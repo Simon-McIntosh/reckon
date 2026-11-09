@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="195">
+<meta name="plan-version" content="196">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s21&quot;:[&quot;a-dispatch-returns-without-its-worker#s20&quot;],&quot;s24&quot;:[&quot;a-dispatch-returns-without-its-worker#s23&quot;]}">
 </head>
@@ -1495,6 +1495,9 @@
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261109T033640550193-review-of-a-sweep-launched-review-starts-its-worker-40a813b9f19a" data-who="reckon-build" data-when="2026-11-09T03:46:23.205Z">
     <div class="r-comment-body"><p>The reviewed node publishes a launch's attempt record with its claim at reckon/crew/dispatch.py:2762, so a sweep-launched review that stops between the claim (dispatch.py:2583) and _prepare_attempt_records (:3438) now leaves an attempt.json naming the attempt it stopped on; the review scores it 18/17/20/14/18/18 over goal_fidelity, evidence, scope_discipline, durability, fit, reuse, records no added failure against afdd8b2c..40a813b9, and records four non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261109T041122720890-review-of-a-sweep-launched-review-starts-its-worker-ed2f85665acd" data-who="reckon-build" data-when="2026-11-09T04:21:10.517Z">
+    <div class="r-comment-body"><p>The review for r-20261109T025218327227-a-sweep-launched-review-starts-its-worker is parsed at head ed2f85665acd against base afdd8b2cc5, scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 17, fit 18, reuse 20, with added_failure_count 0 and two non-blocking findings — the fragment&#x27;s :3438 anchor resolves to unrelated code at this head, and the attempt marker sits ~190 lines after the claim leaving a residual untested window.</p></div>
 </div>
 </section>
 </main>

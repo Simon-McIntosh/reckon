@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3046 _dispatch_composed_review calls dispatch_module.dispatch",
+    "reckon/crew/queue_admission.py:441 the admitted launch calls dispatch, reaching the restore path that now drops the attempt record",
+    "reckon/crew/dispatch_claims.py:856 _publish_launch_claim writes the claim beside which the attempt marker is now published",
+    "reckon/crew/resumption.py:1052 and :1112 read the attempt record the change makes present earlier"
+  ],
+  "completed_at": "2026-11-09T04:21:10.517Z",
+  "dispatched_at": "2026-11-09T04:13:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "line anchors in the evidence note drifted with the repair commit; the symbols are named and resolve by search",
+      "recorded_at": "2026-11-09T04:23:44.400082+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a stop between the claim and the marker leaves claim.json, which the landed never-launched classification (a-dispatch-returns-without-its-worker s19, 85d520ca18) dates from claim_registered_at, so that shape is already reported as never launched",
+      "recorded_at": "2026-11-09T04:23:57.927497+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "The lead paragraph cites `_prepare_attempt_records` at `reckon/crew/dispatch.py:3438`, but at the reviewed head ed2f8566 that line is an unrelated comment about a context-refusal trace; `_prepare_attempt_records` is called at :3471, and the claim write the same sentence sends the reader to is at :2581 (`:2583` is an argument line inside that call). The anchors were carried from the step trace recorded at 3b938adf, which named its own revision, and were not re-derived after b0c4ba8e82 shifted the file. A reader following the pointer lands on the wrong statement, so the evidence document's central citation cannot be checked where it sends them. Fold into a node that re-derives the anchors against the landed head."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2773",
+      "severity": "non-blocking",
+      "text": "The attempt marker is published at :2773, roughly 190 lines after the claim is registered at :2581, so a launcher that ends between those two points still leaves exactly the field shape this node set out to make legible \u2014 brief.md and claim.json, a pointer in starting, and no attempt record. Ranges :2581-:2773 contain `_refuse_over_concurrency_ceiling`, the admission checks and the peer/scope composition, and no test drives a stop there; `test_a_launcher_that_ends_stops_after_its_attempt_record` throws from `_create_worktree` at :2867, which the marker already precedes. The repair therefore narrows the window rather than closing it, and the fragment's 'with its claim' overstates the placement. Fold into a node that publishes the marker inside `_publish_launch_claim` (reckon/crew/dispatch_claims.py:856), which is where the claim itself becomes durable."
+    }
+  ],
+  "gate_sources": {
+    "after_population": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T025218327227-a-sweep-launched-review-starts-its-worker/logs/after-population.log",
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T025218327227-a-sweep-launched-review-starts-its-worker/logs/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T025218327227-a-sweep-launched-review-starts-its-worker/logs/base-population.log",
+    "review_regate": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T041122720890-review-of-a-sweep-launched-review-starts-its-worker-ed2f85665acd/gate.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read the four commits against afdd8b2c: 3b938adfe6 adds the claim-time marker write and the new four-case test, 40a813b9f1 and ed2f85665a edit only the fragment, b0c4ba8e82 adds _attempt_record_for and its two unlinks in the queue-restore paths; 283 insertions across three files, no deletions.",
+    "done_when": "The done_when names a per-step log, the test with its negative control, the importer-population delta and ruff; logs/step-trace.log records the milestone line order at 3b938adf, after-suite.log ends 4 passed EXIT=0, negative-control.log and negative-control-restore.log each end 1 failed / 3 passed EXIT=1 on their own mutation, base-population.log and after-population.log each end 327 passed EXIT=0, and ruff.log ends check EXIT=0 and format EXIT=0 \u2014 but the population measured is only the 42 files importing recovery_review_dispatch, while the done_when names files importing dispatch or recovery_review_dispatch, and the dispatch side is recorded unmeasured.",
+    "goal": "The source goal is to find the step where a sweep-launched review stops between its claim and its attempt record; the fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html:19 names the span and reads the field directory r-20261109T013544897285-review-of-a-concurrent-launch-is-refused-34d0376761a9 (brief.md, claim.json, no attempt.json) as a process that stopped rather than one refused, and dispatch.py now writes the marker at :2773 so a stop after it names its attempt.",
+    "manifest": "Read; it records status complete, commits 3b938adfe6, 40a813b9f1, b0c4ba8e82 and ed2f85665a, the 4-test gate, two negative controls of 1 failed / 3 passed each, both population arms at 327 passed, and the shas and log paths those claims rest on.",
+    "write_paths": "The source node declared reckon/crew/dispatch.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_sweep_launched_review_starts_its_worker.py and the fragment; the diff afdd8b2c..ed2f8566 changes the first, the third and the fourth and leaves recovery_review_dispatch.py untouched, which the manifest states."
+  },
+  "justifications": {
+    "durability": "reckon/crew/dispatch.py:2773 and :3619 each fail a distinct assertion when removed \u2014 tests/test_a_sweep_launched_review_starts_its_worker.py:152 reddens on the marker write and :189 on the restore-path unlink \u2014 while the positive-path assertion at :79 is satisfied by the pre-existing later write and is labelled a control, not a guard.",
+    "evidence": "logs/after-suite.log, logs/base-population.log and logs/after-population.log record the gate and both arms, but the done_when's 'dispatch or recovery_review_dispatch' importer population is measured only on the recovery_review_dispatch side (42 files), with the wider 329-file set recorded unmeasured rather than run.",
+    "fit": "reckon/crew/dispatch.py:2773 writes the same four keys (run_id, attempt, attempt_kind, attempt_started_at) that _prepare_attempt_records writes at reckon/crew/dispatch_launch.py:2203, so the earlier record is the later record's own shape, and the helper at :1545 is named for the file it returns.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2773 publishes the attempt identity with the claim so a stopped launch names its attempt, and the fragment's :19 lead records the step it was dispatched to find.",
+    "reuse": "the capability search over reckon/crew for an attempt-record path or unlink owner (grep attempt_record_path, def .*attempt_record, ATTEMPT_RECORD_NAME) found none \u2014 recovery_liveness.py:519, dispatch_launch.py:2242 and promotion_records.py:104 each rebuild the path inline \u2014 so the two-line helper extends no owner and forks nothing.",
+    "scope_discipline": "every path in git diff afdd8b2c..ed2f8566 is one of the four declared write paths, and the declared-but-unneeded reckon/crew/recovery_review_dispatch.py is left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is to find the step where a sweep-launched review stops between its claim and its attempt record; the fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html:19 names the span and reads the field directory r-20261109T013544897285-review-of-a-concurrent-launch-is-refused-34d0376761a9 (brief.md, claim.json, no attempt.json) as a process that stopped rather than one refused, and dispatch.py now writes the marker at :2773 so a stop after it names its attempt.\nVERDICT done_when: The done_when names a per-step log, the test with its negative control, the importer-population delta and ruff; logs/step-trace.log records the milestone line order at 3b938adf, after-suite.log ends 4 passed EXIT=0, negative-control.log and negative-control-restore.log each end 1 failed / 3 passed EXIT=1 on their own mutation, base-population.log and after-population.log each end 327 passed EXIT=0, and ruff.log ends check EXIT=0 and format EXIT=0 \u2014 but the population measured is only the 42 files importing recovery_review_dispatch, while the done_when names files importing dispatch or recovery_review_dispatch, and the dispatch side is recorded unmeasured.\nVERDICT write_paths: The source node declared reckon/crew/dispatch.py, reckon/crew/recovery_review_dispatch.py, tests/test_a_sweep_launched_review_starts_its_worker.py and the fragment; the diff afdd8b2c..ed2f8566 changes the first, the third and the fourth and leaves recovery_review_dispatch.py untouched, which the manifest states.\nVERDICT manifest: Read; it records status complete, commits 3b938adfe6, 40a813b9f1, b0c4ba8e82 and ed2f85665a, the 4-test gate, two negative controls of 1 failed / 3 passed each, both population arms at 327 passed, and the shas and log paths those claims rest on.\nVERDICT diff: Read the four commits against afdd8b2c: 3b938adfe6 adds the claim-time marker write and the new four-case test, 40a813b9f1 and ed2f85665a edit only the fragment, b0c4ba8e82 adds _attempt_record_for and its two unlinks in the queue-restore paths; 283 insertions across three files, no deletions.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3046 _dispatch_composed_review calls dispatch_module.dispatch, reckon/crew/queue_admission.py:441 the admitted launch calls dispatch, reckon/crew/dispatch_claims.py:856 _publish_launch_claim, reckon/crew/resumption.py:1052 and :1112 read the attempt record\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2773 publishes the attempt identity with the claim so a stopped launch names its attempt, and the fragment's :19 lead records the step it was dispatched to find.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/after-suite.log, logs/base-population.log and logs/after-population.log record the gate and both arms, but the done_when's 'dispatch or recovery_review_dispatch' importer population is measured only on the recovery_review_dispatch side (42 files), with the wider 329-file set recorded unmeasured rather than run.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff afdd8b2c..ed2f8566 is one of the four declared write paths, and the declared-but-unneeded reckon/crew/recovery_review_dispatch.py is left untouched.\nSCORE durability: 17\nJUSTIFICATION durability: reckon/crew/dispatch.py:2773 and :3619 each fail a distinct assertion when removed \u2014 tests/test_a_sweep_launched_review_starts_its_worker.py:152 reddens on the marker write and :189 on the restore-path unlink \u2014 while the positive-path assertion at :79 is satisfied by the pre-existing later write and is labelled a control, not a guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:2773 writes the same four keys that _prepare_attempt_records writes at reckon/crew/dispatch_launch.py:2203, so the earlier record is the later record's own shape, and the helper at :1545 is named for the file it returns.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search over reckon/crew for an attempt-record path or unlink owner (grep attempt_record_path, def .*attempt_record, ATTEMPT_RECORD_NAME) found none \u2014 recovery_liveness.py:519, dispatch_launch.py:2242 and promotion_records.py:104 each rebuild the path inline \u2014 so the two-line helper extends no owner and forks nothing.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html:19 non-blocking: the citation of _prepare_attempt_records at dispatch.py:3438 lands on an unrelated comment at the reviewed head, where the call is at :3471, because the anchors were carried from the step trace at 3b938adf and never re-derived.\nFINDING reckon/crew/dispatch.py:2773 non-blocking: the marker sits ~190 lines after the claim at :2581, so a launcher that ends between them still leaves claim-with-no-attempt and no test covers that residual span, which the fragment's 'with its claim' overstates.\n",
+  "review_run_id": "r-20261109T041122720890-review-of-a-sweep-launched-review-starts-its-worker-ed2f85665acd",
+  "reviewed_base_sha": "afdd8b2cc5866bc0cb71c619992e9b372572eb88",
+  "reviewed_head_sha": "ed2f85665acd69276b9b667e229d7a59a086c24f",
+  "reviewed_run_id": "r-20261109T025218327227-a-sweep-launched-review-starts-its-worker",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:22:00+00:00",
+  "total": 108
+}
