@@ -1048,9 +1048,7 @@ def load_aggregate(
     return _load_aggregate(project, root)
 
 
-def _indexed_run_ids(
-    project: str, root: str | Path | None
-) -> set[str] | None:
+def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     """Membership from the published run index, or ``None`` when it is not current.
 
     The answer is the ids the index already holds, read without decoding any

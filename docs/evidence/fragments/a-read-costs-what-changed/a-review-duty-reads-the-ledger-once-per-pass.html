@@ -2,9 +2,14 @@
   <h2>a-review-duty-reads-the-ledger-once-per-pass — the station's review duty reads the ledger once per pass</h2>
 
   <p id="a-review-duty-reads-the-ledger-once-per-pass-what-changed"><strong>What changed.</strong>
-  <code>ledger.run_ids</code> is served from the stat-validated run index <code>ledger.load</code>
-  already keeps, through <code>load(project, root, headers_only=True)</code>, instead of parsing the
-  aggregate on every call. The station evaluates every delivered run's review duty on every tick,
+  <code>ledger.run_ids</code> is served from the stat-validated run index the ledger already
+  publishes, through a new <code>_indexed_run_ids</code> that reads the index's ids only,
+  instead of parsing the aggregate on every call. The index is trusted while the aggregate's stat
+  identity matches the one it recorded and every run file carries the stamp it stored; otherwise
+  the read falls back to the aggregate and the run documents, the read it made before. It is
+  deliberately not <code>load</code>: <code>load</code> rebuilds the index and decodes rows a
+  membership caller did not ask for, and the run store's cross-check requires membership to stay
+  cheap. The station evaluates every delivered run's review duty on every tick,
   and each duty asks <code>ledger.run_ids</code> whether the run is closed — through
   <code>station_subscriber.live_work_populations</code>,
   <code>delivered_run_owes_review</code>, <code>obligations._review_duty_item</code>,
@@ -33,4 +38,15 @@
   <strong>3</strong> times, once per delivered run, and the gate fails on
   <code>assert 3 &lt;= 1</code> — <strong>1 failed, EXIT=1</strong>. Log:
   <code>logs/negative-control.log</code>.</p>
+
+  <p id="a-review-duty-reads-the-ledger-once-per-pass-importers"><strong>Importer arm.</strong>
+  Eight test files importing <code>reckon.ledger</code>, <code>reckon.crew.obligations</code> or
+  <code>reckon.crew.recovery_review_dispatch</code> run one arm at a time at <code>-n 4</code>:
+  <strong>140 passed, EXIT=0</strong> against the base revision's <code>ledger.py</code> and
+  <strong>141 passed, EXIT=0</strong> at the head, the extra case being this node's own test. No
+  failure is added. The importer population named by the done-when is 323 files, and one of them
+  alone (<code>tests/test_ledger.py</code>) exceeded four minutes on this host, so the full
+  population was not run inside the node's budget; the subset run here is the files that reach the
+  index, the membership read and the review-duty path directly. Logs:
+  <code>logs/baseline-importers.log</code>, <code>logs/after-importers.log</code>.</p>
 </section>
