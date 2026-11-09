@@ -28,6 +28,7 @@ import pytest
 
 from reckon import ledger
 from reckon.crew import merge, recovery
+from reckon.crew import recovery_review_acceptance as acceptance
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 from tests.helpers.git import git as _git
@@ -39,11 +40,10 @@ from tests.helpers.landing_repository import (
 
 RUN_ID = "r-20261109T120000000000-reflex-acceptance"
 GATE_COMMAND = "sh gate.sh"
-GATE_COMMAND = "sh gate.sh"
 
 
-@pytest.fixture()
-def real_pointer_is_not_a_fixture_target(isolated_reckon_home: Path) -> None:
+@pytest.fixture(autouse=True)
+def real_pointer_is_not_a_fixture_target() -> None:
     """No fixture may reach the workstation's real crew pointer directory."""
     real_pointer = (
         Path.home() / ".config" / "reckon" / "crew" / "live" / f"{RUN_ID}.json"
@@ -307,14 +307,8 @@ def test_a_missing_branch_read_as_promotable_would_promote(
     assert not pointer_path(RUN_ID).exists()
 
 
-def test_a_checkout_with_no_remote_judges_its_own_branch(
-    isolated_reckon_home: Path, tmp_path: Path
-) -> None:
-    """No remote configured means no remote branch to be off, so local stands.
-
-    A fixture repository with no ``origin`` keeps the behaviour a repository
-    without a remote has always had: the checkout's own branch is the answer.
-    """
+def _remote_less_repository(isolated_reckon_home: Path, tmp_path: Path) -> Path:
+    """A checkout of ``main`` that configures no remote at all."""
     repository = tmp_path / "local-repo"
     repository.mkdir()
     for arguments in (
@@ -334,14 +328,115 @@ def test_a_checkout_with_no_remote_judges_its_own_branch(
     (isolated_reckon_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
     )
+    return repository
+
+
+def test_a_checkout_with_no_remote_declines(
+    isolated_reckon_home: Path, tmp_path: Path
+) -> None:
+    """No remote means no branch to show the work on, so acceptance stands down.
+
+    Judging the checkout's own HEAD here is the defect this section closes: a
+    repository with no remote would promote a run no reader outside the
+    checkout can find. The repair named is the missing remote.
+    """
+    repository = _remote_less_repository(isolated_reckon_home, tmp_path)
     base, commit = _land_run_commit(repository, push=False)
     _write_run(repository, tmp_path, base=base, commit=commit)
     _store_review(base=base, head=commit)
 
     report = _sweep()
 
+    assert report["accepted"] == [], report
+    refusal = _refusal_for(report)
+    assert refusal["accepted"] is False
+    assert refusal["remote_cause"] == merge.REMOTE_UNCONFIGURED
+    assert "configures no origin remote" in refusal["reason"]
+    assert pointer_path(RUN_ID).is_file()
+    assert ledger.runs(PROJECT, root=repository) == []
+
+
+def test_a_missing_remote_read_as_promotable_would_promote(
+    isolated_reckon_home: Path,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Control for the arm above: the refusal is the absent remote, not the fixture."""
+    repository = _remote_less_repository(isolated_reckon_home, tmp_path)
+    base, commit = _land_run_commit(repository, push=False)
+    _write_run(repository, tmp_path, base=base, commit=commit)
+    _store_review(base=base, head=commit)
+    _read_as_promotable(monkeypatch)
+
+    report = _sweep()
+
     assert report["accepted"] == [RUN_ID], report
     assert not pointer_path(RUN_ID).exists()
+
+
+def test_a_detached_checkout_declines_naming_the_branch(
+    origin_and_repository: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """A detached HEAD has no primary branch to compare against, and says so."""
+    _origin, repository = origin_and_repository
+    base, commit = _land_run_commit(repository, push=True)
+    _git(repository, "checkout", "-q", "--detach", "HEAD")
+    _write_run(repository, tmp_path, base=base, commit=commit)
+    _store_review(base=base, head=commit)
+
+    report = _sweep()
+
+    assert report["accepted"] == [], report
+    refusal = _refusal_for(report)
+    assert refusal["accepted"] is False
+    assert refusal["remote_cause"] == "detached-head"
+    assert "HEAD is detached" in refusal["reason"]
+    assert "check the primary branch out" in refusal["reason"]
+    assert pointer_path(RUN_ID).is_file()
+
+
+def test_a_detached_checkout_read_as_promotable_would_promote(
+    origin_and_repository: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Control for the arm above: with a branch answer supplied nothing refuses."""
+    _origin, repository = origin_and_repository
+    base, commit = _land_run_commit(repository, push=True)
+    _git(repository, "checkout", "-q", "--detach", "HEAD")
+    _write_run(repository, tmp_path, base=base, commit=commit)
+    _store_review(base=base, head=commit)
+    # The checkout is detached, but the commit is pushed, so supplying the
+    # branch the refusal named is the whole difference between the two arms.
+    monkeypatch.setattr(acceptance, "_checked_out_branch", lambda repo: ("main", ""))
+
+    report = _sweep()
+
+    assert report["accepted"] == [RUN_ID], report
+    assert not pointer_path(RUN_ID).exists()
+
+
+def test_an_unresolvable_commit_is_not_reported_as_an_unreachable_remote(
+    origin_and_repository: tuple[Path, Path], tmp_path: Path
+) -> None:
+    """A commit the checkout cannot resolve names its own repair, not the network.
+
+    The review store refuses a reviewed head it cannot resolve, so this state
+    cannot be reached through a stored review. The question is asked of the
+    guard directly, which is what decides the cause the coordinator reads.
+    """
+    _origin, repository = origin_and_repository
+    commit = "0" * 40
+
+    missing, refusal = acceptance._commits_missing_from(repository, [commit])
+
+    assert missing == []
+    assert refusal is not None
+    assert refusal["cause"] == acceptance.UNRESOLVABLE_COMMIT
+    reason = acceptance._remote_unreadable_reason(refusal, [commit])
+    assert commit in reason
+    assert "cannot resolve commit" in reason
+    assert "could not be read" not in reason
 
 
 def test_acceptance_still_promotes_the_base_case_with_no_remote_read_needed(

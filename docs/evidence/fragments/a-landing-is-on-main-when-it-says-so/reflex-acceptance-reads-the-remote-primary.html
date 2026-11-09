@@ -39,24 +39,34 @@
       <p>An unreachable remote and a reachable remote carrying no primary ref are
         distinct answers and each declines the promotion, recording
         <code>remote_cause</code> and a reason naming the remote, the branch and
-        the commits. Neither is read as "not missing", because either would
-        promote work the remote may not hold.</p>
+        the commits. So does a checkout that configures no remote at all: there is
+        no remote branch to show the work on, and judging the checkout's own HEAD
+        is exactly the local-only promotion this section closes. A detached HEAD
+        and a commit the checkout cannot resolve are told apart from those three,
+        because each has a different repair — check the primary branch out, fetch
+        the commit, configure the remote, retry the network — and reporting any of
+        them as an unreachable remote sends the coordinator to the wrong fix.</p>
     </section>
 
     <section id="reflex-acceptance-reads-the-remote-primary-measure">
       <h2>Measure</h2>
       <p>Gate: <code>tests/test_reflex_acceptance_reads_the_remote_primary.py</code>
         over a temporary repository and a bare <code>origin</code>. At the head it
-        reports 8 passed, <code>EXIT=0</code>. Each declined arm carries a control,
+        reports 12 passed, <code>EXIT=0</code>. Each declined arm carries a control,
         because a guard that never fires passes the same assertions as one that
         refuses everything: a run whose commits are only on local <code>main</code>
         is not promoted, while the same run with the deliverable pushed promotes;
         an unreachable remote declines with <code>remote_cause: unreachable</code>
         and a control that answers the remote read as promotable promotes it; a
         remote with <code>refs/heads/main</code> deleted declines with
-        <code>remote_cause: missing-branch</code> and the same control promotes it;
-        and a checkout configuring no remote judges its own branch and promotes,
-        which is the behaviour a remote-less repository has always had.</p>
+        <code>remote_cause: missing-branch</code>; a checkout configuring no remote
+        declines with <code>remote_cause: no-remote</code> and a control that
+        answers the question as promotable promotes it; and a detached checkout
+        declines with <code>remote_cause: detached-head</code>, with a control that
+        supplies the branch the refusal named promoting the same run. A commit the
+        checkout cannot resolve is asked of the guard directly, since the review
+        store refuses to record a reviewed head it cannot resolve, and its reason
+        names the commit rather than the network.</p>
       <p>Negative control: the declared mutation reverts the question to the local
         checkout. Over a tree extracted from base revision
         <code>bf85149157</code> with this node's test copied in, the
@@ -67,12 +77,15 @@
         unreachable-remote and missing-branch arms fail too, since neither cause
         is represented in the base code. That run reports 3 failed, 5 passed,
         <code>EXIT=1</code>.</p>
-      <p>Regression: <code>tests/test_review_acceptance_promotes.py</code>, which
-        exercises this module's accepting branch through a remote-less fixture,
-        reports 6 passed at the base revision and 6 passed at the head, so the
-        change adds no failure and the no-remote fallback preserves the path.
-        Ruff check and <code>ruff format --check</code> are clean on both staged
-        paths.</p>
+      <p>Open consequence, outside this node's write scope:
+        <code>tests/test_review_acceptance_promotes.py</code> builds its repository
+        with no remote, so four of its cases now meet the
+        <code>no-remote</code> decline before reaching the behaviour each measures
+        (4 failed, 26 passed alongside the four other importer files). Its fixture
+        needs a bare <code>origin</code> with each landed commit pushed, which is
+        the shape <code>tests/helpers/landing_repository._write_origin_and_checkout</code>
+        already provides. Ruff check and <code>ruff format --check</code> are clean
+        on both staged paths.</p>
     </section>
   </main>
 </body>
