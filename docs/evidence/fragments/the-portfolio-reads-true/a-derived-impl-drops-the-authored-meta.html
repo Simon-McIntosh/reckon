@@ -49,7 +49,15 @@
   <p>The gate is <code>tests/test_a_derived_impl_drops_the_authored_meta.py</code> — 8 tests. At the
   head it ran green (<strong>8 passed</strong>, <code>EXIT=0</code>). The same file copied into the
   dispatch base tree (<code>9ac9d2af9f</code>) ran red (<strong>4 failed, 4 passed</strong>,
-  <code>EXIT=1</code>), failing exactly cases (a), (d), (e) and (f) as the section predicts.</p>
+  <code>EXIT=1</code>, <code>node-gate-base.log</code>), failing exactly cases (a), (d), (e) and
+  (f) as the section predicts.</p>
+
+  <p>Case (b) is measured on the write, not on the text. Identical text is what a write of
+  identical content leaves behind, so the file's bytes cannot tell a skipped write from a
+  performed one; the test spies the writer and compares the file's inode, size and mtime across a
+  patch that changes nothing. A mutation that forces the idempotency guard through fails it on that
+  assertion — the writer is reached and the plan file is replaced
+  (<code>no-change-mutation.log</code>, <strong>1 failed</strong>, <code>EXIT=1</code>).</p>
 
   <p>The negative control made the opt-in a no-op, keeping the authored meta. The run went red
   (<strong>4 failed, 4 passed</strong>, <code>EXIT=1</code>) with the same four FAILED ids and none
