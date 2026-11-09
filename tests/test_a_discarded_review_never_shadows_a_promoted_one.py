@@ -6,13 +6,15 @@ the re-dispatch that measured the figures and was promoted. The by-head
 selection ranked only on completeness, so it kept the discarded run's unparsed
 record when that filename sorted first; ``crew dispose --review`` then refused,
 because the head resolved to a record other than the promoted review the
-operator named.
+operator named. The same shadowing is reachable from the store's misfiled
+lookup, which selects by content for a record filed under another run id.
 
 These tests write the records into the committed run directory the selection
 reads, put a discard marker where a discard leaves one, and drive the selection
 through :func:`stored_record` and through the operator's own ``crew dispose``
 and ``crew dispose --review``. Each discarded filename sorts before the record it
-must not shadow, so a selection that ignored the discard record would pick it.
+must not shadow, and in the misfiled case the discarded file is given the newer
+modification time, so a selection that ignored the discard record would pick it.
 
 Every crew directory resolves inside a temporary configuration home and every
 repository is synthesised under the test's own temporary tree, so nothing
@@ -22,6 +24,7 @@ touches the operator's stores.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -315,6 +318,41 @@ def test_a_lone_unparsed_record_still_resolves(fixture: Fixture) -> None:
     assert record is not None
     assert Path(path).resolve() == lone.resolve()
     assert record["status"] == "unparsed"
+
+
+def test_a_discarded_review_filed_under_another_run_never_shadows_a_promoted_one(
+    fixture: Fixture,
+) -> None:
+    """The misfiled lookup skips a discarded record that names another run."""
+    store = review_module.review_store_root() / PROJECT
+    store.mkdir(parents=True, exist_ok=True)
+    promoted = store / f"{PROMOTED_REVIEW}.json"
+    discarded = store / f"{DISCARDED_REVIEW}.json"
+    for path, review_run_id, status, when in (
+        (promoted, PROMOTED_REVIEW, "parsed", 1_000_000_000),
+        (discarded, DISCARDED_REVIEW, "unparsed", 2_000_000_000),
+    ):
+        path.write_text(
+            json.dumps(
+                _figure_record(
+                    review_run_id=review_run_id,
+                    head_sha=fixture.head_sha,
+                    status=status,
+                )
+            ),
+            encoding="utf-8",
+        )
+        # Pinned: the discarded file is the newer of the two, which is the
+        # record the store's misfiled lookup would return without the rule.
+        os.utime(path, ns=(when, when))
+    _record_discard(DISCARDED_REVIEW)
+
+    path, record = _selected(fixture)
+
+    assert record is not None
+    assert Path(path).resolve() == promoted.resolve()
+    assert record["review_run_id"] == PROMOTED_REVIEW
+    assert record[review_module.MISFILED_KEY] is True
 
 
 def test_the_fixture_home_is_temporary_and_the_real_store_is_untouched(
