@@ -475,9 +475,7 @@ def _reviewed_run_id(source: str, records: Iterable[Mapping[str, Any]]) -> str:
     if not named:
         return source
     named.sort(
-        key=lambda item: str(
-            item.get("completed_at") or item.get("created_at") or ""
-        )
+        key=lambda item: str(item.get("completed_at") or item.get("created_at") or "")
     )
     return str(named[-1].get("run_id") or source)
 
@@ -570,8 +568,7 @@ def _session_too_large_to_continue(record: Mapping[str, Any]) -> str | None:
                     refusal = "blocking_limit"
     if refusal:
         return (
-            f"the run ended with {refusal!r}, so its session is too large to "
-            "continue"
+            f"the run ended with {refusal!r}, so its session is too large to continue"
         )
     if compaction_announced and not boundary_seen:
         return (
@@ -617,9 +614,7 @@ def _prior_same_task_run(
     if not candidates:
         return None
     candidates.sort(
-        key=lambda item: str(
-            item.get("completed_at") or item.get("created_at") or ""
-        )
+        key=lambda item: str(item.get("completed_at") or item.get("created_at") or "")
     )
     return candidates[-1]
 
@@ -971,9 +966,10 @@ def _backend_settings(
     # The identity the launch resolved to, recorded beside the command. It is
     # consulted when the command's own stem names no dialect, which is the case
     # a placed run produces; a record naming only its lane still resolves.
-    identity = str(record.get("dialect") or "").strip() or str(
-        record.get("backend") or ""
-    ).strip()
+    identity = (
+        str(record.get("dialect") or "").strip()
+        or str(record.get("backend") or "").strip()
+    )
     if identity:
         settings.setdefault("dialect", identity)
     for key in ("usable_input_window", "model", "effort", "input_modalities"):
@@ -2423,6 +2419,7 @@ def record_resumption(
     run_id: str,
     *,
     pid: int,
+    attempt: int | None = None,
     turn: int,
     log_path: str | Path,
     stderr_path: str | Path,
@@ -2447,7 +2444,11 @@ def record_resumption(
                 "pid": pid,
                 "pid_start_time": _process_start_time(pid),
                 "phase": "working",
-                "attempt": int(record.get("attempt") or 1) + 1,
+                "attempt": (
+                    int(attempt)
+                    if attempt is not None
+                    else int(record.get("attempt") or 1) + 1
+                ),
                 "attempt_kind": "resume",
                 # A harness change may require a fresh session even though
                 # this attempt was requested through the resume command.
@@ -2477,6 +2478,7 @@ def record_resumption(
         return record
 
     return _mutate_pointer(run_id, resume)
+
 
 from .dispatch_admission import (  # noqa: E402
     LanePaused,

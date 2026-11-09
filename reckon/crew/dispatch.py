@@ -2793,6 +2793,7 @@ def dispatch(
         wave_id = _resolved_wave_id(project, session, wave)
 
     worktree: dict[str, Any] | None = None
+    reservation = None
     spawned_pid: int | None = None
     spawned_start_time: str | None = None
     wired_peer_run_ids: list[str] = []
@@ -2811,6 +2812,27 @@ def dispatch(
             run_id=run_id,
             session=session,
         )
+        # A relaunch of a dispatch here has never launched takes no reservation;
+        # a launch of an existing run id takes one for the attempt it starts,
+        # before the worktree is touched, and launches exactly that attempt.
+        # An in-harness relaunch takes none and is refused while a CLI launch
+        # of the run holds one, because nothing on disk records its own end.
+        from reckon.crew.dispatch_launch import (
+            refuse_held_launch,
+            reserve_launch_attempt,
+            run_holds_an_attempt_record,
+        )
+
+        if run_holds_an_attempt_record(run_dir(run_id)):
+            if launch_kind == "cli":
+                reservation = reserve_launch_attempt(
+                    run_dir(run_id), run_id, kind="dispatch"
+                )
+                attempt = reservation.attempt
+                if lineage:
+                    lineage["attempt"] = attempt
+            else:
+                refuse_held_launch(run_id, run_dir(run_id))
         rendered_images = []
         pending_pngs = []
         for index, image in enumerate(node.images):
@@ -3546,6 +3568,15 @@ def dispatch(
         # message would otherwise lose the tree the rollback could not remove.
         try:
             _unwire_peer_channels(run_id, wired_peer_run_ids)
+            # A launch that refused before its supervisor was recorded releases
+            # its reservation at once, so the next launch of the run is
+            # admitted. One that recorded a supervisor leaves it to that
+            # supervisor's exit, whatever this unwind then signals.
+            from reckon.crew.dispatch_launch import (
+                release_launch_reservation as _release_launch_reservation,
+            )
+
+            _release_launch_reservation(reservation, only_when_unspawned=True)
             if spawned_pid is not None:
                 with contextlib.suppress(CrewError, OSError):
                     _signal_process_group(

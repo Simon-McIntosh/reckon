@@ -1516,7 +1516,15 @@ def _launch_failure_block(record: Mapping[str, Any]) -> dict[str, str] | None:
     }
 
 
-def _spawn(plan: Any, *, log_path: Path, stderr_path: Path, prompt_path: Path) -> int:
+def _spawn(
+    plan: Any,
+    *,
+    log_path: Path,
+    stderr_path: Path,
+    prompt_path: Path,
+    attempt: int | None = None,
+    reservation: Any = None,
+) -> int:
     """Start a resumed worker through the run's own supervisor.
 
     A resumption leaves through the same supervisor a dispatch does, so its
@@ -1539,6 +1547,8 @@ def _spawn(plan: Any, *, log_path: Path, stderr_path: Path, prompt_path: Path) -
         log_path=Path(log_path),
         stderr_path=Path(stderr_path),
         prompt_path=Path(prompt_path),
+        attempt=attempt,
+        reservation=reservation,
     )
 
 
@@ -1701,13 +1711,22 @@ def _resume(
     # process-table guard cannot reach. The claim goes only when the launch
     # that took it failed before a worker existed: a worker that started is
     # held by its own claim, exactly as it is held by the in-flight mark.
+    from reckon.crew.dispatch_launch import (
+        release_launch_reservation,
+        reserve_launch_attempt,
+    )
+
+    # The reservation is keyed on the newest attempt receipt in the run's own
+    # directory plus one, the same key the dispatch door computes, so a resume
+    # and a dispatch racing in the window between one door's attempt record and
+    # its supervisor's worker record take one reservation between them.
     try:
-        claim_path = claim_next_attempt(run_id, record)
+        reservation = reserve_launch_attempt(run_dir(run_id), run_id, kind="resume")
     except CrewError:
-        # The claim was met by another door's launch, so this advice belongs to
-        # the attempt that holds the run rather than to the one refused. It is
-        # kept for the run's next resume, exactly as the in-flight refusal in
-        # the plan builder keeps it.
+        # The reservation was met by another door's launch, so this advice
+        # belongs to the attempt that holds the run rather than to the one
+        # refused. It is kept for the run's next resume, exactly as the
+        # in-flight refusal in the plan builder keeps it.
         store_refused_advice(run_id, advice)
         raise
     # The registry entry is taken inside the guarded block and held across the
@@ -1744,6 +1763,8 @@ def _resume(
                     log_path=log_path,
                     stderr_path=stderr_path,
                     prompt_path=advice_path,
+                    attempt=reservation.attempt,
+                    reservation=reservation,
                 )
             else:
                 pid = launcher(
@@ -1765,11 +1786,12 @@ def _resume(
             # would refuse the run's next resume against a launch that never
             # produced a worker.
             clear_resume_launching(run_id)
-            release_attempt_claim(claim_path)
+            release_launch_reservation(reservation, only_when_unspawned=True)
             raise
         record_resumption(
             run_id,
             pid=pid,
+            attempt=reservation.attempt,
             turn=turn,
             log_path=log_path,
             stderr_path=stderr_path,
