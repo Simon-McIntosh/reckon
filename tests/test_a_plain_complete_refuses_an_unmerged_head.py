@@ -36,6 +36,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli as cli_module
+from reckon import crew_run_commands
 from reckon.crew import merge
 from reckon.crew.runs import _write_json, pointer_path
 from tests.helpers.git import git as _git
@@ -50,11 +51,19 @@ MARKER = "the reviewed change survives the merge\n"
 
 
 def _skip_the_guard_if_declared(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Apply the declared mutation: promote without asking the remote."""
+    """Apply the declared mutation: promote without asking the remote.
+
+    The name is patched in the module whose code resolves it. ``crew_complete``
+    lives in ``reckon.crew_run_commands``, so its global lookup reads that
+    module's namespace; a patch applied to ``reckon.cli`` would install a name
+    nothing calls and the guard would stay in place.
+    """
     if not os.environ.get("RECKON_COMPLETE_SKIP_HEAD_CHECK"):
         return
     monkeypatch.setattr(
-        cli_module, "_refuse_a_plain_complete_off_the_branch", lambda *a, **k: None
+        crew_run_commands,
+        "_refuse_a_plain_complete_off_the_branch",
+        lambda *a, **k: None,
     )
 
 
