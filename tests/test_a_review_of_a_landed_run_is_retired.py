@@ -189,7 +189,7 @@ def _live_subject(repository: Path, run_id: str) -> None:
             "phase": "running",
             "queued_at": datetime.now(UTC).isoformat(),
             "created_at": datetime.now(UTC).isoformat(),
-        }
+        },
     )
 
 
@@ -260,9 +260,7 @@ def test_a_review_of_a_promoted_run_is_retired_and_names_the_landed_run(
     assert result["verdicts"][0]["verdict"] == "retired-landed-review"
 
 
-def test_a_retired_review_is_retired_once(
-    admit_repo: Path, tmp_path: Path
-) -> None:
+def test_a_retired_review_is_retired_once(admit_repo: Path, tmp_path: Path) -> None:
     config, resolve = _config_for()
     _lane(admit_repo, tmp_path, config)
     _promote(admit_repo, REVIEWED_RUN)
@@ -325,9 +323,7 @@ def test_a_refused_review_of_a_live_run_is_not_retired(
         resolve=resolve,
     )
 
-    result = queue_admission.admit_once(
-        config_for=resolve, launcher=_launcher([])
-    )
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
 
     assert result["retired"] == []
     assert result["obligations"] == []
@@ -358,9 +354,7 @@ def test_a_review_whose_subject_never_landed_is_not_retired(
     assert not runs.pointer_path(REVIEWED_RUN).is_file()
     assert runs._promoted_record_project(REVIEWED_RUN, PROJECT) is None
 
-    result = queue_admission.admit_once(
-        config_for=resolve, launcher=_launcher([])
-    )
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
 
     assert result["retired"] == []
     assert result["obligations"] == []
