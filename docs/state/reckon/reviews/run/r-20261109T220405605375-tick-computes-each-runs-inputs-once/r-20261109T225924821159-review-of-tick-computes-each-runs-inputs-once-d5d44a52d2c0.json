@@ -1,0 +1,164 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count",
+    "tests/test_arm_lock_is_never_held_by_a_follower.py::test_contended_arming_refuses_within_bound",
+    "tests/test_producer_survives_its_reload.py::test_a_producer_keeps_publishing_after_a_slow_reload",
+    "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[streaming]"
+  ],
+  "added_failures_note": "Derived from the reviewed run own completed matched importer logs and importer-results.json; manifest after_suite instead describes the focused test and is not comparable to its importer baseline. No attribution of these failures to the change is established.",
+  "assertion_analysis": [
+    {
+      "condition_for_failure": "Committed review storage is unavailable; prevents a vacuous fixture.",
+      "line": 28
+    },
+    {
+      "condition_for_failure": "The instrument no longer sees each known committed review file; guards the positive control before interpreting counts.",
+      "line": 65
+    },
+    {
+      "condition_for_failure": "Instrumentation misses the canonical reader binding.",
+      "line": 77
+    },
+    {
+      "condition_for_failure": "The producer omits or substitutes a synthetic run in its initial events.",
+      "line": 98
+    },
+    {
+      "condition_for_failure": "Removing the tick memo or its watch context restores repeated reads; recorded base has six per run, not one.",
+      "line": 99
+    },
+    {
+      "condition_for_failure": "The rewrite replaces the inode, invalidating the intended in-place control.",
+      "line": 122
+    },
+    {
+      "condition_for_failure": "The rewrite changes directory identity, making a directory-only invalidator sufficient.",
+      "line": 123
+    },
+    {
+      "condition_for_failure": "The producer does not reach the supplied sleeper after the next quiet tick.",
+      "line": 124
+    },
+    {
+      "condition_for_failure": "A tick reuses prior identities without reads or repeats the reader per run; removing memo yields four or six instead of one.",
+      "line": 133
+    },
+    {
+      "condition_for_failure": "Retaining identities across ticks or coarsening review identity to directory metadata leaves the rewritten run key unchanged, or unrelated keys change.",
+      "line": 134
+    }
+  ],
+  "assertion_independence": "No added assertion compares an echoed input to itself: counts observe real reader calls, identities observe filesystem metadata, events observe producer output, and changed keys compare independently observed pre/post snapshots.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:watch_ticker:3312",
+    "reckon/crew/recovery_watch.py:_crew_home_change_token:3024",
+    "reckon/crew/recovery_watch.py:_watch_snapshot:1553",
+    "reckon/crew/recovery_watch.py:_snapshot_reuse_key:1234",
+    "reckon/crew/recovery_classification.py:classify_pointer:836"
+  ],
+  "completed_at": "2026-11-09T23:14:25Z",
+  "dispatched_at": "2026-11-09T23:02:47Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/tick-computes-each-runs-inputs-once.html",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: The required importer no-added-failure gate remains unmet: matched logs show 12 base versus 16 head failures with four new ids; their cause is unadjudicated, so the focused pass does not establish the full done_when."
+    },
+    {
+      "file": "manifest.md",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: after_suite names the two-test focused run whereas baseline_suite names 126 importer files, so directly subtracting these fields falsely reports zero added failures; publish a matched importer suite pair or an explicit matched-pair gate receipt before accepting the no-regression evidence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read 75eca569075d1826af28addbd581ad9a2394c56b and d5d44a52d2c03bdc370a38bfcff78dc578e2a932 separately; they add tick-local input reuse, two focused tests and an evidence fragment within scope.",
+    "done_when": "Live plan s21 and source prompt.txt require one read per each of 40 runs, rewrite invalidation and zero added importer failures; scoped-head.log proves the first two, but importers-head.log records four added failures.",
+    "goal": "The source prompt.txt goal requires shared per-run classification inputs, implemented by recovery_memo.py:475 and recovery_watch.py:3312 for the change token, reuse key and classifier.",
+    "manifest": "Source manifest.md records both commits, the focused pass, the negative control and the unmet broader gate, but lines 19 and 20 pair different test populations.",
+    "write_paths": "The six declared source prompt.txt write paths contain all four paths changed between b1a9e13a0b4312d8d1595f07cf75ced4ca907d68 and d5d44a52d2c03bdc370a38bfcff78dc578e2a932."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_computes_each_runs_inputs_once.py:99,133,134 fail respectively if within-tick reuse is removed, subsequent ticks duplicate reads, or an in-place rewrite no longer changes only its run's key; the base negative control actually fails both tests.",
+    "evidence": "scoped-head.log ends with 2 passed and EXIT=0 and negative-control.log with 2 failed and EXIT=1, but importers-base.log and importers-head.log show 12 versus 16 failures and manifest.md:19-20 expose an unmatched suite pair.",
+    "fit": "reckon/crew/recovery_memo.py:465 follows the repository's context-manager cleanup idiom in runs.py:1130, and the staged Python paths add zero lint findings and pass formatting in lint-delta.log.",
+    "goal_fidelity": "reckon/crew/recovery_memo.py:484-509 memoizes complete input identities by run id and recovery_watch.py:3312 bounds reuse to one producer tick.",
+    "reuse": "Capability searches over recovery_memo.py, recovery_watch.py and runs.py found existing file-identity ownership in _classification_inputs and tick configuration caching in _producer_tick; the change extends the former, and its test imports the existing tick and project fixtures instead of copying them.",
+    "scope_discipline": "The four changed paths in the two reviewed commits are among the six paths declared in source prompt.txt and each supports the input-sharing goal."
+  },
+  "production_sampling": "Deferred to the coordinator after integration, as the live plan explicitly excludes it from the worker gate.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt goal requires shared per-run classification inputs, implemented by recovery_memo.py:475 and recovery_watch.py:3312 for the change token, reuse key and classifier.\nVERDICT done_when: Live plan s21 and source prompt.txt require one read per each of 40 runs, rewrite invalidation and zero added importer failures; scoped-head.log proves the first two, but importers-head.log records four added failures.\nVERDICT write_paths: The six declared source prompt.txt write paths contain all four paths changed between b1a9e13a0b4312d8d1595f07cf75ced4ca907d68 and d5d44a52d2c03bdc370a38bfcff78dc578e2a932.\nVERDICT manifest: Source manifest.md records both commits, the focused pass, the negative control and the unmet broader gate, but lines 19 and 20 pair different test populations.\nVERDICT diff: Read 75eca569075d1826af28addbd581ad9a2394c56b and d5d44a52d2c03bdc370a38bfcff78dc578e2a932 separately; they add tick-local input reuse, two focused tests and an evidence fragment within scope.\nCALL_SITES: reckon/crew/recovery_watch.py:watch_ticker:3312, reckon/crew/recovery_watch.py:_crew_home_change_token:3024, reckon/crew/recovery_watch.py:_watch_snapshot:1553, reckon/crew/recovery_watch.py:_snapshot_reuse_key:1234, reckon/crew/recovery_classification.py:classify_pointer:836\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_memo.py:484-509 memoizes complete input identities by run id and recovery_watch.py:3312 bounds reuse to one producer tick.\nSCORE evidence: 12\nJUSTIFICATION evidence: scoped-head.log ends with 2 passed and EXIT=0 and negative-control.log with 2 failed and EXIT=1, but importers-base.log and importers-head.log show 12 versus 16 failures and manifest.md:19-20 expose an unmatched suite pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four changed paths in the two reviewed commits are among the six paths declared in source prompt.txt and each supports the input-sharing goal.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_tick_computes_each_runs_inputs_once.py:99,133,134 fail respectively if within-tick reuse is removed, subsequent ticks duplicate reads, or an in-place rewrite no longer changes only its run's key; the base negative control actually fails both tests.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:465 follows the repository's context-manager cleanup idiom in runs.py:1130, and the staged Python paths add zero lint findings and pass formatting in lint-delta.log.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches over recovery_memo.py, recovery_watch.py and runs.py found existing file-identity ownership in _classification_inputs and tick configuration caching in _producer_tick; the change extends the former, and its test imports the existing tick and project fixtures instead of copying them.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/tick-computes-each-runs-inputs-once.html:20 blocking: The required importer no-added-failure gate remains unmet: matched logs show 12 base versus 16 head failures with four new ids; their cause is unadjudicated, so the focused pass does not establish the full done_when.\nFINDING manifest.md:20 blocking: after_suite names the two-test focused run whereas baseline_suite names 126 importer files, so directly subtracting these fields falsely reports zero added failures; publish a matched importer suite pair or an explicit matched-pair gate receipt before accepting the no-regression evidence.\n",
+  "review_run_id": "r-20261109T225924821159-review-of-tick-computes-each-runs-inputs-once-d5d44a52d2c0",
+  "reviewed_base_sha": "b1a9e13a0b4312d8d1595f07cf75ced4ca907d68",
+  "reviewed_head_sha": "d5d44a52d2c03bdc370a38bfcff78dc578e2a932",
+  "reviewed_plan_version": 136,
+  "reviewed_run_id": "r-20261109T220405605375-tick-computes-each-runs-inputs-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 16,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_the_chain_queues_awaiting_upstream_and_launches_in_order",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_an_abandoned_upstream_blocks_the_tail_and_never_launches",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_wait_on_another_request_reads_that_requests_own_record",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_json_manifest_upstream_releases_the_wait",
+        "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit",
+        "tests/test_a_crashed_producer_is_restarted.py::test_a_steady_run_resets_the_delay_and_crash_count",
+        "tests/test_arm_lock_is_never_held_by_a_follower.py::test_contended_arming_refuses_within_bound",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing",
+        "tests/test_producer_survives_its_reload.py::test_a_producer_keeps_publishing_after_a_slow_reload",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[streaming]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220405605375-tick-computes-each-runs-inputs-once/importers-head.log",
+      "revision": "75eca569075d1826af28addbd581ad9a2394c56b"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 12,
+      "failure_ids": [
+        "tests/test_a_crashed_producer_is_restarted.py::test_crashed_producer_reoccupies_the_seat[crash]",
+        "tests/test_a_crashed_producer_is_restarted.py::test_repeated_crashes_reach_a_reported_limit",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_the_chain_queues_awaiting_upstream_and_launches_in_order",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_an_abandoned_upstream_blocks_the_tail_and_never_launches",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_wait_on_another_request_reads_that_requests_own_record",
+        "tests/test_a_queued_request_waits_on_its_dependencies.py::test_a_json_manifest_upstream_releases_the_wait",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220405605375-tick-computes-each-runs-inputs-once/importers-base.log",
+      "revision": "b1a9e13a0b4312d8d1595f07cf75ced4ca907d68"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:28:35.323936+00:00",
+  "total": 112
+}

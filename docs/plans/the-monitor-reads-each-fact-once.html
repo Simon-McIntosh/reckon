@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="136">
-<meta name="plan-modified" content="2026-11-09">
+<meta name="plan-version" content="137">
+<meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -784,6 +784,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261109T225924821159-review-of-tick-computes-each-runs-inputs-once-d5d44a52d2c0" data-who="reckon-build" data-when="2026-11-09T23:14:25Z">
+    <div class="r-comment-body"><p>Reviewed b1a9e13a0b4312d8d1595f07cf75ced4ca907d68 to d5d44a52d2c03bdc370a38bfcff78dc578e2a932; parsed review scores all six dimensions and blocks acceptance on unmet importer evidence and mismatched suite fields.</p></div>
 </div>
 </section>
 </main>
