@@ -12,10 +12,11 @@
     unknown reading on a record <code>_record_is_known_foreign</code> marks foreign, so <code>_prepare_attempt_records</code>,
     <code>_supervisor_spawn_worker</code> and the dispatch guard answer alike. Off-host only an exit receipt frees the
     launch: the canonical <code>exit.json</code> beside a canonical <code>worker.json</code>, or the newest retired
-    attempt's <code>attempt-N-exit.json</code>, both read through the new <code>_exit_receipt_shows_ended</code> so the two
-    shapes cannot be freed on different terms. That reader treats a file on disk as absent unless it parses and
-    names this run, the way the exit-record owner <code>_run_exit_record</code> reads the canonical record, so a
-    receipt truncated mid-write cannot free a launch. <code>_retired_attempt_ended</code> applies the launching-host rule
+    attempt's <code>attempt-N-exit.json</code>. The exit-record owner <code>_run_exit_record</code> takes the receipt's
+    file name, so both shapes are read by that one reader and cannot be freed on different terms, and its strict
+    reading requires the receipt to name this run. A file that does not parse, one truncated mid-write, one carrying
+    no run id and another run's receipt are all absent, so none of them frees a launch.
+    <code>_retired_attempt_ended</code> applies the launching-host rule
     <code>_worker_record_liveness</code> already applies: a retired worker receipt for a foreign run is never probed
     against this host's process table, because a dead local number is not the remote worker's end. A record that never
     launched is let through, as before, and age never frees a launch. <code>live_worker_reading</code> still answers
@@ -26,33 +27,35 @@
     says how to proceed: launch from that host, or stop the run there. Every refusal for a run launched on this host reads
     exactly as before, which the local live-worker case asserts.</p>
   <p id="a-worker-on-another-host-refuses-a-relaunch-measure">The defect was reproduced before the repair. At the dispatch
-    base (<code>099653a40d</code>) with the new test copied into a scratch base tree, the gate reports
-    <strong>5 failed, 7 passed, EXIT=1</strong> — <code>test_a_canonical_worker_on_another_host_refuses_a_relaunch</code>
-    and <code>test_a_retired_worker_on_another_host_refuses_a_relaunch</code> both failing
-    <code>DID NOT RAISE CrewError</code>, the guard admitting the launch. At the head it reports
-    <strong>12 passed, EXIT=0</strong>. The neighbouring population
+    base (<code>099653a40d</code>) in a scratch tree carrying the final test file and the main checkout's environment, the
+    gate reports <strong>6 failed, 7 passed, EXIT=1</strong> — <code>test_a_canonical_worker_on_another_host_refuses_a_relaunch</code>
+    and <code>test_a_retired_worker_on_another_host_refuses_a_relaunch</code> fail <code>DID NOT RAISE CrewError</code>,
+    the guard admitting the launch, and four receipt-integrity cases fail with them. At the head it reports
+    <strong>13 passed, EXIT=0</strong>. The neighbouring population
     (<code>tests/test_a_queued_run_launches_once.py</code> and <code>tests/test_a_concurrent_launch_is_refused.py</code>)
     reports <strong>29 passed, EXIT=0</strong> at both arms.</p>
   <p id="a-worker-on-another-host-refuses-a-relaunch-measure-receipt">Reading a receipt's presence as its content was
-    repaired in the same file. <code>_exit_receipt_shows_ended</code> used to free a foreign launch on a file's existence
-    alone, so a receipt truncated mid-write, one that did not parse, or another run's receipt each read as the worker's
-    end. It now applies the exit-record owner's rules to both names, and the gate carries that as three more cases. At
-    <code>fc13619cea</code>, the revision being repaired, with this round's test copied in, the gate reports
-    <strong>3 failed, 9 passed, EXIT=1</strong>, failing the truncated canonical receipt, the truncated retired receipt
-    and the other-run receipt. At the dispatch base with the same file it reports <strong>5 failed, 7 passed,
-    EXIT=1</strong>, and at the head <strong>12 passed, EXIT=0</strong>.</p>
-  <p id="a-worker-on-another-host-refuses-a-relaunch-cases">The twelve cases run with the scheduler query stubbed to answer
-    nothing, ten of them through <code>_supervisor_spawn_worker</code>. Off-host: (a1) a canonical worker with no exit
-    receipt is refused, and the text names the host and pid; (a2) retired receipts whose newest worker receipt has no exit
-    beside it are refused although its pid is dead here; a truncated canonical receipt, a truncated retired receipt and an
-    exit receipt naming another run are each refused too, because none of them is evidence the worker ended; (b1) and (b2)
-    the same two shapes with a complete exit receipt present spawn; (c) a never-launched record spawns. On this host: a
-    live worker refuses and names its pid without the foreign remedy, a dead worker spawns, a retired dead registration
-    spawns, and a retired exit receipt spawns. Every case works in a temporary crew home and asserts afterwards that the
-    operator's own crew home is untouched.</p>
+    repaired in two steps. A guard that freed a foreign launch on a file's existence was first made to read the file; it
+    then still carried its own copy of the exit-record owner's rules for the retired shape, and still accepted a receipt
+    that parsed while naming no run. The owner <code>_run_exit_record</code> now takes the receipt's file name and a
+    strict reading requiring the receipt to name this run, and the guard's parser is gone: both shapes call the owner.
+    At <code>1ba776d856</code>, the revision being re-reviewed, with this round's test copied in, the run-id-less receipt
+    case is the only failure (<strong>1 failed, 12 passed, EXIT=1</strong>); at <code>fc13619cea</code> that case and the
+    three earlier receipt cases fail together (<strong>4 failed, 9 passed, EXIT=1</strong>); at the head <strong>13 passed,
+    EXIT=0</strong>.</p>
+  <p id="a-worker-on-another-host-refuses-a-relaunch-cases">The thirteen cases run with the scheduler query stubbed to
+    answer nothing, all of them through <code>_supervisor_spawn_worker</code>. Off-host: (a1) a canonical worker with no
+    exit receipt is refused, and the text names the host and pid; (a2) retired receipts whose newest worker receipt has no
+    exit beside it are refused although its pid is dead here; a truncated canonical receipt, a truncated retired receipt,
+    an exit receipt naming another run and a receipt naming no run are each refused too, because none of them is evidence
+    the worker ended; (b1) and (b2) the same two shapes with a complete exit receipt present spawn; (c) a never-launched
+    record spawns. On this host: a live worker refuses and names its pid without the foreign remedy, a dead worker
+    spawns, a retired dead registration spawns, and a retired exit receipt spawns. Every case works in a temporary crew
+    home and asserts afterwards that the operator's own crew home is untouched.</p>
   <p id="a-worker-on-another-host-refuses-a-relaunch-control">The declared negative control removes the foreign-record arm
-    from <code>_launch_refused_by</code> so an off-host unknown returns <code>False</code> again: <strong>5 failed, 7
-    passed, EXIT=1</strong>, naming (a1), (a2) and the three receipt cases. A second control removes the canonical
-    exit-receipt read: <strong>1 failed, 1 passed, EXIT=1</strong>, naming (b1). A third is the repair base itself, where
-    the reader falls back to a file's existence: the three receipt cases fail and nothing else does.</p>
+    from <code>_launch_refused_by</code> so an off-host unknown returns <code>False</code> again: the off-host refusal
+    cases fail and the local cases still pass. A second control removes the canonical exit-receipt read:
+    <strong>1 failed, 1 passed, EXIT=1</strong>, naming (b1). A third is the revision whose reader fell back to a file's
+    existence, where the three receipt cases fail and nothing else does; a fourth is <code>1ba776d856</code>, where only
+    the run-id-less receipt case fails.</p>
 </section>
