@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T22:56:32.707Z",
+  "dispatched_at": "2026-11-09T22:42:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:137",
+      "id": "anchors_resolve-1",
+      "reason": "the single load-bearing fact of the section is the bound on the log, and its anchor currently points at unrelated code.",
+      "text": "\u00a74 justifies its window design by citing the trim at `reckon/crew/queue_admission.py` \"near lines 2095\u20132100\", but lines 2095\u20132100 are pointer-annotation and restore handling; the trim (`trim_service_log(..., limit=ADMISSION_VERDICT_LOG_MAX_BYTES, keep=ADMISSION_VERDICT_LOG_MAX_BYTES)`) is at `:2453\u20132454` and its bound at `:103`. A reader who checks the citation finds no trim and has to decide whether the 1 MiB bound is real before trusting the whole two-window design",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "evidence_paths-1",
+      "reason": "without the copies' paths the \"at zero\" half of the after window is unmeasurable, and without their spacing the 4.5-hour coverage claim is unsupported, so a node could report a pass over a far shorter window than the plan asserts.",
+      "text": "the after-window hold counts are defined as \"every retained copy of the live log taken after the admit service reloaded onto \u00a72 and \u00a73 (07:39\u201310:37Z and 20:46\u201322:12Z on 9 November, about 4.5 hours)\", which names two time ranges and no path; the before window by contrast names a durable file (`~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl`, present, 1,046,044 bytes, 212 rows). No retained 9 November copy is on a path the plan names, so the measuring node cannot reproduce or verify those counts. The coverage arithmetic compounds it: with the log bounded at ~80\u201390 minutes of tail, \"about 4.5 hours\" of coverage requires a copy roughly every 80 minutes across each range, and two snapshots would give at most ~3 hours, so the stated after-window size is only attainable if the copies' number and spacing are recorded",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:149",
+      "id": "done_when-1",
+      "reason": "the assertion the section exists to prove can be satisfied by a window that measured nothing, which is the same defect the earlier review found in the ledger arm and which was answered there only for pairs.",
+      "text": "the done-when floors the ledger arm at five concurrent pairs but sets no floor on the retained-copy arm, which is what carries `<code>held-on-claim</code> verdicts on shared-root file paths at zero`; a copy holding a few quiet verdict rows yields zero by emptiness rather than by the fix, and the negative control it declares is on the *before* window, so it cannot catch a thin after-window copy",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bf8514915783affbb3f793ba830ded0b1796a559",
+  "plan_fingerprint": "6c432c6c0596d52554b85cbc166741ad02770935061cc6a19437b25735745ef5",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T223732306577-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "d0cbd420da8326cb7ccd5d69451d1fdb421fa670",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the trim of `admission-verdicts.jsonl` is cited as `reckon/crew/queue_admission.py` \"near lines 2095\u20132100\", but those lines are pointer-writeback exception handling; the trim call is at `reckon/crew/queue_admission.py:2453` with the bound declared at `:103` (`ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576`).",
+    "done_when": "a finding \u2014 \u00a74's done-when carries two arms and only the ledger arm has a volume floor; the retained-copy arm, which carries the \"at zero\" assertion, has none, so a thin copy window reads as a pass.",
+    "evidence_paths": "a finding \u2014 the after-window hold counts are said to come from \"every retained copy of the live log\", named only by two time ranges and never by a path; I found no such copy under `~/.cache/reckon-claims/` (which holds only the 8 November before-window and an after-s32 copy) or in `docs/evidence/fragments/concurrent-edits-meet-at-the-merge/`, so a later reader and the measuring node alike have nothing to open.",
+    "naming": "pass \u2014 \u00a74 introduces no new symbol, and its one date-stamped clause (\"amended on 9 November with the lead's approval\") records plan provenance rather than leaking a stage label or ticket reference into code.",
+    "reasoning": "pass \u2014 all three checks hold. The stated root cause matches the cited evidence: the before-window snapshot parses to 212 pass records over exactly 2026-11-07T05:38:15Z\u20132026-11-08T12:33:24Z with 296 `held-on-claim` pointers, of which 283 name a path under a shared root (`reckon/`, `tests/`, `scripts/`, `skills/`), so the exclusivity default really was holding shared-root paths. The declared mechanism produces the done-when: `docs/state/reckon/shared-write-paths.json` declares the four shared roots and the six exclusive patterns \u00a72 names, and all 7,641 run-ledger records under `docs/state/reckon/runs/` carry `node_definition.write_paths` non-empty plus `dispatched_at` and `completed_at`, so the concurrent-pair arm is computable from the ledger as written. The real code path is named: the writer is the admission pass's verdict recorder in `reckon/crew/queue_admission.py`, and the live log confirms the bounded tail it describes (774 rows spanning 2026-11-09T21:19:56Z\u201322:50:23Z, about 90 minutes).",
+    "single_goal": "pass \u2014 \u00a74 declares one deliverable (one measurement, one evidence fragment) and every clause of the done-when serves that single measure.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s4: [s2, s3]` and `s5: [s2]`, every target resolves to a section that exists in the same plan, and \u00a74's opening sentence (\"once \u00a72 and \u00a73 are on main\") matches the declaration; s2, s3 and s5 are declared done, so the queue's hold is the only entry \u00a74 still needs."
+  },
+  "section_digests": {
+    "_document": "040335a70dff03152d2485f289c86f33d81d7076aea0b303198a1ad1a58281f3",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "189e7168fc1306248baa5949a4d9f60d95f4729c76c3bd1c20421849b3b37523",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:08:18.928776+00:00",
+  "total": null
+}
