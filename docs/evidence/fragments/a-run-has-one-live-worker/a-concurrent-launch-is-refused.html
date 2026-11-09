@@ -13,8 +13,12 @@
   relaunch takes no reservation and is refused while a CLI launch holds one.</p>
   <p>Measured at head d36e465b39: 18 cases pass. At the dispatch base 29b47d2cb8, with the
   new test copied in, 16 fail and 2 pass &#8212; the window is reproduced, including the
-  further launch being admitted. Eight of twelve declared mutations redden the case they
-  name; four were not made to redden (free by age, freeing by pointer comparison, freeing
-  only while the pointer is short of its key, and keying the resume on the pointer's
-  attempt) and are recorded as uncovered rather than claimed.</p>
+  further launch being admitted. Ten of twelve declared mutations redden the case they
+  name. Two of those needed the pre-check removed so the loop condition was the only
+  guard before they could bite (free by age, and freeing a reservation by comparing the
+  pointer with its key). Two are inert against the cases they were declared against and
+  are recorded as uncovered rather than claimed: freeing only while the pointer is short
+  of its number, whose target case already has the pointer at the attempt, and keying the
+  resume on the pointer's attempt, which agrees with the receipt key wherever the pointer
+  is current.</p>
 </section>
