@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T05:53:18.371Z",
+  "dispatched_at": "2026-11-09T05:42:58Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:329",
+      "id": "reasoning-1",
+      "reason": "an implementer following the Deliverable literally must either edit reckon/crew/obligations.py (outside the declared write paths, a scope blocker) or invent an ambiguous record lookup the plan never settles, so the plan is wrong about where the fix lands and what it must change.",
+      "text": "the Deliverable names `_finding_dispose_commands` (reckon/crew/recovery_review_dispatch.py:2458-2471) as the place the rubric is known because the record is held there, but at those lines the function signature is `(project, run_id, index)`, so it holds neither the record nor the rubric; the record is held one frame up, in `_review_dispatch_refusal` (reckon/crew/obligations.py:653, record at :700-708 and :715) and `_open_review_refusal` (reckon/crew/recovery_review_dispatch.py:2474+), and the duty rows that print the command are produced at reckon/crew/obligations.py:706 and :809, both outside the section's declared write paths. Worse, a re-read inside `_finding_dispose_commands` cannot disambiguate: `_undisposed_blocking_findings` is applied per stored record, so a text record and a figure record that each carry a blocking finding at index 0 call the composer with identical `(project, run_id, 0)` arguments and nothing names which rubric applies.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8de27a3c1c5dbff2fa77a56b5b5254847466bb80",
+  "plan_fingerprint": "fc1053f1dab7c55c32b110fa9c86b33fc17bb1fb5ddc95dfd5f20f21dfb69a88",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 142,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8de27a3c1c5dbff2fa77a56b5b5254847466bb80",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "carried into \u00a724's dispatch: the record and rubric are held in obligations._review_dispatch_refusal, which passes them down to _finding_dispose_commands; reckon/crew/obligations.py joins the dispatch's write paths",
+      "reason": "",
+      "when": "2026-11-09T06:44:17.705494+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8de27a3c1c5dbff2fa77a56b5b5254847466bb80",
+      "commit_basis": "edit",
+      "note": "carried into \u00a724's dispatch: the record and rubric are held in obligations._review_dispatch_refusal, which passes them down to _finding_dispose_commands; reckon/crew/obligations.py joins the dispatch's write paths",
+      "reason": "",
+      "when": "2026-11-09T06:44:17.705494+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-review-can-see-the-figure/r-20261109T053905034759-plan-review-of-a-review-can-see-the-figure.json",
+  "review_run_id": "r-20261109T053905034759-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "b565d340b5eeb9132f3ed077a524463bf0c71f55",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispose_commands` is at reckon/crew/review_dispositions.py:506 (the cited \"near line 515\" is its docstring line) and `_finding_dispose_commands` occupies exactly reckon/crew/recovery_review_dispatch.py:2458-2471, as cited.",
+    "done_when": "pass \u2014 both cases are measurable with a temporary crew home and the negative control is a real one: with the rubric dropped from the composer the command names the figure review run without `--rubric`, and `record_for_review_run_anywhere(..., rubric=None)` returns no record, producing exactly \"carries no record\" (reckon/crew_run_commands.py:928-955).",
+    "evidence_paths": "pass \u2014 the gate logs are directed to the run directory, a durable crew path, not a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches the new test filename or any cited symbol, and no changelog prose is introduced.",
+    "reasoning": "a finding \u2014 the Deliverable states the rubric \"is known only where the record is held: `_finding_dispose_commands`\", but that function takes only `(project, run_id, index)` and holds no record, while the duty-producing callers that would have to supply it live in reckon/crew/obligations.py, which the section's write paths exclude.",
+    "single_goal": "pass \u2014 the section carries one deliverable, a dispose command that runs for a figure finding.",
+    "wiring": "pass \u2014 \u00a724 is named by the open followup `f-arcstf-024` (snapshot line 386, invocation `/reckon-build a-review-can-see-the-figure \u00a724`), declares no depends-on it needs, and the earlier finding that no followup named \u00a724 is answered."
+  },
+  "section_digests": {
+    "_document": "4f2abf995c31090eac676777c02d82b9ada741150dd44d2cecdebae20c85839a",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "c9ed658bd81ee95aca671c4c50b6f524c6200537628625fad8284c60c56925f0",
+    "s22": "c459fe692437be93f44bffcad0813f9f98189d953074b617c388d7375ba98df2",
+    "s23": "30eaa8240d92bb5c2483fd1bf90d172ec8d8b1ee1bcb4be519a3c31b60e00c41",
+    "s24": "cd0f9476d12a331d3bb46f76e24779beb744ab22f1f0c07aac2a52e57e6cb441",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T06:30:35.724183+00:00",
+  "total": null
+}

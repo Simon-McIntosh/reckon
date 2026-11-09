@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:4511",
+    "reckon/crew/dispatch_launch.py:3430",
+    "reckon/crew/dispatch_launch.py:2381",
+    "reckon/crew/dispatch_launch.py:2441",
+    "reckon/crew/dispatch.py:3940"
+  ],
+  "completed_at": "2026-11-09T06:40:44.342Z",
+  "dispatched_at": "2026-11-09T06:27:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the case still reddens when the guard refuses, as repair-4-controls.log shows; the assert pid > 0 line is redundant, not the guard",
+      "recorded_at": "2026-11-09T07:43:03.887920+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "corrected without a new commit: baseline_suite and after_suite now record the dispatch-base and head arms with the literal armed commands",
+      "recorded_at": "2026-11-09T07:43:56.198013+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "id": "e2b7c9a41f30",
+      "line": 446,
+      "severity": "non-blocking",
+      "text": "The case's only assertion is `assert pid > 0` (and the same at :461), which cannot fail for any successful return of _supervisor_spawn_worker because a spawned Popen pid is always positive; the discriminating signal is the absence of the _reservation_refusal raise at reckon/crew/dispatch_launch.py:3437. The test still reddens on the regression, as logs/repair-4-controls.log shows, but the assertion itself guards nothing and would pass if the guard returned a wrong positive pid."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T005938978471-a-concurrent-launch-is-refused/manifest.md",
+      "id": "a7d1f0c25b84",
+      "line": 10,
+      "severity": "non-blocking",
+      "text": "baseline_suite and after_suite are null, so the two arms exist only as prose in test_logs and the checkpoint; a promoter must open the named logs by hand rather than read the arm revision, command and failure ids the suite fence asks the manifest to carry."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the single commit b1d59971..06f62cb6db: it appends two cases, test_an_earlier_attempts_reservation_does_not_guard_a_later_launch at :436 and test_a_reservation_whose_attempt_already_ended_is_skipped at :452, with no production change.",
+    "done_when": "The done-when requires the armed suite command resolved per revision to pass at the head by delta against the base and every negative control to be logged failing the case it names; logs/repair-4-head.log (28 passed, EXIT=0) and logs/repair-4-base.log (5 passed, EXIT=0) give zero added failures, and logs/repair-4-controls.log records both named cases failing EXIT=1 under their rule's removal.",
+    "goal": "The source node's goal is to refuse a relaunch of a run id while another launch of that run is in flight through one receipt-keyed reservation every CLI door takes; this commit adds the guard cases at tests/test_a_concurrent_launch_is_refused.py:436 and :452 for the two admission rules that keep that reservation from refusing a launch it must admit.",
+    "manifest": "Read; it records status complete, the commit list headed by 06f62cb6db, the head and base arm logs, and negative_control_log logs/repair-4-controls.log, but its baseline_suite and after_suite fields are null so the arms are readable only as prose in test_logs.",
+    "write_paths": "The node declared reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/resumption.py, tests/test_a_concurrent_launch_is_refused.py, the evidence fragment and the figures directory; the only path in this diff, tests/test_a_concurrent_launch_is_refused.py, is inside that set."
+  },
+  "justifications": {
+    "durability": "logs/repair-4-controls.log shows removing the before_attempt skip reddens test_an_earlier_attempts_reservation_does_not_guard_a_later_launch and removing the skip_ended skip reddens test_a_reservation_whose_attempt_already_ended_is_skipped, each EXIT=1 with a FAILED id absent from the head arm; the cases' only assertion, assert pid > 0 at tests/test_a_concurrent_launch_is_refused.py:446 and :461, is incidental and cannot itself fail.",
+    "evidence": "logs/repair-4-head.log records 28 passed EXIT=0 at 06f62cb6db over the resolved two-file command and logs/repair-4-base.log records 5 passed EXIT=0 at 29b47d2c, but manifest.md:10 carries those only as prose in test_logs while baseline_suite and after_suite are null.",
+    "fit": "The two cases follow the module's existing helper and tmp-home idiom and use descriptive names with no plan, sprint or ticket identifier, and ruff check and ruff format --check are clean on the staged path.",
+    "goal_fidelity": "The commit covers the two spawn-guard rules the node goal's refusal depends on: tests/test_a_concurrent_launch_is_refused.py:446 admits a launch past a superseded reservation and :461 admits past an ended one, so the reservation at reckon/crew/dispatch_launch.py:2326 and :2331 no longer refuses a launch it must admit.",
+    "reuse": "The commit adds only two test functions; it introduces no definition, and the behaviour they exercise is owned by held_launch_reservation at reckon/crew/dispatch_launch.py:2306, which both cases reach through _supervisor_spawn_worker rather than reimplementing.",
+    "scope_discipline": "git diff --stat b1d5997119..06f62cb6db lists exactly one path, tests/test_a_concurrent_launch_is_refused.py with 31 insertions, which is a declared write path of the node."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261109T061742514788-review-of-a-concurrent-launch-is-refused-06f62cb6db88",
+  "reviewed_base_sha": "b1d5997119b0ed08de6a3e77bbba8aabb6eaab99",
+  "reviewed_head_sha": "06f62cb6db881d9b36b3bcde7f19994f1514fc22",
+  "reviewed_run_id": "r-20261109T005938978471-a-concurrent-launch-is-refused",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T06:52:00+00:00",
+  "total": 112
+}

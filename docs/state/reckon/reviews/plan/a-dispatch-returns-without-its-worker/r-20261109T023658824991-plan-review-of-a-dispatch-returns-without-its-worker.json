@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T02:45:46.356Z",
+  "dispatched_at": "2026-11-09T02:38:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "done_when-1",
+      "reason": "the coordinator would widen the done-when's population to include test files importing `reckon.crew.dispatch`, as \u00a719 and \u00a720 do for the modules they change, so the gate can fail on a defect in the module this node may edit.",
+      "text": "the gate population is \"the test files importing `reckon.crew.recovery_review_dispatch`\" while the section now declares `reckon/crew/dispatch.py` a write path, so a repair landing in `dispatch()`'s pre-attempt window is measured by a population that does not own it: 60 test files import `reckon.crew.recovery_review_dispatch` against 719 that import `reckon.crew.dispatch`, and the smaller set does not exercise `dispatch()`'s plan-build, worktree and claim window directly, which is exactly where the section expects the cause",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ed4ba1ec418141c172c877515e6644f72615ca08",
+  "plan_fingerprint": "6d306bd71d06879b0d1a8dc3d996109d75559130cc3c7ddc4d8a44b8c9f0fde7",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 185,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "ed4ba1ec418141c172c877515e6644f72615ca08",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "carried into \u00a723's dispatch done-when: the gate population is the test files importing reckon.crew.dispatch as well as reckon.crew.recovery_review_dispatch",
+      "reason": "",
+      "when": "2026-11-09T02:52:09.713949+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "ed4ba1ec418141c172c877515e6644f72615ca08",
+      "commit_basis": "edit",
+      "note": "carried into \u00a723's dispatch done-when: the gate population is the test files importing reckon.crew.dispatch as well as reckon.crew.recovery_review_dispatch",
+      "reason": "",
+      "when": "2026-11-09T02:52:09.713949+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T023658824991-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T023658824991-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "21e274fc67d98f4a73f865bb39f21db6958d475d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in s23 resolves at `ed4ba1ec41`: `_sweep_lapsed_holds` (`reckon/crew_follow_commands.py:244`, bound as `sweep=` at `:1458`) passes no launcher, `sweep` binds `launch = launcher` (`reckon/crew/resumption.py:2177`) and calls `dispatch_awaiting_reviews` in its review pass (`:2424`, inside the cited 2413\u20132464), which is defined at `reckon/crew/recovery_review_acceptance.py:526`. The cited `_prepare_attempt_records` anchor resolves to its call site at `reckon/crew/dispatch.py:3438` (the definition is `reckon/crew/dispatch_launch.py:2150`); that is the boundary marker the worker needs, not a defect.",
+    "done_when": "a finding \u2014 the gate population still reads \"test files importing `reckon.crew.recovery_review_dispatch`\" although the section now declares `reckon/crew/dispatch.py` as a write path.",
+    "evidence_paths": "pass \u2014 the evidence note sits on the repo's durable `docs/evidence/fragments/a-dispatch-returns-without-its-worker/` path (the directory exists and holds the plan's other notes) and the per-step log is on the investigating run's own `logs/`, not in the temporary crew home.",
+    "naming": "pass \u2014 the section names mechanisms by what they do and introduces no plan labels, ticket numbers or version tags into any symbol, file or comment.",
+    "reasoning": "pass \u2014 the stated cause (the launch stops between the claim's registration and the attempt record) matches the cited record set, and I confirmed it on the kept run directory: `claim.json` reads `claim_registered_at` 2026-11-09T01:38:18Z, `discard.json` reads `discarded_at` 2026-11-09T01:40:22.882965+00:00 (124.9 s, so \"124 seconds later\" is exact), and `classification.json` records `attempt.json` and `worker.json` as `absent`, while `reckon/crew/promotion.py:discard` removes only the pointer, the claim and the worktree, so the absence of `attempt.json` is evidence the launch stopped before `_prepare_attempt_records` wrote it. The mechanism produces the done-when, and the caller is named: `dispatch_review_for_run` (`reckon/crew/recovery_review_dispatch.py:2605`) reaches `_dispatch_composed_review`, which calls `dispatch(... launcher=launcher)`; with `launcher=None` that is the `_prepare_attempt_records` branch at `reckon/crew/dispatch.py:3438`. I also checked the second route: the first listed instance (`r-20261108T163518843254-plan-review-of-a-read-costs-what-changed`) is a plan review, composed through `plan_review.compose_owed_plan_reviews` (`reckon/crew/plan_review.py:4036`) rather than `dispatch_awaiting_reviews`, but that caller is also given `launcher=launch` from the same sweep, so it enters the same `dispatch()` window and the named reproduction reaches it.",
+    "single_goal": "pass \u2014 one deliverable (name the step a sweep-launched review stops at, and repair it if it lies in scope); the repair is conditional on the investigation rather than a second deliverable.",
+    "wiring": "pass \u2014 s23's relationships are as it needs them; s23 declares no depends-on, and the work it builds on (\u00a719, done) is already landed, so naming it a dependency would add nothing; the write path it gained (`reckon/crew/dispatch.py`) matches where the window it localises actually lies (`_publish_launch_claim` called at `reckon/crew/dispatch.py:2570`, `_prepare_attempt_records` called at `reckon/crew/dispatch.py:3438`, both inside `dispatch()`)."
+  },
+  "section_digests": {
+    "_document": "a7ba1aafa800184023efd2d6b5bc4317abff27299b5403d8f53a41786047d0a8",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T02:49:30.821087+00:00",
+  "total": null
+}

@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:3488",
+    "reckon/crew/dispatch_launch.py:2944",
+    "reckon/crew/dispatch_launch.py:2952",
+    "reckon/crew/dispatch_launch.py:2990",
+    "reckon/crew/dispatch_launch.py:2333",
+    "reckon/crew_dispatch_commands.py:2236",
+    "reckon/crew/queue_admission.py:441"
+  ],
+  "completed_at": "2026-11-09T02:29:48.081Z",
+  "dispatched_at": "2026-11-09T02:21:56Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html",
+      "id": "b18c4f70e2a9",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "The repair paragraph reads 'the hold lapsed the following the door's exit', a duplicated word that makes the sentence ungrammatical in the record a reader is meant to trust; 'the hold lapsed following the door's exit' is what it means. Cosmetic, in prose only, and does not affect the argument the paragraph makes."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:3488 is the repaired call site, reached from reckon/crew_dispatch_commands.py:2236 (the CLI door) and reckon/crew/queue_admission.py:441 (the long-lived admit door); the callee's recording sites are reckon/crew/dispatch_launch.py:2952 and :2990.",
+    "diff": "read all four commits against 34d0376761: c2151be25d passes reservation=reservation at reckon/crew/dispatch.py:3488 and adds test_a_dispatch_is_held_by_the_supervisor_it_recorded; 5cec79ccac widens the two-door refusal assertion in tests/test_a_resume_never_launches_beside_another_node.py:267 to accept either door's wording; d656bc354b formats it; 227b1e5580 records the repair in the evidence fragment.",
+    "done_when": "the plan's admit-door case ('a run launched through the admit door, whose admitting process stays alive, becomes launchable again once its recorded supervisor has exited') is asserted by tests/test_a_concurrent_launch_is_refused.py:618, which drives crew.dispatch in-process to completion and reads the reservation it leaves; logs/repair-head.log records 24 passed EXIT=0 and logs/repair-base.log records the one red at the repair base.",
+    "goal": "the goal is that a relaunch of an existing run id is refused while another launch of that run is in flight and no ended launch leaves the run unlaunchable; reckon/crew/dispatch.py:3488 now hands its reservation to the supervisor it starts, which closes the one door the previous review found still naming its own process.",
+    "manifest": "read; it records status complete, both prior findings as 'acted <id>: c2151be25d', baseline_suite with failure_ids ['tests/test_a_resume_never_launches_beside_another_node.py::test_two_doors_reading_one_attempt_launch_only_once'] at 34d0376761 and after_suite with none at d656bc354b, and negative_control_log naming logs/repair-controls.log.",
+    "write_paths": "the repair round declared seven paths plus tests/test_a_resume_never_launches_beside_another_node.py; git diff --name-only 34d0376761..227b1e5580 lists exactly reckon/crew/dispatch.py, tests/test_a_concurrent_launch_is_refused.py, tests/test_a_resume_never_launches_beside_another_node.py and the evidence fragment, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_concurrent_launch_is_refused.py:651 reddens when the handover is reverted, as logs/repair-controls.log shows the assertion failing on the door's own pid 3208 rather than the stand-in supervisor's, so the assertion does not move with the value the test supplies through the spawn seam.",
+    "evidence": "logs/repair-head.log records 24 passed EXIT=0 at d656bc354b and logs/repair-base.log records 1 failed 22 passed EXIT=1 at 34d0376761, with logs/repair-controls.log showing each answering commit reverted reddening its own case, and ruff check and ruff format --check over the three staged python paths report no findings.",
+    "fit": "reckon/crew/dispatch.py:3488-3490 passes the keyword in the style of the sibling call at reckon/crew/dispatch_launch.py:2939, and the new case at tests/test_a_concurrent_launch_is_refused.py:618 follows the file's docstring-per-case idiom with no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3488 now passes reservation=reservation into _start_supervisor, and reckon/crew/dispatch_launch.py:2990 records that supervisor on the reservation, so the dispatch door's hold is bound to the launch it started rather than to the admitting process that outlives it.",
+    "reuse": "the diff adds no definition: it supplies an existing keyword to _start_supervisor and relies on record_reservation_supervisor at reckon/crew/dispatch_launch.py:2333, so no capability the repository owns is forked.",
+    "scope_discipline": "every path in 34d0376761..227b1e5580 is inside the repair round's declared scope, which the resume advice at prompt.txt:80-87 and its 'Write scope for this round' line extend to tests/test_a_resume_never_launches_beside_another_node.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a relaunch of an existing run id is refused while another launch of that run is in flight and no launch that has ended or been killed leaves the run unlaunchable; reckon/crew/dispatch.py:3488 now passes reservation=reservation into _start_supervisor, so the reservation is bound to the supervisor rather than to the admitting process that outlives it.\nVERDICT done_when: the plan's admit-door case is asserted by tests/test_a_concurrent_launch_is_refused.py:618, which drives crew.dispatch in-process to completion, asserts the reservation left behind names the stand-in supervisor, and asserts the run becomes reservable again once that supervisor exits; logs/repair-head.log records 24 passed EXIT=0 and logs/repair-base.log records 1 failed 22 passed EXIT=1.\nVERDICT write_paths: the repair round declared the four modules, both test files and the evidence fragment; git diff --name-only 34d0376761..227b1e5580 lists reckon/crew/dispatch.py, tests/test_a_concurrent_launch_is_refused.py, tests/test_a_resume_never_launches_beside_another_node.py and the fragment, every one inside that scope.\nVERDICT manifest: read; status complete, both prior findings answered as 'acted <id>: c2151be25d', baseline_suite names the one sibling-case failure at 34d0376761 and after_suite names none at d656bc354b, and negative_control_log names logs/repair-controls.log.\nVERDICT diff: read all four commits against 34d0376761: c2151be25d is the two-line handover at reckon/crew/dispatch.py:3488 plus the 53-line case; 5cec79ccac widens the sibling assertion at tests/test_a_resume_never_launches_beside_another_node.py:267; d656bc354b formats it; 227b1e5580 records the repair in the fragment.\nCALL_SITES: reckon/crew/dispatch.py:3488, reckon/crew/dispatch_launch.py:2944, reckon/crew/dispatch_launch.py:2952, reckon/crew/dispatch_launch.py:2990, reckon/crew/dispatch_launch.py:2333, reckon/crew_dispatch_commands.py:2236, reckon/crew/queue_admission.py:441\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3488 now passes reservation=reservation into _start_supervisor, and reckon/crew/dispatch_launch.py:2990 records that supervisor on the reservation, binding the hold to the launch it started.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/repair-head.log records 24 passed EXIT=0 at d656bc354b, logs/repair-base.log records 1 failed 22 passed EXIT=1 at 34d0376761, and logs/repair-controls.log shows both answering commits reddening their own case when reverted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in 34d0376761..227b1e5580, including tests/test_a_resume_never_launches_beside_another_node.py, is inside the repair round's declared write scope at prompt.txt:80-87 and its 'Write scope for this round' line.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_concurrent_launch_is_refused.py:651 fails when the handover at reckon/crew/dispatch.py:3488 is reverted, as logs/repair-controls.log shows it failing on the door's own pid 3208 rather than the stand-in supervisor's.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:3488-3490 follows the sibling keyword call at reckon/crew/dispatch_launch.py:2939 and the new case follows the file's docstring-per-case idiom, though the evidence paragraph at docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html:27 carries a duplicated word.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, supplying an existing keyword to _start_supervisor and reusing record_reservation_supervisor at reckon/crew/dispatch_launch.py:2333.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html:27 non-blocking: 'the hold lapsed the following the door's exit' duplicates a word and reads ungrammatically in the evidence record; the intended sentence is 'the hold lapsed following the door's exit'.",
+  "review_run_id": "r-20261109T021829039080-review-of-a-concurrent-launch-is-refused-227b1e55809c",
+  "reviewed_base_sha": "34d0376761a91c16f86a5cd873c10967a9c3c1fc",
+  "reviewed_head_sha": "227b1e55809c3b3068a7eb0db15da74d1a118af5",
+  "reviewed_run_id": "r-20261109T005938978471-a-concurrent-launch-is-refused",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:35:00+00:00",
+  "total": 116
+}

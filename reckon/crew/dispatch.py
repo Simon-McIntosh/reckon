@@ -1531,8 +1531,19 @@ def _request_claim_restored_on_refusal(run_id, request):
         if discard_recorded(run_id):
             _release_launch_claim(run_id)
         else:
+            # The starting claim published the attempt record beside the claim.
+            # The request is going back to the queue rather than being launched,
+            # so the record it published describes an attempt that never
+            # happened: kept, the restored request would read afterwards as a
+            # launch that stopped after its claim. The claim itself stays,
+            # exactly as it did before the record was published with it.
+            _attempt_record_for(run_id).unlink(missing_ok=True)
             _write_json(pointer_path(run_id), request)
         raise
+
+
+def _attempt_record_for(run_id: str) -> Path:
+    return run_dir(run_id) / ATTEMPT_RECORD_NAME
 
 
 def dispatch(
@@ -2751,6 +2762,28 @@ def dispatch(
                 "previous_run_id": str(previous.get("run_id") or ""),
             }
 
+        # The attempt's identity is written down here, with the claim, rather
+        # than only after the launch is composed. Everything from this point to
+        # the supervisor — the worktree, the prompt, the composed argv — takes
+        # seconds, and a launcher that ends inside that span runs no handler and
+        # writes nothing else, so the run would keep a claim and no attempt at
+        # all. The marker is what makes such a run name the attempt it stopped
+        # on instead of reading as one that never started.
+        _supervisor_write(
+            directory / ATTEMPT_RECORD_NAME,
+            {
+                "run_id": run_id,
+                "attempt": attempt,
+                "attempt_kind": (
+                    "shadow"
+                    if shadow_lineage
+                    else "redispatch"
+                    if lineage
+                    else "dispatch"
+                ),
+                "attempt_started_at": _utc_now(),
+            },
+        )
         dispatch_watch, session_delivery, watch_override = _arrange_dispatch_follower(
             project,
             session,
@@ -3322,6 +3355,11 @@ def dispatch(
                     "pid": None,
                     "pid_start_time": None,
                     "argv": list(plan.argv),
+                    # The directories this plan resolved for its backend, so a
+                    # resume or a lane change composes the worker's PATH from
+                    # what this launch searched rather than from whatever the
+                    # flight layers declare when the later attempt runs.
+                    "backend_search_path": list(plan.backend_search_path),
                     "command": harness_command,
                     "dialect": plan.dialect,
                     "session_resumed": _launched_prior_session(plan) is not None,
@@ -3627,6 +3665,12 @@ def dispatch(
                     _stamp_failure,
                 )
 
+                # The starting claim published the attempt record beside the
+                # claim. This request is going back to the queue rather than
+                # running, so the record describes an attempt that never
+                # happened: kept, the restored request reads afterwards as a
+                # launch that stopped after its claim.
+                _attempt_record_for(run_id).unlink(missing_ok=True)
                 failure = f"{type(exc).__name__}: {exc}"
 
                 def restore(pointer: dict[str, Any]) -> dict[str, Any]:

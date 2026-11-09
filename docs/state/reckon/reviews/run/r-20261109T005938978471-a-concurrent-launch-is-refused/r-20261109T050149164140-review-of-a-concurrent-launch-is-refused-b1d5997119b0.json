@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:3498",
+    "reckon/crew/dispatch.py:3513",
+    "reckon/crew/queue_admission.py:441",
+    "reckon/crew/resumption.py:1781",
+    "reckon/crew/dispatch_launch.py:2985",
+    "reckon/crew/dispatch_launch.py:3391",
+    "reckon/crew/dispatch_launch.py:4511"
+  ],
+  "completed_at": "2026-11-09T05:19:33.102Z",
+  "dispatched_at": "2026-11-09T05:05:24Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "id": "a1c7f0d3b18e",
+      "line": 2330,
+      "severity": "non-blocking",
+      "text": "The spawn guard's new before_attempt rule at :2330 (and its skip_ended rule at :2332) is not covered by an assertion that fails if either is removed or inverted. tests/test_a_concurrent_launch_is_refused.py:429 plants a reservation at a LATER attempt than the spec, which is refused with or without before_attempt, and no fixture leaves a reservation at an attempt that also has an attempt-N-exit.json record, so the earlier-attempt admission and the ended-attempt skip this commit exists to provide are exercised by nothing. Reverting either line leaves the file green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T005938978471-a-concurrent-launch-is-refused/logs/repair-3-affected.log",
+      "id": "8d2e5b4a7c01",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The head gate log named in the manifest has no '# revision' or '# command' header and ends '[exited with code 0]' instead of a bare EXIT= line, which the plan's done-when requires of every gate log; a reader cannot tie its 55-passed result to a revision from the log itself, and promotion's own reading of the exit status has to fall back on other fields."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T005938978471-a-concurrent-launch-is-refused/manifest.md",
+      "id": "c4b90e17a652",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "negative_control_log names logs/repair-controls.log, which arms the previous round's commits at d656bc354b, while the controls that arm this round's changes are in logs/repair-3-controls.log, named only in negative_control_note; a promotion that reads the field would verify a control that never touches 227b1e5580..b1d5997119."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch.py:3498 and :3513 (the dispatch and admit door, reached from reckon/crew/queue_admission.py:441), reckon/crew/resumption.py:1781 (the resume seam), reckon/crew/dispatch_launch.py:2985 (supervised_launch) and :3391 (the supervisor's spawn guard).",
+    "diff": "read all seven commits against 227b1e5580: 80c87c0a32 adds before_attempt and skip_ended to the spawn guard and moves the supervisor handover out of _start_supervisor's keyword; 05ad284e4e plants a later reservation in the guard case; 1570b1f7ad widens launch_reservation_key to canonical records and adds the adoption and seam-release; e088769dc7 restricts adoption to the door's own attempt; 8236b32ad6, 9009ff3d5a and b1d5997119 are the evidence fragment.",
+    "done_when": "the done-when asks that the spawn guard admit its own attempt and refuse another while that reservation is held, and that the arm pass by delta against the base; tests/test_a_concurrent_launch_is_refused.py:409 admits spec 2 and :429 refuses spec 2 against a planted attempt-3 reservation, with logs/repair-head-2.log 24 passed EXIT=0 against logs/repair-base-2.log 1 failed EXIT=1.",
+    "goal": "the goal is to refuse a relaunch of an existing run id while another launch is in flight, through one receipt-keyed reservation that every CLI relaunch door takes and frees by its launch's own end; reckon/crew/dispatch_launch.py:2206 now keys on every record the run holds and :2985 adopts a door's own unrecorded reservation.",
+    "manifest": "read; it records status complete, fourteen commits through b1d5997119, the seven-file 55-case gate at logs/repair-3-affected.log, and negative controls at logs/repair-controls.log, but it carries no baseline_suite or after_suite keys for this round and its negative_control_log names the previous round's log rather than logs/repair-3-controls.log.",
+    "write_paths": "the node's declared write paths are the four crew modules, tests/test_a_concurrent_launch_is_refused.py and the evidence fragment (the round's prompt additionally extended it to tests/test_a_resume_never_launches_beside_another_node.py); every path in the diff is inside that set and nothing else changed."
+  },
+  "justifications": {
+    "durability": "the receipt-key repair is guarded red-first by logs/repair-3-controls.log, but the spawn guard's new before_attempt rule at reckon/crew/dispatch_launch.py:2330 and its skip_ended rule at :2332 have no assertion that reddens if either is removed, since tests/test_a_concurrent_launch_is_refused.py:429 plants a later reservation than the spec and no fixture gives a reservation an exit record.",
+    "evidence": "logs/repair-head-2.log records 24 passed EXIT=0 at 05ad284e4e and logs/repair-base-2.log records 1 failed 23 passed EXIT=1 at 34d0376761, but the manifest carries no baseline_suite or after_suite for this round and logs/repair-3-affected.log has no revision header and ends '[exited with code 0]' rather than a bare EXIT= line.",
+    "fit": "reckon/crew/dispatch_launch.py:3029-3033 hands the returned pid to record_reservation_supervisor in the same style as the sibling branch at :3075, and the new helpers at :2238 carry no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3498 and :3513 now record the spawned supervisor (or release a seam that started none) on the reservation, and reckon/crew/dispatch_launch.py:2985 adopts a door's own unrecorded reservation, so the hold follows the launch rather than the admitting process the goal names.",
+    "reuse": "the diff adds one helper, _reservation_taken_by_this_process at reckon/crew/dispatch_launch.py:2238, which is built on the module's own _read_reservation and LaunchReservation rather than forking an existing capability, and it extends launch_reservation_key at :2206 in place.",
+    "scope_discipline": "git diff --name-status 227b1e5580..b1d5997119 lists six paths, every one inside the node's declared write paths (the four modules, the two test files and the evidence fragment)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse a relaunch of a run id while another launch of that run is in flight, through one receipt-keyed reservation every CLI relaunch door takes before the worktree and frees by its launch's own end; reckon/crew/dispatch_launch.py:2206 now keys on the canonical records as well as the retired receipts, :2985 adopts a door's own unrecorded reservation, and reckon/crew/dispatch.py:3498 records the supervisor it started on that reservation.\nVERDICT done_when: the done-when asks that the spawn guard admit its own attempt and refuse another while the reservation is held, and that the armed command pass by delta against the base; tests/test_a_concurrent_launch_is_refused.py:409 admits the spec's own attempt and :429 refuses the same spec against a planted later reservation, and logs/repair-head-2.log records 24 passed EXIT=0 at 05ad284e4e against logs/repair-base-2.log 1 failed 23 passed EXIT=1 at 34d0376761.\nVERDICT write_paths: the node's declared paths are reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/resumption.py, tests/test_a_concurrent_launch_is_refused.py and the evidence fragment, with tests/test_a_resume_never_launches_beside_another_node.py added by the round's prompt; git diff --name-status 227b1e5580..b1d5997119 lists six paths, all inside that set, and dispatch_sessions.py is untouched.\nVERDICT manifest: read; status complete, fourteen commits ending b1d5997119, the seven-file 55-case gate named at logs/repair-3-affected.log, and the evidence-inputs line; but it carries no baseline_suite or after_suite keys for this round, and negative_control_log points at logs/repair-controls.log from the previous round rather than logs/repair-3-controls.log which its own note describes.\nVERDICT diff: read all seven commits against 227b1e5580: 80c87c0a32 adds before_attempt and skip_ended to held_launch_reservation and calls _start_supervisor without the reservation keyword; 05ad284e4e plants a later reservation in the spawn-guard case; 1570b1f7ad widens launch_reservation_key to canonical records, adds _reservation_taken_by_this_process and releases a bare seam; e088769dc7 bounds adoption to the door's own attempt and rewrites the two-door case to race from inside the first launch; 8236b32ad6, 9009ff3d5a and b1d5997119 are the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3498, reckon/crew/dispatch.py:3513, reckon/crew/queue_admission.py:441, reckon/crew/resumption.py:1781, reckon/crew/dispatch_launch.py:2985, reckon/crew/dispatch_launch.py:3391, reckon/crew/dispatch_launch.py:4511\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3498 records the returned supervisor pid on the reservation and :3513 releases a seam that started none, while reckon/crew/dispatch_launch.py:2985 adopts a door's own unrecorded hold, so the reservation follows the launch rather than the admitting process.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/repair-head-2.log is 24 passed EXIT=0 at 05ad284e4e and logs/repair-base-2.log is 1 failed EXIT=1 at 34d0376761, but no baseline_suite/after_suite is recorded for this round and logs/repair-3-affected.log carries no revision header and no bare EXIT= line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --name-status 227b1e5580..b1d5997119 is inside the node's declared write paths, with no extra file and no hunk outside the goal.\nSCORE durability: 14\nJUSTIFICATION durability: logs/repair-3-controls.log reddens the two new key cases when launch_reservation_key is reverted, but reckon/crew/dispatch_launch.py:2330 and :2332 add guard rules no assertion reddens, since tests/test_a_concurrent_launch_is_refused.py:429 plants a later reservation and no fixture pairs a reservation with an exit record, so those two rules are protected, while the guard rules are not.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:3033 records the pid in the same shape as the sibling branches at :3075 and :3085, and the new names (_reservation_taken_by_this_process, before_attempt, skip_ended) describe mechanism with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the one added definition, _reservation_taken_by_this_process at reckon/crew/dispatch_launch.py:2238, reuses _read_reservation and LaunchReservation from the same module and extends launch_reservation_key in place, so no repository capability is forked.\nFINDING reckon/crew/dispatch_launch.py:2330 non-blocking: the before_attempt rule (and skip_ended at :2332) has no assertion that reddens if it is removed; tests/test_a_concurrent_launch_is_refused.py:429 plants a reservation at a later attempt than the spec, which is refused either way, and no fixture gives a reservation an attempt-N-exit.json record, so reverting either line leaves the file green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T005938978471-a-concurrent-launch-is-refused/logs/repair-3-affected.log:1 non-blocking: the head gate log has no revision or command header and ends '[exited with code 0]' rather than a bare EXIT= line, so a reader cannot tie its 55-passed result to a revision from the log itself.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T005938978471-a-concurrent-launch-is-refused/manifest.md:24 non-blocking: negative_control_log names logs/repair-controls.log, which arms the previous round at d656bc354b, while this round's controls are in logs/repair-3-controls.log named only in the note.",
+  "review_run_id": "r-20261109T050149164140-review-of-a-concurrent-launch-is-refused-b1d5997119b0",
+  "reviewed_base_sha": "227b1e55809c3b3068a7eb0db15da74d1a118af5",
+  "reviewed_head_sha": "b1d5997119b0ed08de6a3e77bbba8aabb6eaab99",
+  "reviewed_run_id": "r-20261109T005938978471-a-concurrent-launch-is-refused",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:55:00+00:00",
+  "total": 107
+}

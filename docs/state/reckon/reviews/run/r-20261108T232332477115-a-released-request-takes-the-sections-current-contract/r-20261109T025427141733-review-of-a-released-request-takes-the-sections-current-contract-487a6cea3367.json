@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T03:07:02.805Z",
+  "dispatched_at": "2026-11-09T02:56:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the done-when case exercises the shared re-derivation path the other marked fields use; per-field cases would strengthen it but change no shipped behaviour",
+      "recorded_at": "2026-11-09T03:17:07.099533+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "crew queue edit has no estimated_hours option, so no edit path can leave a stale mark today; the time_budget clause is dead but harmless",
+      "recorded_at": "2026-11-09T03:17:31.163483+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the landing re-records both suite arms with the literal armed command at the dispatch base and the reviewed head",
+      "recorded_at": "2026-11-09T03:17:46.147745+00:00"
+    }
+  },
+  "findings": [
+    {
+      "claim": "section_derivation marks write_paths (:377) and estimated_hours (:380) as section-derived and the release re-derives them, but tests/test_a_released_request_takes_the_sections_current_contract.py asserts only the done_when case's re-derivation, so a regression in either of the other two marked fields leaves the suite green and the requirement it implements unguarded.",
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 377,
+      "severity": "non-blocking",
+      "text": "section_derivation marks write_paths (:377) and estimated_hours (:380) as section-derived and the release re-derives them, but tests/test_a_released_request_takes_the_sections_current_contract.py asserts only the done_when case's re-derivation, so a regression in either of the other two marked fields leaves the suite green and the requirement it implements unguarded."
+    },
+    {
+      "claim": "the mark-clearing loop names time_budget, a field section_derivation never marks \u2014 the section's effort field is estimated_hours (dispatch_batch.py:380) \u2014 so the clause is dead and the two vocabularies disagree; any edit path that later sets estimated_hours would leave its mark standing and the next release would overwrite the coordinator's value.",
+      "file": "reckon/crew/queue_edit.py",
+      "line": 443,
+      "severity": "non-blocking",
+      "text": "the mark-clearing loop names time_budget, a field section_derivation never marks \u2014 the section's effort field is estimated_hours (dispatch_batch.py:380) \u2014 so the clause is dead and the two vocabularies disagree; any edit path that later sets estimated_hours would leave its mark standing and the next release would overwrite the coordinator's value."
+    },
+    {
+      "claim": "after_suite names revision b88fe72093 (logs/importers-head.log), which is the first commit of the branch; the code changed afterwards in b3f232488d and a0125da2f4, and the arm covering the landed code is logs/importers-head-3.log at a0125da2f4, named only in the artifacts line, so the machine-read suite pair does not measure the revision this review read.",
+      "file": "manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "after_suite names revision b88fe72093 (logs/importers-head.log), which is the first commit of the branch; the code changed afterwards in b3f232488d and a0125da2f4, and the arm covering the landed code is logs/importers-head-3.log at a0125da2f4, named only in the artifacts line, so the machine-read suite pair does not measure the revision this review read."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a738 asks that a released request take the section's current contract, and reckon/crew/queue_admission.py:4545 re-derives each marked field from the section at the release base while :4588 writes it onto the pointer, keeping dispatcher-supplied and queue-edited fields.\nVERDICT done_when: the done-when names tests/test_a_released_request_takes_the_sections_current_contract.py with plan_review_gate enforce, both pointer digests, a logged negative control, an importer delta and ruff; logs/gate-head.log records '7 passed' and EXIT=0, I re-ran the same file at 487a6cea33 for '7 passed', logs/negative-control.log holds three controls each EXIT=1, the base and head importer arms are logged, and ruff check on the four Python paths reports no findings.\nVERDICT write_paths: the dispatch declared reckon/crew/queue_admission.py, reckon/crew/dispatch_batch.py, reckon/crew/queue_edit.py, tests/test_a_released_request_takes_the_sections_current_contract.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-released-request-takes-the-sections-current-contract.html; git diff --stat 29b47d2cb8..487a6cea33 changes exactly those five files and nothing else.\nVERDICT manifest: read; it records status complete, six commits, the seven-case gate with its log, three negative controls each EXIT=1, the base and head importer arms with their reconciliation, and one rubric line per dimension, and its landing statement matches what the diff does.\nVERDICT diff: read all six commits against 29b47d2cb8; b88fe72093 adds the derivation mark and the release re-derivation, b3f232488d refuses an unreadable section and re-digests the stored field, a0125da2f4 catches any reader exception per request, and 6b5e2d2baf, 2fff65748c and 487a6cea33 are evidence-fragment updates only, so the code at the reviewed head equals the code at a0125da2f4.\nCALL_SITES: reckon/crew/queue_admission.py:5017, reckon/crew/queue_admission.py:613, reckon/crew/dispatch.py:599, reckon/crew/dispatch_batch.py:717, reckon/crew/queue_edit.py:443\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4545 reads the marks and re-derives only those fields, and the first case asserts on the launched prompt.txt at tests/test_a_released_request_takes_the_sections_current_contract.py:246 rather than on the pointer alone.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log records 7 passed and EXIT=0 and the base and head importer arms are logged with the one differing id shown failing identically at the base revision in logs/importers-base-single.log, but manifest.md:15 records after_suite at b88fe72093 while the code changed afterwards, so the machine-read pair does not cover the reviewed revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 29b47d2cb8..487a6cea33 lists only the five declared write paths, and the docs-only commits touch nothing outside them.\nSCORE durability: 16\nJUSTIFICATION durability: each declared control reddens the case it names with EXIT=1 in logs/negative-control.log, but tests/test_a_released_request_takes_the_sections_current_contract.py has no case for the write_paths or estimated_hours marks added at reckon/crew/dispatch_batch.py:377 and :380, so a regression in either stays green.\nSCORE fit: 18\nJUSTIFICATION fit: the added helpers carry mechanism-named docstrings with no plan or ticket label matching the module's idiom, but reckon/crew/queue_edit.py:443 clears a mark for time_budget, which section_derivation never marks.\nSCORE reuse: 20\nJUSTIFICATION reuse: section_derivation at reckon/crew/dispatch_batch.py:359 extends the existing _PlanRead owner (dispatch_batch.py:242) and reuses plan_review._digest, and a search for another mechanism that re-derives a node field from its section found none (read.done_when has dispatch_batch.py as its only caller).\nFINDING reckon/crew/dispatch_batch.py:377 non-blocking: write_paths and estimated_hours are marked and re-derived but no test asserts either, so a regression in those two fields is invisible to the node's own gate.\nFINDING reckon/crew/queue_edit.py:443 non-blocking: the mark-clearing loop names time_budget, a field the section never supplies, while the section-supplied effort field estimated_hours has no clearing path, so the two vocabularies disagree.\nFINDING manifest.md:15 non-blocking: after_suite names the arm at b88fe72093, before the code changed in b3f232488d and a0125da2f4, so the recorded suite pair does not measure the reviewed revision; the arm that does is logs/importers-head-3.log, named only in artifacts.\n",
+  "review_run_id": "r-20261109T025427141733-review-of-a-released-request-takes-the-sections-current-contract-487a6cea3367",
+  "reviewed_base_sha": "29b47d2cb8dc87054d1ba97457c8cfbe48f10544",
+  "reviewed_head_sha": "487a6cea3367323410d5c3d9164ba8f2f1906af4",
+  "reviewed_run_id": "r-20261108T232332477115-a-released-request-takes-the-sections-current-contract",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:22:02.823304+00:00",
+  "total": 110
+}

@@ -1,0 +1,144 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T05:23:30.149Z",
+  "dispatched_at": "2026-11-09T05:12:39Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261109T050712755648-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:23",
+      "id": "wiring-1",
+      "reason": "a section with no followup naming it cannot be built, which is the same defect earlier reviews raised against \u00a725 and the plan answered by writing followups for \u00a725 and \u00a726.",
+      "text": "s27 and s24 are declared implementable in `plan-section-declarations`, but the last followup is f-erikacr-025 (\u00a726, resolved) and neither section is named by an open followup, so nothing dispatches them",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261109T050712755648-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:211",
+      "id": "done_when-1",
+      "reason": "the deliverable's first clause (discarded never selected) would then be implemented by nothing tested, and a node could pass the gate while a parsed record from a discarded run still shadows a promoted one \u2014 a reachable state, since a discard removes the pointer and keeps the record already written.",
+      "text": "\u00a727's first case pairs an unparsed record from a discarded run with a parsed record from a promoted one, and its second case is a lone unparsed record, so \"prefer parsed over unparsed\" alone passes both cases and the negative control; no case puts a parsed record from a discarded run beside a parsed record whose run was promoted",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/every-review-is-kept-as-a-committed-record/r-20261109T050712755648-plan-review-of-every-review-is-kept-as-a-committed-record/plan.html:211",
+      "id": "reasoning-1",
+      "reason": "the worker must decide whether a record-store selection may consult the crew home for every candidate, and the rule then judges each candidate by a lookup the section never names or justifies.",
+      "text": "\u00a727's deliverable says a record whose review run was discarded is never selected, but it names no mechanism and no read site, unlike its siblings (\u00a726 names `committed_review_root` and `commit_record_write`); the record itself carries no discard fact, and `_select_stored_record` reads record files only while the fact exists solely as `discard.json` under the crew run directory, read today by `promotion.discard_recorded`",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+  "plan_fingerprint": "819fb03c2c4a446bb4571865fba1932d2c6873ea1133a7839a20e7da19a8fa30",
+  "plan_slug": "every-review-is-kept-as-a-committed-record",
+  "plan_version": 199,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "followups now name \u00a724 and \u00a727",
+      "reason": "",
+      "when": "2026-11-09T05:47:48.270357+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a727 adds a case with a parsed record from a discarded run beside a parsed record from a promoted run, asserting the promoted one is selected",
+      "reason": "",
+      "when": "2026-11-09T05:47:57.883068+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a727 names the mechanism: the selection reads each candidate's review run discard record through promotion.discard_record_path, few records ever sharing a head",
+      "reason": "",
+      "when": "2026-11-09T05:48:06.885478+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "note": "\u00a727 adds a case with a parsed record from a discarded run beside a parsed record from a promoted run, asserting the promoted one is selected",
+      "reason": "",
+      "when": "2026-11-09T05:47:57.883068+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "note": "\u00a727 names the mechanism: the selection reads each candidate's review run discard record through promotion.discard_record_path, few records ever sharing a head",
+      "reason": "",
+      "when": "2026-11-09T05:48:06.885478+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "3d66f362c8f6b6f67e61a50f187134c4f4fdc6e1",
+      "commit_basis": "edit",
+      "note": "followups now name \u00a724 and \u00a727",
+      "reason": "",
+      "when": "2026-11-09T05:47:48.270357+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/every-review-is-kept-as-a-committed-record/r-20261109T050712755648-plan-review-of-every-review-is-kept-as-a-committed-record.json",
+  "review_run_id": "r-20261109T050712755648-plan-review-of-every-review-is-kept-as-a-committed-record",
+  "reviewed_blob_sha": "d728e24c87e36e0d39dd52ea67066dc8165b8cb1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 b1be31b712 and cb4c580378 both resolve; `crew_run_commands.py` near line 1077 carries the quoted \"cannot be selected on its own\" refusal; the two cited figure records exist in nova's committed run directory with the stated statuses, finding counts, and the discarded run holding `discard.json`; \u00a725's completeness preference genuinely cannot fire on a figure record because such a figure record has no `scores` \u2014 so the stated root cause is the one the cited evidence shows.",
+    "done_when": "a finding \u2014 \u00a727's three cases are all satisfied by the parsed-over-unparsed clause alone, so its primary clause (a record from a discarded review run is never selected) is measured by nothing.",
+    "evidence_paths": "pass \u2014 \u00a727's gate and negative-control logs sit under the run directory, as every sibling section's do.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach \u00a727's symbols, test name or write paths; the prose states the mechanism.",
+    "reasoning": "a finding \u2014 \u00a727 requires selection to know the record's review run was discarded, but names no read site and the fact is not carried in the record; `review_records.py` reads record files only, and the only readers of the discard fact are `promotion.discard_recorded` and the run's own marker.",
+    "single_goal": "pass \u2014 \u00a727 carries one selection-preference rule with one test file and one write scope.",
+    "wiring": "a finding \u2014 `plan-section-declarations` (line 23) now marks s27 and s24 implementable, but the followup list ends at f-erikacr-025 (\u00a726, resolved) and nothing names either section."
+  },
+  "section_digests": {
+    "_document": "c0b5ece59aae9bc01ec69b8d937cc0632b7240e2b02bc25dfe68725819f7c498",
+    "s1": "0e9b72d369354c8d7be32605938df607ebbbce67023bc6ed8de9c06d12d32df4",
+    "s10": "8e08c7c8a99206f9db453d65cb98c9c40f69e4c07325e55c639d885f927f0ae3",
+    "s11": "a8a04a9908b25d410e85f68b11504ae3940e469acc04fa4ac25e8ebb8373a2d0",
+    "s12": "bb85d80dcb9e0286d21a8ca6acd3af79e736c64c84b5ac85569fc6ce2c73863b",
+    "s13": "18a2d10f1e3c66be8277b7b4ef2922db7611cded7589553da5347b9a1ee5cd0f",
+    "s14": "90fd381b5f80417031410428331e779266feb4e517d89e5237d29cbe1c5e4700",
+    "s15": "72f678eb5f0bc62870da1cc4637f6db55365548aa9b52f46884cc0b3551a6ae7",
+    "s16": "7a5788c2a3fa1a2f0029d46feab7c3ed8a6b2a35c6ca9788fbe9911d5ab9cb56",
+    "s17": "86a993485a8a8461fd1e5e336bf8623e585cd4540daa1e5b5e78af2a0c172ce5",
+    "s18": "c89ae3a282a47cc0790b201cd56e732fc633876a1f1bd4dea1ae9521bd21574a",
+    "s19": "1ae8ba274c5965e60610446e8b60f06c93772468c117cf677c3fe8e2efeff862",
+    "s2": "87bfc5d2caae7c2107ebf209d7886ed542b6b34e4f47b7ec3dac6bb990a0ec05",
+    "s20": "c4d6ffe26d4b44f9ab15c017f5c0524d7dd00fbe4c8d2d2f707923425bb50092",
+    "s21": "931b2870fb36b75949015af97ccfe184a222d06e1a7706463e9da0e5dc06b1e7",
+    "s22": "6574cd53cba003ceaa5bf39f4e436b0016f15f4822a35435ffa2791a99917430",
+    "s23": "50771e5200ab695fbcae4380ab62d0a12265b1413e3b62377a00690284da83c2",
+    "s24": "2f5ac608d204b7c2c1f1affa9a62075d87ba15abcee396e5b564de6345a4cd81",
+    "s25": "01bd5e71416e1cf2e0b5a14dd22c696ff8b29b7d4a859b85b7ef775f545eb94c",
+    "s26": "e1ad86c5fb15fe2da279cce98a3da8c591c0c9970d4e47116feebd387982d5cf",
+    "s27": "32a34178448248077e5fb4b124dbd6786fa28f51e9f0a3ca4faef473092cfbb0",
+    "s3": "4ce83cf60d72c0bc7560ad67b63321b66ad2eab203f056b94bbe6050abe68365",
+    "s4": "14ea9195d5ca24416c1b7e31c1724697cfa10b66641d937ba50243796dfd5b11",
+    "s5": "7f1aafa877b35b589380f7d9a159ef46b7570d317c0593b44a0fdf356f277f73",
+    "s6": "5ecf4c2d9f156607b73fb3e02ebdd52e6c94975806391f24b7334650f4cbc212",
+    "s7": "cd48982a8e4a684a6819271ee9171b2025df2c3c60785738c533eeb4bc6f6810",
+    "s8": "d292be9ad6a414aacd3a2fe40d7730c79ce5dc8f1983898056f5916b02ca2ed0",
+    "s9": "85877b77c395ca8a1482bef5887cfc72cbf6109174dba2c01265aa015a906d73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:39:32.952224+00:00",
+  "total": null
+}

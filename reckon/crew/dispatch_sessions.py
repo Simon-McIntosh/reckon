@@ -970,6 +970,15 @@ def _backend_settings(
         str(record.get("dialect") or "").strip()
         or str(record.get("backend") or "").strip()
     )
+    # The directories the launched plan resolved for its backend. The rebuilt
+    # settings carry the harness identity and the lane's window, and a rebuild
+    # from the record's own command drops every other key. The record is the
+    # authority for what this run searched, so a resumed attempt composes its
+    # worker PATH from the same directories even where the configured lane has
+    # since lost a declaration the run's first launch resolved.
+    recorded_search_path = record.get("backend_search_path")
+    if isinstance(recorded_search_path, list) and recorded_search_path:
+        settings["search_path"] = [str(item) for item in recorded_search_path]
     if identity:
         settings.setdefault("dialect", identity)
     for key in ("usable_input_window", "model", "effort", "input_modalities"):
@@ -2033,6 +2042,10 @@ def change_lane(
                     "argv": list(target_plan.argv),
                     "command": str(target_plan.argv[0]),
                     "dialect": target_plan.dialect,
+                    # The move's own resolution, so a resume of the moved run
+                    # searches the destination lane's declared directories
+                    # rather than the ones its previous attempt used.
+                    "backend_search_path": list(target_plan.backend_search_path),
                 }
             )
             current.pop("directive", None)
@@ -2042,6 +2055,10 @@ def change_lane(
                     "argv": None,
                     "command": None,
                     "dialect": None,
+                    # No plan was composed, so nothing was searched through a
+                    # declared path; a later move back to a cli lane resolves
+                    # the destination's declaration from the config.
+                    "backend_search_path": None,
                     "directive": {
                         "attach_with": (
                             f"reckon crew attach --run {run_id} --task <task-id>"

@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: repair-base-suite.log (5c474bd0e8) ends '7 passed' with EXIT=0 and repair-after-suite.log (ec1bd85f51) ends '8 passed' with EXIT=0, both declaring completed, so no failure appears at the head that the base did not carry.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131",
+    "reckon/crew/dispatch_batch.py:528",
+    "reckon/crew/dispatch_batch.py:537",
+    "reckon/crew/dispatch_batch.py:424"
+  ],
+  "completed_at": "2026-11-09T01:07:44.706Z",
+  "dispatched_at": "2026-11-09T00:57:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the five cases are evidenced at the head by logs/repair-after-suite.log's 8 passed; only the quoted figure lacks its own log line",
+      "recorded_at": "2026-11-09T01:13:51.032944+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the case discriminates through refused == 1 and its negative control; matching the reason text more tightly would strengthen it but changes no shipped behaviour",
+      "recorded_at": "2026-11-09T01:14:10.532853+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the Measure paragraph and manifest.md:22 quote a head-tree gate figure of '5 passed in 1.45s' that no log in the run's logs/ carries - the only gate-only log, logs/gate-after.log, declares revision 12b5f3d1ce and '3 passed', while the five cases are covered at the head only by logs/repair-after-suite.log's '8 passed' over this gate plus a three-test file - so the figure is true but is not a log's own summary line as the artifacts rule requires."
+    },
+    {
+      "file": "tests/test_a_batch_derives_an_absolute_write_path.py",
+      "line": "172",
+      "severity": "non-blocking",
+      "text": "the assertion 'PARENT_RELATIVE_MODULE in str(row[\"reason\"])' cannot distinguish the parent-segment refusal from the resolve-nowhere refusal, because both message templates echo the whole write-paths sentence, which itself contains the token; the case's discriminating power rests on 'refused == 1' and the negative control, so it would not redden if a section naming '../missing/x.md' were refused by the wrong branch, and asserting on the reason's own phrase would close that gap."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "three commits against 5c474bd0e8: the refusal and its case, the fragment's rewritten landing and measure, and the corrected importer-arm revision.",
+    "done_when": "the done-when names the gate, both controls and the importer arm; the manifest records the five-case gate in an 8-passed after arm at ec1bd85f51, four controls red with EXIT=1 and the importer arm 20 passed at cd1b826f2b.",
+    "goal": "the goal is to keep an absolute write path absolute when a batch derives it from section text; this round closes the three prior findings, and dispatch_batch.py:309-318 refuses a '..' token while :71 matches the dot prefix whole.",
+    "manifest": "status complete, gate command and log paths named, both suite arms declare revisions with completed true and zero failure ids.",
+    "write_paths": "the diff changes exactly the three declared paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_derives_an_absolute_write_path.py:164-172 reddens at 'refused': 0 under negative-control-4 when the '..' refusal is removed.",
+    "evidence": "the control and suite logs reconcile with the fragment, but the '5 passed in 1.45s' gate figure at manifest.md:22 has no head-revision log behind it.",
+    "fit": "dispatch_batch.py:68-69 states the mechanism and the new case at :164 follows the file's fixture pattern.",
+    "goal_fidelity": "dispatch_batch.py:309-318 refuses a token carrying a '..' segment and :71 matches the prefix whole, so the prior review's shortened derivation no longer occurs.",
+    "reuse": "the change extends _PATH_TOKEN and _PlanRead.write_paths in place rather than forking a capability.",
+    "scope_discipline": "every path in the diff is inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep an absolute write path absolute when a batch derives it from section text; this round repairs the three findings the prior review left at 5c474bd0e8, and reckon/crew/dispatch_batch.py:71 now matches a './' or '../' prefix whole while write_paths refuses any token carrying a '..' segment at :309-318.\nVERDICT done_when: \u00a79's done-when names the gate's cases, both negative controls and the importer arm; the manifest records repair-base-suite.log '7 passed' at 5c474bd0e8 and repair-after-suite.log '8 passed' at ec1bd85f51 with EXIT=0 in both, the five-case gate, four controls each ending EXIT=1 on a named test id, and the importer arm 20 passed at cd1b826f2b; the five gate cases are 5 of the 8 in that after arm, since tests/test_a_batch_request_can_be_edited.py carries the other 3 at the same revision.\nVERDICT write_paths: declared write paths are reckon/crew/dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and the evidence fragment under docs/evidence/fragments/a-queued-request-is-checked-when-queued/; the three commits change exactly those three files and nothing else.\nVERDICT manifest: read; status complete, it names the gate command, the four control logs and the importer arm, its baseline_suite and after_suite declare 5c474bd0e8 and ec1bd85f51 with completed true and zero failure ids, and it carries a rubric line for all six dimensions.\nVERDICT diff: read commit by commit against 5c474bd0e8: 6475a7899a widens the prefix to '(?:\\.{1,2}/)*', adds the parent-segment refusal in write_paths, adds the fifth case with its constant and section and drops the self-comparing startswith assertion; cd1b826f2b and ec1bd85f51 rewrite the fragment's landing and measure paragraphs to the five cases, the fourth control and the arm revisions - 31 insertions and 7 deletions across the three declared files.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131, reckon/crew/dispatch_batch.py:528, reckon/crew/dispatch_batch.py:537, reckon/crew/dispatch_batch.py:424\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: dispatch_batch.py:309-318 raises BatchEntryRefusedError for a '..' token and dispatch_batch.py:71 matches the prefix whole, so '../docs/x.md' is now refused rather than derived as 'docs/x.md', closing the prior review's dispatch_batch.py:68 finding.\nSCORE evidence: 17\nJUSTIFICATION evidence: the four control logs and the two suite-arm logs reconcile with the fragment's counts and revisions, but the manifest's quoted 'gate: 5 passed in 1.45s' at manifest.md:22 has no gate-only log at the reviewed head, since logs/gate-after.log is stale at 12b5f3d1ce with '3 passed'.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff - reckon/crew/dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and the fragment - is inside the node's declared write paths, and no other file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_batch_derives_an_absolute_write_path.py:164-172 asserts refused==1, status refused and no live pointer, and negative-control-4-parent-segment-shortened.log shows the case reddening at 'refused': 0 when the '..' refusal is removed, which is the regression it exists to catch.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment at dispatch_batch.py:68-69 states the mechanism, the refusal reuses BatchEntryRefusedError and the surrounding message idiom at :319-330, and the new case at :164 follows the file's fixture and naming pattern.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends the existing _PATH_TOKEN and _PlanRead.write_paths in place, and the '..' in parts idiom it reuses inline also stands alone at reckon/crew/promotion_scope.py:403, which is not a shared owner the addition could extend.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html:5 non-blocking: the Measure paragraph and manifest.md:22 quote a head-tree gate figure of '5 passed in 1.45s' that no log in the run's logs/ carries - the only gate-only log, logs/gate-after.log, declares revision 12b5f3d1ce and '3 passed', while the five cases are covered at the head only by logs/repair-after-suite.log's '8 passed' over this gate plus a three-test file - so the figure is true but is not a log's own summary line as the artifacts rule requires.\nFINDING tests/test_a_batch_derives_an_absolute_write_path.py:172 non-blocking: the assertion 'PARENT_RELATIVE_MODULE in str(row[\"reason\"])' cannot distinguish the parent-segment refusal from the resolve-nowhere refusal, because both message templates echo the whole write-paths sentence, which itself contains the token; the case's discriminating power rests on 'refused == 1' and the negative control, so it would not redden if a section naming '../missing/x.md' were refused by the wrong branch, and asserting on the reason's own phrase would close that gap.",
+  "review_run_id": "r-20261109T005652590989-review-of-a-batch-derives-an-absolute-write-path-ec1bd85f51d5",
+  "reviewed_base_sha": "5c474bd0e813b1d352217c5da427217afcaf627d",
+  "reviewed_head_sha": "ec1bd85f51d5a517be991570be408fb168b8f313",
+  "reviewed_run_id": "r-20261108T232922624067-a-batch-derives-an-absolute-write-path",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261109T005652590989-review-of-a-batch-derives-an-absolute-write-path-ec1bd85f51d5",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:16:30.338813+00:00",
+  "total": 112
+}

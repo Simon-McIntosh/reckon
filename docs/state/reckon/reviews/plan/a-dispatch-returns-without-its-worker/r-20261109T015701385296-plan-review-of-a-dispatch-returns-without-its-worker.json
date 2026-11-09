@@ -1,0 +1,161 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T02:08:35.015Z",
+  "dispatched_at": "2026-11-09T01:58:17Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "reasoning-1",
+      "reason": "the node's whole method is to reproduce the sweep's path, and this instruction points it at the in-process seam or at nothing, so the step it is meant to catch is the one step the reproduction cannot reach.",
+      "text": "s23 tells the worker to reproduce \"driving `dispatch_review_for_run` with the launcher the follower's sweep passes\", but the follower's cadence passes no launcher at all: `crew_follow_commands.py:1458` binds `sweep=_sweep_lapsed_holds`, whose body at `crew_follow_commands.py:261` calls `sweep(project, session=session, dry_run=dry_run)`, so `launch = launcher` is `None` in `reckon/crew/resumption.py:2177` and `launcher=None` is forwarded to `dispatch_review_for_run` via `dispatch_awaiting_reviews` (`recovery_review_acceptance.py:647`); in `reckon/crew/dispatch.py:3437-3481` a non-`None` launcher is the `else` arm the code itself documents as \"a test seam that stands in for the supervisor\", so a worker following the instruction literally either finds no such launcher or reproduces through the seam and never reaches the supervisor at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "reasoning-2",
+      "reason": "the investigation would spend its turn on steps its own evidence rules out, and it omits the event that actually ended the strand and lies in `promotion.discard`, narrowing exactly where the worker should look first \u2014 the pre-spawn segment between the pointer write and `_prepare_attempt_records`.",
+      "text": "the candidate list (\"the supervisor spawn, a lock wait, an exception the sweep swallows, or a process that dies with its parent\") contradicts the record set the plan cites: `_prepare_attempt_records` (`reckon/crew/dispatch_launch.py:2150`) writes `attempt.json` (`ATTEMPT_RECORD_NAME`, :1928) at :2202 and is called at `reckon/crew/dispatch.py:3438` immediately before `_supervisor_spec` and `_start_supervisor` (:3459), so a run directory with no `attempt.json`, no `worker.json` and no stream never reached the spawn \u2014 both the supervisor-spawn step and the dies-with-parent step are already excluded, while the kept directory of `r-20261109T013544897285` also carries a `discard.json` written at 01:40:22Z, 2m04s after its 01:38:18Z claim, a step the plan does not mention and which is not \"about ten minutes in `starting`\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "evidence_paths-1",
+      "reason": "the node's product is a durable evidence note, and the done-when as written is satisfiable with a log that has already been deleted; it should require the log on the node's own durable run directory or the note to carry it.",
+      "text": "the done-when requires \"the reproduction's per-step log under the run directory\", but the deliverable reproduces the sweep \"in a temporary crew home\": the reproduced run's directory therefore lives under `TMPDIR` and is removed with the run, so the only log the done-when names is one a later reader cannot open",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "done_when-1",
+      "reason": "the branch is declared and honest for a cause that may sit in the sweep's own module (`resumption.py`/`recovery_review_acceptance.py`, outside the write paths), and requiring a behavioural measure there would force a fix the node is not scoped to make; the author can reasonably decline this as the tradeoff the escape branch exists for.",
+      "text": "the alternative branch closes the node when \"the note states the cause lies outside these write paths\", which measures only that a note exists and a follow-up section is described: no behaviour is exercised and no negative control is declared on that path, so the section can pass without a sweep-launched review ever reaching an attempt record",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+  "plan_fingerprint": "475fae6ba2f500bf29c5c40c62bc34ca7805414f4c38d8c02ec6bcc4bf83b7b7",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 183,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a723 now reproduces the sweep as it runs: the follower's _sweep_lapsed_holds passes no launcher, so dispatch_review_for_run is driven with launcher=None through resumption's sweep",
+      "reason": "",
+      "when": "2026-11-09T02:16:26.230160+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a723's candidates are now the steps between claim registration and _prepare_attempt_records (dispatch.py near line 3438), since no attempt.json means the launch stopped before it; spawn and parent death are excluded",
+      "reason": "",
+      "when": "2026-11-09T02:16:35.993663+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "the per-step log goes under the investigating run's own logs/, not the temporary crew home",
+      "reason": "",
+      "when": "2026-11-09T02:16:49.528209+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-1",
+      "reason": "the cause may sit in the sweep's own modules, outside this grant, so the branch that records the cause and the repair section stays; its note must quote the step the reproduction stopped at",
+      "when": "2026-11-09T02:17:00.980257+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the cause may sit in the sweep's own modules, outside this grant, so the branch that records the cause and the repair section stays; its note must quote the step the reproduction stopped at",
+      "when": "2026-11-09T02:17:00.980257+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "note": "the per-step log goes under the investigating run's own logs/, not the temporary crew home",
+      "reason": "",
+      "when": "2026-11-09T02:16:49.528209+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "note": "\u00a723 now reproduces the sweep as it runs: the follower's _sweep_lapsed_holds passes no launcher, so dispatch_review_for_run is driven with launcher=None through resumption's sweep",
+      "reason": "",
+      "when": "2026-11-09T02:16:26.230160+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "01fc41da88d097997b6c767050ba18571a47f27c",
+      "commit_basis": "edit",
+      "note": "\u00a723's candidates are now the steps between claim registration and _prepare_attempt_records (dispatch.py near line 3438), since no attempt.json means the launch stopped before it; spawn and parent death are excluded",
+      "reason": "",
+      "when": "2026-11-09T02:16:35.993663+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T015701385296-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T015701385296-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "54375135fceef730f6003369844e0caceb5d7d40",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_review_dispatch.py` exists and holds `dispatch_review_for_run` (:2605), both cited run directories exist (`r-20261108T163518843254\u2026`, `r-20261109T013544897285\u2026`), the evidence-fragment directory `docs/evidence/fragments/a-dispatch-returns-without-its-worker/` exists, and the cited claim timestamp 01:38:18Z matches `claim.json`.",
+    "done_when": "a finding \u2014 s23's done-when has an escape branch that closes the node on a note with no behavioural measure and no negative control (plan.html:1045).",
+    "evidence_paths": "a finding \u2014 the done-when puts the reproduction's per-step log \"under the run directory\" while the deliverable reproduces in a temporary crew home, whose run directory does not survive the run (plan.html:1045).",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach the section's symbols or filenames; the new test and note names state the mechanism.",
+    "reasoning": "two findings \u2014 the reproduction instruction names a launcher the follower's sweep never passes, and two of the four candidate steps the investigation is told to test are excluded by the record set the plan itself cites.",
+    "single_goal": "pass \u2014 one goal (a sweep-launched review reaching an attempt record or a recorded refusal); the conditional repair is the same goal's remediation, and the branch that names a follow-up section is a declared exit rather than a second deliverable.",
+    "wiring": "pass \u2014 s23 declares no dependency, none is needed (\u00a719, the section it builds on, is `done` and its write paths are disjoint), and no other section declares s23 as an upstream, so the DAG is consistent with the new unit."
+  },
+  "section_digests": {
+    "_document": "a7ba1aafa800184023efd2d6b5bc4317abff27299b5403d8f53a41786047d0a8",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "529ee79b44a9a28556335f0cc1ba2041831e596004e7a12f522ea3365347ad5a",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T02:14:24.667321+00:00",
+  "total": null
+}

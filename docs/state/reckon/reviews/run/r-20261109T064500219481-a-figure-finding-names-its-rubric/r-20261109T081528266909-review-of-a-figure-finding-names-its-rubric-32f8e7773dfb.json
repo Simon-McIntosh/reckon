@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligations.py:1964",
+    "reckon/crew/obligations.py:1982",
+    "reckon/crew/obligations.py:706",
+    "reckon/crew/obligations.py:809",
+    "reckon/crew/recovery_review_dispatch.py:2557",
+    "reckon/crew/recovery_review_dispatch.py:2648",
+    "reckon/crew/review_dispositions.py:514"
+  ],
+  "completed_at": "2026-11-09T08:23:59.177Z",
+  "dispatched_at": "2026-11-09T08:16:38Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T064500219481-a-figure-finding-names-its-rubric/logs/importers-head.log",
+      "id": "c1f4a9d2e607",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The log cited as the importer head arm names revision 7d4f59320b5e93b42d7af891c95e4a45308e1476 (the base) on its header line; it was written at 08:37 local, before the fix commit 8316301515 at 08:39, so it measured a working tree whose HEAD was still the base. A reader cannot tell which code produced the 47 failures, and the manifest's artifacts line presents it as a head measurement."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T064500219481-a-figure-finding-names-its-rubric/manifest.md",
+      "id": "b83e0f5c1a92",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "baseline_suite runs three targeted importer tests while after_suite runs the new node test file, so the two arms are not a comparable pair; the done-when's 'importers add no failure against the base' is therefore not measured for the 45 head failures beyond the three ids reproduced, and the base arm is recorded as partial."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "id": "d27c5a8e3f14",
+      "line": 809,
+      "severity": "non-blocking",
+      "text": "The reflex path composes its command only from report keys (review_rubric, review_run_id) added at reckon/crew/recovery_review_dispatch.py:2578, and no test references either key or _reflex_open_refusal; if the keys were absent the composition would silently fall back to the text form, which is the exact defect this node repairs."
+    },
+    {
+      "file": "tests/test_a_figure_finding_names_its_rubric.py",
+      "id": "e95b1c078a3d",
+      "line": 277,
+      "severity": "non-blocking",
+      "text": "assert recorded[\"node\"] == FOLD_NODE compares the recorded disposition against FOLD_NODE, the value this test substituted into the command at :226, so the assertion holds whatever the code does; the discriminating assertions are the CLI exit, receipt path and untouched text record at :263-273."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/obligations.py:1964 and :1982 compose the duty from the two refusal builders, which reach _finding_dispose_commands at reckon/crew/obligations.py:704 and :807, and reckon/crew/recovery_review_dispatch.py:2557 composes the refusal text; no other production caller passes a review run id.",
+    "diff": "Read both commits against 7d4f59320b: 8316301515 threads the rubric and review run through the composer and its three callers, 32f8e7773d adds the evidence fragment; five files, 372 insertions, 9 deletions.",
+    "done_when": "The done-when names tests/test_a_figure_finding_names_its_rubric.py with both cases and a logged negative control; logs/gate-after-node-test.log records 2 passed EXIT=0 and logs/negative-control-rubric-dropped.log records 1 failed, 1 passed EXIT=1 with the reported refusal, so the gate asserts the measure, though the importer-delta half is only partly measured.",
+    "goal": "The node goal is that the obligation for a blocking figure finding hands over a dispose command naming the figure review and its rubric; reckon/crew/review_dispositions.py:514 now renders --rubric and reckon/crew/recovery_review_dispatch.py:2458 supplies it from the stored record.",
+    "manifest": "Read; status complete, commits 8316301515 and 32f8e7773d, the gate and negative-control logs recorded with EXIT lines, and baseline_suite/after_suite filled, though the two arms run different commands.",
+    "write_paths": "The node declared reckon/crew/review_dispositions.py, reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py, tests/test_a_figure_finding_names_its_rubric.py and the evidence fragment; every path in git diff 7d4f59320b..32f8e7773d is inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_figure_finding_names_its_rubric.py:263 runs the printed fold through the CLI and logs/negative-control-rubric-dropped.log shows dropping rubric_flag reddens it, but the report-to-command path at reckon/crew/obligations.py:807 has no test and tests/test_a_figure_finding_names_its_rubric.py:277 asserts a value the test itself injected.",
+    "evidence": "logs/gate-after-node-test.log records 2 passed EXIT=0 at 32f8e7773d and logs/negative-control-rubric-dropped.log records the exact 'carries no record' refusal EXIT=1, but the importer delta rests on a partial base arm (logs/importers-base-targeted.log, 3 ids) against 47 head failures attributed by filename, and logs/importers-head.log:1 names the base revision.",
+    "fit": "The change extends existing owners in place (reckon/crew/review_dispositions.py:514 adds a keyword beside the review run it already took) and introduces no plan, sprint or ticket identifier in code, names or comments.",
+    "goal_fidelity": "The landed change makes the obligation for a blocking figure finding hand over a command that runs: reckon/crew/obligations.py:704 passes the stored record to _finding_dispose_commands and reckon/crew/obligations.py:807 does the same from the report, so both duty composers name the figure review and its rubric.",
+    "reuse": "dispose_commands at reckon/crew/review_dispositions.py:514 is the repository's only dispose-command composer and it is extended rather than forked, and the round selection reuses review_records.newest_delivered_review's existing rubric parameter.",
+    "scope_discipline": "git diff --stat 7d4f59320b..32f8e7773d lists exactly the five declared paths (review_dispositions.py, recovery_review_dispatch.py, obligations.py, the new test, the evidence fragment) and no other file."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261109T081528266909-review-of-a-figure-finding-names-its-rubric-32f8e7773dfb",
+  "reviewed_base_sha": "7d4f59320b5e93b42d7af891c95e4a45308e1476",
+  "reviewed_head_sha": "32f8e7773dfbab7479036f2fd271a06e38559d96",
+  "reviewed_run_id": "r-20261109T064500219481-a-figure-finding-names-its-rubric",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T09:30:00+00:00",
+  "total": 108
+}

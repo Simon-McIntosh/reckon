@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs at the delta's own arms: logs/after-arm-failing-files-base.log (revision cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e) and logs/importers-subset-after-repair.log (revision b4bce196197b950cda6a8160c4e245f51491e3bd) each end '21 failed, 331 passed' with EXIT=1 and list the same 21 FAILED ids, so no id appears at the head arm that the base arm did not carry; the shared causes are pre-existing (role 'implement' is not configured, TaskNode.__init__ missing 'plan', KeyError 'argv').",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1235",
+    "reckon/crew_run_commands.py:1334",
+    "reckon/cli.py:479"
+  ],
+  "completed_at": "2026-11-09T01:23:13.572Z",
+  "dispatched_at": "2026-11-09T01:13:26Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence labelling; the landing re-records both suite arms with the literal armed command at base and head, with revision and exit lines",
+      "recorded_at": "2026-11-09T01:27:01.837606+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "evidence labelling; the landing re-records both suite arms with the literal armed command at base and head, with revision and exit lines",
+      "recorded_at": "2026-11-09T01:27:21.322814+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "evidence labelling; the landing re-records both suite arms with the literal armed command at base and head, with revision and exit lines",
+      "recorded_at": "2026-11-09T01:27:34.193495+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/logs/node-gate-repair-round.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "the node-gate log carries no `# revision:`, `# tree:` or `# command:` header and no bare `EXIT=` line \u2014 it holds only `...   [100%]` and `3 passed in 2.05s` \u2014 so the gate's exit status is unreadable from the log while the manifest asserts `EXIT=0`; a reader must infer the status from pytest's summary rather than read it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "the reviewed run's after_suite carries \"completed\": false even though logs/importers-subset-after-repair.log runs to its summary line (`21 failed, 331 passed in 255.94s (0:04:15)`) and ends `EXIT=1`; under the contract's own rule an arm is readable only when completed is true, so this declares unreadable an arm whose log is in fact complete."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/logs/importers-subset-after-repair.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the after arm's header names only its revision, with no tree, `module.__file__` or cwd line, while the base arm (logs/after-arm-failing-files-base.log:1-4) ran from a git-archive extraction under the scratch tree \u2014 so the identical 21 failure ids compare two unlabelled environments rather than one tree at two revisions."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 6013d3c3b6: b4bce19619 adds `committed_record_project` (reckon/crew/review.py:3360), calls it at :3416, rewrites the module docstring from pre-change narrative to the invariant, and moves the first case's assertion onto `select_review_for_head`; cb4c580378 updates only the evidence fragment.",
+    "done_when": "\u00a726's done-when names the node gate, the declared negative control, the importer arm and ruff; the manifest records logs/node-gate-repair-round.log reading `3 passed`, the control at 2 failed/1 passed EXIT=1, the no-op probe at 2 failed/1 passed EXIT=1, and the two importer arms both ending `21 failed, ...` with identical FAILED id sets.",
+    "goal": "the goal is to let `crew repair --review` reach and commit a record at the run's committed review location, and the delta adds `committed_record_project` at reckon/crew/review.py:3360 so `repair_run_review` resolves the project from the record's own `docs/state/<project>/reviews/run/<run>/` path and commits with no `--project`.",
+    "manifest": "read; it reports status complete, ten log paths, `3 passed` for the node gate and 21-versus-21 importer ids, and it names the declared negative control log \u2014 but its after_suite carries `completed: false` while its own log ends with the pytest summary and `EXIT=1`, so that arm reads unreadable by the contract's own rule.",
+    "write_paths": "the declared paths are reckon/crew/review.py, reckon/crew/review_records.py, reckon/crew_run_commands.py, tests/test_a_committed_review_record_can_be_repaired.py and the landing fragment; the delta 6013d3c3b6..cb4c580378 changes exactly reckon/crew/review.py, the test file and the fragment."
+  },
+  "justifications": {
+    "durability": "logs/probe-a-no-op-repair-fails-the-status-assertion.log shows tests/test_a_committed_review_record_can_be_repaired.py:121 and :155 reddening with `assert 'incomplete' == 'unparsed'` when the repair writes nothing, so the assertion is anchored to the store rather than to the repair's return value.",
+    "evidence": "logs/node-gate-repair-round.log carries `3 passed` but no revision, command header or `EXIT=` line, and the manifest's after_suite declares `completed: false` although logs/importers-subset-after-repair.log ends with the pytest summary and EXIT=1.",
+    "fit": "reckon/crew/review.py:3360-3378 sits beside `committed_run_review_directory` in the same idiom, the module docstring at :1-13 now states the invariant rather than the history, and no added name carries a plan label.",
+    "goal_fidelity": "reckon/crew/review.py:3416-3417 infers the project from the record path and :3492 commits the rewrite once resolved, which is every point the goal names, with a path under neither location still refused at :3426.",
+    "reuse": "neither `committed_review_root` (reckon/crew/review.py:2548) nor doccheck's `_declared_project` (reckon/doccheck.py:2776) maps a committed review path back to a project, so `committed_record_project` is the first owner of that capability and re-spells the tree shape `committed_review_root` already builds.",
+    "scope_discipline": "git diff --stat 6013d3c3b6..cb4c580378 lists only reckon/crew/review.py, tests/test_a_committed_review_record_can_be_repaired.py and the evidence fragment, all inside the declared write paths, and the worktree is clean at the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to let `crew repair --review` reach and commit a record at the run's committed review location, and the delta adds `committed_record_project` at reckon/crew/review.py:3360 so `repair_run_review` resolves the project from the record's own `docs/state/<project>/reviews/run/<run>/` path and commits with no `--project`.\nVERDICT done_when: \u00a726's done-when names the node gate, the declared negative control, the importer arm and ruff; the manifest records logs/node-gate-repair-round.log reading `3 passed`, the control at 2 failed/1 passed EXIT=1, the no-op probe at 2 failed/1 passed EXIT=1, and the two importer arms both ending `21 failed, ...` with identical FAILED id sets.\nVERDICT write_paths: the declared paths are reckon/crew/review.py, reckon/crew/review_records.py, reckon/crew_run_commands.py, tests/test_a_committed_review_record_can_be_repaired.py and the landing fragment; the delta 6013d3c3b6..cb4c580378 changes exactly reckon/crew/review.py, the test file and the fragment.\nVERDICT manifest: read; it reports status complete, ten log paths, `3 passed` for the node gate and 21-versus-21 importer ids, and it names the declared negative control log \u2014 but its after_suite carries `completed: false` while its own log ends with the pytest summary and `EXIT=1`, so that arm reads unreadable by the contract's own rule.\nVERDICT diff: read both commits against 6013d3c3b6: b4bce19619 adds `committed_record_project` (reckon/crew/review.py:3360), calls it at :3416, rewrites the module docstring from pre-change narrative to the invariant, and moves the first case's assertion onto `select_review_for_head`; cb4c580378 updates only the evidence fragment.\nCALL_SITES: reckon/crew_run_commands.py:1235, reckon/crew_run_commands.py:1334, reckon/cli.py:479\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:3416-3417 infers the project from the record path and :3492 commits the rewrite once resolved, which is every point the goal names, with a path under neither location still refused at :3426.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/node-gate-repair-round.log carries `3 passed` but no revision, command header or `EXIT=` line, and the manifest's after_suite declares `completed: false` although logs/importers-subset-after-repair.log ends with the pytest summary and EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6013d3c3b6..cb4c580378 lists only reckon/crew/review.py, tests/test_a_committed_review_record_can_be_repaired.py and the evidence fragment, all inside the declared write paths, and the worktree is clean at the head.\nSCORE durability: 19\nJUSTIFICATION durability: logs/probe-a-no-op-repair-fails-the-status-assertion.log shows tests/test_a_committed_review_record_can_be_repaired.py:121 and :155 reddening with `assert 'incomplete' == 'unparsed'` when the repair writes nothing, so the assertion is anchored to the store rather than to the repair's return value.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:3360-3378 sits beside `committed_run_review_directory` in the same idiom, the module docstring at :1-13 now states the invariant rather than the history, and no added name carries a plan label.\nSCORE reuse: 18\nJUSTIFICATION reuse: neither `committed_review_root` (reckon/crew/review.py:2548) nor doccheck's `_declared_project` (reckon/doccheck.py:2776) maps a committed review path back to a project, so `committed_record_project` is the first owner of that capability and re-spells the tree shape `committed_review_root` already builds.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/logs/node-gate-repair-round.log:2 non-blocking: the node-gate log carries no `# revision:`, `# tree:` or `# command:` header and no bare `EXIT=` line \u2014 it holds only `...   [100%]` and `3 passed in 2.05s` \u2014 so the gate's exit status is unreadable from the log while the manifest asserts `EXIT=0`; a reader must infer the status from pytest's summary rather than read it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/manifest.md:17 non-blocking: the reviewed run's after_suite carries \"completed\": false even though logs/importers-subset-after-repair.log runs to its summary line (`21 failed, 331 passed in 255.94s (0:04:15)`) and ends `EXIT=1`; under the contract's own rule an arm is readable only when completed is true, so this declares unreadable an arm whose log is in fact complete.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232244736898-a-committed-review-record-can-be-repaired/logs/importers-subset-after-repair.log:1 non-blocking: the after arm's header names only its revision, with no tree, `module.__file__` or cwd line, while the base arm (logs/after-arm-failing-files-base.log:1-4) ran from a git-archive extraction under the scratch tree \u2014 so the identical 21 failure ids compare two unlabelled environments rather than one tree at two revisions.\n",
+  "review_run_id": "r-20261109T011224982264-review-of-a-committed-review-record-can-be-repaired-cb4c580378c4",
+  "reviewed_base_sha": "6013d3c3b6df1d2ed435832adc51777a8233de47",
+  "reviewed_head_sha": "cb4c580378c495c0caa9c67884a3c468ed5e8c6c",
+  "reviewed_run_id": "r-20261108T232244736898-a-committed-review-record-can-be-repaired",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:30:13.818514+00:00",
+  "total": 108
+}

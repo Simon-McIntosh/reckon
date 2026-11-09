@@ -18,7 +18,10 @@ reports what is still owed.
 
 from __future__ import annotations
 
+import fcntl
+import hashlib
 import json
+import os
 import re
 import shlex
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -57,7 +60,10 @@ from reckon.crew.routing import (
     _retained_worktree,
     record_names_worktree,
 )
+from reckon.crew.run_paths import crew_home
+from reckon.git_head import _git_directory, _head_identity
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
+from reckon.velocity import run_git
 
 CLASSIFICATION_DUTY_KINDS = {
     "scoring": "review-missing",
@@ -166,6 +172,9 @@ DUTY_ROW_FIELDS = (
     # a reader sees which run ends the wait rather than the compose command that
     # would duplicate it.
     "review_run_id",
+    # The paths a checkout's index stages as deleted while HEAD and the working
+    # tree both still carry them.
+    "paths",
 )
 
 # A review whose attempt the lane's admission gate refused with ``lane-paused``
@@ -259,11 +268,41 @@ PRODUCER_GONE_DUTY_KIND = "run-producer-gone"
 # the request.
 WAIT_UNRESOLVABLE_DUTY_KIND = "wait-unresolvable"
 
+# A main checkout whose index stages a path as deleted while HEAD and the
+# working tree both still carry it. An ordinary ``git commit`` in that checkout
+# records the deletion, and the working tree shows nothing wrong. It is a
+# notice rather than a blocking duty: no run owes it, and the repair is one
+# command in a checkout the session may not be working in.
+INDEX_LAG_DUTY_KIND = "index-lags-head"
+
+#: The log one line is appended to the first time a lag is observed, and the
+#: store remembering which lags that log already carries, both under the crew
+#: home. A lag is keyed by HEAD and its paths, so a moved HEAD or a new path is
+#: a new occurrence while the same lag read twice is not.
+INDEX_LAG_LOG_NAME = "index-lag.log"
+INDEX_LAG_SEEN_NAME = "index-lag-seen.json"
+
+#: ``git diff`` refreshes the index's stat cache and writes it back unless
+#: optional locks are disabled, and this reader must never change the index it
+#: reports on. Every git call the detector makes carries this environment, so
+#: reading the view cannot even rewrite the stat cache it reports about.
+INDEX_LAG_GIT_ENV = {"GIT_OPTIONAL_LOCKS": "0"}
+
+#: The last reading taken per main checkout, keyed on what must move for it to
+#: stop describing the checkout (the index's stat identity and HEAD), so a
+#: sweep that recomputes every session's payload does not run git per tick.
+_INDEX_LAG_READINGS: dict[str, tuple[tuple[Any, ...], dict[str, Any] | None]] = {}
+
 # The duty kinds that are listed but never hold a stop open: the work behind
 # them is already owned by a reflex that retries, so blocking would ask the
 # coordinator to act on a wait it cannot shorten.
 NON_BLOCKING_DUTY_KINDS = frozenset(
-    {REVIEW_QUEUED_DUTY_KIND, QUEUED_RUN_DUTY_KIND, STALLED_RUN_DUTY_KIND}
+    {
+        REVIEW_QUEUED_DUTY_KIND,
+        QUEUED_RUN_DUTY_KIND,
+        STALLED_RUN_DUTY_KIND,
+        INDEX_LAG_DUTY_KIND,
+    }
 )
 
 
@@ -1647,6 +1686,7 @@ def _review_tier_key(
 
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
+    _INDEX_LAG_READINGS.clear()
     file_memo.clear()
 
 
@@ -2514,6 +2554,180 @@ def recent_limit_resets(session: str) -> list[dict[str, Any]]:
     return budget_reset.recent_resets(session=session, horizon=RESET_HORIZON)
 
 
+def _index_lag_paths(repository: Path) -> tuple[tuple[str, ...], str]:
+    """The paths HEAD and the working tree hold while the index stages a delete.
+
+    ``git diff --cached --diff-filter=D`` lists what the index records as
+    deleted against HEAD. A path counts only when the file is still on disk and
+    the checkout does not ignore it: a staged deletion whose file is gone is an
+    ordinary intended removal, and a path untracked with ``git rm --cached``
+    and then ignored is a deliberate one. The two are not distinguishable with
+    certainty, which is why the finding is a notice naming the restore rather
+    than a repair applied on the reader's behalf.
+    """
+    staged = run_git(
+        repository,
+        "diff",
+        "--cached",
+        "--name-only",
+        "--diff-filter=D",
+        "-z",
+        "HEAD",
+        env=INDEX_LAG_GIT_ENV,
+    )
+    names = (
+        [os.fsdecode(name) for name in staged.stdout.split(b"\0") if name]
+        if staged.returncode == 0
+        else []
+    )
+    present = [name for name in names if (repository / name).exists()]
+    if not present:
+        return (), ""
+    ignored_read = run_git(
+        repository,
+        "check-ignore",
+        "-z",
+        "--stdin",
+        input=b"\0".join(os.fsencode(name) for name in present) + b"\0",
+        env=INDEX_LAG_GIT_ENV,
+    )
+    if ignored_read.returncode not in (0, 1):
+        return (), ""
+    ignored = {os.fsdecode(name) for name in ignored_read.stdout.split(b"\0") if name}
+    paths = tuple(sorted(set(present) - ignored))
+    if not paths:
+        return (), ""
+    head_read = run_git(repository, "rev-parse", "HEAD", env=INDEX_LAG_GIT_ENV)
+    head = (
+        head_read.stdout.decode("utf-8", "surrogateescape").strip()
+        if head_read.returncode == 0
+        else ""
+    )
+    return paths, head
+
+
+def _record_index_lag(paths: Sequence[str], head: str, *, now: datetime) -> None:
+    """Append one line to the crew home's lag log unless this lag is recorded.
+
+    The log is the only durable trace of an index that drifted, and its purpose
+    is matching a later occurrence to its writer, so it names the instant, HEAD
+    and the paths once per distinct lag. Best effort throughout: an unwritable
+    crew home must not take the view down with it.
+    """
+    home = crew_home()
+    key = hashlib.sha256(
+        (head + "\0" + "\0".join(paths)).encode("utf-8", "surrogateescape")
+    ).hexdigest()
+    try:
+        home.mkdir(parents=True, exist_ok=True)
+        with (home / (INDEX_LAG_SEEN_NAME + ".lock")).open("a+b") as handle:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+            try:
+                seen_path = home / INDEX_LAG_SEEN_NAME
+                try:
+                    seen = json.loads(seen_path.read_text(encoding="utf-8"))
+                except (OSError, ValueError):
+                    seen = {}
+                if not isinstance(seen, dict):
+                    seen = {}
+                if key in seen:
+                    return
+                stamp = now.astimezone(UTC).isoformat().replace("+00:00", "Z")
+                line = json.dumps({"at": stamp, "head": head, "paths": list(paths)})
+                with (home / INDEX_LAG_LOG_NAME).open("a", encoding="utf-8") as log:
+                    log.write(line + "\n")
+                seen[key] = stamp
+                pending = seen_path.with_name(seen_path.name + ".tmp")
+                pending.write_text(
+                    json.dumps(seen, sort_keys=True) + "\n", encoding="utf-8"
+                )
+                os.replace(pending, seen_path)
+            finally:
+                fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    except OSError:
+        return
+
+
+def _index_lag_reading_key(repository: Path) -> tuple[Any, ...] | None:
+    """What must move for a cached lag reading to stop describing this checkout.
+
+    The index's stat identity moves on any write to it, and the head identity
+    moves whenever the resolved commit does, so the key changes on both of the
+    events that can make a cached notice wrong. The head identity is the one
+    the follower's per-second freshness read uses: it resolves a linked
+    worktree's pointer and packed refs as files, never by spawning git. None
+    means the head cannot be read as files, and the caller then caches
+    nothing — an unreadable identity is not a stable one.
+    """
+    head_identity = _head_identity(repository)
+    if head_identity is None:
+        return None
+    git_dir = _git_directory(repository)
+    try:
+        index_signature: Any = file_memo.file_signature(
+            (git_dir if git_dir is not None else repository / ".git") / "index"
+        )
+    except OSError:
+        index_signature = None
+    return (str(repository), index_signature, head_identity)
+
+
+def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
+    """The notice one project's main checkout raises when its index lags HEAD.
+
+    Read from the project's registered mount, which is the checkout every
+    producer and follower of that project writes to, rather than from the
+    caller's enclosing worktree. The notice is not run-scoped: it belongs to
+    the project, so every session working it sees the same row.
+
+    The reading is cached against the checkout's index stat identity and HEAD,
+    and dropped when a named path stops existing: a sweep recomputes every
+    session's payload on each tick, and a git subprocess per tick to learn that
+    nothing moved is the cost that cache avoids. A write to the index or a
+    moved HEAD changes the key, so the next read re-derives.
+    """
+    from reckon.crew.dispatch_sections import project_mount_repository
+
+    repository = project_mount_repository(project)
+    if repository is None:
+        return None
+    key = _index_lag_reading_key(repository)
+    store_key = str(repository)
+    cached = _INDEX_LAG_READINGS.get(store_key) if key is not None else None
+    if cached is not None and cached[0] == key:
+        notice = cached[1]
+        if notice is None:
+            return None
+        if all((repository / path).exists() for path in notice["paths"]):
+            return dict(notice)
+    paths, head = _index_lag_paths(repository)
+    if not paths:
+        if key is not None:
+            _INDEX_LAG_READINGS[store_key] = (key, None)
+        return None
+    _record_index_lag(paths, head, now=now)
+    restore = "git -C {} reset -q -- {}".format(
+        shlex.quote(str(repository)),
+        " ".join(shlex.quote(path) for path in paths),
+    )
+    notice = {
+        "kind": INDEX_LAG_DUTY_KIND,
+        "run_id": "",
+        "age_seconds": 0,
+        "head": head,
+        "paths": list(paths),
+        "reason": (
+            "the checkout's index stages these paths as deleted while HEAD and "
+            "the working tree both still carry them, so a plain `git commit` "
+            "there would record them as deleted"
+        ),
+        "next_command": restore,
+    }
+    if key is not None:
+        _INDEX_LAG_READINGS[store_key] = (key, notice)
+    return dict(notice)
+
+
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
 ) -> dict[str, Any]:
@@ -2816,6 +3030,13 @@ def _obligations_view(
         )
     )
     items.extend(_held_worktrees(project, session, now=now))
+    # A main checkout's index can stage a path as deleted while HEAD and the
+    # working tree both hold the file, and the next plain commit there records
+    # the deletion. The condition belongs to the project rather than to a run,
+    # so every session working it is shown the same notice.
+    index_lag = _index_lag_notice(project, now=now)
+    if index_lag is not None:
+        items.append(index_lag)
     acknowledgements = _acknowledgements_in_force(project, now=now)
     items, acknowledged = _partition_acknowledged(items, acknowledgements)
     items.sort(

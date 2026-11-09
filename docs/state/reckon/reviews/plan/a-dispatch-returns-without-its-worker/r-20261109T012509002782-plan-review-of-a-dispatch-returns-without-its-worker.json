@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T01:38:18.209Z",
+  "dispatched_at": "2026-11-09T01:26:24Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1037",
+      "id": "reasoning-1",
+      "reason": "the stated mechanism (directories resolved at plan build and read from the plan) cannot satisfy the section's own second case on a resume or a lane change, both of which rebuild from the recorded row; the deliverable must name carrying the lane's declared search path onto the rebuilt backend, as the placement and gate-document carries already do.",
+      "text": "\u00a721's second case asserts that \"a resume of that run composes a supervisor spec whose PATH contains it too\", but on the resume path the backend mapping is rebuilt by `_backend_settings` (reckon/crew/dispatch_sessions.py:911), which returns a fresh `{launch, command}` dict plus only five copied keys (`dialect`, `usable_input_window`, `model`, `effort`, `input_modalities`) when the record names a command, so the project-declared `search_path` is absent; the resume then adds back only single keys through `_carry_declared_placement` (:1026) and `_carry_declared_gate_documents` (:1051), so the plan built from that mapping carries no directories and the resumed supervisor spec's PATH omits the declared directory",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8b21ea63b33d432347d92aadaabe51c47739de89",
+  "plan_fingerprint": "094733b7c83e593887581671d5603bd83b85baa36888f2efccb635ad0032988b",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 181,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "5b5ce838d711aaced16da73c08ed5351fc074593",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a721 now persists the resolved directories on the run record at launch, and the resume and lane-change path in _backend_settings (dispatch_sessions.py near line 911) reads them from the record rather than rebuilding the mapping without them",
+      "reason": "",
+      "when": "2026-11-09T01:56:18.196964+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "5b5ce838d711aaced16da73c08ed5351fc074593",
+      "commit_basis": "edit",
+      "note": "\u00a721 now persists the resolved directories on the run record at launch, and the resume and lane-change path in _backend_settings (dispatch_sessions.py near line 911) reads them from the record rather than rebuilding the mapping without them",
+      "reason": "",
+      "when": "2026-11-09T01:56:18.196964+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T012509002782-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T012509002782-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "f09e49185e6f9cfc94a788d883fe5bfeffa63fe7",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every named symbol resolves at base: `LaunchPlan` (reckon/_backends.py:394), `resolve_launch_executable` (reckon/crew/dispatch_launch.py:1184), `_persisted_worker_environment` (:730), `_supervisor_spec` (:2411), the availability report's `shutil.which` (reckon/flight.py:2349); commit d8d93ea4 exists, is absent from main's history and is pinned at refs/reckon/archive/a-launch-finds-its-backend-on-the-declared-path, which is what makes \"read it with `git show`\" correct; 5631154f78 is an ancestor of HEAD and is \u00a720's recorded run head, whose declared-path input landed in code at 600cba4d68. Two \"near line\" hints lag their symbols (dispatch.py:3164 \u2192 3233; dispatch_launch.py:670 \u2192 730) but resolve through the symbol named beside each, so they mislead no reader who follows the name.",
+    "done_when": "a finding \u2014 \u00a721's second case (a resume whose supervisor-spec PATH carries the project-declared directory) is not produced by the mechanism \u00a721 states, because the backend mapping a resume rebuilds from drops `search_path` (FINDING reasoning below); \u00a722's case and its negative control hold, since a bare `shutil.which` leaves the off-PATH stub unfound.",
+    "evidence_paths": "pass \u2014 both gates write their logs under the run directory (`~/.config/reckon/crew/runs/<run_id>/`), a durable path that outlives the node, and both name their new test file repo-relative; nothing is directed at a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 the new test filenames are behavioural (`test_every_backend_reader_searches_the_declared_path.py`, `test_the_availability_report_searches_the_declared_path.py`), and neither section carries a plan label, stage name, ticket number or changelog sentence.",
+    "reasoning": "a finding \u2014 \u00a721's root cause matches its evidence (reckon/crew/dispatch.py:3233 and reckon/crew/dispatch_sessions.py:1849 pass no `backend` to `resolve_launch_executable`, and `_declared_search_path_for_backend_name` reads `flight.resolve()` with no project), but its mechanism does not produce the resume arm it asserts; \u00a722's mechanism does run on a real path, `probe_availability` (reckon/flight.py:2306), which two production callers reach (reckon/flight.py:2720, reckon/crew_dispatch_commands.py:619) with project-resolved backend entries.",
+    "single_goal": "pass \u2014 \u00a721 carries one deliverable (a project-layer search path reaches every reader of a cli launch) and \u00a722 one (the availability report searches the declared path); splitting the report out of \u00a721 is what keeps each on one verdict.",
+    "wiring": "pass \u2014 \u00a721's declared depends-on \u00a720 is present in plan-section-depends-on (plan.html:29), and \u00a722 consumes only \u00a720's already-landed `search_path` key (reckon/_flight_schema.py:355), which is an ancestor of HEAD at 600cba4d68, so \u00a722 carries no undeclared wait that the queue would need to hold; no declared relationship points at a node that does not exist."
+  },
+  "section_digests": {
+    "_document": "9f1d1a63cc805ac3eebeaf4526459349252f41fab747a9f0db304d3542afeced",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "fc521b33a0923d2b1d3f1f796296fc204d5845a786862bb8e7acb6439cdc932b",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:45:33.661131+00:00",
+  "total": null
+}

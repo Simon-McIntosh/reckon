@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A sweep-launched review stops after its claim | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A sweep-launched review stops after its claim</h1>
+      <p class="lead">The step a sweep-launched review stops at is the claim's own publication. <code>dispatch()</code> publishes the run's claim at <code>reckon/crew/dispatch.py:2583</code> and writes nothing else durable until <code>_prepare_attempt_records</code> at <code>:3438</code>; the pointer it rewrites in between was already written by the claim itself. A launcher that ends anywhere in that span therefore leaves exactly the field's shape — <code>brief.md</code> and <code>claim.json</code>, a pointer in <code>starting</code>, and no attempt record. It is not a refusal: a refusal unwinds through <code>_claim_released_on_refusal</code>, which deletes the pointer <em>and</em> the run directory, and the kept run directory proves no unwind ran. It is a process that stopped. The launch now writes the attempt record with its claim, so a run that stops there names the attempt it stopped on.</p>
+    </header>
+
+    <section id="a-sweep-launched-review-starts-its-worker-step">
+      <h2>The step, and how it was located</h2>
+      <p>Driven as the follower's review sweep drives it — <code>resumption.sweep()</code> with no launcher, so <code>_sweep_lapsed_holds</code>'s <code>launcher=None</code> reaches <code>dispatch_review_for_run</code> → <code>_dispatch_composed_review</code> → <code>dispatch()</code> — an uninterrupted launch reaches <code>attempt.json</code>. So the sweep path itself is intact today, and the stranding is not a branch in it. A line trace over <code>reckon/crew/dispatch.py</code> in the same run records the milestones the launch crosses: claim-registered, admission-checks-entered, follower-arranged, worktree-window, launch-plan-composed, pointer-published, launch-branch, attempt-records.</p>
+      <p>Between claim-registered and attempt-records the module contains no <code>return</code> at all, and every raise is inside the claim-release guard. Two ways out remain: the launch reaches <code>attempt.json</code>, or the process that runs it ends. The kept run directory of <code>r-20261109T013544897285-review-of-a-concurrent-launch-is-refused-34d0376761a9</code> holds <code>brief.md</code> and <code>claim.json</code> (claim at <code>2026-11-09T01:38:18Z</code>) and nothing else; its <code>discard.json</code>, written at <code>01:40:22Z</code>, records <code>phase: starting</code> and <code>backend: clive</code>. A refusal at any point in the span would have removed that directory with the claim.</p>
+      <table>
+        <thead><tr><th>Read</th><th>Result</th></tr></thead>
+        <tbody>
+          <tr><td>The kept run directory</td><td><code>brief.md</code>, <code>claim.json</code>; no <code>attempt.json</code>, <code>worker.json</code>, stream or pid</td></tr>
+          <tr><td><code>recovery/reckon.jsonl</code> around the claim</td><td>no sweep row between <code>00:35Z</code> and <code>02:11Z</code>: the sweep that composed this review never reached its own report write</td></tr>
+          <tr><td>A refusal in the same window, measured</td><td>the pointer and the run directory are both removed, so a kept claim is not a refusal</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section id="a-sweep-launched-review-starts-its-worker-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code>: the attempt record is published with the claim, at the point the attempt identity is settled, instead of only at the launch gate. Everything between that point and the supervisor — the worktree cut, the prompt, the composed argv — takes seconds; a process that ends inside it now leaves an <code>attempt.json</code> naming its attempt, where before the run kept a claim and no attempt at all.</li>
+        <li><code>tests/test_a_sweep_launched_review_starts_its_worker.py</code> (new): four cases in a temporary crew home. The sweep's own path reaches the attempt record. A refused launch leaves no claim and no run directory. A launcher that ends inside the window — a <code>BaseException</code>, so no guard runs, as a stopped process behaves — leaves the claim and the attempt record. A queue launch that is refused is restored to <code>queued</code> with no attempt record, because a request that goes back to the queue has not made an attempt.</li>
+        <li><code>reckon/crew/dispatch.py</code>, second pass: a launch admitted from the queue is not discarded when it refuses — its pointer is restored to the phase it waited in. The attempt record published with the starting claim is now removed wherever the refusal restores the request to the queue; kept, the restored request would read as a launch that stopped after its claim.</li>
+      </ul>
+    </section>
+
+    <section id="a-sweep-launched-review-starts-its-worker-measure">
+      <h2>Measure</h2>
+      <p>The gate is <code>tests/test_a_sweep_launched_review_starts_its_worker.py</code>: <strong>4 passed</strong>. Two negative controls restore the failing steps one at a time. Removing the attempt-marker write from <code>dispatch.py</code> gives <strong>1 failed, 3 passed</strong>, the failure being <code>test_a_launcher_that_ends_stops_after_its_attempt_record</code> on its assertion that the run kept its claim and no attempt record. Removing the restore-path removal of that record gives <strong>1 failed, 3 passed</strong> as well, the failure being <code>test_a_refused_queue_launch_keeps_no_attempt_record</code>. Each case fails only under its own mutation, which is what makes each a measurement of its step rather than of the sweep path.</p>
+      <p>The change is also measured against the base revision over the population it can disturb: the 42 test files that import <code>reckon.crew.recovery_review_dispatch</code>, one arm at a time with <code>-n 4</code>. <strong>Both arms passed 327 tests</strong> — the after arm re-run at the final revision <code>b0c4ba8e82</code> in 106.58 s and the base arm at <code>afdd8b2cc5</code> in 92.74 s — so no failure was added. The wider set of 329 test files importing <code>reckon.crew.dispatch</code> or <code>reckon.crew.recovery_review_dispatch</code> was started and did not finish inside this run's window; it is recorded as unmeasured, not as clean.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -93,6 +93,8 @@ def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     )
 
     repository = tmp_path / "checkout"
+    # The section names src/one.py, so a derived path there must resolve.
+    (repository / "src").mkdir(parents=True)
     state = repository / "docs" / "state" / PROJECT
     state.mkdir(parents=True)
     (state / "index.json").write_text(

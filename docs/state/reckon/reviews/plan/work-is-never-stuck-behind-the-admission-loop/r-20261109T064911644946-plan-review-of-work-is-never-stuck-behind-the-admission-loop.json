@@ -1,0 +1,229 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T07:09:19.971Z",
+  "dispatched_at": "2026-11-09T06:57:32Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:313",
+      "id": "reasoning-1",
+      "reason": "without the acquiring call named, the repair and its negative control target a mechanism the station may never invoke, so the node would either find nothing to change or change the wrong file, and its control could not be written.",
+      "text": "\u00a748 gives two hypotheses for how the station holds a pointer lock (a `with _pointer_lock(...)` enclosing the tick's loop, or a generator suspended inside one), but neither has a caller in the code the plan cites: `_pointer_lock` is acquired only in `reckon/crew/runs.py` (`_mutate_pointer` at 464, dispatch requeue at 885 and 942, stacking at 1729) and in `reckon/crew/queue_admission.py` (pass-side relaunch/writeback at 343, 1761 and 1822), while `station.py`, `station_subscriber.py` and `obligations.py` contain no acquisition and call only reads (`runs.list_live`/`read_pointer`/`drain`/`run_acknowledgement`, `queue_admission.queued_placements`/`recorded_pass_hold`). The plan's own stack samples showed no `_pointer_lock` frame, and no `with _pointer_lock` exists in `station.py` at all, so the first hypothesis is falsified by the file, and the second requires an acquisition nothing in the station performs. A plan that pre-commits the repair (\"the station takes a run's pointer lock only around the read-modify-write it protects\") on a mechanism with no reachable caller sends the node at a code path that may not exist, while the cited evidence fits a cause the plan does not consider \u2014 an inherited descriptor in a forked child, or an fd leaked by a caller outside the station's own modules.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:312",
+      "id": "wiring-1",
+      "reason": "a coordinator queues implementable sections from that map, so the overlap has to become a declared wait or a stated sequencing, exactly what the map exists to prevent.",
+      "text": "\u00a748 is declared `implementable` with `reckon/crew/obligations.py` among its write paths, and \u00a745 (line 301) is also `implementable` with `reckon/crew/obligations.py` among its write paths, yet `plan-section-depends-on` carries no `s48` key and no entry links the two. Two implementable sections editing one file with no declared order are dispatched together by a coordinator following the map, giving two worktrees editing the same module and a merge the plan never ordered.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:317",
+      "id": "wiring-2",
+      "reason": "the next invocation is what a coordinator acts on, and today it names a landed section rather than the implementable work this change added.",
+      "text": "\u00a748 is added `implementable` but the plan's only open followup (`f-wns-001`, `data-status=\"open\"`, lines 317-321) still carries `/reckon-build work-is-never-stuck-behind-the-admission-loop \u00a72` \u2014 a section declared done since 5 November \u2014 and no followup names \u00a748. The plan-state contract requires the chain to close visibly with an open followup carrying the next one-line invocation; as written a resumed coordinator is pointed at finished work and the newly added section is reachable from no invocation.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:313",
+      "id": "done_when-1",
+      "reason": "the stated repair and its control both depend on that attribution, so an ungated investigation lets an implausible attribution survive into the change it is supposed to justify.",
+      "text": "the deliverable's first half (\"The worker reproduces the station's tick against a temporary crew home holding a delivered review run, records which call acquires that run's pointer lock and how long it is held, and names the enclosing frame or the unclosed generator\") is measured by nothing in the done-when: the cases assert only that no pointer lock is held after a tick and that an acquisition returns within one second, and the attribution is required only to appear in the manifest. A worker can pass both while recording a guessed attribution, and no negative control can fail on a wrong attribution.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop/plan.html:313",
+      "id": "done_when-2",
+      "reason": "the control's expected outcome has to be a bounded wait whose timeout is the red signal, otherwise the node can neither report a clean control nor tell a hang from a pass.",
+      "text": "the negative control reads \"restoring the lock-holding call makes that acquisition wait for the tick\", which presumes the restored defect releases the lock when the tick ends. The plan's own second hypothesis is an unclosed generator suspended inside a pointer-lock block; if that is what the investigation names, the restored defect holds the lock for the life of the station, so the acquisition never loses the race and \"wait for the tick\" never ends \u2014 the control hangs, or trips a suite-wide timeout, instead of turning one case red.",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c9f31e3d43900e7e3f94e98b61df10f29dbfd99c",
+  "plan_fingerprint": "7a660dd9d12db09386937bef73a68f15876e436070942c6b33f4336a84630173",
+  "plan_slug": "work-is-never-stuck-behind-the-admission-loop",
+  "plan_version": 335,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a748 now lists the only acquirers (runs._mutate_pointer near 464, dispatch requeue near 885 and 942, stacking near 1729, and the queue_admission paths) and requires the investigation to name which one the station reaches, with a stack or trace as evidence",
+      "reason": "",
+      "when": "2026-11-09T07:23:26.448200+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s48 now waits on s45, which also writes obligations.py",
+      "reason": "",
+      "when": "2026-11-09T07:23:36.706287+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "finding": "wiring-2",
+      "note": "f-wns-001 is resolved and a followup names \u00a748",
+      "reason": "",
+      "when": "2026-11-09T07:23:49.135078+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a748's done-when now requires the manifest to name the acquiring call with the trace that shows it",
+      "reason": "",
+      "when": "2026-11-09T07:24:00.019250+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a748's negative control is now a bounded acquisition with a five-second timeout, whose expiry is the red signal",
+      "reason": "",
+      "when": "2026-11-09T07:24:11.379655+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b156d36cb00dd3884688ce7e12b32f70a2dddf38",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "corrected: \u00a745 now waits on \u00a748, because \u00a745 has no run and \u00a748 is the smaller urgent fix; f-wns-002 names the order",
+      "reason": "",
+      "when": "2026-11-09T07:29:33.564516+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "note": "\u00a748's done-when now requires the manifest to name the acquiring call with the trace that shows it",
+      "reason": "",
+      "when": "2026-11-09T07:24:00.019250+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "note": "\u00a748's negative control is now a bounded acquisition with a five-second timeout, whose expiry is the red signal",
+      "reason": "",
+      "when": "2026-11-09T07:24:11.379655+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "note": "\u00a748 now lists the only acquirers (runs._mutate_pointer near 464, dispatch requeue near 885 and 942, stacking near 1729, and the queue_admission paths) and requires the investigation to name which one the station reaches, with a stack or trace as evidence",
+      "reason": "",
+      "when": "2026-11-09T07:23:26.448200+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b156d36cb00dd3884688ce7e12b32f70a2dddf38",
+      "commit_basis": "edit",
+      "note": "corrected: \u00a745 now waits on \u00a748, because \u00a745 has no run and \u00a748 is the smaller urgent fix; f-wns-002 names the order",
+      "reason": "",
+      "when": "2026-11-09T07:29:33.564516+00:00"
+    },
+    "wiring-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "b3930802394b61c68914830be9375e5f163f48aa",
+      "commit_basis": "edit",
+      "note": "f-wns-001 is resolved and a followup names \u00a748",
+      "reason": "",
+      "when": "2026-11-09T07:23:49.135078+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/work-is-never-stuck-behind-the-admission-loop/r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop.json",
+  "review_run_id": "r-20261109T064911644946-plan-review-of-work-is-never-stuck-behind-the-admission-loop",
+  "reviewed_blob_sha": "96919e24d0d89c8536f04950ff77a240b0fb50dc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `runs._pointer_lock` is `reckon/crew/runs.py:452` (flock at 457), `promotion.complete`'s `with _pointer_lock(run_id)` is `reckon/crew/promotion.py:301`, and `station.tick`\u2192`station_subscriber.live_work_populations`\u2192`obligations._review_duty_item` resolves at `station.py:524`, `station_subscriber.py:187/145`, `obligations.py:1736`; all resolve.",
+    "done_when": "a finding \u2014 the investigation deliverable's result (\"records which call acquires that run's pointer lock \u2026 names the enclosing frame\") is measured by nothing, and the declared negative control's stated outcome presumes a lock the tick releases.",
+    "evidence_paths": "pass \u2014 the gate writes its arms under the crew run directory with revision, command and `EXIT=`-style sentinel handling, which survives the run.",
+    "naming": "pass \u2014 the new test and the section name the mechanism, and no plan label, ticket number or version tag reaches a symbol, path or comment.",
+    "reasoning": "a finding \u2014 the cited evidence and the cited code show no station-reachable acquisition of a run's pointer lock, so neither stated hypothesis has a caller.",
+    "single_goal": "pass \u2014 the section has one goal (the station holds no run lock across its tick); the investigation is the means to it and the gate is one test.",
+    "wiring": "a finding \u2014 \u00a748 is newly declared `implementable` and shares `reckon/crew/obligations.py` with \u00a745, also `implementable`, and neither declares a `plan-section-depends-on` entry, so one wave can dispatch both into one file."
+  },
+  "section_digests": {
+    "_document": "cf716be0aeb53e13627bf9a7e2f89eb00fcd55f880cb38fa5265c974de6564c1",
+    "s1": "b585c5379c7260e3b347e966ec3a72d783db9b05657e4127ff337ac5161458e9",
+    "s10": "98088891e2546735c88e0018dd2adbec8a9f9cb618cada74e28a4095e47f5f36",
+    "s11": "64172d367078831447521db5db6f564603855f46c387c906413737be38d7cefa",
+    "s12": "a326ddd2ee6a25d3a5bd7e7faf7faebb13b159435640d33f4c6c5edcca238229",
+    "s13": "43c63cb3547e9638882e45af647c6eca92cdbd77c8006cbf416ed717619a79d5",
+    "s14": "8ad0ca2171f9b9e5d1a4402bed0ba51d908267ec88069268c781013864f569fa",
+    "s15": "97b76e836bce15b65611e3a1c12d5628da0992c3b604881d88f2e406aec3097b",
+    "s16": "de7130b93ad47423ed1f2ac37f7d700e9e1875834a26a33af10a97e2476eafa7",
+    "s17": "e0db3dac4c8e5a22f059034f39cf37bf8c5bd249834f218c25bdec42bc4151ed",
+    "s18": "dac73bb15e3a6db1d4fce585091868e67027d7235101498beef9a59ec2d88363",
+    "s19": "c1cb9323a74f953649b86e65f30cfa320b3f38079883c2a62230fe0b33e58fac",
+    "s2": "f6c0cf62d2c938252c455003a50bb8b8c59948880c30ba53eb34d4d29e8c23fc",
+    "s20": "132bce7e7e2e5612ff43da2f5ac5d14df2686c95a8118525bacac4349e87cb1b",
+    "s21": "ee777267cd96cff6866d857040b00da4e88084663ba40545bb4727aa3450d15c",
+    "s22": "ded37e8e903c88b4c4ba24e9bcfd1cc917e8112037b46dcbbf603bc8a83b9c4b",
+    "s23": "ccb7d854a9adbfef64161daad60b53aa6d860102e4771ff9a5577ab600a8cf79",
+    "s24": "61e0aa46c530807b80f7d600cfda4b2ccbbbe6a7695e74d51056473811046ce6",
+    "s25": "e45eb6699ec467a5bd9381005ac8a37e5079839d93875987c3ae51c7f7c2b7b3",
+    "s26": "2bdadd53a5742d8a2188a592cb048d2bb7bc8ace23f8f154eaff76cd539be41d",
+    "s27": "3e00c68c2c7c78bd8c8b8456b0718c3bd0720d2858b7c95db2196c25e03b289c",
+    "s28": "ed6ca5aa57e4f51ab3ceaeb3d9939a36b018a580d6ba698918ebd906a9b5e16d",
+    "s29": "3aa37627da7e8cb8a62888647fafa8d4833f2c35caca60b2937ad5cb7692711d",
+    "s3": "b7cc7a6cb809c6aca3267aa75867832638d1e895c70283c8b66cbe5415e358f6",
+    "s30": "b8b8706c9acabd5006293450da1eac5c27a1d9cbc69cc594fbdba230ca1d1eac",
+    "s31": "ac4b803910e2499bc7b5387d115251c945ada6fcb6411ad4badc3fa09aa77ec2",
+    "s32": "22711f595f248a553e4c98745f773436a8e3f3fd93718028095777acf063c506",
+    "s33": "fe3a748bc5a61e7ac5d17cc712da88ad843725ce9aad7e3ed9470af61c1cd300",
+    "s34": "f4f8c99832a81234a920d6788e9b3ea8bdb5ebf2124bbb64379dda3ea113277c",
+    "s35": "2ed3877471fd213967e72162b1f3d2cc9e086e047f2fd9d723e6c3e2abe2f396",
+    "s36": "54d73c62fdbeea28623fcf99c6d67154627d70aedb131fbed6d09343a3074979",
+    "s37": "d77b9f249be97d69d0ec0919ab6f556cfce7d44cc3a10d2ff943fdfb072fa9c2",
+    "s38": "5964a7a77be985b0b3a188ae40216cb8baef56f2191fab4e66aba5ae6d73ef5e",
+    "s39": "f6ca758ac5780e061aa1fdc392bec7946778a45f169cd9f74684d452968d3caa",
+    "s4": "8220f4acb86bde075d194dffed5ce2cf67af7ba21c21fd4e67d63a215ff7f5c6",
+    "s40": "c0d32ee979fa8e4251090e331dd712a49044a120812f19a6ace10646f45e073b",
+    "s41": "ab9f7902ff9c3414612cf1954249191ab419cb53bab4e904f557af396368d13f",
+    "s42": "238db2fe928160e0127a007bea71f684924880378290ef3193126ab399c35a7b",
+    "s43": "60a13d8600c9f51f039bb4b59ffe32650f8309befe2a208722fd8c79a3737894",
+    "s44": "24cd56d2400f9014d179dc0e05d6df66a228486d9e9c93b6010ccff7e7fcf2b2",
+    "s45": "4ce93449a6aada32697c3981d68a78204974791964659975a9156a5eafbb3124",
+    "s46": "82417e4bcdef0d350e3eae871a0b7ecad1ea580a176a73a6078d79ad7b7c7128",
+    "s47": "0ac5b7fd96906e00c359cee80c1ad2793fe0a5af62bca7fb9909772f197f397e",
+    "s48": "7bcb1c00a4c48442c2398810d25c13ada3a791a885054cb14bc7444aa2826d29",
+    "s5": "4d9eb434bba38de1ca75e0c65b3f3f0e5ee2dacb10a39e95ba851ca1e42db9a5",
+    "s6": "2f92e5358487aabaeb8d2b0c54fdf9a0407281e571a7eadaef0a2509754e3666",
+    "s7": "685d1132a4afe44934d774958ddc7017f71d596bb02f6b58bc7410028d8a10ae",
+    "s8": "aeee45dae61c75d687aed6c0439881dc004712a5242684e89b8625cdb5da8390",
+    "s9": "9240ba8b6a2a944280b3e2a2f692d8c76e5e57a675753250f8e0dcfd4e801bcb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T07:16:16.209211+00:00",
+  "total": null
+}

@@ -1,0 +1,168 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T03:48:09.596Z",
+  "dispatched_at": "2026-11-09T03:42:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "wiring-1",
+      "reason": "without the declared edge the queue runs the investigation against evidence that does not yet exist, which is the exact failure the depends-on field exists to prevent.",
+      "text": "s24 depends on \u00a723 twice over \u2014 it cites \u00a723's located span as its premise and requires the note to cover the 8 November instances \"from \u00a719 and \u00a723\" \u2014 yet the plan declares no depends-on for s24, so the queue can dispatch it before \u00a723 has produced the evidence note it must read",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "anchors_resolve-1",
+      "reason": "the plan states that \u00a723 \"located\" the span as an established fact with a readable evidence pointer, and a reader or worker following it gets nothing.",
+      "text": "\u00a724's opening citation links to a-sweep-launched-review-starts-its-worker.html, which does not exist in docs/evidence/fragments/a-dispatch-returns-without-its-worker/ (ten fragments present, this one absent) because the file is \u00a723's unbuilt done-when deliverable",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "reasoning-1",
+      "reason": "the conclusion a kept claim with no attempt record means the process ended inside the span still holds via the try/except rollback, so only the clause naming the guard needs correcting.",
+      "text": "the premise \"every raise in it is inside the claim-release guard\" does not hold: the `with (...)` guard at reckon/crew/dispatch.py:2585 closes at :2589 and covers only the admission-check region, while the raises at :2826, :2850, :3275 and :3370 are caught by the dispatch-level `try:` at :2800 and `except Exception` at :3535, whose rollback releases the launch claim and removes the run directory",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "done_when-1",
+      "reason": "the delivery is unaffected if read as section-shaped text inside the note, but the plan would be clearer for saying so.",
+      "text": "the done-when requires the note to close \"with the repair in plan-section form\" and the deliverable asks for the repair's write paths, test and negative control, but the section's only granted write path is the evidence note and plan state is coordinator-owned, leaving a worker unsure whether to author a plan section",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e17c4e15ca6f225e781101c5a1b4ca047dd3775f",
+  "plan_fingerprint": "48ecd722aede1ec5299938795d79c1fdab2bf876f94a73ae33a08a22e81c2a8d",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 190,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s24 now waits on s23",
+      "reason": "",
+      "when": "2026-11-09T04:00:23.564708+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "the link resolves once \u00a723 lands its fragment, which s24 now waits for",
+      "reason": "",
+      "when": "2026-11-09T04:00:29.990267+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a724's premise now says the raises in the span are caught either by the claim-release guard or by dispatch()'s rollback near lines 2800 and 3535, both of which release the claim and remove the run directory",
+      "reason": "",
+      "when": "2026-11-09T04:00:36.139206+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a724 says the repair is section-shaped text inside the evidence note; the coordinator files it",
+      "reason": "",
+      "when": "2026-11-09T04:00:42.921925+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "note": "the link resolves once \u00a723 lands its fragment, which s24 now waits for",
+      "reason": "",
+      "when": "2026-11-09T04:00:29.990267+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "note": "\u00a724 says the repair is section-shaped text inside the evidence note; the coordinator files it",
+      "reason": "",
+      "when": "2026-11-09T04:00:42.921925+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "note": "\u00a724's premise now says the raises in the span are caught either by the claim-release guard or by dispatch()'s rollback near lines 2800 and 3535, both of which release the claim and remove the run directory",
+      "reason": "",
+      "when": "2026-11-09T04:00:36.139206+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c476f0e7b7b13bb1aa5c5490a6c2cae8c45b5d27",
+      "commit_basis": "edit",
+      "note": "s24 now waits on s23",
+      "reason": "",
+      "when": "2026-11-09T04:00:23.564708+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T034100783113-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T034100783113-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "b1f5b9b51c6bbf92970385dcdf042dba7cbc67f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the evidence link s24 opens with, /reckon/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html, does not resolve: that directory holds ten fragments and not this one, because the file is \u00a723's own unbuilt deliverable.",
+    "done_when": "a finding \u2014 s24's done-when requires the note to \"close with the repair in plan-section form\" while its only write path is the evidence note, so the plan does not say whether authoring a plan section is authorised.",
+    "evidence_paths": "pass \u2014 the note lands at docs/evidence/fragments/a-dispatch-returns-without-its-worker/why-a-sweep-process-ends-mid-launch.html, in the repository beside its ten sibling fragments, not a scratchpad; s24 requires no gate log.",
+    "naming": "pass \u2014 s24 introduces no code symbols or filenames, and its prose names mechanisms and paths rather than plan labels or ticket numbers; the section and run identifiers it cites are the plan's own record.",
+    "reasoning": "a finding \u2014 s24's bounding premise names the wrong guard: \"every raise in it is inside the claim-release guard\" is false, since the guard at dispatch.py:2585 closes at :2589 and the raises in the rest of the span are caught by the dispatch-level try/except at :2800/:3535.",
+    "single_goal": "pass \u2014 s24 carries one deliverable, an investigation that records one cause; the section-form repair text is the note's closing content, not a second product change (\"It edits no product source\").",
+    "wiring": "a finding \u2014 s24 rests on \u00a723's investigation and its evidence note, but `plan-section-depends-on` declares only `s21 -> s20`; s24 declares no depends-on on s23."
+  },
+  "section_digests": {
+    "_document": "4aeb067a2e332c40d63eb2e67ea8410294c33c80b85f2e27f7d1a322a9a2e76f",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "697647a64e546b4b2055b107aa065294aae1d2842cf5738f2a4fb2d56c8426e1",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:58:56.928477+00:00",
+  "total": null
+}

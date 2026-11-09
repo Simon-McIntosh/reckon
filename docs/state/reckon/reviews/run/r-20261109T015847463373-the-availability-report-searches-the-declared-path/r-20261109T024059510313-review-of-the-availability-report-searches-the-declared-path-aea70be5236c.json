@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/flight.py:2720",
+    "reckon/crew_dispatch_commands.py:619"
+  ],
+  "completed_at": "2026-11-09T02:50:20.432Z",
+  "dispatched_at": "2026-11-09T02:42:48Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "docstring word order only; the mechanism it states is correct",
+      "recorded_at": "2026-11-09T02:56:32.528072+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/flight.py",
+      "id": "c7a1e2d940bf",
+      "line": 2404,
+      "severity": "non-blocking",
+      "text": "The helper docstring reads 'the returned source is ``\"PATH\"`` never', an inverted phrase that parses as 'is never \"PATH\"' only on a second reading; 'the returned source is never ``\"PATH\"``' states the same mechanism clearly. Prose only, no behaviour affected."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/flight.py:2720 (flight report availability) and reckon/crew_dispatch_commands.py:619 (backend availability refusal check) are the two production callers of probe_availability.",
+    "diff": "read both commits against ad25de31ce: 7f9c97809d adds the declared-path search, command_source and the six-case test in reckon/flight.py and the new test file; aea70be523 records the landing in the evidence fragment.",
+    "done_when": "the plan's done_when is asserted by tests/test_the_availability_report_searches_the_declared_path.py:82-148 (project-layer declaration, host-layer declaration, PATH precedence, neither-path false), with the negative control at logs/negative-control-bare-which.log and the importer population at logs/importers-head.log vs logs/importers-base.log.",
+    "goal": "the node goal is that the flight availability report searches the declared backend path after the process PATH; reckon/flight.py:2353-2366 now does that and names which search held the command.",
+    "manifest": "read at status complete; it records the gate command, the 6-passed head log, the 2-failed negative control, and both importer arms at 20 failed/1 error with identical failure-id sets.",
+    "write_paths": "the node declared reckon/flight.py, the new test and the evidence fragment; git diff --name-only ad25de31ce..aea70be523 lists exactly those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_the_availability_report_searches_the_declared_path.py:94-96 redden when the declared-path search is reverted to a bare shutil.which, as logs/negative-control-bare-which.log shows, and the assertion reads a report field the code computes rather than a value the test hands the report.",
+    "evidence": "logs/head-node-tests.log records 6 passed EXIT=0 at aea70be523, logs/negative-control-bare-which.log records 2 failed 4 passed EXIT=1 under the declared bare-which mutation, and logs/importers-head.log and logs/importers-base.log carry the same 21 failure/error ids (diff of the extracted sets empty).",
+    "fit": "reckon/flight.py:2398 follows the module's private-helper style and the lazy import at reckon/flight.py:2359 matches the file's established function-level import idiom, though the helper docstring at reckon/flight.py:2404 reads awkwardly.",
+    "goal_fidelity": "reckon/flight.py:2353-2366 now locates a cli backend on the process PATH and then on declared_backend_search_path(backend), and sets command_source to \"PATH\" or the directory that held it, exactly the deliverable at docs/plans/a-dispatch-returns-without-its-worker.html:1041.",
+    "reuse": "the diff extends the existing owner of declared-path reading, dispatch_launch.declared_backend_search_path at reckon/crew/dispatch_launch.py:609, rather than forking it; the small isfile/X_OK scan at reckon/flight.py:2407 has no exact owner in the repository, whose X_OK scans (reckon/shim_lookup.py:75, reckon/service.py:121) serve unrelated lookups.",
+    "scope_discipline": "git diff --stat ad25de31ce..aea70be523 lists exactly reckon/flight.py, tests/test_the_availability_report_searches_the_declared_path.py and the declared evidence fragment, with no plan file or shared index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the flight availability report searches the declared backend path after the process PATH; reckon/flight.py:2353-2366 now searches the process PATH first and then declared_backend_search_path(backend), and sets command_source to \"PATH\" or the directory that held the command.\nVERDICT done_when: the plan's done_when is asserted by tests/test_the_availability_report_searches_the_declared_path.py:82-148 \u2014 a project-layer-only declaration, a host-layer declaration, PATH precedence, and a neither-path false \u2014 while logs/head-node-tests.log records 6 passed EXIT=0, logs/negative-control-bare-which.log records 2 failed 4 passed EXIT=1 under the declared bare-which mutation, and both importer arms carry the same 21 failure/error ids.\nVERDICT write_paths: the node declared reckon/flight.py, tests/test_the_availability_report_searches_the_declared_path.py and the evidence fragment; git diff --name-only ad25de31ce..aea70be523 lists exactly those three paths.\nVERDICT manifest: read at status complete; it records the gate command, the 6-passed head log, the 2-failed negative control, and both importer arms at 20 failed/1 error with identical failure-id sets.\nVERDICT diff: read both commits against ad25de31ce: 7f9c97809d adds the declared-path search, command_source and the six-case test in reckon/flight.py and the new test file; aea70be523 records the landing in the evidence fragment and touches no code.\nCALL_SITES: reckon/flight.py:2720, reckon/crew_dispatch_commands.py:619\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/flight.py:2353-2366 now locates a cli backend on the process PATH and then on declared_backend_search_path(backend), naming which search held it, exactly the deliverable at docs/plans/a-dispatch-returns-without-its-worker.html:1041.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-node-tests.log records 6 passed EXIT=0 at aea70be523, logs/negative-control-bare-which.log records 2 failed 4 passed EXIT=1 under the declared mutation, and logs/importers-head.log and logs/importers-base.log carry the same 21 failure/error ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat ad25de31ce..aea70be523 lists exactly reckon/flight.py, tests/test_the_availability_report_searches_the_declared_path.py and the declared evidence fragment, with no plan file or shared index touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_availability_report_searches_the_declared_path.py:94-96 redden when the declared-path search is reverted to a bare shutil.which, as logs/negative-control-bare-which.log shows, and they read report fields the code computes rather than a value the test hands in.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/flight.py:2398 follows the module's private-helper style and the lazy import at reckon/flight.py:2359 matches the file's established function-level import idiom, though the docstring at reckon/flight.py:2404 reads awkwardly.\nSCORE reuse: 18\nJUSTIFICATION reuse: the diff extends the existing owner of declared-path reading, dispatch_launch.declared_backend_search_path at reckon/crew/dispatch_launch.py:609, rather than forking it; the isfile/X_OK scan at reckon/flight.py:2407 has no exact owner, the repository's X_OK scans at reckon/shim_lookup.py:75 and reckon/service.py:121 serving unrelated lookups.\nFINDING reckon/flight.py:2404 non-blocking: the helper docstring reads 'the returned source is ``\"PATH\"`` never', an inverted phrase that parses as 'is never \"PATH\"' only on a second reading; 'the returned source is never ``\"PATH\"``' states the same mechanism clearly, and no behaviour is affected.",
+  "review_run_id": "r-20261109T024059510313-review-of-the-availability-report-searches-the-declared-path-aea70be5236c",
+  "reviewed_base_sha": "ad25de31ce2e75bc9aa390d8563b2cd058fbe640",
+  "reviewed_head_sha": "aea70be5236cad669522a1dae2ece239c0dbbc24",
+  "reviewed_run_id": "r-20261109T015847463373-the-availability-report-searches-the-declared-path",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:55:00+00:00",
+  "total": 114
+}

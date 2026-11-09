@@ -1,0 +1,84 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T01:15:25.892Z",
+  "dispatched_at": "2026-11-09T01:06:57Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1037",
+      "id": "reasoning-1",
+      "reason": "as written the executor either under-delivers (\"every reader\" still false for a resume) and passes its gate, or hits a scope refusal on a course-correction inside a file it was not granted, so the plan needs either `reckon/crew/resumption.py` in the write paths (or a stated in-scope re-resolution by project) or its claim narrowed to the dispatch path.",
+      "text": "\u00a721's deliverable says `_persisted_worker_environment` \"forwards the same mapping to `launch_search_path`\", but its only cli-launch caller, `_supervisor_spec` (`reckon/crew/dispatch_launch.py:2411`, calling `_persisted_worker_environment` at `:2459`), receives a `LaunchPlan` and no backend mapping \u2014 `LaunchPlan` (`reckon/_backends.py:394`) carries the backend as a name only \u2014 and `_supervisor_spec`'s own callers are `dispatch.py:3448` (which does hold the mapping) and `supervised_launch` (`dispatch_launch.py:2640`, reached from `:1626` and from `resumption.py:1534`), which hold only the plan; the resume and lane-change launches, whose `resolve_launch_executable` callers \u00a721 itself names at `dispatch_sessions.py:1332` and `:1849`, therefore compose their persisted PATH through the same host-layer-only `backend_name` arm today and cannot carry the project-layer directory without editing `reckon/crew/resumption.py` (its local `_spawn` at `:1519`), which is not in \u00a721's write paths; and the done-when cannot see the shortfall, because its first case asserts only a fresh dispatch's persisted PATH",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+  "plan_fingerprint": "2db232af0b07b196cb404b045c3fe99d3deb19a379af182d086486ae673f613e",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 179,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "LaunchPlan now carries the resolved backend search directories, computed at plan build where the project-resolved mapping is held, so _supervisor_spec, the resume path and the persisted environment all read them from the plan; reckon/_backends.py joins \u00a721's write paths, and the availability report moves to a new \u00a722",
+      "reason": "",
+      "when": "2026-11-09T01:22:14.741166+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "bb23ab6e26a40b663a20e878cb3ea9f8095d31d7",
+      "commit_basis": "edit",
+      "note": "LaunchPlan now carries the resolved backend search directories, computed at plan build where the project-resolved mapping is held, so _supervisor_spec, the resume path and the persisted environment all read them from the plan; reckon/_backends.py joins \u00a721's write paths, and the availability report moves to a new \u00a722",
+      "reason": "",
+      "when": "2026-11-09T01:22:14.741166+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261108T221240944551-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261108T221240944551-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "e103e1a035813cbce7c85907aaad9c6ae5d45f8f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 verified at HEAD: `resolve_launch_executable` carries the `backend` parameter (`reckon/crew/dispatch_launch.py:1184-1189`) and its only three production callers pass no `backend` (`dispatch.py:3233`, `dispatch_sessions.py:1332`, `:1849`); `_persisted_worker_environment` (`dispatch_launch.py:730`) forwards `backend_name` alone to `launch_search_path` (`:647`); `flight.py:2349` is the bare `shutil.which(command)`; both cited \u00a720 review ids resolve (`r-20261108T205206811901` under the plan-review reports, `r-20261108T213151677264` under the crew runs). Two line pointers have drifted with later commits (`dispatch.py` 3164\u21923233, `dispatch_launch.py` 670\u2192730) but every one of them is anchored on a named symbol, and the flow they describe still holds; the cited landing sha `5631154f78` is \u00a720's recorded run head, a `docs(evidence)` commit whose own record names the code revision that carries the input (`bb92bb806b`).",
+    "done_when": "pass \u2014 \u00a721 names a new test with two cases, three negative controls each tied to one case (\"dropping the backend from the composed-plan call refuses the first case at plan build\", \"forwarding only the backend name \u2026 leaves the directory out of the persisted PATH\", \"a bare `shutil.which` fails the second case\"), a named importer-population delta against base and the ruff floor; every control is falsifiable and none is a suite that would pass on unfixed code. The gate exercises a fresh cli dispatch only, which is what the finding below is about.",
+    "evidence_paths": "pass \u2014 gate logs go \"under the run directory\", a durable crew run directory, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 `tests/test_every_backend_reader_searches_the_declared_path.py` names the mechanism, and no proposed symbol, comment or filename carries a plan label, section number, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the root cause matches the evidence it cites, but the mechanism it prescribes for the persisted environment cannot run on the resume path it also means to cover; see the finding below.",
+    "single_goal": "pass \u2014 the three readers (\u00a721's three named sites) are one invariant, \"a declared search path reaches every reader\", with one test file and one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s21` on `a-dispatch-returns-without-its-worker#s20` (plan.html:29), \u00a720 stands `done` with its recorded head at `5631154f78`, so the wait is discharged and \u00a721 declares no edge that points elsewhere."
+  },
+  "section_digests": {
+    "_document": "e9dfd4547940f647b32312e52aa923ca8b4ffdf92dce572553d753a0612483e8",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "7914604ab01699e0fb9f8757b27918a7a34bcaa5726e998badaf2869ccbe120d",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:20:11.587233+00:00",
+  "total": null
+}

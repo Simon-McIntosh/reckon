@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T05:11:43.507Z",
+  "dispatched_at": "2026-11-09T04:52:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html#s13",
+      "id": "reasoning-1",
+      "reason": "an implementer following the section's mechanism would first resolve the reviewed run and ask whether it is promoted, find that resolution yields no run for exactly these two requests, and leave them held-until-changed \u2014 the failure the section exists to fix; the plan needs to name the identity it retires on (the run id spelled in the request's own write path) rather than the live-fleet resolution that is already failing.",
+      "text": "s13 says the reviews' write path into the parents' review records \"is no longer reachable\" because the parents \"were promoted and landed before the reviews were admitted\", but the recorded `failure` on both queued pointers (r-20261107T231204549886-\u2026, r-20261107T231744388117-\u2026) is a sandbox-grant refusal that reads \"write path '\u2026/review-records/<run>.figure.json' is unreachable in resolved sandbox tier 'read-only'; \u2026 review node 'review-of-bank-drive-continuation-b818dab4d60f-figure' reviews run bank-drive-continuation and may write only that run's record directory\" \u2014 the reviewed run id resolved to the bare source `bank-drive-continuation`, not a run id, so `_reviewed_run_id_for_node` (and the durable fallback it calls) returns a string naming no run directory; the directory itself is present and already contains figure records, so the path is not unreachable, its owner is unresolved",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "52c5f67636c15458eaaeaa291bf40020ac73f61c",
+  "plan_fingerprint": "b5e825d913183efc9d97be6bc3abfb5211fb6050fd892546d89b90228a085c36",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 106,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "52c5f67636c15458eaaeaa291bf40020ac73f61c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a713 now keys retirement on the recorded refusal, a sandbox-grant refusal naming the review's own review-records write path, together with a promoted subject, and its first step confirms why that path is unreachable once the subject is promoted",
+      "reason": "",
+      "when": "2026-11-09T05:35:34.088121+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "52c5f67636c15458eaaeaa291bf40020ac73f61c",
+      "commit_basis": "edit",
+      "note": "\u00a713 now keys retirement on the recorded refusal, a sandbox-grant refusal naming the review's own review-records write path, together with a promoted subject, and its first step confirms why that path is unreachable once the subject is promoted",
+      "reason": "",
+      "when": "2026-11-09T05:35:34.088121+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-review-dies-where-nobody-is-looking/r-20261109T044917220188-plan-review-of-a-review-dies-where-nobody-is-looking.json",
+  "review_run_id": "r-20261109T044917220188-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "63d132d2b7918340319c786ae224b611d6d440d1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both cited review run ids resolve (`~/.config/reckon/crew/live/<run>.json` exists for each), `reckon/crew/queue_admission.py` exists, and the refusal text the section quotes reproduces from the pointers' recorded `failure`.",
+    "done_when": "pass \u2014 s13 names two test cases, a declared mutation (dropping the promoted-subject check leaves the first request held-until-changed on every pass), a delta-based suite rule and a ruff gate on the staged paths.",
+    "evidence_paths": "pass \u2014 the gate log is named for the run directory under `~/.config/reckon/crew/runs/`, a durable path, and the new test lives in the repository.",
+    "naming": "pass \u2014 the new test file and the section's symbols carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 s13's stated cause is that promotion makes the write path unreachable, but the recorded refusal shows the reviewed run's identity fails to resolve at all, so a retirement check built on \"resolve the reviewed run, then ask whether it was promoted\" would not classify the two requests the section exists to fix.",
+    "single_goal": "pass \u2014 s13 delivers one behaviour: retire, rather than retry, a queued review whose subject has landed.",
+    "wiring": "pass \u2014 `plan-blocks` is now empty (the stale orchestrator-lane edge is gone), `plan-depends-on` `worker-death-is-recorded` and `plan-informs` `scoring-should-stop-a-promotion` both name plans that exist, and s13 introduces no relationship it needs."
+  },
+  "section_digests": {
+    "_document": "6e1da94d63b13ae8fc171fc02ef20125ee07adee83fca5b78b81592acf5a2f1f",
+    "s1": "b13bacdd3dd40a8e3cb226066b6660b6aebf8a50b7f0d135972dce72a067ff10",
+    "s10": "a5c034b4157c2223c785f33e695ea65b6b5a8d2715cc7920e0089851b40ee94d",
+    "s11": "ee506b104842ed50a3cea08abe395e6e43918cff0f3239ce091415fe2e98fe39",
+    "s12": "f34aff9875ad00ad0d781d7805d52889b986efe74f16afeb8b465b4b29ef6615",
+    "s13": "9870fa07ed5edf859d4fc650639742f1a53012d7abeb322db9b89893530029b1",
+    "s2": "06b36b451d3e1f9cc4f3c7c8c54bc8f4a1c93efe0eab5a9d7dccde893ace0c54",
+    "s3": "017097c61e4fa1d5d2dc8f168b9f71610c2ae361ff0f2c1d5cffb2b68c7df410",
+    "s4": "dfa3413c15b5496e8adbcf0232faeb0066257492e10fbd4fa9aefccc0fb09e77",
+    "s5": "2a352f8bf478dcdf4e8b5b0125205012974807a199c4b04c43b93d0b94534685",
+    "s6": "a9509e66f17fcf2ce1a5c6f73f1bf69c9b8e9f0a5fc2c8828b680e6e533c8a89",
+    "s7": "7132004ffea77391601b22ef619715e5e1b92d1f216e8fa177ee601bd9d6b7dd",
+    "s8": "8b258458e56f488bec3ad12a01ff14bb102096e78b20d9099bb99ca2911f2964",
+    "s9": "059f92c7b3786222a361ca3a5049648fd0cccb17f00ec762e7bdfba6ee02e958"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:23:13.248155+00:00",
+  "total": null
+}

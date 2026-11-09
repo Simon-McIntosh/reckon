@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T07:15:00.029Z",
+  "dispatched_at": "2026-11-09T07:05:33Z",
+  "findings": [
+    {
+      "line": 1484,
+      "path": "reckon/crew/queue_admission.py",
+      "severity": "non-blocking",
+      "text": "the declared path's run is recovered by a re-implemented shape rule: `path.parent.name != \"review-records\" and path.parent.parent.parent != runs_directory` duplicates the owner `reckon/crew/recovery_review_delivery.py:164 _delivered_record_location` (reached for a whole pointer by `_declared_record_directory`), which dispatch_admission.py:2253 already cites as the one spelling of that rule; the duplicate also hardcodes the literal where the owner reads `review.RUN_REVIEW_RECORD_DIRNAME`, so a rename of the directory desyncs two readers"
+    },
+    {
+      "line": 15,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/manifest.md",
+      "severity": "non-blocking",
+      "text": "the source manifest records no result for the done_when's fourth clause (`ruff check` plus `ruff format --check` add no findings on the staged paths): manifest.md:15 records only the node test run and no gate log carries the lint arm, so the arm is claimed in a commit subject rather than recorded; re-run here it is clean (both commands EXIT=0 on the two staged Python paths), so this is a recording gap rather than a finding about the code"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: reckon/crew/queue_admission.py:admit_once reaches the new helpers at reckon/crew/queue_admission.py:5290, admit_until_stopped at :6075 runs it in the service loop, reckon/crew_run_commands.py:4548 is the crew admit entry, and the discard path reuses reckon/crew/recovery_review_dispatch.py:490 _discard_stranded_review.",
+    "diff": "VERDICT diff: read ae6985fc82 and 64a00fcc8d against fdf8faabb; the fix adds four helpers and one admit_once branch to queue_admission.py, and the test commit adds six cases and the evidence fragment, all inside the declared scope.",
+    "done_when": "VERDICT done_when: the done_when's four clauses are asserted by tests/test_a_review_of_a_landed_run_is_retired.py and by the importers delta; the test arm, the never-landed arm and the failure delta are recorded, and only the ruff arm is unrecorded (verified clean here).",
+    "goal": "VERDICT goal: the goal is to retire a queued review once its subject has landed; reckon/crew/queue_admission.py:1494 _landed_review_subject and :1530 _retire_landed_review implement exactly that, and admit_once at :5290 fires it ahead of every hold.",
+    "manifest": "VERDICT manifest: read manifest.md; it states 6 passed EXIT=0 at 64a00fcc8d with logs/node-tests-final.log, a negative control at logs/negative-control.log, and an importer arm pair whose 23 failing ids are identical.",
+    "write_paths": "VERDICT write_paths: the declared paths are reckon/crew/queue_admission.py, tests/test_a_review_of_a_landed_run_is_retired.py and the evidence fragment; both commits touch only those three."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retire a queued review once its subject has landed; reckon/crew/queue_admission.py:1494 _landed_review_subject returns the promoted subject and :1530 _retire_landed_review discards the request, which is the stated deliverable.\nVERDICT done_when: the done_when names tests/test_a_review_of_a_landed_run_is_retired.py, the two nova-pointer reproduction, the importer delta and a ruff arm; the manifest records the first three (manifest.md:15, :18, :20-21) and the ruff arm is unrecorded, though it passes when re-run here.\nVERDICT write_paths: read the manifest's declared paths; the two commits touch only reckon/crew/queue_admission.py, tests/test_a_review_of_a_landed_run_is_retired.py and docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-review-of-a-landed-run-is-retired.html, all declared.\nVERDICT manifest: read manifest.md; it reports 6 passed EXIT=0 at 64a00fcc8d against logs/node-tests-final.log and a negative control at logs/negative-control.log where 3 of 6 cases failed with EXIT=1.\nVERDICT diff: read ae6985fc82 and 64a00fcc8d against fdf8faabbb; the fix adds four helpers and one admit_once branch to reckon/crew/queue_admission.py, the test adds 399 lines, and the evidence fragment records the refusal read live from the nova pointer.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:4548, reckon/crew/recovery_review_dispatch.py:_discard_stranded_review\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:5289 retires the request before any hold can record it, so a congested gate cannot keep a stranded review queued.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/node-tests-final.log records 6 passed at 64a00fcc8d and logs/negative-control.log records 3 failed EXIT=1 under the reinstated defect, while the done_when's ruff arm has no recorded log at manifest.md:15.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits (queue_admission.py, the test file, the evidence fragment) is inside the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_review_of_a_landed_run_is_retired.py:236 fails when the promoted-subject check is dropped, as logs/negative-control.log shows, and :328 and :359 redden if the live-subject or not-promoted guards are removed.\nSCORE fit: 17\nJUSTIFICATION fit: the helpers follow the module's own idioms (_failure_text, RECORDED_HOLD_FIELD, _mutate_pointer, _verdict_row) and no added symbol, filename or comment carries a plan, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:1484 re-implements the runs-root shape rule the repository already owns at reckon/crew/recovery_review_delivery.py:164 instead of calling it, though the discard itself reuses recovery_review_dispatch._discard_stranded_review.\nFINDING reckon/crew/queue_admission.py:1484 non-blocking: the declared path's run is recovered by a duplicated shape rule (hardcoded \"review-records\" plus a runs-root comparison) where recovery_review_delivery._delivered_record_location already owns it, so the rule now has two spellings.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/manifest.md:15 non-blocking: the done_when's ruff arm is claimed but no gate log or manifest field records it; re-run here it is clean, so the gap is in the evidence record rather than the code.",
+  "review_run_id": "r-20261109T070346724084-review-of-a-review-of-a-landed-run-is-retired-64a00fcc8dbc",
+  "reviewed_base_sha": "fdf8faabbb7847c67420b540043dd618da0b129b",
+  "reviewed_head_sha": "64a00fcc8dbc3b41158b6a59a3d330a7faba1548",
+  "reviewed_run_id": "r-20261109T053743006521-a-review-of-a-landed-run-is-retired",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T07:23:19.316901+00:00",
+  "total": 93
+}

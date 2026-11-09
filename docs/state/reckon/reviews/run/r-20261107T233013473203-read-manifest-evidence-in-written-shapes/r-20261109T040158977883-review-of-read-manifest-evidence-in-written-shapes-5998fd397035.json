@@ -1,0 +1,96 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:582 lambda: _require_verdict_matches_exit_status(run_id, record, gate_check, verdict=verdict)",
+    "reckon/crew/promotion_evidence.py:1452 _missing_suite_arms_clause",
+    "reckon/crew/reports.py:317 parse_manifest",
+    "reckon/crew/dispatch_launch.py:3584 _worker_manifest_is_whole",
+    "reckon/crew/promotion_checks.py:574 parse_manifest"
+  ],
+  "completed_at": "2026-11-09T04:13:06.451Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-read-manifest-evidence-in-written-shapes-5998fd397035",
+      "recorded_at": "2026-11-09T05:23:49.076194+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-09T04:04:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-read-manifest-evidence-in-written-shapes-5998fd397035",
+      "recorded_at": "2026-11-09T04:31:31.146196+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/negative-control.log",
+      "id": "a25130d0831e",
+      "line": "1",
+      "severity": "blocking",
+      "text": "only three of the six negative controls the section's Done when declares were executed (mutation runs A, B and C, covering reading test_logs as one entry, splitting test_logs alone and leaving commits unsplit); the controls for refusing any mention of baseline_suite (seventh case), refusing any baseline_suite: { not glued (eighth case) and restating the field list as literals (tenth case) were never run, so the done_when's 'every case and negative control' is unmet and the ledger-owned field list is guarded by a passing test rather than demonstrated to fail when restated."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "1dd391325127",
+      "line": "1026",
+      "severity": "non-blocking",
+      "text": "_SUITE_ARM_KEYS is defined and read nowhere in the tree, duplicating the same pair that promotion_evidence.py:1360 _SUITE_ARM_NAMES carries, so the arm vocabulary has an unused second declaration."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "bafae420d9d9",
+      "line": "962",
+      "severity": "non-blocking",
+      "text": "_split_entry_tokens duplicates the loop body of _split_on_whitespace at reckon/crew/reports.py:1075 rather than extending it with a predicate, leaving two whitespace-split helpers in one module and running both over commits."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "d22cf59a198c",
+      "line": "928",
+      "severity": "non-blocking",
+      "text": "_looks_like_a_list_entry_token accepts any token containing a separator, so the census's one sha-plus-parenthesised-paths commits line (r-20261003T011436676083-dry-run-picker-is-comparable) is split into fragments such as '(reckon/crew/dispatch.py' that no resolver can read, where the whole line was previously dropped whole."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/base-arm.log"
+  },
+  "item_verdicts": {
+    "call_sites": "Verified five production call sites: promotion.py:582, promotion_evidence.py:1452, reports.py:317, dispatch_launch.py:3584 and promotion_checks.py:574.",
+    "diff": "Read the single commit 5998fd3970 against its parent 1f74899e3f: 383 insertions and 5 deletions across the five declared paths, adding _split_entry_tokens, _refuse_glued_suite_arm_key, the orientation_write_paths membership, the set union's removal in dispatch_launch and the ten-case test.",
+    "done_when": "The done_when names tests/test_a_manifest_is_read_in_the_shapes_workers_write.py, the defect's reproduction in the gate log, base and head arms, every case and negative control of s8, and ruff on the staged paths; head-arm.log records 10 passed EXIT=0 and base-arm.log 5 failed EXIT=1 at 1f74899e3f, repro-defect.log records the single-entry test_logs and the absent baseline_suite, but negative-control.log holds only mutation runs A, B and C, so three of the section's six declared negative controls never ran and the measure is not met as written.",
+    "goal": "The node's goal is to read a manifest's gate evidence in the shapes workers write it; reckon/crew/reports.py:962 _split_entry_tokens splits whitespace-joined guarded-list entries, reckon/crew/reports.py:1030 _refuse_glued_suite_arm_key refuses an arm folded into prose, and reckon/crew/promotion_evidence.py:1363 _missing_suite_arms_clause names both arm shapes when a manifest records neither.",
+    "manifest": "Read in full; it reports status complete, names the gate command and its ten case results, the base arm's five failures, the three mutation runs, the census denominator and figures, and records one pre-existing failure under outside_scope.",
+    "write_paths": "The manifest declares reckon/crew/reports.py, reckon/crew/promotion_evidence.py, reckon/crew/dispatch_launch.py, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py and the landing fragment under docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/; git diff 1f74899e3f..5998fd3970 changes exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "Each added assertion reddens on a named regression - reports.py:935 splitting unconditionally fails tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:112, dropping the lookbehind at reports.py:1022 fails line 165, and restating the field list at promotion_evidence.py:1378 fails line 200 - but three declared controls were not run to demonstrate them.",
+    "evidence": "head-arm.log and base-arm.log record revisions, literal commands and terminal EXIT= lines, and repro-defect.log records the defect before any change, but negative-control.log holds three of the six declared mutation arms, so the evidence for the glued-key precision and the ledger-field read is a passing test rather than a falsification.",
+    "fit": "The additions sit beside the existing ManifestParseError family and reuse _looks_like_a_list_entry_token at reckon/crew/reports.py:928, follow the module's docstring idiom, and carry no forbidden name; reckon/crew/reports.py:1026 _SUITE_ARM_KEYS is defined and never read.",
+    "goal_fidelity": "All three deliverables of the section are implemented as written at reckon/crew/reports.py:962, reports.py:1030 and promotion_evidence.py:1363, and orientation_write_paths reaches the coercion loop through reports.py:90.",
+    "reuse": "reckon/crew/reports.py:962 _split_entry_tokens repeats the whitespace-split loop that reckon/crew/reports.py:1075 _split_on_whitespace already owns for commits, rather than extending that owner with a predicate parameter, so commits now runs both loops in sequence.",
+    "scope_discipline": "Every path in git diff 1f74899e3f..5998fd3970 lies inside the declared write paths, with the only surplus being the unused constant at reckon/crew/reports.py:1026."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to read a manifest's gate evidence in the shapes workers write it; reckon/crew/reports.py:962 _split_entry_tokens splits whitespace-joined guarded-list entries, reckon/crew/reports.py:1030 _refuse_glued_suite_arm_key refuses an arm folded into prose, and reckon/crew/promotion_evidence.py:1363 _missing_suite_arms_clause names both arm shapes when a manifest records neither.\nVERDICT done_when: The done_when names tests/test_a_manifest_is_read_in_the_shapes_workers_write.py, the defect's reproduction in the gate log, base and head arms, every case and negative control of s8, and ruff on the staged paths; head-arm.log records 10 passed EXIT=0 and base-arm.log 5 failed EXIT=1 at 1f74899e3f, repro-defect.log records the single-entry test_logs and the absent baseline_suite, but negative-control.log holds only mutation runs A, B and C, so three of the section's six declared negative controls never ran and the measure is not met as written.\nVERDICT write_paths: The manifest declares hotpaths:reckon/crew/reports.py, reckon/crew/promotion_evidence.py, reckon/crew/dispatch_launch.py, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py and the landing fragment under docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/; git diff 1f74899e3f..5998fd3970 changes exactly those five paths and nothing else.\nVERDICT manifest: Read in full; it reports status complete, names the gate command and its ten case results, the base arm's five failures, the three mutation runs, the census denominator and figures, and records one pre-existing failure under outside_scope.\nVERDICT diff: Read the single commit 5998fd3970 against its parent 1f74899e3f: 383 insertions and 5 deletions across the five declared paths, adding _split_entry_tokens, _refuse_glued_suite_arm_key, the orientation_write_paths membership, the set union's removal in dispatch_launch and the ten-case test.\nCALL_SITES: reckon/crew/promotion.py:582 lambda: _require_verdict_matches_exit_status(run_id, record, gate_check, verdict=verdict), reckon/crew/promotion_evidence.py:1452 _missing_suite_arms_clause, reckon/crew/reports.py:317 parse_manifest, reckon/crew/dispatch_launch.py:3584 _worker_manifest_is_whole, reckon/crew/promotion_checks.py:574 parse_manifest\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: All three deliverables of the section are implemented as written at reckon/crew/reports.py:962, reports.py:1030 and promotion_evidence.py:1363, and orientation_write_paths reaches the coercion loop through reports.py:90.\nSCORE evidence: 13\nJUSTIFICATION evidence: head-arm.log and base-arm.log record revisions, literal commands and terminal EXIT= lines, and repro-defect.log records the defect before any change, but negative-control.log holds three of the six declared mutation arms, so the evidence for the glued-key precision and the ledger-field read is a passing test rather than a falsification.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: Every path in git diff 1f74899e3f..5998fd3970 lies inside the declared write paths, with the only surplus being the unused constant at reckon/crew/reports.py:1026.\nSCORE durability: 17\nJUSTIFICATION durability: Each added assertion reddens on a named regression - reports.py:935 splitting unconditionally fails tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:112, dropping the lookbehind at reports.py:1022 fails line 165, and restating the field list at promotion_evidence.py:1378 fails line 200 - but three declared controls were not run to demonstrate them.\nSCORE fit: 18\nJUSTIFICATION fit: The additions sit beside the existing ManifestParseError family and reuse _looks_like_a_list_entry_token at reckon/crew/reports.py:928, follow the module's docstring idiom, and carry no forbidden name; reckon/crew/reports.py:1026 _SUITE_ARM_KEYS is defined and never read.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/reports.py:962 _split_entry_tokens repeats the whitelist-split loop that reckon/crew/reports.py:1075 _split_on_whitespace already owns for commits, rather than extending that owner with a predicate parameter, so commits now runs both loops in sequence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/negative-control.log:1 blocking: only three of the six negative controls the section's Done when declares were executed (mutation runs A, B and C, covering reading test_logs as one entry, splitting test_logs alone and leaving commits unsplit); the controls for refusing any mention of baseline_suite (seventh case), refusing any baseline_suite: { not glued (eighth case) and restating the field list as literals (tenth case) were never run, so the done_when's 'every case and negative control' is unmet and the ledger-owned field list is guarded by a passing test rather than demonstrated to fail when restated.\nFINDING reckon/crew/reports.py:1026 non-blocking: _SUITE_ARM_KEYS is defined and read nowhere in the tree, duplicating the same pair that promotion_evidence.py:1360 _SUITE_ARM_NAMES carries, so the arm vocabulary has an unused second declaration.\nFINDING reckon/crew/reports.py:962 non-blocking: _split_entry_tokens duplicates the loop body of _split_on_whitespace at reckon/crew/reports.py:1075 rather than extending it with a predicate, leaving two whitespace-split helpers in one module and running both over commits.\nFINDING reckon/crew/reports.py:928 non-blocking: _looks_like_a_list_entry_token accepts any token containing a separator, so the census's one sha-plus-parenthesised-paths commits line (r-20261003T011436676083-dry-run-picker-is-comparable) is split into fragments such as '(reckon/crew/dispatch.py' that no resolver can read, where the whole line was previously dropped whole.\n",
+  "review_run_id": "r-20261109T040158977883-review-of-read-manifest-evidence-in-written-shapes-5998fd397035",
+  "reviewed_base_sha": "1f74899e3fe775d9bb7594db11e3f46ec6f51d2a",
+  "reviewed_head_sha": "5998fd397035394c7a15ffd8a9155d32d1417c3e",
+  "reviewed_run_id": "r-20261107T233013473203-read-manifest-evidence-in-written-shapes",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T04:11:51.529267+00:00",
+  "total": 90
+}

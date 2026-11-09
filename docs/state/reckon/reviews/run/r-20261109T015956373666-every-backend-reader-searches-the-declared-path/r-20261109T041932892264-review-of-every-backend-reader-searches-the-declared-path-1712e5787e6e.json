@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the two gate logs the run cites, by extracting every FAILED/ERROR line id and differencing the sets (the conftest ERROR id excluded from both sides, as the manifest's failure_ids do). logs/baseline-importers.log (revision a7ba0d27c2) records '17 failed, 1538 passed, 1 skipped, 11 warnings, 1 error in 570.78s' EXIT=1, completed; logs/head-importers.log (revision 3f398aa922) records '15 failed, 1540 passed, 1 skipped, 10 warnings, 1 error in 575.92s' EXIT=1, completed. Head-only ids: none. Base-only ids, both passing at the head: tests/test_producer_reads_only_what_changed.py::test_bytes_parsed_equals_bytes_appended_and_unchanged_polls_parse_nothing and tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes. These 15 characterize the population at 3f398aa922; the only commit after it, 1712e5787e, touches the evidence fragment alone, so no code or test is in the uncovered range. This review also re-ran the node gate at the reviewed head in the reviewed worktree: '3 passed in 10.47s'.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3305 records plan.backend_search_path on the cli launch record",
+    "reckon/crew/dispatch_sessions.py:983 _backend_settings reads the recorded directories back",
+    "reckon/crew/dispatch_sessions.py:2052 change_lane writes the destination plan's directories",
+    "reckon/crew/dispatch_sessions.py:2065 change_lane clears the field for a planless destination",
+    "reckon/crew/dispatch_launch.py:1224 launch_search_path prefers the plan's resolved directories",
+    "reckon/crew/dispatch_launch.py:1351 resolve_backend_placement reads them from the plan",
+    "reckon/crew/dispatch_launch.py:2475 _supervisor_spec writes them into the worker PATH"
+  ],
+  "completed_at": "2026-11-09T04:27:21.310Z",
+  "dispatched_at": "2026-11-09T04:20:44Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the stop test's file is unchanged between 366129aaca and 3f398aa922, so the six serial passes transfer; only the reruns' revision label differs",
+      "recorded_at": "2026-11-09T04:29:08.380594+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added paragraph says the disputed stop test was run 'three times at each arm - 1 passed and EXIT=0 in all six runs', but the three head-arm logs are headed '# revision: 366129aaca', not the 3f398aa922 the table row above them and the manifest's after arm name. The observation still transfers, because tests/test_stop_before_spawn_spawns_nothing.py is untouched between 366129aaca and 3f398aa922 (only this node's own test file and this fragment change), and each log carries its own revision header. The defect is traceability: a reader comparing the six runs to the after arm has to resolve the gap themselves."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/head-importers.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/baseline-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Production readers verified against the gained change at 1712e5787e: reckon/crew/dispatch.py:3305, reckon/crew/dispatch_sessions.py:983, :2052, :2065, reckon/crew/dispatch_launch.py:1224, :1351, :2475; none is touched by these commits, and the fragment's claims describe them accurately.",
+    "diff": "Reviewed commit by commit: 3f398aa922 deletes the single assertion at tests/test_every_backend_reader_searches_the_declared_path.py:295 that checked a stub the fixture itself had just written, and 1712e5787e rewrites the fragment's gate table at :38-42 to quote each log's own summary line, splits the importer population into a base row and an after row, and adds the stop-test paragraph at :45; no production file is in the range.",
+    "done_when": "The done_when asks that the node test pass with both negative controls logged and that the importer population add no failure against its base; logs/repair-node-tests.log now carries a revision header, '3 passed in 6.62s' and a bare 'EXIT=0' (this review re-ran the same gate at 1712e5787e and got '3 passed in 10.47s'), both negative-control logs end in their own summary and 'EXIT=1', and the two importer arms are logged and reported separately with no head-only failure id.",
+    "goal": "The source goal is to carry the resolved backend search directories from plan build through every launch and resume of a cli run; the gained commits change no production code, and reckon/crew/dispatch.py:3305 and reckon/crew/dispatch_sessions.py:983 still record and read those directories back at the reviewed head, so the goal stands and the repair only makes its record truthful.",
+    "manifest": "Read at the run directory: manifest.md:17 now records after_suite revision 3f398aa922 with failure_count 15 against logs/head-importers.log, which on disk is headed '# revision: 3f398aa922' and ends '15 failed, 1540 passed, 1 skipped, 10 warnings, 1 error in 575.92s' / 'EXIT=1', and baseline_suite matches logs/baseline-importers.log at a7ba0d27c2; the prior review's mismatch between the field and its log is gone.",
+    "write_paths": "The source node declares six exclusive paths; git diff 3f3a4482..1712e5787e touches only tests/test_every_backend_reader_searches_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html (7 insertions, 6 deletions), both declared, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "The gained change adds no assertion and deletes a vacuous one; the surviving guard at tests/test_every_backend_reader_searches_the_declared_path.py:294 reddens if change_lane stops writing the destination's directories, which logs/negative-control-lane-change.log shows directly (1 failed, 2 passed, EXIT=1) at the same revision 3f398aa922.",
+    "evidence": "The fragment's four gate rows at docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html:38-42 now reproduce their cited logs' own summary lines exactly, and manifest.md:17's after_suite matches logs/head-importers.log; the residual deduction is the unlabelled head revision behind the stop-test runs.",
+    "fit": "The added fragment prose sits inside the existing node-prefixed section at docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html:45 and introduces no name, symbol or identifier the naming rules forbid.",
+    "goal_fidelity": "The gained commits are a record repair, and the goal they support is still carried by reckon/crew/dispatch.py:3305 recording plan.backend_search_path and reckon/crew/dispatch_sessions.py:983 reading it back, both verified at 1712e5787e.",
+    "reuse": "The gained diff adds no function, class or module, so nothing can fork a repository-owned capability; the deleted assertion was a duplicate of the record read-back already covered by the line above it.",
+    "scope_discipline": "git diff --stat 3f3a4482..1712e5787e lists exactly the two declared write paths and no other file."
+  },
+  "project": "reckon",
+  "raw_text": "",
+  "review_run_id": "r-20261109T041932892264-review-of-every-backend-reader-searches-the-declared-path-1712e5787e6e",
+  "reviewed_base_sha": "3f3a4482e30405d16958e405e5223b330841d1a2",
+  "reviewed_head_sha": "1712e5787e6ef98ffafe737020e0a4a5dfaf6dbf",
+  "reviewed_run_id": "r-20261109T015956373666-every-backend-reader-searches-the-declared-path",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T04:33:04.214179+00:00",
+  "total": 114
+}

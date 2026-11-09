@@ -1,0 +1,104 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/promotion.py:576 lambda: _require_gate_log_agrees(run_id, gate_check, record, verdict=verdict)",
+    "reckon/crew/promotion_evidence.py:1085 _log_shows_the_command_ran",
+    "reckon/crew/promotion_evidence.py:1123 _recorded_exit_status -> reports._terminal_exit_status",
+    "reckon/crew/promotion_evidence.py:1208 _receipt_mismatches",
+    "reckon/crew/promotion_evidence.py:1362 _require_gate_log_agrees",
+    "reckon/crew/standing_suite.py:206 _result_counts",
+    "reckon/crew/promotion_checks.py:2168 _recorded_exit_status",
+    "reckon/crew/pending_landing.py:173 _recorded_exit_status",
+    "reckon/crew/queue_landing.py:544 _log_ends_in_exit_record",
+    "reckon/crew/promotion_records.py:411 _recorded_exit_status"
+  ],
+  "completed_at": "2026-11-09T03:12:25.653Z",
+  "dispatched_at": "2026-11-09T03:02:17Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "record wording: the fragment's base row names the first round's base; the manifest's baseline_suite now records the dispatch base faf94938 with its log, which is the record the landing reads",
+      "recorded_at": "2026-11-09T03:39:35.812669+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "superseded: the base arm was re-run from a base-revision tree whose log records the module resolving inside that tree",
+      "recorded_at": "2026-11-09T03:39:47.272335+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "a smaller duplication left after this change centralised the summary reading; the remaining alternation is in review.py and is left for the next change to that module",
+      "recorded_at": "2026-11-09T03:40:20.844927+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the control harness is now copied into the run directory, so the controls can be re-run from the record",
+      "recorded_at": "2026-11-09T03:40:03.303452+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html",
+      "line": "55",
+      "severity": "non-blocking",
+      "text": "the table row 'base | faf94938 | 10 failed' still describes the original round's base arm, while the same page at line 69 now cites logs/base-arm.log for the repair base b4b70562; logs/base-arm.log's header reads revision b4b70562 and no log in logs/ records faf94938, so the page publishes a base-arm figure no on-disk log supports."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html",
+      "line": "49",
+      "severity": "non-blocking",
+      "text": "the page asserts every log names its module.__file__, but logs/base-arm.log:5 records the module resolving to the head worktree (/home/ITER/mcintos/Code/.reckon-worktrees/.../agree-a-receipt-with-its-log/reckon/crew/promotion_evidence.py) while :1 records revision b4b70562 and :4 the base export cwd; the two cannot describe one process, so the log does not establish which revision's code produced the 3 failures."
+    },
+    {
+      "file": "reckon/crew/review.py",
+      "line": "2114",
+      "severity": "non-blocking",
+      "text": "RESULT_COUNT_RE restates the numeric alternation of the pre-existing _PYTEST_SUMMARY_RE at reckon/crew/review.py:1817 in the same module, so the runner-summary vocabulary this commit centralised still has two owners and a change to the result words must still be made in two places."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html",
+      "line": "96",
+      "severity": "non-blocking",
+      "text": "the fragment names the control harness as 'the run's ten_controls.py', but no such file exists in the run directory; it lives only under ephemeral /tmp/reckon-crew-scratch/r-20261109T014514752202-.../ten_controls.py, so the stated ability to re-run a control from the record rests on a scratch path that does not survive the node."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T014514752202-agree-a-receipt-with-its-log/logs/head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T014514752202-agree-a-receipt-with-its-log/logs/base-arm.log"
+  },
+  "item_verdicts": {
+    "diff": "Read both commits against b4b70562; 231f3d8b deletes the local _EXIT_RECORD, _RESULT_COUNT_LINE, _FAILED_OR_ERROR_FIGURE and _last_pytest_summary_failures from promotion_evidence.py, adds review.RESULT_COUNT_RE and review.pytest_summary_failure_count, delegates _recorded_exit_status to reports._terminal_exit_status, and adds the exit/summary records its three repaired fixtures need; 4bf7782f rewrites the fragment's controls paragraph into a ten-row table plus a retraction.",
+    "done_when": "The round's measure is both arms recorded plus the ten controls actually run; logs/base-arm.log ends '3 failed, 24 passed in 38.89s' EXIT=1 and logs/head-arm.log '27 passed in 50.87s' EXIT=0, and logs/controls/neg-01..neg-10 each carry 'caught: True' with a failing run, so the measure is met on its own terms.",
+    "goal": "The node's goal for this round is to answer four review findings on the gate-log guard; reckon/crew/promotion_evidence.py:1123 now delegates the terminal exit record to reports._terminal_exit_status and :1208/:1362 ask review.pytest_summary_failure_count, and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:72-98 replaces the declared-controls claim with ten measured per-control rows.",
+    "manifest": "Read; it records status complete, repair_base b4b70562, commits 231f3d8b and 4bf7782f, both arms with literal commands and log paths, ten control logs, two revert logs and a 309-run promotion sweep; its measurement_module and measurement_cwd name the head worktree while logs/base-arm.log claims the base revision.",
+    "write_paths": "The reviewed manifest declares five paths for this round and git diff b4b70562..4bf7782f changes exactly those five (promotion.py, promotion_evidence.py, review.py, tests/test_crew_gate_log_agrees.py, the evidence fragment), with nothing outside them."
+  },
+  "justifications": {
+    "durability": "Reverting 231f3d8b reddens the three fixtures (logs/revert-231f3d8b2d.log, 3 failed), but the refactor itself is behaviour-preserving and no committed test pins the single-owner property at reckon/crew/promotion_evidence.py:1067.",
+    "evidence": "The arms are real and reproducible \u2014 an independent re-run from the base export gave the same '3 failed, 24 passed' EXIT=1 \u2014 but logs/base-arm.log:5 records module.__file__ resolving to the head worktree while :1 records revision b4b70562 and :4 records the base cwd.",
+    "fit": "The added readers follow review.py's house style at reckon/crew/review.py:2110-2153 and both commits carry conventional subjects, bodies, and no plan or ticket identifiers.",
+    "goal_fidelity": "All four findings are answered in the artefact each names, though the fragment's new harness pointer at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:96 names no file present in the run directory.",
+    "reuse": "The commit collapses three runner-summary owners to two, but reckon/crew/review.py:2114 RESULT_COUNT_RE still restates the numeric alternation of _PYTEST_SUMMARY_RE at :1817 in the same module.",
+    "scope_discipline": "git diff --stat b4b70562..4bf7782f touches exactly the five declared files with 101 insertions and 72 deletions and no other path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the round's goal is to answer four review findings on the gate-log guard, and reckon/crew/promotion_evidence.py:1123 plus review.py:2125 answer them by delegating to the owners the repository already had.\nVERDICT done_when: the measure is both arms recorded and ten controls run; logs/base-arm.log ends '3 failed, 24 passed in 38.89s' EXIT=1 and logs/head-arm.log '27 passed in 50.87s' EXIT=0, with ten control logs each carrying 'caught: True'.\nVERDICT write_paths: read the manifest's five declared paths; git diff b4b70562..4bf7782f changes exactly those five files and no others.\nVERDICT manifest: read; it records the two commits, both arms with literal commands and log paths, ten control logs, two revert logs and a 309-run sweep, and its measurement_module names the head worktree rather than the base export.\nVERDICT diff: read both commits against b4b70562; promotion_evidence.py loses four local readers, review.py gains RESULT_COUNT_RE and pytest_summary_failure_count, and three fixtures gain the exit and summary records the guard now requires.\nCALL_SITES: reckon/crew/promotion.py:576, reckon/crew/promotion_evidence.py:1085, reckon/crew/promotion_evidence.py:1208, reckon/crew/promotion_evidence.py:1362, reckon/crew/promotion_evidence.py:1123, reckon/crew/standing_suite.py:206, reckon/crew/promotion_checks.py:2168, reckon/crew/pending_landing.py:173, reckon/crew/queue_landing.py:544, reckon/crew/promotion_records.py:411\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: all four findings are answered where each points, though the fragment's harness pointer at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:96 names no file in the run directory.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arms reproduce independently ('3 failed, 24 passed' EXIT=1 from the base export), but logs/base-arm.log:5 records module.__file__ in the head worktree while :1 and :4 name revision b4b70562 and the base cwd.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat b4b70562..4bf7782f touches exactly the five declared files.\nSCORE durability: 15\nJUSTIFICATION durability: reverting reckon/crew/promotion_evidence.py's commit reddens the three repaired fixtures per logs/revert-231f3d8b2d.log, but no committed test pins the single-owner property the refactor introduces.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review.py:2110-2153 follows the module's explanatory-comment style and both commits carry conventional subjects and bodies with no plan identifiers.\nSCORE reuse: 17\nJUSTIFICATION reuse: the commit collapses three runner-summary owners to two, but reckon/crew/review.py:2114 still restates the numeric alternation of _PYTEST_SUMMARY_RE at :1817.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:55 non-blocking: the table row naming faf94938 as the base arm has no log on disk after logs/base-arm.log was replaced by the b4b70562 repair base cited at line 69.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:49 non-blocking: logs/base-arm.log:5 records the module resolving to the head worktree while the same header names the base revision and cwd, so the log does not establish which revision produced the 3 failures.\nFINDING reckon/crew/review.py:2114 non-blocking: RESULT_COUNT_RE duplicates the numeric alternation of _PYTEST_SUMMARY_RE at reckon/crew/review.py:1817, leaving the summary vocabulary with two owners in the module that was meant to consolidate it.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/agree-a-receipt-with-its-log.html:96 non-blocking: the harness is named as the run's ten_controls.py but exists only under ephemeral /tmp scratch, so the record cannot be re-run from the run directory as the page states.\n",
+  "review_run_id": "r-20261109T030043708910-review-of-agree-a-receipt-with-its-log-4bf7782f1366",
+  "reviewed_base_sha": "b4b70562cf1651e3a8f737ea37aec31606780cb5",
+  "reviewed_head_sha": "4bf7782f136667271343470e886e2fed51c984c5",
+  "reviewed_run_id": "r-20261109T014514752202-agree-a-receipt-with-its-log",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:22:14.653297+00:00",
+  "total": 102
+}

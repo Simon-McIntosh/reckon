@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T04:08:28.957Z",
+  "dispatched_at": "2026-11-09T04:02:20Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "reasoning-1",
+      "reason": "the premise is the section's whole argument, and as written it steers the investigation at process-death causes (lease reap, session exit) while asserting a fact its evidence cannot establish.",
+      "text": "s24 concludes that \"the process running the launch ended inside that span\" and that \"why the follower's sweep process ends partway through a launch is not known\", but nothing cited distinguishes termination from a process still alive and stalled: a sweep blocked inside `dispatch_review_for_run` keeps the claim and writes no attempt record and no report row, and both handlers the section relies on catch `Exception` only (`dispatch_claims.py:985`, `dispatch.py:3535`), so a `SystemExit`/`KeyboardInterrupt`/`CancelledError` mid-span also leaves the claim with a live process \u2014 while the section's own deliverable lists \"a sweep that blocked rather than ended\" as a cause still to establish",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "done_when-1",
+      "reason": "the node is undeliverable as specified; the done-when must name a surviving source or accept an explicit \"identity not recoverable from the surviving records, and here is the nearest record\" branch.",
+      "text": "the done-when requires the note to name \"the process that ran the 01:38Z sweep\", taken \"from `session-hosts/*.json`, the follower leases and the producer and station logs\", but the session-host store holds no record for any session in the 01:38Z window on 9 November (91 records; the only 9 November record is 03:12, project power_convertor; the record naming session a337e0e6 dates from 7 November) and the only lease store holds 74 `promotion-*` files and no follower lease \u2014 so a worker following the declared sources cannot name the process and the node has no way to close the done-when",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1048",
+      "id": "reasoning-2",
+      "reason": "the investigation's steps do not depend on that clause; it is an inaccurate explanatory aside about a sibling section's outcome rather than a step the worker takes.",
+      "text": "s24 states \"\u00a723 made a stranded launch publish its attempt record with the claim, so it is now datable and \u00a719 classifies it\", but \u00a723's declared deliverable makes a sweep-launched review \"reach an attempt record or a recorded refusal\" at `_prepare_attempt_records`; it does not publish `attempt.json` at claim time, so a process that dies mid-launch still writes no attempt record, and \u00a719 already dates a stranded launch from `claim_registered_at` in the `claim.json` this very run carries",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+  "plan_fingerprint": "09e796d45df6d1ece63573eb947d8bc3222e6df18f7e7ebe11dfb125ec5d94cc",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 194,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a724 now treats a stalled sweep as equally possible: a sweep blocked inside dispatch_review_for_run leaves the same traces as one that ended, and the investigation must tell the two apart",
+      "reason": "",
+      "when": "2026-11-09T04:20:55.493478+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a724's done-when accepts an explicit finding that the process's identity is not recoverable from surviving records, listing each source checked and what it holds for the window",
+      "reason": "",
+      "when": "2026-11-09T04:21:01.672052+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a724 now says \u00a723's delivered change, once landed, publishes the attempt record with the claim",
+      "reason": "",
+      "when": "2026-11-09T04:21:08.942052+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "note": "\u00a724's done-when accepts an explicit finding that the process's identity is not recoverable from surviving records, listing each source checked and what it holds for the window",
+      "reason": "",
+      "when": "2026-11-09T04:21:01.672052+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "note": "\u00a724 now treats a stalled sweep as equally possible: a sweep blocked inside dispatch_review_for_run leaves the same traces as one that ended, and the investigation must tell the two apart",
+      "reason": "",
+      "when": "2026-11-09T04:20:55.493478+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "10dc0d37e17461dbbf96819c47ebb786726b91cc",
+      "commit_basis": "edit",
+      "note": "\u00a724 now says \u00a723's delivered change, once landed, publishes the attempt record with the claim",
+      "reason": "",
+      "when": "2026-11-09T04:21:08.942052+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T040124839247-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T040124839247-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "643ad3cf5572ccf741bfb3c07992afaf79f1c7cc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch.py` 2583, 2585\u20132589, 2800, 3438 and 3535 all resolve as described; the \u00a723 evidence href resolves once \u00a723 lands the fragment, and s24 now waits on s23.",
+    "done_when": "a finding \u2014 the done-when requires the note to name the process that ran the 01:38Z sweep from `session-hosts/*.json` and the follower leases, and no record in either store covers that window.",
+    "evidence_paths": "pass \u2014 the note is written under `docs/evidence/fragments/a-dispatch-returns-without-its-worker/`, a durable repository path.",
+    "naming": "pass \u2014 the section introduces no code symbol, and its prose carries no plan label, ticket number or changelog reference into code.",
+    "reasoning": "a finding \u2014 the premise \"a kept claim with no attempt record means the process ended inside the span\" asserts termination where the cited records show only that the launch stopped, and the section's own deliverable lists a blocked sweep as an open cause.",
+    "single_goal": "pass \u2014 one deliverable, an investigation closing in an evidence note whose repair is section-shaped text the coordinator files.",
+    "wiring": "pass \u2014 s24's `plan-section-depends-on` declares s23 (snapshot line 29), and s23 is the section whose located span and evidence note s24 reads."
+  },
+  "section_digests": {
+    "_document": "4aeb067a2e332c40d63eb2e67ea8410294c33c80b85f2e27f7d1a322a9a2e76f",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "396a8cda782bcaa3688f822c1d27822e90879d4a723350fb65a3ca63621d9455",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T04:17:35.280379+00:00",
+  "total": null
+}

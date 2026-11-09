@@ -1,0 +1,190 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T05:28:25.626Z",
+  "dispatched_at": "2026-11-09T05:19:28Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "done_when-1",
+      "reason": "a worker choosing a value at random can land a bound above the classification bound, so the worker sees a `launch-failed` run that then vanishes, and the gate case never states which of the two readings it is asserting against.",
+      "text": "the done-when requires a launch held inside the span past \"the bound\" to release its claim, but s25 never states the bound's value or its relation to the existing 900 s stranded-launch bound (cited in \u00a719 at line 1029), so two mechanisms date the same stall: one classifies it `launch-failed` while its claim is still held, the other removes the run directory the first is reading",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "done_when-2",
+      "reason": "the assertion is a direct read of a record case 1's write already produces, so a control would restate case 1 rather than measure anything new.",
+      "text": "case 3, \"claim.json names the pid, host and step reached\", declares no negative control while cases 1 and 2 each do",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "reasoning-1",
+      "reason": "the second measured instance stalled after the attempt record, i.e. inside the span, so a between-steps check there would let the node pass its gate while the observed failure stays unbounded; naming the observer changes what is built.",
+      "text": "the bound is specified but the process that observes it is not: the only reader that can notice expiry is a thread that is not blocked, and the plan never says the delivery loop (or a watchdog) is where the check runs, while a check placed inside the span cannot fire during the very stall the plan diagnoses, a blocked read inside one step (`list_live` is called inside the span at reckon/crew/dispatch.py:2653, and the GPFS wait is named as the block)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "reasoning-2",
+      "reason": "the recovery action destroys the record of what it recovered, so a coordinator reading the outcome afterwards cannot tell a stranded launch from one whose claim was simply never published, and the node's own output (the step reached) has nowhere to land.",
+      "text": "the deliverable removes the run directory and records \"a refusal naming the step reached\", but the only per-run refusal record the current code leaves is inside that directory: the claim-release guard (reckon/crew/dispatch_claims.py:975) only gives the claim back, and the plan names no durable path for the refusal",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "reasoning-3",
+      "reason": "s25 waits on \u00a724 so the sequencing is safe, but the plan's content asserts an unlanded result, and \u00a724 permits the opposite conclusion (records cannot identify the process); the mechanism s25 builds \u2014 off-thread plus a bound \u2014 is written to one specific cause, so the premise should read as \u00a724's finding with the note linked.",
+      "text": "the \"Why\" states as established who stranded the 01:38Z launch, that the process never ended, that its lease was renewed at 04:48Z and what two stack samples showed, but \u00a724 is still `implementable` and the note its done-when produces, `docs/evidence/fragments/a-dispatch-returns-without-its-worker/why-a-sweep-process-ends-mid-launch.html`, is absent from that directory (twelve fragments present, this one not), and s25 cites no record for any of it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bb6f7719aba1c64de6655586239561e89f1e661b",
+  "plan_fingerprint": "ce419dbd993b6ecfd2199870d63ec291db8fb788cb11afbe9248c205ee2b2aff",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 202,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a725's bound is STRANDED_LAUNCH_BOUND_SECONDS (recovery_liveness.py near line 68), the same bound \u00a719 classifies on, so release and classification agree",
+      "reason": "",
+      "when": "2026-11-09T05:48:15.636845+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "done_when-2",
+      "reason": "case three reads a record case one's write already produces, so a control would restate case one's",
+      "when": "2026-11-09T05:48:26.877160+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a725 names the observer: the admit service's pass, a separate process, releases a claim whose launch span has passed the bound; nothing inside the blocked span is relied on",
+      "reason": "",
+      "when": "2026-11-09T05:48:38.563577+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a725 writes the refusal to the crew home's refusal-traces store (dispatch_refusals.py) before the run directory is removed",
+      "reason": "",
+      "when": "2026-11-09T05:48:50.406301+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "finding": "reasoning-3",
+      "note": "\u00a724 has landed (a33e545ac9) and its evidence note is on main, so the Why now cites a landed result",
+      "reason": "",
+      "when": "2026-11-09T05:49:00.703797+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "note": "\u00a725's bound is STRANDED_LAUNCH_BOUND_SECONDS (recovery_liveness.py near line 68), the same bound \u00a719 classifies on, so release and classification agree",
+      "reason": "",
+      "when": "2026-11-09T05:48:15.636845+00:00"
+    },
+    "done_when-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "case three reads a record case one's write already produces, so a control would restate case one's",
+      "when": "2026-11-09T05:48:26.877160+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "note": "\u00a725 names the observer: the admit service's pass, a separate process, releases a claim whose launch span has passed the bound; nothing inside the blocked span is relied on",
+      "reason": "",
+      "when": "2026-11-09T05:48:38.563577+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "note": "\u00a725 writes the refusal to the crew home's refusal-traces store (dispatch_refusals.py) before the run directory is removed",
+      "reason": "",
+      "when": "2026-11-09T05:48:50.406301+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "a33e545ac9a9acaaa45ec28aed63bd22bfa950a4",
+      "commit_basis": "edit",
+      "note": "\u00a724 has landed (a33e545ac9) and its evidence note is on main, so the Why now cites a landed result",
+      "reason": "",
+      "when": "2026-11-09T05:49:00.703797+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T051805101142-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T051805101142-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "9c752a519b4e4d6d40020298d52561cfac27f46c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol s25 names resolves (`runs.list_live`, `obligations._live_pointers`, `promotion_evidence._committed_scope`, `_review_duty_item`), the cited run directory exists, and the span endpoints at reckon/crew/dispatch.py:2583 and :3438 are where s25 says.",
+    "done_when": "findings \u2014 the deadline bound is given no value and no relation to the existing `STRANDED_LAUNCH_BOUND_SECONDS` = 900 s bound that dates the same stall, and case 3 declares no negative control.",
+    "evidence_paths": "pass \u2014 the test writes to the repository's `tests/` path and gate logs go under the dispatched run's own directory, not the temporary crew home.",
+    "naming": "pass \u2014 the section heading, the test name `test_a_launch_span_is_dated_and_bounded.py` and the mechanism words carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "findings \u2014 the deadline has no named observer, the refusal it records has no durable path once the run directory is removed, and the \"Why\" states \u00a724's unlanded findings as established with no citation.",
+    "single_goal": "pass \u2014 the three cases are one goal, a blocked launch that is dated, bounded and cannot stall the follower; the off-thread half is what makes the bound observable, so the parts are one mechanism rather than two deliverables.",
+    "wiring": "pass \u2014 s25's depends-on s24 is present and correct, s24 exists and is `implementable`, and the two sections s25 cites as landed (\u00a719 and \u00a723) are declared `done`, so neither needs a dependency."
+  },
+  "section_digests": {
+    "_document": "9d8b5eb99b289222dc1da8e95d48ec0f60a46c52db671aa9b4efecdf24045674",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "e7d0f5b9796a4e5d09207e97cc3678f7fa5341c36f77e7ffe13e6003ef671d9f",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:45:22.013494+00:00",
+  "total": null
+}

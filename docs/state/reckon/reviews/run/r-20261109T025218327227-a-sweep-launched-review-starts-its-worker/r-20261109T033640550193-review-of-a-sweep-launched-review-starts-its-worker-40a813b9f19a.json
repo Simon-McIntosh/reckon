@@ -1,0 +1,55 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T03:46:23.205Z",
+  "dispatched_at": "2026-11-09T03:37:41Z",
+  "emitted_text": "VERDICT goal: the node goal is to find the step where a sweep-launched review stops between its claim and its attempt record; the evidence fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-sweep-launched-review-starts-its-worker.html:22 names it as the span from the claim's publication (reckon/crew/dispatch.py:2583) to _prepare_attempt_records (:3438), which contains no return outside the claim-release guard, and the landed repair publishes the attempt record at the top of that span (reckon/crew/dispatch.py:2762).\nVERDICT done_when: the done-when's arms are recorded and re-readable - tests/test_a_sweep_launched_review_starts_its_worker.py 3 passed (logs/after-suite.log, EXIT=0), the negative control 1 failed / 2 passed (logs/negative-control.log, EXIT=1), and the 42-file reckon.crew.recovery_review_dispatch importer population 327 passed on both arms (logs/base-population.log and logs/after-population.log, both EXIT=0), and the gate command the worker ran is the literal command its manifest records.\nVERDICT write_paths: every path in the diff - reckon/crew/dispatch.py, tests/test_a_sweep_launched_review_starts_its_worker.py and the evidence fragment - is inside the five declared write paths; recovery_review_dispatch.py was declared and needed no change, and no file outside the scope appears in either commit.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T025218327227-a-sweep-launched-review-starts-its-worker/manifest.md; it records the gate command and 3 passed, the negative control at 1 failed / 2 passed, both population arms at 327 passed, and names the wider 329-file dispatch-importer set as unmeasured rather than clean.\nVERDICT diff: read commit by commit from afdd8b2cc5866bc0cb71c619992e9b372572eb88 to 40a813b9f19aaf93567f150311cab2dd49a5ae38; 3b938adfe6 adds the 22-line attempt-record write in reckon/crew/dispatch.py, the 147-line three-case test and the evidence fragment, and 40a813b9f1 adds one paragraph to the fragment recording the population arms, with nothing else in either commit.\nCALL_SITES: reckon/crew/dispatch.py:dispatch, reckon/crew/recovery_review_dispatch.py:dispatch_review_for_run, reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/recovery_liveness.py:_attempt_started_seconds, reckon/crew/promotion_records.py:_rebuilt_record, reckon/crew/dispatch_claims.py:_release_launch_claim\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2762 makes a run that stops in the named span keep an attempt record, and the fragment states the span rather than a guessed line.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-suite.log and logs/negative-control.log each end in a bare EXIT= line whose status matches the manifest, and both population arms record 327 passed with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three files are all inside the declared write paths and neither commit touches anything else.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_sweep_launched_review_starts_its_worker.py:143 reddens when the marker write is removed, as logs/negative-control.log shows, but the refusal case at :112 asserts only the live-pointer list and never the directory's removal.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/dispatch.py:2754-2779 reuses ATTEMPT_RECORD_NAME and _supervisor_write and writes the same four keys the existing gate at reckon/crew/dispatch_launch.py:2204 writes, with mechanism-only comments.\nSCORE reuse: 18\nJUSTIFICATION reuse: no new record type or writer exists; the module reuses the existing attempt record, though the four-key payload is restated rather than built by one helper.\nFINDING tests/test_a_sweep_launched_review_starts_its_worker.py:112 non-blocking: the refusal case asserts only that the live-pointer list holds no review run, so it does not guard the removal of the run directory and the attempt record the change adds inside that window.\nFINDING tests/test_a_sweep_launched_review_starts_its_worker.py:86 non-blocking: `assert source[\"run_id\"]` asserts a value the test's own fixture carries and so cannot fail.\nFINDING reckon/crew/dispatch.py:2762 non-blocking: an admitted dispatch that refuses mid-composition is restored to `waiting` by reckon/crew/dispatch.py:1524 while its run directory survives, so a queued run now carries an attempt record for an attempt that never launched.\nFINDING manifest.md:21 non-blocking: baseline_suite's command carries a `...` placeholder where the log header has the literal path.",
+  "findings": [
+    {
+      "file": "tests/test_a_sweep_launched_review_starts_its_worker.py",
+      "line": 112,
+      "severity": "non-blocking",
+      "summary": "the refusal case does not assert the run directory (and the attempt record in it) is gone",
+      "text": "tests/test_a_sweep_launched_review_starts_its_worker.py:112 the refusal case asserts only that the live-pointer list holds no review run, so it does not guard the cleanup of the attempt record the change adds inside the refusal window: if a refused launch kept its run directory with an attempt.json, this case would stay green."
+    },
+    {
+      "file": "tests/test_a_sweep_launched_review_starts_its_worker.py",
+      "line": 86,
+      "severity": "non-blocking",
+      "summary": "vacuous assertion on a fixture value",
+      "text": "tests/test_a_sweep_launched_review_starts_its_worker.py:86 `assert source[\"run_id\"]` asserts a value the test's own fixture dict already carries, so it cannot fail and guards nothing."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": 2762,
+      "severity": "non-blocking",
+      "summary": "a restored queued request keeps the attempt record written before its refusal",
+      "text": "reckon/crew/dispatch.py:2762 the attempt record is written unconditionally, so an admitted dispatch that refuses mid-composition has its pointer restored to `waiting` by _request_claim_restored_on_refusal (reckon path reckon/crew/dispatch.py:1524) while the run directory survives, leaving an attempt record on a run that never launched. No reader keys on the record's presence today (reckon/crew/recovery_liveness.py:519 reads attempt_started_at, reckon/crew/promotion_records.py:104 reads it for created_at), so the effect is a shifted attempt clock for a queued run rather than a misclassification, but the queued state now carries an attempt marker."
+    },
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "summary": "baseline_suite command in the reviewed manifest carries a placeholder",
+      "text": "manifest.md:21 baseline_suite's command carries a `...` placeholder (`$(cat .../rrd-importers.txt)`) where the log header carries the literal path the manifest contract requires, so the base arm cannot be re-run from the manifest line alone; the after_suite command and both log headers are literal."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261109T033640550193-review-of-a-sweep-launched-review-starts-its-worker-40a813b9f19a",
+  "review_text": "full emission recorded under emitted_text; the six checklist verdicts, the required CALL_SITES line, six SCOREs and six JUSTIFICATIONs are the emitted_text field, and four non-blocking findings name a file and a line each.",
+  "reviewed_base_sha": "afdd8b2cc5866bc0cb71c619992e9b372572eb88",
+  "reviewed_head_sha": "40a813b9f19aaf93567f150311cab2dd49a5ae38",
+  "reviewed_run_id": "r-20261109T025218327227-a-sweep-launched-review-starts-its-worker",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:54:48.452751+00:00",
+  "total": 105
+}

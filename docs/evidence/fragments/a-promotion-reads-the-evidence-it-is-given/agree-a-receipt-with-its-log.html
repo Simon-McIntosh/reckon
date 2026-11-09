@@ -1,0 +1,123 @@
+<section id="agree-a-receipt-with-its-log-landing">
+  <h2>A gate receipt's failure figures agree with its log</h2>
+
+  <p><strong>What changed.</strong> A promotion asserts a passing gate from two records: the
+  manifest's <code>after_suite</code> arm, which states an exit status, a failure count and
+  failure ids, and the gate log the row cites. Nothing compared the figures with the log.
+  The gate-log guard read the log's tail for a status and stopped there, so a log holding
+  two runs accepted a receipt copied from the first run's figures beside the second run's
+  status.</p>
+
+  <p>In <code>reckon/crew/promotion_evidence.py</code>, <code>_require_gate_log_agrees</code>
+  now takes the run record and reads the arm that describes the cited log — by path or by
+  digest; an arm naming another log is not compared. Its count is compared with the failed
+  plus errored figure of the log's last pytest summary, and its ids with the ids of the
+  log's last run in both directions through <code>review.failure_ids_match</code>, with the
+  receipt as the base so a bare receipt id covers a qualified log id. Each field is compared
+  only when the arm records it, so an arm stating one figure is not refused for the absence
+  of another.</p>
+
+  <p>Two further shapes are refused, both for a passing gate. A cited log with no terminal
+  <code>EXIT=&lt;n&gt;</code> line is refused, read through
+  <code>reports._terminal_exit_status</code>, which already owns that question; the
+  command-not-found refusal is asked first, because a log whose only content is that
+  diagnostic is better named by it. A gate whose command runs pytest and whose last run
+  reaches no pytest summary is refused, because such a run stopped before reporting a
+  result; a command that does not run pytest is not held to one.</p>
+
+  <p>In <code>reckon/crew/review.py</code>, <code>gate_log_failure_ids</code> gains a
+  <code>last_run</code> reading, cut by the new <code>last_run_text</code> at the log's
+  second-to-last exit record, so the ids come from the same run the status does. The
+  section adds no refusal family: every mismatch is reported through the gate-log refusal
+  that already exists.</p>
+
+  <h3 id="agree-a-receipt-with-its-log-reproduced">The defect, reproduced before the repair</h3>
+
+  <p>Against the dispatch base <code>faf94938</code>, over temporary logs, three receipts the
+  section says must be refused were all accepted, each returning normally:
+  first-run count and ids beside the last run's exit status — accepted; a pytest gate whose
+  last run reached no summary — accepted; a cited log with no <code>EXIT=</code> line —
+  accepted. The log is
+  <code>logs/repro-defect.log</code> in the run directory, under the base revision and its
+  literal command, ending <code>EXIT=0</code>.</p>
+
+  <h3 id="agree-a-receipt-with-its-log-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_receipt_agrees_with_its_log.py</code>, run as the armed
+  command resolves over each arm's own tree, one arm at a time. The base arm is a scratch
+  export of <code>faf94938</code> with the new test file copied in; the head arm is this
+  worktree. Every log names its revision, tree, command, <code>module.__file__</code> and
+  working directory on its header lines, and ends in <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>faf94938</td><td>10 failed, <code>EXIT=1</code> — every case fails on the base guard's signature, which takes no run record</td></tr>
+      <tr><td>head</td><td>4665b678</td><td>10 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The repair gate runs both gate-log files, as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_receipt_agrees_with_its_log.py tests/test_crew_gate_log_agrees.py</code>.
+  Over that pair the repair's base <code>b4b70562</code> reads 3 failed, 24 passed,
+  <code>EXIT=1</code>: the three cases in
+  <code>tests/test_crew_gate_log_agrees.py</code> whose cited logs carry neither a terminal
+  <code>EXIT=</code> record nor, for a pytest command, a summary line. Those fixtures
+  predate the refusals; they gain the records their runs would have written, and the head
+  <code>231f3d8b</code> reads 27 passed, <code>EXIT=0</code>. Logs:
+  <code>logs/base-arm.log</code> and <code>logs/head-arm.log</code>.</p>
+
+  <p>Ten negative controls were applied in this round, each a source mutation of the code
+  under test, restored before the next was applied. Each was measured against the gate
+  command and each caught the case it names, <code>EXIT=1</code> in all ten runs:</p>
+
+  <table>
+    <thead><tr><th>control</th><th>case that must fail</th><th>caught</th></tr></thead>
+    <tbody>
+      <tr><td>accepting a log with no <code>EXIT=</code> line</td><td><code>test_a_log_with_no_exit_record_is_refused</code></td><td>yes</td></tr>
+      <tr><td>dropping the pytest-summary refusal</td><td><code>test_a_pytest_gate_whose_last_run_reached_no_summary_is_refused</code></td><td>yes</td></tr>
+      <tr><td>dropping the count and id comparisons</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>selecting the first run for both count and ids</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>reading ids from the whole log</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>counting only the failed figure</td><td><code>test_an_error_is_counted_with_the_failures</code></td><td>yes</td></tr>
+      <tr><td>requiring a pytest summary of every command</td><td><code>test_a_ctest_log_compares_its_ids_and_not_its_count</code></td><td>yes</td></tr>
+      <tr><td>comparing without the identity condition</td><td><code>test_an_arm_describing_another_log_is_not_compared</code></td><td>yes</td></tr>
+      <tr><td>checking only that log ids are covered</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>requiring a count</td><td><code>test_an_arm_recording_no_count_is_judged_on_exit_status_only</code></td><td>yes</td></tr>
+    </tbody>
+  </table>
+
+  <p>An earlier round declared ten controls and ran three, and this page described all ten as
+  measured. That was an overstatement of what had been run and is corrected here: the
+  per-control logs are <code>logs/controls/neg-01…neg-10*.log</code> in the run directory,
+  each headed with the control, the case it must fail, whether it was caught and its
+  <code>EXIT=</code> line. The harness that applies them is the run's
+  <code>ten_controls.py</code>; it anchors every edit exactly once, writes both mutated
+  files back before each run and restores both afterwards, and reports a control whose
+  anchor does not match or whose case stays green as a miss rather than counting it.</p>
+
+  <p>The two new refusals were then run over every reckon run promoted in the last 14 days:
+  309 passing gates judged, 304 of their cited logs readable from here. The no-exit-record
+  refusal would have refused <strong>1</strong> —
+  <code>r-20261105T084251683381-snapshot-classifies-from-its-read</code>, whose cited gate
+  log ends at <code>1 passed in 1.41s</code> with no <code>EXIT=</code> line. The
+  pytest-summary refusal would have refused <strong>0</strong>. Sweep log:
+  <code>logs/recent-promotions-sweep.log</code>.</p>
+
+  <p>Ruff adds no findings on the staged paths: the two remaining findings in
+  <code>reckon/crew/promotion.py</code> (<code>S110</code>, <code>BLE001</code> at the
+  base file's line 1776) are present at the base revision, and
+  <code>ruff format --check</code> reports all four paths formatted.</p>
+
+  <h3 id="agree-a-receipt-with-its-log-outside-scope">Outside this node's reach</h3>
+
+  <p>Three cases in <code>tests/test_crew_gate_log_agrees.py</code> pin the behaviour this
+  section changes and fail against it. They are outside this node's write scope and are
+  reported rather than edited: <code>test_promotion_whose_log_and_command_agree_lands_unchanged</code>
+  and <code>test_fixture_command_not_found_beside_a_passing_summary_is_accepted</code> cite
+  logs with no <code>EXIT=</code> line and expect acceptance;
+  <code>test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted</code> cites a
+  pytest command whose log carries no pytest summary. Each needs one line of its fixture
+  updated — an <code>EXIT=0</code> record, and a result-count line.</p>
+</section>

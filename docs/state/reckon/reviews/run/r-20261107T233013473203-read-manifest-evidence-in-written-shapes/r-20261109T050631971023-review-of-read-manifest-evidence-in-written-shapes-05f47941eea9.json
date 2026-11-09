@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:574 parse_manifest",
+    "reckon/crew/dispatch_launch.py:3561 parse_manifest",
+    "reckon/crew/promotion_records.py:720 parse_manifest",
+    "reckon/crew/queue_admission.py:3128 parse_manifest",
+    "reckon/ledger.py:796 parse_manifest"
+  ],
+  "completed_at": "2026-11-09T05:26:44.416Z",
+  "dispatched_at": "2026-11-09T05:12:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "6c1e0a7d42b9",
+      "line": "1073",
+      "severity": "non-blocking",
+      "text": "the commit reading widened by this delta has no falsifying assertion: case 3's four shas split under both the deleted hex-only splitter and _split_entry_tokens, so restoring reports.py:1073 to a separate commit splitter leaves the suite green, while a commits line that pairs each sha with a parenthesised path (r-20261003T011436676083-dry-run-picker-is-comparable, read at head as ['1cc3d749ee842880163760e7a8cb5121cc168ab4', '(reckon/crew/dispatch.py', 'tests/test_routing_picker_key.py)', '00cef9d6c', '(docs/evidence/...'])) has its wider reading unasserted."
+    },
+    {
+      "file": "reckon/crew/reports.py",
+      "id": "2f84c3b105da",
+      "line": "882",
+      "severity": "non-blocking",
+      "text": "_split_entry_tokens is applied to the commits field twice, once inside _coerce_commit_identifiers at reports.py:1073 and again by the guarded-key coercion loop here, so the call the delta introduced in the commit reader is redundant work and a second place where the single rule its docstring claims is stated."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/repair-head-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/repair-base-arm.log"
+  },
+  "item_verdicts": {
+    "call_sites": "Verified five production call sites reaching parse_manifest, which calls _normalise_manifest_fields at reports.py:362 and so the changed commit coercion: promotion_checks.py:574, dispatch_launch.py:3561, promotion_records.py:720, queue_admission.py:3128 and ledger.py:796.",
+    "diff": "Read the single gained commit 05f47941ee against 5998fd3970: it deletes _split_on_whitespace and its _COMMIT_ID pattern, routes _coerce_commit_identifiers through _split_entry_tokens at reports.py:1073, drops the seventh case's own baseline_suite line, and adds the repair rows to the fragment.",
+    "done_when": "The done_when requires every \u00a78 case and negative control, the recorded reproduction, base and head arms under the armed command, and the bounded census; repair-base-arm.log (5998fd3970, 10 passed, EXIT=0) and repair-head-arm.log (05f47941ee, 10 passed, EXIT=0) record the repair arms, negative-control.log now holds all six declared mutations each ending EXIT=1 and failing the case its declaration names, and repair-negative-control.log isolates the seventh case, so the prior review's blocking finding is repaired.",
+    "goal": "The node's goal is to read a manifest's gate evidence in the shapes workers write it; the gained commit carries only the repair, unifying the commit splitter at reckon/crew/reports.py:1073 and removing the seventh case's own arm line at tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:140 so the mention rule is exercised, while the three \u00a78 deliverables at reports.py:962, reports.py:1030 and promotion_evidence.py:1363 stand as the first review read them.",
+    "manifest": "Read in full at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/manifest.md; it reports status complete, the repair arms, the six mutation runs and the revert control, and its baseline_suite and after_suite point at the two repair logs, both completed with zero failures.",
+    "write_paths": "The node declares reckon/crew/reports.py, reckon/crew/promotion_evidence.py, reckon/crew/dispatch_launch.py, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py and the landing fragment; git diff --stat 5998fd3970..05f47941ee touches exactly the fragment, reckon/crew/reports.py and the test, all inside that list."
+  },
+  "justifications": {
+    "durability": "repair-negative-control.log shows the seventh case passing at 5998fd3970 under mutation D and failing at 05f47941ee, but no assertion in tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:99 distinguishes the production half of the delta, so reverting the commit splitter change leaves the suite green.",
+    "evidence": "repair-base-arm.log and repair-head-arm.log each record the revision, the measured module, the literal gate command and a bare EXIT=0 beside 10 passed, and negative-control.log holds six mutation runs each ending EXIT=1.",
+    "fit": "The extended docstring at reckon/crew/reports.py:962 states the shared rule the module uses, the deletion leaves one helper beside _looks_like_a_list_entry_token, and the delta introduces no forbidden name.",
+    "goal_fidelity": "The delta does what the node goal's repair requires: reckon/crew/reports.py:1073 reads commit ids through the same predicate every guarded list field uses, which is the reuse consolidation the prior review asked for.",
+    "reuse": "The delta deletes _split_on_whitespace and its private _COMMIT_ID pattern and has _coerce_commit_identifiers call the existing owner _split_entry_tokens at reckon/crew/reports.py:1073, so one rule reads commit ids and paths.",
+    "scope_discipline": "Every path in git diff 5998fd3970..05f47941ee lies inside the node's declared write paths, three files, with no plan, index or other module touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to read a manifest's gate evidence in the shapes workers write it; the gained commit carries only the repair, unifying the commit splitter at reckon/crew/reports.py:1073 and removing the seventh case's own arm line at tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:140 so the mention rule is exercised, while the three section deliverables at reports.py:962, reports.py:1030 and promotion_evidence.py:1363 stand as the first review read them.\nVERDICT done_when: the done_when requires every section case and negative control, the recorded reproduction, base and head arms under the armed command, and the bounded census; repair-base-arm.log (5998fd3970, 10 passed, EXIT=0) and repair-head-arm.log (05f47941ee, 10 passed, EXIT=0) record the repair arms, negative-control.log now holds all six declared mutations each ending EXIT=1 and failing the case its declaration names, and repair-negative-control.log isolates the seventh case, so the prior review's blocking finding is repaired.\nVERDICT write_paths: the node declares reckon/crew/reports.py, reckon/crew/promotion_evidence.py, reckon/crew/dispatch_launch.py, tests/test_a_manifest_is_read_in_the_shapes_workers_write.py and the landing fragment; git diff --stat 5998fd3970..05f47941ee touches exactly the fragment, reckon/crew/reports.py and the test, all inside that list.\nVERDICT manifest: read in full at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T233013473203-read-manifest-evidence-in-written-shapes/manifest.md; it reports status complete, the repair arms, the six mutation runs and the revert control, and its baseline_suite and after_suite point at the two repair logs, both completed with zero failures.\nVERDICT diff: read the single gained commit 05f47941ee against 5998fd3970: it deletes _split_on_whitespace and its _COMMIT_ID pattern, routes _coerce_commit_identifiers through _split_entry_tokens at reports.py:1073, drops the seventh case's own baseline_suite line, and adds the repair rows to the fragment.\nCALL_SITES: reckon/crew/promotion_checks.py:574, reckon/crew/dispatch_launch.py:3561, reckon/crew/promotion_records.py:720, reckon/crew/queue_admission.py:3128, reckon/ledger.py:796\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta does what the node goal's repair requires, with reckon/crew/reports.py:1073 reading commit ids through the same predicate every guarded list field uses.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair-base-arm.log and repair-head-arm.log each record the revision, the measured module, the literal gate command and a bare EXIT=0 beside 10 passed, and negative-control.log holds six mutation runs each ending EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 5998fd3970..05f47941ee lies inside the node's declared write paths, three files and nothing else.\nSCORE durability: 14\nJUSTIFICATION durability: repair-negative-control.log shows the seventh case passing at 5998fd3970 under mutation D and failing at 05f47941ee, but no assertion in tests/test_a_manifest_is_read_in_the_shapes_workers_write.py:99 distinguishes the production half of the delta, so reverting reports.py:1073 leaves the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: the extended docstring at reckon/crew/reports.py:962 states the shared rule the module uses, the deletion leaves one helper beside _looks_like_a_list_entry_token, and no forbidden name is introduced.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta deletes _split_on_whitespace and its private _COMMIT_ID pattern and has _coerce_commit_identifiers call the existing owner _split_entry_tokens at reckon/crew/reports.py:1073.\nFINDING reckon/crew/reports.py:1073 non-blocking: the commit reading widened by this delta has no falsifying assertion \u2014 case 3's four shas split under both the deleted hex-only splitter and the shared rule, so restoring a separate commit splitter leaves the suite green while a commits line pairing each sha with a parenthesised path reads differently.\nFINDING reckon/crew/reports.py:882 non-blocking: _split_entry_tokens is applied to the commits field twice, once inside _coerce_commit_identifiers at reports.py:1073 and again by the guarded-key coercion loop here, so the call the delta introduced in the commit reader is redundant work.",
+  "review_run_id": "r-20261109T050631971023-review-of-read-manifest-evidence-in-written-shapes-05f47941eea9",
+  "reviewed_base_sha": "5998fd397035394c7a15ffd8a9155d32d1417c3e",
+  "reviewed_head_sha": "05f47941eea9ea9c10da579681a1f35472734f9a",
+  "reviewed_run_id": "r-20261107T233013473203-read-manifest-evidence-in-written-shapes",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T06:20:00.000000+00:00",
+  "total": 108
+}

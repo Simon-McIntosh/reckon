@@ -1,0 +1,140 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T02:26:32.346Z",
+  "dispatched_at": "2026-11-09T02:19:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "reasoning-1",
+      "reason": "a worker corroborating against that directory finds a two-minute stop, so the duration premise and the hypothesis it invites (a lock or a long wait rather than an immediate stop) must be corrected before the node measures anything.",
+      "text": "\u00a723 says `r-20261109T013544897285-review-of-a-concurrent-launch-is-refused-34d0376761a9` sat \"about ten minutes in `starting`\", while the kept run directory the same section requires the worker to read records `claim_registered_at` 2026-11-09T01:38:18Z and `discard.json` `discarded_at` 2026-11-09T01:40:22Z with `phase: starting` \u2014 124 seconds, not ten minutes \u2014 so the instance's stated stall is the opposite of a long wait, and the reproduction is steered away from the short-stop hypothesis the record supports",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "wiring-1",
+      "reason": "without `reckon/crew/dispatch.py` in the write paths the node cannot repair the step the plan now localises, so either the path is added or \u00a723 should say plainly that it delivers only the evidence note and the proposed section.",
+      "text": "the changed text defines the window to record as \"the claim's registration\" (`_publish_launch_claim` from `dispatch()` at `reckon/crew/dispatch.py:2568`) to `_prepare_attempt_records` (`reckon/crew/dispatch.py:3438`), so every step in it is a statement inside one function in `reckon/crew/dispatch.py`, while the section's write paths are `reckon/crew/recovery_review_dispatch.py`, the new test and the evidence note; the repair branch is therefore unreachable from the declared scope and only the \"propose a plan section\" branch can ever land",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1045",
+      "id": "anchors_resolve-1",
+      "reason": "the mechanism the paragraph states is accurate and a worker reading `sweep` from its definition reaches both passes, so only the line pointer is stale; naming `dispatch_awaiting_reviews` would save a lookup but changes no work.",
+      "text": "the section points at `reckon/crew/resumption.py` near line 2177 for the pass that dispatches a review with `launcher=None`, but line 2177 is inside the resume loop of `sweep`; the review pass is at lines 2413-2464, which calls `dispatch_awaiting_reviews` (`reckon/crew/recovery_review_acceptance.py:526`) and `plan_review.compose_owed_plan_reviews`, and `dispatch_awaiting_reviews` is the caller that actually carries `launcher` into `dispatch_review_for_run`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+  "plan_fingerprint": "2c2f7ea42c152fb58d8a755071c9907d311b7db6fd8f7ce027471f6a6e52e51e",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 184,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a723 now states the measured stall: claim at 01:38:18Z, discard at 01:40:22Z, 124 seconds",
+      "reason": "",
+      "when": "2026-11-09T02:35:24.283788+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "reckon/crew/dispatch.py joins \u00a723's write paths, since the window it localises lies in dispatch()",
+      "reason": "",
+      "when": "2026-11-09T02:35:36.727043+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a723 now points at sweep's review pass near lines 2413-2464 and dispatch_awaiting_reviews (recovery_review_acceptance.py near line 526)",
+      "reason": "",
+      "when": "2026-11-09T02:35:50.213248+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "note": "\u00a723 now points at sweep's review pass near lines 2413-2464 and dispatch_awaiting_reviews (recovery_review_acceptance.py near line 526)",
+      "reason": "",
+      "when": "2026-11-09T02:35:50.213248+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "note": "\u00a723 now states the measured stall: claim at 01:38:18Z, discard at 01:40:22Z, 124 seconds",
+      "reason": "",
+      "when": "2026-11-09T02:35:24.283788+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "940593f597abcea440f17acb2434ae8f124d83cd",
+      "commit_basis": "edit",
+      "note": "reckon/crew/dispatch.py joins \u00a723's write paths, since the window it localises lies in dispatch()",
+      "reason": "",
+      "when": "2026-11-09T02:35:36.727043+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T021745137932-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T021745137932-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "3f427077efc3ec5b6201171cf688e78256a1b407",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the changed text resolves `_sweep_lapsed_holds` (`reckon/crew_follow_commands.py` near lines 261 and 1458), `dispatch_review_for_run` and `_prepare_attempt_records` (`reckon/crew/dispatch.py` near line 3438) correctly, but the pointer it gives for the review pass (`reckon/crew/resumption.py` near line 2177) lands in the resume loop rather than the review pass.",
+    "done_when": "pass \u2014 the done-when names an artifact, a test that must show a sweep-launched review reaching an attempt record or a recorded refusal, and a negative control that restores the failing step; the alternative note branch states the cause, the repair section's deliverable, its write paths and its test, so the measure can fail on either branch (declined in an earlier review for the note branch, not re-raised).",
+    "evidence_paths": "pass \u2014 the evidence note sits at `docs/evidence/fragments/a-dispatch-returns-without-its-worker/` beside the plan's other fragments, and the reproduction log now goes under the investigating run's own `logs/` rather than the temporary crew home the plan removes.",
+    "naming": "pass \u2014 the section's symbols, its proposed test file and the evidence fragment are named by what they measure; no plan, sprint or ticket label reaches them.",
+    "reasoning": "a finding \u2014 the root-cause framing holds and the mechanism runs on the real code path (`dispatch_review_for_run` \u2192 `_dispatch_composed_review`'s `dispatch_module.dispatch(...)`, whose claim write and `_prepare_attempt_records` call are inside the same function), but one cited instance's stated duration is contradicted by the record the plan tells the worker to read.",
+    "single_goal": "pass \u2014 \u00a723 carries one deliverable, the cause of a sweep-launched review stopping before its attempt record, with the repair conditional on where the cause sits.",
+    "wiring": "a finding \u2014 \u00a723 declares `reckon/crew/recovery_review_dispatch.py` as its repair path, but the window the same paragraph defines (claim registration to `_prepare_attempt_records`) lies wholly inside `dispatch()` in `reckon/crew/dispatch.py`, which \u00a723 does not declare."
+  },
+  "section_digests": {
+    "_document": "a7ba1aafa800184023efd2d6b5bc4317abff27299b5403d8f53a41786047d0a8",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "efcce30addfd6b59a7fdfc650d266a7cb1f62a0f029f77b841087f070027b613",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T02:31:46.078703+00:00",
+  "total": null
+}

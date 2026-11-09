@@ -573,7 +573,9 @@ def complete(
                 # truthfully is refused with nothing landed and nothing to
                 # unwind.
                 lambda: _require_commits_beyond_base(run_id, record, commit_list),
-                lambda: _require_gate_log_agrees(run_id, gate_check, verdict=verdict),
+                lambda: _require_gate_log_agrees(
+                    run_id, gate_check, record, verdict=verdict
+                ),
                 # The verdict and the asserted status are two statements about
                 # one run: a passing verdict beside a nonzero exit status is
                 # refused from those two facts alone, whether or not the log
@@ -2463,7 +2465,6 @@ from reckon.crew.promotion_evidence import (
     _ATTEMPT_RECORD_NAME,
     _COMMITLESS_ROLES,
     _COORDINATOR_LANDING_AUTHOR,
-    _EXIT_RECORD,
     _FIELD_LINE,
     _PROVISIONED_WORKTREE_ENTRIES,
     _RUNNER_SUMMARY,

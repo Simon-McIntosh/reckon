@@ -2107,6 +2107,48 @@ def _directional_failure_matches(
     return matched_base, matched_head
 
 
+# A runner's result-count line: ``518 passed, 20 failed, 2 skipped in 91.2s``.
+# It is the line a gate log states its own totals on, so both the check that a
+# command executed and the receipt that claims a failure count read this one
+# recogniser rather than each keeping its own copy.
+RESULT_COUNT_RE = re.compile(
+    r"\b\d+\s+(?:passed|failed|error|errors|skipped|xfailed|xpassed|deselected"
+    r"|warnings?)\b|\bno tests ran\b"
+)
+
+# The failure figures a result-count line states. They are summed because a
+# collection or setup error is a failure a receipt counts too, and a receipt
+# that left them out would read as agreeing with a log naming more.
+_SUMMARY_FAILURE_FIGURE_RE = re.compile(r"\b(\d+)\s+(?:failed|error|errors)\b")
+
+
+def pytest_summary_failure_count(log_text: str) -> int | None:
+    """The failed-plus-errored figure of the text's last pytest summary line.
+
+    A pytest run prints one result-count line at its end, and a log holding two
+    runs prints one per run, so the last is the one whose exit status a capture
+    also records at the tail. A failure line is skipped even when its reason
+    quotes a count, because a ``FAILED`` line names a test rather than
+    summarising a run.
+
+    ``None`` means the text carries no result-count line at all — a ctest log,
+    or a pytest run that stopped before its summary — so the count is unmeasured
+    rather than zero. A run that reported nothing to run reads zero, because
+    ``no tests ran`` is a summary stating exactly that.
+    """
+    measured: int | None = None
+    for raw in log_text.splitlines():
+        line = raw.strip()
+        if _GATE_FAILURE_RE.match(line) or "::" in line:
+            continue
+        if RESULT_COUNT_RE.search(line) is None:
+            continue
+        measured = sum(
+            int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line)
+        )
+    return measured
+
+
 class FailureIdMatch(NamedTuple):
     """Matched and unmatched failure identities on each side of a comparison."""
 
@@ -2189,8 +2231,30 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
     return ids
 
 
+_EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
+
+
+def last_run_text(log_text: str) -> str:
+    """The log's last run, read after its second-to-last ``EXIT=`` line.
+
+    A capture that runs two commands into one log appends one ``EXIT=<n>``
+    record per command, so the run whose status the receipt asserts is the text
+    after the second-to-last of them. A log carrying a single record, or none,
+    holds one run and is returned whole: there is no earlier run to cut away,
+    and cutting at the only record would discard the output the status belongs
+    to.
+    """
+    records = list(_EXIT_RECORD_LINE_RE.finditer(log_text))
+    if len(records) < 2:
+        return log_text
+    return log_text[records[-2].end() :]
+
+
 def gate_log_failure_ids(
-    log_text: str, arm_directory: str | Path | None = None
+    log_text: str,
+    arm_directory: str | Path | None = None,
+    *,
+    last_run: bool = False,
 ) -> set[str] | None:
     """Return the failing ids a gate log names, in whichever format it is written.
 
@@ -2205,13 +2269,19 @@ def gate_log_failure_ids(
     whether it recorded failures: the caller reads that as unmeasured rather
     than as a zero. A log whose format is recognised but which lists no failures
     reads the empty set — it was read, and it names nothing.
+
+    ``last_run`` reads only the log's final run, cut by :func:`last_run_text`,
+    so a log holding two commands reports the failures of the one whose exit
+    status is also read from the tail. Reading the whole text would answer for
+    a run the receipt does not describe.
     """
-    log_format = _gate_log_format(log_text)
+    read = last_run_text(log_text) if last_run else log_text
+    log_format = _gate_log_format(read)
     if log_format is None:
         return None
     if log_format == "ctest":
-        return _ctest_failure_ids(log_text)
-    return _pytest_failure_ids(log_text, arm_directory)
+        return _ctest_failure_ids(read)
+    return _pytest_failure_ids(read, arm_directory)
 
 
 def _gate_log_format(log_text: str) -> str | None:
@@ -3341,15 +3411,89 @@ def _repaired_review_bytes(original: bytes, updates: Mapping[str, Any]) -> bytes
     return source.encode("utf-8")
 
 
+def committed_run_review_directory(
+    project: str, reviewed_run_id: str, *, root: str | Path | None = None
+) -> Path | None:
+    """The run's directory in the project's committed reviews tree, if mounted.
+
+    A promoted run's review record lives here, beside the ledger rather than in
+    the host staging store, so a repair that only knows the staging directory
+    cannot reach the record a promotion landed. The directory is named for the
+    reviewed run and holds files named for the review runs that produced them.
+    """
+    committed_root = committed_review_root(project, root=root)
+    if committed_root is None:
+        return None
+    return Path(committed_root) / COMMITTED_RUN_DIRNAME / reviewed_run_id
+
+
+def committed_record_project(
+    record_path: str | Path, reviewed_run_id: str
+) -> str | None:
+    """The project a committed run-review path names, or ``None``.
+
+    A record under ``<checkout>/docs/state/<project>/reviews/run/<run>/`` names
+    its own project in its path, so a repair of a committed record resolves the
+    project without a live pointer or a ledger row for the reviewed run — the
+    two sources that are absent exactly when the run was promoted from another
+    checkout and its live pointer has since been cleared.
+    """
+    parts = Path(record_path).expanduser().resolve().parts
+    if len(parts) < 6:
+        return None
+    if parts[-2] != reviewed_run_id:
+        return None
+    if parts[-3] != COMMITTED_RUN_DIRNAME or parts[-4] != COMMITTED_REVIEWS_DIRNAME:
+        return None
+    if parts[-6] != "state" or not parts[-5]:
+        return None
+    return parts[-5]
+
+
 def repair_run_review(
-    reviewed_run_id: str, record_path: str | Path, change: str, reason: str
+    reviewed_run_id: str,
+    record_path: str | Path,
+    change: str,
+    reason: str,
+    *,
+    project: str | None = None,
 ) -> dict[str, str]:
-    """Repair a delivered review's status or missing subject ids with provenance."""
+    """Repair a delivered review's status or missing subject ids with provenance.
+
+    The record may sit at either location a run review is stored in: the host
+    review-records directory a live reviewer delivers into, or the project's
+    committed tree once a promotion has landed the record there. The committed
+    directory accepts a file named for the review run, which is how the
+    committed store keys it, rather than requiring the reviewed run's id the
+    staging directory keys on. A path under neither is still refused.
+
+    A committed record names its project in its own path, so the project is
+    taken from there when the caller resolved none — a promoted run whose live
+    pointer and ledger row are both gone is still repairable from the record
+    alone.
+
+    A committed record is a tracked file, so its rewrite is committed here as
+    the other committed record writes are: an uncommitted write is visible only
+    to the checkout that made it. The as-delivered copy is kept beside it under
+    a name outside the ``*.json`` glob the committed reader selects from, so the
+    preservation copy can never be read as the record.
+    """
     from reckon.crew import runs
 
     source = Path(record_path).expanduser().resolve()
-    allowed = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
-    if source.parent != allowed or not source.name.startswith(reviewed_run_id):
+    staging = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
+    in_staging = source.parent == staging and source.name.startswith(reviewed_run_id)
+    if not project and not in_staging and source.name.endswith(".json"):
+        project = committed_record_project(source, reviewed_run_id)
+    committed = (
+        committed_run_review_directory(project, reviewed_run_id) if project else None
+    )
+    in_committed = (
+        committed is not None
+        and source.parent == committed.resolve()
+        and source.name.endswith(".json")
+    )
+    if not (in_staging or in_committed):
         raise ValueError(
             "record is outside the reviewed run's review-records directory"
         )
@@ -3405,13 +3549,20 @@ def repair_run_review(
     rewritten = _repaired_review_bytes(original, updates)
     if json.loads(rewritten) != body:
         raise ValueError("review repair changed fields outside the permitted set")
-    preserved = source.with_name(source.stem + ".asdelivered.json")
+    if in_committed:
+        preserved = source.with_name(source.name + ".asdelivered")
+    else:
+        preserved = source.with_name(source.stem + ".asdelivered.json")
     if not preserved.exists():
         preserved.write_bytes(original)
     filed = store_review(body)
     write_atomically(
         source, lambda handle: handle.write(rewritten), binary=True, fsync=False
     )
+    if in_committed and project:
+        from reckon.crew.review_records import commit_record_write
+
+        commit_record_write(project, [source, preserved])
     return {
         "record": str(source),
         "as_delivered": str(preserved),
