@@ -1048,9 +1048,108 @@ def load_aggregate(
     return _load_aggregate(project, root)
 
 
+def _index_membership(connection: sqlite3.Connection) -> list[str]:
+    """Every run id the index knows, including a file it could not decode.
+
+    Membership is the union of the rows the aggregate carried and the run
+    documents beside it, each counted once. A damaged document still occupies
+    its name, so it counts: the directory holds a run by that name whether or
+    not the index could decode its row. Both the header read and the membership
+    read take this union, so the two cannot disagree about such a file.
+    """
+    return [
+        str(row[0])
+        for row in connection.execute(
+            "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
+            "UNION ALL SELECT name FROM records WHERE name NOT IN "
+            "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
+        )
+    ]
+
+
+def _open_current_index(
+    project: str, root: str | Path | None
+) -> tuple[sqlite3.Connection, dict[str, str]] | None:
+    """Open the published index read-only, or ``None`` when it is not current.
+
+    A snapshot is current while the aggregate it was built from is still the one
+    on disk; once the aggregate has been replaced, the stamp it recorded names a
+    revision the ledger has moved past. Both the last-good read and the
+    membership read decide that here, from one stat, so an index trusted by one
+    is trusted by the other. The caller owns the returned connection.
+    """
+    path = _run_index_path(project, root)
+    if not path.is_file():
+        return None
+    try:
+        connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=0.2)
+    except (sqlite3.Error, OSError):
+        return None
+    try:
+        meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+        if meta.get("stamp") != json.dumps(_file_identity(ledger_path(project, root))):
+            connection.close()
+            return None
+    except (sqlite3.Error, OSError, ValueError, TypeError):
+        connection.close()
+        return None
+    return connection, meta
+
+
+def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
+    """Membership from the published run index, or ``None`` when it is not current.
+
+    The answer is the ids the index already holds, read without decoding any
+    stored payload. It is trusted only while two things hold: the aggregate's
+    stat identity matches the one the index recorded, and every run file the
+    directory holds carries the stat identity the index stored for it. A file
+    added, removed or rewritten in place fails the second check, which is the
+    same evidence :func:`_indexed_data` uses to decide what to rescan; the
+    caller then takes its own read.
+
+    This is deliberately not :func:`load`: a reader of membership must cost no
+    more than the membership, and ``load`` rebuilds the index and decodes the
+    rows a caller did not ask for.
+    """
+    opened = _open_current_index(project, root)
+    if opened is None:
+        return None
+    connection, _meta = opened
+    try:
+        with contextlib.closing(connection):
+            ids = set(_index_membership(connection))
+            stored = dict(connection.execute("SELECT name, stamp FROM records"))
+    except (sqlite3.Error, OSError, ValueError, TypeError):
+        return None
+    snapshot = _run_snapshot(project, root)
+    if len(snapshot) != len(stored):
+        return None
+    for source, stamp in snapshot:
+        if stamp is None or stored.get(source.stem) != json.dumps(stamp):
+            return None
+    return ids
+
+
 def run_ids(project: str, root: str | Path | None = None) -> set[str]:
-    """Read index membership without decoding the individual run payloads."""
-    data, _version = _load_aggregate(project, root)
+    """Read index membership without decoding the individual run payloads.
+
+    The read is served from the run index :func:`load` keeps wherever that index
+    is current, so a caller that runs once per delivered run per station tick
+    pays no aggregate parse at all rather than one per call. An index that no
+    longer describes the ledger is refreshed through :func:`load` once, so the
+    rest of that tick is answered from it; a ledger no reader has indexed yet
+    is read from the aggregate and the run documents, which is the same read
+    this made before the index existed. A run file whose own record the index
+    could not decode still counts by its name, because membership and not the
+    row's contents is what this answers.
+    """
+    current = _indexed_run_ids(project, root)
+    if current is not None:
+        return current
+    if _run_index_path(project, root).is_file():
+        data, _version = load(project, root, headers_only=True)
+    else:
+        data, _version = _load_aggregate(project, root)
     return {
         str(record["run_id"])
         for record in data["runs"]
@@ -1337,14 +1436,7 @@ def _index_payload(
         raise ValueError("invalid index header")
     version = int(meta["version"])
     if headers_only:
-        data["runs"] = [
-            {"run_id": row[0]}
-            for row in connection.execute(
-                "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
-                "UNION ALL SELECT name FROM records WHERE payload IS NOT NULL AND name NOT IN "
-                "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
-            )
-        ]
+        data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
     column = "picker" if picker_only else "payload"
     data["runs"] = [
@@ -1405,18 +1497,12 @@ def _last_good_index_data(
     caller falls through to the aggregate itself; an unchanged one still avoids
     the scan.
     """
-    path = _run_index_path(project, root)
-    if not path.is_file():
+    opened = _open_current_index(project, root)
+    if opened is None:
         return None
+    connection, meta = opened
     try:
-        with contextlib.closing(
-            sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=0.2)
-        ) as connection:
-            meta = dict(connection.execute("SELECT name, payload FROM metadata"))
-            if meta.get("stamp") != json.dumps(
-                _file_identity(ledger_path(project, root))
-            ):
-                return None
+        with contextlib.closing(connection):
             refreshed_at = float(meta["refreshed_at"])
             data, version = _index_payload(
                 connection,
