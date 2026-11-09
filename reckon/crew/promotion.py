@@ -154,12 +154,47 @@ from reckon.evidence import (
 )
 
 
-# A promotion writes the run's stores and then commits the landing, so two
-# promotions of one run that run at once can interleave their stage, commit and
-# rollback steps and leave a landed path staged back. The run's pointer lock is
-# a node-local ``flock``, which cannot see a promotion of the same run on
-# another host. The lease below is the claim that spans hosts: it is named for
-# the run and claimed by an atomic link in the fleet home every host shares.
+# Promotion serialises its landing independently of pointer mutations. The
+# flock excludes local processes and threads; the renewable lease excludes a
+# promotion on another host through the fleet home's atomic link.
+@contextmanager
+def _promotion_lock(run_id: str) -> Iterator[None]:
+    with _pointer_lock(f"promotion-{run_id}"):
+        yield
+
+
+def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Remove only the attempt that promotion checked, preserving a newer one."""
+    with _pointer_lock(run_id):
+        path = pointer_path(run_id)
+        if not path.exists():
+            return False
+        current = read_pointer(run_id)
+        fields = (
+            "attempt",
+            "attempt_kind",
+            "phase",
+            "pid",
+            "pid_start_time",
+            "launcher_host",
+            "log_path",
+            "stderr_path",
+            "worktree",
+            "resume_launch_in_flight",
+            "node",
+            "repo",
+            "backend",
+            "agent",
+        )
+        if any(current.get(key) != record.get(key) for key in fields):
+            raise CrewError(
+                f"run {run_id!r} changed while promotion ran; "
+                "its pointer and workspace are preserved; retry promotion"
+            )
+        path.unlink()
+        return True
+
+
 def _promotion_lease_name(run_id: str) -> str:
     return f"promotion-{run_id}"
 
@@ -295,11 +330,11 @@ def complete(
     awaiting_pick = _shadow_pick_in_flight(run_id) if dry_run else False
     if not dry_run:
         _await_in_flight_shadow_pick(run_id)
-    # The node-local pointer lock serialises a run's read-modify-write here; the
-    # host lease, taken inside it, excludes a promotion of the same run on
-    # another host for the whole span, before either store is written.
-    with _pointer_lock(run_id), _promotion_host_lease(run_id):
-        record = _read_pointer_or_rebuild(run_id, root=root)
+    # Checks and landing retain their own claim while pointer mutations remain
+    # available to sweeps and resume. Pointer access holds only its own lock.
+    with _promotion_lock(run_id), _promotion_host_lease(run_id):
+        with _pointer_lock(run_id):
+            record = _read_pointer_or_rebuild(run_id, root=root)
         record = {**record, **read_dispatch_detail(record)}
         # A dispatch whose launch was refused leaves a run that names no
         # project: the refusal removed the pointer or never let it carry a
@@ -1208,7 +1243,7 @@ def _complete_locked(
             )
             capture = capture_run_session(record)
             path = pointer_path(run_id)
-            path.unlink(missing_ok=True)
+            _remove_promoted_pointer(run_id, record)
             retention = existing.get("worktree_retention")
             release = _release_after_promotion(
                 run_id,
@@ -1775,7 +1810,7 @@ def _complete_locked(
         from reckon.crew.picker import lane_context as _lane_context
 
         _lane_context.refresh_run_time_profile(project)
-    except Exception:
+    except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
     committed_review_paths: list[Path] = []
     with _report_written_ledger_row(
@@ -1860,7 +1895,7 @@ def _complete_locked(
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
         capture = capture_run_session(record)
-        pointer_path(run_id).unlink(missing_ok=True)
+        _remove_promoted_pointer(run_id, record)
         release = _release_after_promotion(
             run_id,
             record,
@@ -2034,7 +2069,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
     own pre-check raced a test sees a launch as the refusal it is rather than
     removing a run that has started.
     """
-    with _pointer_lock(run_id):
+    with _promotion_lock(run_id), _pointer_lock(run_id):
         record = read_pointer(run_id)
         if allowed_phases:
             phase = str(record.get("phase") or "")

@@ -33,8 +33,8 @@ from reckon.crew.routing import (
 from reckon.crew.runs import (
     _live_worktree_claims,
     _manifest_freshness,
+    _mutate_pointer,
     _repository_relative_scope,
-    _write_json,
     capture_run_session,
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
     pointer_path,
@@ -186,9 +186,10 @@ def _complete_withdrawn_run(run_id: str, record: Mapping[str, Any]) -> dict[str,
     state the word the fleet vocabulary already uses for a departure that
     records no landing.
     """
+    from reckon.crew.promotion import _remove_promoted_pointer
+
     capture = capture_run_session(record)
-    pointer_existed = pointer_path(run_id).exists()
-    pointer_path(run_id).unlink(missing_ok=True)
+    pointer_existed = _remove_promoted_pointer(run_id, record)
     release = _release_after_promotion(run_id, record)
     release.update(_retire_disposable_identity(record))
     return {
@@ -709,9 +710,12 @@ def _evaluate_suite_delta(
         # is the state a later promotion reads, so a dry run must not move it.
         if dry_run:
             return
-        updated = dict(record)
-        updated["suite_delta_refusal"] = refusal
-        _write_json(pointer_path(run_id), updated)
+
+        def amend(current: dict[str, Any]) -> dict[str, Any]:
+            current["suite_delta_refusal"] = refusal
+            return current
+
+        _mutate_pointer(run_id, amend)
 
     manifest_present, fresh = _manifest_freshness(record)
     manifest: dict[str, Any] = {}
