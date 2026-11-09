@@ -1,0 +1,116 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:48:37.062Z",
+  "dispatched_at": "2026-11-09T16:41:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:22",
+      "id": "wiring-1",
+      "reason": "this is the same wiring gap an earlier review raised for \u00a719 and the author closed by adding f-tmref-005; without a followup naming \u00a720, the next coordinator has nothing to dispatch and the chain reads as finished.",
+      "text": "`_document` moves \u00a720 to `implementable` but carries no followup naming its invocation: the two open followups are f-tmref-004 (\u00a77) and f-tmref-005 (\u00a719), and \u00a719 is now `done`, so the invocation chain ends on a completed section and \u00a720 has no entry point.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "reasoning-1",
+      "reason": "a worker implementing this clause literally removes the per-file identities and reintroduces the stale-snapshot bug the cited code documents, which the node's own gate (a scan count) cannot catch.",
+      "text": "\u00a720's Deliverable says \"The change token is built from directory stamps of the review stores, not from per-run globs\", but `_review_input_identities` (`reckon/crew/recovery_memo.py:387`) carries per-file identities precisely because a directory stamp cannot see an in-place rewrite, and `reckon/crew/review_records.py:1512\u20131517` says so in its own comment (\"A record rewritten in place \u2026 keeps its name, its inode and the store's entries, so the directory's stat identity does not move\"); `_crew_home_change_token` (`reckon/crew/recovery_watch.py:2977`) also states the token must carry \"the classification's own composition rather than a cheaper subset of it\". A directory-stamp token would leave a rewritten review record unread, so a quiet beat would serve a stale classification \u2014 the exact defect the per-file identities exist to prevent.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "reasoning-2",
+      "reason": "the named mechanism cannot remove the profile's largest surviving entry, so the node would land a correct per-tick listing and leave the ~30% unchanged; the fix the evidence supports is threading the tick's pointer set into `_declared_head_keyed_record`.",
+      "text": "\u00a720 names `_review_store_record_paths` among the functions that \"read the per-tick listing rather than globbing per run\", but that function (`reckon/crew/recovery_review_delivery.py:50\u201386`) performs no directory listing at all: it walks `node.write_paths` and compares paths. The 30% the profile attributes to it comes through `_review_record_delivery_directory` \u2192 `_resolved_reviewed_run_id` (`recovery_review_delivery.py:228\u2013269`), which calls `list_live(project=project)` when `_declared_head_keyed_record` calls `_review_store_record_paths` without `pointers=` (line 121), and otherwise falls through to `run_store.runs_for_node` \u2014 a durable-store read, not a store-directory scan.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "reasoning-3",
+      "reason": "memoising `resolved_tick_config` in that thread (the stated deliverable) changes neither call site, so the third limb of the deliverable is unimplementable as written.",
+      "text": "\u00a720 says \"The obligation sweep thread also still re-parses the flight YAML per run through `resolved_tick_config`\", but the obligation sweep's two flight reads call `flight.resolve` directly and never reach `resolved_tick_config`: `reckon/crew/obligations.py:2770` (`_obligations_view`) and `reckon/crew/obligation_snapshot.py:1292` (`_derive_fleet_state`). Each is also resolved once per session view or derivation, not per run.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "done_when-1",
+      "reason": "a worker can satisfy the stated bound without reducing any GPFS traffic, and the gate would pass on the unfixed code, so the negative control measures nothing.",
+      "text": "\u00a720's measure bounds `os.scandir`/`glob` at \"most once per review-store directory\", but `_review_input_identities` lists a per-run directory \u2014 `committed/<project>/<COMMITTED_RUN_DIRNAME>/<run_id>` (`recovery_memo.py:418\u2013421`) \u2014 so 40 live pointers permit 40 listings under a literal reading, which is what the base arm already does. The negative control also only says the base counts are \"recorded\", not that the head assertion fails there.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "single_goal-1",
+      "reason": "the sweep-thread memo can fail or land independently of the tick change, so one verdict cannot close the node and one gate proves neither.",
+      "text": "\u00a720 carries three independently closable deliverables: the producer tick's per-tick review-store listing for `_review_store_record_paths`/`_review_input_identities`/`_own_review_record_exists`, the change token's construction, and a `resolved_tick_config` memo in the obligation sweep thread \u2014 the last in a different thread with its own measure (`flight.resolve` per sweep) and no dependence on the first two.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "evidence_paths-1",
+      "reason": "the section's only end-to-end evidence of the cost falling is unopenable, and \u00a719 set the precedent of naming the pre-landing reading's path.",
+      "text": "\u00a720's post-landing check (\"the coordinator samples the live producer's main thread every 2 s for 120 s and records the busy share, against the 54 of 57 recorded before this section\") names no durable path for the new samples or for the pre-landing reading it is compared against, so the comparison cannot be re-read by anyone but the coordinator who took it.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:554",
+      "id": "anchors_resolve-1",
+      "reason": "the other frame names the same call site and the mechanism rests on them, so correcting the frame spelling would not change what the node does.",
+      "text": "the \u00a720 profile leg `_snapshot_reuse_key > _classification_inputs > _review_input_identities > select_wildcard / _own_review_record_exists` names `select_wildcard`, which resolves to no function anywhere in the repository (`grep -rn select_wildcard` returns only this plan line), so a reader cannot check that half of the profile.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fdc47d5df81211e18804e21d28a71546452e7343",
+  "plan_fingerprint": "f8acf88d0827a44b8f2f524aa7ec980d790d8f232a3f9cc2020dc567b33104e9",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 133,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T163936702281-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "d65f97b1f5efd47a750888e3b0cceabe65260f8d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the profile frame `select_wildcard` in \u00a720 resolves to no function in the tree; every other cited symbol resolves.",
+    "done_when": "a finding \u2014 \u00a720's bound \"at most once per review-store directory\" is ambiguous and holds at base on the per-run committed-tree reading, so the negative control cannot distinguish the fix.",
+    "evidence_paths": "a finding \u2014 \u00a720's post-landing busy-share check names no durable path for either the post-landing samples or the \"54 of 57\" reading it is compared against.",
+    "naming": "pass \u2014 the test file and helper names are mechanism-named, and no ticket, version or stage label reaches them.",
+    "reasoning": "a finding \u2014 \u00a720 names `_review_store_record_paths` as a per-run globber, but it performs no listing; its 30% cost is run-id resolution, which a per-tick store listing does not address.",
+    "single_goal": "a finding \u2014 \u00a720 bundles the producer tick's review-store listing, the change token, and a flight-YAML memo in a different thread (the obligation sweep).",
+    "wiring": "a finding \u2014 `_document` leaves \u00a720 `implementable` with no followup carrying its invocation, and the open followups name \u00a77 and \u00a719, the latter now `done`."
+  },
+  "section_digests": {
+    "_document": "4a470d5e54a42345d3575fbc90568be9f7962cb1aa36670e5a5c4800f2f4fff9",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "1e0e42c8576db312c152ea58108da7af563d055dada707698ea55d86823887fa",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T21:50:11.226679+00:00",
+  "total": null
+}
