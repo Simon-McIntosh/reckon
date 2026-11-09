@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="146">
+<meta name="plan-version" content="147">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -333,6 +333,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261109T183250271017-review-of-a-worker-on-another-host-refuses-a-relaunch-af3da92f842f" data-who="reckon-build" data-when="2026-11-09T18:49:32.516Z">
     <div class="r-comment-body"><p>review of r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch at af3da92f842f, covering 1ba776d856..af3da92f84 (ceea2ae24b, af3da92f84), stored parsed at af3da92f842f0f0e7f1df85c3d33e82ca5681512 with scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 16, fit 19, reuse 20, added_failure_count 0, and three non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch" data-who="reckon-build" data-when="2026-11-09T18:32:06Z">
+    <div class="r-comment-body"><p>§15 landed across ceea2ae24b with fc13619cea and 1ba776d856: an off-host unknown reading enters the launch guard&#x27;s refusal branch instead of falling through to &quot;no worker&quot;; off-host only an exit receipt frees a launch, read by the exit-record owner _run_exit_record which now takes the receipt name (canonical exit.json and attempt-N-exit.json alike) and a strict reading requiring the receipt to name this run, so a truncated, unparseable, run-id-less or other-run receipt is absent and the guard&#x27;s own parser is deleted; a retired worker receipt for a foreign run is never probed against this host; refusals name the recording launcher_host and pid plus &quot;launch from that host, or stop the run there&quot; — gate tests/test_a_worker_on_another_host_refuses_a_relaunch.py 13 passed EXIT=0 at head, 6 failed 7 passed EXIT=1 at the dispatch base 099653a40d, 4 failed 9 passed EXIT=1 at fc13619cea and 1 failed 12 passed EXIT=1 at 1ba776d856, each with the final test file.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
     <div class="r-comment-body"><p>A second instance, reported by the nova S21 coordinator: run <code>r-20261008T004354567004-cfs-edge-term-tangents</code> on codex-astra. After H200 job 1281977 completed at 05:54:42 CEST, the wait sweep resumed the run (resume 2). Its stderr reads <code>thread/resume failed: thread 01a1192e-8494-7fc0-a551-721fb3acada8 already has an active writer (code -32600)</code> at 03:56:32Z while a codex worker in the same worktree went on working. The follower then reported <em>exited with code 1 with 11 commits beyond its recorded base</em> and, a second later, <em>ended by SIGKILL</em>. The investigation should name the guard for both runs: here the backend refused the second writer, while the claude run of §1 admitted it.</p></div>
