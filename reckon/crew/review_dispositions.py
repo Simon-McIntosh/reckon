@@ -28,6 +28,7 @@ also stays in that module, whose own remaining writers share it.
 
 from __future__ import annotations
 
+import json
 import shlex
 from collections.abc import Mapping
 from datetime import UTC, datetime
@@ -161,6 +162,71 @@ def sub_floor_dimensions(
     return rows
 
 
+def _carry_answer_to_delivered_copies(
+    reviewed_run_id: str,
+    record: Mapping[str, Any],
+    key: str,
+) -> list[Path]:
+    """Write ``record``'s ``key`` field into every delivered copy of the record.
+
+    A run review delivers its record into the reviewed run's own
+    ``review-records`` directory, and the supervisor — or a promotion, for a run
+    whose supervisor did not get that far — files those copies into the store
+    again. That filing writes the copy's body over the store file, so a
+    disposition recorded only on the store file is dropped by the next filing of
+    the same review. The delivered copies are therefore written alongside the
+    store copy, which is what keeps the answer on the body every later write of
+    this review is made from.
+
+    Which files those are is decided by ``review._records_naming_this_review``,
+    the same selection the filing reads, narrowed to this record's rubric so the
+    figure review stored beside a text review is never written to. The entry the
+    caller just recorded is merged into each copy under the same key, the latest
+    entry winning per name by the stamp it records, so a copy that already
+    answers another finding keeps that answer and gains this one. A copy already
+    carrying the same entry is left untouched, so recording a disposition twice
+    writes nothing.
+    """
+    from reckon.crew.review import (
+        _records_naming_this_review,
+        _review_record_rubric,
+        _write_record,
+    )
+    from reckon.crew.review_records import _answer_stamp
+    from reckon.crew.runs import run_dir
+
+    written_entries = record.get(key)
+    if not isinstance(written_entries, Mapping):
+        return []
+    written: list[Path] = []
+    for path in _records_naming_this_review(
+        record,
+        run_dir(reviewed_run_id),
+        rubric=_review_record_rubric(record),
+    ):
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if not isinstance(body, dict):
+            continue
+        existing = body.get(key)
+        merged = dict(existing) if isinstance(existing, Mapping) else {}
+        changed = False
+        for name, entry in written_entries.items():
+            current = merged.get(name)
+            if current is None or _answer_stamp(entry) >= _answer_stamp(current):
+                if current != entry:
+                    changed = True
+                merged[name] = entry
+        if not changed:
+            continue
+        body[key] = merged
+        _write_record(path, body)
+        written.append(path)
+    return written
+
+
 def _build_disposition_entry(
     kind: str | None, node: str | None, reason: str | None
 ) -> dict[str, Any]:
@@ -280,6 +346,12 @@ def record_dimension_disposition(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, record)
+    # The reviewer's own copies in the review run's directory are filed into the
+    # store again by a later filing of this review, so the answer is written
+    # there too rather than only on the copy this call selected.
+    _carry_answer_to_delivered_copies(
+        reviewed_run_id, record, DIMENSION_DISPOSITIONS_KEY
+    )
     # A disposition written to the committed record is a tracked change, so it
     # is committed here rather than left for the next reader to trip on; a
     # staging write is not tracked and is left where it was written.
@@ -499,6 +571,7 @@ def record_finding_disposition(
 
     path.parent.mkdir(parents=True, exist_ok=True)
     _write_record(path, record)
+    _carry_answer_to_delivered_copies(reviewed_run_id, record, FINDING_DISPOSITIONS_KEY)
     commit_record_write(project, path)
     return path
 
