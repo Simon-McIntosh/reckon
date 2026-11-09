@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:42:16.854Z",
+  "dispatched_at": "2026-11-09T15:37:28Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T153547346530-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:60",
+      "id": "reasoning-1",
+      "reason": "the worker needs to be told whether gc fetches (and pays its cost on a login node) or which step refreshes the ref, otherwise the stated guarantee and every arm of the done-when hold only in the temporary repository.",
+      "text": "\u00a75 says the gc reap skips a flagged pointer \"until its head is on the remote primary branch, read as `origin/<primary>` after a fetch\", but `reckon/crew/gc.py` contains no `fetch` call and no notion of a primary branch (grep over the module returns none for either), so the refresh step is unowned; in the done-when's temporary repository the bare remote is local, so the test's own push moves `origin/main` and the arm passes while in production a `origin/<primary>` advanced by any other checkout stays stale and the pointer reads live indefinitely \u2014 the live-pointer-that-never-clears state this section exists to prevent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T153547346530-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:60",
+      "id": "reasoning-2",
+      "reason": "as written the two sections prescribe opposite ledger outcomes for \"gate passed, merge deferred\", so a worker implementing \u00a75 literally leaves the ledger and plan comment claiming a landing \u00a76 forbids, with nothing in the record flagging the deferral but a pointer that gc and crew merge are both being changed to manage.",
+      "text": "\u00a75's flag path keeps the pointer for a run whose promotion has already written a passed ledger row and plan comment, which \u00a76 (plan.html:64) describes as the record reading the run as landed, and which \u00a75's own Why calls \"the ledger then reads landed work that main does not carry, the state \u00a72 exists to prevent\"; \u00a76 resolves the same state for the `--land` route by rewriting the row to a not-landed outcome naming the failed step, but \u00a75 gives its flagged route no equivalent and names only the live pointer as the remaining record",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a354a20a67ef403564f1ae59bc6f53c0dbdd8c3e",
+  "plan_fingerprint": "ab1d65a2473ed2801f661e906874eeebef8fd8af1fe285fbdc2a6dbec4f47938",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T153547346530-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "e7768182ad6819ac41f59ab4e3ef7e8addcf34d6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves at `a354a20a`: `reckon/crew/gc.py:722-739` is the live-pointer reap, `reckon/crew/pending_landing.py:233` is the live-pointer skip, `reckon/crew_run_commands.py:249` is `def crew_merge`, `reckon/crew/merge.py:808` is `raise MergePushOutstandingError(...)`, and `land_merge` (merge.py:735-808) contains no pointer unlink.",
+    "done_when": "pass \u2014 each of \u00a75's five arms names a control that can fail: the base revision promoting and removing the pointer, skipping the retirement, the reap without the skip, and retiring on the local branch; the two gc arms and the base-revision control all measure behaviour absent at `a354a20a`.",
+    "evidence_paths": "pass \u2014 evidence is the new `tests/test_a_plain_complete_refuses_an_unmerged_head.py` under the repository's test tree, and the run-directory log convention is already stated by \u00a72 and \u00a76; \u00a75's own done-when omits the log-path sentence its siblings carry, which is a small inconsistency rather than a defect.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach a symbol; \"separate merge\" is a mechanism, not a stage label.",
+    "reasoning": "a finding \u2014 \u00a75's gc skip reads `origin/<primary>` \"after a fetch\" but no caller in the plan or in `reckon/crew/gc.py` performs a fetch, and the same section's flagged path leaves the promoted run's ledger row and plan comment reading as landed for a head main does not carry, the state its own Why names as the defect.",
+    "single_goal": "pass \u2014 \u00a75 is one deliverable, the lifecycle of a run promoted without a landing (refuse, flag, keep, retire, survive gc), and its gate closes on that one verdict.",
+    "wiring": "pass \u2014 \u00a75 is `implementable`, f-alomwiss-007 (plan.html:85-89) carries `/reckon-build \u2026 \u00a75`, and `plan-section-depends-on` (plan.html:29) makes s6 wait on s5, which matches \u00a75's own closing sentence that \u00a76 also writes `promotion.py`."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "cfa3176cf6faf91376f647ed85be3225bd4188318a3637224e3488b06fe91c46",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:48:11.425099+00:00",
+  "total": null
+}
