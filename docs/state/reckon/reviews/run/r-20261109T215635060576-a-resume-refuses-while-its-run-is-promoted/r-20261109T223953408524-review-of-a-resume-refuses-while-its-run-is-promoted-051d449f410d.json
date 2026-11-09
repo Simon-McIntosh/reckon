@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T22:59:54.700Z",
+  "dispatched_at": "2026-11-09T22:43:32Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 262,
+      "severity": "non-blocking",
+      "summary": "the refusal path calls clear_resume_launching, which takes the pointer lock blocking, so against a real promotion holding both locks the resume waits instead of refusing"
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 212,
+      "severity": "non-blocking",
+      "summary": "promotion_lock_name restates the lock name owned by promotion.py:162, so a rename there silently disables the guard with no test reddening"
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "line": 1435,
+      "severity": "non-blocking",
+      "summary": "resume_plan mutates the pointer before mark_resume_launching, so the guard fires after the write it exists to prevent"
+    },
+    {
+      "file": "tests/test_a_resume_waits_out_a_promotion.py",
+      "line": 40,
+      "severity": "non-blocking",
+      "summary": "DECLARED_MUTATION is defined and never referenced"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted/negative-control-base-arm.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "summary": "the log's module header names the worktree module while its tree and cwd headers name the scratch tree, so the header misreports which code ran"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"a resume refuses while its run's promotion lock is held\"; reckon/crew/resumption.py:236-256 takes the run's promotion lock non-blocking inside mark_resume_launching and raises a CrewError naming the promotion, so the stated deliverable is present.\nVERDICT done_when: the done_when asks for a refusal that leaves the pointer unchanged, a resume without a promotion proceeding, a five-second deadlock bound, importer arms adding no failure and ruff clean; tests/test_a_resume_waits_out_a_promotion.py:110-223 supplies each case and the manifest records head 3 passed against base 1 failed/2 passed with identical importer failure ids.\nVERDICT write_paths: the declared paths are reckon/crew/runs.py, reckon/crew/resumption.py, tests/test_a_resume_waits_out_a_promotion.py and the evidence fragment; git diff --stat from the base to the head touches exactly those four files and nothing else.\nVERDICT manifest: read at its own path; it states status complete, carries all six rubric lines, records head 3 passed and base 1 failed/2 passed with both logs under the run directory, and names eleven pre-existing importer failures under outside_scope.\nVERDICT diff: read commit by commit; the first commit adds PointerLockHeldError and the blocking flag to reckon/crew/runs.py:452-490 and the promotion-lock take to reckon/crew/resumption.py:236-256, and the second adds the test and the evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:_resume (line 1771), reckon/crew/dispatch_sessions.py:resume_plan (line 1440), reckon/crew/promotion.py:_promotion_lock (line 162)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:236-256 refuses with a message naming the promotion, though the refusal is reached only after clear_resume_launching takes the pointer lock blocking at resumption.py:262.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-suite.log records 3 passed at the reviewed head and negative-control-base-arm.log records 1 failed/2 passed with EXIT=1 at the base, but the refusal case at tests/test_a_resume_waits_out_a_promotion.py:139 holds only the promotion lock, not the run's pointer lock that promotion.py:2072 also holds.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat from the base to the head shows four files, every one of them inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_resume_waits_out_a_promotion.py:110 fails at the base revision with DID NOT RAISE CrewError, but no assertion reddens if promotion.py:162 renames its lock, because resumption.py:212 restates the name independently.\nSCORE fit: 18\nJUSTIFICATION fit: PointerLockHeldError and the blocking keyword on _pointer_lock follow the existing contextmanager idiom at reckon/crew/runs.py:465 and carry no plan or ticket identifier, though the test's unused DECLARED_MUTATION at tests/test_a_resume_waits_out_a_promotion.py:40 is dead weight.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/resumption.py:212 restates the lock name that reckon/crew/promotion.py:162 already owns instead of extending that owner with a blocking parameter.\nFINDING reckon/crew/resumption.py:262 non-blocking: the refusal path reaches clear_resume_launching from the exception arm at resumption.py:1808, and that helper takes the run's pointer lock with a blocking _pointer_lock, so against a real promotion, which holds both locks at promotion.py:2072, the resume waits for the promotion to end before raising, contrary to the message's refusal-rather-than-waiting claim and to the fragment's; the new test cannot see this because it holds only the promotion lock.\nFINDING reckon/crew/resumption.py:212 non-blocking: promotion_lock_name restates the promotion lock name owned by reckon/crew/promotion.py:162 and repeated at promotion.py:199, so a rename there silently makes the resume take a different lock and the guard vanishes, with no test reddening because the refusal test spells the literal itself and the deadlock test would simply stop contending.\nFINDING reckon/crew/dispatch_sessions.py:1435 non-blocking: resume_plan mutates the pointer through _mutate_pointer before calling mark_resume_launching at line 1440, so on that path the new guard fires after the pointer write it exists to prevent, and the manifest's evidence_inputs overstates the call site by saying it is refused with the same message.\nFINDING tests/test_a_resume_waits_out_a_promotion.py:40 non-blocking: DECLARED_MUTATION is defined and never referenced, leaving a dead constant that reads as a check but asserts nothing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted/negative-control-base-arm.log:3 non-blocking: the header's module line names the worktree's reckon/crew/resumption.py while its tree and cwd lines name the scratch tree, and the manifest's measurement_module names the scratch path, so the log's record of which module ran contradicts its other header lines.\n",
+  "review_run_id": "r-20261109T223953408524-review-of-a-resume-refuses-while-its-run-is-promoted-051d449f410d",
+  "reviewed_base_sha": "f6a07c1c23b10edbc5dedb607c87ef55ce0863c7",
+  "reviewed_head_sha": "051d449f410d575177cf4ea994f8925ec6db5c2b",
+  "reviewed_run_id": "r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:18:13.722316+00:00",
+  "total": 91
+}
