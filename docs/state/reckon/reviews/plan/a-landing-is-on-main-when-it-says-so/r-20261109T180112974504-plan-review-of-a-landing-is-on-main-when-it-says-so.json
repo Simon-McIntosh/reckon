@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T18:10:30.538Z",
+  "dispatched_at": "2026-11-09T18:02:47Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "done_when-1",
+      "reason": "a worker writing this control literally would assert pointer removal against a base revision that preserves the pointer, so the arm fails for a reason unrelated to the repair, and the stated cause of the unrecovered landing (\"no landing pass then finishes\" a pointerless run) is the inverse of the true one (a live unflagged pointer is skipped), risking a \"fix\" that removes the pointer instead of flagging it.",
+      "text": "\u00a76's negative control asserts \"at the base revision the first case removes the pointer and leaves a passed row for a head that is not on the branch, which no landing pass then finishes\", but the base revision does the opposite of the first clause and the opposite of the second: the measured failure is the pointer-removal guard raising \"run ... changed while promotion ran\", and that raise is `raise CrewError(...)` immediately before `path.unlink()` (`reckon/crew/promotion.py:189-196`), whose message states \"its pointer and workspace are preserved\" \u2014 so the pointer survives, exactly as \u00a76's own Why records (\"the pointer-removal guard ... raised\"). And a pointer that *were* removed would make `run_id` absent from `runs.list_live()`, which is precisely the condition under which `finish_pending_landings` does *not* skip the record (`run_id in live and not (pointer or {}).get(\"pending_landing_repair\")`, `reckon/crew/pending_landing.py:233`) \u2014 so a removed pointer would be finished by the landing pass, not left unfinished; the reason the base case is never finished is the *live, unflagged* pointer, which is the fact \u00a76's flag exists to change",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "anchors_resolve-1",
+      "reason": "the claim is explicitly dated (\"Measured on 9 November at about 14:02Z\") and was true at the measurement; only the present-tense phrasing is now stale, and a coordinator reading it would lose a few minutes to the parenthetical, not take a wrong path.",
+      "text": "\u00a76's Why supports \"origin/main carries none of its commits\" with \"(its refusal family `D24` is absent from `reckon/crew/refusals.py` on main)\", but `D24` is present at `reckon/crew/refusals.py:95` in the tree a reader opens today, added by `fb39a8a0e1` and merged to main at 15:16Z on 9 November (`612314cf88`), after the 14:02Z measurement",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "e845addefab17d7b840e9d070c70b3717bb65464",
+  "plan_fingerprint": "58766621cef1f6584edafd2efd9197e16ab5c68c9d8b280ad43827baa7681db2",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 26,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T180112974504-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "b16936fa5ed9390feb680e17258750f7392caa2a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the new text's line citations all resolve (`promotion.py:161`, `:189`, `:2072`; `runs.py:453-462`; `resumption.py:217`; `promotion_checks.py:787`; `pending_landing.py:185`; `crew_run_commands.py:3217`), but the parenthetical \"D24 is absent from `reckon/crew/refusals.py` on main\" no longer holds when a reader opens the file today.",
+    "done_when": "a finding \u2014 s6's negative control says the base revision \"removes the pointer\", but `_remove_promoted_pointer` raises before `path.unlink()` so the pointer is preserved, and a removed pointer would in fact let the landing pass finish the head.",
+    "evidence_paths": "pass \u2014 the gate log is written \"under the run directory\", starting with revision and command and ending in `EXIT=`, which is durable and re-openable.",
+    "naming": "pass \u2014 the new mechanism is named by what it does (`pending_landing_repair`, a non-blocking lock mode); no plan labels, stage names or ticket numbers reach a symbol or comment.",
+    "reasoning": "pass \u2014 the root cause (a resume moving `attempt`/`phase` after `_require_worker_stopped_before_promotion` had passed) matches the guard's compared field list; the marking mechanism does produce the first arm, since `finish_pending_landings` skips only a live pointer that lacks the flag (`pending_landing.py:233`) and unlinks the pointer and releases the worktree once flagged (`pending_landing.py:309`); and the mechanism sits on the real path \u2014 `mark_resume_launching` is called from `_resume` (`resumption.py:1742`), which the repair reflex (`recovery_repair_dispatch.py:105`) and `crew resume` (`crew_run_commands.py:2428`) both reach.",
+    "single_goal": "pass \u2014 s6 carries one outcome (a `--land` promotion records a landing only once the head is on main); the resume lock is the prevention half of that one measure, not a second deliverable.",
+    "wiring": "pass \u2014 s6 declares `plan-section-depends-on` s6\u2192s5 and the edge resolves to the section that closes the neighbouring plain-complete route; \u00a75 records the matching \"\u00a76 also writes promotion.py\" note, so the two sections' writable files do not collide."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "21c36d0c92510ecabc472d79ecac52805626f4c009836573a6cafa61914b290c",
+    "s6": "6d8cf7fbdf7099ca6e86c76be328682ee1b0ad66574a5e0af790028b4144bcf3",
+    "s7": "84bc24f6fe1df5a54f3d90a870ad9e95b19f56858a96ed8185e04fe3006d02fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:17:07.620579+00:00",
+  "total": null
+}
