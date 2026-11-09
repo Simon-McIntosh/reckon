@@ -105,4 +105,22 @@
     <li><strong>Give a synchronous launcher an end.</strong> When the seam branch returns, the launch it stood in for is over: release the reservation there, or record the seam's pid, so a run launched through a seam is not held by the process that called it. This is what makes rule 2 safe and is the rule the deliverable already states (&ldquo;freed by its launch's own end&rdquo;).</li>
     <li><strong>Leave the two timing failures to measurement first.</strong> Write <code>worker.json</code> before the survival wait in the supervisor's own path (it is already written immediately after <code>Popen</code>; move it ahead of any work that follows the spawn), and reproduce the detached-worker case before changing it. Neither should alter a §13 case, and both must be measured against the base arm before being claimed.</li>
   </ol>
+
+  <p><strong>Implemented at <code>1570b1f7ad</code>, with item 2 amended.</strong>
+  The defect in <code>test_a_second_resume_records_the_third_attempt</code> was
+  in the key, not in the number the door launched: a first attempt that ended
+  with its canonical <code>worker.json</code> or <code>exit.json</code> still in
+  place had never been retired into <code>attempt-N</code> receipts, so the key
+  read it as attempt zero and handed the relaunch a number the attempt had
+  already taken. <code>launch_reservation_key</code> now reads every record the
+  run holds &mdash; the retired receipts by their name, the canonical records by
+  the attempt they carry &mdash; and a launch starts exactly the attempt its
+  door reserved, never a larger number computed from the pointer. The dispatch
+  door records the returned supervisor pid itself; a resume that reserves and
+  then launches through the seam has its own unrecorded reservation adopted by
+  that launch, so the hold follows the worker; a bare seam releases it on
+  return. The two new cases are a first attempt that left no receipt and a
+  canonical record written before the attempt field existed. The detached-worker
+  and group-stop ids needed no change: both pass at this head with the
+  reservation defects fixed.</p>
 </section>
