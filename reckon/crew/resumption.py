@@ -50,6 +50,7 @@ import subprocess
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, suppress
+from contextvars import ContextVar
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -209,14 +210,67 @@ def launch_in_flight(record: Mapping[str, Any]) -> bool:
     return record_process_alive(marker) is True
 
 
+class PromotionInProgressError(CrewError):
+    """A resume met a run that a promotion holds, and refuses rather than waits."""
+
+    def __init__(self, run_id: str) -> None:
+        super().__init__(
+            f"cannot resume {run_id!r}: it is being promoted, so its pointer "
+            "and worktree are the promotion's to rewrite; the resume is "
+            "refused rather than waiting, and the run can be resumed once "
+            "the promotion finishes"
+        )
+        self.run_id = run_id
+
+
+# The runs one context already holds against promotion. A resume plan writes
+# the pointer and then marks the launch, and both must happen under one hold;
+# without this the inner take would compete with the outer one and refuse the
+# process against itself.
+_PROMOTION_HELD: ContextVar[frozenset[str]] = ContextVar(
+    "promotion_held", default=frozenset()
+)
+
+
 def promotion_lock_name(run_id: str) -> str:
     """The lock a promotion holds for the whole of a run's promotion.
 
-    Promotion takes this lock before the run's own pointer lock, so a resume
-    takes it first here, in the same order, and the two can never hold what the
-    other waits for.
+    The name is promotion's own, imported rather than spelled again here, so a
+    rename there cannot leave this guard watching a lock nobody takes. What
+    keeps the two spellings from diverging silently is the case that drives a
+    real promotion lock held over both its writes. The lock named must stay the
+    one promotion takes before the run's pointer lock: a resume takes it first
+    here, in the same order, and the two can never hold what the other waits
+    for.
     """
-    return f"promotion-{run_id}"
+    from reckon.crew.promotion import _promotion_lease_name
+
+    return _promotion_lease_name(run_id)
+
+
+@contextmanager
+def hold_against_promotion(run_id: str):
+    """Hold the run against a promotion, or refuse while one holds it.
+
+    Re-entrant within one context, so a caller that already holds the run (a
+    resume plan that writes the pointer and then marks the launch) passes
+    through the inner take rather than competing with itself.
+    """
+    held = _PROMOTION_HELD.get()
+    if run_id in held:
+        yield
+        return
+    try:
+        with _pointer_lock(promotion_lock_name(run_id), blocking=False):
+            token = _PROMOTION_HELD.set(held | {run_id})
+            try:
+                yield
+            finally:
+                _PROMOTION_HELD.reset(token)
+    except PointerLockHeldError as held_error:
+        if held_error.run_id != promotion_lock_name(run_id):
+            raise
+        raise PromotionInProgressError(run_id) from None
 
 
 def mark_resume_launching(run_id: str) -> None:
@@ -225,47 +279,54 @@ def mark_resume_launching(run_id: str) -> None:
     A run with no live pointer has nothing to carry the mark and nothing that
     could read it back, so there is nothing to write and no refusal to warn of.
 
-    The run's promotion lock is taken first, without waiting. A promotion holds
-    it while it rewrites and removes the pointer, so a resume that meets it
-    refuses instead of writing a pointer under the promotion; a resume that
+    The run is held against promotion first, without waiting. A promotion holds
+    that lock while it rewrites and removes the pointer, so a resume that meets
+    it refuses instead of writing a pointer under the promotion; a resume that
     takes it first is finished before any promotion can start, because the
     promotion acquires the same lock. Taking it before the pointer lock — the
     order promotion uses — is what keeps the pair from deadlocking.
     """
+    with hold_against_promotion(run_id), _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return
+        current[RESUME_LAUNCH_IN_FLIGHT] = {
+            "pid": os.getpid(),
+            "pid_start_time": process_start_time(os.getpid()),
+            "at": _utc_now(),
+        }
+        _write_json(pointer_path(run_id), current)
+
+
+def _drop_launch_mark_locked(run_id: str) -> None:
     try:
-        with (
-            _pointer_lock(promotion_lock_name(run_id), blocking=False),
-            _pointer_lock(run_id),
-        ):
-            try:
-                current = read_pointer(run_id)
-            except CrewError:
-                return
-            current[RESUME_LAUNCH_IN_FLIGHT] = {
-                "pid": os.getpid(),
-                "pid_start_time": process_start_time(os.getpid()),
-                "at": _utc_now(),
-            }
-            _write_json(pointer_path(run_id), current)
-    except PointerLockHeldError:
-        raise CrewError(
-            f"cannot resume {run_id!r}: it is being promoted, so its pointer "
-            "and worktree are the promotion's to rewrite; the resume is "
-            "refused rather than waiting, and the run can be resumed once "
-            "the promotion finishes"
-        ) from None
+        current = read_pointer(run_id)
+    except CrewError:
+        return
+    if current.pop(RESUME_LAUNCH_IN_FLIGHT, None) is None:
+        return
+    _write_json(pointer_path(run_id), current)
 
 
 def clear_resume_launching(run_id: str) -> None:
     """Drop the in-flight marker once the attempt's pid has been recorded."""
     with _pointer_lock(run_id):
-        try:
-            current = read_pointer(run_id)
-        except CrewError:
-            return
-        if current.pop(RESUME_LAUNCH_IN_FLIGHT, None) is None:
-            return
-        _write_json(pointer_path(run_id), current)
+        _drop_launch_mark_locked(run_id)
+
+
+def clear_resume_launching_without_waiting(run_id: str) -> None:
+    """Drop the mark only if its pointer is free, so a refusal never waits.
+
+    A resume refused because a promotion holds the run must not queue behind
+    that promotion to undo a mark: the pointer is the promotion's to rewrite
+    and remove, so a mark left on it is not this refusal's to undo.
+    """
+    try:
+        with _pointer_lock(run_id, blocking=False):
+            _drop_launch_mark_locked(run_id)
+    except PointerLockHeldError:
+        return
 
 
 def live_attempt_refusal(run_id: str, record: Mapping[str, Any]) -> CrewError | None:
@@ -1808,6 +1869,14 @@ def _resume(
                 # supervisor has recorded it, and that supervisor keeps the
                 # hold.
                 release_launch_reservation(reservation, only_when_unspawned=True)
+        except PromotionInProgressError:
+            # The refusal is the promotion's answer, and its pointer lock is
+            # held by that promotion: undoing the mark here must not queue
+            # behind it, which is the wait this refusal exists to avoid. The
+            # claim goes, because no worker was started.
+            clear_resume_launching_without_waiting(run_id)
+            release_launch_reservation(reservation, only_when_unspawned=True)
+            raise
         except BaseException:
             # A launch that ended before it held the session recorded no attempt
             # of its own, so nothing will drop the in-flight marker this door

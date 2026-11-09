@@ -1432,12 +1432,18 @@ def resume_plan(
         }
         return current
 
-    _mutate_pointer(run_id, capture)
-    # The attempt's pid is not on the pointer until the caller records it, so
-    # this marker closes the window between here and that write: a second door
-    # reading the pointer in between sees a launch in flight and refuses, and
-    # record_resumption drops the marker once the attempt is recorded.
-    _resumption.mark_resume_launching(run_id)
+    # The pointer write and the launch mark are one hold. Taken separately, a
+    # promotion starting between them would read a pointer this resume had
+    # already rewritten, and the mark's own refusal would fire after the write
+    # it exists to prevent.
+    with _resumption.hold_against_promotion(run_id):
+        _mutate_pointer(run_id, capture)
+        # The attempt's pid is not on the pointer until the caller records it,
+        # so this marker closes the window between here and that write: a
+        # second door reading the pointer in between sees a launch in flight
+        # and refuses, and record_resumption drops the marker once the attempt
+        # is recorded.
+        _resumption.mark_resume_launching(run_id)
     return plan
 
 

@@ -17,7 +17,9 @@ would catch it.
 The cases drive ``_resume`` with a launcher seam, so no worker is started and
 there is nothing left running. The promotion arm holds the two locks exactly as
 ``promotion.py`` does, in its order, and the deadlock arm starts one of each
-together against a five-second bound.
+together against a five-second bound. The refusal is bounded too: a resume
+whose run a real promotion holds over both its writes must answer promptly,
+not queue behind the pointer lock the promotion is holding.
 
 The declared mutation is the base behaviour: a resume that takes only the run's
 pointer lock proceeds while the promotion lock is held.
@@ -37,16 +39,13 @@ import pytest
 from reckon.crew import promotion, resumption, runs
 from reckon.crew.node import CrewError
 
-DECLARED_MUTATION = (
-    "At the base revision the resume proceeds while the promotion lock is held"
-)
-
 RUN_ID = "r-resume-beside-a-promotion"
 # The name promotion gives its per-run lock (reckon/crew/promotion.py). Spelled
 # here rather than read through the production helper, so the base arm holds the
 # lock the base code actually races against instead of failing on a new name.
 PROMOTION_LOCK = f"promotion-{RUN_ID}"
 DEADLOCK_BUDGET_SECONDS = 5.0
+REFUSAL_BUDGET_SECONDS = 2.0
 ROUNDS = 25
 
 
@@ -144,6 +143,41 @@ def test_a_resume_refuses_while_a_promotion_holds_the_lock(
 
     assert launched == [], "a refused resume must not start a worker"
     assert pointer.read_bytes() == before, "the promotion's pointer was rewritten"
+
+
+def test_a_refusal_does_not_wait_for_the_promotions_pointer_lock(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refused resume answers at once, though the promotion holds both locks.
+
+    A real promotion holds its lock and the run's pointer lock together while it
+    rewrites the pointer. The resume must refuse inside that window rather than
+    queue behind the pointer lock to undo a mark: a refusal that waited would be
+    exactly the stall this node exists to remove, and its process would sit
+    there until the promotion finished.
+    """
+    _fixture(tmp_path, monkeypatch)
+    outcome: list[BaseException] = []
+
+    def attempt() -> None:
+        try:
+            _resume(RUN_ID, 424242)
+        except BaseException as exc:  # noqa: BLE001 - reported by the case
+            outcome.append(exc)
+
+    with promotion._promotion_lock(RUN_ID), runs._pointer_lock(RUN_ID):
+        thread = threading.Thread(target=attempt, daemon=True)
+        thread.start()
+        thread.join(timeout=REFUSAL_BUDGET_SECONDS)
+        waited = thread.is_alive()
+    # Released either way, so a refusal that did queue is cleaned up before the
+    # assertion reports it rather than outliving the case.
+    thread.join(timeout=REFUSAL_BUDGET_SECONDS)
+
+    assert not waited, "the refusal queued behind the promotion's pointer lock"
+    assert len(outcome) == 1, outcome
+    refusal_type = getattr(resumption, "PromotionInProgressError", CrewError)
+    assert isinstance(outcome[0], refusal_type), outcome
 
 
 def test_a_resume_proceeds_with_no_promotion_in_progress(
