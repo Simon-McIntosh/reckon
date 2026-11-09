@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:41:42.600Z",
+  "dispatched_at": "2026-11-09T10:33:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "done_when-1",
+      "reason": "a worker would either fail its own red arm or force the count by editing the pass limit, and the plan must say the control runs the pass as a preview (`dry_run=True`, which skips the limit) or raise the limit inside the test.",
+      "text": "the negative control says the base pass \"calls `list_live` once per plan, so at least 6 times\", but a real pass weighs exactly one plan (`PLAN_REVIEW_PASS_LIMIT = 1`, `plan_review.py:3401`; `if not dry_run and len(report[\"read\"]) >= PLAN_REVIEW_PASS_LIMIT: break` at `plan_review.py:3982`), so the base arm reads 2 calls (one in `plan_authoring_runs`, one in `_standing_plan_review`), never 6 \u2014 the control as specified cannot be produced",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "reasoning-1",
+      "reason": "the worker would implement the three named functions, watch the publish assertion stay red, and be left to guess at an unstated fourth caller and its new parameter.",
+      "text": "the deliverable says the owed-review pass \"neither re-reads nor re-publishes\" the pointer set and names `compose_owed_plan_reviews`, `_owed_review_skip_reason` and `_standing_plan_review`, but `compose_owed_plan_reviews` first calls `plan_authoring_runs` (`plan_review.py:3904`), whose body calls `runs.list_live(project=project)` (`plan_review.py:3512`, which publishes at `runs.py:1132`), and that function takes no `pointers` argument (`plan_review.py:3487`), so the named mechanism leaves the pass publishing and the done-when's \"the pass makes no watch-stream publish\" unmet",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "reasoning-2",
+      "reason": "the section as written promises a whole-tick single read and measures only the pass, so a node can close on its gate while the tick still lists the pointer set four times, which is the cost the section exists to remove.",
+      "text": "the title and deliverable claim \"one producer tick reads the live pointer set once\", but the same tick reads it again in `runs.sweep_unfollowed_sessions` (`reckon/crew/runs.py:4330`) and in `resumption.sweep` (`reckon/crew/resumption.py:2185`) besides `watch_ticker`'s own read (`recovery_watch.py:3339`), and neither of those two reads is named in the deliverable or counted by the done-when",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "reasoning-3",
+      "reason": "the worker is sent to cache a path that disappears, and the bounded-resolution measure is satisfied vacuously rather than by the resolution being shared with `review_coverage`.",
+      "text": "the clause \"the flight resolution a classification needs is resolved once per project per tick\" names classification as the consumer, but the pass's own `flight.resolve` calls come from `review_coverage` (`plan_review.py:1155`), reached once per weighed plan through `_owed_review_skip_reason`, while `classify_pointer`'s resolution is reached only through the watch-stream publish this section removes, so after the fix the classification path no longer runs in the pass and the named consumer resolves nothing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "evidence_paths-1",
+      "reason": "the check is explicitly outside the node's gate and the coordinator holds the producer home; a named path would make it reproducible but no code path changes.",
+      "text": "the post-landing check reads \"three consecutive heartbeat gaps in its event stream for project reckon ... against the gaps recorded before landing\", but names neither the event stream file nor a durable path for the pre-landing readings, so the comparison the check depends on has no locator",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor is one call-hop short of the claim but leads to the right function, and the py-spy chain quoted beside it already names `_standing_plan_review > runs.list_live`.",
+      "text": "the sentence \"each plan the owed-review pass considers calls `list_live` without the pointer set it already holds (`plan_review.py:3782` on main)\" anchors on the line that calls `_standing_plan_review`, while the `list_live` call it describes is `recovery_review_dispatch.py:2142`; a reader who opens 3782 finds no `list_live`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "252194ec01b39afb5cef22c152eb20c5830ab704",
+  "plan_fingerprint": "1b998ee06bdf146dd15a8ff8dc3229b3842ae0ad45d5884e24347721fbe7a557",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T103035903507-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "ebed94ebd66bd8ac2b9ce9d8a987df2e4345ab8b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `plan_review.py:3782` is the call to `_standing_plan_review`, not the `list_live` call the sentence attaches it to, which is `reckon/crew/recovery_review_dispatch.py:2142`.",
+    "done_when": "a finding \u2014 the negative control's base count is unachievable as written, because a real pass weighs one plan (`PLAN_REVIEW_PASS_LIMIT = 1`, `reckon/crew/plan_review.py:3401`).",
+    "evidence_paths": "a finding \u2014 the coordinator's post-landing heartbeat check names neither the event stream that carries the gaps nor where the pre-landing gaps are recorded.",
+    "naming": "pass \u2014 the test filename and the symbols it names describe the mechanism, and no plan label, stage name or ticket number reaches code.",
+    "reasoning": "a finding \u2014 the deliverable's list of functions omits `plan_authoring_runs`, whose `runs.list_live(project=project)` (`reckon/crew/plan_review.py:3512`) runs inside the pass and publishes the watch stream, so the stated mechanism cannot produce the stated \"no watch-stream publish\".",
+    "single_goal": "pass \u2014 the two limbs (pointer set once, bounded tick) are the single loop this section repairs; the earlier declination stands and the unit's change does not alter that.",
+    "wiring": "pass \u2014 \u00a719's only open invocation carrier is f-tmref-005 (`/reckon-build the-monitor-reads-each-fact-once \u00a719`), and no depends-on or gates entry is needed for it."
+  },
+  "section_digests": {
+    "_document": "45b1cf4f712fbc2ead523cafde5258f887bf6ae067d3a2e50095557ca1db086d",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "7ae2897ec67e7c5b88bd30d7bd54491abc3f7be846e6a11e4969541c7b4f54ca",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:42:14.804414+00:00",
+  "total": null
+}
