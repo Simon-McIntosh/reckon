@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:47:32.601Z",
+  "dispatched_at": "2026-11-09T15:42:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "done_when-1",
+      "reason": "on a fresh node the dispatched attempt is 1 (dispatch.py:2729) and the base key computed from the pre-created empty directory is also 1 (dispatch_launch.py:2242), so base and head agree and the case passes at base, while the plan requires it to fail there; the fixture (a node with an earlier committed run, so the dispatched attempt is 2 or more) is what makes the case measure the repair and it is not stated.",
+      "text": "the \"paired shadow arm's first launch keeps its dispatched attempt\" case does not fail at the dispatch base unless the shadowed node already has a committed run",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "reasoning-1",
+      "reason": "claim publication is `not shadow_lineage` (dispatch.py:2577) and only the paired door pre-creates both run directories (dispatch.py:1351), so an unbriefed `crew shadow` launch reaches the marker at dispatch.py:2773 with no run directory and `_supervisor_write` (dispatch_launch.py:1947) drops it, leaving \u00a716's central rule that every launch takes a reservation undelivered on that production door.",
+      "text": "\"The attempt marker is already written for every fresh launch, because the launch claim creates the run directory before it\" is false for a solo `crew shadow` launch",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1cc9ca769dbec1a430532fdc0f7b42eb955ea9a9",
+  "plan_fingerprint": "63f459f55788a2aec4b0aa208c49e63a66fc24c162164276b0b734ae89947fec",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 132,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T153948082363-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "8a36cb98bcb15801a38cab952e8c9773a52913f6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 dispatch.py:1351 pre-creates both paired arms' directories, dispatch.py:2582 publishes the launch claim, dispatch.py:2773 writes the attempt marker, dispatch_launch.py:2440 is the suppressed supervisor write, resumption.py:389 is claim_next_attempt, tests/test_a_concurrent_launch_is_refused.py:446/:461/:782 and the two reclaim tests in tests/test_a_resume_never_launches_beside_another_node.py:343/:367 all resolve.",
+    "done_when": "a finding \u2014 \u00a716's \"paired shadow arm's first launch keeps its dispatched attempt\" case cannot fail at the base with the fixture its text implies.",
+    "evidence_paths": "pass \u2014 write paths are repository files and every gate log sits under the run directory with a revision header and a bare EXIT= line.",
+    "naming": "pass \u2014 the section names mechanisms and existing symbols (run_holds_an_attempt_record, launch_reservation_key, reserve_launch_attempt) and carries no plan label into code.",
+    "reasoning": "a finding \u2014 the claim that the attempt marker is written for every fresh launch does not hold on the crew shadow door, which publishes no claim and pre-creates no directory.",
+    "single_goal": "pass \u2014 the section carries one deliverable, the reservation leaving no stray state, with four defects that are all reservation state or tests of it.",
+    "wiring": "pass \u2014 s16's declared wait on s15 is present in plan-section-depends-on and both sections' write paths overlap in reckon/crew/dispatch.py and dispatch_launch.py, so the ordering is correct."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "fa82d49166ff3aef48788ee25d56627eb3122641bc7c419b868509b328dbf3c0",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:57:21.161088+00:00",
+  "total": null
+}
