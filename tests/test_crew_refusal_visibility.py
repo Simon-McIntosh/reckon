@@ -96,6 +96,21 @@ def test_the_dispatch_refusal_census_is_partitioned_without_gaps() -> None:
     assert CONVERTED_REFUSAL_FAMILIES.isdisjoint(COMMAND_BOUNDARY_FAMILIES)
 
 
+def test_the_released_launch_family_resolves_with_its_own_action() -> None:
+    """A released launch is told to launch again, never to answer a review.
+
+    The family was rendered through the plan-review id, so an operator whose
+    launch simply outlived its bound was sent to `reckon crew review`. The
+    remedy is asserted positively and the wrong one negatively, because a
+    registered id with the wrong action still reads as covered.
+    """
+    rendered = format_refusal("D24", "run r-x was released as a stranded launch")
+
+    assert "`reckon crew dispatch` the node again" in rendered
+    assert "allow-unreviewed-plan" not in rendered
+    assert "`reckon crew review`" not in rendered
+
+
 @pytest.mark.parametrize("family_id", sorted(CONVERTED_REFUSAL_FAMILIES))
 def test_each_reachable_refusal_names_its_resolving_action(family_id: str) -> None:
     rendered = format_refusal(family_id, "the operation was refused")
