@@ -1,24 +1,42 @@
-<section id="producer-tick-reads-live-pointers-once-checkpoint">
-<h3>Producer tick checkpoint</h3>
-<p>The synthetic crew home contains 40 live pointers and one plan owing a review.
-The full synchronous tick is measured through patched call counters; the independent
-obligations publisher holds its sweep lock during the measurement.</p>
+<section id="producer-tick-reads-live-pointers-once-outcome">
+<h3>Producer tick implementation and evidence</h3>
+<p>The synthetic crew home contains 40 live pointers across four unattended
+sessions and one plan owing a review. Counters patch every imported
+<code>list_live</code> binding in the watcher, resumption, review dispatch,
+review acceptance and runs modules. Each session reaches the owed-review pass;
+the plan is dispatched once. The independent obligations publisher holds its
+sweep lock while the synchronous tick is measured.</p>
 <table>
-<thead><tr><th>Measure</th><th>Base</th><th>Scoped checkpoint</th><th>Required</th></tr></thead>
+<thead><tr><th>Measure</th><th>Original product code</th><th>Implementation</th></tr></thead>
 <tbody>
-<tr><td>Live-pointer listings</td><td>6</td><td>2</td><td>1</td></tr>
-<tr><td>Watch-stream publication calls</td><td>6</td><td>2</td><td>1</td></tr>
-<tr><td>Flight resolutions</td><td>2</td><td>1</td><td>1 per project</td></tr>
-<tr><td>Slow-pointer visits before returning control</td><td>80</td><td>1</td><td>Fewer than 40</td></tr>
+<tr><td>Live-pointer listings per tick</td><td>15</td><td>1</td></tr>
+<tr><td>Watch-stream publication calls per tick</td><td>15</td><td>1</td></tr>
+<tr><td>Flight resolutions for the project</td><td>2</td><td>1</td></tr>
+<tr><td>Slow publication-pointer visits before returning control</td><td>80</td><td>1</td></tr>
+<tr><td>Slow acceptance-pointer visits before returning control</td><td>40</td><td>1</td></tr>
 </tbody>
 </table>
-<p>The scoped implementation forwards pointers through the unattended-session,
-resumption, plan-authoring and standing-plan-review paths. A tick-local flight
-cache resolves review configuration once. A ten-second cooperative bound checks
-pointer boundaries and retains the prior complete population on interruption.</p>
-<p>This is a recovery checkpoint, not a completed delivery. The focused gate
-reports one failure and one pass; the whole-tick single-read assertion remains
-red. Importing-module regression checks and operational heartbeat measurements
-remain outstanding. The manifest records the scope condition that prevents
-completion and names the durable base and checkpoint logs.</p>
+<p>The original-code control fails all three new checks. The implementation
+forwards the same pointer set through recovery, acceptance, plan-authoring and
+standing-review reads, and caches flight resolution within the tick. An expired
+tick cancels at the next guarded pointer boundary, retains the last complete
+published population, and returns control for reload and lease checks.</p>
+<p>The default cooperative bound is 25 seconds plus the cost of the pointer
+already being processed. The existing recovery fixture measured 14.96 seconds
+for a complete tick; a 10-second default interrupted that healthy pass. The
+synthetic boundary checks explicitly use a 10-second budget and an 11-second
+pointer, and require exactly one visit in both publication and acceptance.</p>
+<p>The focused importing-call-path comparison reports <strong>90 passed at base
+and 93 passed at head, with zero added failures</strong>. It covers unattended
+sessions, session-scoped sweeps, plan-review composition, review commands,
+standalone classifier callers and the new producer-tick cases.</p>
+<p><strong>Validation remains incomplete.</strong> The broader scan selected
+786 importing test files. Its base arm reached its 1500-second bound without a
+summary, so no broad head arm ran and no broad failure delta is claimed. The
+manifest and run directory retain the full command, incomplete receipt,
+negative control, focused comparison and final scoped-suite evidence.</p>
+<p>The live events sample records transition observations separated by 20, 21
+and 109 seconds. These event-triggered stamps are not periodic heartbeat
+measurements. The plan records an earlier 53-minute publication gap; the
+coordinator still owns post-landing heartbeat verification.</p>
 </section>
