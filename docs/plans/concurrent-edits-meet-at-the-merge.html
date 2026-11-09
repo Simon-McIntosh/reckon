@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
+<meta name="plan-version" content="16">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -134,20 +134,19 @@
     <section data-reckon="section" data-id="s4" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> A measurement once §2 and §3 are on main and the admit service
     has reloaded onto them. The writer trims <code>~/.config/reckon/crew/admission-verdicts.jsonl</code> to 1 MiB on every
-    append (<code>reckon/crew/queue_admission.py</code> near lines 2095–2100), so it holds about a day. The
+    append (<code>reckon/crew/queue_admission.py</code> near lines 2095–2100), so it holds a bounded tail: on 9 November that was about 80 minutes (790 rows from 20:46Z to 22:06Z), not a day. The
     before window is the snapshot copied on 8 November before §2 landed,
     <code>~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code> (212 passes from
     2026-11-07T05:38Z to 2026-11-08T12:33Z, 296 held-on-claim verdicts; its last hours already include the
-    interim shared list of commit <code>5cf29445c8</code>). The after window is a copy of the live log spanning
-    at least 12 hours after the admit service reloads onto §2 and §3. The measure reads both copies, and counts <code>held-on-claim</code> verdicts on file claims, split by
+    interim shared list of commit <code>5cf29445c8</code>). Because of that bound, the after window has two parts, amended on 9 November with the lead's approval. Hold counts come from every retained copy of the live log taken after the admit service reloaded onto §2 and §3 (07:39–10:37Z and 20:46–22:12Z on 9 November, about 4.5 hours). Concurrent pairs come from the run ledger (<code>docs/state/reckon/runs/</code>) over at least 12 hours after that reload, since each landed run records its write paths and its dispatch and landing times. The measure counts <code>held-on-claim</code> verdicts on file claims in both windows, split by
     whether the claimed path is under a shared root. It also lists every pair of runs that held
-    concurrent claims on one file in the window after, and whether each landed cleanly, landed
+    concurrent claims on one file in the ledger window after, and whether each landed cleanly, landed
     after a merge repair, or is still open.</p>
     <p><strong>Done when</strong> the evidence fragment
     <code>docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html</code>
     records both windows' counts, with the commands that produced them logged in the measuring
-    run's own directory, whose path the fragment cites. The after window must hold at least five
-    pairs of runs with concurrent claims on one shared-root file, and shows
+    run's own directory, whose path the fragment cites. The ledger window after must hold at least five
+    pairs of runs with concurrent claims on one shared-root file, and the retained copies after show
     <code>held-on-claim</code> verdicts on shared-root file paths at zero. Negative control: the
     before window shows such verdicts above zero. A window with fewer than five concurrent pairs is
     reported as unmeasured and re-taken later, never as a pass. Every concurrent pair is accounted for, and any pair left with conflict
