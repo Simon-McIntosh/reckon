@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T02:24:59.915Z",
+  "dispatched_at": "2026-11-09T02:15:25Z",
+  "findings": [
+    {
+      "claim": "the release callback never pops section_rederivation_refused, so a request that was refused once and released on a later pass carries a stale refusal record beside a successful section_rederivation, and a reader of the pointer cannot tell which of the two describes the current release.",
+      "file": "reckon/crew/queue_admission.py",
+      "line": 4673,
+      "severity": "non-blocking",
+      "text": "the release callback never pops section_rederivation_refused, so a request that was refused once and released on a later pass carries a stale refusal record beside a successful section_rederivation, and a reader of the pointer cannot tell which of the two describes the current release."
+    },
+    {
+      "claim": "_record_rederivation_refusal writes a second hold-reason channel ({detail, at}) beside queue_hold.detail, which _hold_for_plan_review at queue_admission.py:4508 already owns for exactly this question, and nothing under reckon/ reads section_rederivation_refused, so the reason is recorded where no queue surface shows it; extend the hold record rather than adding a parallel one.",
+      "file": "reckon/crew/queue_admission.py",
+      "line": 4609,
+      "severity": "non-blocking",
+      "text": "_record_rederivation_refusal writes a second hold-reason channel ({detail, at}) beside queue_hold.detail, which _hold_for_plan_review at queue_admission.py:4508 already owns for exactly this question, and nothing under reckon/ reads section_rederivation_refused, so the reason is recorded where no queue surface shows it; extend the hold record rather than adding a parallel one."
+    },
+    {
+      "claim": "the release loop catches only BatchEntryRefusedError and admit_once at queue_admission.py:5002 wraps the call in no try, so any other exception the plan reader raises while re-deriving now aborts the whole admission pass for every project instead of holding the one request; the broad catch removed at dispatch_batch.py left that path guarded.",
+      "file": "reckon/crew/queue_admission.py",
+      "line": 4667,
+      "severity": "non-blocking",
+      "text": "the release loop catches only BatchEntryRefusedError and admit_once at queue_admission.py:5002 wraps the call in no try, so any other exception the plan reader raises while re-deriving now aborts the whole admission pass for every project instead of holding the one request; the broad catch removed at dispatch_batch.py left that path guarded."
+    },
+    {
+      "claim": "the mark now digests through plan_review._digest (default=str, compact separators) while marks stamped before this commit used the removed section_field_digest spelling (default separators), so for a request queued under the old spelling section_rederivation.old never equals new and the pointer reports a change for a field whose text did not move.",
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 370,
+      "severity": "non-blocking",
+      "text": "the mark now digests through plan_review._digest (default=str, compact separators) while marks stamped before this commit used the removed section_field_digest spelling (default separators), so for a request queued under the old spelling section_rederivation.old never equals new and the pointer reports a change for a field whose text did not move."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node re-derives a released request's section-supplied fields from the text it launches against; the commits since the previous review (b3f232488d, 2fff65748c) harden that path, refusing a release it cannot re-derive at reckon/crew/queue_admission.py:4667 and recording it on the pointer at :4609, while keeping the goal's behaviour intact.\nVERDICT done_when: the done_when names tests/test_a_released_request_takes_the_sections_current_contract.py with plan_review_gate enforced, the pointer's old/new digests, a logged negative control and a no-added-failure importer arm; logs/gate-head.log records '5 passed' and EXIT=0 at b3f232488d, logs/negative-control.log records EXIT=1 at the declared mutation, and logs/importers-head-2.log records 108 failed / 418 passed at 2fff65748c against logs/importers-base.log's 108 failed / 412 passed plus 1 ERROR.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, reckon/crew/dispatch_batch.py, reckon/crew/queue_edit.py, the test file and the evidence fragment; git diff --stat 6b5e2d2baf..2fff65748c changes dispatch_batch.py, queue_admission.py, the test and the fragment, all inside that set, and queue_edit.py is correctly untouched by these commits.\nVERDICT manifest: read; it records the five-case gate at head, the refusal case, the negative control at EXIT=1, base and head importer arms compared by delta, and one rubric line per dimension.\nVERDICT diff: read commit by commit (b3f232488d the refusal path plus the digest and mark-order changes, 2fff65748c the docs-only evidence update); the code at 2fff65748c is identical to b3f232488d, so the gate log taken there covers the reviewed head.\nCALL_SITES: reckon/crew/queue_admission.py:5002 (admit_once calls _release_plan_review_holds), reckon/crew/queue_admission.py:4673 (release callback applies the re-derived fields), reckon/crew/queue_admission.py:4701 (in-memory apply for the same-pass launch), reckon/crew/queue_admission.py:496 (_carry_section_rederivation on the launched run), reckon/crew/dispatch_batch.py:515 (_stamp_section_derived, called at :710), reckon/crew/queue_edit.py:442 (queue edit clears the mark)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4667 refuses a release whose section cannot be read and reckon/crew/dispatch_batch.py:405 derives from the release base, so a released request still runs the text it launches against.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-head.log records '5 passed' EXIT=0 at b3f232488d and logs/importers-head-2.log records 108 failed / 418 passed at the reviewed head, though gate-head.log's '# command:' line omits the PYTHONPATH and interpreter the manifest's tests line records.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 6b5e2d2baf..2fff65748c is inside the node's declared write paths and nothing outside them moves.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_released_request_takes_the_sections_current_contract.py:229 asserts the launched prompt.txt carries the new done-when and not the old one, which the negative control proves reddens, but the same test's line 240 asserts only recorded['old'] != recorded['new'] and would also pass on a digest-spelling difference alone.\nSCORE fit: 18\nJUSTIFICATION fit: the new helpers at reckon/crew/queue_admission.py:4609 and reckon/crew/dispatch_batch.py:366 are named by mechanism and follow the surrounding docstring style, and the cross-module private import of plan_review._digest matches the existing use of _done_when_paragraph at dispatch_batch.py:280.\nSCORE reuse: 12\nJUSTIFICATION reuse: the digest fork flagged earlier is now resolved by taking plan_review._digest, but reckon/crew/queue_admission.py:4609 adds a second hold-reason record beside the queue_hold.detail that _hold_for_plan_review already owns at :4508, with no reader of the new key anywhere under reckon/.\nFINDING reckon/crew/queue_admission.py:4673 non-blocking: the release callback never pops section_rederivation_refused, so a request refused once and released later carries a stale refusal beside a successful section_rederivation and a reader cannot tell which is current.\nFINDING reckon/crew/queue_admission.py:4609 non-blocking: _record_rederivation_refusal writes a second hold-reason channel ({detail, at}) beside queue_hold.detail, the capability _hold_for_plan_review owns at :4508, and nothing under reckon/ reads section_rederivation_refused, so the reason is invisible to every queue surface.\nFINDING reckon/crew/queue_admission.py:4667 non-blocking: the release loop catches only BatchEntryRefusedError and admit_once at :5002 has no try, so any other exception from the plan reader now aborts the whole admission pass instead of holding one request.\nFINDING reckon/crew/dispatch_batch.py:370 non-blocking: marks stamped before this commit digest under the removed helper's spelling, so section_rederivation.old never equals new for a request queued under it and the pointer reports a change for text that did not move.\n",
+  "review_run_id": "r-20261109T021152310988-review-of-a-released-request-takes-the-sections-current-contract-2fff65748c78",
+  "reviewed_base_sha": "6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5",
+  "reviewed_head_sha": "2fff65748c78f270376583844710a0c9e309a9cc",
+  "reviewed_run_id": "r-20261108T232332477115-a-released-request-takes-the-sections-current-contract",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T02:32:02.296055+00:00",
+  "total": 100
+}

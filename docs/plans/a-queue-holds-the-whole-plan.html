@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="315">
+<meta name="plan-version" content="316">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -728,6 +728,12 @@
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261108T082456646701-keep-every-field-of-a-queued-node" data-who="reckon-build" data-when="2026-11-08T15:19:36Z">
     <div class="r-comment-body"><p>`_node_from_pointer` in `reckon/crew/queue_admission.py` and `TaskNode.as_dict()` in `reckon/crew/node.py` now read the dataclass's own field list in both directions and copy every collection deeply, so a queued-node rebuild loses nothing and neither the serialised node nor the pointer record can mutate the other; measured by a replay that lost 4 fields before the change and 0 after, with the new test's 4 cases passing at the head and its first two failing at the dispatch base.</p></div>
 </div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261109T013333105895-review-of-a-released-request-takes-the-sections-current-contract-6b5e2d2baff2" data-who="reckon-build" data-when="2026-11-09T01:41:34.591Z">
+    <div class="r-comment-body"><p>The review of r-20261108T232332477115-a-released-request-takes-the-sections-current-contract at head 6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5 stores a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 14, fit 17, reuse 16) with added_failure_count 0, five non-blocking findings, and the revision pair 29b47d2cb8dc87054d1ba97457c8cfbe48f10544..6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5.</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261109T021152310988-review-of-a-released-request-takes-the-sections-current-contract-2fff65748c78" data-who="reckon-build" data-when="2026-11-09T02:24:59.915Z">
+    <div class="r-comment-body"><p>Independent review of r-20261108T232332477115-a-released-request-takes-the-sections-current-contract covering only the commits gained since its first review (6b5e2d2baf..2fff65748c) stores a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 12, with 0 added failures from the base and head importer arms and four non-blocking findings (stale refusal record never cleared; a second hold-reason channel no reader reads; the release loop&#x27;s narrowed exception guard can abort a whole admission pass; and pre-existing marks digesting under the removed helper&#x27;s spelling).</p></div>
+</div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261109T002614744446-review-of-a-queued-brief-run-rebuilds-its-node-5b357803cd3b" data-who="reckon-build" data-when="2026-11-09T00:36:25.902Z">
     <div class="r-comment-body"><p>§39 review of r-20261109T000341614945-a-queued-brief-run-rebuilds-its-node at head 5b357803cd3b: parsed, scored 20/18/20/18/18/20 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse, total 114), 0 added failures; the guard narrowing and its three-case gate hold, with one non-blocking finding that the third test's spec_level assertion cannot fail on any variant of the guard.</p></div>
 </div>
@@ -877,9 +883,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s38" data-id="c-run-r-20261109T013333105895-review-of-a-released-request-takes-the-sections-current-contract-6b5e2d2baff2" data-who="reckon-build" data-when="2026-11-09T01:41:34.591Z">
-    <div class="r-comment-body"><p>The review of r-20261108T232332477115-a-released-request-takes-the-sections-current-contract at head 6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5 stores a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 14, fit 17, reuse 16) with added_failure_count 0, five non-blocking findings, and the revision pair 29b47d2cb8dc87054d1ba97457c8cfbe48f10544..6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5.</p></div>
 </div>
 </section>
 </main>
