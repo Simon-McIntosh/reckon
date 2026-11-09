@@ -33,6 +33,7 @@ COMMENTS_SPAN = re.compile(
 STAMPED_METAS = re.compile(
     r'<meta\s+name="plan-(?:version|modified)"[^>]*>\s*', re.IGNORECASE
 )
+PLAN_IMPL_META = re.compile(r'<meta\s+name="plan-impl"[^>]*>\s*', re.IGNORECASE)
 
 # A record in the comments section (data-section="s1") and a landing record an
 # agent wrote into section s2's own body, which is the shape the plan corpus
@@ -114,9 +115,17 @@ def _record_blocks(text: str, comment_id: str) -> list[str]:
 
 
 def _outside_editable(text: str) -> str:
-    """Everything a state write may legitimately touch (the comments section
-    and the version/modified stamps) removed."""
-    return STAMPED_METAS.sub("", COMMENTS_SPAN.sub("", text))
+    """Everything a state write may legitimately touch removed.
+
+    That is the comments section, the version and modified stamps, and — on a
+    plan whose impl derives from its declarations — the authored plan-impl
+    meta, which such a write drops so the file and the server agree. A plan
+    that authorises its own impl keeps that line and still compares it.
+    """
+    stripped = STAMPED_METAS.sub("", COMMENTS_SPAN.sub("", text))
+    if read_state(text).get("impl_source") in {"computed", "declarations"}:
+        stripped = PLAN_IMPL_META.sub("", stripped)
+    return stripped
 
 
 def _body_record_ids(text: str) -> list[str]:

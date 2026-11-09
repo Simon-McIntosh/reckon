@@ -107,13 +107,13 @@ def test_an_append_meeting_a_landing_write_is_not_lost(
     gate = threading.Barrier(2)
     render = _plan_html.write_state
 
-    def rendering(html_text, state):
+    def rendering(html_text, state, **keywords):
         # A peer that already passed the barrier leaves a later wait to time out;
         # render anyway, so the retry path is measured.
 
         with contextlib.suppress(threading.BrokenBarrierError):
             gate.wait(timeout=2.0)
-        return render(html_text, state)
+        return render(html_text, state, **keywords)
 
     monkeypatch.setattr(_plan_html, "write_state", rendering)
 
