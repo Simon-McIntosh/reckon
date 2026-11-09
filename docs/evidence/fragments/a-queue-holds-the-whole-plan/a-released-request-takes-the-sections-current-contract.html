@@ -20,29 +20,42 @@
   so a coordinator's edit is kept; a field the dispatcher supplied carries no
   mark from the start.</p>
 
+  <p>A release that cannot read the section is refused rather than released on
+  the stored fields: the request stays <code>held</code> and the pointer records
+  the reason under <code>section_rederivation_refused</code>. Releasing on the
+  stored fields would put the request back on the text the plan has left behind,
+  which is the disagreement the re-derivation exists to remove. The marks are
+  read before the pointer is rebuilt into a node, so a request whose fields the
+  dispatcher supplied pays no rebuild and cannot fail in the release loop.</p>
+
   <h3 id="a-released-request-takes-the-sections-current-contract-measured">Measured</h3>
 
-  <p>Three cases in
+  <p>Four cases in
   <code>tests/test_a_released_request_takes_the_sections_current_contract.py</code>
   run against a synthesised mounted project under <code>RECKON_HOME</code> with
   <code>plan_review_gate</code> set to <code>enforce</code>, so the plan change
   takes a hold. In the first, a request whose section supplied its done-when is
   held when the section's done-when changes, released once a review of the new
-  text is stored, and launches with the new text: the pointer's
-  <code>done_when</code> carries it, and
-  <code>section_rederivation.done_when</code> records the digest of the stored
-  value as <code>old</code> and of the launched value as <code>new</code>. In the
-  second, a done-when the dispatcher supplied survives the same change. In the
-  third, a done-when set by <code>crew queue edit</code> survives it.</p>
+  text is stored, and launched: the assertion is on
+  <code>prompt.txt</code> — the text the launch writes and the worker reads —
+  which carries the section's current done-when and not the one the request was
+  queued under. The pointer's <code>done_when</code> carries it too, and
+  <code>section_rederivation.done_when</code> records an <code>old</code> digest
+  that differs from its <code>new</code>. In the second, a done-when the
+  dispatcher supplied survives the same change. In the third, a done-when set by
+  <code>crew queue edit</code> survives it. In the fourth, the plan document is
+  removed after the review is stored: the pass releases nothing, launches
+  nothing, leaves the request <code>held</code> on its stored done-when, and
+  records a refusal naming the plan.</p>
 
   <p>The negative control is logged at
-  <code>logs/negative-control.log</code> in the run directory: releasing with
-  the stored fields, as before this change, makes the first case launch the old
-  done-when and the case fails with
-  <code>assert 'pytest -q tests/test_new.py reports 5 passed' in 'Done when :
-  pytest -q tests/test_old.py reports 2 passed.'</code>, <code>EXIT=1</code>.
-  The four cases pass at the head. Every test file importing
-  <code>reckon.crew.queue_admission</code> runs at the base revision and at the
-  head in one arm at a time with <code>-n 4</code>; the two arms are compared by
-  delta and the logs sit under <code>logs/</code> in the run directory.</p>
+  <code>logs/negative-control.log</code> in the run directory: deleting the
+  in-memory re-derivation the pass launches from leaves the launched node on the
+  stored fields, and the first case fails on the launched prompt with
+  <code>assert 'pytest -q tests/test_new.py reports 5 passed' in '…'</code>,
+  <code>EXIT=1</code>. The five cases pass at the head. Every test file
+  importing <code>reckon.crew.queue_admission</code> runs at the base revision
+  and at the head in one arm at a time with <code>-n 4</code>; the two arms are
+  compared by delta and the logs sit under <code>logs/</code> in the run
+  directory.</p>
 </section>
