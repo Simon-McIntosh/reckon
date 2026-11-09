@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T23:04:46.822Z",
+  "dispatched_at": "2026-11-09T22:54:06Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261109T225032485297-plan-review-of-a-run-has-one-live-worker/plan.html:176",
+      "id": "reasoning-1",
+      "reason": "the section's own goal is \"leaves no stray state\", and this door produces a reservation whose attempt is never launched, which its done-when has no case for.",
+      "text": "\u00a716 rests \"every launch reserves\" and the key rule on the marker preceding the reservation block on every door, but the resume door (`supervised_launch`, dispatch_launch.py:3078) reserves before `_prepare_attempt_records` writes `attempt.json` (:2599, called :3090), so on that door `launch_reservation_key` with no receipt reads the *previous* attempt's marker; a run whose only trace is `attempt.json` naming attempt 1 (exactly the mid-composition death \u00a716(2) repairs) then reserves attempt 1 while launching `max(key, record+1)` = attempt 2, leaving a hold on attempt 1 that \u00a716's freeing rule \u2014 an exit receipt for the *reserved* attempt \u2014 never releases",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261109T225032485297-plan-review-of-a-run-has-one-live-worker/plan.html:180",
+      "id": "done_when-1",
+      "reason": "the section's only completion proof is that grep, so a worker following it delivers \"removed\" while a reader of the retired artifact survives, and the plan never says whether the census arm is deleted or explicitly out of scope.",
+      "text": "\u00a717 declares \"no production run writes those files\" and measures removal with `git grep` over `reckon scripts skills` for seven symbol names, but `scripts/census/monitor_census.py:146-152` reads them by glob (`run_path.glob(\"attempt-*.claim\")`, `_attempt_claims`, `_claim_between`) and its docstring calls a claim \"the durable evidence that an attempt was launched\"; the grep returns nothing while that reader remains, so the measure passes without the machinery being gone",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261109T225032485297-plan-review-of-a-run-has-one-live-worker/plan.html:180",
+      "id": "anchors_resolve-1",
+      "reason": "deletion is specified by subject rather than by count, so the wrong figure misleads a reader but does not change what the node deletes.",
+      "text": "\u00a717 says \"Deleting the readers turned 7 of its 16 cases red\", but `tests/test_a_resumed_attempt_is_read_through_its_own_records.py` holds 9 test functions and no parametrisation at HEAD d7473876, so the cited population cannot be checked and the plan's deletion rule (\"every case whose subject is a date read from a claim file\") is the only operative instruction",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d747387675dc0fc67802c05191e0dc2c2637b128",
+  "plan_fingerprint": "fdc411f2be5468ab67ccb95ddb381d2d9f7165547ff5ebbae8305586e365b1a6",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 151,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T225032485297-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "f39f3c166cfbddb28e2394b9f2211e6edcf2f29c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file, symbol and run id cited by \u00a716 and \u00a717 resolves (`r-20261109T215502946009` and `r-20261109T164607822723` both exist; `_attempt_claim_seconds` recovery_liveness.py:625, `attempt_claim_path` resumption.py:314, the duplicated `_create_attempt_claim` at tests/test_staged_write_inventory.py:160 and :192 all resolve), but \u00a717's \"7 of its 16 cases\" does not reconcile with the file it describes, which holds 9 test functions and no parametrisation at the reviewed head.",
+    "done_when": "a finding \u2014 \u00a717's done-when offers a symbol grep as the proof that the retired attempt-claim machinery is gone, and that check cannot see `scripts/census/monitor_census.py:150`, which reads `attempt-*.claim` by glob and survives both the deletion and the grep.",
+    "evidence_paths": "pass \u2014 both units put gate logs under the run directory and cite the operator-visible evidence fragment `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html`, not a scratchpad.",
+    "naming": "pass \u2014 the new section's prose, write paths and case names state the mechanism (`launch_reservation_key`, `held_launch_reservation`, `test_a_fresh_run_ids_reservation_ends_with_its_launch`) with no stage label, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a716's argument that \"the marker is written before the reservation block on every door\" is false on the resume door, which reserves at `reckon/crew/dispatch_launch.py:3078` and only writes `attempt.json` inside `_prepare_attempt_records` at `:2599`, called at `:3090`.",
+    "single_goal": "pass \u2014 \u00a716 after the split names one mechanism (the reservation's attempt key and freeing rule) with its tests; \u00a715's strict-read case is the one-item carry-over the earlier review explicitly accepted, not a second mechanism.",
+    "wiring": "pass \u2014 \u00a717's `plan-section-depends-on` edge to \u00a713 is recorded, \u00a717's write paths (`resumption.py`, `recovery_liveness.py`, three test files) are disjoint from \u00a716's (`dispatch.py`, `dispatch_launch.py`, two test files), so the followup's \"the two run in parallel\" holds, and no needed dependency is missing."
+  },
+  "section_digests": {
+    "_document": "80dd6f0c86f7d8ce96d4b0d52647a0910b34fb714f16722d7027495ab5c14f63",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "afb7b6e47c3473935185be5741e96c396c19a6f79914af60ea00d4fe2e2ee83d",
+    "s17": "aa1e572761a6d69837e8129bc2cf4b240c98206e9a9f91f7320bed3c03583fce",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:15:48.441627+00:00",
+  "total": null
+}
