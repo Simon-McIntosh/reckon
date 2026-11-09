@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:19:11.008Z",
+  "dispatched_at": "2026-11-09T15:14:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T151256761377-plan-review-of-the-portfolio-reads-true/plan.html:176",
+      "id": "reasoning-1",
+      "reason": "a node editing the third writer is told to keep a guard that is not there, and must either correct the sentence or decide unaided whether adding one (which would change text-edit version semantics) is in scope.",
+      "text": "\u00a710 states \"Each keeps its existing no-change comparison of the parsed state, stamps excluded, which skips the disk write for a patch with no content change\" of all three writers, but only the store write (reckon/_store.py:1748-1755) and the POST handler (reckon/serve.py:3921-3927) carry that guard; _replace_plan_text (reckon/_store.py:2371-2462) renders and calls write_atomically unconditionally, refusing an identical old/new pair up front instead \u2014 so the invariant the sentence tells the node to preserve does not exist on the path case (e) drives",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T151256761377-plan-review-of-the-portfolio-reads-true/plan.html:176",
+      "id": "done_when-1",
+      "reason": "the enumeration is explicit and each case is runnable as written, so a node implements all five regardless of the stale count.",
+      "text": "the done-when says \"covers three cases\" and then lists five, (a) through (e), so the section's own statement of its coverage contradicts its enumeration",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1cbeebbf13e1c202edf66d7ac44060df00dcd376",
+  "plan_fingerprint": "4b2536ce51cc3e998c1f1f88b13ae36828418a332fb1ee29f79e74a20e382163",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 75,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T151256761377-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "e730c8663dcc2c52816118207904440802518da4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each code anchor resolves at head: the derived-impl branch at reckon/_plan_html.py:2281, the store write at reckon/_store.py:1717, _replace_plan_text at reckon/_store.py:2371\u20132463 (the cited ~2448 sits inside it, at its write_state call), the POST handler write at reckon/serve.py:3909, the impl-meta-stale finding at reckon/doccheck.py:1595-1614, the 0.67 measurement in docs/plans/a-run-has-one-live-worker.html, and the 141 count (grep -rl 'name=\"plan-impl\"' docs/plans/*.html returns 141).",
+    "done_when": "a finding \u2014 \u00a710's done-when enumerates five cases (a)\u2013(e) but introduces them as \"covers three cases\" (plan.html:176), a stale count left by the two later additions.",
+    "evidence_paths": "pass \u2014 gate logs are declared under the run directory, and no evidence is placed on a node-local temporary path or a session scratchpad.",
+    "naming": "pass \u2014 the proposed test file names the mechanism (a derived impl drops the authored meta) and carries no plan, stage or ticket identifier.",
+    "reasoning": "a finding \u2014 the root cause matches the cited evidence and the mechanism does produce the done-when on all three named writers, but \u00a710 asserts that each of the three keeps \"its existing no-change comparison of the parsed state\", and the third, _replace_plan_text, has no such comparison.",
+    "single_goal": "pass \u2014 every case (a)\u2013(e) serves the one deliverable, dropping the authored plan-impl meta when the state's impl is derived, and the gate can be closed on that single verdict.",
+    "wiring": "pass \u2014 section 10 (/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T151256761377-plan-review-of-the-portfolio-reads-true/plan.html:175) declares no depends-on, informs or gates edge and needs none: it repairs a serialiser path whose prerequisite (\u00a72's derived impl and the impl-meta-stale warning) is recorded as landed."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "10c877c044c43317082a3eadcae2ce0c67f6e40d803cf9d9860b74fdeaa06c08",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:25:59.830475+00:00",
+  "total": null
+}
