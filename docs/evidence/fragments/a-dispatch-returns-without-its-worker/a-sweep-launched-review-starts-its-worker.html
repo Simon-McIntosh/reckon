@@ -44,6 +44,7 @@
     <section id="a-sweep-launched-review-starts-its-worker-measure">
       <h2>Measure</h2>
       <p>The gate is <code>tests/test_a_sweep_launched_review_starts_its_worker.py</code>: <strong>3 passed</strong>. The negative control restores the failing step by removing the attempt-marker write from <code>dispatch.py</code>: <strong>1 failed, 2 passed</strong>, the failure being <code>test_a_launcher_that_ends_stops_after_its_attempt_record</code> on its assertion that the run kept its claim and no attempt record. The other two cases stay green under the mutation, which is what makes the third a measurement of this step rather than of the sweep path.</p>
+      <p>The change is also measured against the base revision over the population it can disturb: the 42 test files that import <code>reckon.crew.recovery_review_dispatch</code>, one arm at a time with <code>-n 4</code>. <strong>Both arms passed 327 tests</strong> — the after arm at <code>3b938adfe6</code> in 153.40 s and the base arm at <code>afdd8b2cc5</code> in 92.74 s — so no failure was added. The wider set of 329 test files importing <code>reckon.crew.dispatch</code> or <code>reckon.crew.recovery_review_dispatch</code> was started and did not finish inside this run's window; it is recorded as unmeasured, not as clean.</p>
     </section>
   </main>
 </body>
