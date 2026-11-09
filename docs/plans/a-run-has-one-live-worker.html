@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -352,6 +352,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261109T014036849812-review-of-a-concurrent-launch-is-refused-34d0376761a9" data-who="reckon-build" data-when="2026-11-09T01:53:19.040Z">
+    <div class="r-comment-body"><p>Independent review of r-20261109T005938978471-a-concurrent-launch-is-refused at head 34d0376761 (base 29b47d2cb8) is parsed with all six dimensions scored and two blocking findings: the dispatch door starts its supervisor without passing its reservation, so its hold is never tied to the launch and the admit door would refuse the run indefinitely.</p></div>
 </div>
 </section>
 </main>

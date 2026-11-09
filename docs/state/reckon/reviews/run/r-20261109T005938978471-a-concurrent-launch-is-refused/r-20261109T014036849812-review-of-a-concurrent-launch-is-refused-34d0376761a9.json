@@ -1,0 +1,95 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2828",
+    "reckon/crew/dispatch.py:3488",
+    "reckon/crew/dispatch.py:3579",
+    "reckon/crew/resumption.py:1724",
+    "reckon/crew/resumption.py:1789",
+    "reckon/crew/dispatch_launch.py:2900",
+    "reckon/crew/dispatch_launch.py:2979",
+    "reckon/crew/dispatch_launch.py:3332",
+    "reckon/crew/dispatch_sessions.py:2447",
+    "reckon/crew/queue_admission.py:441"
+  ],
+  "completed_at": "2026-11-09T01:53:19.040Z",
+  "dispatched_at": "2026-11-09T01:43:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "c4e1a90b7f2d",
+      "line": 3488,
+      "severity": "blocking",
+      "text": "The dispatch door never hands its reservation to the supervisor it starts: _start_supervisor(spec_path, directory, run_id) is called with no reservation keyword, while dispatch_launch.py:2982 and :2992 are the only sites that call record_reservation_supervisor. The reservation therefore keeps naming the dispatching process, so reservation_in_flight falls to its process arm for the whole life of that process. On the admit door, which calls dispatch in-process from a long-lived loop (queue_admission.py:441), the reservation is held until the service restarts, so a run relaunched once is refused forever after its worker has ended, against the deliverable's 'no launch that has ended, or been killed, leaves the run unlaunchable'. Off the fleet the same omission frees the hold the moment the dispatch CLI exits, which reopens the very window between attempt.json and worker.json that the node exists to close. Repair is passing reservation=reservation at this call."
+    },
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "id": "a7f30c5d18b6",
+      "line": 298,
+      "severity": "blocking",
+      "text": "No assertion covers the path that is defective: test_a_recorded_supervisor_that_exited_frees_the_reservation builds the reservation with _reservation(... supervisor_pid=_dead_pid()) and never runs a launch, so it holds whether or not any door records a supervisor. The plan's admit-door case, 'a run launched through the admit door, whose admitting process stays alive, becomes launchable again once its recorded supervisor has exited', has no case that drives dispatch to completion and then reads the reservation it left behind. A case asserting that the reservation file remaining after a dispatch names the supervisor pid would redden on the reckon/crew/dispatch.py:3488 defect."
+    },
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "id": "b2d96e4f0a13",
+      "line": 233,
+      "severity": "non-blocking",
+      "text": "The plan requires 'the same race for a run that is not its node's newest committed run still yields one reservation and one refusal', and no case represents it: test_a_resume_and_a_dispatch_take_the_same_key reserves twice on one run directory with no ledger at all. The hazard is structurally absent today because launch_reservation_key reads only the run's own receipts, so the missing case cannot expose a live defect, but nothing would redden if a door began keying on prior_node_runs[-1] again."
+    },
+    {
+      "file": "reckon/crew/dispatch_sessions.py",
+      "id": "e5c8071a6d94",
+      "line": 969,
+      "severity": "non-blocking",
+      "text": "Four hunks of this file are reflowed lines the change does not otherwise touch (the sorts at :475 and :617, the refusal string at :570, the identity expression at :969). The node's own rubric claims only declared modules were written, which is true, but the reformatting enlarges the review surface and belongs in its own sweep per the repository's lint policy."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "id": "f9b04d2c7e51",
+      "line": 389,
+      "severity": "non-blocking",
+      "text": "claim_next_attempt, release_attempt_claim and _claim_may_be_reclaimed now have no production caller after _resume switched to the reservation; only tests/test_a_resume_never_launches_beside_another_node.py exercises them. The plan ruled the claim out for reuse, which is why a second primitive was written, but leaving the retired one in place means the module still presents two attempt-claiming mechanisms with different keys and different release rules. Retiring it is fenced out of this node's scope because that test file is not in its write paths, so this is recorded for a follow-up rather than repaired here."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "id": "d3a05b8c21e7",
+      "line": 2289,
+      "severity": "non-blocking",
+      "text": "_set_reservation_aside renames an abandoned reservation to attempt-N.reservation.reclaimed.<pid> inside the run directory and nothing ever removes it, so every reclaim leaves a file in a directory whose listing run_holds_an_attempt_record and the receipt readers walk. The names do not match _ATTEMPT_RECEIPT_PATTERN or _RESERVATION_PATTERN, so correctness is unaffected; the cost is unbounded accumulation in the run record of a run that is relaunched repeatedly."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read all three commits against 29b47d2cb8: d36e465b39 adds the reservation block and its four call sites plus the 625-line test, d47523edc2 and 34d0376761 add and then extend the 24-line evidence fragment.",
+    "done_when": "the done_when names the reproduced window, one case per hazard with the scheduler stubbed, section 12's five cases, every negative control logged, the armed suite by delta, and clean ruff; logs/head-arm.log and logs/base-arm.log carry the delta (18 pass versus 16 fail), logs/s12-five.log shows 5 passed EXIT=0, and the negative-control logs cover 10 of the 15 declared controls, leaving the older-run case unrepresented and two logged controls green.",
+    "goal": "the goal is one receipt-keyed reservation every CLI relaunch door takes before the worktree and frees by its launch's own end; reckon/crew/dispatch_launch.py:2295 implements it and reckon/crew/resumption.py:1724 takes it, but reckon/crew/dispatch.py:3488 starts the supervisor without handing the reservation over, so the dispatch door's hold is never tied to the launch it started.",
+    "manifest": "read; it records status complete, 18 head cases and 16 base-arm failures, ten of twelve attempted mutations reddening, two mutations recorded as inert, a population arm that timed out at 34 percent under outside_scope, and a durability rubric line marked partially answered.",
+    "write_paths": "the run declared reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, reckon/crew/dispatch_sessions.py, reckon/crew/resumption.py, tests/test_a_concurrent_launch_is_refused.py and its evidence fragment; git show --name-only over 29b47d2cb8..34d0376761 lists exactly those six paths."
+  },
+  "justifications": {
+    "durability": "sixteen base-arm failures and ten reddening mutations show the key, the refusal and the release are guarded, but tests/test_a_concurrent_launch_is_refused.py:298 supplies the supervisor pid it then asserts on, so no case fails if dispatch never records one.",
+    "evidence": "logs/head-arm.log records 18 passed EXIT=0 at d36e465b39 and logs/base-arm.log records 16 failed 2 passed EXIT=1 at 29b47d2cb8, but the done_when's requirement that every negative control the plan names be logged reddening its case is unmet: the plan names 15, logs/negative-controls.log attempts 12 and two lines there end EXIT=0, and no log covers the older-run case at all.",
+    "fit": "the new block at reckon/crew/dispatch_launch.py:2150-2385 follows the module's comment-and-helper idiom and its names describe the mechanism, carrying no plan, sprint or ticket identifier.",
+    "goal_fidelity": "reckon/crew/resumption.py:1724 takes the reservation and launches it, and reckon/crew/dispatch_launch.py:2900 keys it on the newest receipt, but the dispatch door drops its own reservation at reckon/crew/dispatch.py:3488, so the attempt is never bound to the supervisor that runs it.",
+    "reuse": "reserve_launch_attempt is a new owner beside the pre-existing attempt claim at reckon/crew/resumption.py:389, which the plan ruled out reusing and which the change leaves in place with no production caller.",
+    "scope_discipline": "every changed path in d36e465b39, d47523edc2 and 34d0376761 is inside the six declared write paths, though reckon/crew/dispatch_sessions.py:969 carries a reformat of lines the change does not otherwise touch."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is one receipt-keyed reservation taken by every CLI relaunch door before the worktree and freed by its launch's own end; reckon/crew/dispatch_launch.py:2295 implements it and reckon/crew/resumption.py:1724 takes it, but reckon/crew/dispatch.py:3488 starts the supervisor without handing the reservation over.\nVERDICT done_when: the done_when names the reproduced window, one case per hazard, section 12's five cases, every negative control logged and the armed suite by delta; logs/head-arm.log shows 18 passed EXIT=0 at d36e465b39, logs/base-arm.log 16 failed 2 passed EXIT=1 at 29b47d2cb8, logs/s12-five.log 5 passed EXIT=0, and the negative-control logs cover 10 of 15 declared controls with the older-run case unrepresented.\nVERDICT write_paths: the run declared the four modules, the new test and its evidence fragment; git show --name-only over 29b47d2cb8..34d0376761 lists exactly those six paths and nothing else.\nVERDICT manifest: read; it records status complete, the head and base arms, ten of twelve attempted mutations reddening with two recorded inert, a population arm timing out at 34 percent under outside_scope, and rubric.durability marked partially answered.\nVERDICT diff: read all three commits against 29b47d2cb8: d36e465b39 adds the reservation block, its four call sites and a 625-line test, d47523edc2 and 34d0376761 add and extend the 24-line evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:2828, reckon/crew/dispatch.py:3488, reckon/crew/dispatch.py:3579, reckon/crew/resumption.py:1724, reckon/crew/resumption.py:1789, reckon/crew/dispatch_launch.py:2900, reckon/crew/dispatch_launch.py:2979, reckon/crew/dispatch_launch.py:3332, reckon/crew/dispatch_sessions.py:2447, reckon/crew/queue_admission.py:441\nSCORE goal_fidelity: 12\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:1724 takes the reservation and launches it, and reckon/crew/dispatch_launch.py:2900 keys it on the newest receipt, but the dispatch door drops its own reservation at reckon/crew/dispatch.py:3488, so the attempt is never bound to the supervisor that runs it.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/head-arm.log records 18 passed EXIT=0 and logs/base-arm.log 16 failed EXIT=1, but the done_when's requirement that every negative control the plan names be logged reddening its case is unmet: the plan names 15, negative-controls.log attempts 12 with two lines ending EXIT=0, and the older-run case has no log and no case.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path across the three commits is inside the six declared write paths, though reckon/crew/dispatch_sessions.py:969 reflows lines the change does not otherwise touch.\nSCORE durability: 12\nJUSTIFICATION durability: sixteen base-arm failures and ten reddening mutations guard the key, the refusal and the release, but tests/test_a_concurrent_launch_is_refused.py:298 supplies the supervisor pid it asserts on and never runs a launch, so no case fails if a door never records a supervisor.\nSCORE fit: 16\nJUSTIFICATION fit: the new block at reckon/crew/dispatch_launch.py:2150-2385 follows the module's comment-and-helper idiom and its names describe the mechanism with no plan, sprint or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: reserve_launch_attempt is a new owner beside the pre-existing attempt claim at reckon/crew/resumption.py:389, which the plan ruled out for reuse and which the change leaves in place with no production caller.\nFINDING reckon/crew/dispatch.py:3488 blocking: the dispatch door starts its supervisor with no reservation keyword, so record_reservation_supervisor never runs for it and the reservation keeps naming the dispatching process; on the long-lived admit door that refuses the run forever after its worker ends, and off the fleet it frees the hold as soon as the CLI exits, reopening the attempt.json-to-worker.json window.\nFINDING tests/test_a_concurrent_launch_is_refused.py:298 blocking: the case builds a reservation with the supervisor pid it then asserts on and never drives a launch, so no assertion fails if a door never records a supervisor, leaving the plan's admit-door case unguarded.\nFINDING tests/test_a_concurrent_launch_is_refused.py:233 non-blocking: the plan's older-run case is absent and nothing would redden if a door keyed on the node's newest committed run again.\nFINDING reckon/crew/dispatch_sessions.py:969 non-blocking: four hunks reflow lines the change does not otherwise touch, enlarging the review surface beyond what the goal implies.\nFINDING reckon/crew/resumption.py:389 non-blocking: claim_next_attempt, release_attempt_claim and _claim_may_be_reclaimed have no production caller left, leaving two attempt-claiming primitives with different keys and release rules in one module.\nFINDING reckon/crew/dispatch_launch.py:2289 non-blocking: an abandoned reservation is renamed to attempt-N.reservation.reclaimed.<pid> and never removed, so repeated relaunches accumulate files in the run directory.",
+  "review_run_id": "r-20261109T014036849812-review-of-a-concurrent-launch-is-refused-34d0376761a9",
+  "reviewed_base_sha": "29b47d2cb8dc87054d1ba97457c8cfbe48f10544",
+  "reviewed_head_sha": "34d0376761a91c16f86a5cd873c10967a9c3c1fc",
+  "reviewed_run_id": "r-20261109T005938978471-a-concurrent-launch-is-refused",
+  "scores": {
+    "durability": 12,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 12,
+    "reuse": 15,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T01:55:00+00:00",
+  "total": 81
+}
