@@ -2242,9 +2242,18 @@ def reservation_in_flight(payload: Mapping[str, Any] | None) -> bool:
 
 
 def held_launch_reservation(
-    run_directory: Path, *, exclude_attempt: int | None = None
+    run_directory: Path,
+    *,
+    exclude_attempt: int | None = None,
+    before_attempt: int | None = None,
+    skip_ended: bool = False,
 ) -> Mapping[str, Any] | None:
-    """The reservation still holding an attempt, ignoring ``exclude_attempt``."""
+    """The reservation still holding an attempt.
+
+    ``exclude_attempt`` drops one attempt's reservation and ``before_attempt``
+    drops every attempt older than that number: an older attempt's launch has
+    already been superseded, so its reservation cannot guard a later one.
+    """
     try:
         names = [path.name for path in run_directory.iterdir()]
     except OSError:
@@ -2255,6 +2264,12 @@ def held_launch_reservation(
             continue
         attempt = int(match.group(1))
         if exclude_attempt is not None and attempt == exclude_attempt:
+            continue
+        if before_attempt is not None and attempt < before_attempt:
+            continue
+        if skip_ended and (run_directory / f"attempt-{attempt}-exit.json").exists():
+            # The attempt this reservation held has an ending recorded, so the
+            # launch that took it is over however its processes read.
             continue
         payload = _read_reservation(run_directory / name)
         if reservation_in_flight(payload):
@@ -2902,10 +2917,15 @@ def supervised_launch(
             run_directory, run_directory.name, kind=attempt_kind
         )
     if attempt is None:
+        # The reservation decides exclusion; the run's own record decides the
+        # number a launch that reserved against an empty directory starts. A
+        # run whose earlier attempt left no receipt still moves to the attempt
+        # after the one its record names.
+        from_record = int(record.get("attempt") or 1) + 1
         attempt = (
-            reservation.attempt
+            max(reservation.attempt, from_record)
             if reservation is not None
-            else int(record.get("attempt") or 1) + 1
+            else from_record
         )
     try:
         _prepare_attempt_records(
@@ -2936,9 +2956,10 @@ def supervised_launch(
             attempt_started_at=attempt_started_at,
         ),
     )
-    return _start_supervisor(
-        spec_path, run_directory, run_directory.name, reservation=reservation
-    )
+    pid = _start_supervisor(spec_path, run_directory, run_directory.name)
+    if reservation is not None:
+        record_reservation_supervisor(reservation, pid)
+    return pid
 
 
 def _start_supervisor(
@@ -3329,11 +3350,19 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
     # it straight after the spawn. Asking about that pid would refuse every
     # launch, so the pointer's own pid is dropped and the read answers from the
     # run's worker record and its session instead.
-    held = held_launch_reservation(
-        Path(str(spec["run_directory"])), exclude_attempt=int(spec.get("attempt") or 0)
-    )
-    if held is not None:
-        raise _reservation_refusal(run_id, held)
+    # A spec that names no run directory cannot be matched against a
+    # reservation; the reading below still answers for the worker record.
+    reserved_directory = spec.get("run_directory")
+    if reserved_directory is not None:
+        launch_attempt = int(spec.get("attempt") or 0)
+        held = held_launch_reservation(
+            Path(str(reserved_directory)),
+            exclude_attempt=launch_attempt,
+            before_attempt=launch_attempt or None,
+            skip_ended=True,
+        )
+        if held is not None:
+            raise _reservation_refusal(run_id, held)
     prior = _without_this_supervisor(record)
     holder = live_worker_reading(prior)
     if _launch_refused_by(prior, holder):
