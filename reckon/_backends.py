@@ -55,6 +55,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import queue
 import re
 import subprocess
@@ -390,6 +391,29 @@ class Observation:
         }
 
 
+def backend_search_directories(
+    backend: Mapping[str, Any] | None = None,
+) -> tuple[str, ...]:
+    """Directories a backend declares for finding its command, in order.
+
+    A backend's location is a fact about the host, not about the shell that
+    happens to launch it, so the declaration is read from the backend entry the
+    caller already holds rather than from the launcher's environment. Reading it
+    from that entry is what lets a project layer's ``search_path`` apply: a
+    reader that resolved the flight config without the project would see the
+    host layer's entry and miss a directory the project supplied.
+
+    Home-relative entries are expanded and duplicates dropped; a backend
+    declaring none returns empty.
+    """
+    directories: list[str] = []
+    for entry in (backend or {}).get("search_path") or ():
+        directory = os.path.expanduser(str(entry))
+        if directory and directory not in directories:
+            directories.append(directory)
+    return tuple(directories)
+
+
 @dataclass(frozen=True)
 class LaunchPlan:
     """A runnable invocation: what to execute, where, and what to feed it."""
@@ -403,12 +427,19 @@ class LaunchPlan:
     final_message_path: str | None
     resumed_session: str | None
     fence_waiver: str | None = None
+    # Resolved once, from the project-resolved backend entry this plan was built
+    # from. Every later reader — the persisted worker environment, a supervisor
+    # spec rebuilt for a resume — takes the directories from here rather than
+    # resolving the flight layers again, so a directory a project layer declares
+    # reaches the worker's own PATH on every attempt and not only at pre-flight.
+    backend_search_path: tuple[str, ...] = ()
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
         return {
             "argv": list(self.argv),
             "backend": self.backend,
+            "backend_search_path": list(self.backend_search_path),
             "cwd": self.cwd,
             "dialect": self.dialect,
             "final_message_path": self.final_message_path,
@@ -2447,6 +2478,7 @@ def launch_plan(
         final_message_path=final_path,
         resumed_session=resume_session,
         fence_waiver=fence_waiver,
+        backend_search_path=backend_search_directories(backend),
     )
 
 

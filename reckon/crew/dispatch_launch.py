@@ -616,15 +616,10 @@ def declared_backend_search_path(backend: Mapping[str, Any] | None) -> list[str]
     reader that resolved the flight config without the project would see the
     host layer's entry and miss a directory the project supplied.
 
-    Entries are returned in declaration order with home-relative ones expanded
-    and duplicates dropped; a backend declaring none returns empty.
+    The expansion is owned by :func:`reckon._backends.backend_search_directories`
+    so a launch plan resolves it by exactly the rule a reader here does.
     """
-    declared: list[str] = []
-    for entry in (backend or {}).get("search_path") or ():
-        directory = os.path.expanduser(str(entry))
-        if directory and directory not in declared:
-            declared.append(directory)
-    return declared
+    return list(_backends.backend_search_directories(backend))
 
 
 def _declared_search_path_for_backend_name(backend_name: str | None) -> list[str]:
@@ -651,6 +646,7 @@ def launch_search_path(
     fenced: bool = False,
     backend: Mapping[str, Any] | None = None,
     backend_name: str | None = None,
+    search_directories: Iterable[str] | None = None,
 ) -> str:
     """Return the effective worker PATH for one launch.
 
@@ -677,6 +673,11 @@ def launch_search_path(
     directory still searches the one the flight layer declares, and an
     inherited directory that already carries the command wins. A caller holding
     only a backend name passes ``backend_name`` and the host layer is read.
+
+    ``search_directories`` is the list a launch plan already resolved for its
+    backend, and it wins over both of those reads: a reader holding the plan
+    takes the directories from it rather than resolving the flight layers a
+    second time, so a resumed attempt composes the PATH the first launch did.
     """
     from reckon.shim_lookup import holds_shim
 
@@ -706,7 +707,9 @@ def launch_search_path(
     # carries a directory always wins over the flight layer's declaration.
     inherited_resolved = {os.path.realpath(entry) for entry in inherited_entries}
     declared = (
-        declared_backend_search_path(backend)
+        [os.path.expanduser(str(entry)) for entry in search_directories]
+        if search_directories is not None
+        else declared_backend_search_path(backend)
         if backend is not None
         else _declared_search_path_for_backend_name(backend_name)
     )
@@ -733,6 +736,7 @@ def _persisted_worker_environment(
     facts: Any | None = None,
     fenced: bool = False,
     backend_name: str | None = None,
+    search_directories: Iterable[str] | None = None,
 ) -> dict[str, str]:
     """Return only the launch overlay safe to persist in a run record."""
     persisted = dict(environment or {})
@@ -755,7 +759,11 @@ def _persisted_worker_environment(
             persisted.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     placement = _current_host_facts() if facts is None else facts
     persisted["PATH"] = launch_search_path(
-        environment, facts=placement, fenced=fenced, backend_name=backend_name
+        environment,
+        facts=placement,
+        fenced=fenced,
+        backend_name=backend_name,
+        search_directories=search_directories,
     )
     # The worker shims on that PATH start an interpreter that can import the
     # package. A launch composed out of a composing process that runs out of a
@@ -1205,30 +1213,31 @@ def resolve_launch_executable(
     The fence element is therefore never taken as the backend.
 
     ``environment`` is the overlay the launch will run with; absent, the launch's
-    own environment is used, which is what every construction site passes.
-    ``backend`` is the resolved backend entry when the caller holds one, so a
-    project layer's declared search path applies; without it the declaration is
-    read from the host layer by the plan's backend name.
+    own environment is used, which is what every construction site passes. The
+    declared search directories are the ones the plan resolved when it was
+    built, so a directory a project layer declares reaches this read without the
+    flight layers being resolved a second time. ``backend`` is the resolved
+    backend entry a direct caller may hold for a plan built without that field.
     """
     selected_environment = plan.environment if environment is None else environment
+    declared = (
+        list(plan.backend_search_path)
+        if plan.backend_search_path
+        else declared_backend_search_path(backend)
+        if backend is not None
+        else _declared_search_path_for_backend_name(plan.backend)
+    )
     searched = launch_search_path(
         selected_environment,
         facts=facts,
-        backend=backend,
-        backend_name=plan.backend,
+        search_directories=declared,
     )
     element = harness_command_index(plan.argv)
     binary = str(plan.argv[element]) if element < len(plan.argv) else ""
     resolved = shutil.which(binary, path=searched) if binary else None
     if not resolved:
         raise LaunchResolutionError(
-            _unresolved_backend_command(
-                binary,
-                searched,
-                declared_backend_search_path(backend)
-                if backend is not None
-                else _declared_search_path_for_backend_name(plan.backend),
-            )
+            _unresolved_backend_command(binary, searched, declared)
         )
     # Absolute, not canonical: a launcher installed as ``bin/codex`` symlinked
     # to ``codex.js`` must still be exec'd under the name the launch was
@@ -1338,7 +1347,9 @@ def apply_backend_placement(
     placement = flight.placement_for(backend)
     if placement is None:
         return plan
-    searched = launch_search_path(plan.environment)
+    searched = launch_search_path(
+        plan.environment, search_directories=plan.backend_search_path
+    )
     scheduler = str(placement["scheduler"])
     found = shutil.which(scheduler, path=searched)
     if not found:
@@ -2461,6 +2472,7 @@ def _supervisor_spec(
                 facts=facts,
                 fenced=fenced,
                 backend_name=plan.backend,
+                search_directories=plan.backend_search_path or None,
             ),
             "dialect": plan.dialect,
             "backend": plan.backend,
