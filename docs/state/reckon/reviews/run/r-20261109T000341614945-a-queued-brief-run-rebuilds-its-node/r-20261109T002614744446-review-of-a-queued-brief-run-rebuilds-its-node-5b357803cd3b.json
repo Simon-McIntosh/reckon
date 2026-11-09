@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:390",
+    "reckon/crew/queue_admission.py:1539",
+    "reckon/crew/queue_admission.py:3801",
+    "reckon/crew/queue_admission.py:4122",
+    "reckon/crew/queue_admission.py:4402",
+    "reckon/crew/queue_edit.py:103"
+  ],
+  "completed_at": "2026-11-09T00:36:25.902Z",
+  "dispatched_at": "2026-11-09T00:28:29Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "inert but harmless; the role assertion carries the guard-deletion case the done-when asks for",
+      "recorded_at": "2026-11-09T00:44:51.864198+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_queued_brief_run_rebuilds.py",
+      "id": "f4a1c7e20b3d",
+      "line": 122,
+      "severity": "non-blocking",
+      "text": "assert rebuilt.spec_level == \"\" is inert against this change: spec_level's dataclass default is \"\" (reckon/crew/node.py:786), so the value is \"\" with the old guard, with the narrowed guard and with the guard deleted altogether; it cannot fail on any regression this node exists to prevent and adds nothing over the role assertion at :121 that does carry the guard-deletion case."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 45640cfc: 2168ae64 narrows the guard in reckon/crew/queue_admission.py and adds three cases in tests/test_a_queued_brief_run_rebuilds.py, 5b357803 adds the 78-line evidence fragment with no trailing newline.",
+    "done_when": "the done_when names tests/test_a_queued_brief_run_rebuilds.py with three cases, a logged negative control under logs/, an importer comparison with no added failure at -n 4, and clean ruff on the staged paths; the gate, base arm, both controls and both importer arms are on disk, and only the ruff arm is recorded without a log.",
+    "goal": "the goal is to narrow the queued-node rebuild's empty-string guard to fields whose default is a non-empty string; reckon/crew/queue_admission.py:239-245 now requires isinstance(spec.default, str) and spec.default, which is exactly that and nothing more.",
+    "manifest": "read; it records status complete, gate 3 passed EXIT=0 at 5b357803, base arm 1 failed with the reproduced TypeError, the declared negative control red, importer arms 109/412 versus 118/400, and an outside_scope entry for the queue-time refusal.",
+    "write_paths": "the node declared reckon/crew/queue_admission.py, tests/test_a_queued_brief_run_rebuilds.py, the evidence fragment and a figures directory; the diff writes three files, all inside that set, and the figures path is unused."
+  },
+  "justifications": {
+    "durability": "reinstating the old guard reddens test_a_brief_carried_pointer_rebuilds_an_empty_plan with the recorded TypeError (logs/negative-control.log) and deleting the guard reddens the role assertion (logs/negative-control-guard-deleted.log), while tests/test_a_queued_brief_run_rebuilds.py:122 asserts a value no variant of the guard changes.",
+    "evidence": "logs/gate-head.log records 3 passed EXIT=0 at 5b357803 and logs/gate-base.log records 1 failed EXIT=1 with the quoted TypeError; the importer claim re-derives to zero added failing ids from logs/importers-base.log and logs/importers-head.log, but the manifest's ruff claim has no log behind it.",
+    "fit": "the guard and its comment at reckon/crew/queue_admission.py:236-245 follow the module's own inline-comment idiom and carry no plan, sprint or ticket identifier; the per-module queued_home fixture matches the pattern ten other test modules use.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:239 keeps the guard and admits only a real non-empty string default, so a required field's stored \"\" survives the rebuild while role keeps \"implement\".",
+    "reuse": "the production change adds no definition, narrowing the existing guard inside reckon/crew/queue_admission.py:198 _node_from_pointer, which is the sole owner of the queued rebuild; a search of tests/ for queued_home and crew_home fixtures found no conftest owner, only the repo-wide per-module pattern.",
+    "scope_discipline": "the diff touches only reckon/crew/queue_admission.py, tests/test_a_queued_brief_run_rebuilds.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-brief-run-rebuilds-its-node.html, all three declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to narrow the queued-node rebuild's empty-string guard to fields whose default is a non-empty string; reckon/crew/queue_admission.py:239-245 now requires isinstance(spec.default, str) and spec.default, which is exactly that and nothing more.\nVERDICT done_when: the done_when names tests/test_a_queued_brief_run_rebuilds.py with three cases, a logged negative control under logs/, an importer comparison with no added failure at -n 4, and clean ruff on the staged paths; logs/gate-head.log records 3 passed EXIT=0 and logs/gate-base.log records 1 failed EXIT=1, both importer arms are on disk, and only the ruff arm is recorded without a log.\nVERDICT write_paths: the node declared reckon/crew/queue_admission.py, tests/test_a_queued_brief_run_rebuilds.py, the evidence fragment and a figures directory; the diff writes three files, all inside that set, and the figures path is unused.\nVERDICT manifest: read; it records status complete, gate 3 passed EXIT=0 at 5b357803, base arm 1 failed with the reproduced TypeError, the declared negative control red, importer arms 109/412 versus 118/400, and an outside_scope entry for the queue-time refusal.\nVERDICT diff: read both commits against 45640cfc: 2168ae64 narrows the guard in reckon/crew/queue_admission.py and adds three cases in tests/test_a_queued_brief_run_rebuilds.py, 5b357803 adds the 78-line evidence fragment with no trailing newline.\nCALL_SITES: reckon/crew/queue_admission.py:390, reckon/crew/queue_admission.py:1539, reckon/crew/queue_admission.py:3801, reckon/crew/queue_admission.py:4122, reckon/crew/queue_admission.py:4402, reckon/crew/queue_edit.py:103\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:239 keeps the guard and admits only a real non-empty string default, so a required field's stored \"\" survives the rebuild while role keeps \"implement\".\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-head.log records 3 passed EXIT=0 at 5b357803 and logs/gate-base.log records 1 failed EXIT=1 with the quoted TypeError; the importer claim re-derives to zero added failing ids from logs/importers-base.log and logs/importers-head.log, but the manifest's ruff claim has no log behind it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/queue_admission.py, tests/test_a_queued_brief_run_rebuilds.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-queued-brief-run-rebuilds-its-node.html, all three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the old guard reddens test_a_brief_carried_pointer_rebuilds_an_empty_plan with the recorded TypeError (logs/negative-control.log) and deleting the guard reddens the role assertion (logs/negative-control-guard-deleted.log), while tests/test_a_queued_brief_run_rebuilds.py:122 asserts a value no variant of the guard changes.\nSCORE fit: 18\nJUSTIFICATION fit: the guard and its comment at reckon/crew/queue_admission.py:236-245 follow the module's own inline-comment idiom and carry no plan, sprint or ticket identifier; the per-module queued_home fixture matches the pattern ten other test modules use.\nSCORE reuse: 20\nJUSTIFICATION reuse: the production change adds no definition, narrowing the existing guard inside reckon/crew/queue_admission.py:198 _node_from_pointer, which is the sole owner of the queued rebuild; a search of tests/ for queued_home and crew_home fixtures found no conftest owner, only the repo-wide per-module pattern.\nFINDING tests/test_a_queued_brief_run_rebuilds.py:122 non-blocking: assert rebuilt.spec_level == \"\" is inert against this change, because spec_level's dataclass default is \"\" (reckon/crew/node.py:786) so the assertion holds with the old guard, the narrowed guard and no guard at all, and it adds nothing over the role assertion at :121 that carries the guard-deletion case.",
+  "review_run_id": "r-20261109T002614744446-review-of-a-queued-brief-run-rebuilds-its-node-5b357803cd3b",
+  "reviewed_base_sha": "45640cfc6d9af123f13389151f7036c88794c7d1",
+  "reviewed_head_sha": "5b357803cd3b70f890b721bb620a9ff325eb7f79",
+  "reviewed_run_id": "r-20261109T000341614945-a-queued-brief-run-rebuilds-its-node",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T00:44:00+00:00",
+  "total": 114
+}
