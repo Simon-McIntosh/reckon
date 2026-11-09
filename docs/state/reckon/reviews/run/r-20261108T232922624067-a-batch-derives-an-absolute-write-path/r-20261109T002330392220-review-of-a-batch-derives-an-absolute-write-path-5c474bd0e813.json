@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: repair-base-suite.log (12b5f3d1ce) ends '6 passed' with EXIT=0 and repair-after-suite.log (5c474bd0e8) ends '7 passed' with EXIT=0, both declaring completed, so no failure appears at the head that the base did not carry.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131",
+    "reckon/crew/dispatch_batch.py:queue_batch",
+    "reckon/crew/dispatch_batch.py:_build_entry",
+    "reckon/crew/dispatch_batch.py:_PlanRead.write_paths"
+  ],
+  "completed_at": "2026-11-09T00:33:01.284Z",
+  "dispatched_at": "2026-11-09T00:25:52Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "the `(?:` `\\./` `)*` prefix is free to start one character into a `../` prefix, since re.findall resumes scanning at the second dot, so a sentence naming `../docs/x.md` derives `docs/x.md` - an in-repo path whose parent exists, which the queue-time check at :321-330 therefore accepts - where the previous pattern derived `/docs/x.md`; both are wrong, but the new value is silently accepted, which is the failure class this section guards, and no case covers the form."
+    },
+    {
+      "file": "tests/test_a_batch_derives_an_absolute_write_path.py",
+      "line": "148",
+      "severity": "non-blocking",
+      "text": "`assert ABSOLUTE_RECORD.startswith(\"/\")` compares the test's own module literal against itself and cannot fail for any behaviour of the code under test, so it adds no coverage to case one; already recorded by the prior review at head 12b5f3d1ce and unchanged by this commit."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the rewritten Measure paragraph reports that 'the head tree 20 passed' for the importer arm, but the log it names, logs/importers-after.log, declares `# revision: 12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1` - one commit before the reviewed head - so the arm is not evidenced at 5c474bd0e8; the four other importer test files derive only plain relative paths (`src/module.py`, `one.py`, `three.py`), so the residual risk is nil, but the receipt names a revision it did not run at."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 12b5f3d1ce: the single commit 5c474bd0e8 changes the _PATH_TOKEN pattern and the comment above it, adds one test case with its constant and section entry, and rewrites two paragraphs of the evidence fragment - 17 insertions and 8 deletions across the three declared files.",
+    "done_when": "\u00a79's done-when names three cases plus the importer arm; the manifest records the two-file suite 6 passed at base and 7 passed at head with EXIT=0 in both, the four-case gate, and three negative controls each at 1 failed and 3 passed with EXIT=1; I re-ran tests/test_a_batch_derives_an_absolute_write_path.py at 5c474bd0e8 and got '4 passed in 0.86s', EXIT=0.",
+    "goal": "the node goal is to keep an absolute write path absolute when a batch derives it from section text; this commit is the repair of the prior review's blocking finding, and dispatch_batch.py:68 now matches a repeated './' prefix before the optional leading slash, so a './'-prefixed relative path is no longer read as a root.",
+    "manifest": "read; status complete, it names the gate command and eight log paths, its baseline_suite and after_suite declare 12b5f3d1ce and 5c474bd0e8 with completed true and zero failure ids, and it carries a rubric line for all six dimensions.",
+    "write_paths": "declared write paths are reckon/crew/dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html; the commit changes exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_derives_an_absolute_write_path.py:157 asserts the independent literal ['docs/x.md'] and negative-control-3-dot-prefix-read-as-root.log shows it reddening on ['/docs/x.md'] when the pattern is reverted, which is the reversion this commit exists to prevent.",
+    "evidence": "the four gate cases are logged at 5c474bd0e8 and the three controls each end EXIT=1 with 1 failed, but the importer after-arm cited at docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html:5 is logs/importers-after.log, whose own header declares revision 12b5f3d1ce rather than the reviewed head.",
+    "fit": "dispatch_batch.py:61-67 keeps the module's existing comment idiom and states the mechanism rather than the incident, and the new test at :157 follows the file's fixture and naming pattern.",
+    "goal_fidelity": "dispatch_batch.py:68 gives './docs/x.md' a prefix match so write_paths at :306-330 derives 'docs/x.md' while '/abs/data/record.json' still derives whole, closing the prior review's blocking finding.",
+    "reuse": "no definition is added; the change extends the existing _PATH_TOKEN in place, and a search of reckon/ and plugins/ for _WRITE_PATHS_SENTENCE and _PATH_TOKEN found no owner this duplicates.",
+    "scope_discipline": "the commit touches only dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and the declared evidence fragment, all three inside the node's write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep an absolute write path absolute when a batch derives it from section text; this commit is the repair of the prior review's blocking finding, and reckon/crew/dispatch_batch.py:68 now matches a repeated './' prefix before the optional leading slash, so a './'-prefixed relative path is no longer read as a root.\nVERDICT done_when: \u00a79's done-when names three cases plus the importer arm; the manifest records the two-file suite 6 passed at base and 7 passed at head with EXIT=0 in both, the four-case gate, and three negative controls each at 1 failed and 3 passed with EXIT=1; I re-ran tests/test_a_batch_derives_an_absolute_write_path.py at 5c474bd0e8 and got '4 passed in 0.86s', EXIT=0.\nVERDICT write_paths: declared write paths are reckon/crew/dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html; the commit changes exactly those three files and nothing else.\nVERDICT manifest: read; status complete, it names the gate command and eight log paths, its baseline_suite and after_suite declare 12b5f3d1ce and 5c474bd0e8 with completed true and zero failure ids, and it carries a rubric line for all six dimensions.\nVERDICT diff: read commit by commit against 12b5f3d1ce: the single commit 5c474bd0e8 changes the _PATH_TOKEN pattern and the comment above it, adds one test case with its constant and section entry, and rewrites two paragraphs of the evidence fragment - 17 insertions and 8 deletions across the three declared files.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131, reckon/crew/dispatch_batch.py:queue_batch, reckon/crew/dispatch_batch.py:_build_entry, reckon/crew/dispatch_batch.py:_PlanRead.write_paths\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: dispatch_batch.py:68 gives './docs/x.md' a prefix match so write_paths at :306-330 derives 'docs/x.md' while '/abs/data/record.json' still derives whole, closing the prior review's blocking finding.\nSCORE evidence: 15\nJUSTIFICATION evidence: the four gate cases are logged at 5c474bd0e8 and the three controls each end EXIT=1 with 1 failed, but the importer after-arm cited at docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html:5 is logs/importers-after.log, whose own header declares revision 12b5f3d1ce rather than the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the commit touches only dispatch_batch.py, tests/test_a_batch_derives_an_absolute_write_path.py and the declared evidence fragment, all three inside the node's write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_batch_derives_an_absolute_write_path.py:157 asserts the independent literal ['docs/x.md'] and negative-control-3-dot-prefix-read-as-root.log shows it reddening on ['/docs/x.md'] when the pattern is reverted, which is the reversion this commit exists to prevent.\nSCORE fit: 19\nJUSTIFICATION fit: dispatch_batch.py:61-67 keeps the module's existing comment idiom and states the mechanism rather than the incident, and the new test at :157 follows the file's fixture and naming pattern.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change extends the existing _PATH_TOKEN in place, and a search of reckon/ and plugins/ for _WRITE_PATHS_SENTENCE and _PATH_TOKEN found no owner this duplicates.\nFINDING reckon/crew/dispatch_batch.py:68 non-blocking: the '(?:\\./)*' prefix is free to start one character into a '../' prefix, since re.findall resumes scanning at the second dot, so a sentence naming '../docs/x.md' derives 'docs/x.md' - an in-repo path whose parent exists, which the queue-time check at :321-330 therefore accepts - where the previous pattern derived '/docs/x.md'; both are wrong, but the new value is silently accepted, which is the failure class this section guards, and no case covers the form.\nFINDING tests/test_a_batch_derives_an_absolute_write_path.py:148 non-blocking: 'assert ABSOLUTE_RECORD.startswith(\"/\")' compares the test's own module literal against itself and cannot fail for any behaviour of the code under test, so it adds no coverage to case one; already recorded by the prior review at head 12b5f3d1ce and unchanged by this commit.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html:5 non-blocking: the rewritten Measure paragraph reports that 'the head tree 20 passed' for the importer arm, but the log it names, logs/importers-after.log, declares '# revision: 12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1' - one commit before the reviewed head - so the arm is not evidenced at 5c474bd0e8; the four other importer test files derive only plain relative paths ('src/module.py', 'one.py', 'three.py'), so the residual risk is nil, but the receipt names a revision it did not run at.\n",
+  "review_run_id": "r-20261109T002330392220-review-of-a-batch-derives-an-absolute-write-path-5c474bd0e813",
+  "reviewed_base_sha": "12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1",
+  "reviewed_head_sha": "5c474bd0e813b1d352217c5da427217afcaf627d",
+  "reviewed_run_id": "r-20261108T232922624067-a-batch-derives-an-absolute-write-path",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261109T002330392220-review-of-a-batch-derives-an-absolute-write-path-5c474bd0e813",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T00:41:41.266635+00:00",
+  "total": 110
+}
