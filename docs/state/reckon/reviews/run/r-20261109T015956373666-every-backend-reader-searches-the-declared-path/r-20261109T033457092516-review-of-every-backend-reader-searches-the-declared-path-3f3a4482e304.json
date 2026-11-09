@@ -1,0 +1,82 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the run's own two gate logs. baseline_suite cites logs/baseline-importers.log (revision a7ba0d27c2): '13 failed, 1536 passed, 1 skipped, 9 warnings, 7 errors', EXIT=1, completed. after_suite cites logs/head-importers.log, which on disk is headed '# revision: 366129aaca' and reads '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error', EXIT=1, completed -- NOT the 13 failed / 7 errors and revision 414dae0712 its JSON records (see FINDING on manifest.md:17). Comparing the two logs by test id gives 7 head-only ids and 8 base-only ids, one id changing from ERROR to FAILED (test_a_discarded_run_is_not_recreated), so the raw set difference is 7. None is attributable to this change: logs/head-new-ids-isolated.log reruns the new ids and 5 of the 7 fail there too while logs/base-new-ids-isolated.log fails the same 5 at the base revision, and the remaining two (test_a_stop_between_the_check_and_the_spawn_spawns_no_worker, test_a_stop_during_the_pre_spawn_snapshot_spawns_no_worker) pass at head in isolation. None of the 7 is in this node's declared write paths. Caveat: the two isolation logs carry no revision header, so their attribution rests on the manifest and filename rather than on the log's own first line. The node test itself was re-run by this review at the reviewed head: logs/review-rerun-node-test.log records '3 passed in 11.71s' EXIT=0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:1538 dispatch composes and records the cli launch",
+    "reckon/crew/dispatch_sessions.py:911 _backend_settings reads the recorded directories back",
+    "reckon/crew/dispatch_sessions.py:1661 change_lane rewrites the destination record",
+    "reckon/crew/dispatch_launch.py:1184 resolve_launch_executable resolves the argv from the plan",
+    "reckon/crew/dispatch_launch.py:2411 _supervisor_spec writes the worker PATH"
+  ],
+  "completed_at": "2026-11-09T03:43:32.513Z",
+  "dispatched_at": "2026-11-09T03:36:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html",
+      "line": "41",
+      "severity": "blocking",
+      "text": "blocking: the population row states the importer arm at 366129aaca read 'Same 13 failed / 1536 passed / 7 errors as the base arm', but the log it cites, logs/head-importers.log, is headed '# revision: 366129aaca' and reads '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error'. A reader checking the delivered claim against its own evidence finds different numbers, so the fragment records a result the run did not produce."
+    },
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html",
+      "line": "38",
+      "severity": "blocking",
+      "text": "blocking: the node-test row claims '3 passed, EXIT=0' against logs/repair-node-tests.log, but that log is 4 lines long and ends at '[100%]' with no pytest summary and no EXIT= line, so the cited artefact records neither the pass count nor the exit status. The result is true -- this review re-ran the same command at 3f3a4482e304 and logs/review-rerun-node-test.log records '3 passed in 11.71s' EXIT=0 -- but promotion reads a gate's status from the log's last line, and this log leaves it unread."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/manifest.md",
+      "line": "17",
+      "severity": "blocking",
+      "text": "blocking: after_suite records revision 414dae0712 with failure_count 13 and seven errors while citing logs/head-importers.log, which now carries revision 366129aaca and '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error'. The field promotion reads as the head arm therefore describes a run whose log no longer exists, and the manifest's own checkpoint at manifest.md:21 said the in-flight population run would replace it but status was set complete without that update."
+    },
+    {
+      "file": "tests/test_every_backend_reader_searches_the_declared_path.py",
+      "line": "295",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert (tmp_path / 'destination-backend-bin' / COMMAND).is_file() asserts a stub the fixture created two lines earlier in the same test, so it is true whatever the code under test does and cannot redden on any regression; the behaviour it appears to guard is already guarded by moved['backend_search_path'] == [destination] at :294."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/head-importers.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/logs/baseline-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s): the three production entry points the tests now drive (dispatch, change_lane) and the two readers that consume what the record carries (_backend_settings, resolve_launch_executable/_supervisor_spec).",
+    "diff": "Read commit by commit against 414dae0712: 366129aaca rewrites the node test's three cases to drive the production record writers, and 3f3a4482 corrects the fragment's revision labels and adds the two mutation rows, with no production code changed in either.",
+    "done_when": "The done_when asks that the node test pass with both negative controls logged and that importers add no failure against the base; logs/repair-node-tests.log is truncated at '[100%]' with no summary or EXIT line, so this review re-ran the command, and logs/review-rerun-node-test.log records '3 passed in 11.71s' EXIT=0 at 3f3a4482e304, while logs/negative-control-launch-record.log (2 failed, EXIT=1) and logs/negative-control-lane-change.log (1 failed, 2 passed, EXIT=1) substantiate both mutations.",
+    "goal": "The source goal is to carry the resolved backend search directories from plan build through every launch and resume of a cli run; the gained commits repair the prior review's two test gaps and its evidence labels, and tests/test_every_backend_reader_searches_the_declared_path.py:227-304 now drives crew.dispatch, read_pointer and change_lane rather than constructing the record they read.",
+    "manifest": "Read manifest.md; it records status complete and the three cases, but its after_suite at manifest.md:17 names revision 414dae0712 and 13 failures while the log it cites, logs/head-importers.log, is headed revision 366129aaca and reads '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error'.",
+    "write_paths": "The source node declares six exclusive paths; git diff 414dae0712..3f3a4482 changes only tests/test_every_backend_reader_searches_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html, both inside that scope, and no production file is touched in the gained commits."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-launch-record.log shows removing the record write reddens test_a_first_launch_searches_a_project_layer_declaration and test_a_resume_searches_the_directories_the_launch_recorded, and logs/negative-control-lane-change.log shows removing the move's writes reddens the lane-change case; the one assertion at :295 cannot fail and carries no durability weight.",
+    "evidence": "logs/head-importers.log and logs/repair-node-tests.log do not record the numbers the fragment and manifest attribute to them, so two of the three delivered evidence records fail against their own artefacts even though logs/review-rerun-node-test.log confirms the gate passes.",
+    "fit": "tests/test_every_backend_reader_searches_the_declared_path.py follows the surrounding pytest idiom (a launcher stand-in as in tests/test_crew.py, a tmp_path flight layer, an autouse PATH pin) and introduces no plan, sprint or ticket identifier in names or docstrings.",
+    "goal_fidelity": "tests/test_every_backend_reader_searches_the_declared_path.py:233 asserts the dispatched record carries the project-layer directory and :252-260 assert a resume rebuilt from that record searches it, which is the goal the gained commits were dispatched to close.",
+    "reuse": "The gained commits add no production definition; their test helpers are local to the module and mirror the launcher stand-in pattern already used across tests/, and no repository-owned mechanism is forked.",
+    "scope_discipline": "git diff 414dae0712..3f3a4482 touches only tests/test_every_backend_reader_searches_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html, both declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal is to carry the resolved backend search directories from plan build through every launch and resume of a cli run; tests/test_every_backend_reader_searches_the_declared_path.py:227-304 now drives crew.dispatch, read_pointer and change_lane rather than constructing the record they read.\nVERDICT done_when: The done_when asks the node test to pass with both negative controls logged; logs/repair-node-tests.log is truncated at '[100%]' with no summary or EXIT line, so this review re-ran the command and logs/review-rerun-node-test.log records '3 passed in 11.71s' EXIT=0 at 3f3a4482e304, with logs/negative-control-launch-record.log and logs/negative-control-lane-change.log substantiating both mutations.\nVERDICT write_paths: The source node declares six exclusive paths and git diff 414dae0712..3f3a4482 changes only tests/test_every_backend_reader_searches_the_declared_path.py and docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html, both inside that scope.\nVERDICT manifest: Read manifest.md; it records status complete but its after_suite at manifest.md:17 names revision 414dae0712 and 13 failures while the log it cites, logs/head-importers.log, is headed revision 366129aaca and reads '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error'.\nVERDICT diff: Read commit by commit against 414dae0712: 366129aaca rewrites the node test's three cases to drive the production record writers and 3f3a4482 corrects the fragment's revision labels and adds the two mutation rows, with no production code changed.\nCALL_SITES: reckon/crew/dispatch.py:1538 dispatch, reckon/crew/dispatch_sessions.py:911 _backend_settings, reckon/crew/dispatch_sessions.py:1661 change_lane, reckon/crew/dispatch_launch.py:1184 resolve_launch_executable, reckon/crew/dispatch_launch.py:2411 _supervisor_spec\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_every_backend_reader_searches_the_declared_path.py:233 and :252-260 assert the dispatched record carries the project-layer directory and that a resume rebuilt from it searches that directory.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/head-importers.log and logs/repair-node-tests.log do not record the numbers the fragment and manifest attribute to them, though logs/review-rerun-node-test.log confirms the gate passes.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 414dae0712..3f3a4482 touches only the two declared write paths and no production file.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-launch-record.log and logs/negative-control-lane-change.log show each case reddens when the record write it measures is removed, but the assertion at tests/test_every_backend_reader_searches_the_declared_path.py:295 cannot fail.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_every_backend_reader_searches_the_declared_path.py follows the launcher-stand-in and tmp_path flight-layer idiom already used in tests/test_crew.py and names nothing by plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no production definition, and the test module's helpers are local and mirror the existing stand-in-launcher pattern rather than forking a repository mechanism.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html:41 blocking: the population row claims 'Same 13 failed / 1536 passed / 7 errors as the base arm' while its cited log logs/head-importers.log is headed revision 366129aaca and reads '18 failed, 1537 passed, 1 skipped, 10 warnings, 1 error'.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/every-backend-reader-searches-the-declared-path.html:38 blocking: the row claims '3 passed, EXIT=0' against logs/repair-node-tests.log, which ends at '[100%]' with no summary and no EXIT= line, leaving the gate status unread; the result is true only via logs/review-rerun-node-test.log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T015956373666-every-backend-reader-searches-the-declared-path/manifest.md:17 blocking: after_suite records revision 414dae0712 with 13 failures while citing logs/head-importers.log, an artefact now carrying revision 366129aaca and 18 failures, so the field promotion reads as the head arm describes a run whose log no longer exists.\nFINDING tests/test_every_backend_reader_searches_the_declared_path.py:295 non-blocking: assert (tmp_path / 'destination-backend-bin' / COMMAND).is_file() asserts a stub the fixture created and is true whatever the code under test does.",
+  "review_run_id": "r-20261109T033457092516-review-of-every-backend-reader-searches-the-declared-path-3f3a4482e304",
+  "reviewed_base_sha": "414dae0712c9c6f6d3dfe2de9cda0bbe99601efe",
+  "reviewed_head_sha": "3f3a4482e30405d16958e405e5223b330841d1a2",
+  "reviewed_run_id": "r-20261109T015956373666-every-backend-reader-searches-the-declared-path",
+  "scores": {
+    "durability": 18,
+    "evidence": 10,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T03:49:16.661157+00:00",
+  "total": 105
+}

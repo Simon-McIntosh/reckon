@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="190">
+<meta name="plan-version" content="191">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s21&quot;:[&quot;a-dispatch-returns-without-its-worker#s20&quot;]}">
 </head>
@@ -1354,6 +1354,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261109T024817189664-review-of-every-backend-reader-searches-the-declared-path-414dae0712c9" data-who="reckon-build" data-when="2026-11-09T03:01:54.185Z">
     <div class="r-comment-body"><p>Reviewed r-20261109T015956373666-every-backend-reader-searches-the-declared-path at a7ba0d27c2..414dae0712 across all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 15, fit 19, reuse 20; total 108); the plan-carried backend search path reaches the executable, the persisted worker PATH and a resumed attempt, with four non-blocking findings on untested record writers, a mismatched manifest after_suite pair, and a stale revision in the evidence fragment.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261109T033457092516-review-of-every-backend-reader-searches-the-declared-path-3f3a4482e304" data-who="reckon-build" data-when="2026-11-09T03:43:32.513Z">
+    <div class="r-comment-body"><p>Independent review of r-20261109T015956373666-every-backend-reader-searches-the-declared-path over the commits it gained since 414dae0712 (366129aaca and 3f3a4482e304): all six dimensions scored, status parsed, added_failure_count 0 derived from baseline-importers.log and head-importers.log, with three blocking findings on evidence records that contradict or fail to record their own cited logs and one non-blocking finding on an assertion that cannot fail.</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261109T024059510313-review-of-the-availability-report-searches-the-declared-path-aea70be5236c" data-who="reckon-build" data-when="2026-11-09T02:50:20.432Z">
     <div class="r-comment-body"><p>Independent review of run r-20261109T015847463373 at base ad25de31ce and head aea70be523. Verdict: sound and landable. The report now searches the process PATH first and the declared backend search path after it (reckon/flight.py:2353-2366), adds command_source naming which search held the command, and keeps a neither-path backend reading false. Scores: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 18 (total 114). Added failures against base: 0 (both 21-id importer arms identical). One non-blocking finding: an awkward phrase in the helper docstring at reckon/flight.py:2404.</p></div>
