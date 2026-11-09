@@ -390,10 +390,14 @@ def test_the_spawn_guard_admits_its_own_attempt_and_refuses_another(
         )
     )
     assert "attempt 2" in str(refused) and IN_FLIGHT in str(refused)
+    # A reservation at a later attempt than the spec's guards the spawn. One at
+    # an earlier attempt does not: that launch has been superseded, so refusing
+    # on it would leave a resumed run unlaunchable for good.
+    _reservation(home, 3, pid=os.getpid())
     refused_guard = _refused(
-        lambda: dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 3))
+        lambda: dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 2))
     )
-    assert "attempt 2" in str(refused_guard) and IN_FLIGHT in str(refused_guard)
+    assert "attempt 3" in str(refused_guard) and IN_FLIGHT in str(refused_guard)
 
 
 # ── a reserved attempt is launched ──────────────────────────────────────────
