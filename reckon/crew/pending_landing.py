@@ -225,7 +225,11 @@ def finish_pending_landings(
             continue
         conflict = record.get("merge_conflict") or {}
         pointer = None
-        if conflict:
+        # A live pointer is read even without a recorded conflict, because a
+        # promotion that could not remove its pointer marks it and leaves the
+        # landing to this pass. Reading it is what tells the two apart: an
+        # unmarked live pointer belongs to a newer attempt and is left alone.
+        if conflict or run_id in live:
             try:
                 pointer = runs.read_pointer(run_id)
             except runs.CrewError:
