@@ -436,6 +436,17 @@ def edit(
             target.write_text(steering_text, encoding="utf-8")
             node_block["brief_path"] = str(target)
             node_block["brief_sha256"] = digest
+        # A field this edit set is the coordinator's, not the section's, so its
+        # section-derived mark is cleared here: a release after a plan change
+        # re-derives the fields the section still owns and keeps this one.
+        marks = dict(node_block.get("section_derived") or {})
+        for name in ("done_when", "write_paths", "time_budget"):
+            if changes.get(name):
+                marks.pop(name, None)
+        if marks:
+            node_block["section_derived"] = marks
+        else:
+            node_block.pop("section_derived", None)
         current["node"] = node_block
         options = dict(current.get("dispatch_options") or {})
         if route is not None:

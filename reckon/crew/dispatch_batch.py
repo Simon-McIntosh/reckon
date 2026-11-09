@@ -356,13 +356,89 @@ def _as_list(value: Any) -> list[str]:
     raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
+def section_field_digest(value: Any) -> str:
+    """The digest of one section-derived value, as the queue records it.
+
+    A released request is re-derived from the section's current text, and the
+    pointer records what changed by comparing this digest of the stored value
+    against the digest of the value the section states now. The digest is over
+    the value's canonical JSON so a list of paths and a single string each have
+    one spelling.
+    """
+    import hashlib
+
+    canonical = json.dumps(value, sort_keys=True, ensure_ascii=False)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, str]]:
+    """Each node field this section supplies, with the digest of its value.
+
+    A batch entry that omits a field takes the section's, and a released
+    request re-derives those same fields, so both sides of that contract are
+    answered here rather than twice. A field the section does not supply is
+    absent, which is what keeps a supplied or edited field the request's own.
+    """
+    values: dict[str, Any] = {}
+    with contextlib.suppress(BatchEntryRefusedError):
+        values["done_when"] = read.done_when(section)
+    paths = read.write_paths(section)
+    if paths:
+        values["write_paths"] = paths
+    estimate = read.section_record(section).get("effort_hours")
+    if isinstance(estimate, (int, float)):
+        values["estimated_hours"] = float(estimate)
+    return {
+        name: (value, section_field_digest(value)) for name, value in values.items()
+    }
+
+
+def rederived_section_fields(
+    *,
+    project: str,
+    plan: str,
+    section: str,
+    repo_root: str | Path,
+    marked: Mapping[str, str],
+) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
+    """Re-derive a stored request's section-supplied fields from the plan now.
+
+    ``marked`` is the field-to-digest record the queue writer left on the
+    request, naming which of its node fields the section supplied. The values
+    come back with both digests, so the pointer records what the release
+    changed. A field the section no longer states is absent from the values,
+    which is what keeps the request's stored value.
+    """
+    try:
+        read = _PlanRead(project, plan, Path(repo_root))
+        derivation = section_derivation(read, section)
+    except Exception:  # noqa: BLE001 - an unreadable plan keeps the stored fields
+        return {}, {}
+    values: dict[str, Any] = {}
+    digests: dict[str, dict[str, str]] = {}
+    for name, stored_digest in marked.items():
+        fresh = derivation.get(name)
+        if fresh is None:
+            continue
+        value, digest = fresh
+        values[name] = value
+        digests[name] = {"old": str(stored_digest), "new": digest}
+    return values, digests
+
+
 def _entry_node(
     index: int,
     entry: Mapping[str, Any],
     *,
     plans: _Plans,
-) -> tuple[str, TaskNode]:
-    """Build one entry's node, filling every omitted field from its section."""
+) -> tuple[str, TaskNode, dict[str, str]]:
+    """Build one entry's node, filling every omitted field from its section.
+
+    The third value names every field whose value the section supplied, with
+    the digest of the value taken. The queue records it on the stored request:
+    a field the dispatcher supplied or an editor set carries no mark, so a
+    later release can re-derive the section's fields and keep the rest.
+    """
     unknown = sorted(set(entry) - BATCH_ENTRY_FIELDS)
     if unknown:
         raise BatchEntryRefusedError(
@@ -385,24 +461,29 @@ def _entry_node(
         )
 
     read = plans.read(project, plan)
-    record = read.section_record(section)
+    derivation = section_derivation(read, section)
+    derived: dict[str, str] = {}
 
-    done_when = str(entry.get("done_when") or "").strip() or read.done_when(section)
+    done_when = str(entry.get("done_when") or "").strip()
+    if not done_when:
+        if "done_when" not in derivation:
+            raise BatchEntryRefusedError(
+                f"{project}:{plan}#{section}: the section states no "
+                "done-when, so the entry must give one"
+            )
+        done_when, derived["done_when"] = derivation["done_when"]
     write_paths = _as_list(entry.get("write_paths"))
     if not write_paths:
-        write_paths = read.write_paths(section)
-    if not write_paths:
-        raise BatchEntryRefusedError(
-            f"{project}:{plan}#{section}: the section states no write-paths "
-            "sentence and the entry gives none"
-        )
+        if "write_paths" not in derivation:
+            raise BatchEntryRefusedError(
+                f"{project}:{plan}#{section}: the section states no write-paths "
+                "sentence and the entry gives none"
+            )
+        write_paths, derived["write_paths"] = derivation["write_paths"]
 
     estimated_hours = entry.get("estimated_hours")
-    if estimated_hours is None:
-        estimate = record.get("effort_hours")
-        estimated_hours = (
-            float(estimate) if isinstance(estimate, (int, float)) else None
-        )
+    if estimated_hours is None and "estimated_hours" in derivation:
+        estimated_hours, derived["estimated_hours"] = derivation["estimated_hours"]
     spec_level = str(entry.get("spec_level") or "")
 
     node = TaskNode(
@@ -428,7 +509,7 @@ def _entry_node(
         inputs=_as_list(entry.get("inputs")),
         compares_with=str(entry.get("compares_with") or ""),
     )
-    return project, node
+    return project, node, derived
 
 
 def _peer_scopes(values: Any) -> dict[str, list[str]]:
@@ -439,6 +520,24 @@ def _peer_scopes(values: Any) -> dict[str, list[str]]:
             path.strip() for path in paths.split(",") if path.strip()
         ]
     return scopes
+
+
+def _stamp_section_derived(run_id: str, derived: Mapping[str, str]) -> None:
+    """Record on a stored request which fields its section supplied.
+
+    The mark lives on the stored node beside the values it describes, so an
+    editor that changes one of those fields clears it in the same write, and a
+    release reads it without re-reading the plan the request was queued from.
+    """
+    from reckon.crew import runs as runs_module
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        node_block = dict(current.get("node") or {})
+        node_block["section_derived"] = dict(derived)
+        current["node"] = node_block
+        return current
+
+    runs_module._mutate_pointer(run_id, stamp)
 
 
 def _require_stored(stored: Mapping[str, Any], project: str, node: TaskNode) -> None:
@@ -557,7 +656,7 @@ def _queue_batch(
     for index in ordered:
         entry = entries[index]
         try:
-            project, node = _entry_node(index, entry, plans=plans)
+            project, node, derived = _entry_node(index, entry, plans=plans)
             # An entry waits on another entry of this batch by that entry's node
             # id; the stored request is named by its run id, which the earlier
             # entry's row carries.
@@ -615,6 +714,10 @@ def _queue_batch(
                 pointer = read_pointer(stored_id)
                 if isinstance(pointer, dict):
                     queue_admission.record_review_contract(pointer)
+                if derived and stored_id == run_id:
+                    # A request already queued keeps the node it was stored
+                    # with, so its marks stay the ones that node was built under.
+                    _stamp_section_derived(stored_id, derived)
             _require_stored(stored, project, node)
             actual_id, row = next(iter(stored.items()))
             phase = str(row.get("phase") or "")

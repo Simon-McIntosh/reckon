@@ -493,7 +493,29 @@ def _launch_queued(
     else:
         with contextlib.suppress(OSError):
             _join_admitted_plan_review(pointer, str(launched["run_id"]))
+        _carry_section_rederivation(pointer, str(launched["run_id"]))
     return launched
+
+
+def _carry_section_rederivation(pointer: Mapping[str, Any], run_id: str) -> None:
+    """Keep a release's re-derivation record on the run it launched.
+
+    A launch publishes a fresh record built from the node it launched, so the
+    record the release wrote on the request is not part of it. The digests are
+    written beside the launched node here: the node carries the re-derived
+    values, and this says which fields the section supplied and what they were
+    before the release.
+    """
+    recorded = pointer.get("section_rederivation")
+    if not isinstance(recorded, Mapping) or not recorded:
+        return
+
+    def carry(current: dict[str, Any]) -> dict[str, Any]:
+        current["section_rederivation"] = dict(recorded)
+        return current
+
+    with contextlib.suppress(Exception):
+        runs._mutate_pointer(run_id, carry)
 
 
 # The dispatch options a rebind copies from the request it moves. The waivers a
@@ -4520,6 +4542,61 @@ def _hold_for_plan_review(pointer: Mapping[str, Any], detail: str) -> bool:
     return True
 
 
+def _section_rederivation(
+    pointer: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
+    """Each section-derived field as the section states it now, with both digests.
+
+    A request keeps a field the dispatcher supplied and a field ``crew queue
+    edit`` set; only the fields its section supplied are re-derived, and the
+    mark the queue writer left on the stored node is what names them. The plan
+    is read from the checkout the release launches against, which is the text
+    the request will run under, so a request released onto a changed section
+    carries the contract of the text it launches with rather than the one it
+    was queued against.
+
+    A field the section no longer supplies keeps its stored value: releasing a
+    request the plan has moved past is what the review it awaited was for, and
+    dropping a required field here would refuse a launch the queue has already
+    admitted. An unreadable plan does the same.
+    """
+    from reckon.crew import dispatch_batch
+
+    node = _node_from_pointer(pointer)
+    marks = dict((pointer.get("node") or {}).get("section_derived") or {})
+    if not marks or not node.plan.strip():
+        return {}, {}
+    return dispatch_batch.rederived_section_fields(
+        project=str(pointer.get("project") or ""),
+        plan=node.plan,
+        section=node.section,
+        repo_root=str(pointer.get("repo") or ""),
+        marked=marks,
+    )
+
+
+def _apply_section_rederivation(
+    pointer: dict[str, Any],
+    values: Mapping[str, Any],
+    digests: Mapping[str, Mapping[str, str]],
+) -> None:
+    """Write the re-derived fields onto a pointer, marking them current.
+
+    The fields stay marked as the section's: they were re-derived from it, so a
+    later release re-derives them again from text it moved to since.
+    """
+    node_block = dict(pointer.get("node") or {})
+    marks = dict(node_block.get("section_derived") or {})
+    for name, value in values.items():
+        node_block[name] = value
+        marks[name] = digests[name]["new"]
+    node_block["section_derived"] = marks
+    pointer["node"] = node_block
+    pointer["section_rederivation"] = {
+        name: dict(pair) for name, pair in digests.items()
+    }
+
+
 def _release_plan_review_holds(
     live: Sequence[Mapping[str, Any]],
     *,
@@ -4548,16 +4625,25 @@ def _release_plan_review_holds(
             continue
         run_id = str(pointer.get("run_id") or "")
         ended = _now()
+        # The hold was taken because the section moved; the release launches
+        # against the text it moved to, so the fields it supplied are re-derived
+        # here and the launched node is the current contract rather than the one
+        # the request was queued under.
+        rederived, digests = _section_rederivation(pointer)
 
         def release(
             current: dict[str, Any],
             prior_phase: str = prior,
             released_at: datetime = ended,
+            values: dict[str, Any] = rederived,
+            changed: dict[str, dict[str, str]] = digests,
         ) -> dict[str, Any]:
             started = parse_utc((current.get("queue_hold") or {}).get("started_at"))
             queued_at = parse_utc(current.get("queued_at"))
             if started is not None and queued_at is not None:
                 current["queued_at"] = (queued_at + (released_at - started)).isoformat()
+            if values:
+                _apply_section_rederivation(current, values, changed)
             current["phase"] = prior_phase
             current.pop("queue_hold", None)
             current["queue_released_at"] = released_at.isoformat()
@@ -4570,6 +4656,10 @@ def _release_plan_review_holds(
         if isinstance(pointer, dict):
             pointer["phase"] = prior
             pointer.pop("queue_hold", None)
+            if rederived:
+                # The pass launches from this pass's in-memory records, so the
+                # node it hands the launcher is the one re-derived above.
+                _apply_section_rederivation(pointer, rederived, digests)
         released.append(run_id)
     return released
 
