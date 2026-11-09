@@ -7,9 +7,8 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
   <meta name="plan-title" content="A landing is on main when it says so">
-  <meta name="plan-summary" content="A resume now takes the run's promotion lock first, without waiting, and refuses while a promotion holds it instead of rewriting the pointer underneath it. The two take the locks in the same order, so a promotion and a resume started together cannot deadlock.">
-  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
-  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-summary" content="A resume takes the run's promotion lock first, without waiting, before it writes the pointer or marks the launch, and refuses while a promotion holds it. The refusal itself never takes the pointer lock, so it answers at once even against a promotion holding both locks, and the two sides take the locks in promotion's own order so a promotion and a resume started together cannot deadlock.">
+  <meta name="plan-recorded-at" content="2026-11-10">
   <meta name="plan-verdict" content="passed">
   <meta name="plan-impl" content="1.0">
   <title>A resume refuses while its run is promoted | reckon</title>
@@ -29,43 +28,62 @@
         it has passed. Such a resume took only the pointer lock, so it rewrote
         the pointer underneath a promotion that had already decided what to do
         with that run.</p>
-      <p><code>_pointer_lock</code> in <code>reckon/crew/runs.py</code> now takes
-        an optional non-blocking mode, which raises
+      <p><code>_pointer_lock</code> in <code>reckon/crew/runs.py</code> takes an
+        optional non-blocking mode, which raises
         <code>PointerLockHeldError</code> when the lock is held instead of
-        queueing for it. <code>mark_resume_launching</code> in
-        <code>reckon/crew/resumption.py</code> takes the run's promotion lock
-        first in that mode and the pointer lock inside it, which is the order
-        promotion itself uses: a promotion in progress is a refusal that names
-        the promotion and tells the operator to retry once it finishes, and the
-        two cannot hold what the other waits for. The refusal happens before the
-        pointer is read, so the pointer is left exactly as the promotion has it,
-        and no worker is started.</p>
+        queueing for it. <code>reckon/crew/resumption.py</code> composes it into
+        <code>hold_against_promotion</code>, which takes the run's promotion
+        lock without waiting and raises <code>PromotionInProgressError</code>
+        when a promotion holds it. The hold is re-entrant within one context,
+        and the lock name is imported from the module that owns it rather than
+        spelled again, so a rename in promotion cannot leave this guard watching
+        a lock nobody takes.</p>
+      <p>Three places take it. <code>mark_resume_launching</code> holds the run
+        before it writes the launch mark. <code>resume_plan</code> in
+        <code>reckon/crew/dispatch_sessions.py</code> holds the run around both
+        its pointer write and that mark, because taking them separately let a
+        promotion start in between and the guard fire after the write it exists
+        to prevent. And <code>_resume</code> answers a refusal without touching
+        the pointer: the mark is dropped only if the pointer is free, because
+        the pointer is the promotion's to rewrite and remove, so a mark left on
+        it is not the refusal's to undo.</p>
+      <p>The locks are taken in promotion's own order — promotion lock, then
+        the run's pointer lock — so a promotion and a resume started together
+        cannot hold what the other waits for.</p>
     </section>
 
     <section id="a-resume-refuses-while-its-run-is-promoted-measure">
       <h2>Measure</h2>
       <p>Gate: <code>tests/test_a_resume_waits_out_a_promotion.py</code> over a
         temporary crew home and a run whose pointer and worktree are under it.
-        At the head revision it reports 3 passed, <code>EXIT=0</code>. The three
+        At the head revision it reports 4 passed, <code>EXIT=0</code>. The
         cases are: a resume attempted while the promotion lock is held refuses
         naming the promotion, with the pointer byte-for-byte unchanged and the
-        launch seam never called; a resume with no promotion in progress
-        proceeds and leaves no in-flight marker; and a promotion-shaped critical
-        section and a resume started together finish inside a five-second bound
-        in all 25 rounds, in whichever order they arrive.</p>
+        launch seam never called; a real promotion holding its lock and the
+        run's pointer lock together, with the refusal required inside two
+        seconds, which fails if the refusal queues behind the pointer lock; a
+        resume with no promotion in progress proceeding and leaving no
+        in-flight marker; and a promotion-shaped critical section and a resume
+        started together finishing inside a five-second bound in all 25 rounds,
+        in whichever order they arrive.</p>
       <p>Negative control: at the base revision
         <code>f6a07c1c23</code>, over a tree extracted from that revision with
-        the node's test copied in, the refusal case fails with
-        <code>DID NOT RAISE CrewError</code> — the resume proceeds while the
-        promotion lock is held, which is the defect §8 records, reproduced. That
-        log is <code>negative-control-base-arm.log</code> in the run directory;
-        the same tree reports 1 failed, 2 passed, <code>EXIT=1</code>.</p>
+        the node's test copied in, 2 of the 4 cases fail and 2 pass so a guard
+        that refuses everything could not pass either. The refusal case fails
+        with <code>DID NOT RAISE CrewError</code> — the resume proceeds while
+        the promotion lock is held — and the both-locks case fails with
+        <code>the refusal queued behind the promotion's pointer lock</code>,
+        which is the defect this repair round named.</p>
+      <p>A second control applies one mutation to the repaired head: the
+        refusal's mark is cleared through the blocking pointer lock again, and
+        the both-locks case fails with <code>the refusal queued behind the
+        promotion's pointer lock</code>, <code>EXIT=1</code>.</p>
       <p>Importer arm: the six existing test files that name
         <code>_pointer_lock</code>, <code>mark_resume_launching</code> or a
         promotion lock report 11 failed, 205 passed at the head and the same 11
         failed, 205 passed at the base revision, with identical failing ids, so
         this change adds no failure. Ruff check and format are clean on the
-        three staged paths.</p>
+        four staged paths.</p>
     </section>
   </main>
 </body>
