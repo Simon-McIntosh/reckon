@@ -23,7 +23,7 @@
   <title>A Promotion Reads the Evidence It Is Given | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s5&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s7&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s4&quot;,&quot;a-promotion-reads-the-evidence-it-is-given#s5&quot;],&quot;s8&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s7&quot;],&quot;s9&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s6&quot;]}">
 </head>
@@ -143,6 +143,12 @@
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261108T013853686847-merge-the-landed-head-release-onto-main" data-who="reckon-build" data-when="2026-11-08T02:11:43.243Z">
     <div class="r-comment-body"><p>Merged the reviewed head bea6a6bf6c into the dispatch base b92b48de1a as merge commit 2660dc4944; the conflict in reckon/crew_run_commands.py is resolved keeping both the base's pending_landing.clear_pending(run_id) call and the reviewed head's release judgement (integration_repo=repository, integration_commit=landed commit) with nothing else moved, measured by tests/test_a_landed_head_releases_its_worktree.py going from 1 failed / 2 passed at the base revision to 3 passed at the merge, and the pending-landing test file 4 passed.</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261109T020715926620-review-of-agree-a-receipt-with-its-log-b4b70562cf16" data-who="reckon-build" data-when="2026-11-09T02:23:00.943Z">
+    <div class="r-comment-body"><p>review of agree-a-receipt-with-its-log at head b4b70562cf16 — a parsed record over base faf94938 scoring goal_fidelity 17, evidence 9, scope_discipline 20, durability 14, fit 16, reuse 5, with two blocking findings (seven of the section's ten declared negative controls were never executed while the fragment states ten; three cases in tests/test_crew_gate_log_agrees.py pass at base and fail at head) and two non-blocking findings (a duplicated runner-summary parser, and a digest identity branch no producer writes).</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261109T030043708910-review-of-agree-a-receipt-with-its-log-4bf7782f1366" data-who="reckon-build" data-when="2026-11-09T03:12:25.653Z">
+    <div class="r-comment-body"><p>independent review of r-20261109T014514752202-agree-a-receipt-with-its-log over b4b70562..4bf7782f1366 — 111/120 across the six dimensions, no blocking findings; the two gained commits consolidate the runner-summary readers and correct the evidence page, and the base arm&#x27;s 3-failure figure was reproduced independently at the true base revision</p></div>
+</div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261108T042945852869-review-of-release-the-merged-worktree-66a282352829" data-who="reckon-build" data-when="2026-11-08T04:47:36.140Z">
     <div class="r-comment-body"><p>review of r-20261107T233819681056-release-the-merged-worktree at 66a2823528 (base 1b3663ce4f) is stored as a parsed record: all 6 dimensions scored, 0 added failures, 1 non-blocking finding on the merge's release not honouring a recorded worktree_retention.</p></div>
 </div>
@@ -154,9 +160,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T233819681056-release-the-merged-worktree" data-who="reckon-build" data-when="2026-11-08T06:39:07Z">
     <div class="r-comment-body"><p>crew merge now releases every held worktree whose HEAD the commit it landed carries, judged against the merge commit it wrote and read through obligations._held_worktree_records; the result names each released and each withheld tree, and a tree a ledger row retains for a recoverable session is withheld with its retention named; a release that raises is recorded as not judged and never refuses the landed merge. Gate tests/test_a_merge_releases_its_worktree.py: base 1b3663ce4f 4 failed / 1 passed, head 0acd2713 5 passed.</p></div>
-</div>
-<div class="r-comment" data-section="s7" data-id="c-run-r-20261109T020715926620-review-of-agree-a-receipt-with-its-log-b4b70562cf16" data-who="reckon-build" data-when="2026-11-09T02:23:00.943Z">
-    <div class="r-comment-body"><p>review of agree-a-receipt-with-its-log at head b4b70562cf16 — a parsed record over base faf94938 scoring goal_fidelity 17, evidence 9, scope_discipline 20, durability 14, fit 16, reuse 5, with two blocking findings (seven of the section&#x27;s ten declared negative controls were never executed while the fragment states ten; three cases in tests/test_crew_gate_log_agrees.py pass at base and fail at head) and two non-blocking findings (a duplicated runner-summary parser, and a digest identity branch no producer writes).</p></div>
 </div>
 </section>
 </main>
