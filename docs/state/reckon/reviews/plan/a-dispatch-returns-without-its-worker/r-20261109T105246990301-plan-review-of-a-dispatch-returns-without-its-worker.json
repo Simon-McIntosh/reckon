@@ -1,0 +1,113 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:02:14.589Z",
+  "dispatched_at": "2026-11-09T10:54:40Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1021",
+      "id": "anchors_resolve-1",
+      "reason": "an implementable node sent at this text opens the wrong file, finds none of the symbols, and either reports blocked or extracts a module boundary that already partly exists, while the genuinely missing boundary (dispatch_launch.py holding the supervisor beside the launch plan) goes unnamed.",
+      "text": "\u00a717 states the per-run supervisor's body is `_supervisor_command` \"inside `reckon/crew/dispatch.py` (12,638 lines)\" and names seven private helpers around it, but `dispatch.py` is 4,205 lines, `_supervisor_command` is defined at `reckon/crew/dispatch_peer.py:454`, and `_supervisor_spec`, `_supervisor_argv`, `_start_supervisor`, `_spawn_detached_supervisor`, `_spawn_through_fleet`, `_confirm_supervisor_survived` and `_write_boundary_tree_snapshot` are all defined in `reckon/crew/dispatch_launch.py:2382-3176`; dispatch.py holds only re-exports (`_prepare_attempt_records` at 3902, `_start_supervisor` at 3924)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:675",
+      "id": "anchors_resolve-2",
+      "reason": "a section marked done whose gate path a reader cannot open leaves the ignored-file case unverified against a done-when that declares it, so the plan claims coverage the repository does not show and a later reader cannot tell whether the case was built elsewhere or dropped.",
+      "text": "\u00a79's done-when names `tests/test_discard_removes_an_empty_worktree.py`, which does not exist in the tree; the landed test is `tests/test_discard_releases_a_clean_worktree.py`, whose cases are a clean-integrated worktree removed, a dirty one kept and an unintegrated one kept, and no case covers the fourth worktree the done-when requires (a file only under an ignored path)",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1051",
+      "id": "single_goal-1",
+      "reason": "the done-when's second case measures only the threading change and the first and third only the claim bound, so one verdict cannot close both, and a failure in either half leaves the other unexamined; splitting them also lets the threading repair land without waiting on the refusal-store pass.",
+      "text": "\u00a725 bundles two mechanisms: (a) the claim recording its holder and step, the admit pass expiring the span into a refusal record, and the launch fencing on that record; and (b) the follower running its sweep off its delivery thread so `_sweep_on_cadence` neither runs it inline nor joins it against the arming's deadline",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1021",
+      "id": "done_when-1",
+      "reason": "the obvious failure mode, a module that merely re-exports the old functions, passes every clause; a control that drops the module and requires the launch tests to fail would make the measure falsifiable, and without it the node's whole verdict rests on a suite that passes on the unchanged code.",
+      "text": "\u00a717's done-when requires the supervisor's behaviour to live in its own module and the importing-test population to add no failure, but declares no negative control, so no assertion in it can distinguish a real module boundary from a thin re-export",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1011",
+      "id": "wiring-1",
+      "reason": "s3 and s14 are both done, so nothing queues incorrectly today; the omission would only bite if a section were re-dispatched while its upstream was reopened.",
+      "text": "s15 derives its bound from s14's landed reference, s4 and s7 each state they run after \u00a73, and s9 states it runs after \u00a73, but none of these four edges appears in `plan-section-depends-on` ({s21\u2192s20, s24\u2192s23, s25\u2192s24}), which is what the queue orders on",
+      "type": "wiring",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1001",
+      "id": "anchors_resolve-3",
+      "reason": "the sentence is incidental prose in a done section, and the measurement it supports is cited independently in the same paragraph.",
+      "text": "\u00a712 attributes a failure description to \"The \u00a754 worker\", but this plan's sections stop at \u00a725 and no other anchor in the document names \u00a754",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:52",
+      "id": "reasoning-1",
+      "reason": "the supersession is stated explicitly in \u00a73's readings, so a reader who reaches \u00a73 is not sent down the wrong mechanism; leaving \u00a72's paragraph in place costs only a reader who stops at \u00a72.",
+      "text": "\u00a72's measured paragraph states that no code path holds the dispatch process open after the worker launches and that the time a dispatch spends is pre-launch, in `routing.py:880`, while \u00a73 states the holder is the post-launch tree snapshot, and \u00a73's own readings list declares \u00a72 superseded where they conflict",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6408eaee7299a9cdde6eb2ffb1f7246e25351c6f",
+  "plan_fingerprint": "74cdd20ebac9edb0653c11752ce37ced58d2c2037a0273a52f0e1fab775ed459",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 209,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T105246990301-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "ae58d83bffac4fe62008ced851a3f0452a2a1d92",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 s17 names `_supervisor_command` and seven private helpers inside `reckon/crew/dispatch.py` at 12,638 lines, but dispatch.py is 4,205 lines and every one of those symbols is defined elsewhere; s9's done-when names a test file that does not exist.",
+    "done_when": "a finding \u2014 s17's done-when asserts a module boundary and a population delta but declares no negative control, so nothing in it can fail to show the boundary is real.",
+    "evidence_paths": "pass \u2014 gates write to committed research data (`docs/research/data/dispatch-lifetime.json`), the archive landed record, per-node logs and run directories; no session scratchpad path is named.",
+    "naming": "pass \u2014 the live sections' symbols (`_refuse_a_discarded_launch`, `_publish_launch_claim`, `_sweep_on_cadence`, `STRANDED_LAUNCH_BOUND_SECONDS`) are with the work, and no plan label, ticket number or version tag reaches a source name in s15, s17 or s25.",
+    "reasoning": "a finding \u2014 s17's root cause is stated against a file and symbol set that no longer holds, so its mechanism does not run on the code path it names; the remaining live sections' mechanisms match their measures. Reference work: `reckon` repository, snapshot `docs/plans/a-dispatch-returns-without-its-worker.html`.",
+    "single_goal": "a finding \u2014 s25 carries two deliverables, a dated and bounded launch span and moving the follower's sweep off its delivery thread, and its gate proves both with no single verdict available.",
+    "wiring": "a finding \u2014 every declared `plan-section-depends-on` edge resolves (s21\u2192s20, s24\u2192s23, s25\u2192s24) and `plan-informs` names a plan that exists, but three sections (s4, s7, s9) and s15 declare a prose dependency the machine-readable map omits, and s15 needs s14's landed bound."
+  },
+  "section_digests": {
+    "_document": "9d8b5eb99b289222dc1da8e95d48ec0f60a46c52db671aa9b4efecdf24045674",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "67bbeaae96bc2c14bf2b569d62abd60359666a9ef97f5af73082566414743468",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:11:24.996845+00:00",
+  "total": null
+}
