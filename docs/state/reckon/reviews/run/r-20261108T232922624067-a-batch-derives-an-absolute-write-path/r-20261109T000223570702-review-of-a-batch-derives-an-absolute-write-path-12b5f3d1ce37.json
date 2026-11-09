@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: importers-base.log (base cb1b92d1c) ends '20 passed' with EXIT=0 and importers-after.log (head 12b5f3d1ce) ends '20 passed' with EXIT=0, so no failure appears at the head that the base did not carry.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131",
+    "reckon/crew/dispatch_batch.py:_build_entry",
+    "reckon/crew/dispatch_batch.py:_queue_batch"
+  ],
+  "completed_at": "2026-11-09T00:10:04.413Z",
+  "dispatched_at": "2026-11-09T00:03:19Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "309",
+      "severity": "blocking",
+      "text": "the optional leading slash in _PATH_TOKEN at :67 consumes the slash of a './'-prefixed relative path, so './docs/x.md' derives '/docs/x.md' and the while loop at :309 never fires; against the landed module the token list is ['/docs/x.md'], a path the fence then treats as outside the repository and the queue-time existence check skips, which is the failure class this section exists to prevent."
+    },
+    {
+      "file": "tests/test_a_batch_derives_an_absolute_write_path.py",
+      "line": "146",
+      "severity": "non-blocking",
+      "text": "assert ABSOLUTE_RECORD.startswith('/') asserts a property of the test's own literal and cannot fail for any behaviour of the code under test, so it adds no coverage to the case it sits in."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "the fragment states that only a leading './' relative prefix is dropped, which the landed _PATH_TOKEN does not do: a './'-prefixed path comes back absolute, so the record describes behaviour the change does not have."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232922624067-a-batch-derives-an-absolute-write-path/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the artifacts line reports ruff check and ruff format --check clean, but no log under logs/ captures either run, so the done_when's ruff clause rests on an unrecorded claim."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against cb1b92d1c: ef7084a47a changes the token regex, the strip and adds the queue-time refusal, 12b5f3d1ce seeds src/ in one fixture; 195 insertions across four files.",
+    "done_when": "the done_when names three cases in tests/test_a_batch_derives_an_absolute_write_path.py with two negative controls and the importer arm; the manifest records 3 passed EXIT=0, both controls 1 failed 2 passed EXIT=1, importers 20 passed at base and 20 passed at head.",
+    "goal": "the node's goal is to keep an absolute write path absolute when a batch derives it from section text; dispatch_batch.py:67 and :293 keep the leading slash and a plain relative path is unchanged.",
+    "manifest": "read; it states status complete, the gate command, five log paths and its artifacts, and its changed_paths matches the four files in the diff.",
+    "write_paths": "declared write paths are dispatch_batch.py, the new test and the evidence fragment; the diff's fourth file, tests/test_a_batch_request_can_be_edited.py, is covered by the resume advice that put it in the worker's write paths."
+  },
+  "justifications": {
+    "durability": "the two mutations in negative-control-1 and -2 redden case one and case three as declared, but case two has no mutation and the './x' regression this change introduces is covered by no test.",
+    "evidence": "the gate log gate-after.log ends '3 passed' with EXIT=0 and both control logs end EXIT=1 with 1 failed, but no log records the ruff result the done_when also names.",
+    "fit": "dispatch_batch.py:306-310 follows the file's own comment style, but the while loop that intends to drop a './' prefix is unreachable because the regex already consumed the slash.",
+    "goal_fidelity": "dispatch_batch.py:293 derives an absolute path whole and refuses a missing relative one, but the same method at :309 turns a './x' relative path into '/x', contradicting the section's 'a repository-relative path is derived as today'.",
+    "reuse": "no definition is added; the change extends the existing _PATH_TOKEN and _PlanRead.write_paths, and a search of tests/conftest.py and tests/ found no shared batch-repository fixture owner nor a second sentence-to-write-paths deriver.",
+    "scope_discipline": "the four paths in the diff are the three declared write paths plus tests/test_a_batch_request_can_be_edited.py, which the resume advice explicitly granted and which changed by two added lines."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep an absolute write path absolute when a batch derives it from section text; dispatch_batch.py:67 and :293 keep the leading slash and a plain relative path is unchanged.\nVERDICT done_when: the done_when names three cases in tests/test_a_batch_derives_an_absolute_write_path.py with two negative controls and the importer arm; the manifest records 3 passed EXIT=0, both controls 1 failed 2 passed EXIT=1, importers 20 passed at base and 20 passed at head.\nVERDICT write_paths: declared write paths are dispatch_batch.py, the new test and the evidence fragment; the diff's fourth file, tests/test_a_batch_request_can_be_edited.py, is covered by the resume advice that put it in the worker's write paths.\nVERDICT manifest: read; it states status complete, the gate command, five log paths and its artifacts, and its changed_paths matches the four files in the diff.\nVERDICT diff: read commit by commit against cb1b92d1c: ef7084a47a changes the token regex, the strip and adds the queue-time refusal, 12b5f3d1ce seeds src/ in one fixture; 195 insertions across four files.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131, reckon/crew/dispatch_batch.py:_build_entry, reckon/crew/dispatch_batch.py:_queue_batch\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: dispatch_batch.py:293 derives an absolute path whole and refuses a missing relative one, but the same method at :309 turns a './x' relative path into '/x', contradicting the section's 'a repository-relative path is derived as today'.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate log gate-after.log ends '3 passed' with EXIT=0 and both control logs end EXIT=1 with 1 failed, but no log records the ruff result the done_when also names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four paths in the diff are the three declared write paths plus tests/test_a_batch_request_can_be_edited.py, which the resume advice explicitly granted and which changed by two added lines.\nSCORE durability: 15\nJUSTIFICATION durability: the two mutations in negative-control-1 and -2 redden case one and case three as declared, but case two has no mutation and the './x' regression this change introduces is covered by no test.\nSCORE fit: 16\nJUSTIFICATION fit: dispatch_batch.py:306-310 follows the file's own comment style, but the while loop that intends to drop a './' prefix is unreachable because the regex already consumed the slash.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the change extends the existing _PATH_TOKEN and _PlanRead.write_paths, and a search of tests/conftest.py and tests/ found no shared batch-repository fixture owner nor a second sentence-to-write-paths deriver.\nFINDING reckon/crew/dispatch_batch.py:309 blocking: the optional leading slash in _PATH_TOKEN at :67 consumes the slash of a './'-prefixed relative path, so './docs/x.md' derives '/docs/x.md' and the while loop at :309 never fires; against the landed module the token list is ['/docs/x.md'], a path the fence then treats as outside the repository and the queue-time existence check skips, which is the failure class this section exists to prevent.\nFINDING tests/test_a_batch_derives_an_absolute_write_path.py:146 non-blocking: assert ABSOLUTE_RECORD.startswith('/') asserts a property of the test's own literal and cannot fail for any behaviour of the code under test, so it adds no coverage to the case it sits in.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-derives-an-absolute-write-path.html:4 non-blocking: the fragment states that only a leading './' relative prefix is dropped, which the landed _PATH_TOKEN does not do: a './'-prefixed path comes back absolute, so the record describes behaviour the change does not have.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261108T232922624067-a-batch-derives-an-absolute-write-path/manifest.md:15 non-blocking: the artifacts line reports ruff check and ruff format --check clean, but no log under logs/ captures either run, so the done_when's ruff clause rests on an unrecorded claim.\n",
+  "review_run_id": "r-20261109T000223570702-review-of-a-batch-derives-an-absolute-write-path-12b5f3d1ce37",
+  "reviewed_base_sha": "cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e",
+  "reviewed_head_sha": "12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1",
+  "reviewed_run_id": "r-20261108T232922624067-a-batch-derives-an-absolute-write-path",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261109T000223570702-review-of-a-batch-derives-an-absolute-write-path-12b5f3d1ce37",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T00:14:06.013270+00:00",
+  "total": 103
+}
