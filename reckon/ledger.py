@@ -1048,18 +1048,70 @@ def load_aggregate(
     return _load_aggregate(project, root)
 
 
+def _indexed_run_ids(
+    project: str, root: str | Path | None
+) -> set[str] | None:
+    """Membership from the published run index, or ``None`` when it is not current.
+
+    The answer is the ids the index already holds, read without decoding any
+    stored payload. It is trusted only while two things hold: the aggregate's
+    stat identity matches the one the index recorded, and every run file the
+    directory holds carries the stat identity the index stored for it. A file
+    added, removed or rewritten in place fails the second check, which is the
+    same evidence :func:`_indexed_data` uses to decide what to rescan; the
+    caller then takes its own read.
+
+    This is deliberately not :func:`load`: a reader of membership must cost no
+    more than the membership, and ``load`` rebuilds the index and decodes the
+    rows a caller did not ask for.
+    """
+    path = _run_index_path(project, root)
+    if not path.is_file():
+        return None
+    try:
+        with contextlib.closing(
+            sqlite3.connect(f"file:{path}?mode=ro", uri=True, timeout=0.2)
+        ) as connection:
+            meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            if meta.get("stamp") != json.dumps(
+                _file_identity(ledger_path(project, root))
+            ):
+                return None
+            stored = dict(connection.execute("SELECT name, stamp FROM records"))
+            ids = {
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL "
+                    "UNION SELECT name FROM records"
+                )
+            }
+    except (sqlite3.Error, OSError, ValueError):
+        return None
+    snapshot = _run_snapshot(project, root)
+    if len(snapshot) != len(stored):
+        return None
+    for source, stamp in snapshot:
+        if stamp is None or stored.get(source.stem) != json.dumps(stamp):
+            return None
+    return ids
+
+
 def run_ids(project: str, root: str | Path | None = None) -> set[str]:
     """Read index membership without decoding the individual run payloads.
 
-    The read is served from the run index :func:`load` keeps, so a caller that
-    runs once per delivered run per station tick pays at most one aggregate
-    parse per ledger change rather than one per call. The index is keyed on the
-    aggregate's and the runs directory's stat identity, so a ledger written
-    behind the index is rescanned and its new rows answer here too. A run file
-    whose own record the index could not decode still counts by its name, which
-    is the membership this answers and not the row's contents.
+    The read is served from the run index :func:`load` keeps wherever that index
+    is current, so a caller that runs once per delivered run per station tick
+    pays no aggregate parse at all rather than one per call. A ledger the index
+    does not cover falls back to the aggregate and the run documents, which is
+    the same read this made before the index existed and still answers a ledger
+    no reader has indexed yet. A run file whose own record the index could not
+    decode still counts by its name, because membership and not the row's
+    contents is what this answers.
     """
-    data, _version = load(project, root, headers_only=True)
+    current = _indexed_run_ids(project, root)
+    if current is not None:
+        return current
+    data, _version = _load_aggregate(project, root)
     return {
         str(record["run_id"])
         for record in data["runs"]
