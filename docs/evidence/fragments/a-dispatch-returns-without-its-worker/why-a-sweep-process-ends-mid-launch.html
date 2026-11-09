@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>Why a sweep process ends mid-launch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>Why a sweep process ends mid-launch</h1>
+      <p class="lead">The 01:38Z review of <code>r-20261109T005938978471-a-concurrent-launch-is-refused</code> was launched by the review reflex inside the follower for session <code>a337e0e6-c34c-4497-878a-bc42ce1b7cf6</code>, process <strong>3427403</strong> on <code>98dci4-clu-2068</code>, armed at <code>2026-11-07T12:13:44Z</code>. That process <strong>did not end</strong>. Every record that would show a death — a re-arm, an exit file, a lease lapse — is absent or shows the opposite, and the lease was still being renewed eleven hours later at <code>04:48:05Z</code>. The launch stopped inside <code>dispatch_review_for_run</code> between the claim's publication (<code>01:38:18Z</code>) and <code>_prepare_attempt_records</code>: a sweep <em>blocked in the span</em>, not a process that died in it. The coordinator could not have been the launcher; its own attempt at <code>01:39:49Z</code> was refused with <q>a review is already in flight as a live run</q>.</p>
+    </header>
+
+    <section id="why-a-sweep-process-ends-mid-launch-attribution">
+      <h2>Which process ran the sweep</h2>
+      <p>The review pass is taken with the sweeping process's own session: <code>_sweeping_session</code> matches the calling pid against <code>runs.list_followers(project)</code> and returns that row's session (<code>reckon/crew/recovery_repair_dispatch.py:1757-1760</code>), and <code>dispatch_awaiting_reviews</code> then skips every pointer whose <code>session</code> differs (<code>reckon/crew/recovery_review_acceptance.py:571-576</code>). So a sweep that composed this review ran in a process holding <code>a337e0e6</code>'s follower registration, and only one registration names that session.</p>
+      <table>
+        <thead><tr><th>Record</th><th>What it holds</th></tr></thead>
+        <tbody>
+          <tr><td><code>crew/watch/reckon-18dc8a86709b.followers/a337e0e6-…-f8728255d227.lock</code></td><td><code>pid: 3427403</code>, <code>pid_start_time: 371068605</code>, <code>parent_pid: 4089457</code>, <code>session: a337e0e6-…</code>, <code>started_at: 2026-11-07T12:13:44Z</code>, <code>delivery: stream</code></td></tr>
+          <tr><td><code>crew/session-hosts/4088896-241584007.json</code></td><td>owner <code>pid 4088896</code>; <code>children: [{pid: 3427403, project: reckon, session: a337e0e6-…}]</code>; <code>updated_at 1794053621.95</code> = <code>2026-11-07T12:13:41Z</code></td></tr>
+          <tr><td><code>crew/runs/r-20261109T013544897285-…/claim.json</code></td><td><code>claim_registered_at: 2026-11-09T01:38:18Z</code> — no pid, which is the attribution gap named below</td></tr>
+          <tr><td><code>crew/watch/reckon-18dc8a86709b.events</code></td><td><code>01:38:23Z</code> baseline <code>dispatched</code> for that run, <code>session: a337e0e6-…</code>; <code>01:40:30Z</code> transition <code>dispatched → discarded</code></td></tr>
+        </tbody>
+      </table>
+      <p>The coordinator session's own transcript rules it out as the launcher. At <code>2026-11-09T01:39:49.018Z</code> it ran <code>dispatch_review_for_run(read_pointer('r-20261109T005938978471…'))</code> and at <code>01:40:05.479Z</code> received <q>§13 review: False&nbsp;&nbsp;None a review is already in flight as a live run</q>. At <code>01:40:09.139Z</code> it read the live pointer and found <code>starting</code> with only <code>brief.md claim.json classification.json</code>; at <code>01:40:17.689Z</code> it ran <code>reckon crew discard --run r-20261109T013544897285-…</code>, which returned <code>ok: True, pointer_removed: True</code> at <code>01:43:37.057Z</code>. Transcript: <code>~/.claude/projects/-home-ITER-mcintos-Code-reckon/a337e0e6-c34c-4497-878a-bc42ce1b7cf6.jsonl</code>. A process that was holding no claim could not have received that refusal.</p>
+    </section>
+
+    <section id="why-a-sweep-process-ends-mid-launch-blocked-not-ended">
+      <h2>It blocked; it did not end</h2>
+      <p>Four ways a launch process can stop were tested against the records, and each is contradicted by a record that only the surviving process could have produced.</p>
+      <table>
+        <thead><tr><th>Rejected reading</th><th>Record that contradicts it</th></tr></thead>
+        <tbody>
+          <tr><td>A lease expiry reaped the follower</td><td><code>crew/watch/reckon-18dc8a86709b.followers/a337e0e6-…-f8728255d227.lease</code> reads <code>{"renewed_at": 1794199685.5957587}</code> = <code>2026-11-09T04:48:05Z</code>, eleven hours after the claim, naming the same session and host</td></tr>
+          <tr><td>An exit with its owning session</td><td>The <code>.lock</code> above still names <code>pid 3427403</code> and <code>started_at 2026-11-07T12:13:44Z</code>, unchanged across the window, and no <code>…-f8728255d227.3427403.exit.json</code> exists; the session's newest exit record is <code>…-4155101.exit.json</code> at <code>2026-11-07T05:42:56Z</code>, before this arming</td></tr>
+          <tr><td>A station reload re-executed it</td><td><code>~/.local/state/fleet/fleet-1291586.log</code> has no <code>station started</code> line between <code>2026-11-08T19:15:15Z</code> (pid 1290739) and <code>2026-11-09T04:50:04Z</code> (pid 1939725); the station is a declared service held by the batch step, not the session host's follower child</td></tr>
+          <tr><td>The fleet supervisor's re-exec at <code>01:36:54Z</code> killed the launch</td><td>The same log shows <code>code stamp moved … re-executing</code> at <code>01:36:54Z</code> and a new supervisor at <code>01:36:56Z</code>, but a re-exec replaces the supervisor image only: the follower's <code>.lock</code> has not been rewritten since it was armed, and the pid and start time it names predate the re-exec and are unchanged by it. The claim is 82 s later still, at <code>01:38:18Z</code>, and the events stream carries rows through it</td></tr>
+        </tbody>
+      </table>
+      <p><strong>Negative control.</strong> The reading this note rejects is <q>the follower was reaped and the launch died with it</q>. It is falsified by the lease record above: a reaped follower cannot renew <code>renewed_at</code> at <code>04:48:05Z</code> under the same pid and arming time, and a re-armed follower would have rewritten the <code>.lock</code> with a new pid and left an exit record for the old one. Neither exists. The launch therefore stayed blocked, holding the claim, which is exactly the shape §23 located: a kept run directory with <code>brief.md</code> and <code>claim.json</code> and no <code>attempt.json</code>, and no unwind through the claim-release guard.</p>
+      <p><strong>A second reading is also wrong, and it is in §23's note.</strong> That note infers <q>the sweep … never reached its own report write</q> from <code>recovery/reckon.jsonl</code> holding no row between <code>00:35Z</code> and <code>02:11Z</code>. The log is not a heartbeat: <code>reckon/crew/resumption.py</code> writes a row only when a sweep judged something (<q>an operator reading it wants recoveries and the refusals to recover, not a heartbeat from every tick</q>). Over the three days before the event the same file holds 96 gaps with a <strong>median of 22.7 minutes</strong>, <strong>68 longer than 10 minutes</strong>, and <strong>twelve longer than the 96.4-minute window</strong>, the largest 468.9 minutes (<code>2026-11-06T23:00:40Z → 2026-11-07T06:49:32Z</code>). The absence is ordinary and measures nothing about a block.</p>
+    </section>
+
+    <section id="why-a-sweep-process-ends-mid-launch-sources">
+      <h2>What each source holds for 00:35Z–02:11Z</h2>
+      <table>
+        <thead><tr><th>Source</th><th>Held for the window</th></tr></thead>
+        <tbody>
+          <tr><td><code>crew/session-hosts/*.json</code> (91 records)</td><td>Nothing. Zero records carry an <code>updated_at</code> inside the window; the range runs <code>2026-10-07T13:09:07Z</code> to <code>2026-11-09T04:49:23Z</code>. The only record naming session <code>a337e0e6</code> is the stale <code>4088896-241584007.json</code> at <code>2026-11-07T12:13:41Z</code>. The store is written on arming, not per poll, so it cannot date a death inside a window</td></tr>
+          <tr><td>Follower leases (<code>*.lease</code>)</td><td>One record per session, replaced in place on each renewal, so only the latest survives: <code>a337e0e6</code>'s reads <code>renewed_at 2026-11-09T04:48:05Z</code>. No history across the window</td></tr>
+          <tr><td>Producer log <code>~/.config/reckon/logs/watch-reckon-watch-reckon.service.log</code></td><td>Four timestamped rows in the window — <code>00:55:30Z</code>, <code>01:12:25Z</code>, <code>01:17:57Z</code>, <code>01:33:36Z</code> — and none between <code>01:33:36Z</code> and <code>02:30Z</code>. The producer's event stream itself runs throughout: 1–4 rows per minute in every minute of the window, including <code>01:38:23Z</code> and <code>01:40:30Z</code></td></tr>
+          <tr><td>Station / fleet log <code>~/.local/state/fleet/fleet-1291586.log</code></td><td>Supervisor re-exec at <code>01:36:54Z</code>, new supervisor <code>01:36:56Z</code>, declared services <code>ambix-ingest</code> and <code>reckon-admit-local</code> restarted <code>01:37:03Z</code>–<code>01:37:12Z</code>; no station start in the window. <code>sacct</code> shows job <code>1291586</code> <code>RUNNING</code> continuously since <code>2026-10-20T20:47:46Z</code> on <code>98dci4-clu-2068</code>, so no allocation end</td></tr>
+          <tr><td>Recovery rows <code>crew/recovery/reckon.jsonl</code></td><td>One row at <code>00:35:15Z</code> (2 reviews dispatched) and the next at <code>02:11:37Z</code> (1 dispatched, for <code>r-20261109T014514752202</code>). The 96.4-minute gap is ordinary, per the distribution above</td></tr>
+          <tr><td>Ledger <code>crew/run_store.db</code></td><td>No row for <code>r-20261109T013544897285-…</code> in <code>runs</code> or <code>run_details</code>. A ledger row is written at completion, and this run never completed, so the ledger can neither date the launch nor identify it</td></tr>
+        </tbody>
+      </table>
+      <p>Each claim above is re-checked by a runnable script, <code>verify_evidence.py</code> in the run directory, whose log is <code>logs/evidence-check.log</code>: nine checks, <strong>0 failures</strong>, including the recovery-gap distribution and the absence of an exit record for the launching pid. A check fails when its record cannot be read, so an unreadable source reports as a failure rather than as a clean row.</p>
+      <p>The claim itself is the only record the launch wrote, and it holds nothing but <code>claim_registered_at</code> and <code>run_id</code> — no pid, no host, no step. That is the specific gap: <strong>the process is identified here by the session it served and the follower registration that holds that session, not by a record the launch wrote about itself.</strong> For the next instance to be attributable from its own records, the claim must carry the launching <code>pid</code>, <code>host</code> and <code>step</code> reached, refreshed as the launch advances.</p>
+    </section>
+
+    <section id="why-a-sweep-process-ends-mid-launch-november">
+      <h2>The 8 November instances</h2>
+      <p>The same shape recurs four times on 8 November, all on this host and all reflex-dispatched, and the serving follower in each case was again a process that never re-armed.</p>
+      <table>
+        <thead><tr><th>Run</th><th>Run directory</th><th>Follower records</th></tr></thead>
+        <tbody>
+          <tr><td><code>r-20261108T101408329308-review-of-diiid-frame-146-orientation-correction</code></td><td><code>brief.md</code> <code>claim.json</code> <code>classification.json</code> <code>discard.json</code>; no attempt or worker record</td><td rowspan="4">Session <code>404513fc-8e68-4a0f-8060-29ac9ff3d5fd</code>'s follower holds <code>pid 835456</code>, <code>started_at 2026-11-07T22:49:37Z</code>, and the session has <strong>no exit record at all</strong> — the follower was never re-armed across 8 November</td></tr>
+          <tr><td><code>r-20261108T142016871539-review-of-receipt-mask-history-rename</code></td><td><code>brief.md</code> <code>claim.json</code> <code>classification.json</code> <code>discard.json</code>; no attempt or worker record</td></tr>
+          <tr><td><code>r-20261108T151821672475-review-of-diiid-residual-plateau</code></td><td><code>brief.md</code> <code>claim.json</code> <code>classification.json</code> <code>discard.json</code>; no attempt or worker record</td></tr>
+          <tr><td><code>r-20261108T163518843254-plan-review-of-a-read-costs-what-changed</code></td><td><code>brief.md</code> <code>claim.json</code> <code>classification.json</code> <code>discard.json</code>; no attempt or worker record</td></tr>
+        </tbody>
+      </table>
+      <p>The 16:35Z case is the best dated: the events stream carries its baseline <code>dispatched</code> at <code>2026-11-08T16:38:50Z</code>, a transition <code>dispatched → stalled</code> at <code>16:51:42Z</code>, and <code>stalled → discarded</code> at <code>17:02:04Z</code>. Its session is <code>404513fc</code>, whose follower registration shows one arming at <code>2026-11-07T22:49:37Z</code> and no exit — the same verdict as the 9 November case: blocked in the launch span, never ended. The fourth §19 instance, <code>r-20261108T152817957650</code>, has no run directory left and no events row; §19 records it as <q>a prompt but no worker</q>, so it cannot be dated further from these sources.</p>
+    </section>
+
+    <section id="why-a-sweep-process-ends-mid-launch-repair">
+      <h2>Repair — proposed as a plan section</h2>
+      <p><strong>A launch span is dated and bounded.</strong> <strong>Why.</strong> A review launch that blocks between its claim and its attempt record holds the claim indefinitely: no record says who holds it, the run reads as <q>in flight</q> to the very dispatch that would repair it, and only a coordinator who notices can discard it by hand. Measured three times in two days on this host (01:38Z on 9 November; four instances on 8 November), each cleared only by a hand <code>crew discard</code>. <strong>Deliverable.</strong> The claim record carries the launching <code>pid</code>, <code>host</code>, <code>launched_at</code> and the <code>step</code> reached, so a stranded launch names its holder. The span from the claim's publication to <code>_prepare_attempt_records</code> is bounded by a deadline; on expiry the claim is released, the run directory removed and a refusal recorded naming the step it reached, so a blocked launch becomes a recorded refusal rather than a stranded run. The follower runs its sweep on its own thread whatever its arming deadline, so a blocked sweep cannot stall the pane's delivery. <strong>Done when</strong> a new <code>tests/test_a_launch_span_is_dated_and_bounded.py</code> shows, in a temporary crew home, that a launch held inside the span past the bound releases its claim, removes its run directory and records a refusal naming the step; a second case shows the follower still delivering rows while its sweep is held; and <code>claim.json</code> published at the base of the span names <code>pid</code>, <code>host</code> and <code>step</code>. Negative controls: removing the bound leaves the claim held and the run directory kept; removing the always-threaded sweep stalls delivery, quoted in the log. The test files importing <code>reckon.crew.dispatch</code> add no failure against the base revision, run one arm at a time with at most <code>-n 4</code>, with logs under the run directory. Ruff check and ruff format --check add no findings on the staged paths. <strong>Write paths</strong>: <code>reckon/crew/dispatch.py</code>, <code>reckon/crew/dispatch_sessions.py</code>, <code>reckon/crew_follow_commands.py</code> and the new test.</p>
+    </section>
+  </main>
+</body>
+</html>
