@@ -2107,6 +2107,48 @@ def _directional_failure_matches(
     return matched_base, matched_head
 
 
+# A runner's result-count line: ``518 passed, 20 failed, 2 skipped in 91.2s``.
+# It is the line a gate log states its own totals on, so both the check that a
+# command executed and the receipt that claims a failure count read this one
+# recogniser rather than each keeping its own copy.
+RESULT_COUNT_RE = re.compile(
+    r"\b\d+\s+(?:passed|failed|error|errors|skipped|xfailed|xpassed|deselected"
+    r"|warnings?)\b|\bno tests ran\b"
+)
+
+# The failure figures a result-count line states. They are summed because a
+# collection or setup error is a failure a receipt counts too, and a receipt
+# that left them out would read as agreeing with a log naming more.
+_SUMMARY_FAILURE_FIGURE_RE = re.compile(r"\b(\d+)\s+(?:failed|error|errors)\b")
+
+
+def pytest_summary_failure_count(log_text: str) -> int | None:
+    """The failed-plus-errored figure of the text's last pytest summary line.
+
+    A pytest run prints one result-count line at its end, and a log holding two
+    runs prints one per run, so the last is the one whose exit status a capture
+    also records at the tail. A failure line is skipped even when its reason
+    quotes a count, because a ``FAILED`` line names a test rather than
+    summarising a run.
+
+    ``None`` means the text carries no result-count line at all — a ctest log,
+    or a pytest run that stopped before its summary — so the count is unmeasured
+    rather than zero. A run that reported nothing to run reads zero, because
+    ``no tests ran`` is a summary stating exactly that.
+    """
+    measured: int | None = None
+    for raw in log_text.splitlines():
+        line = raw.strip()
+        if _GATE_FAILURE_RE.match(line) or "::" in line:
+            continue
+        if RESULT_COUNT_RE.search(line) is None:
+            continue
+        measured = sum(
+            int(figure) for figure in _SUMMARY_FAILURE_FIGURE_RE.findall(line)
+        )
+    return measured
+
+
 class FailureIdMatch(NamedTuple):
     """Matched and unmatched failure identities on each side of a comparison."""
 

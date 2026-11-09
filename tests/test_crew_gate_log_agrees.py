@@ -254,6 +254,7 @@ def test_a_recorded_executed_exit_beside_a_quoted_diagnostic_is_accepted(
     executed_log.write_text(
         "tests/test_crew_gate_log_agrees.py::test_a_command_that_is_missing\n"
         "bash: line 1: rekon crew frobnicate: command not found\n"
+        "1 passed in 0.4s\n"
         "EXIT=0\n",
         encoding="utf-8",
     )
@@ -423,7 +424,8 @@ def test_fixture_command_not_found_beside_a_passing_summary_is_accepted(
     captured_log.write_text(
         "tests/test_crew_gate_log_agrees.py::test_a_command_that_is_missing\n"
         "bash: line 1: rekon crew frobnicate: command not found\n"
-        "=== 518 passed, 20 failed, 2 skipped in 91.2s ===\n",
+        "=== 518 passed, 20 failed, 2 skipped in 91.2s ===\n"
+        "EXIT=0\n",
         encoding="utf-8",
     )
 
@@ -480,7 +482,7 @@ def test_promotion_whose_log_and_command_agree_lands_unchanged(
     _write_pointer(run_id, repository)
     passing_log = tmp_path / "agreeing-gate.log"
     passing_log.write_text(
-        "tests/test_crew_gate_log_agrees.py 12 passed in 0.4s\n",
+        "tests/test_crew_gate_log_agrees.py 12 passed in 0.4s\nEXIT=0\n",
         encoding="utf-8",
     )
 

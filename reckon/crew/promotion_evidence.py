@@ -1061,18 +1061,22 @@ def _require_gate_evidence(
     )
 
 
-_EXIT_RECORD = re.compile(r"EXIT=(-?\d+)")
-
-
-_RUNNER_SUMMARY = re.compile(
-    r"\b\d+\s+(?:passed|failed|errors?|skipped|xfailed|xpassed|deselected|warnings?)\b"
-)
+# The runner's result-count recogniser is the review module's, so the line that
+# proves a command executed and the line a receipt's failure count is read from
+# are recognised once.
+_RUNNER_SUMMARY = review_module.RESULT_COUNT_RE
 
 
 # A runner's own summary naming a nonzero failure or error count. The count is
 # what makes it a failure statement; "0 failed" is a green run's summary and is
 # deliberately not matched.
 _RUNNER_FAILURE_SUMMARY = re.compile(r"\b[1-9]\d*\s+(?:failed|errors?)\b")
+
+
+# A gate command that runs pytest is the one a pytest summary is owed by. The
+# program may be reached through an interpreter, a runner or a wrapper, so the
+# name is matched as a word anywhere in the command.
+_PYTEST_COMMAND = re.compile(r"\bpytest\b")
 
 
 _UNEXECUTED_EXIT_CODES = frozenset({126, 127})
@@ -1112,15 +1116,11 @@ def _recorded_exit_status(log_text: str) -> int | None:
     which writes the command's own status as a final ``EXIT=<n>`` line. Only an
     end-of-log record is read: a status marker buried inside a runner's own
     output is not this check's evidence, so a passing log that merely mentions
-    the token is left alone.
+    the token is left alone. The reader itself is
+    :func:`reckon.crew.reports._terminal_exit_status`, so the fleet has one
+    answer to what the terminal line says.
     """
-    for raw_line in reversed(log_text.splitlines()):
-        line = raw_line.strip()
-        if not line:
-            continue
-        match = _EXIT_RECORD.fullmatch(line)
-        return int(match.group(1)) if match else None
-    return None
+    return _terminal_exit_status(log_text)
 
 
 def _runner_reports_a_failed_run(log_text: str) -> bool:
@@ -1154,48 +1154,6 @@ def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
     if recorded is not None:
         return recorded != 0
     return _runner_reports_a_failed_run(log_text)
-
-
-# A pytest summary line's own failure figures: ``1 failed, 1 error in 0.2s``.
-# The two are summed because a collection or setup error is a failure the
-# receipt counts, and a receipt that omitted them would read as agreeing with a
-# log that names more.
-_FAILED_OR_ERROR_FIGURE = re.compile(r"\b(\d+)\s+(?:failed|error|errors)\b")
-
-# The shape a runner's result-count summary takes, so a summary line is told
-# from a failure line whose reason happens to quote a count.
-_RESULT_COUNT_LINE = re.compile(
-    r"\b\d+\s+(?:passed|failed|error|errors|skipped|xfailed|xpassed|deselected"
-    r"|warnings?)\b"
-)
-
-# A gate command that runs pytest is the one a pytest summary is owed by. The
-# program may be reached through an interpreter, a runner or a wrapper, so the
-# name is matched as a word anywhere in the command.
-_PYTEST_COMMAND = re.compile(r"\bpytest\b")
-
-
-def _last_pytest_summary_failures(log_text: str) -> int | None:
-    """The failed-plus-errored figure of the log's last pytest summary line.
-
-    A pytest run prints one result-count line at its end, and a log holding two
-    runs prints one per run, so the last is the one whose exit status the tail
-    records. A failure line is excluded even when its reason quotes a count: a
-    ``FAILED`` line names a test rather than summarising a run.
-
-    ``None`` means the text carries no result-count line at all — a ctest log,
-    or a pytest run that stopped before its summary — so the count is
-    unmeasured rather than zero.
-    """
-    measured: int | None = None
-    for raw in log_text.splitlines():
-        line = raw.strip()
-        if line.startswith(("FAILED", "ERROR")) or "::" in line:
-            continue
-        if _RESULT_COUNT_LINE.search(line) is None and "no tests ran" not in line:
-            continue
-        measured = sum(int(figure) for figure in _FAILED_OR_ERROR_FIGURE.findall(line))
-    return measured
 
 
 def _arm_describes_the_cited_log(
@@ -1247,7 +1205,7 @@ def _receipt_mismatches(
     mismatches: list[str] = []
     recorded_count = arm.get("failure_count")
     if isinstance(recorded_count, int) and not isinstance(recorded_count, bool):
-        measured = _last_pytest_summary_failures(last_run)
+        measured = review_module.pytest_summary_failure_count(last_run)
         if measured is not None and measured != recorded_count:
             mismatches.append(
                 f"its failure_count records {recorded_count} and the log's last "
@@ -1401,7 +1359,7 @@ def _require_gate_log_agrees(
     command = str(gate_check.get("command") or "").strip()
     if _PYTEST_COMMAND.search(command):
         last_run = review_module.last_run_text(log_text)
-        if _last_pytest_summary_failures(last_run) is None:
+        if review_module.pytest_summary_failure_count(last_run) is None:
             raise CrewError(
                 f"run {run_id!r} asserts gate 'passed' but its cited log "
                 f"{log_path!r} reaches no pytest summary for a command that "
