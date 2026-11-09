@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;,&quot;concurrent-edits-meet-at-the-merge#s3&quot;],&quot;s5&quot;:[&quot;concurrent-edits-meet-at-the-merge#s2&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;done&quot;}">
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="14">
+<meta name="plan-version" content="15">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -154,7 +154,7 @@
     markers or an unlanded head with no repair round fails the measure.</p>
 
     <h2 id="s5">§5 — A fragments-directory claim never blocks a sibling node</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> On 8 November run <code>r-20261108T052434073237-oversized-node-reserved-lane-reproduced</code> claimed the whole <code>docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop</code> directory, so every other node of that plan was refused at dispatch, and admission-loop §32 had to be dispatched on its brief alone. §2 keeps directory claims exclusive, so this blocker survives §2.</p><p><strong>Deliverable.</strong> Dispatch already defaults a node's fragment to its own file (<code>dispatch_claims._landing_fragment_paths</code>, near <code>reckon/crew/dispatch_claims.py:1068</code>), so the remaining change is in the conflict check itself, <code>runs._raise_live_scope_conflict</code> (near <code>reckon/crew/runs.py:1574</code>), reached through <code>dispatch_claims</code>: a claim on a plan's evidence-fragments directory is compared as the fragment files its node names or writes, not as the whole directory. Two nodes of one plan never conflict on the fragments directory; two claims on the same fragment file still do.</p><p><strong>Done when</strong> a new <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code> shows with a temporary repository and crew home: a live run whose claim names a plan's fragments directory does not refuse a second node of that plan whose fragment is a different file; two nodes naming the same fragment file are refused. Negative control: at the base revision the first case is refused. The test files importing <code>reckon.crew.dispatch_claims</code> or <code>reckon.crew.runs</code> add no failure against base, one arm at a time with at most <code>-n 4</code>; ruff adds no findings on the staged paths.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -191,7 +191,10 @@
     <div class="r-comment-body"><p>Independent review of 8ecbbfcf8701806f63af95263cc1e43bd3504af1 is parsed: goal_fidelity=20, evidence=10, scope_discipline=20, durability=20, fit=20, reuse=20; two blocking evidence findings require a valid base receipt and complete importer comparison within the declared worker limit.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261109T074617313035-fragment-claim-never-blocks-a-sibling" data-who="reckon-build" data-when="2026-11-09T10:57:43Z">
-    <div class="r-comment-body"><p>Fragment-directory claims compare the node&#x27;s default, named and written files while unrelated claims retain their identity: 9 focused tests pass; seven direct-caller files add zero failure IDs (base/head each 2 failed, 56 passed). Full 694-file importer delta remains unmeasured. Evidence: /reckon/evidence/fragments/concurrent-edits-meet-at-the-merge/fragment-claim-never-blocks-a-sibling.html#fragment-claim-never-blocks-a-sibling-results</p></div>
+    <div class="r-comment-body"><p>Fragment-directory claims compare the node's default, named and written files while unrelated claims retain their identity: 9 focused tests pass; seven direct-caller files add zero failure IDs (base/head each 2 failed, 56 passed). Full 694-file importer delta remains unmeasured. Evidence: /reckon/evidence/fragments/concurrent-edits-meet-at-the-merge/fragment-claim-never-blocks-a-sibling.html#fragment-claim-never-blocks-a-sibling-results</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-close-s5" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>Landed from r-20261109T074617313035 (head 8ecbbfcf87, on main at 1d59455766). <code>reckon/crew/dispatch_claims.py</code> now compares a claim on a plan's evidence-fragments directory as the fragment files its node writes, so a sibling node of that plan with a different fragment is admitted, and two nodes naming the same fragment file are still refused. <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code>: 9 passed at head; with the file copied onto base 6a3aae57b2, 6 failed and 3 passed (the negative control). A 33-file claims population read an identical 28 failure ids at base and head (587 to 596 passed). The review's two evidence findings were answered: the base arm was corrected, and the importer population was scoped to dispatch_claims' callers.</p></div>
 </div>
 </section>
 </main>
