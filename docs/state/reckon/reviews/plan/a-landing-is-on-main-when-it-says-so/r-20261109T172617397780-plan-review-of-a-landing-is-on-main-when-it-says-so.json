@@ -1,0 +1,85 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T17:32:03.998Z",
+  "dispatched_at": "2026-11-09T17:27:42Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/merge.py:614",
+      "id": "reuse_search-1",
+      "reason": "a fetch helper written without the 443 fallback fails on every compute node, so the new plain-complete guard would refuse every landing there for the fetch failure rather than for an unmerged head.",
+      "text": "`_remote_head` already answers \"what does the remote branch carry\" with `git ls-remote origin refs/heads/<branch>`, carries the port-443 retry (`_port22_refused`/`_port443_env`, `reckon/crew/merge.py:634-660`) that the workstation needs because port 22 is refused on compute nodes, and is the read `_push_and_confirm` confirms against; \u00a75's premise \"nothing in `reckon/` fetches today\" is true but is not the reuse map, because a fetch is only needed to refresh the remote-tracking ref before an ancestry test, and the plan neither cites `_remote_head` nor reuses its 443 route",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:250",
+      "id": "reuse_search-2",
+      "reason": "\u00a76 should say which of the two owns a promoted-unmerged run and extend that one, rather than adding a parallel path that disagrees with `finish_pending_landings` about a live run (which it skips unless `pending_landing_repair` is set).",
+      "text": "\u00a72 landed a mechanism that records a landing before promotion, clears it after the merge, and finishes any promoted run whose head is not on the primary branch on the next landing pass, with `pending_landing_repair` already routed from `crew complete` (`reckon/crew_run_commands.py:3217`) and set by the repair dispatch (`reckon/crew/recovery_repair_dispatch.py:82`); \u00a75, \u00a76 and \u00a77 mention it nowhere, so \u00a76 designs a second recovery for a state the plan already owns",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/recovery_review_dispatch.py:943",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is a fetch-and-verify helper in `merge.py` beside `_remote_head`, called from all three sites, which is one owner instead of two.",
+      "text": "the plan places the new fetch-and-ancestry function beside `_integration_ref` in a review-dispatch module, so remote *access* ends up owned by two modules; `_integration_ref` only names a remote-tracking ref locally and never talks to the remote, while `merge.py` is the module that owns remote reads, remote failure classification and the 443 route; the function is a thin wrapper over `git fetch` + `merge-base` with no statement of what behaviour it adds that extending `merge.py` could not",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion_scope.py:2568",
+      "id": "duplicate_owner-1",
+      "reason": "\u00a77's edit can replace the inlined probe with the one owned helper and say so, which also makes the \"distinct answer for a failed fetch and a missing ref\" contract live in one place instead of being re-derived at each site.",
+      "text": "ancestry is answered by four separate implementations: `promotion_scope._revision_is_ancestor` (`reckon/crew/promotion_scope.py:2568`), `merge._is_ancestor` (`reckon/crew/merge.py:623`), `velocity._is_ancestor` (`reckon/velocity.py:714`), and an inlined `git merge-base --is-ancestor ... HEAD` probe in `_commits_missing_from` (`reckon/crew/recovery_review_acceptance.py:227-245`); \u00a75 and \u00a77 would add a fifth calling convention for the same question against a different revision, and \u00a77's own target file is one of the hand-rolled sites",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/pending_landing.py:250",
+      "id": "duplicate_owner-2",
+      "reason": "an implementer cannot build both branches of an either/or, and picking the row-rewrite branch leaves a passed row visible during the window \u00a76 exists to close, so the plan must settle on merge-before-record and say what happens to the pending-landing record it already writes.",
+      "text": "\u00a76 offers two alternatives (\"Either the merge runs before the ledger row and plan comment are committed, or a failure after them ... rewrites the row to a not-landed outcome\") without choosing, and the second alternative re-implements the promoted-but-unmerged recovery that `finish_pending_landings` already performs, while a rewritten ledger row cannot satisfy the plan's own headline that a landing is recorded only once the head is on main",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:59",
+      "id": "interface_budget-1",
+      "reason": "the section must either point the new refusals at existing families or state why a new family is unavoidable, otherwise the refusal census grows by three with no accounting, against a registry that exists precisely to be extended deliberately.",
+      "text": "public_definitions 2437, cli_options 470, mcp_views 15, refusal_families 24; \u00a75 adds two operator-facing refusals (the fetch failed, the ref is missing) and \u00a76 adds a step-naming refusal whose family id `D24` already sits in `DISPATCH_REFUSAL_REMEDIES` (`reckon/crew/refusals.py:95`), yet no section names a refusal it retires, merges or reuses, and \u00a76's text reads D24 as absent rather than declaring it in the registry the module docstring calls \"one registry to extend when it adds a refusal\"",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8e95b99f4a1a953a2feffd5c8137ff5a95e7e68c",
+  "plan_fingerprint": "334db1d5fa8bf56aaf3de5f13c3cee00c5091588a04296f524725da03a091046",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 22,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T172617397780-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "bf0a097f236fa6738069798b3f00a1086e2b042e",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 the design adds one guarded function and calls it from three existing paths (plain complete, --land promotion, reflex acceptance); the behaviour stays behind the existing `promotion.complete` and `merge.require_promotable_head` interfaces rather than becoming a new layer callers must learn.",
+    "duplicate_owner": "a finding \u2014 four ancestry implementations already exist (`merge._is_ancestor`, `velocity._is_ancestor`, `promotion_scope._revision_is_ancestor`, and the inlined probe in `recovery_review_acceptance._commits_missing_from`) and \u00a75/\u00a77 add a fifth plus a second remote-read path beside `merge._remote_head`.",
+    "interface_budget": "a finding \u2014 public_definitions 2437, cli_options 470, mcp_views 15, refusal_families 24; \u00a75 adds two operator-facing refusals (failed fetch, missing ref) and \u00a76 adds a third (a failed step named after the ledger row), and none of the three sections names a refusal it retires or merges, or says why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a75 and \u00a77 propose a new remote-ref mechanism without citing `merge._remote_head` (`reckon/crew/merge.py:614`), which already reads what the remote branch carries, and \u00a76 proposes a promoted-but-unmerged recovery without citing `pending_landing.finish_pending_landings` (`reckon/crew/pending_landing.py:250`), which \u00a72 of this same plan landed for exactly that state.",
+    "thin_wrapper": "a finding \u2014 \u00a75 adds a function over `git fetch` + `merge-base --is-ancestor` and never states why the remote access in `reckon/crew/merge.py` cannot be extended instead."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "17aeee4be9a0d57e3d4b7e52b34f6b683b49dd105a002b01a9bc8e5bff4e9d9b",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27",
+    "s7": "8bc90ae3525f9de845f012d8a6db903090289d9304ef9bceeb017eb832f22cc8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:39:46.520181+00:00",
+  "total": null
+}
