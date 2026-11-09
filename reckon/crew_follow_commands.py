@@ -1540,6 +1540,15 @@ def _follow_watch_lines(
         # deadline the arming was granted, which a replacement image must not
         # re-anchor.
         lifetime_deadline = started_at + max(0.0, float(lifetime))
+    # The arming's own span, measured once on the monotonic clock the loop
+    # reads. The deadline is an instant on ``clock``, which a caller may inject
+    # and hold still, so the span it leaves at this arming is what bounds the
+    # end of the arming when nothing else advances that clock.
+    lifetime_span_deadline = (
+        None
+        if lifetime_deadline is None
+        else time.monotonic() + max(0.0, lifetime_deadline - started_at)
+    )
     lifetime_elapsed = False
     consumer_gone = False
     # The settle: a follower a settle-aware host runs ends once no live work
@@ -1667,9 +1676,19 @@ def _follow_watch_lines(
         rather than on any stream event: a follower with no producer up must
         still reach its deadline, which is exactly the case where a reader
         would otherwise see nothing at all and assume the pane is quiet.
+
+        The span the arming was granted is read beside it, because the sweep no
+        longer pays for the deadline: a sweep runs on its own thread and the
+        arming ends whether or not it is still walking, so the end cannot wait
+        for a clock the caller has stopped advancing.
         """
         nonlocal lifetime_elapsed
         if lifetime_deadline is not None and clock() >= lifetime_deadline:
+            lifetime_elapsed = True
+        elif (
+            lifetime_span_deadline is not None
+            and time.monotonic() >= lifetime_span_deadline
+        ):
             lifetime_elapsed = True
 
     def _stopped() -> bool:
