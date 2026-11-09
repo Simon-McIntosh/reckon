@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import signal
+import socket
 import subprocess
 from pathlib import (
     Path,
@@ -2467,6 +2468,13 @@ def record_resumption(
                     else int(record.get("attempt") or 1) + 1
                 ),
                 "attempt_kind": "resume",
+                # This attempt's worker was issued its pid by the machine
+                # running this write, so the pointer names that machine from
+                # here on. A resume re-issues the pid, and a pid is meaningful
+                # only on the host that issued it: carrying the dispatch host
+                # forward leaves no host able to prove the worker dead, and
+                # every later resume is then refused as liveness unknown.
+                "launcher_host": socket.gethostname(),
                 # A harness change may require a fresh session even though
                 # this attempt was requested through the resume command.
                 "session_resumed": bool(prior_session_resumed),

@@ -3072,6 +3072,15 @@ def dispatch(
             "local": resolution.local,
             "execution_fit": resolution.execution_fit.as_dict(),
             "launch": launch_kind,
+            # The host this attempt's worker was issued its pid on, recorded by
+            # the launch rather than inherited from the pointer it merges over.
+            # A queued request is stored with no host, because no process
+            # exists yet, and the admission pass that launches it may run on
+            # another machine: carrying the queued absence forward would leave
+            # the pointer naming no host, and no host could then prove the
+            # worker dead. A redispatch of a new run is stamped by the pointer
+            # writer alone, and a settled run's later writes carry this value.
+            "launcher_host": socket.gethostname(),
             "sandbox": backend.get("sandbox"),
             # Whether this launch was composed inside the fence wrapper,
             # overwritten from the composed plan below. The boundary check reads
