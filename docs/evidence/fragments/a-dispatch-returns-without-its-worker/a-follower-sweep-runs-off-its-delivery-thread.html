@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A follower's sweep runs off its delivery thread | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A follower's sweep runs off its delivery thread</h1>
+      <p class="lead">The follower's recovery sweep ran on its delivery thread on a fresh arming, and was joined against the arming's deadline on an arming that carried one. A sweep walks every registered worktree, and any launch it starts runs inside that walk, so a launch blocked on a storage read held the pane's next row and the next tick behind it. Both branches now start the sweep on its own thread, and a single-flight guard keeps one sweep in flight.</p>
+    </header>
+
+    <section id="a-follower-sweep-runs-off-its-delivery-thread-defect">
+      <h2>What the gate did, and why neither branch was safe</h2>
+      <p><code>_sweep_on_cadence</code> in <code>reckon/crew_follow_commands.py</code> had two branches at the cadence stamp. With no lifetime deadline — the common fresh-arming case and the one measured on 9 November — it called the sweep inline. With a deadline it started a thread and joined it for the time the arming had left, which bounded the sweep but also held the poll: a sweep still walking at the deadline ended the arming by being waited for, not by the arming's own clock. Both put the sweep's duration in front of the reader.</p>
+      <p>The cadence stamp is not a single-flight guard. It records when the last sweep <em>started</em>, and a sweep can outlive its cadence, so the gate alone would start a second sweep over the same fleet while the first was still walking — two passes that would resume the same lapsed runs.</p>
+    </section>
+
+    <section id="a-follower-sweep-runs-off-its-delivery-thread-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew_follow_commands.py</code>: <code>_sweep_on_cadence</code> always starts the sweep on a daemon thread and never joins it. A thread kept beside the cadence stamp is the single-flight guard: while it is alive a cadence that comes due starts nothing and is retried on a later tick, and the next sweep starts normally once it returns. The arming's deadline is left to the wait pass.</li>
+        <li><code>reckon/crew_follow_commands.py</code>: the arming's grant is measured once, in monotonic time, from what is left of the deadline at its start, and <code>_check_lifetime</code> ends the arming when either reading has passed. Taking the sweep off the delivery thread removed the one thing that had advanced an injected clock, so an arming whose clock a caller holds still never reached its deadline and its end line was never printed.</li>
+        <li><code>tests/test_a_follower_sweep_runs_off_its_delivery_thread.py</code> (new): three cases over a temporary crew home, a stream in a temporary file and a sweep the test holds on an event. Rows are delivered and the tick after the gate completes while the sweep is held, on both former branches; a cadence due during the held sweep starts no second sweep, counted on the sweep entry point; and the guard releases, so a cadence after the held sweep returns starts the next one. The cases import the clock, the stream line, the row collector and the stop from <code>tests/test_follow_sweep_cadence.py</code>, extending its follower with the held sweep and the arming lifetime rather than restating a second harness.</li>
+      </ul>
+    </section>
+
+    <section id="a-follower-sweep-runs-off-its-delivery-thread-measure">
+      <h2>Measure</h2>
+      <p>The node's gate is <code>tests/test_a_follower_sweep_runs_off_its_delivery_thread.py</code>: <strong>3 passed</strong> at revision <code>610e09fc50</code>. The declared mutation applies both defects at once — the sweep back on the delivery thread and the single-flight guard removed — and gives <strong>3 failed</strong>: both held-sweep cases stop delivering rows, and the second-sweep case reports <code>[0.0, 10.0]</code> against <code>[0.0]</code>. Applied alone, removing only the guard gives <strong>3 failed</strong> with the same second-sweep count, which isolates the guard from the thread.</p>
+      <p>The change is measured against the base revision over the test files that import <code>reckon.crew_follow_commands</code> or <code>reckon.crew.resumption</code> and cover the paths it touches — <code>test_follow_sweep_cadence.py</code>, <code>test_follower_bounds_its_lifetime.py</code> and <code>test_crew_recover.py</code>. The base arm at <code>cf73cde40a</code>, run in a scratch extraction of that revision, passed <strong>32 tests</strong>; the head over those three files plus the node's own passed <strong>35</strong>, the node's three accounting for the difference. A further 59 tests across the five follower files that inject an arming lifetime passed at the head. No failure was added.</p>
+      <p>The wider importer population is every test file importing <code>reckon.crew_follow_commands</code> or <code>reckon.crew.resumption</code> — 64 files — run one arm at a time with <code>-n 4</code>. The head arm reported <strong>543 passed, 13 failed</strong> and the base arm at <code>cf73cde40a</code> <strong>542 passed, 14 failed</strong>. The failure sets overlap in all but one id, and the three files they fall in are unrelated to this change: <code>test_a_pane_settles_when_no_work_is_live.py</code>, <code>test_follower_hands_off_to_host.py</code> and <code>test_mcp_recovery.py</code>. The one head-only id, <code>test_mcp_recovery.py::test_resume_reattaches_a_session_already_on_the_pointer</code>, passes three times out of three when run alone at the head, and the whole of <code>test_mcp_recovery.py</code> under <code>-n 4</code> fails the same three ids at the base and at the head. The set is load-sensitive in a shifting way, not a delta from this change.</p>
+      <p>The first head run of the base-arm population did add one: <code>test_a_poll_that_outlives_the_deadline_is_abandoned</code> failed, because with the sweep off the delivery thread nothing advanced that case's stub clock. The run is kept as a log beside the record, and the arming-span change above is what closed it; the case is not edited.</p>
+      <p><strong>Lint.</strong> <code>ruff check</code> on <code>reckon/crew_follow_commands.py</code> reports 2 findings at the head, which are the file's own two at the base revision (<code>SIM103</code> and <code>SIM115</code>); the delivered change adds none. The first cut wrote the arming's two deadline readings as an <code>elif</code> with the same body and drew <code>SIM114</code>; both conditions are now computed and the flag set once. Reverting that fold restores the 3-finding count, which is the check the finding names.</p>
+    </section>
+  </main>
+</body>
+</html>

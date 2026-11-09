@@ -1540,6 +1540,15 @@ def _follow_watch_lines(
         # deadline the arming was granted, which a replacement image must not
         # re-anchor.
         lifetime_deadline = started_at + max(0.0, float(lifetime))
+    # The arming's own span, measured once on the monotonic clock the loop
+    # reads. The deadline is an instant on ``clock``, which a caller may inject
+    # and hold still, so the span it leaves at this arming is what bounds the
+    # end of the arming when nothing else advances that clock.
+    lifetime_span_deadline = (
+        None
+        if lifetime_deadline is None
+        else time.monotonic() + max(0.0, lifetime_deadline - started_at)
+    )
     lifetime_elapsed = False
     consumer_gone = False
     # The settle: a follower a settle-aware host runs ends once no live work
@@ -1667,9 +1676,19 @@ def _follow_watch_lines(
         rather than on any stream event: a follower with no producer up must
         still reach its deadline, which is exactly the case where a reader
         would otherwise see nothing at all and assume the pane is quiet.
+
+        The span the arming was granted is read beside it, because the sweep no
+        longer pays for the deadline: a sweep runs on its own thread and the
+        arming ends whether or not it is still walking, so the end cannot wait
+        for a clock the caller has stopped advancing.
         """
         nonlocal lifetime_elapsed
-        if lifetime_deadline is not None and clock() >= lifetime_deadline:
+        deadline_passed = lifetime_deadline is not None and clock() >= lifetime_deadline
+        span_passed = (
+            lifetime_span_deadline is not None
+            and time.monotonic() >= lifetime_span_deadline
+        )
+        if deadline_passed or span_passed:
             lifetime_elapsed = True
 
     def _stopped() -> bool:
@@ -1838,6 +1857,11 @@ def _follow_watch_lines(
 
     cadence = DEFAULT_SWEEP_SECONDS if sweep_interval is None else float(sweep_interval)
     swept_at: float | None = None
+    # The sweep's own thread, kept so a cadence that comes due while a sweep
+    # still walks starts no second one. ``swept_at`` cannot answer that: a
+    # sweep walks every registered worktree and can outlive its cadence, so it
+    # is stamped at every start and says nothing about whether one is running.
+    sweep_thread: threading.Thread | None = None
 
     def _sweep_quietly() -> None:
         try:
@@ -1853,42 +1877,45 @@ def _follow_watch_lines(
             return
 
     def _sweep_on_cadence() -> None:
-        """Run the recovery sweep at most once per cadence.
+        """Start the recovery sweep at most once per cadence, off this thread.
 
         The follower polls in a tight loop, so the cadence is what stops a
         cheap sweep from becoming a hot path. It is time since the last sweep
         rather than a count of iterations, because the loop's own rate depends
         on whether a producer is up.
 
-        An arming's deadline bounds the poll itself, not only the gap between
-        two of them. A sweep walks every registered worktree and can run for
-        hours, and while it ran the check that ends an arming waited for it to
-        return — a 29 m arming held open for 3 h 36 m. A sweep on its own
-        thread is waited for only as long as the arming has left; one still
-        walking at the deadline is abandoned and the follower ends.
+        The sweep runs on its own thread, so nothing it does can hold this
+        pane's rows. A sweep walks every registered worktree and starts the
+        launches it resumes, and each of those can block for minutes on a
+        storage wait; on the delivery thread that wait is paid by the reader,
+        whose next row and next tick queue behind it. The same is true of an
+        arming's deadline, which bounds the poll rather than the sweep: joining
+        a sweep against it held a 29 m arming open for 3 h 36 m, so the deadline
+        is left to the wait pass, which ends the arming whether or not a sweep
+        is still walking.
+
+        One sweep runs at a time. A cadence that comes due while the previous
+        sweep is still walking starts nothing and is retried on a later tick,
+        because a sweep can outlive its cadence and a second one would read the
+        same fleet and start the same launches beside the first.
         """
-        nonlocal swept_at, lifetime_elapsed
+        nonlocal swept_at, lifetime_elapsed, sweep_thread
         if sweep is None:
             return
         moment = clock()
         if swept_at is not None and moment - swept_at < cadence:
             return
-        swept_at = moment
-        if lifetime_deadline is None:
-            _sweep_quietly()
-            return
-        remaining = lifetime_deadline - clock()
-        if remaining <= 0:
-            # A poll begun now would outlive the arming before it did any
+        if lifetime_deadline is not None and moment >= lifetime_deadline:
+            # A sweep begun now would outlive the arming before it did any
             # work: the arming is over and the passes that follow take the
             # end path.
             lifetime_elapsed = True
             return
-        poll = threading.Thread(target=_sweep_quietly, daemon=True)
-        poll.start()
-        poll.join(remaining)
-        if poll.is_alive():
-            lifetime_elapsed = True
+        if sweep_thread is not None and sweep_thread.is_alive():
+            return
+        swept_at = moment
+        sweep_thread = threading.Thread(target=_sweep_quietly, daemon=True)
+        sweep_thread.start()
 
     # A resume handed in the environment is an image replacing itself, which
     # already has the pane's rows on screen and needs only the format switch
