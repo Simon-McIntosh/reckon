@@ -1226,14 +1226,16 @@ def crew_check_review(record_path, pretty):
         raise click.exceptions.Exit(1)
 
 
-def crew_repair_review(reviewed_run_id, record_path, change, reason, pretty):
+def crew_repair_review(
+    reviewed_run_id, record_path, change, reason, pretty, project=None
+):
     """Repair only a review's status or missing subject identity, preserving it."""
     from reckon.crew import review as review_module
     from reckon.crew.node import CrewError
 
     try:
         result = review_module.repair_run_review(
-            reviewed_run_id, record_path, change, reason
+            reviewed_run_id, record_path, change, reason, project=project
         )
     except (OSError, ValueError, TypeError, CrewError) as exc:
         raise click.ClickException(str(exc)) from exc
@@ -1320,7 +1322,7 @@ def crew_repair(
     status, repair_review, run_id, record_path, change, reason, pretty, project=None
 ):
     """Repair a manifest's status word or a review's status or subject identity."""
-    _accept_a_matching_project(run_id, project)
+    resolved_project = _accept_a_matching_project(run_id, project)
     if bool(status) == repair_review:
         raise click.UsageError("choose exactly one of --status or --review")
     if status:
@@ -1329,7 +1331,9 @@ def crew_repair(
         return crew_repair_status(run_id, status, reason, pretty)
     if not record_path or not change:
         raise click.UsageError("--review needs --record and --set")
-    return crew_repair_review(run_id, record_path, change, reason, pretty)
+    return crew_repair_review(
+        run_id, record_path, change, reason, pretty, project=resolved_project
+    )
 
 
 @crew.command(name="supersede-review")
