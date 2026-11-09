@@ -575,6 +575,36 @@ def requeue_notice(environ: Mapping[str, str] | None = None) -> str | None:
     )
 
 
+def restarted_own_job(environ: Mapping[str, str] | None = None) -> bool:
+    """Whether this standby start is a restart of the fleet the record names.
+
+    A requeued allocation keeps its job id and starts its batch script again on
+    another node, which starts the supervisor in standby a second time. When the
+    published record already names this job and SLURM reports a restart, there
+    is no migration left to hold for: this start continues the fleet the dead
+    node hosted, so it promotes itself rather than standing by indefinitely. A
+    standby whose record names another job is a migration still in progress and
+    keeps standing by.
+    """
+    environ = os.environ if environ is None else environ
+    job = (environ.get("SLURM_JOB_ID") or "").strip()
+    if not job:
+        return False
+    try:
+        restarts = int((environ.get("SLURM_RESTART_COUNT") or "0").strip() or 0)
+    except ValueError:
+        return False
+    if restarts <= 0:
+        return False
+    try:
+        previous = json.loads(
+            (state_directory(environ) / RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    return isinstance(previous, Mapping) and str(previous.get("job_id") or "") == job
+
+
 def announce_requeue(environ: Mapping[str, str] | None = None) -> str | None:
     """Record a requeue where the next attach shows it, and return the notice."""
     environ = os.environ if environ is None else environ
@@ -2476,7 +2506,10 @@ def serve(
     remove_stale_session_tmp(environ)
     state_directory(environ).mkdir(parents=True, exist_ok=True)
     announce_requeue(environ)
-    if not standby:
+    # A standby that is a restart of the job the record names has no migration
+    # left to hold for, so it takes the fleet rather than standing by.
+    is_standby = standby and not restarted_own_job(environ)
+    if not is_standby:
         publish_record(runtime, environ)
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
@@ -2489,13 +2522,17 @@ def serve(
         f"fleet supervisor on {_short_hostname()}, "
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
     )
+    if standby and not is_standby:
+        log(
+            f"job {environ.get('SLURM_JOB_ID') or '?'} restarted on "
+            f"{_short_hostname()}; promoting instead of standing by"
+        )
     start_health_sampler(environ)
     services = DeclaredServices(runtime, environ)
     station_process = StationProcess(runtime, environ)
-    if not standby:
+    if not is_standby:
         services.reload()
         station_process.ensure()
-    is_standby = standby
 
     def promote() -> None:
         nonlocal is_standby
