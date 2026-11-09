@@ -525,6 +525,7 @@ def _refuse_a_live_worker_before_the_worktree(run_id: str) -> None:
             f"{attempt_text}still holds this run, and cutting its worktree again "
             "would leave it writing into a tree no fence covers; observe or stop "
             "it before dispatching again",
+            record,
         )
     )
 

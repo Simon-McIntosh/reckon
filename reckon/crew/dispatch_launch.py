@@ -53,7 +53,11 @@ from reckon.crew.routing import (
     _repository_tree_snapshot,
     signal_worker,
 )
-from reckon.crew.process_liveness import LIVENESS_PLACED, LivenessReading
+from reckon.crew.process_liveness import (
+    LIVENESS_PLACED,
+    LIVENESS_UNKNOWN,
+    LivenessReading,
+)
 from reckon.crew.process_signal import _run_uses_step, signal_pending_step_client
 from reckon.crew.runs import (
     _mutate_pointer,
@@ -2018,7 +2022,7 @@ def _free_attempt_number(run_directory: Path, name: str, attempt: int) -> int:
     return number
 
 
-def _live_worker_naming(reading: LivenessReading) -> str:
+def _live_worker_naming(reading: LivenessReading, record: Mapping[str, Any]) -> str:
     """How a launch refusal names the worker it found.
 
     Only the arm that read a pid this host probed as the worker's own carries
@@ -2029,7 +2033,21 @@ def _live_worker_naming(reading: LivenessReading) -> str:
     the thing that was actually found instead. A placed run whose scheduler
     could not be asked has no liveness to report and says so, because the only
     pid the record holds is the client's.
+
+    A run launched on another host reads no arm at all — this host cannot probe
+    a pid it did not issue — so the record itself supplies what the reading
+    cannot: the host that issued the pid, and the pid it recorded. The reader
+    is sent to the machine that can answer for it rather than left with an
+    unnamed process.
     """
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
+
+    if _record_is_known_foreign(record):
+        host = str(record.get("launcher_host"))
+        pid = record.get("pid")
+        if pid is not None:
+            return f"launched on host {host}, pid {pid}"
+        return f"launched on host {host}"
     if reading.arm == LIVENESS_PLACED:
         job = f"job {reading.job_id}" if reading.job_id else "a scheduler job"
         if reading.alive is None:
@@ -2043,18 +2061,32 @@ def _live_worker_naming(reading: LivenessReading) -> str:
 
 
 def _live_worker_refusal(
-    run_id: str, reading: LivenessReading, consequence: str
+    run_id: str,
+    reading: LivenessReading,
+    consequence: str,
+    record: Mapping[str, Any],
 ) -> str:
     """The whole text of a launch refused over the holder it found.
 
     A placed run whose scheduler could not be queried has no observed worker,
     so the refusal says its liveness cannot be read rather than asserting one.
+    A run launched on another host is in the same position for the same reason,
+    and this host cannot observe the worker at all, so the refusal names where
+    it runs and says what the reader can do about it: launch from that host, or
+    stop the run there.
     """
+    from reckon.crew.recovery_liveness import _record_is_known_foreign
+
     if reading.alive is None:
         head = "cannot read whether its worker is live"
     else:
         head = "still has a live worker"
-    return f"run {run_id!r} {head} ({_live_worker_naming(reading)}): {consequence}"
+    text = (
+        f"run {run_id!r} {head} ({_live_worker_naming(reading, record)}): {consequence}"
+    )
+    if _record_is_known_foreign(record):
+        text += f"; launch from {record.get('launcher_host')}, or stop the run there"
+    return text
 
 
 def _record_holds_a_worker(record: Mapping[str, Any]) -> bool:
@@ -2092,9 +2124,20 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     comparison :func:`runs.record_process_alive` owns, so a recycled pid is not
     read as the retired worker.
 
+    A pid means nothing off the host that issued it, so a worker receipt for a
+    run launched on another host is never probed against this host's process
+    table: that probe answers about whatever local process now holds the
+    number, and a dead local number is not the remote worker's end. Only the
+    exit receipt, which travels with the shared run directory, shows a foreign
+    attempt ended.
+
     None answers "no attempt receipts": the caller keeps the answer it gives a
     record holding no worker record at all.
     """
+    from reckon.crew.recovery_liveness import (
+        _record_is_known_foreign,
+        _run_exit_record,
+    )
     from reckon.crew.recovery_wait import _run_directory
 
     directory = _run_directory(record)
@@ -2110,7 +2153,12 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     if not numbers:
         return None
     attempt = max(numbers)
-    if (directory / f"attempt-{attempt}-exit.json").exists():
+    # The receipt must name this run: a foreign launch is freed only by the
+    # attempt's own account of its end, never by a file standing where one goes.
+    receipt = _run_exit_record(
+        record, f"attempt-{attempt}-exit.json", require_run_id=True
+    )
+    if receipt is not None:
         return True
     try:
         data = json.loads(
@@ -2120,17 +2168,22 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
         return False
     if not isinstance(data, Mapping):
         return False
+    if _record_is_known_foreign(record):
+        return False
     return record_process_alive(data, process_alive) is False
 
 
 def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> bool:
     """Whether this reading is reason enough to refuse a second launch.
 
-    An alive reading always is. A placed run whose scheduler could not be
-    queried refuses only when the record holds a recorded worker that nothing
-    has shown to be gone: the pointer's pid names the scheduler client, so the
-    local probe cannot answer for the worker, and a second worker beside a live
-    one rewrites the same manifest from its own partial view.
+    An alive reading always is. A run whose liveness this host cannot read
+    refuses only when the record holds a recorded worker that nothing has shown
+    to be gone. Two things make liveness unreadable here: the run is placed and
+    its scheduler could not be queried, so the pointer's pid names the scheduler
+    client rather than the worker; or the run was launched on another host, so
+    its pids are numbers this host's process table cannot answer for. Refusing
+    on either keeps a second worker from starting beside a live one, which would
+    write the same manifest from its own partial view.
 
     While the canonical worker record exists, that record answers: a record
     with no pointer pid, no worker record and no attempt receipt has never
@@ -2141,19 +2194,39 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
     worker receipt whose pid this host probes dead, is that attempt shown to
     have ended and the launch proceeds. A retired worker receipt whose pid is
     alive or cannot be read still refuses.
+
+    A run launched on another host is freed by an exit receipt alone, because no
+    probe this host can run answers for a pid it did not issue. The canonical
+    ``exit.json`` beside a canonical worker record and a retired
+    ``attempt-N-exit.json`` are read by the exit-record owner
+    ``_run_exit_record``, under its strict reading: the receipt must name this
+    run, so neither shape is freed by a file that merely stands where a receipt
+    goes. Age never frees a launch.
     """
-    from reckon.crew.recovery_liveness import _worker_record_liveness
+    from reckon.crew.recovery_liveness import (
+        _record_is_known_foreign,
+        _run_exit_record,
+        _worker_record_liveness,
+    )
     from reckon.crew.recovery_wait import _run_directory
 
     if reading.alive is True:
         return True
-    if reading.arm == LIVENESS_PLACED and reading.alive is None:
+    foreign = _record_is_known_foreign(record)
+    placed_unknown = reading.arm == LIVENESS_PLACED and reading.alive is None
+    foreign_unknown = (
+        foreign and reading.arm == LIVENESS_UNKNOWN and reading.alive is None
+    )
+    if placed_unknown or foreign_unknown:
+        directory = _run_directory(record)
         retired = None
-        if not (_run_directory(record) / WORKER_RECORD_NAME).exists():
+        if not (directory / WORKER_RECORD_NAME).exists():
             retired = _retired_attempt_ended(record)
         if retired is not None:
             return not retired
         if not _record_holds_a_worker(record):
+            return False
+        if foreign and _run_exit_record(record, require_run_id=True) is not None:
             return False
         return _worker_record_liveness(record) is not False
     return False
@@ -2520,6 +2593,7 @@ def _prepare_attempt_records(
                 "a launch that started now would retire its worker record, so "
                 "the run would read as halted while its worker kept working; "
                 "observe or stop it before launching again",
+                record,
             )
         )
     _supervisor_write(
@@ -3457,6 +3531,7 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
                 holder,
                 "a launch that started now would run a second worker beside it; "
                 "observe or stop it before launching again",
+                prior,
             )
         )
     environment = _worker_runtime_environment(
