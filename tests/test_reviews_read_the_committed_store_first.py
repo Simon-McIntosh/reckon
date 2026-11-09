@@ -37,10 +37,17 @@ COMPLETION_TS = "2026-10-06T09:07:30+00:00"
 
 @pytest.fixture()
 def root(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A synthesised project checkout mounted at its own docs directory."""
+    """A synthesised project checkout mounted at its own docs directory.
+
+    The node-local cache directory is confined here too. The store index is
+    persisted under ``XDG_RUNTIME_DIR`` keyed by the store's resolved path, and
+    pytest reuses a numbered basetemp path across runs, so a rerun would
+    otherwise find the previous run's index document and never build.
+    """
     config = tmp_path / "config"
     config.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config))
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(tmp_path / "run"))
     repo = tmp_path / "repo"
     (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
     (config / "mounts.json").write_text(
