@@ -55,6 +55,11 @@
     <p>Two nodes landed. The first (reviewed head <code>43c67c4427</code>): open blocking findings outrank every promotion tier; an overdue review duty is worded with its age and carries no dispatch command; an in-flight review is named instead of review-missing. The second (reviewed head <code>177ce1a24c</code>, release <code>44065b440f</code>): a queued run's row states its current admission hold and reason once the refusal recorded on its pointer is resolved.</p>
   </section>
 
+  <section id="producer-tick-reads-live-pointers-once" data-evidence-origin="append">
+    <h2>A producer tick reads the live pointers once</h2>
+    <p>Landed from r-20261109T120446544718 (head c73a7d1dd0, on main at bb05fcd011). One producer tick now makes one <code>list_live</code> call and one watch-stream publish and hands its pointer set to <code>sweep_unfollowed_sessions</code>, <code>resumption.sweep</code>, the owed-review pass and <code>dispatch_awaiting_reviews</code>; flight resolves once per project per tick, and a tick past its bound returns to its reload check. Node test: 3 passed at head, 3 failed with the file on base 3118c2969a. The coordinator compared all 786 importing test files at base and head in 13 slices with no added failure that survives a rerun (<code>~/.config/reckon/crew/runs/r-20261109T120446544718-producer-tick-reads-live-pointers-once/logs/pop/summary.txt</code>).</p><p><strong>The live check does not pass.</strong> The lock file is rewritten at reloads, not on every tick, so its mtime is not a tick heartbeat. Sampling the producer's main thread instead (pid 3781488, on the landed code, 16:15–16:17Z) found it busy in 54 of 57 samples, with a run of 26 consecutive busy samples, so ticks still last about a minute. A 75 s profile puts about 30% in the one remaining <code>list_live</code> publish, 30% in <code>_stop_delivered_reviews</code> scanning review-store paths, and about 25% in <code>_crew_home_change_token</code> globbing every run's review records (<code>~/.config/reckon/crew/runs/r-20261109T120446544718-producer-tick-reads-live-pointers-once/logs/post-landing-heartbeats.log</code>). That remaining cost is §20.</p>
+  </section>
+
 </main>
 </body>
 </html>
