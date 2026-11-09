@@ -4558,13 +4558,22 @@ def _section_rederivation(
     A field the section no longer supplies keeps its stored value: releasing a
     request the plan has moved past is what the review it awaited was for, and
     dropping a required field here would refuse a launch the queue has already
-    admitted. An unreadable plan does the same.
+    admitted.
+
+    A plan or section that cannot be read raises. The stored fields are not a
+    fallback: releasing on them would put the request back on the text the plan
+    has left behind, so the caller refuses the release and records why.
     """
     from reckon.crew import dispatch_batch
 
-    node = _node_from_pointer(pointer)
     marks = dict((pointer.get("node") or {}).get("section_derived") or {})
-    if not marks or not node.plan.strip():
+    if not marks:
+        # A request whose fields the dispatcher supplied has nothing to
+        # re-derive, and the rebuild is skipped so an unmarked request cannot
+        # raise here.
+        return {}, {}
+    node = _node_from_pointer(pointer)
+    if not node.plan.strip() or not node.section.strip():
         return {}, {}
     return dispatch_batch.rederived_section_fields(
         project=str(pointer.get("project") or ""),
@@ -4597,6 +4606,30 @@ def _apply_section_rederivation(
     }
 
 
+def _record_rederivation_refusal(
+    pointer: Mapping[str, Any], run_id: str, detail: str
+) -> None:
+    """Keep a request held when its section cannot be read, and say why.
+
+    The stored fields are not a fallback for a re-derivation that failed: they
+    describe the text the plan has moved past, which is the disagreement the
+    re-derivation exists to remove. So the release is refused, the request
+    stays held, and the reason is written on the pointer where the next reader
+    of the queue finds it.
+    """
+    refused_at = _now().isoformat()
+    record = {"detail": detail, "at": refused_at}
+
+    def refuse(current: dict[str, Any]) -> dict[str, Any]:
+        current["section_rederivation_refused"] = dict(record)
+        return current
+
+    with contextlib.suppress(Exception):
+        runs._mutate_pointer(run_id, refuse)
+    if isinstance(pointer, dict):
+        pointer["section_rederivation_refused"] = dict(record)
+
+
 def _release_plan_review_holds(
     live: Sequence[Mapping[str, Any]],
     *,
@@ -4609,6 +4642,8 @@ def _release_plan_review_holds(
     coordinator call. A hold a coordinator wrote carries no ``automatic`` mark
     and is never released here, and a request so held stays held.
     """
+    from reckon.crew.dispatch_batch import BatchEntryRefusedError
+
     released: list[str] = []
     for pointer in live:
         if str(pointer.get("phase") or "") != HELD_PHASE:
@@ -4629,7 +4664,11 @@ def _release_plan_review_holds(
         # against the text it moved to, so the fields it supplied are re-derived
         # here and the launched node is the current contract rather than the one
         # the request was queued under.
-        rederived, digests = _section_rederivation(pointer)
+        try:
+            rederived, digests = _section_rederivation(pointer)
+        except BatchEntryRefusedError as exc:
+            _record_rederivation_refusal(pointer, run_id, str(exc))
+            continue
 
         def release(
             current: dict[str, Any],

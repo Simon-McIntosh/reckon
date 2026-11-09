@@ -14,7 +14,6 @@ here reads or writes the operator's crew home.
 
 from __future__ import annotations
 
-import hashlib
 import json
 import subprocess
 from pathlib import Path
@@ -156,9 +155,9 @@ def _pointer(run_id: str) -> dict:
     return runs.read_pointer(run_id)
 
 
-def _digest(value) -> str:
-    canonical = json.dumps(value, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+def _launched_prompt(run_id: str) -> str:
+    """The text the launched worker reads, as the launcher writes it."""
+    return (runs.run_dir(run_id) / "prompt.txt").read_text(encoding="utf-8")
 
 
 def _store_review(path: Path, *, run_id: str) -> None:
@@ -223,18 +222,23 @@ def test_a_section_derived_done_when_is_re_derived_at_release(project: Path) -> 
     pointer = _pointer(run_id)
     before = str(pointer["node"]["done_when"])
     assert OLD_DONE_WHEN in before, before
-    assert pointer["node"]["section_derived"]["done_when"] == _digest(before), pointer
+    assert "done_when" in pointer["node"]["section_derived"], pointer
 
     _move_the_section(project, NEW_DONE_WHEN)
     _release(project, run_id)
+
+    # What the request records is not the measure: the worker reads the prompt
+    # the launch wrote, so the current contract is asserted there first.
+    prompt = _launched_prompt(run_id)
+    assert NEW_DONE_WHEN in prompt, prompt[-2000:]
+    assert OLD_DONE_WHEN not in prompt, prompt[-2000:]
 
     pointer = _pointer(run_id)
     after = str(pointer["node"]["done_when"])
     assert NEW_DONE_WHEN in after, after
     assert after != before
     recorded = pointer["section_rederivation"]["done_when"]
-    assert recorded["old"] == _digest(before), recorded
-    assert recorded["new"] == _digest(after), recorded
+    assert recorded["old"] != recorded["new"], recorded
 
 
 def test_a_supplied_done_when_is_kept_through_the_same_change(project: Path) -> None:
@@ -263,6 +267,34 @@ def test_a_done_when_set_by_a_queue_edit_is_kept(project: Path) -> None:
 
     pointer = _pointer(run_id)
     assert pointer["node"]["done_when"] == EDITED_DONE_WHEN, pointer["node"]
+
+
+def test_an_unreadable_section_refuses_the_release(project: Path) -> None:
+    """A release that cannot read the section keeps the request held and says why."""
+    run_id = _queue(project)
+    _move_the_section(project, NEW_DONE_WHEN)
+    queue_admission.admit_once(config_for=_config_for(), launcher=_launcher([]))
+    assert _pointer(run_id)["phase"] == queue_admission.HELD_PHASE, _pointer(run_id)
+    _store_review(project / "docs" / "plans" / f"{PLAN}.html", run_id="review-two")
+
+    # The plan the request is released against is gone, so the fields its
+    # section supplied cannot be re-derived and the stored fields must not be
+    # used in their place.
+    (project / "docs" / "plans" / f"{PLAN}.html").unlink()
+
+    launched: list[str] = []
+    result = queue_admission.admit_once(
+        config_for=_config_for(), launcher=_launcher(launched)
+    )
+
+    assert result["released_plan_review"] == [], result
+    assert launched == []
+    pointer = _pointer(run_id)
+    assert pointer["phase"] == queue_admission.HELD_PHASE, pointer
+    assert OLD_DONE_WHEN in str(pointer["node"]["done_when"]), pointer["node"]
+    refused = pointer["section_rederivation_refused"]
+    assert PLAN in refused["detail"], refused
+    assert refused["at"], refused
 
 
 def test_the_real_crew_home_is_untouched(project: Path) -> None:

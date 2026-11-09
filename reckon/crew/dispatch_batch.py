@@ -356,21 +356,6 @@ def _as_list(value: Any) -> list[str]:
     raise BatchEntryRefusedError(f"{value!r} is not a list of strings")
 
 
-def section_field_digest(value: Any) -> str:
-    """The digest of one section-derived value, as the queue records it.
-
-    A released request is re-derived from the section's current text, and the
-    pointer records what changed by comparing this digest of the stored value
-    against the digest of the value the section states now. The digest is over
-    the value's canonical JSON so a list of paths and a single string each have
-    one spelling.
-    """
-    import hashlib
-
-    canonical = json.dumps(value, sort_keys=True, ensure_ascii=False)
-    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
-
-
 def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, str]]:
     """Each node field this section supplies, with the digest of its value.
 
@@ -378,7 +363,12 @@ def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, st
     request re-derives those same fields, so both sides of that contract are
     answered here rather than twice. A field the section does not supply is
     absent, which is what keeps a supplied or edited field the request's own.
+    The digest is the plan reader's own canonical-JSON digest, so a value
+    recorded at queue time and the same value re-derived at release compare
+    equal.
     """
+    from reckon.crew.plan_review import _digest
+
     values: dict[str, Any] = {}
     with contextlib.suppress(BatchEntryRefusedError):
         values["done_when"] = read.done_when(section)
@@ -388,9 +378,7 @@ def section_derivation(read: _PlanRead, section: str) -> dict[str, tuple[Any, st
     estimate = read.section_record(section).get("effort_hours")
     if isinstance(estimate, (int, float)):
         values["estimated_hours"] = float(estimate)
-    return {
-        name: (value, section_field_digest(value)) for name, value in values.items()
-    }
+    return {name: (value, _digest(value)) for name, value in values.items()}
 
 
 def rederived_section_fields(
@@ -408,12 +396,14 @@ def rederived_section_fields(
     come back with both digests, so the pointer records what the release
     changed. A field the section no longer states is absent from the values,
     which is what keeps the request's stored value.
+
+    A plan or section that cannot be read raises ``BatchEntryRefusedError``.
+    The caller must not read that as "nothing was derived": releasing on the
+    stored fields would put the request back on the text the plan has left
+    behind, which is exactly what the release re-derivation exists to stop.
     """
-    try:
-        read = _PlanRead(project, plan, Path(repo_root))
-        derivation = section_derivation(read, section)
-    except Exception:  # noqa: BLE001 - an unreadable plan keeps the stored fields
-        return {}, {}
+    read = _PlanRead(project, plan, Path(repo_root))
+    derivation = section_derivation(read, section)
     values: dict[str, Any] = {}
     digests: dict[str, dict[str, str]] = {}
     for name, stored_digest in marked.items():
