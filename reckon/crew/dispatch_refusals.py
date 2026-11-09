@@ -30,12 +30,23 @@ from typing import Any
 
 from reckon._store import write_json_atomically
 from reckon._timestamps import parse_utc
-from reckon.crew.node import TaskNode
+from reckon.crew.node import CrewError, TaskNode
+from reckon.crew.refusals import format_refusal
 from reckon.crew.routing import _context_contributors
 from reckon.crew.run_paths import _utc_now, crew_home
 
 RECORD_DIRECTORY = "refusal-traces"
 CONTEXT_REFUSAL_REASON = "context-window-exceeded"
+
+# A launch that outlived its bound is released by the admission pass, a
+# separate process, so the release has to reach the launch itself. The launch
+# reads this record rather than the claim, because the holder that published
+# the claim may still be alive and blocked and can never observe that its own
+# claim was taken away. The record outlives the run directory the release
+# removes, which is why it is keyed on the run id and never read from inside
+# that directory.
+LAUNCH_REFUSAL_REASON = "launch-span-exceeded"
+LAUNCH_REFUSAL_VERSION = 1
 
 # The payload's shape, so a trace written by an earlier version is read as
 # absent rather than misread: the paths were mappings once, and a reader that
@@ -216,3 +227,84 @@ def consume_context_refusal(
         record_path(node, project=project, home=home).unlink()
     except FileNotFoundError:
         return
+
+
+def launch_refusal_path(run_id: str, *, home: str | Path | None = None) -> Path:
+    """Where the release of one run's launch span is recorded."""
+    readable = re.sub(r"[^A-Za-z0-9._-]", "-", str(run_id)).strip("-") or "run"
+    return _home(home) / RECORD_DIRECTORY / f"launch-{readable}.json"
+
+
+def record_launch_refusal(
+    *,
+    run_id: str,
+    step: str,
+    holder: Mapping[str, Any] | None = None,
+    home: str | Path | None = None,
+) -> Path:
+    """Record that a launch span was released, naming the step it reached.
+
+    The step and the holder are what the released launch's own fence reports
+    when it resumes: a span that stopped before the spawn and one that stopped
+    just after are different failures, and only the step tells them apart.
+    """
+    payload = {
+        "version": LAUNCH_REFUSAL_VERSION,
+        "run_id": str(run_id),
+        "reason": LAUNCH_REFUSAL_REASON,
+        "recorded_at": _utc_now(),
+        "step": str(step or ""),
+        "holder": dict(holder or {}),
+    }
+    path = launch_refusal_path(run_id, home=home)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    write_json_atomically(
+        path, payload, indent=2, sort_keys=True, mode=0o600, ensure_ascii=True
+    )
+    return path
+
+
+def launch_refusal(
+    run_id: str, *, home: str | Path | None = None
+) -> dict[str, Any] | None:
+    """The release on record for this run, or None when no span was released."""
+    try:
+        stored = json.loads(launch_refusal_path(run_id, home=home).read_text("utf-8"))
+    except (FileNotFoundError, ValueError, OSError):
+        return None
+    if not isinstance(stored, Mapping):
+        return None
+    if stored.get("version") != LAUNCH_REFUSAL_VERSION:
+        return None
+    if str(stored.get("run_id") or "") != str(run_id):
+        return None
+    return dict(stored)
+
+
+def refuse_a_released_launch(
+    run_id: str, *, started: bool = False, home: str | Path | None = None
+) -> None:
+    """Refuse a launch whose span the admission pass has already released.
+
+    Read twice by the launch: before the spawn and again after it. The second
+    read closes the window between the first check and the fork, so a launch
+    that stalls there and resumes after its release does not spawn a worker for
+    a run that no longer exists — and, having already spawned, hands the pid to
+    the rollback that signals it.
+    """
+    refusal = launch_refusal(run_id, home=home)
+    if refusal is None:
+        return
+    step = str(refusal.get("step") or "an unrecorded step")
+    when = (
+        "while its worker was being started"
+        if started
+        else "before its worker was started"
+    )
+    raise CrewError(
+        format_refusal(
+            "D23",
+            f"run {run_id!r} was released as a stranded launch at step {step} {when}; "
+            "the launch is refused",
+        )
+    )

@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A launch span is dated and bounded | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A launch span is dated and bounded</h1>
+      <p class="lead">A launch blocked on a GPFS read held a claim no worker backed, and
+      nothing inside that blocked span could observe its own bound. The claim now names the
+      process running the span, the span's launch time and the step it reached, and the
+      admission pass &mdash; a separate process &mdash; releases a span past
+      <code>STRANDED_LAUNCH_BOUND_SECONDS</code>, recording a refusal that names the step
+      before it gives the claim back and removes the run directory. The launch fences on that
+      refusal record rather than on the claim, because the holder may still be alive and
+      blocked, and reads it twice: before the spawn and again after it, so a release landing
+      between the two hands the spawned pid to the rollback that signals it.</p>
+    </header>
+
+    <section id="a-launch-span-is-dated-and-bounded-measure">
+      <h2>Measure</h2>
+      <p><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+      tests/test_a_launch_span_is_dated_and_bounded.py</code> &mdash; 4 passed, 0 failed.
+      The four cases are: a launch held past the bound releases its claim, removes its run
+      directory and records a refusal naming <code>claim-published</code>; the same launch,
+      resumed after its release, refuses rather than spawning, with the launcher never
+      entered; a release pinned inside the spawn window is caught by the post-spawn read and
+      the spawned worker is signalled and gone; and <code>claim.json</code> names the holder
+      pid, the host and the launch time, with the step advancing to
+      <code>identity-published</code>.</p>
+      <p>The negative control applied both declared mutations and ran red:
+      <code>STRANDED_LAUNCH_BOUND_SECONDS</code> raised past any age left the claim held and
+      the run directory kept, and removing the post-spawn read of the refusal record left
+      the pinned-release worker running. Both logs are under the run directory.</p>
+    </section>
+
+    <section id="a-launch-span-is-dated-and-bounded-paths">
+      <h2>Where the change lives</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch_claims.py</code> &mdash; the claim carries holder pid,
+        host, launch time and step; <code>read_launch_claim</code> and
+        <code>advance_launch_step</code> sit beside the publisher.</li>
+        <li><code>reckon/crew/dispatch_refusals.py</code> &mdash; the run-keyed launch refusal
+        record and <code>refuse_a_released_launch</code>, the fence the launch reads.</li>
+        <li><code>reckon/crew/queue_admission.py</code> &mdash;
+        <code>_release_stranded_launches</code>, called once per admission pass before
+        anything is ordered.</li>
+        <li><code>reckon/crew/dispatch.py</code> &mdash; the step advances after the spawn and
+        after the identity is published, and the refusal is read on both sides of the
+        spawn.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
