@@ -1910,7 +1910,11 @@ def _fragment_scope_paths(
     covers a directory-only declaration before it writes anything; worktree
     changes retain custom fragment names once they have been written.
     """
-    if absolute.parts[-3:-1] != ("evidence", "fragments") or not node_id:
+    if (
+        absolute.parts[-3:-1] != ("evidence", "fragments")
+        or not node_id
+        or (repository is not None and not absolute.is_relative_to(repository))
+    ):
         return (absolute,)
     paths = {absolute / f"{node_id}.html"}
     if worktree and repository is not None:
@@ -1951,7 +1955,11 @@ def _fragment_comparison_scopes(
     entries = [
         (
             repository,
-            path.relative_to(repository).as_posix() if repository else str(path),
+            _candidate
+            if path == absolute
+            else path.relative_to(repository).as_posix()
+            if repository
+            else str(path),
             path,
             declared,
             derived,
@@ -1960,7 +1968,9 @@ def _fragment_comparison_scopes(
         for path in _fragment_scope_paths(absolute, node_id, repository=repository)
     ]
     compared = tuple(
-        replace(
+        claim
+        if path == claim.absolute_path
+        else replace(
             claim,
             path=path.relative_to(claim.repository).as_posix()
             if claim.repository

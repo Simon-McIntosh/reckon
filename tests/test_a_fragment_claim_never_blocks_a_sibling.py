@@ -99,3 +99,23 @@ def test_an_explicit_fragment_keeps_its_file_claim(
         _dispatch(admit_repo, "joiner", fragment)
     assert refusal.value.run_id == owner["run_id"]
     assert refusal.value.claimed_path == fragment
+
+
+@pytest.mark.parametrize("outside_path", ["external.html", "evidence/fragments/plan-a"])
+def test_an_unrelated_external_claim_keeps_its_original_identity(
+    admit_repo: Path,  # noqa: F811 - imported fixture
+    outside_path: str,
+) -> None:
+    outside = str(admit_repo.parent / outside_path)
+    claim = runs._LiveScopeClaim(
+        run_id="external-owner",
+        node_id="owner",
+        path=outside,
+        declared_path=outside,
+    )
+    runs._raise_live_scope_conflict(
+        _node("joiner", f"{FRAGMENTS}/joiner.html"),
+        [claim],
+        admit_repo,
+        project=PROJECT,
+    )
