@@ -81,6 +81,50 @@ def clear_pending(run_id: str) -> None:
         return
 
 
+#: The pointer fields that identify the attempt a landing mark belongs to.
+_ATTEMPT_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
+
+
+def pointer_attempt(pointer: Mapping[str, Any] | None) -> dict[str, Any]:
+    """The identity of the attempt a pointer belongs to, as the mark records it."""
+    pointer = pointer or {}
+    return {field: pointer.get(field) for field in _ATTEMPT_FIELDS}
+
+
+def mark_pending_landing_repair(
+    run_id: str, pointer: Mapping[str, Any]
+) -> dict[str, Any]:
+    """Write ``pointer`` as the run's live pointer, marked for the landing pass.
+
+    One writer for the mark: a promotion that could not remove its pointer and a
+    merge repair that rebuilds an absent one both call it, so the fields the
+    mark carries and the attempt it names are decided in one place. The attempt
+    is recorded because the pointer that is live when the mark is written may
+    already belong to a newer attempt, and the pass must remove only the attempt
+    it finished rather than whichever pointer happens to be there later.
+    """
+    marked = {
+        **dict(pointer),
+        "pending_landing_repair": True,
+        "pending_landing_repair_attempt": pointer_attempt(pointer),
+    }
+    runs._write_json(runs.pointer_path(run_id), marked)
+    return marked
+
+
+def _release_marked_pointer(run_id: str, marked: Mapping[str, Any]) -> bool:
+    """Remove a marked pointer only while it is still the attempt the mark names."""
+    with runs._pointer_lock(run_id):
+        try:
+            current = runs.read_pointer(run_id)
+        except runs.CrewError:
+            return False
+        if pointer_attempt(current) != marked.get("pending_landing_repair_attempt"):
+            return False
+        runs.pointer_path(run_id).unlink(missing_ok=True)
+        return True
+
+
 def _read(path: Path) -> dict[str, Any] | None:
     try:
         loaded = json.loads(path.read_text(encoding="utf-8"))
@@ -310,8 +354,14 @@ def finish_pending_landings(
                 path.write_text(json.dumps(record), encoding="utf-8")
             results.append({"run_id": run_id, "status": "failed", "error": str(exc)})
             continue
-        if pointer is not None and pointer.get("pending_landing_repair"):
-            runs.pointer_path(run_id).unlink(missing_ok=True)
+        # Only the attempt the mark names is released: a pointer a newer attempt
+        # has since written belongs to work still in flight, and removing it or
+        # its tree would strand that attempt mid-run.
+        if (
+            pointer is not None
+            and pointer.get("pending_landing_repair")
+            and _release_marked_pointer(run_id, pointer)
+        ):
             merge.release_landed_worktrees(
                 repository, str(landed["commit"]), head=head, projects=[project]
             )

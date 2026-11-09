@@ -202,6 +202,8 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
     attempt owns: the landing pass leaves an unmarked live pointer alone, so
     without it the reviewed head stays off the branch beside a passed row.
     """
+    from reckon.crew import pending_landing
+
     with _pointer_lock(run_id):
         try:
             current = read_pointer(run_id)
@@ -209,9 +211,8 @@ def _keep_pointer_for_pending_landing(run_id: str) -> bool:
             return False
         if current.get("pending_landing_repair"):
             return True
-        current["pending_landing_repair"] = True
         try:
-            _write_json(pointer_path(run_id), current)
+            pending_landing.mark_pending_landing_repair(run_id, current)
         except OSError:
             return False
         return True

@@ -183,6 +183,12 @@ def test_a_promotion_that_could_not_hand_over_is_finished_by_the_next_pass(
 
     kept = read_pointer(RUN_ID)
     assert kept.get("pending_landing_repair") is True
+    assert kept.get("pending_landing_repair_attempt") == {
+        "attempt": 4,
+        "phase": "running",
+        "pid": None,
+        "pid_start_time": None,
+    }
     assert pointer_path(RUN_ID).exists()
 
     results = pending_landing.finish_pending_landings()
@@ -192,6 +198,66 @@ def test_a_promotion_that_could_not_hand_over_is_finished_by_the_next_pass(
     assert not pointer_path(RUN_ID).exists()
     assert not list(pending_landing.pending_dir().glob("*.json"))
     assert _on_branch(remote, head), "the reviewed head never reached the branch"
+
+
+def _landed_and_marked(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> tuple[Path, Path, str]:
+    """Promote under a simulated resume, leaving the promoted head promoted but unmerged."""
+    repo, remote, head = _seed(home)
+    pending_landing.write_pending(RUN_ID, PROJECT)
+    _pointer(repo)
+    monkeypatch.setattr(merge, "project_repository", lambda project: repo)
+    _resume_during_promotion(monkeypatch)
+    with pytest.raises(promotion.CrewError):
+        _promote(repo)
+    return repo, remote, head
+
+
+def _bump_attempt(attempt: int, *, retarget_mark: bool = False) -> None:
+    """Move the marked pointer to a newer attempt, keeping or retargeting its mark."""
+    current = read_pointer(RUN_ID)
+    current["attempt"] = attempt
+    current["phase"] = "running"
+    if retarget_mark:
+        current["pending_landing_repair_attempt"] = pending_landing.pointer_attempt(
+            current
+        )
+    _write_json(pointer_path(RUN_ID), current)
+
+
+def test_a_newer_attempt_keeps_its_pointer_when_the_landing_finishes(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _repo, remote, head = _landed_and_marked(home, monkeypatch)
+    _bump_attempt(5)
+    releases: list[Any] = []
+    monkeypatch.setattr(
+        merge,
+        "release_landed_worktrees",
+        lambda *a, **k: releases.append(a) or {"released": [], "withheld": []},
+    )
+
+    results = pending_landing.finish_pending_landings()
+
+    assert results[0]["status"] == "finished", results
+    assert _on_branch(remote, head)
+    live = read_pointer(RUN_ID)
+    assert live["attempt"] == 5
+    assert releases == []
+
+
+def test_without_the_recorded_attempt_the_newer_pointer_is_lost(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Negative control: a mark naming the pointer it is read from releases it."""
+    _landed_and_marked(home, monkeypatch)
+    _bump_attempt(5, retarget_mark=True)
+
+    results = pending_landing.finish_pending_landings()
+
+    assert results[0]["status"] == "finished", results
+    assert not pointer_path(RUN_ID).exists()
 
 
 def test_an_undisturbed_landing_promotes_and_lands(
