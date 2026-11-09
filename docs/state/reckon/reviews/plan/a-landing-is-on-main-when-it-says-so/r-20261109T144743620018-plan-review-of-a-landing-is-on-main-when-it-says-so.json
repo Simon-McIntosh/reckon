@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:56:40.396Z",
+  "dispatched_at": "2026-11-09T14:49:32Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "the plan needs `reckon/crew/gc.py` (or a marker the reap respects) in its write paths and in its done-when, otherwise it ships a route that a routine gc pass silently defeats.",
+      "text": "\u00a75 asserts \"Today nothing retires that pointer\" and concludes the kept pointer survives \"until the head reaches the branch\", but `crew gc`'s live-pointer reap unlinks any pointer whose run id is in the ledger and whose process is not alive (`reckon/crew/gc.py:722-739`: `if record_run_id not in ledgered or record_process_alive(record) is not False: continue` \u2026 `pointer_path(record_run_id).unlink()`); a run promoted with the separate-merge flag has a ledger row and a dead worker, so an ordinary gc pass removes the pointer before the merge and `crew merge --run` loses the run exactly as in nova-8a \u2014 the failure \u00a75 exists to prevent. The done-when's second case cannot detect this because it never runs gc between promotion and merge",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:80",
+      "id": "wiring-1",
+      "reason": "without a \u00a75 followup the plan's declared chain cannot start, and \u00a76 is undeliverable through it.",
+      "text": "\u00a75 is declared `implementable` and \u00a76 waits on it (`plan-section-depends-on` s6\u2192s5, plan.html:29), but no followup carries `/reckon-build a-landing-is-on-main-when-it-says-so \u00a75`; the only open followup (f-alomwiss-006) dispatches \u00a76, so a coordinator following the plan's own chain queues a node whose upstream nothing drives, and the admit service holds \u00a76 `awaiting-upstream` indefinitely",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0a8c66faef3dfb385782402e8e14e7be9ee58c93",
+  "plan_fingerprint": "5e11f7b50561acc8b29a89deaf9008a9a596b6234ecccccbc1629d8450937302",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T144743620018-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "e815798d266c9029ce506bdb12327d410f591d0e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `crew_merge` is at `reckon/crew_run_commands.py:251`, `merge.land_merge` at `:329` and `merge.py` contains no pointer removal, `pending_landing.finish_pending_landings` is at `reckon/crew/pending_landing.py:187` with the live-run skip at `:233`.",
+    "done_when": "pass \u2014 \u00a75's done-when names two negative controls (base revision promotes and removes the pointer; skipping the retirement leaves the pointer on disk), both of which can fail.",
+    "evidence_paths": "pass \u2014 \u00a75 names no scratchpad or node-local path; its measure is a repository test file plus the run-directory log convention the plan states in \u00a72 and \u00a76.",
+    "naming": "pass \u2014 \u00a75 introduces no plan label, stage name or ticket number into a symbol, file or comment; the separate-merge flag is described by what it does.",
+    "reasoning": "a finding \u2014 the mechanism's premise \"Today nothing retires that pointer\" is false: `crew gc` reaps every live pointer whose run has a ledger row and whose process is not alive (`reckon/crew/gc.py:722-739`), which is exactly the state a separate-merge promotion leaves behind.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: a plain complete neither promotes an unmerged head nor leaves the kept run unresolvable, with the retirement as the same behaviour's second half.",
+    "wiring": "a finding \u2014 \u00a75 is declared implementable (plan.html:23) and \u00a76 declares `plan-section-depends-on` s6\u2192s5 (plan.html:29), but no followup names \u00a75; the only open followup is f-alomwiss-006, whose prompt dispatches \u00a76 (plan.html:80-84)."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "5c50cd64e0d57a4ef7801873c1760229b4e43f72d814564c6e4690db6bd57d85",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:02:23.030643+00:00",
+  "total": null
+}
