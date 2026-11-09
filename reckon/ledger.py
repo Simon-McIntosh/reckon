@@ -1049,8 +1049,17 @@ def load_aggregate(
 
 
 def run_ids(project: str, root: str | Path | None = None) -> set[str]:
-    """Read index membership without decoding the individual run payloads."""
-    data, _version = _load_aggregate(project, root)
+    """Read index membership without decoding the individual run payloads.
+
+    The read is served from the run index :func:`load` keeps, so a caller that
+    runs once per delivered run per station tick pays at most one aggregate
+    parse per ledger change rather than one per call. The index is keyed on the
+    aggregate's and the runs directory's stat identity, so a ledger written
+    behind the index is rescanned and its new rows answer here too. A run file
+    whose own record the index could not decode still counts by its name, which
+    is the membership this answers and not the row's contents.
+    """
+    data, _version = load(project, root, headers_only=True)
     return {
         str(record["run_id"])
         for record in data["runs"]

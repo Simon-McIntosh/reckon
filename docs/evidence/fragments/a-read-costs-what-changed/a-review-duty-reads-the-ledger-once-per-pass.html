@@ -1,0 +1,36 @@
+<section id="a-review-duty-reads-the-ledger-once-per-pass">
+  <h2>a-review-duty-reads-the-ledger-once-per-pass — the station's review duty reads the ledger once per pass</h2>
+
+  <p id="a-review-duty-reads-the-ledger-once-per-pass-what-changed"><strong>What changed.</strong>
+  <code>ledger.run_ids</code> is served from the stat-validated run index <code>ledger.load</code>
+  already keeps, through <code>load(project, root, headers_only=True)</code>, instead of parsing the
+  aggregate on every call. The station evaluates every delivered run's review duty on every tick,
+  and each duty asks <code>ledger.run_ids</code> whether the run is closed — through
+  <code>station_subscriber.live_work_populations</code>,
+  <code>delivered_run_owes_review</code>, <code>obligations._review_duty_item</code>,
+  <code>_reflex_open_refusal</code> and
+  <code>recovery_review_dispatch._open_review_refusal</code>. With the aggregate read per call, one
+  tick paid a full ledger parse per delivered run. The index is keyed on the aggregate's and the
+  runs directory's stat identity, so a ledger written behind the index is rescanned, and a run file
+  whose own record the index could not decode still counts by its name. The refusal the duty
+  reports is unchanged.</p>
+
+  <p id="a-review-duty-reads-the-ledger-once-per-pass-measure"><strong>Measure.</strong>
+  <code>tests/test_a_review_duty_reads_the_ledger_once_per_pass.py</code> builds a synthesised crew
+  home of three delivered runs whose only stored review describes an earlier head, so each reads
+  <code>scoring</code> with a <code>review-missing</code> duty the reflex owns. After one warm-up
+  <code>ledger.read_records</code> call, one <code>station_subscriber.live_work_populations</code>
+  pass enters <code>_open_review_refusal</code> for all <strong>3</strong> runs and calls
+  <code>_load_aggregate</code> <strong>0</strong> times (the gate asserts at most <strong>1</strong>
+  per project). A direct <code>ledger.run_ids(project)</code> after the pass opens no further
+  aggregate read, and the same pass run with the aggregate-reading
+  <code>run_ids</code> returns the identical duty text for every run. Head gate:
+  <strong>1 passed, EXIT=0</strong>.</p>
+
+  <p id="a-review-duty-reads-the-ledger-once-per-pass-negative-control"><strong>Declared negative
+  control, executed and logged.</strong> Reverting <code>run_ids</code> to
+  <code>_load_aggregate(project, root)</code> makes the pass read the aggregate
+  <strong>3</strong> times, once per delivered run, and the gate fails on
+  <code>assert 3 &lt;= 1</code> — <strong>1 failed, EXIT=1</strong>. Log:
+  <code>logs/negative-control.log</code>.</p>
+</section>
