@@ -248,9 +248,9 @@ def test_arming_refuses_a_configuration_home_under_a_test_directory(
 
 def test_arming_proceeds_for_an_ordinary_configuration_home(monkeypatch) -> None:
     """The refusal is bound to the throwaway home, not to arming itself."""
-    from tests.conftest import test_temp_config_home
+    from tests.conftest import make_temp_config_home
 
-    ordinary = test_temp_config_home("reckon-ordinary-home-")
+    ordinary = make_temp_config_home("reckon-ordinary-home-")
     launched: list[list[str]] = []
 
     class _Supervisor:
@@ -324,10 +324,10 @@ def test_a_producer_is_bound_to_this_run_by_the_home_it_reports_into(
     the pid, and the directory's location names the run. A record under another
     run's home belongs to that run and must not be found from this one.
     """
-    from tests.conftest import test_temp_config_home, watcher_record_pids
+    from tests.conftest import make_temp_config_home, watcher_record_pids
 
     inside = tmp_path / "inside"
-    outside = test_temp_config_home("reckon-ordinary-home-")
+    outside = make_temp_config_home("reckon-ordinary-home-")
     (inside / "crew" / "watch").mkdir(parents=True)
     (outside / "crew" / "watch").mkdir(parents=True)
 

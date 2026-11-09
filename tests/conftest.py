@@ -1062,10 +1062,10 @@ def _answered_scratch_headroom(request, monkeypatch):
     )
 
 
-def test_temp_config_home(
+def make_temp_config_home(
     prefix: str,
     *,
-    directory: Path | None = None,  # noqa: PT028 - a helper callers import, not a collected test; optional so the arming cases keep their own home
+    directory: Path | None = None,
 ) -> Path:
     """A throwaway configuration home a test created, registered for attribution.
 
