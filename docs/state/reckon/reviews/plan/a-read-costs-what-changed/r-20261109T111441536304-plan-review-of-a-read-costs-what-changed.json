@@ -1,0 +1,55 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:22:51.698Z",
+  "dispatched_at": "2026-11-09T11:16:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:113",
+      "id": "done_when-1",
+      "reason": "a worker implementing the once-per-pass shape the count sentence permits meets a red assertion on its own deliverable and must choose between two clauses of one section, where deleting the stale half of the count sentence (the write paths already confine the fix to the ledger) makes the gate single-valued.",
+      "text": "the done-when names two mutually exclusive acceptable shapes for one measure: \"a fix serving `run_ids` from a stat-validated cache counts zero and a fix reading once per pass counts one\" sits under a bar of \"at most once per project\", so a once-per-pass fix reads as satisfying the count, while the clause added beside it (\"After the pass, a direct `ledger.run_ids(project)` call opens no aggregate read, so the cache serves every caller, not only the tick\") fails exactly that shape, because a once-per-pass memo is cold for the direct call and opens one aggregate read",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d39bc6e2f5e2b33ee8133014fc61f7df02e32cde",
+  "plan_fingerprint": "e1243bf94b233585d40fbf1373c5b780b854c59fe397dc3f7a4f9d7daaf02aec",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T111441536304-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "8ddd082a47c55687337e436550a5c30101b8840b",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited target resolves: `ledger._load_aggregate` `reckon/ledger.py:992`, `ledger.run_ids` `:1051`, `obligations._reflex_owns_review` `reckon/crew/obligations.py:719`, `_reflex_open_refusal` `:779`, `_reflex_review_window_seconds` `:739`, `recovery_review_dispatch._open_review_refusal` `reckon/crew/recovery_review_dispatch.py:2497` with its `ledger.run_ids` call at `:2539` (\"near line 2516\" points inside that function), `station.py:524` is `station_subscriber.live_work_populations(project_pointers)`, and the landing claim now reads 8 November (22:01Z), matching `21553c80c9` at 2026-11-08 23:01 +0100.",
+    "done_when": "a finding \u2014 the count criterion still accepts a \"fix reading once per pass\", which the neighbour clause added this round forbids.",
+    "evidence_paths": "pass \u2014 the gate log and manifest go under the run directory and the new test under `tests/`; no session scratchpad or node-local `/tmp` path is named.",
+    "naming": "pass \u2014 `tests/test_a_review_duty_reads_the_ledger_once_per_pass.py` names the mechanism, and no plan label, stage name or ticket number reaches a symbol or the comment set.",
+    "reasoning": "pass \u2014 the stack sample names the mechanism its evidence supports (`run_ids` \u2192 `_load_aggregate`; `reckon/_store._load_json_envelope` is an unconditional read and the live aggregate `~/.config/reckon/state/reckon/crew.json` is 81 MB, so a per-call rebuild is the expensive thing the Why describes), the cache mechanism produces the count the done-when asserts, and the caller chain is real and complete from `station.py:524` through `live_work_populations` (`station_subscriber.py:187`), `delivered_run_owes_review` (`:91`, which calls `obligations._review_duty_item` at `:145`), `_review_duty_item` (`obligations.py:1744`, reaching `_reflex_open_refusal` at `:1982`), `review_dispatch_refusal` (`recovery_review_dispatch.py:2584`) and `_open_review_refusal` (`:2497`) to `ledger.run_ids(project)` (`:2539`).",
+    "single_goal": "pass \u2014 one deliverable (serve `run_ids` from a stat-validated cache, evidenced by one fixture test), with the measurement as its evidence rather than a second goal.",
+    "wiring": "pass \u2014 s15 declares no dependency and needs none: the fix is confined to `ledger.run_ids` (`reckon/ledger.py:1051`), a module-level read every caller already routes through, and the section names no other node's output it consumes."
+  },
+  "section_digests": {
+    "_document": "fadd834561014ac70b3c356334ec429206b493af2f66b7ab5d86276b95038750",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "7c94cf8a13101fb508a3c1ed36361411aa28464a63cf02229cb0927821040408",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:37:18.218344+00:00",
+  "total": null
+}
