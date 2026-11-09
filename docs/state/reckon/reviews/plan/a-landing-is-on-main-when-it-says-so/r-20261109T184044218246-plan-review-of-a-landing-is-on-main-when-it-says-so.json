@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T18:48:40.058Z",
+  "dispatched_at": "2026-11-09T18:42:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "as written, \u00a75 lands a change that turns `main` red in a test the node may not edit, and the node's own gate cannot report it.",
+      "text": "\u00a75 instructs the node to register one new refusal family in `DISPATCH_REFUSAL_REMEDIES`, but `tests/test_crew_refusal_visibility.py:91` asserts `set(DISPATCH_REFUSAL_REMEDIES) == {f\"D{n:02d}\" for n in range(1, 25)}` and `CONVERTED_REFUSAL_FAMILIES` is the same frozen range, so a 25th family fails that test, and the file is absent from \u00a75's declared write paths while its scoped gate cannot see it \u2014 measured at revision 276444427d: the census test passes (36 passed), and with `D25` added to the dict `set(dict) == expected` becomes False while `crew_run_commands.py` is not in `REFUSAL_SOURCE_PATHS` either",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "single_goal-1",
+      "reason": "the lock exclusion is a separate defect with its own base-revision control, and splitting it gives each half a gate that can close on one verdict instead of a five-file node proving neither cleanly.",
+      "text": "\u00a76 bundles the pending-landing marking/repair with an unrelated defect fix (a non-blocking `_pointer_lock` and a resume that takes the promotion lock first), so a \u00a76 that marks and repairs correctly but never lands the lock change still reads as a partial pass on the same verdict",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:68",
+      "id": "done_when-2",
+      "reason": "the requirement \u00a75 introduces is precisely that an unreachable remote and a missing branch are distinct answers, so the section that consumes it must be able to show a guard that conflates them fails.",
+      "text": "\u00a77's third and fourth cases (an unreachable remote declines; a reachable remote with no primary ref declines) carry no negative control, unlike the identical pair in \u00a75 which each carry one (\"with a negative control in which reading that empty answer as promotable promotes it\")",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:35",
+      "id": "anchors_resolve-1",
+      "reason": "both sections are done and no future node builds from their line numbers, but a reader following \u00a73's pointers lands in the ledger error handler instead of the release path.",
+      "text": "\u00a71 cites the withheld refusal at `reckon/crew_run_commands.py` near lines 3380\u20133389 but the string \"the reviewed head landed and was pushed, but the worktree was withheld\" is at line 3564, and \u00a73's guard/merge/release citations at 3312/3337 name unrelated code while those steps live at 3320 (`_land_a_promoted_run`), the merge confirm mid-function and 3505 (`_release_after_promotion`)",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:35",
+      "id": "reasoning-1",
+      "reason": "the repair landed under \u00a73 (`_record_release_on_ledger` takes the post-merge reading under `--land`) and no node builds from \u00a71's narrative sentence, so correcting it changes no dispatch.",
+      "text": "\u00a71 states \"the merge and push were confirmed each time; only the release's judgement of the worktree is wrong\", while the comment closing \u00a73 records the cause of the same withheld refusal as the pre-merge release record that the post-merge release could not replace, which makes the recorded reason stale rather than the judgement wrong",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:47",
+      "id": "done_when-3",
+      "reason": "\u00a72 is done and each of its four cases is listed with its control immediately beside it, so the miscount misleads only a reader counting controls rather than reading them.",
+      "text": "\u00a72's done-when says \"shows three things\" and \"Three negative controls, one per case\" while enumerating four cases and four controls, so a reader cannot tell which case the third control is claimed to cover",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "276444427d4cd67a6a55e68db728ded22305a00c",
+  "plan_fingerprint": "fdf70c763c2a54962b7f1958461c645cd3a2a88283a5e6d9566e4582664de1ca",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T184044218246-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "16de37c5e4b1f6ec03a495a5bfa1f3e563ccdd43",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a75, \u00a76 and \u00a77's anchors all resolve (`_remote_head` at `merge.py:614`, `_is_ancestor` at 623, `_port22_refused`/`_port443_env` at 634/644, `_push_and_confirm` at 664\u2013686, `finish_pending_landings` at `pending_landing.py:185` with the live-pointer skip at 233, `_pointer_lock` at `runs.py:453`, `promotion_module.complete` at `recovery_review_acceptance.py:348`), but \u00a71's and \u00a73's line numbers name the wrong code: the withheld refusal is at `reckon/crew_run_commands.py:3564`, not \"near lines 3380\u20133389\", and \u00a73's 3312/3337 name the ledger error handler and unrelated lines while the guard, merge and release live at 3320 (`_land_a_promoted_run`) and 3505.",
+    "done_when": "a finding \u2014 \u00a75's gate is scoped to \"test files importing `reckon.crew_run_commands` or `reckon.crew.promotion`\", which cannot see `tests/test_crew_refusal_visibility.py`, the test its new refusal family is guaranteed to turn red.",
+    "evidence_paths": "pass \u2014 \u00a73's evidence note sits at `docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/the-withheld-release-cause.html` and \u00a75/\u00a76/\u00a77 gate logs are under the crew run directory; no node writes to a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the section prose carries no plan labels, ticket numbers or version tags into code; `D24` is a product refusal family that exists in `reckon/crew/refusals.py:95`, not a plan identifier.",
+    "reasoning": "a finding \u2014 \u00a71's stated root cause (\"only the release's judgement of the worktree is wrong\") is contradicted by the cause \u00a73 landed on the same refusal family, a stale pre-merge release record rather than a wrong judgement; every other section's mechanism reaches its done-when on a named caller, and \u00a76's repair path is confirmed by `pending_landing.py` lines 309\u2013312 already unlinking a marked pointer after a landing.",
+    "single_goal": "a finding \u2014 \u00a76 carries two independent deliverables: the pending-landing repair marking, and the promotion/resume lock exclusion (`runs._pointer_lock` non-blocking mode plus a reordered resume), each with its own negative control.",
+    "wiring": "pass \u2014 every declared relationship resolves: `plan-section-depends-on` wires s6\u2192s5 and s7\u2192s5, both to sections that exist, and \u00a77's dependence on \u00a75 is real because \u00a77's deliverable calls the function \u00a75 adds to `reckon/crew/merge.py` while \u00a77's write paths correctly exclude `merge.py`; \u00a75's placement of the refusal outside `merge.require_promotable_head` is also correct, since that guard is the one `crew merge --run` reaches at `reckon/crew_run_commands.py:322`."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "21c36d0c92510ecabc472d79ecac52805626f4c009836573a6cafa61914b290c",
+    "s6": "38ad953769d9995eafceb602ffcbdd0c26023feac64a221752209c429ce6af16",
+    "s7": "84bc24f6fe1df5a54f3d90a870ad9e95b19f56858a96ed8185e04fe3006d02fb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:56:13.208753+00:00",
+  "total": null
+}
