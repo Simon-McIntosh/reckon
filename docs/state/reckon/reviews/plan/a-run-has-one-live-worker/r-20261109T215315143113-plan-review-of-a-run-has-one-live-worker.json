@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T22:09:15.240Z",
+  "dispatched_at": "2026-11-09T21:57:08Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "reasoning-1",
+      "reason": "a worker following the plan deletes the readers, reddens an out-of-scope file it may not edit, and lands a red primary branch.",
+      "text": "the claim that `_attempt_claim_seconds` and `_attempt_started_from_claim` \"can only answer None once the pair is gone\" is false against the repository's fixtures: `tests/test_a_resumed_attempt_is_read_through_its_own_records.py` writes `attempt-N.claim` files directly (`claim_age_seconds`, `extra_claims`, lines 157 and 171) and asserts state read through them; neutralising the three claim readers and the `_current_attempt_number` claim branch gives 9 passed at head and 7 failed under the deletion (`claim-reader-deletion.log`), including `test_a_claim_alone_dates_the_attempt` and `test_every_claim_in_the_directory_dates_the_attempt` (which calls `_attempt_claim_numbers`), and that file is neither a write path nor in the no-failure list",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "done_when-1",
+      "reason": "neither modified-or-affected file is gated, so its regressions or its new case can go unmeasured in the node's own evidence.",
+      "text": "the Done-when lists four test files that \"add no failure\" but omits `tests/test_a_resumed_attempt_is_read_through_its_own_records.py`, the file the reader sweep breaks, and it also omits `tests/test_a_worker_on_another_host_refuses_a_relaunch.py`, the file this change edits to add the retired-receipt case",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "done_when-2",
+      "reason": "a control that cannot move the outcome leaves the fresh-run case unmeasured, which is the defect the done-when exists to prevent; the mutation must remove the marker write or force the guard False.",
+      "text": "the revised fresh-run mutation control cannot falsify the case as named: \u00a716 states that `run_holds_an_attempt_record`, \"left unchanged, always sees at least the launch's own marker, and every launch reserves\", so removing that guard (reserving unconditionally) leaves head behaviour identical and the revised case green",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "single_goal-1",
+      "reason": "a single verdict cannot close the reservation mechanism and the dead-reader sweep together, and the named gate proves neither the \u00a715 case nor the recovery-reading cases.",
+      "text": "the node now bundles three independently-failing deliverables: the reservation repairs, the recovery-liveness claim-reader sweep (a code-health finding), and a \u00a715 strict-receipt test case in \u00a715's file, while the gate names only `tests/test_a_concurrent_launch_is_refused.py`",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "anchors_resolve-1",
+      "reason": "the citation sends a worker to a review record that does not contain the finding it must act on.",
+      "text": "\"The same review found the `_create_attempt_claim` fixture written twice\" now follows the inserted paragraph naming `r-20261109T183250271017`, but that review's stored findings are three (strict retired-receipt read, an evidence-fragment population, a manifest path) and none is the fixture duplication; `r-20261109T164607822723` names it (\"the duplicated AST fixture literal\")",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cf3948b55efc0306771ac1a895178c62c1015c54",
+  "plan_fingerprint": "720c206ed4590ba286752dfba11a987aa0bf92a2bd2f716ae93c4bd4d695d713",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 149,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T215315143113-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "49836f2f4fa37f29e40982bd9dc5df6eed2f0b33",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \"The same review\" after the inserted \u00a715 paragraph now resolves to `r-20261109T183250271017`, which did not report the duplicated `_create_attempt_claim` fixture; `r-20261109T164607822723` did.",
+    "done_when": "a finding \u2014 the Done-when's no-failure evidence list omits `tests/test_a_resumed_attempt_is_read_through_its_own_records.py`, whose cases the section's own reader deletion reddens 7 of 9 (measured).",
+    "evidence_paths": "pass \u2014 every log is required under the run directory with revision and literal-command headers and a bare `EXIT=` line, and no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or changelog prose reach the symbols; the renamed case names the mechanism (`test_a_fresh_run_ids_reservation_ends_with_its_launch`).",
+    "reasoning": "a finding \u2014 the plan says `_attempt_claim_seconds` and `_attempt_started_from_claim` \"can only answer None once the pair is gone\", but the repository's own recovery-reading cases write `attempt-N.claim` fixtures directly, so those readers still answer and deleting them breaks 7 of 9 cases outside the section's write paths.",
+    "single_goal": "a finding \u2014 \u00a716 now carries the reservation repairs, a recovery-liveness dead-reader sweep taken from a code-health review, and a \u00a715 strict-receipt test case in \u00a715's test file; the gate names none of the last two.",
+    "wiring": "pass \u2014 \u00a716's `plan-section-depends-on` now names both `#s15` and `#s13`, both done, and the one write path it gained (`tests/test_a_worker_on_another_host_refuses_a_relaunch.py`) is \u00a715's file, which it now waits on; every other path it rewrites is covered by those two edges."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "7c290ad1d8b843e762ad36091dd4a335d6dbe47d323b0dadbc9057821a539a1e",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T22:30:47.128025+00:00",
+  "total": null
+}
