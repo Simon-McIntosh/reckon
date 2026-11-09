@@ -1834,6 +1834,57 @@ def _stamp_failure(
     return record
 
 
+def _release_stranded_launches(
+    live: list[dict[str, Any]],
+    *,
+    verdicts: list[dict[str, Any]] | None = None,
+    now_seconds: float | None = None,
+) -> list[str]:
+    """Release launches that held their span past the bound, and record each.
+
+    Nothing inside the blocked span can observe its own bound, so the pass,
+    which is a separate process, does. The release writes the refusal naming
+    the step the span reached before it gives the claim back: the launch that
+    resumes reads the record rather than the claim, and removing the run
+    directory first would destroy the only local account of where the span
+    stopped. So the order is record, pointer, directory.
+    """
+    from reckon.crew import dispatch_claims, dispatch_refusals, recovery_liveness
+
+    moment = time.time() if now_seconds is None else now_seconds
+    released: list[str] = []
+    for pointer in live:
+        if not recovery_liveness._stranded_launch(pointer, now_seconds=moment):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        claim = dispatch_claims.read_launch_claim(run_id)
+        step = str(claim.get("step") or "")
+        holder = {
+            key: claim.get(key)
+            for key in ("holder_pid", "holder_host", "launched_at", "step", "step_at")
+        }
+        dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
+        dispatch_claims._release_launch_claim(run_id)
+        released.append(run_id)
+        if verdicts is not None:
+            verdicts.append(
+                _verdict_row(
+                    pointer,
+                    allowance=None,
+                    allowance_source="",
+                    verdict="released-stranded-launch",
+                    detail=(
+                        "the launch span passed its bound at step "
+                        f"{step or 'an unrecorded step'}; the claim is released "
+                        "and the release is recorded"
+                    ),
+                )
+            )
+    return released
+
+
 def _requeue_admitted_failures(
     live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
 ) -> list[str]:
@@ -5171,6 +5222,15 @@ def admit_once(
             runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
         )
         live = runs.list_live()
+        # A launch past its bound holds a claim no worker backs. Releasing it
+        # here, before anything is ordered, keeps the lanes and the review
+        # reflex from reading a stranded span as work in flight; the released
+        # run is re-read so it costs no place in the ordering this pass.
+        result["released_stranded"] = _release_stranded_launches(
+            live, verdicts=result["verdicts"]
+        )
+        if result["released_stranded"]:
+            live = runs.list_live()
         # Readiness is re-read here, on every pass: a request waiting on its
         # section's refs moves to ``queued`` the moment the last ref lands and
         # to ``blocked-upstream`` the moment one is closed as abandoned or

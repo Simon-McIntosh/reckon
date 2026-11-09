@@ -8,6 +8,7 @@ import os
 import re
 import secrets
 import shutil
+import socket
 import sqlite3
 import time
 from dataclasses import (
@@ -581,6 +582,14 @@ def _repository_scope_claims(
 # aside, so one killed dispatcher cannot block the node for everyone.
 NODE_DISPATCH_CLAIM_DIRECTORY = "claims"
 
+# The steps a launch span reaches, in the order it reaches them. The claim
+# names the first when it is published, and the launch advances it as it goes,
+# so a span that stops anywhere inside leaves the step it stopped at. The step
+# is what the release records and what the released launch reports back.
+LAUNCH_CLAIM_STEP = "claim-published"
+LAUNCH_WORKER_STEP = "worker-spawned"
+LAUNCH_IDENTITY_STEP = "identity-published"
+
 # This value changes when an interpreter starts after exec, even when the
 # kernel keeps its pid and process start time. Publishing by pid lets a later
 # dispatch judge the holder using only the record it is trying to reclaim.
@@ -912,9 +921,51 @@ def _publish_launch_claim(
         record["brief"] = brief
     _write_json(
         run_dir(run_id) / "claim.json",
-        {"run_id": run_id, "claim_registered_at": record["created_at"]},
+        {
+            "run_id": run_id,
+            "claim_registered_at": record["created_at"],
+            **_launch_holder(record["created_at"], step=LAUNCH_CLAIM_STEP),
+        },
     )
     _write_json(pointer_path(run_id), record)
+
+
+def _launch_holder(at: str, *, step: str) -> dict[str, Any]:
+    """Who is running the launch span, when it began, and how far it has reached."""
+    return {
+        "holder_pid": os.getpid(),
+        "holder_host": socket.gethostname(),
+        "launched_at": at,
+        "step": step,
+        "step_at": at,
+    }
+
+
+def read_launch_claim(run_id: str) -> dict[str, Any]:
+    """This run's launch claim as the span published it, or an empty record."""
+    try:
+        claim = json.loads((run_dir(run_id) / "claim.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    if not isinstance(claim, Mapping) or claim.get("run_id") != run_id:
+        return {}
+    return dict(claim)
+
+
+def advance_launch_step(run_id: str, step: str) -> None:
+    """Record the step the launch span has reached, beside the claim.
+
+    The claim is written before the launch composes anything, so a span that
+    stops inside it leaves the step it reached for the reader that finds it.
+    A launch that has already given its claim back advances nothing.
+    """
+    path = run_dir(run_id) / "claim.json"
+    claim = read_launch_claim(run_id)
+    if not claim:
+        return
+    claim["step"] = step
+    claim["step_at"] = _utc_now()
+    _write_json(path, claim)
 
 
 def _release_launch_claim(run_id: str) -> None:

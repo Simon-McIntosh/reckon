@@ -123,6 +123,7 @@ from reckon.crew.dispatch_refusals import (
     brief_reduction as brief_reduction,
     consume_context_refusal as consume_context_refusal,
     record_context_refusal as record_context_refusal,
+    refuse_a_released_launch as refuse_a_released_launch,
 )
 from reckon.crew.refusals import (
     format_refusal as format_refusal,
@@ -3525,18 +3526,19 @@ def dispatch(
                     )
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
-                    spawned_pid = _start_supervisor(
-                        spec_path, directory, run_id
-                    )
+                    refuse_a_released_launch(run_id)
+                    spawned_pid = _start_supervisor(spec_path, directory, run_id)
                     if reservation is not None:
                         # The supervisor only becomes the hold once it exists:
                         # from here the reservation is freed by its exit, not by
                         # this dispatching process, which returns while the
                         # worker it started runs on.
                         _record_reservation_supervisor(reservation, spawned_pid)
+                    advance_launch_step(run_id, LAUNCH_WORKER_STEP)
                 else:
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
+                    refuse_a_released_launch(run_id)
                     spawned_pid = launcher(
                         plan,
                         log_path=log_path,
@@ -3551,6 +3553,7 @@ def dispatch(
                         _release_launch_reservation(
                             reservation, only_when_unspawned=True
                         )
+                    advance_launch_step(run_id, LAUNCH_WORKER_STEP)
             except OSError as exc:
                 raise CrewError(
                     format_refusal("D22", f"the worker launch could not start: {exc}")
@@ -3599,6 +3602,12 @@ def dispatch(
             # has a pid for.
             record = _mutate_pointer(run_id, attach_launch_identity)
             _refuse_a_discarded_launch(run_id, started=True)
+            refuse_a_released_launch(run_id, started=True)
+            advance_launch_step(run_id, LAUNCH_IDENTITY_STEP)
+            # The release may have landed between the pre-spawn check and the
+            # spawn, and this launch already owns a pid: refusing here hands it
+            # to the rollback, which signals it, so a stalled launch that
+            # resumes cannot leave a worker running for a released run.
         else:
             # A delegated launch spawns no process, so there is no supervisor to
             # take the boundary baseline after dispatch's writes. Dispatch takes
@@ -3854,6 +3863,9 @@ from .dispatch_claims import (  # noqa: E402
     _peer_claim_is_an_unlaunched_racing_winner as _peer_claim_is_an_unlaunched_racing_winner,
     _peer_scopes_without_shared_landing_paths as _peer_scopes_without_shared_landing_paths,
     _publish_launch_claim as _publish_launch_claim,
+    advance_launch_step as advance_launch_step,
+    LAUNCH_WORKER_STEP as LAUNCH_WORKER_STEP,
+    LAUNCH_IDENTITY_STEP as LAUNCH_IDENTITY_STEP,
     _racing_claim_current as _racing_claim_current,
     _racing_clock as _racing_clock,
     _refuse_a_discarded_launch as _refuse_a_discarded_launch,

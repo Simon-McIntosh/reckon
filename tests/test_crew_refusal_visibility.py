@@ -30,7 +30,7 @@ from reckon.crew.refusals import (
     format_refusal,
 )
 
-CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 24))
+CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 25))
 COMMAND_BOUNDARY_FAMILIES = frozenset()
 REFUSAL_SOURCE_PATHS = (
     "reckon/crew_dispatch_commands.py",
@@ -43,6 +43,7 @@ REFUSAL_SOURCE_PATHS = (
     "reckon/crew/dispatch_peer.py",
     "reckon/crew/dispatch_picker.py",
     "reckon/crew/dispatch_plan.py",
+    "reckon/crew/dispatch_refusals.py",
     "reckon/crew/dispatch_sections.py",
     "reckon/crew/dispatch_sessions.py",
     "reckon/crew/dispatch_watch.py",
@@ -88,11 +89,26 @@ def _formatter_family_calls() -> set[str]:
 
 
 def test_the_dispatch_refusal_census_is_partitioned_without_gaps() -> None:
-    expected = {f"D{number:02d}" for number in range(1, 24)}
+    expected = {f"D{number:02d}" for number in range(1, 25)}
 
     assert set(DISPATCH_REFUSAL_REMEDIES) == expected
     assert expected == CONVERTED_REFUSAL_FAMILIES | COMMAND_BOUNDARY_FAMILIES
     assert CONVERTED_REFUSAL_FAMILIES.isdisjoint(COMMAND_BOUNDARY_FAMILIES)
+
+
+def test_the_released_launch_family_resolves_with_its_own_action() -> None:
+    """A released launch is told to launch again, never to answer a review.
+
+    The family was rendered through the plan-review id, so an operator whose
+    launch simply outlived its bound was sent to `reckon crew review`. The
+    remedy is asserted positively and the wrong one negatively, because a
+    registered id with the wrong action still reads as covered.
+    """
+    rendered = format_refusal("D24", "run r-x was released as a stranded launch")
+
+    assert "`reckon crew dispatch` the node again" in rendered
+    assert "allow-unreviewed-plan" not in rendered
+    assert "`reckon crew review`" not in rendered
 
 
 @pytest.mark.parametrize("family_id", sorted(CONVERTED_REFUSAL_FAMILIES))
