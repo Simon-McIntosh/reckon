@@ -1,0 +1,83 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Derived from the reviewed run's own arms. baseline_suite at 930ce36532 completed with failure_count 4, ids test_a_launch_held_past_the_bound_is_released_and_recorded, test_a_release_pinned_after_the_spawn_read_signals_its_worker, test_a_released_launch_resumes_into_a_refusal_rather_than_a_spawn and test_the_claim_names_its_holder_and_the_step_advances (logs/armed-manual/base.log ends '4 failed, 34 passed' EXIT=1). after_suite at c57bf588b5 completed with failure_count 0 (logs/gate-merge.log ends '40 passed' EXIT=0). Every base failure is repaired by the change and the head adds none, so added_failure_count is 0 and added_failure_ids is empty.",
+  "call_sites": "reckon/crew/dispatch.py:3529, reckon/crew/dispatch.py:3537, reckon/crew/dispatch.py:3541, reckon/crew/dispatch.py:3556, reckon/crew/dispatch.py:3605, reckon/crew/dispatch.py:3606, reckon/crew/queue_admission.py:5229",
+  "call_sites_note": "All production call sites the change reaches: the two pre-spawn refuse_a_released_launch reads and the two advance_launch_step(LAUNCH_WORKER_STEP) calls in dispatch.py's launch path, the post-spawn refuse_a_released_launch and advance_launch_step(LAUNCH_IDENTITY_STEP), and admit_once's _release_stranded_launches at queue_admission.py:5229. reckon/crew/dispatch.py:126 and :3866 re-export the names; reckon/crew/dispatch_claims.py:923 is the claim publisher the holder fields land in. The node's own test file is not counted.",
+  "completed_at": "2026-11-09T15:04:49.986Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-launch-claim-has-one-reader",
+      "recorded_at": "2026-11-09T15:11:51.534394+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-09T14:55:34Z",
+  "durability_note": "Each assertion group names the code change that reddens it. Removing the post-spawn read at reckon/crew/dispatch.py:3605 reddens tests/test_a_launch_span_is_dated_and_bounded.py:153-161, and logs/negative-control-merge.log shows exactly that with the pinned-release worker left running. Raising STRANDED_LAUNCH_BOUND_SECONDS reddens the release case at lines 101-108, and the same log shows the claim held and the run directory kept. Restoring the D23 literal at reckon/crew/dispatch_refusals.py:306 reddens lines 132-134, which assert the plan-review remedy is absent and the dispatch-again remedy present. The holder, step and worker-signalled assertions read state production wrote, not values the test handed in.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-launch-claim-has-one-reader",
+      "recorded_at": "2026-11-09T15:11:09.704568+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking: a tautological assertion beside independent production-state assertions, or a self-check undercount of granted paths",
+      "recorded_at": "2026-11-09T15:11:24.396487+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking: a tautological assertion beside independent production-state assertions, or a self-check undercount of granted paths",
+      "recorded_at": "2026-11-09T15:11:40.213136+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_claims.py",
+      "line": 944,
+      "severity": "non-blocking",
+      "text": "read_launch_claim re-implements the read-and-validate of claim.json that reckon/crew/dispatch_launch.py:4672 (_claim_registration_for_worker) already owns, and reckon/crew/recovery_liveness.py:748 states in terms that a second copy would be free to drift from it about the same file. The addition duplicates the owner rather than extending it. The node was fenced out of dispatch_launch.py, so the remedy is a follow-up that makes _claim_registration_for_worker read through read_launch_claim."
+    },
+    {
+      "file": "tests/test_a_launch_span_is_dated_and_bounded.py",
+      "line": 176,
+      "severity": "non-blocking",
+      "text": "`assert record[\"run_id\"] == RUN_ID` compares a value the test supplied to dispatch against the call's own echo, so it holds whatever dispatch does with the field and cannot redden on a regression. The case's durability rests on lines 178-183, which assert the holder pid, host, launch time and the advancing step against production-written state."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T114801835790-a-launch-span-is-dated-and-bounded/manifest.md",
+      "line": 22,
+      "severity": "non-blocking",
+      "text": "rubric.scope reports 'the four granted production paths' while the manifest's own changed_paths and the landed diff carry a fifth production module, reckon/crew/refusals.py:95; a coordinator reading the self-check undercounts the fence widening."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit from 930ce36532 through 38c5c2284e (the implementation), fb39a8a0e1 (the D24 family), be28ac3490 (the census), 177d706c49 (the family's own action assertion) and the merge c57bf588b5. The merge resolved the single conflicted path reckon/crew/dispatch.py keeping both the launch reservation block and the launch-span fence; reckon/crew/dispatch.py:3528-3606 at the head carries the reservation call, the pre-spawn read, the spawn, the post-spawn read and both step advances in one flow.",
+    "done_when": "The done_when names tests/test_a_launch_span_is_dated_and_bounded.py's four cases, importer arms that add no failure, and ruff clean on staged paths. The manifest records logs/gate-merge.log '40 passed' EXIT=0 at c57bf588b5 and logs/armed-manual/base.log '4 failed, 34 passed' EXIT=1 at 930ce36532; the importer arms are logs/base-arm.log and logs/after-arm-final.log, both '1 failed, 80 passed' EXIT=1 on the same pre-existing id; I re-ran ruff check and ruff format --check over the changed paths and reproduced one pre-existing F841 and the pre-existing format diff in tests/test_crew_refusal_visibility.py, unchanged from its base revision.",
+    "goal": "The source node's goal is 'a launch span is bounded and a stalled launch becomes a recorded refusal'. Every clause of plan section 25 is landed: reckon/crew/dispatch_claims.py:919 publishes holder pid, host, launch time and step beside the claim; reckon/crew/queue_admission.py:1837 releases a span past STRANDED_LAUNCH_BOUND_SECONDS, recording a step-naming refusal before it gives the claim back and removes the run directory; reckon/crew/dispatch_refusals.py:284 fences the launch on that record on both sides of the spawn; and the step advances through one helper at reckon/crew/dispatch_claims.py:955.",
+    "manifest": "Read. status complete, commits 38c5c2284e through c57bf588b5, changed_paths naming eight files, baseline_suite and after_suite both completed (4 failing ids at base, none at head), negative_control_log naming logs/negative-control-merge.log whose last line is EXIT=1, and outside_scope naming the census test. The rubric.scope line undercounts the production fence widening, recorded as finding 3.",
+    "write_paths": "The source node's declared paths are reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, reckon/crew/queue_admission.py, reckon/crew/dispatch_refusals.py, tests/test_a_launch_span_is_dated_and_bounded.py, the evidence fragment and a figures directory. The landed change is inside them plus reckon/crew/refusals.py:95 and tests/test_crew_refusal_visibility.py:33-134, which resume-1-advice.txt directed and resume-2-advice.txt explicitly granted. The figures directory is unused and no figure is required by section 25."
+  },
+  "negative_control_note": "The node declared two mutations and both run red at the reviewed head: logs/negative-control-merge.log applies them at c57bf588b5 and ends '3 failed, 1 passed' EXIT=1, with the fourth case passing because it exercises the claim's holder fields rather than the bound or the second read.",
+  "node": "review-of-a-launch-span-is-dated-and-bounded-c57bf588b537",
+  "plan": "a-dispatch-returns-without-its-worker",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'a launch span is bounded and a stalled launch becomes a recorded refusal'; every clause of plan section 25 is landed, with reckon/crew/dispatch_claims.py:919 recording the holder and step and reckon/crew/queue_admission.py:1837 releasing a span into a run-keyed refusal.\nVERDICT done_when: the done_when names the four cases in tests/test_a_launch_span_is_dated_and_bounded.py, importer arms adding no failure and ruff clean on staged paths; logs/gate-merge.log records '40 passed' EXIT=0 at c57bf588b5 and logs/armed-manual/base.log records the four node-test ids failing at 930ce36532.\nVERDICT write_paths: read the source manifest's declared paths; the change lands in the four production modules, the node test and the evidence fragment, plus reckon/crew/refusals.py and tests/test_crew_refusal_visibility.py, which resume-1-advice.txt and resume-2-advice.txt granted mid-round.\nVERDICT manifest: read; status complete, five commits ending at the merge c57bf588b5, baseline_suite and after_suite both completed with four failing ids at base and none at head, and negative_control_log naming logs/negative-control-merge.log whose last line is EXIT=1.\nVERDICT diff: read commit by commit from 930ce36532 through 38c5c2284e, fb39a8a0e1, be28ac3490, 177d706c49 to the merge c57bf588b5; eight files changed and the merge of primary main resolved reckon/crew/dispatch.py keeping both the launch reservation and the launch-span fence.\nCALL_SITES: reckon/crew/dispatch.py:3529, reckon/crew/dispatch.py:3537, reckon/crew/dispatch.py:3541, reckon/crew/dispatch.py:3556, reckon/crew/dispatch.py:3605, reckon/crew/dispatch.py:3606, reckon/crew/queue_admission.py:5229\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:919 records the holder and step and reckon/crew/queue_admission.py:1837 releases and records the refusal, matching plan section 25's deliverable line for line.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-merge.log ends '40 passed' EXIT=0 at c57bf588b5 against logs/armed-manual/base.log '4 failed, 34 passed' EXIT=1, and logs/negative-control-merge.log ends '3 failed, 1 passed' EXIT=1.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is inside the dispatched fence or a path granted in resume-1-advice.txt and resume-2-advice.txt (reckon/crew/refusals.py:95, tests/test_crew_refusal_visibility.py:33).\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_launch_span_is_dated_and_bounded.py:153-161 reddens when reckon/crew/dispatch.py:3605's post-spawn read is removed, as logs/negative-control-merge.log shows for the pinned-release case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_refusals.py:284 mirrors the surrounding discarded-launch fence form and no added name carries a plan, stage or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_claims.py:944 re-reads and re-validates claim.json beside an existing owner, reckon/crew/dispatch_launch.py:4672, without extending it.\nFINDING reckon/crew/dispatch_claims.py:944 non-blocking: read_launch_claim repeats the read-and-validate of claim.json that reckon/crew/dispatch_launch.py:4672 already owns, and reckon/crew/recovery_liveness.py:748 states a second copy would drift from it; the addition duplicates the owner rather than extending it.\nFINDING tests/test_a_launch_span_is_dated_and_bounded.py:176 non-blocking: the assertion compares the run id the test handed dispatch against the call's echo, so it holds whatever dispatch does and cannot redden; the case's durability rests on lines 178-183 instead.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T114801835790-a-launch-span-is-dated-and-bounded/manifest.md:22 non-blocking: rubric.scope reports four granted production paths while changed_paths and the diff carry a fifth production module, reckon/crew/refusals.py, so the self-check undercounts the fence widening.",
+  "reuse_note": "Searched reckon/ for owners of the capabilities the diff adds. Stranded-launch detection already belongs to reckon/crew/recovery_liveness.py:_stranded_launch (line 807) and the release wraps it rather than repeating it. Refusal-trace storage already exists at reckon/crew/dispatch_refusals.py:record_path for the context refusal; the launch refusal is a distinct run-keyed store with its own version, not a copy of the node-keyed one. run_id keying, atomic JSON writes and the D24 registry all extend existing owners. The one duplication is the claim.json reader, recorded as finding 1.",
+  "review_run_id": "r-20261109T145330811105-review-of-a-launch-span-is-dated-and-bounded-c57bf588b537",
+  "reviewed_base_sha": "930ce36532fba7666a0701e6a0b063774b603a16",
+  "reviewed_head_sha": "c57bf588b5370db328566406c2e99f7d8c6a6c7e",
+  "reviewed_run_id": "r-20261109T114801835790-a-launch-span-is-dated-and-bounded",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:15:46.285762+00:00",
+  "total": 97
+}
