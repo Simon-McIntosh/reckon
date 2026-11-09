@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T12:11:53.136Z",
+  "dispatched_at": "2026-11-09T12:05:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "done_when-1",
+      "reason": "as written the head assertion \"one runs.list_live call\" cannot be satisfied by the code the deliverable produces, and an implementer who only patches runs.list_live would assert a count that is 0 at head and 2 at base, measuring neither the tick's read nor the three handed-down readers.",
+      "text": "the done-when counts `runs.list_live` calls, but three of the five readers bind `list_live` directly from `reckon.crew.runs` at import (`recovery_watch.py:39`, `resumption.py:107`, `recovery_review_dispatch.py:36`), so patching `runs.list_live` sees none of them; the tick's own read (recovery_watch.py:3339) is the one that must remain and it is invisible to that patch, so the head arm reads 0 and the base control reads 2 (runs.py's own and plan_review.py:3512's qualified call) rather than \"at least the four reads named above\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "done_when-2",
+      "reason": "the flight clause needs its resolution shared across every pass in the tick, and a single-session fixture cannot fail a memo placed inside `compose_owed_plan_reviews` instead, so the measure would pass while the per-session re-resolution remains.",
+      "text": "the deliverable's \"A pass weighs one plan (PLAN_REVIEW_PASS_LIMIT is 1), so the cost is not per plan\" omits that the pass is invoked once per swept session, not once per tick: `runs.sweep_unfollowed_sessions` loops over unattended sessions and calls `resumption.sweep` for each (runs.py:4330), and each call reaches `compose_owed_plan_reviews` (resumption.py:2440); the fixture states 40 live pointers and one owing plan but no session spread, so with all 40 in one session the \"flight.resolve once per project\" limb never exercises the multi-pass case it must survive",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bdc94c0d2379b9e50b74316961ac2a5e44c75146",
+  "plan_fingerprint": "f7415db735989fc7f57d593a1f0455b3a9b693f682e15016444008c739219247",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 130,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T120044671444-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "49bb22253fe451292de574d8be9f406c0d8559fd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every symbol in the cited stack resolves: `plan_review._owed_review_skip_reason` (plan_review.py:3733), `plan_review.plan_authoring_runs` (:3487), `runs._publish_watch_stream` (runs.py:3216), `recovery_watch._compute_watch_snapshot` (:1373), `recovery_classification.classify_pointer` (:792), `recovery_review_dispatch._resolved_review_config` (:2109) and `_standing_plan_review`'s `list_live` call (:2142, bare call at plan_review.py:3782).",
+    "done_when": "a finding \u2014 the counter instrument named (`runs.list_live`) cannot observe three of the five reads it is meant to count, and the fixture states no session spread for the per-session-sweep multiplier.",
+    "evidence_paths": "pass \u2014 the post-landing check now names the absolute producer event stream `~/.config/reckon/crew/watch/reckon-18dc8a86709b.events` and the pre-landing gaps in the node's evidence fragment, both durable.",
+    "naming": "pass \u2014 `tests/test_a_producer_tick_reads_live_pointers_once.py` and the `pointers` parameter are named by mechanism, with no plan label or ticket number.",
+    "reasoning": "pass \u2014 all five named reader sites exist where the deliverable says (recovery_watch.py:3339, runs.py:4330, resumption.py:2185, plan_review.py:3512, recovery_review_dispatch.py:2142), each publishes at runs.py:1132, and the caller chain the section relies on is real: watch_ticker (recovery_watch.py:3361) \u2192 runs.sweep_unfollowed_sessions \u2192 resumption.sweep (runs.py:4330) \u2192 compose_owed_plan_reviews (resumption.py:2440).",
+    "single_goal": "pass \u2014 the two limbs remain one change to one loop, as the earlier review concluded and the author recorded when declining single_goal-1.",
+    "wiring": "pass \u2014 the open followup at line 580 carries \u00a719's `/reckon-build the-monitor-reads-each-fact-once \u00a719` invocation, and the section needs no dependency it does not declare."
+  },
+  "section_digests": {
+    "_document": "45b1cf4f712fbc2ead523cafde5258f887bf6ae067d3a2e50095557ca1db086d",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:19:07.099777+00:00",
+  "total": null
+}
