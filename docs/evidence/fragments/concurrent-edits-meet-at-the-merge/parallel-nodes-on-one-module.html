@@ -1,0 +1,26 @@
+<section id="parallel-nodes-on-one-module-measure">
+  <h3>Shared-root claim measurements</h3>
+  <p>The before snapshot provides the positive control: held-on-claim refusals occurred on file paths that fall under the configured shared roots. The after copy is an interim sample only; it has not met the required elapsed window or same-file pair count.</p>
+  <table>
+    <thead>
+      <tr><th>Window</th><th>Admission passes</th><th>File claim results</th><th>Concurrent same-file pairs</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Before: 2026-11-07 05:38:15Z to 2026-11-08 12:33:24Z</td>
+        <td>212</td>
+        <td>296 held-on-claim events; 276 classified file events: 263 under shared roots and 13 outside; 20 events could not be joined to a project policy.</td>
+        <td>30 unique held pairs across the window.</td>
+      </tr>
+      <tr>
+        <td>Interim after copy: 2026-11-09 07:48:43Z to 2026-11-09 10:36:43Z</td>
+        <td>399</td>
+        <td>396 held-on-claim file events; 0 under shared roots and 396 outside. All repeat one pair on <code>scripts/iter/integrated_simulation.py</code> in <code>power_convertor</code>, whose current declaration has no shared roots.</td>
+        <td>1 unique held pair, outside the shared-root population. The log does not enumerate successful live claims, so the qualifying pair inventory and outcomes remain unmeasured.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h4 id="parallel-nodes-on-one-module-window-limit">Why this is not a completed after window</h4>
+  <p>The admission loop captures a <code>code_stamp</code> when it starts and re-execs when the source identity changes. The first retained feature-capable record is <code>01863fb71f4a09b9ff1cad3e31118577f8fdec11</code> at 07:39:30Z; that tree contains both the <code>shared_roots</code> claim handler and the <code>merge-conflict</code> repair marker. Later stamps also contain both markers. The combined retained records reach 10:37:06Z, a 2.96-hour span, below the required 12 hours. The current 1 MiB live log holds about 2 hours 48 minutes at this write rate, so additional bounded copies must preserve the span. The result remains unmeasured until the retained window reaches 12 hours and at least five shared-root same-file pairs have landing outcomes.</p>
+  <p>Inputs: before log <code>/home/ITER/mcintos/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code>; overlapping after copies <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-interim.jsonl</code> (1,047,663 bytes, SHA-256 <code>5d57aadce1f05c85d642fddbe4f8c58e57e022dbaeb04e99825bc5f4b83e30f6</code>) and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-20261109T103644Z.jsonl</code> (1,046,072 bytes, SHA-256 <code>55f8c1ce3e7618297ac5f89b3403a3b04881612ae0dbe64c383bfca856fda92e</code>). The split counts and pair list are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-window-current.log</code>; the span probe returns <code>WINDOW_WAIT</code> in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/after-window-probe.log</code>.</p>
+</section>
