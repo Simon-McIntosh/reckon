@@ -74,6 +74,11 @@
       "kind": "exempted",
       "reason": "The diff changes only reckon/crew/dispatch_claims.py (runs.py is untouched), so the population that matters is dispatch_claims' callers. All 14 test files importing dispatch_claims are inside the coordinator's 33-file claims population, which also takes every test touching scope conflicts, fragment paths and shared-write paths. It read an identical 28 failure ids at base 6a3aae57b2 and head 8ecbbfcf87 (587 to 596 passed, the 9 new tests); logs/population-{base,head}-coord.log. -n 6 against the stated -n 4 changes worker count, not coverage. Same disposition as the claims s2 importer finding.",
       "recorded_at": "2026-11-09T13:10:53.972889+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Corrected rather than declined: the base arm is re-run with the head's new test file copied into the base tree, which is the node's negative control. 6 failed, 3 passed, EXIT=1 at base; 9 passed, EXIT=0 at head; baseline_suite now records completed with those six failure ids (logs/armed-base-coord.log names the copied file).",
+      "recorded_at": "2026-11-09T13:11:01.541963+00:00"
     }
   },
   "findings": [
