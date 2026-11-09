@@ -187,21 +187,47 @@ def test_a_state_write_drops_the_authored_meta(tmp_path: Path, store) -> None:
 # ── (b) a write that changes nothing moves nothing ──────────────────────────
 
 
-def test_a_no_change_patch_leaves_the_file_untouched(tmp_path: Path, store) -> None:
+def test_a_no_change_patch_leaves_the_file_untouched(
+    tmp_path: Path, store, monkeypatch
+) -> None:
     _, project = store
     text = _derived_text()
     path = _plant(tmp_path, text, "derived")
+    before = path.stat()
+    writes: list[Path] = []
+    real_write = _store.write_atomically
 
-    _edit_plan(
+    def spying_write(target, writer, **keywords):
+        writes.append(Path(target))
+        return real_write(target, writer, **keywords)
+
+    monkeypatch.setattr(_store, "write_atomically", spying_write)
+    # A crew run refuses a plan write that would land outside its own worktree,
+    # so the refusal would answer for the store and the store would never be
+    # asked. The subject here is the store's guard, not the run's.
+    monkeypatch.delenv("RECKON_RUN_ID", raising=False)
+
+    response = _edit_plan(
         project,
         "derived",
         [{"op": "set", "path": "status", "value": "active"}],
         expected_version=1,
     )
-
-    assert path.read_text(encoding="utf-8") == text, (
+    # Identical text is what a write of identical content leaves behind, so the
+    # text alone cannot tell a skipped write from a performed one. The writer was
+    # never reached, and the file it would have replaced is the same file.
+    after = path.stat()
+    assert path not in writes, (
         "a patch carrying no content change must not write the file"
     )
+    assert (after.st_ino, after.st_size, after.st_mtime_ns) == (
+        before.st_ino,
+        before.st_size,
+        before.st_mtime_ns,
+    ), "the file was replaced under a patch that changed nothing"
+    assert path.read_text(encoding="utf-8") == text
+    assert response.get("ok") is True, response
+    assert response.get("new_version") == 1, response
 
 
 def test_the_default_serialise_round_trips_byte_for_byte() -> None:
