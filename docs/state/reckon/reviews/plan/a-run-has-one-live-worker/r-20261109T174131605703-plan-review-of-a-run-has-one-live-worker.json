@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T17:51:02.119Z",
+  "dispatched_at": "2026-11-09T17:43:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:177",
+      "id": "reasoning-1",
+      "reason": "as written the builder must either satisfy \u00a713's exclusion or \u00a716's marker read, and it cannot do both; implementing the marker read as written reopens the concurrent-launch window \u00a713 closed.",
+      "text": "\u00a716 says \"With only the marker, the key reads the dispatched attempt the marker carries\", and \"the marker\" is `attempt.json`: `dispatch.py:2772` writes it as `_supervisor_write(directory / ATTEMPT_RECORD_NAME, ...)` and `ATTEMPT_RECORD_NAME = \"attempt.json\"` (`dispatch_launch.py:1940`), the same file \u00a716 itself calls \"The attempt marker near line 2772\". \u00a713's own constraint list \u2014 which \u00a716 says \"the design must meet all of them\" \u2014 states the opposite: \"The in-flight `attempt.json` is excluded from the key, so two racing doors compute the same key even after the first has written it, and the held reservation refuses the second.\" The current implementation does exclude it: `launch_reservation_key` (`dispatch_launch.py:2218`) reads only `attempt_receipt_numbers` plus the canonical `worker.json`/`exit.json` by the attempt they carry, never `attempt.json`. Reading the marker back into the key restores the divergence for a run with no receipts: the dispatch door writes its marker at line 2772 and reserves at line 2862, so a second door that reads the key inside that ~90-line span sees no marker and keys on 1 while the first keys on the dispatched attempt, and both admissions succeed \u2014 the two-workers-in-one-worktree outcome the whole plan exists to prevent. The section's own regression measure (\"the two-door first-attempt cases ... each refuse the second door at both base and head\") will not catch it, because \u00a713's existing case drives the two doors in sequence, never interleaved across that span.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:177",
+      "id": "single_goal-1",
+      "reason": "it splits \u00a716 into a behaviour node and a test-repair node, each with a verdict and a gate that can actually show its own change.",
+      "text": "\u00a716 bundles two distinct deliverables: the reservation repairs (the paired shadow arm's attempt, the solo-shadow marker, the suppressed supervisor rewrite, and the dead `claim_next_attempt`/`release_attempt_claim` pair) and a separate test-quality deliverable raised by a code-health review \u2014 merging the duplicated `_create_attempt_claim` fixture in `tests/test_staged_write_inventory.py`, replacing the vacuous `assert pid > 0` at `tests/test_a_concurrent_launch_is_refused.py:446` and `:466`, strengthening the fresh-run case at `:776`, and renaming `test_a_fresh_run_id_takes_no_reservation`. A single verdict on \u00a716 cannot close the test repairs without also passing the behaviour changes, and the mechanical deletion cannot be judged apart from them; the repository's own commit rule keeps mechanical removals in their own commit. The four behaviours do all resolve to one mechanism, so splitting the test-quality work is the whole change.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:111",
+      "id": "anchors_resolve-1",
+      "reason": "both sections are landed and every named function (`_launcher_refusal`, `_stream_reading_refusal`, `_create_worktree`, `_prepare_attempt_records`) resolves, so the drift costs a reader a search rather than sending a builder to wrong code.",
+      "text": "\u00a76 locates the three refusal sites as \"`reckon/crew/resumption.py` near lines 1001 and 1112, and `reckon/crew/dispatch_sessions.py` near line 1223\", but those lines now land in unrelated code: the two resumption sites are `_launcher_refusal` at `resumption.py:1266` and `_stream_reading_refusal` at `resumption.py:1369`, roughly 265 lines further down, and \u00a710's \"`dispatch.py` creates the worktree first, near line 2773\" is likewise `_create_worktree` at `dispatch.py:2892`, and its \"`_prepare_attempt_records` near line 1958\" is at `dispatch_launch.py:2472`. A reader following the line pointer finds nothing to read; the symbol names in the surrounding prose are the only resolvable part.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "894b3fcc0344a7cf064f9d030867deae55f46d20",
+  "plan_fingerprint": "62afdd07338c3675bc8b87eb6a75d2eac76605cc6b70ab8c2b6a699b5c725412",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 139,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T174131605703-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "a0055eb5a0ff311ff115e4d15ab07de45b2f3d64",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a76's and \u00a710's line anchors have drifted past resolvability, so the sites they name cannot be found by line (every symbol they sit beside does resolve).",
+    "done_when": "pass \u2014 every node names a declared negative control and a measurable case; the mutation is named against a case it reddens in \u00a74\u2013\u00a713 and \u00a716, and the two sections without an explicit mutation (\u00a715, and \u00a714) declare a base-arm comparison with the new test copied into the base tree.",
+    "evidence_paths": "pass \u2014 \u00a714 writes its findings to `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html` (present on disk), and every section requires its gate logs to start with the revision and the literal command and end in a bare `EXIT=` line, under durable run directories rather than a scratchpad.",
+    "naming": "pass \u2014 the symbols the sections introduce (`launch_reservation_key`, `run_holds_an_attempt_record`, `held_launch_reservation`, `_retired_attempt_ended`, `_launch_refused_by`, `reserve_launch_attempt`, `live_worker_reading`) are named by mechanism, and no plan label, stage id or ticket number reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a716's marker-key rule makes the reservation key read the in-flight `attempt.json`, which \u00a713 explicitly excludes so two racing doors compute the same key; the mechanism therefore reopens the race it is repairing.",
+    "single_goal": "a finding \u2014 \u00a716's title and stated goal (\"the launch reservation leaves no stray state\") do not cover the two test-file hygiene repairs it also carries, which are a second deliverable.",
+    "wiring": "pass \u2014 `plan-depends-on: a-crew-process-ends-with-its-owner` resolves (`docs/plans/a-crew-process-ends-with-its-owner.html`), and every `plan-section-depends-on` edge (s7\u2190s6, s9\u2190s8, s10\u2190s11, s15\u2190s13, s16\u2190s15) names a section that exists and is ordered before its dependent; \u00a716 rewrites \u00a713's rule and test file but reaches it transitively through s15, so the ordering still holds."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "ecde26ab36ee588d82709631c3d2c0f6b6e54ed3f3fdb989c9de1f4929206947",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:06:23.955550+00:00",
+  "total": null
+}
