@@ -2,6 +2,7 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import hashlib
 import json
 import os
 import re
@@ -23,6 +24,7 @@ from reckon.crew.reports import (
     _NONE_VALUES as _MANIFEST_NOTHING,
 )
 from reckon.crew.reports import (
+    _terminal_exit_status,
     parse_manifest,
 )
 from reckon.crew.runs import (
@@ -1059,18 +1061,22 @@ def _require_gate_evidence(
     )
 
 
-_EXIT_RECORD = re.compile(r"EXIT=(-?\d+)")
-
-
-_RUNNER_SUMMARY = re.compile(
-    r"\b\d+\s+(?:passed|failed|errors?|skipped|xfailed|xpassed|deselected|warnings?)\b"
-)
+# The runner's result-count recogniser is the review module's, so the line that
+# proves a command executed and the line a receipt's failure count is read from
+# are recognised once.
+_RUNNER_SUMMARY = review_module.RESULT_COUNT_RE
 
 
 # A runner's own summary naming a nonzero failure or error count. The count is
 # what makes it a failure statement; "0 failed" is a green run's summary and is
 # deliberately not matched.
 _RUNNER_FAILURE_SUMMARY = re.compile(r"\b[1-9]\d*\s+(?:failed|errors?)\b")
+
+
+# A gate command that runs pytest is the one a pytest summary is owed by. The
+# program may be reached through an interpreter, a runner or a wrapper, so the
+# name is matched as a word anywhere in the command.
+_PYTEST_COMMAND = re.compile(r"\bpytest\b")
 
 
 _UNEXECUTED_EXIT_CODES = frozenset({126, 127})
@@ -1110,15 +1116,11 @@ def _recorded_exit_status(log_text: str) -> int | None:
     which writes the command's own status as a final ``EXIT=<n>`` line. Only an
     end-of-log record is read: a status marker buried inside a runner's own
     output is not this check's evidence, so a passing log that merely mentions
-    the token is left alone.
+    the token is left alone. The reader itself is
+    :func:`reckon.crew.reports._terminal_exit_status`, so the fleet has one
+    answer to what the terminal line says.
     """
-    for raw_line in reversed(log_text.splitlines()):
-        line = raw_line.strip()
-        if not line:
-            continue
-        match = _EXIT_RECORD.fullmatch(line)
-        return int(match.group(1)) if match else None
-    return None
+    return _terminal_exit_status(log_text)
 
 
 def _runner_reports_a_failed_run(log_text: str) -> bool:
@@ -1154,9 +1156,86 @@ def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
     return _runner_reports_a_failed_run(log_text)
 
 
+def _arm_describes_the_cited_log(
+    arm: Mapping[str, Any], log_path: str, log_text: str
+) -> bool:
+    """Whether a suite arm names the log the gate cites.
+
+    An arm states which log it observed by path or by digest. Only an arm that
+    names this log is compared with it: an arm describing another run's log
+    answers about that run, and holding it to this log's figures would refuse a
+    receipt for a fact it never claimed.
+    """
+    recorded_path = str(arm.get("log_path") or "").strip()
+    if recorded_path and (
+        Path(recorded_path).expanduser() == Path(log_path).expanduser()
+    ):
+        return True
+    recorded_digest = str(arm.get("log_digest") or "").strip()
+    if recorded_digest:
+        digest = hashlib.sha256(log_text.encode("utf-8")).hexdigest()
+        if recorded_digest == digest:
+            return True
+    return False
+
+
+def _receipt_mismatches(
+    arm: Mapping[str, Any] | None, log_path: str, log_text: str
+) -> list[str]:
+    """Name every figure in a suite arm the cited log does not agree with.
+
+    The arm is the receipt: the exit status, the failure count and the failure
+    ids a worker asserted for one gate. The log is the evidence. A log holding
+    two runs makes the comparison worth making — a receipt copied from the first
+    run's figures beside the second run's status passes every check that reads
+    only the tail — so each figure is read from the log's last run, the one the
+    status comes from.
+
+    Each field is compared only when the arm records it, so an arm that states
+    one figure is not refused for the absence of another. The ids are compared
+    both ways through the review module's matcher, with the receipt as the ids
+    a log entry must be covered by: a bare receipt id covers a qualified log id,
+    and an id either side names alone is a mismatch.
+    """
+    if not isinstance(arm, Mapping):
+        return []
+    if not _arm_describes_the_cited_log(arm, log_path, log_text):
+        return []
+    last_run = review_module.last_run_text(log_text)
+    mismatches: list[str] = []
+    recorded_count = arm.get("failure_count")
+    if isinstance(recorded_count, int) and not isinstance(recorded_count, bool):
+        measured = review_module.pytest_summary_failure_count(last_run)
+        if measured is not None and measured != recorded_count:
+            mismatches.append(
+                f"its failure_count records {recorded_count} and the log's last "
+                f"run names {measured} failed or errored test(s)"
+            )
+    recorded_ids = arm.get("failure_ids")
+    if isinstance(recorded_ids, list) and all(
+        isinstance(test_id, str) for test_id in recorded_ids
+    ):
+        log_ids = review_module.gate_log_failure_ids(log_text, last_run=True)
+        if log_ids is not None:
+            matched = review_module.failure_ids_match(recorded_ids, log_ids)
+            if matched.unmatched_head:
+                mismatches.append(
+                    "the log's last run reports "
+                    f"{sorted(matched.unmatched_head)!r}, which its failure_ids "
+                    "do not cover"
+                )
+            if matched.unmatched_base:
+                mismatches.append(
+                    f"its failure_ids name {sorted(matched.unmatched_base)!r}, "
+                    "which the log's last run does not report"
+                )
+    return mismatches
+
+
 def _require_gate_log_agrees(
     run_id: str,
     gate_check: Mapping[str, Any] | None,
+    record: Mapping[str, Any],
     *,
     verdict: str,
 ) -> None:
@@ -1167,10 +1246,14 @@ def _require_gate_log_agrees(
     refused before the ledger stores a verdict that downstream calibration and
     routing would otherwise treat as evidence.
 
-    The check reads the log as text and parses no runner's result format: it
-    never re-runs the command and it recognises no test-output schema, so a
-    log that happens to print a runner's summary is untouched. It refuses on
-    three observable shapes and names which it found:
+    The record is read for the one arm that carries the run's own figures for
+    that gate, its manifest's ``after_suite``. Those figures — the exit status,
+    the failure count and the failure ids — are the receipt, and the log is the
+    evidence they claim: a receipt copied from the first of two runs in one log
+    agrees with the tail's status while naming the other run's failures, which
+    every check that reads only the tail would accept.
+
+    It refuses on the following observable shapes and names which it found:
 
     * an empty log — a cited log file that resolves to no content evidences
       nothing, and the empty log itself is the contradiction. A path that
@@ -1180,6 +1263,11 @@ def _require_gate_log_agrees(
     * a recorded exit status that contradicts the asserted one — a log whose
       terminal ``EXIT=<n>`` capture record differs from the asserted status
       has filed contradictory evidence.
+    * a receipt figure the log does not agree with — the ``after_suite`` arm
+      naming this log, when its failure count differs from the failed plus
+      errored figure of the log's last pytest summary, or its failure ids
+      differ from the ids of the log's last run in either direction. Both are
+      read from the last run, the one whose status the tail records.
     * no evidence the command ran — a line carrying the shell's own
       command-not-found diagnostic, when the log carries nothing that shows a
       command did run, states the command never executed. A runner log may
@@ -1190,6 +1278,14 @@ def _require_gate_log_agrees(
       passed, 20 failed``), either of which shows the command executed and its
       output was captured. When the diagnostic is the only evidence, the
       refusal names the matched line and its one-based line number.
+    * no terminal exit record, read through
+      :func:`reckon.crew.reports._terminal_exit_status` rather than by a
+      second reader of the same line. The command-not-found refusal above is
+      asked first, because a log whose only content is that diagnostic is
+      better named by it than by the record the capture never reached.
+    * a pytest gate whose last run reached no pytest summary — such a run did
+      not finish, so its tail states a status for a suite that never reported
+      one. A command that does not run pytest is not held to a pytest summary.
     """
     if verdict != "passed" or not isinstance(gate_check, Mapping):
         return
@@ -1210,12 +1306,12 @@ def _require_gate_log_agrees(
             "output with --gate-log-path, or re-promote with the verdict the "
             "evidence actually records"
         )
-    recorded = _recorded_exit_status(log_text)
+    recorded = _terminal_exit_status(log_text)
     asserted = gate_check.get("exit_status")
     if (
-        recorded is not None
-        and isinstance(asserted, int)
+        isinstance(asserted, int)
         and not isinstance(asserted, bool)
+        and recorded is not None
         and recorded != asserted
     ):
         raise CrewError(
@@ -1237,6 +1333,42 @@ def _require_gate_log_agrees(
             "command ran. Re-run the check and cite its log, or re-promote "
             "with the verdict the evidence actually shows"
         )
+    if recorded is None:
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' but its cited log "
+            f"{log_path!r} carries no terminal EXIT=<n> line: the capture "
+            "convention is what records the command's own status, so a log "
+            "without one states no status at all and the asserted exit status "
+            "is compared with nothing. Found: a cited log with no exit record. "
+            "Re-run the check as `> log 2>&1; echo EXIT=$?` and cite that log, "
+            "or re-promote with the verdict the evidence actually shows"
+        )
+    manifest = _fresh_manifest(record)
+    arm = manifest.get("after_suite") if isinstance(manifest, Mapping) else None
+    mismatches = _receipt_mismatches(arm, log_path, log_text)
+    if mismatches:
+        raise CrewError(
+            f"run {run_id!r} asserts gate 'passed' and its cited log "
+            f"{log_path!r} does not agree with the after_suite arm that "
+            f"describes it: {'; '.join(mismatches)}. Found: a receipt figure "
+            "that disagrees with its log. The arm and the log are two records "
+            "of one run, so a figure only the first of two runs in the log "
+            "could produce is a receipt copied from that run. Correct the arm "
+            "to the last run's figures, or re-run the gate into its own log"
+        )
+    command = str(gate_check.get("command") or "").strip()
+    if _PYTEST_COMMAND.search(command):
+        last_run = review_module.last_run_text(log_text)
+        if review_module.pytest_summary_failure_count(last_run) is None:
+            raise CrewError(
+                f"run {run_id!r} asserts gate 'passed' but its cited log "
+                f"{log_path!r} reaches no pytest summary for a command that "
+                f"runs pytest ({command!r}): the run stopped before its own "
+                "result, so its exit record states a status for a suite that "
+                "never reported one. Found: a pytest gate whose last run "
+                "reached no pytest summary. Finish the run and cite its log, "
+                "or cite the command that produced the run the log records"
+            )
 
 
 def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
