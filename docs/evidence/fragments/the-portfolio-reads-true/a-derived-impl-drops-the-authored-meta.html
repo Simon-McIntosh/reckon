@@ -1,0 +1,58 @@
+<section id="a-derived-impl-drops-the-authored-meta">
+  <h2>A derived impl drops the authored plan-impl meta</h2>
+
+  <p><strong>What changed.</strong> <code>write_state</code> (<code>reckon/_plan_html.py</code>)
+  gains <code>drop_authored_impl_meta</code>. When the state's <code>impl_source</code> is
+  <code>declarations</code> or <code>computed</code> and the opt-in is set, the authored
+  <code>plan-impl</code> meta is removed from the document. The derived figure is the server's, so it
+  is never written back as an authored one. The default is unchanged, so a round-trip and a write
+  carrying no content change move no bytes.</p>
+
+  <p><strong>The four full-state writers pass it.</strong> Each holds a full <code>read_state</code>,
+  which the opt-in needs in order to know whether impl is derived: the store's write path
+  (<code>reckon/_store.py</code>, which <code>edit_plan</code>'s state ops use), its text-replacement
+  path (<code>_replace_plan_text</code>), the plan POST handler (<code>reckon/serve.py</code>), and
+  the tag backfill (<code>backfill_tags_from_preimage</code>, <code>reckon/tags.py</code>).
+  <code>apply_archive_candidates</code> passes only <code>{"archived": "1"}</code>, so it keeps the
+  meta; that plan loses it at its next full-state write.</p>
+
+  <p><strong>The stale figure is what makes it matter.</strong> Measured on a plan declaring
+  <code>{s1: done, s2: implementable}</code> with one done record, the declarations derive
+  <strong>0.5</strong> while an authored <code>plan-impl</code> of <strong>0.67</strong> sat in the
+  file. Before the change, <code>doccheck</code> reported <code>impl-meta-stale</code> and a
+  <code>write_state</code> round-trip returned the 0.67 line untouched — every write path rewrites
+  only the names it is given. After the change the first full-state write leaves no
+  <code>plan-impl</code> meta and the audit reports no <code>impl-meta-stale</code>.</p>
+
+  <h3>The no-change path still moves nothing</h3>
+
+  <p>A patch through <code>edit_plan</code> that carries no content change leaves the file's bytes
+  identical, because the store's existing comparison of the parsed state (stamps excluded) still
+  finds the two reads equal: a derived figure is unaffected by whether the authored line is present.
+  <code>write_state(text, read_state(text))</code> without the opt-in also returns the stale-meta
+  text byte for byte, so a reader-only serialise is untouched.</p>
+
+  <h3>Measured</h3>
+
+  <table>
+    <thead><tr><th>case</th><th>writer</th><th>derived plan</th><th>authored plan</th></tr></thead>
+    <tbody>
+      <tr><td>(a)</td><td>store write path (<code>edit_plan</code> state op)</td><td>meta gone, no <code>impl-meta-stale</code></td><td>—</td></tr>
+      <tr><td>(b)</td><td>no-change patch; round-trip without the opt-in</td><td>file bytes unchanged</td><td>—</td></tr>
+      <tr><td>(c)</td><td>store write path</td><td>—</td><td><code>plan-impl</code> 0.3 kept, source <code>authored</code></td></tr>
+      <tr><td>(d)</td><td>POST <code>/plan/&lt;project&gt;/&lt;slug&gt;</code></td><td>meta gone</td><td>—</td></tr>
+      <tr><td>(e)</td><td><code>replace_plan_text</code></td><td>meta gone</td><td>—</td></tr>
+      <tr><td>(f)</td><td><code>backfill_tags_from_preimage</code></td><td>meta gone</td><td>—</td></tr>
+    </tbody>
+  </table>
+
+  <p>The gate is <code>tests/test_a_derived_impl_drops_the_authored_meta.py</code> — 8 tests. At the
+  head it ran green (<strong>8 passed</strong>, <code>EXIT=0</code>). The same file copied into the
+  dispatch base tree (<code>9ac9d2af9f</code>) ran red (<strong>4 failed, 4 passed</strong>,
+  <code>EXIT=1</code>), failing exactly cases (a), (d), (e) and (f) as the section predicts.</p>
+
+  <p>The negative control made the opt-in a no-op, keeping the authored meta. The run went red
+  (<strong>4 failed, 4 passed</strong>, <code>EXIT=1</code>) with the same four FAILED ids and none
+  that the head arm fails. The mutation was applied in a scratch tree, never to the committed
+  bytes.</p>
+</section>
