@@ -158,7 +158,7 @@ def test_an_overdue_tick_reaches_the_reload_check_before_all_pointers(
     finally:
         stream.close()
     print(f"pointer visits before reload check: {len(visited)}")
-    assert 0 < len(visited) < 40
+    assert len(visited) == 1, "the tick must stop at the very next pointer boundary"
     if slow_stage == "publication":
         assert not producer.known, (
             "an incomplete population must not publish departures"
