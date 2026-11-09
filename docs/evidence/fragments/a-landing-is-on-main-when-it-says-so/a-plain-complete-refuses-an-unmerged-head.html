@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-title" content="A landing is on main when it says so">
+  <meta name="plan-summary" content="A plain crew complete --gate passed now refuses a reviewed head the remote primary branch does not carry, naming the head and the branch and leaving the pointer and the ledger untouched. merge.head_on_remote_branch answers with the ancestry the landing already uses, retries a refused port 22 over 443, and fetches a remote head it does not hold locally; an unreachable remote, a missing branch and a checkout with no remote are distinct answers.">
+  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-impl" content="1.0">
+  <title>A plain complete refuses an unmerged head | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A plain complete refuses an unmerged head</h1>
+
+    <section id="a-plain-complete-refuses-an-unmerged-head-what-changed">
+      <h2>What changed</h2>
+      <p>A plain <code>crew complete --gate passed</code> promoted a run as landed
+        without asking whether the primary branch carried its reviewed head. After
+        <code>crew merge --run</code> refused, the complete still promoted and
+        removed the live pointer, so the ledger read work main did not hold and the
+        landing verb could no longer find the run it had been asked to land.</p>
+      <p><code>reckon/crew/merge.py</code> now answers the question with the
+        ancestry the landing already uses. <code>head_on_remote_branch</code> reads
+        <code>ls-remote</code> for the remote branch over the existing port-22 to
+        443 retry, fetches the remote head's commit over that same route when it is
+        not held locally, and answers through <code>_is_ancestor</code>. Three
+        causes are distinct answers and not one <code>cannot read</code>: an
+        unreachable remote, a reachable remote carrying no such ref, and a checkout
+        configured with no remote at all. The last promotes as before, because the
+        question is not askable there.</p>
+      <p><code>reckon/crew_run_commands.py</code> asks it in the plain-complete path
+        before promoting, for a run that is not a review run, whose gate passed, and
+        whose reviewed head resolves. A refusal names the run, the head and
+        <code>origin/main</code>, and touches neither the pointer nor the ledger. The
+        new family <code>D25</code> carries the repair in
+        <code>reckon/crew/refusals.py</code>. A <code>--land</code> complete, the
+        <code>crew merge --run</code> verb, a gate that did not pass and a review
+        run all keep their behaviour; the guard is deliberately not in the shared
+        dry-run list both paths would run.</p>
+    </section>
+
+    <section id="a-plain-complete-refuses-an-unmerged-head-measure">
+      <h2>Measure</h2>
+      <p>Gate: <code>tests/test_a_plain_complete_refuses_an_unmerged_head.py</code>
+        over a temporary repository and a bare origin. The same file at the base
+        revision <code>fb8c7733b6</code> reports 4 passed, 6 failed,
+        <code>EXIT=1</code>; at the head revision it reports 10 passed,
+        <code>EXIT=0</code>. Each arm holds a control, so a guard that never fires
+        would fail the same assertions as one that refuses everything: an unmerged
+        head refuses with the pointer, <code>main</code>, the remote and the state
+        file all unchanged while a head the branch carries promotes; a head
+        fast-forwarded on local <code>main</code> but never pushed refuses, and the
+        control that reads the checkout's own <code>HEAD</code> instead promotes it;
+        an unreachable remote and a remote with no primary ref refuse naming that
+        cause, with a control reading the empty answer as promotable; a
+        <code>--land</code> complete and a <code>crew merge --run</code> still land,
+        with a control showing the same guard placed in the shared dry-run list
+        refusing the merge; a review run promotes and issues no
+        <code>ls-remote</code> or <code>fetch</code>, with a control keying the guard
+        on the gate alone refusing it; and <code>--gate failed</code> promotes as
+        before.</p>
+      <p>Negative control: the declared mutation removes the guard. At the base
+        revision <code>fb8c7733b6</code>, over a tree extracted from that revision
+        with the node's test copied in, the unmerged-head case fails and its reported
+        promotion payload reads <code>"ok": true, "pointer_removed": true</code> —
+        the defect §5 records, reproduced. That log is
+        <code>logs/negative-control-base-arm.log</code> in the run directory.</p>
+      <p>A regression set of ten existing files reports 6 failed, 130 passed at the
+        head against 5 failed, 24 passed for the two implicate files at the base.
+        The five pre-existing ids are the four parametrisations of
+        <code>test_complete_preserves_the_promotion_commit_through_release</code> and
+        <code>test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan</code>,
+        which fail identically at the base revision. The refusal census in
+        <code>tests/test_crew_refusal_visibility.py</code> carries <code>D25</code>:
+        its converted set and its expected range now run to
+        <code>range(1, 26)</code>, and <code>reckon/crew_run_commands.py</code>
+        joins the sources the formatter census walks, so a reachable family is not
+        reported absent because its raising file was never read. That arm reports
+        37 passed. Ruff check and format are clean on the code paths; the census
+        file carries the same single finding and the same formatting diff at the
+        base revision as at the head, so this change adds none.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -96,6 +96,11 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "`reckon crew dispatch` the node again; the release removed the run "
         "directory, so the next launch starts afresh with a new claim"
     ),
+    "D25": (
+        "`reckon crew complete --land` to promote the run and land its head in "
+        "one call, or `reckon crew merge --project <project> --head <head>` to "
+        "merge the head first"
+    ),
 }
 
 

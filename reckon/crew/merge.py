@@ -611,13 +611,120 @@ def _current_branch(repo: Path) -> str:
     return branch
 
 
+REMOTE_UNREACHABLE = "unreachable"
+REMOTE_BRANCH_MISSING = "missing-branch"
+REMOTE_UNCONFIGURED = "no-remote"
+
+
+def _read_remote_head(
+    repo: Path,
+    remote: str,
+    branch: str,
+    env: dict[str, str] | None = None,
+) -> tuple[str | None, dict[str, str] | None, str]:
+    """Read the remote's ``branch``, returning the head, its route, and a failure.
+
+    A refused port 22 is retried over the port-443 route, as the push is, so a
+    host that reaches the remote only on 443 can still be read. The route that
+    carried the read is returned so a fetch can take the same one.
+
+    The head is ``None`` when the remote could not be read at all, and the empty
+    string when it answered and carries no such ref. Those are distinct answers:
+    one is a remote that cannot be reached, the other a branch that does not
+    exist, and a caller that conflated them would name the wrong repair.
+    """
+    detail = ""
+    if env is None:
+        result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}")
+        detail = result.stderr.strip() or result.stdout.strip()
+        if result.returncode != 0 and _port22_refused(detail):
+            env = _port443_env()
+            result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}", env=env)
+            detail = result.stderr.strip() or result.stdout.strip()
+    else:
+        result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}", env=env)
+        detail = result.stderr.strip() or result.stdout.strip()
+    if result.returncode != 0:
+        return None, env, detail
+    fields = result.stdout.split()
+    return (fields[0].strip() if fields else ""), env, detail
+
+
 def _remote_head(
     repo: Path, remote: str, branch: str, env: dict[str, str] | None = None
 ) -> str:
-    result = _run(repo, "ls-remote", remote, f"refs/heads/{branch}", env=env)
-    if result.returncode != 0 or not result.stdout.strip():
+    head, _env, _detail = _read_remote_head(repo, remote, branch, env=env)
+    if not head:
         raise MergeError(f"cannot read {remote}'s {branch}")
-    return result.stdout.split()[0].strip()
+    return head
+
+
+def head_on_remote_branch(
+    repo: str | Path,
+    head: str,
+    *,
+    remote: str = "origin",
+    branch: str = "",
+) -> dict:
+    """Answer whether ``head`` is reachable from the remote's primary branch.
+
+    The remote head is read with one ``ls-remote`` and its commit is fetched over
+    the same route when it is not present locally, so a head that exists only on
+    the remote is still judged by ancestry rather than by absence. The answer
+    then comes from :func:`_is_ancestor`, which is the same ancestry the merge
+    lands by — this is not a second convention for deciding what is on a branch.
+
+    ``on_branch`` is ``True`` or ``False`` when the question could be asked, and
+    ``None`` when it could not. ``cause`` names why in that case:
+    ``unreachable`` (the remote could not be read), ``missing-branch`` (it
+    answered and carries no such ref) or ``no-remote`` (the checkout configures
+    no such remote, so there is no remote branch to be off).
+
+    ``branch`` defaults to the branch this checkout has checked out, which is the
+    branch a landing pushes to.
+    """
+    repo = Path(repo)
+    branch = branch or _current_branch(repo)
+    answer: dict = {
+        "remote": remote,
+        "branch": branch,
+        "head": head,
+        "remote_head": "",
+        "on_branch": None,
+        "cause": None,
+        "detail": "",
+    }
+    configured = _run(repo, "config", "--get", f"remote.{remote}.url")
+    if configured.returncode != 0 or not configured.stdout.strip():
+        answer["cause"] = REMOTE_UNCONFIGURED
+        return answer
+    head_sha = _rev_parse(repo, head)
+    answer["head"] = head_sha
+    remote_head, env, detail = _read_remote_head(repo, remote, branch)
+    if remote_head is None:
+        answer["cause"] = REMOTE_UNREACHABLE
+        answer["detail"] = detail
+        return answer
+    if not remote_head:
+        answer["cause"] = REMOTE_BRANCH_MISSING
+        return answer
+    answer["remote_head"] = remote_head
+    present = _run(repo, "cat-file", "-e", f"{remote_head}^{{commit}}")
+    if present.returncode != 0:
+        fetched = _run(repo, "fetch", remote, f"refs/heads/{branch}", env=env)
+        if fetched.returncode != 0 and env is None:
+            failed = fetched.stderr.strip() or fetched.stdout.strip()
+            if _port22_refused(failed):
+                env = _port443_env()
+                fetched = _run(repo, "fetch", remote, f"refs/heads/{branch}", env=env)
+        if fetched.returncode != 0 or (
+            _run(repo, "cat-file", "-e", f"{remote_head}^{{commit}}").returncode != 0
+        ):
+            answer["cause"] = REMOTE_UNREACHABLE
+            answer["detail"] = fetched.stderr.strip() or fetched.stdout.strip()
+            return answer
+    answer["on_branch"] = _is_ancestor(repo, head_sha, remote_head)
+    return answer
 
 
 def _is_ancestor(repo: Path, ancestor: str, descendant: str) -> bool:
