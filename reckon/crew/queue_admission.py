@@ -1471,23 +1471,35 @@ def _review_record_refusal_subject(pointer: Mapping[str, Any]) -> str:
     writable root once the reviewed run has left the fleet. The recorded
     refusal must name that same path: a review refused for any other reason is
     not this pass's to retire.
+
+    Both halves are read through the review module's own rules rather than
+    repeated here: the run directory comes from the declarations, and the
+    landing of each declaration is judged by the same location rule the
+    dispatch fence grants a record through, so a change to what counts as a
+    review's record path reaches this retirement too.
     """
+    from reckon.crew import recovery_review_delivery
+
     node = pointer.get("node") or {}
     if str(node.get("role") or "") != REVIEW_ROLE:
         return ""
     text = _failure_text(pointer.get("failure"))
     if _NODE_CONTRACT_REFUSAL not in text:
         return ""
-    runs_directory = runs.runs_dir()
+    run_directory = recovery_review_delivery._declared_record_directory(pointer)
+    if run_directory is None:
+        return ""
     for declared in node.get("write_paths") or ():
-        path = Path(str(declared)).expanduser()
-        if path.parent.name != "review-records":
-            continue
-        if path.parent.parent.parent != runs_directory:
-            continue
         if str(declared) not in text:
             continue
-        return path.parent.parent.name
+        if (
+            recovery_review_delivery._delivered_record_location(
+                str(declared), run_directory
+            )
+            is None
+        ):
+            continue
+        return run_directory.name
     return ""
 
 
