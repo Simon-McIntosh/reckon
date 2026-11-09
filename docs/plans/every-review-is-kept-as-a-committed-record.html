@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="202">
+<meta name="plan-version" content="203">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -558,6 +558,12 @@
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261019T181215792224-s23-population-at-merge" data-who="reckon-build" data-when="2026-10-19T19:09:34.662Z">
     <div class="r-comment-body"><p>population measurement of the stored-review total head: merging 81331dba (candidate merge ea6dbeffb) onto main f79098cb1 over the 174-file importer population adds no failing test id — its two candidate-only ids (tests/test_crew.py watcher tests) fail at base too when run alone (4/5 and 2/5), while the head repairs five base failures (14 failed/1661 passed at base; 11 failed/1670 passed at the candidate)</p></div>
 </div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T054502449622-review-of-promoting-a-review-keeps-its-dispositions-554f0af953e9" data-who="reckon-build" data-when="2026-11-09T06:05:44.614Z">
+    <div class="r-comment-body"><p>Reviewed r-20261109T050437514521-promoting-a-review-keeps-its-dispositions at head 554f0af953 against base 37995ffee7: goal fidelity 18, evidence 15, scope discipline 19, durability 19, fit 18, reuse 5; added failures 0; three non-blocking findings (a delivered-record selection duplicated from reckon/crew/review.py:3279, and two defects in the run's own evidence record).</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T071123363361-review-of-promoting-a-review-keeps-its-dispositions-57affd7fc43b" data-who="reckon-build" data-when="2026-11-09T07:23:56.687Z">
+    <div class="r-comment-body"><p>The gained commit 57affd7fc43b3f6b106eaf4603705cafe09ab239 deletes _delivered_copies_of_record and turns review._records_naming_this_review into the one identity rule both the disposition writer and the filing read, so a disposition still survives a review run&#x27;s promotion and the reuse finding of the 554f0af9 review is answered; scores 109/120 with two non-blocking evidence findings on the run&#x27;s measurement_module/measurement_cwd fields and the negative control log&#x27;s provenance headers.</p></div>
+</div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261108T223033265909-review-of-a-parsed-review-wins-over-an-incomplete-one-8269033355d3" data-who="reckon-build" data-when="2026-11-08T22:40:49.975Z">
     <div class="r-comment-body"><p>an independent review of 8269033355d3 is stored as a parsed record scoring all six dimensions (112/120), reviewed_base_sha bb23ab6e26a40b663a20e878cb3ea9f8095d31d7 and reviewed_head_sha 8269033355d3f427f12d940e1a4cd5caf7b52501 carried beside it, added_failure_count 0 derived from the reviewed run's baseline_suite and after_suite logs, with one non-blocking finding</p></div>
 </div>
@@ -788,9 +794,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261103T083142255959-finish-the-remaining-reviewrecord-recurrence-fold" data-who="reckon-build" data-when="2026-11-05T11:22:27.992Z">
     <div class="r-comment-body"><p>Added tests/test_review_finding_recurrence.py, a synthesised-store gate that computes both consecutive-review recurrence shares per finding type from the stored responses and asserts the plan-review view reports the same fold; the 7-13 October window gives duplicate_owner 42 findings, any 16 (38.1%), acted 9 (21.4%) against the whole-history 83.3% and 41.9%; head arm 4 passed EXIT=0, base arm 4 passed EXIT=0 (0 added), negative control 3 failed 1 passed EXIT=1.</p></div>
-</div>
-<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T054502449622-review-of-promoting-a-review-keeps-its-dispositions-554f0af953e9" data-who="reckon-build" data-when="2026-11-09T06:05:44.614Z">
-    <div class="r-comment-body"><p>Reviewed r-20261109T050437514521-promoting-a-review-keeps-its-dispositions at head 554f0af953 against base 37995ffee7: goal fidelity 18, evidence 15, scope discipline 19, durability 19, fit 18, reuse 5; added failures 0; three non-blocking findings (a delivered-record selection duplicated from reckon/crew/review.py:3279, and two defects in the run&#x27;s own evidence record).</p></div>
 </div>
 </section>
 </main>

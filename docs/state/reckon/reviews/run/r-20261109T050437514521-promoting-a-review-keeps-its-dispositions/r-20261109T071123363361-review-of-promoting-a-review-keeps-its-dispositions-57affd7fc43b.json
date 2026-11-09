@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1085",
+    "reckon/crew_run_commands.py:1095",
+    "reckon/crew/recovery_review_acceptance.py:169",
+    "reckon/crew/recovery_repair_dispatch.py:826",
+    "reckon/crew/recovery_repair_dispatch.py:842",
+    "reckon/crew/promotion.py:338"
+  ],
+  "completed_at": "2026-11-09T07:23:56.687Z",
+  "dispatched_at": "2026-11-09T07:12:28Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "manifest provenance wording only; the landing reruns both armed arms with their own logs",
+      "recorded_at": "2026-11-09T07:27:24.259301+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "manifest provenance wording only; the landing reruns both armed arms with their own logs",
+      "recorded_at": "2026-11-09T07:27:53.065751+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md",
+      "line": 13,
+      "severity": "non-blocking",
+      "text": "measurement_module and measurement_cwd name /tmp/.../parkc-base-importers, the importer arm's tree, while the scratch gate arm that printed a module.__file__ is logs/base-arm.log's parkc-base-3ehG; the fields a reader uses to confirm the scratch gate imported the intended module therefore point at a path no log printed a module.__file__ for.",
+      "type": "evidence"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/logs/negative-control.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the negative-control log's headers disagree about the tree it ran in: the command line cd's to parkc-base-importers while the cwd line names parkc-control-57affd, and the module line names the unmutated worktree copy, so the red is attributable to the declared mutation only by its KeyError symptom rather than by the record's own provenance.",
+      "type": "evidence"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Keep dispositions recorded on a review's staging record through that review run's promotion\"; the gain at 57affd7fc4 preserves that behaviour and additionally makes the disposition writer read the same delivered-record selection as the filing at reckon/crew/review.py:3279.\nVERDICT done_when: the done_when names tests/test_promoting_a_review_keeps_its_dispositions.py with the importer and ruff arms; logs/head-arm.log records 1 passed EXIT=0 at 57affd7fc43b and logs/base-arm.log 1 failed EXIT=1 at 37995ffe, logs/importers-head.log 211 passed against logs/importers-base.log 210 passed, logs/ruff.log EXIT=0, and this review re-ran the single test at the reviewed head and it passed.\nVERDICT write_paths: the manifest declares reckon/crew/review.py, reckon/crew/review_records.py, reckon/crew/review_dispositions.py, the test and the fragment; git diff --name-status from 554f0af953 to 57affd7fc4 lists only reckon/crew/review.py, reckon/crew/review_dispositions.py and the fragment, and review_records.py is untouched.\nVERDICT manifest: read; it records status complete with both gate arms, the negative control, the importer pair and the ruff arm, and its evidence_inputs now cites logs/base-arm.log's KeyError rather than logs/repro.log, answering the two findings of the earlier review; its measurement_module and measurement_cwd name the importer scratch tree rather than the gate's base arm at manifest.md:13.\nVERDICT diff: read commit by commit from 554f0af953 to 57affd7fc4; the single commit deletes _delivered_copies_of_record (review_dispositions.py:165 in the parent), gives _records_naming_this_review a review_run_id fallback and an optional rubric narrowing at reckon/crew/review.py:3294-3320, and repoints _carry_answer_to_delivered_copies at it at reckon/crew/review_dispositions.py:202.\nCALL_SITES: reckon/crew_run_commands.py:1085, reckon/crew_run_commands.py:1095, reckon/crew/recovery_review_acceptance.py:169, reckon/crew/recovery_repair_dispatch.py:826, reckon/crew/recovery_repair_dispatch.py:842, reckon/crew/promotion.py:338\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_dispositions.py:202 carries the answer into the copies the filing at reckon/crew/review.py:3272 selects, so the disposition survives the promotion that rewrites the store from them.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/head-arm.log and logs/base-arm.log carry revision, command and a bare EXIT line and logs/ruff.log records EXIT=0, but manifest.md:13 names the importer scratch tree as measurement_module and logs/negative-control.log:3 names a different tree than its own cwd line.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-status 554f0af953 57affd7fc4 lists three paths, each inside the manifest's declared write paths, and the test the done_when names is left untouched by this commit.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_promoting_a_review_keeps_its_dispositions.py:279 reddens on the committed record if the carry call at reckon/crew/review_dispositions.py:574 is removed, which logs/negative-control.log shows, but nothing asserts that the rubric narrowing added at reckon/crew/review.py:3320 keeps a sibling figure review out of the write.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/review_dispositions.py:190 keeps the module's lazy cross-module import idiom and reckon/crew/review.py:3294's docstring states the identity rule rather than a ticket, with no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the duplicate _delivered_copies_of_record is deleted and reckon/crew/review.py:3279, the owner the filing already read, is extended so both callers consume one selection.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md:13 non-blocking: measurement_module and measurement_cwd name /tmp/.../parkc-base-importers, the importer arm's tree, while the scratch gate arm that printed module.__file__ is logs/base-arm.log's parkc-base-3ehG, so the pair a reader uses to confirm the scratch gate imported the intended module names a path no log printed a module.__file__ for.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/logs/negative-control.log:3 non-blocking: the header's command cd's to parkc-base-importers while its cwd line names parkc-control-57affd and its module line names the unmutated worktree copy, so the red is attributed to the declared mutation by its KeyError symptom rather than by the record's own provenance.\n",
+  "review_run_id": "r-20261109T071123363361-review-of-promoting-a-review-keeps-its-dispositions-57affd7fc43b",
+  "reviewed_base_sha": "554f0af953e956fbf4a14c2aa7f3f70053fb18a8",
+  "reviewed_head_sha": "57affd7fc43b3f6b106eaf4603705cafe09ab239",
+  "reviewed_run_id": "r-20261109T050437514521-promoting-a-review-keeps-its-dispositions",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T07:32:24.243500+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "read commit by commit from 554f0af953 to 57affd7fc4: the duplicate selection is deleted, _records_naming_this_review gains a review_run_id fallback and an optional rubric narrowing, and the writer consumes it.",
+    "done_when": "measured: logs/head-arm.log 1 passed EXIT=0 at 57affd7fc4 and logs/base-arm.log 1 failed EXIT=1 at 37995ffe, importers 211 passed against 210 passed base, logs/ruff.log EXIT=0; the single test re-ran green at the reviewed head during this review.",
+    "goal": "met and improved: the gain at 57affd7fc4 keeps a disposition through a review run's promotion and makes the disposition writer read the same delivered-record selection as the filing at reckon/crew/review.py:3279.",
+    "manifest": "read: both gate arms, the negative control, the importer pair and the ruff arm are recorded and the prior review's two findings are answered, but measurement_module and measurement_cwd name the importer scratch tree.",
+    "write_paths": "kept: 57affd7fc4 changes only reckon/crew/review.py, reckon/crew/review_dispositions.py and the landing fragment, all declared; review_records.py is declared and left untouched."
+  }
+}
