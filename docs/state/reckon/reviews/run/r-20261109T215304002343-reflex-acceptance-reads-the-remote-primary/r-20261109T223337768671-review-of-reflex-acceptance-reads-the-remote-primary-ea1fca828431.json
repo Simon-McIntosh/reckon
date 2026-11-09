@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:676 (the sweep) reached from reckon/crew/resumption.py:2450 via recovery.dispatch_awaiting_reviews",
+    "reckon/crew/recovery.py:191 (the re-export)"
+  ],
+  "completed_at": "2026-11-09T22:49:27.380Z",
+  "dispatched_at": "2026-11-09T22:38:14Z",
+  "finding_dispositions": {
+    "1": {
+      "kind": "exempted",
+      "reason": "the arm is independently held by the accepted-empty and ledger-empty assertions beside it",
+      "recorded_at": "2026-11-09T22:56:13.639907+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_reflex_acceptance_reads_the_remote_primary.py",
+      "id": "f2f3105f9e2",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "non-blocking: real_pointer_is_not_a_fixture_target is neither autouse nor requested by any test, so its two assertions never execute and the guard against writing the workstation's real pointer directory reads as protection while doing nothing."
+    },
+    {
+      "file": "tests/test_reflex_acceptance_reads_the_remote_primary.py",
+      "id": "fab412e510d",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert refusal[\"unmerged_commits\"] == [commit]` compares the code's answer against the same commit the test wrote into the manifest, so any implementation that echoes the manifest commits satisfies it; the independence of the arm rests on the neighbouring `report[\"accepted\"] == []` and empty-ledger assertions, not on this line."
+    },
+    {
+      "file": "tests/test_reflex_acceptance_reads_the_remote_primary.py",
+      "id": "ffd1f3c40fc",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: GATE_COMMAND is assigned twice in a row, the second assignment shadowing the first, which reads as a merge artefact rather than an intended second value."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "id": "f984037503a",
+      "line": "281",
+      "severity": "non-blocking",
+      "text": "non-blocking: every MergeError raised by head_on_remote_branch is recorded as REMOTE_UNREACHABLE, so a detached HEAD or an unresolvable commit is reported to the coordinator as \"origin could not be read\" and names the wrong repair; the decline itself is still safe."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "id": "fecbe04d493",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "non-blocking: a checkout that configures no remote falls back to the local-HEAD probe, so removing or mislaying the remote configuration restores the exact local-only promotion this section closes; the plan names only unreachable and missing-branch, so this is a design choice to ratify rather than a deviation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read ea1fca8284 against bf85149157 commit by commit \u2014 109 lines in the acceptance module replacing the local-HEAD probe with the remote question, 359 lines of new test, 79 lines of landing fragment.",
+    "done_when": "the done_when names four arms with two controls plus a base-revision negative control, and tests/test_reflex_acceptance_reads_the_remote_primary.py carries all four arms, both controls, the no-remote arm and a red base log (logs/negative_control.log, 3 failed 5 passed EXIT=1); the importer-arm clause was measured on tests/test_review_acceptance_promotes.py, which does not import reckon.crew.recovery_review_acceptance.",
+    "goal": "the goal is that the reflex acceptance tests a run's commits against the remote primary branch, and reckon/crew/recovery_review_acceptance.py:254 now asks merge.head_on_remote_branch per commit and returns a named refusal in place of the local-HEAD answer.",
+    "manifest": "read manifest.md lines 7-18 \u2014 commits ea1fca8284, after arm 8 passed EXIT=0 at the head, baseline arm 6 passed EXIT=0 at bf85149157, negative control 3 failed 5 passed EXIT=1.",
+    "write_paths": "the declared set is reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py and the landing fragment, and commit ea1fca8284 touches exactly those three paths and no others."
+  },
+  "justifications": {
+    "durability": "reverting reckon/crew/recovery_review_acceptance.py:254 to the local-HEAD probe is exactly the declared mutation, and logs/negative_control.log shows test_a_run_only_on_local_main_is_not_promoted failing on it, so the test reddens on the regression it guards.",
+    "evidence": "the gate logically covers every done_when arm in tests/test_reflex_acceptance_reads_the_remote_primary.py, but the importer clause was run only against tests/test_review_acceptance_promotes.py, which imports reckon.crew.recovery rather than the changed module, so the seven files that do import it were never run at either revision.",
+    "fit": "the module and test follow the surrounding style (deferred `from reckon.crew import merge as merge_module`, Mapping/Any typing) but tests/test_reflex_acceptance_reads_the_remote_primary.py:42 assigns GATE_COMMAND twice and :46 declares a fixture no test requests.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:379 replaces the local `_commits_missing_from` answer with the remote one and returns remote_cause instead of promoting.",
+    "reuse": "the change calls the existing owner reckon/crew/merge.py:662 rather than adding an ancestry check, and keeps the old probe only as the no-remote fallback at :288.",
+    "scope_discipline": "git show --stat ea1fca8284 lists exactly the three declared paths, and no out-of-scope file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the reflex acceptance tests a run's commits against the remote primary branch, and reckon/crew/recovery_review_acceptance.py:254 now asks merge.head_on_remote_branch per commit and returns a named refusal in place of the local-HEAD answer.\nVERDICT done_when: the done_when names four arms with two controls plus a base-revision negative control, and tests/test_reflex_acceptance_reads_the_remote_primary.py carries all four arms, both controls, the no-remote arm and a red base log (logs/negative_control.log, 3 failed 5 passed EXIT=1); the importer-arm clause was measured on tests/test_review_acceptance_promotes.py, which does not import reckon.crew.recovery_review_acceptance.\nVERDICT write_paths: the declared set is reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py and the landing fragment, and commit ea1fca8284 touches exactly those three paths and no others.\nVERDICT manifest: read manifest.md lines 7-18 \u2014 commits ea1fca8284, after arm 8 passed EXIT=0 at the head, baseline arm 6 passed EXIT=0 at bf85149157, negative control 3 failed 5 passed EXIT=1.\nVERDICT diff: read ea1fca8284 against bf85149157 commit by commit \u2014 109 lines in the acceptance module replacing the local-HEAD probe with the remote question, 359 lines of new test, 79 lines of landing fragment.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:676 (the sweep) reached from reckon/crew/resumption.py:2450 via recovery.dispatch_awaiting_reviews, reckon/crew/recovery.py:191 (the re-export)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:379 replaces the local `_commits_missing_from` answer with the remote one and returns remote_cause instead of promoting.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate logically covers every done_when arm in tests/test_reflex_acceptance_reads_the_remote_primary.py, but the importer clause was run only against tests/test_review_acceptance_promotes.py, which imports reckon.crew.recovery rather than the changed module, so the seven files that do import it were never run at either revision.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git show --stat ea1fca8284 lists exactly the three declared paths, and no out-of-scope file is touched.\nSCORE durability: 19\nJUSTIFICATION durability: reverting reckon/crew/recovery_review_acceptance.py:254 to the local-HEAD probe is exactly the declared mutation, and logs/negative_control.log shows test_a_run_only_on_local_main_is_not_promoted failing on it, so the test reddens on the regression it guards.\nSCORE fit: 17\nJUSTIFICATION fit: the module and test follow the surrounding style (deferred `from reckon.crew import merge as merge_module`, Mapping/Any typing) but tests/test_reflex_acceptance_reads_the_remote_primary.py:42 assigns GATE_COMMAND twice and :46 declares a fixture no test requests.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change calls the existing owner reckon/crew/merge.py:662 rather than adding an ancestry check, and keeps the old probe only as the no-remote fallback at :288.\nFINDING tests/test_reflex_acceptance_reads_the_remote_primary.py:46 non-blocking: real_pointer_is_not_a_fixture_target is neither autouse nor requested by any test, so its two assertions never execute and the guard against writing the workstation's real pointer directory reads as protection while doing nothing.\nFINDING tests/test_reflex_acceptance_reads_the_remote_primary.py:206 non-blocking: `assert refusal[\"unmerged_commits\"] == [commit]` compares the code's answer against the same commit the test wrote into the manifest, so any implementation that echoes the manifest commits satisfies it; the independence of the arm rests on the neighbouring `report[\"accepted\"] == []` and empty-ledger assertions, not on this line.\nFINDING tests/test_reflex_acceptance_reads_the_remote_primary.py:42 non-blocking: GATE_COMMAND is assigned twice in a row, the second assignment shadowing the first, which reads as a merge artefact rather than an intended second value.\nFINDING reckon/crew/recovery_review_acceptance.py:281 non-blocking: every MergeError raised by head_on_remote_branch is recorded as REMOTE_UNREACHABLE, so a detached HEAD or an unresolvable commit is reported to the coordinator as \"origin could not be read\" and names the wrong repair; the decline itself is still safe.\nFINDING reckon/crew/recovery_review_acceptance.py:288 non-blocking: a checkout that configures no remote falls back to the local-HEAD probe, so removing or mislaying the remote configuration restores the exact local-only promotion this section closes; the plan names only unreachable and missing-branch, so this is a design choice to ratify rather than a deviation.",
+  "review_run_id": "r-20261109T223337768671-review-of-reflex-acceptance-reads-the-remote-primary-ea1fca828431",
+  "reviewed_base_sha": "bf8514915783affbb3f793ba830ded0b1796a559",
+  "reviewed_head_sha": "ea1fca828431c5ca8791d23db2db27677daa292e",
+  "reviewed_run_id": "r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T22:47:14.276600+00:00",
+  "total": 109
+}

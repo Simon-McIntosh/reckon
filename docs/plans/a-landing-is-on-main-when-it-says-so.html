@@ -24,8 +24,8 @@
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
-<meta name="plan-modified" content="2026-11-09">
+<meta name="plan-version" content="36">
+<meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
 <body>
@@ -109,6 +109,9 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 </section>
     
 <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-close-s5" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed at <code>65e4ad429d</code>. A plain <code>crew complete --gate passed</code> on an implementation head that is not on the remote primary branch refuses with refusal family D25, reading the remote through <code>merge.py</code>'s port-443 route; review runs and failed or not-run gates promote as before, and <code>crew merge --run</code> still lands an unmerged head. Review 112/120 after one repair round, which fixed the negative control and the refusal census. <a href="/reckon/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-plain-complete-refuses-an-unmerged-head.html">evidence</a></p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-reopen-s2" data-who="reckon-build" data-when="2026-11-08T00:30:00Z">
     <div class="r-comment-body"><p>§2 reopened. It was descoped on the finding that no landing left a head unmerged. On 7 November reckon-0f measured one that did: <code>crew complete --land</code> on <code>r-20261107T152305119816</code> was killed by its time bound (exit 143) after pushing promote <code>c0ba9ee0af</code> (passed) and release <code>3deae1db06</code>. The monitor drew the run as landed, but none of its commits (<code>b1cfbd7d30</code>, <code>c0ec02d067</code>, <code>06c67c9893</code>) reached origin/main for about three hours, until <code>crew gc</code> withheld the tree and reckon-0f merged the head by hand. The done-when gains that fourth case. The same day, four <code>--land</code> calls exited 1 with a false "worktree withheld" after merging and pushing successfully (5bc89fc029, ea60b2749f, b706dae898 and r-20261107T100007560977); that is §3's.</p></div>
 </div>
@@ -127,8 +130,8 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261109T181933671262-a-plain-complete-refuses-an-unmerged-head" data-who="reckon-build" data-when="2026-11-09T19:18:23Z">
     <div class="r-comment-body"><p>changed the plain `crew complete` path to refuse a reviewed head the remote primary branch does not carry, naming the head and the branch with the pointer and ledger untouched; added `merge.head_on_remote_branch`, which reads the remote, retries port 443, fetches an absent remote head and answers through `_is_ancestor`; added refusal family D25. Measure: the new test file goes from 4 passed/6 failed at the base revision to 10 passed at the head revision, no added failure id.</p></div>
 </div>
-<div class="r-comment" data-section="_top" data-id="c-close-s5" data-who="" data-when="">
-    <div class="r-comment-body"><p>Landed at <code>65e4ad429d</code>. A plain <code>crew complete --gate passed</code> on an implementation head that is not on the remote primary branch refuses with refusal family D25, reading the remote through <code>merge.py</code>'s port-443 route; review runs and failed or not-run gates promote as before, and <code>crew merge --run</code> still lands an unmerged head. Review 112/120 after one repair round, which fixed the negative control and the refusal census. <a href="/reckon/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-plain-complete-refuses-an-unmerged-head.html">evidence</a></p></div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261109T223337768671-review-of-reflex-acceptance-reads-the-remote-primary-ea1fca828431" data-who="reckon-build" data-when="2026-11-09T22:49:27.380Z">
+    <div class="r-comment-body"><p>independent review of r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary at ea1fca8284 against base bf85149157 scores goal_fidelity 19, evidence 15, durability 19, scope_discipline 19, fit 17, reuse 20 (total 109) with no blocking finding, so the correction lands; five non-blocking findings name a dead test fixture, one self-referential assertion, a done_when importer arm that was not run, a duplicated constant and two reason-attribution weaknesses.</p></div>
 </div>
 </section>
 </main>
