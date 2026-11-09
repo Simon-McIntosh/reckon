@@ -1,0 +1,47 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T17:17:48.173Z",
+  "dispatched_at": "2026-11-09T17:12:37Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-landing-is-on-main-when-it-says-so/r-20261109T171057395483-plan-review-of-a-landing-is-on-main-when-it-says-so/plan.html:60",
+      "id": "done_when-1",
+      "reason": "the role scoping is the sentence the implementer would most plausibly drop, and no arm fails when it is dropped, so the gate as written admits a refusal that breaks review promotion broadly.",
+      "text": "\u00a75 scopes the refusal to \"an implementation run\", but every arm of the done-when is an implementation-shaped run, so a guard keyed on `--gate passed` alone (no role test) passes all eight arms while refusing or fetching for every composed-review promotion: a composed review's pointer carries `head` equal to the head it reviewed (`reckon/crew/recovery_review_dispatch.py:641`), which is a node's worktree head and not on the primary branch, and the plain complete path already handles review runs at `reckon/crew_run_commands.py:3154`. The missing arm is a review-role run with a head off the branch that still promotes, which is the negative control for the role scoping \u2014 without it the arm set cannot distinguish the stated mechanism from the unscoped one",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "99a84c20dcc2e13f40c9c7c2c71d0cc92852b18c",
+  "plan_fingerprint": "a8b57fb63a2aa5abaab50a318d98a3a11cddedae6c7ff9ee3f23e7046b84e86c",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T171057395483-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "c0986f04982661a6e25404994a30b71f449106e3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/recovery_review_dispatch.py` \"near line 944\" is `_integration_ref` at 944\u2013972, `reckon/crew/merge.py` 157\u2013180 is the `promotion.complete_dry_run` call inside `require_promotable_head`, `promotion.complete_dry_run` exists at `reckon/crew/promotion.py:895`, and \"Nothing in `reckon/` fetches today\" holds (no `git fetch` in `reckon/`; the only `fetch` hits are the model-catalogue HTTP fetch in `reckon/crew/model_catalogue.py`).",
+    "done_when": "a finding \u2014 the new `--gate passed` conditioning in `plan.html:60` is scoped in the Deliverable to \"an implementation run\", but no done-when arm exercises that role scoping, so an implementation keyed on the gate verdict alone passes every arm.",
+    "evidence_paths": "pass \u2014 the gate logs land \"under the run directory\", which is `~/.config/reckon/crew/runs/<run>/` on shared storage, not a node-local temp path; the new test file sits in `tests/`.",
+    "naming": "pass \u2014 the new test file and the planned function are named by the behaviour (`test_a_plain_complete_refuses_an_unmerged_head.py`), and the section carries no ticket numbers, plan labels or changelog prose into code.",
+    "reasoning": "pass \u2014 the three checks hold: the Why's root cause (a plain complete promotes without an ancestry check) matches the cited nova-39/nova-8a reports and the code as it stands; the mechanism (fetch, then ancestry against the fetched ref, refusing on unmerged head or failed fetch or missing ref) produces each arm of the done-when; and the mechanism names its production caller, \"the plain `crew complete` path in `reckon/crew_run_commands.py`\", which is the path that reaches `crew_module.complete` at `reckon/crew_run_commands.py:3257` and is distinct from the `promotion.complete_dry_run` guard list `crew merge --run` shares.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable (one refusal in the plain complete path) and its newly added arms measure that one refusal's gate conditioning, not a second feature.",
+    "wiring": "pass \u2014 \u00a75 is the upstream s6 and s7 both declare in `plan-section-depends-on` (`{\"s6\":[\"...#s5\"],\"s7\":[\"...#s5\"]}`), \u00a76's closing sentence says it waits on this section, and \u00a77 calls the fetch-and-check function \u00a75 adds, so the relationship the new content creates is declared and points the right way."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "303aa905ebb79d8e15926811720ebe18dde5b0804dc20972418b5e7c3e41d532",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27",
+    "s7": "8bc90ae3525f9de845f012d8a6db903090289d9304ef9bceeb017eb832f22cc8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:22:50.341298+00:00",
+  "total": null
+}
