@@ -3231,6 +3231,10 @@ def crew_complete(
         if not ok:
             raise click.exceptions.Exit(1)
         return
+    if not land and gate == "passed" and pointer:
+        _refuse_a_plain_complete_off_the_branch(
+            run_id, pointer, project=project, commits=commits
+        )
     if candidate:
         from reckon.crew import merge as merge_module
         from reckon.crew import queue_landing
@@ -3315,6 +3319,91 @@ def crew_complete(
             raise click.exceptions.Exit(exit_code)
         return
     _emit_crew_result(result, pretty)
+
+
+def _refuse_a_plain_complete_off_the_branch(
+    run_id: str,
+    pointer: Mapping[str, Any],
+    *,
+    project: str | None,
+    commits,
+) -> None:
+    """Refuse a plain complete whose reviewed head is not on the remote branch.
+
+    A plain ``crew complete --gate passed`` promotes a run as landed, and the
+    ledger then reads work the primary branch does not carry. This is the state
+    the landing guard exists to prevent, and without this check a complete whose
+    merge was refused still promotes and removes the live pointer, which leaves
+    ``crew merge --run`` unable to find the run it was asked to land.
+
+    The remote is read through the module that lands there, so the ancestry
+    decision is the one the merge makes. A review run is exempt: its pointer
+    carries the reviewed node's head by design, checked in the node's worktree
+    and never on the branch, and it is not a landing. A checkout that configures
+    no remote has no remote branch to be off, so the question does not arise and
+    the promotion proceeds.
+
+    Nothing is written here: the pointer and the ledger are untouched when this
+    refuses, which is what makes the refusal recoverable.
+    """
+    from reckon.crew import merge as merge_module
+    from reckon.crew import promotion_release
+    from reckon.crew.recovery_review_delivery import _is_review_run
+    from reckon.crew.refusals import format_refusal
+
+    if _is_review_run(pointer):
+        return
+    head = promotion_release._run_promoted_revision(pointer, list(commits or ()))
+    if not head:
+        return
+    project_name = str(pointer.get("project") or project or "")
+    repository: Path | None
+    try:
+        repository = merge_module.project_repository(project_name)
+    except merge_module.MergeError:
+        recorded = str(pointer.get("repo") or "").strip()
+        repository = Path(recorded) if recorded else None
+    if repository is None or not repository.is_dir():
+        return
+    try:
+        answer = merge_module.head_on_remote_branch(repository, head)
+    except merge_module.MergeError as exc:
+        raise click.ClickException(
+            format_refusal(
+                "D25",
+                f"run {run_id}: the reviewed head {head} could not be checked "
+                f"against the remote primary branch: {exc}",
+            )
+        ) from exc
+    if answer["cause"] == merge_module.REMOTE_UNCONFIGURED:
+        return
+    if answer["cause"] == merge_module.REMOTE_UNREACHABLE:
+        raise click.ClickException(
+            format_refusal(
+                "D25",
+                f"run {run_id}: {answer['remote']} could not be read, so it is "
+                f"unknown whether the reviewed head {head} is on "
+                f"{answer['branch']}: {answer['detail']}",
+            )
+        )
+    if answer["cause"] == merge_module.REMOTE_BRANCH_MISSING:
+        raise click.ClickException(
+            format_refusal(
+                "D25",
+                f"run {run_id}: {answer['remote']} carries no {answer['branch']}, "
+                f"so the reviewed head {head} is not on it",
+            )
+        )
+    if answer["on_branch"]:
+        return
+    raise click.ClickException(
+        format_refusal(
+            "D25",
+            f"run {run_id}: the reviewed head {head} is not on "
+            f"{answer['remote']}/{answer['branch']}, so promoting it as passed "
+            "would record landed work the primary branch does not carry",
+        )
+    )
 
 
 def _land_a_promoted_run(
