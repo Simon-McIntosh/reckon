@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:03:16.797Z",
+  "dispatched_at": "2026-11-09T14:57:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-portfolio-reads-true/r-20261109T145543005043-plan-review-of-the-portfolio-reads-true/plan.html:176",
+      "id": "reasoning-1",
+      "reason": "the node would need to pass the opt-in on the replacement writer (or funnel all three writers through one function) and add a case driving it, and without that the section's own claim that the meta goes whenever a write lands is false on the tool's commonest editing path.",
+      "text": "\u00a710 names \"both state writers\" as the store's `_write_state` (`reckon/_store.py:1717`) and the `reckon/serve.py` POST handler, and claims the meta \"goes only when a write lands\", but `_replace_plan_text` (`reckon/_store.py:2448`, called by `edit_plan`'s replacement path at `reckon/mcp_edit_plan.py:2050` and `:2060`) is a third version-advancing state write that calls `write_state` without the opt-in; reproduced at this head, `read_state` on a plan with declarations `{s1: done, s2: implementable}` and an authored meta of 0.9 returns `impl_source=declarations`, `impl=0.5`, and `write_state(text, state)` returns text still carrying `name=\"plan-impl\" content=\"0.9\"` \u2014 so a node implementing \u00a710 exactly as written passes all four done-when cases while a content edit through `edit_plan` leaves the meta stale, which is precisely the condition \u00a710 exists to remove",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bbfc74d229d509ba698b0f6b47a6a15cd3b38ee5",
+  "plan_fingerprint": "65f0cfe9ebbd8037a314d629ff9a010b821ce001fdc49e40f4fdc9a2df28e8e5",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 74,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T145543005043-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "291660075d7b90f5de33ccaa7a16c425031ccd43",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_plan_html.py` line 2281 is the post-change lifecycle block (`impl_is_derived` at 2282-2283), `reckon/_store.py:1717` is the store's `write_state` call in `_write_state`, and `reckon/serve.py:3909` is the POST handler's `write_state` call; the cited 141 `plan-impl` metas under `docs/plans` count exactly 141 at this revision.",
+    "done_when": "pass \u2014 case (d) drives the served POST handler and, with case (a), is declared to fail at the dispatch base; case (b) pins the byte-identical round-trip; the regression population is now the importers of `reckon._plan_html`, `reckon._store` and `reckon.serve`, measurable from the head tree.",
+    "evidence_paths": "pass \u2014 logs go under the run directory and carry a revision header and a bare `EXIT=` terminator; nothing is written to a node-local temporary path.",
+    "naming": "pass \u2014 the section names no ticket, plan or stage identifier in code-facing text; its test filename describes the mechanism.",
+    "reasoning": "a finding \u2014 \u00a710 states the repair in terms of \"both state writers\", but the repository has a third production state write that advances version and stamps `modified`, `_replace_plan_text` (`reckon/_store.py:2448`), reached from `edit_plan`'s replacement op (`reckon/mcp_edit_plan.py:2050`, `:2060`); it calls `write_state` with no opt-in, so a text edit through the same MCP tool that \u00a710 repairs leaves the stale meta.",
+    "single_goal": "pass \u2014 one deliverable: a derived impl's state write removes the authored `plan-impl` meta, with the default serialise left byte-identical.",
+    "wiring": "pass \u2014 \u00a710 declares no outstanding dependency; the sections it shares write paths with (\u00a72 `reckon/_plan_html.py`, \u00a79 `reckon/_store.py`) are `done`, so nothing it needs is unlanded."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "778fac8e7a56e19215fb77708e1487e4f9563ac61037ad2549de2ae1a82fd28b",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:10:11.683305+00:00",
+  "total": null
+}
