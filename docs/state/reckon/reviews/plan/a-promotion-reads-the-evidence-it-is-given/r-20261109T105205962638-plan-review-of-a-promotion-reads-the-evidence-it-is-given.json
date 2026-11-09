@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:01:25.991Z",
+  "dispatched_at": "2026-11-09T10:54:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:103",
+      "id": "done_when-1",
+      "reason": "the deliverable needs either a narrower exclusion or a fourth case (and a stated rule for the tests a conftest carries), otherwise a conftest edit lands with its own guard test unmeasured and the plan says nothing about it.",
+      "text": "excluding every `conftest.py` from `_node_test_files` also removes the genuine tests a conftest holds: `tests/conftest.py:1552 test_shared_home_fixture_never_targets_the_real_store` passes today when the conftest is a target (`1 passed`), and after \u00a710 no armed command names it for a node editing the conftest. That test guards the operator's real store against being a fixture target, so \u00a710 trades one ERROR for an unmeasured guard, and none of the three cases would see it: case 1 requires the conftest not be named, case 2 requires an empty command, and case 3 covers ordinary test files only",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:103",
+      "id": "anchors_resolve-1",
+      "reason": "the premise it supports (a conftest under `tests/` is collected and errors) is independently verified in the code and under pytest, so no mechanism depends on the citation resolving; only the citation itself is loose.",
+      "text": "\"crew-process \u00a76\" does not resolve: no plan has the slug `crew-process`, three plans carry it inside their slug (`a-crew-process-ends-with-its-owner`, `a-crew-process-writes-only-what-it-owns`, `a-long-lived-crew-process-leaves-nothing-stale`), and the nearest \u00a76 (`a-crew-process-ends-with-its-owner.html:391`) is \"An orphan is a process whose owner is dead\", not a conftest grant",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "4024c26a91c4ac6e67823971941deb3d70744280",
+  "plan_fingerprint": "9faa32de63407cbd29c87ab944ec95782797ff1b6dd858028b028e1170bb0533",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 62,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T105205962638-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "f84d49777ef2d1a0e75e297bcda65b438a015d66",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \"crew-process \u00a76\" names no plan slug, so the citation resolves to nothing a reader can open.",
+    "done_when": "a finding \u2014 the blanket conftest exclusion drops the genuine test held inside `tests/conftest.py`, and none of \u00a710's three cases measures that loss.",
+    "evidence_paths": "pass \u2014 the section's gate logs are the run's own revision-stamped logs on the run record. The negative controls are declared twice: one restoring the conftest path and one making the resolution fall back to a bare `pytest`; no evidence rests in a temporary path.",
+    "naming": "pass \u2014 `tests/test_an_armed_command_names_no_conftest.py` and the changed predicate are named by mechanism; no plan labels, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the stated root cause reproduces under pytest, the mechanism (`_node_test_files` skipping conftest, reached by `_scoped_suite_command` at `promotion_records.py:561`) produces the declared empty command, and the caller inserting the file list into the armed suite command is named and real.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable: one predicate in `_node_test_files` plus its own test file.",
+    "wiring": "pass \u2014 \u00a710 declares no wait and no section depends on it, which matches its sole write path (`reckon/crew/promotion_records.py`) being independent of \u00a76\u2013\u00a79, and the open followup `f-aprteig-010` names \u00a710."
+  },
+  "section_digests": {
+    "_document": "cc32472b73a29009d06a1d56714ce28cdfd50ffda0668f99fdd4b618abeb08ed",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "5cf30ae09151bdb54c113c1baa07ca335fd2f18c3db808d37110eb2f9e16e7c9",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:10:34.570510+00:00",
+  "total": null
+}
