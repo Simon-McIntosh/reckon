@@ -1,0 +1,47 @@
+<section id="a-conftest-helper-is-never-collected-landing">
+  <h2>A conftest helper is never collected as a test</h2>
+
+  <p><strong>What changed.</strong> <code>tests/conftest.py</code> defined
+  <code>test_temp_config_home</code>, a helper that other test modules import,
+  under a name pytest collects. Collection therefore took it for a test and
+  errored at setup on its <code>prefix</code> parameter, which
+  <code>pytest tests/conftest.py</code> reported as
+  <code>ERROR tests/conftest.py::test_temp_config_home</code>. The helper is
+  renamed <code>make_temp_config_home</code> and its three callers
+  (<code>tests/test_watch_arming_isolation.py</code>,
+  <code>tests/test_budget_group_declaration.py</code>,
+  <code>tests/test_bookend_reserve_by_group.py</code>) use the new name. The
+  <code>noqa: PT028</code> the old signature carried existed only to excuse the
+  collected name and is dropped with it. The conftest stays in the armed
+  command, so its genuine test,
+  <code>test_shared_home_fixture_never_targets_the_real_store</code>, keeps
+  running.</p>
+
+  <p><strong>The guard.</strong> A new test,
+  <code>tests/test_a_conftest_helper_is_never_collected.py</code>, runs pytest in
+  a subprocess and asserts two facts against its real output: the collected node
+  ids from <code>--collect-only tests/conftest.py</code> include the genuine guard
+  test and contain no helper, and a plain run of <code>tests/conftest.py</code>
+  reports no ERROR.</p>
+
+  <h3 id="a-conftest-helper-is-never-collected-measured">Measured</h3>
+
+  <p>Base arm at <code>3118c2969a</code>, resolved over its own tree (the new
+  test file is absent there and so is dropped from the command):
+  <code>25 passed, 1 error</code>, the error being
+  <code>tests/conftest.py::test_temp_config_home</code>. After arm over the same
+  four files plus the new test: <code>27 passed</code>, exit 0. The delta is the
+  error id removed and no new failure.</p>
+
+  <p><strong>Negative control.</strong> Restoring the <code>test_</code> name on
+  the helper makes both cases in the new test fail:
+  <code>2 failed</code>, with the subprocess output recording
+  <code>ERROR tests/conftest.py::test_temp_config_home</code> and
+  <code>fixture 'prefix' not found</code>.</p>
+
+  <p><strong>Ruff by delta.</strong> The staged paths carry one finding before
+  and after &mdash; the pre-existing <code>F841</code> at
+  <code>tests/conftest.py:1057</code>, which this section leaves untouched. No
+  finding is added, and the dropped <code>noqa: PT028</code> is not missed
+  because the renamed signature is no longer collected.</p>
+</section>

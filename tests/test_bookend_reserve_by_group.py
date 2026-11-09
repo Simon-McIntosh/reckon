@@ -39,7 +39,7 @@ from reckon import crew, flight
 from reckon._store import _config_home
 from reckon.crew import budget_group as bg
 from reckon.crew import reserve
-from tests.conftest import test_temp_config_home as _temp_config_home
+from tests.conftest import make_temp_config_home as _temp_config_home
 from tests.test_dispatch_records_the_pace_row import (
     _Host,
     _prescribed_node,
