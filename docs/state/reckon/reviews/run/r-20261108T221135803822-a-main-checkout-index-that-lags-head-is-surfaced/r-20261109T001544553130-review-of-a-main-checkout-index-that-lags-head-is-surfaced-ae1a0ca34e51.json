@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/station_obligations.py:189",
+    "reckon/crew/station_obligations.py:270",
+    "reckon/crew/obligation_snapshot.py:1493",
+    "reckon/crew/obligation_snapshot.py:1629",
+    "reckon/hooks/coordinator_obligations.py:798",
+    "reckon/mcp_views.py:4573",
+    "reckon/velocity.py:185",
+    "reckon/crew/routing.py:544",
+    "reckon/clones.py:402"
+  ],
+  "completed_at": "2026-11-09T00:24:19.159Z",
+  "dispatched_at": "2026-11-09T00:16:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 2603,
+      "severity": "non-blocking",
+      "text": "_checkout_head_from_files re-implements the capability reckon/git_head.py:82 _head_identity owns (its module docstring is \"Read a checkout's HEAD identity as files, without spawning git\") and does it more weakly: it reads repository/.git/HEAD literally, so a linked worktree (whose .git is a file) and a packed ref both resolve to \"\", which collapses the cache key at :2624 to the index stat identity alone; a cached negative reading can then survive a HEAD move and the notice this node exists to raise is never derived. Importing the owner, or hoisting both readers to it, removes the fork; folding this duplication into a node also answers the same class of finding the previous round raised."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": 2653,
+      "severity": "non-blocking",
+      "text": "the cached reading has no test that it re-derives after the checkout moves: every case in tests/test_a_landing_leaves_the_index_at_head.py builds a fresh temporary checkout, and the station's steady-state case only proves a tick with nothing moved runs no git, so a cache whose key stopped changing would pass all of them while serving a stale notice or a stale silence. A case that repairs the index in place and reads a second time would redden on that regression."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the three commits against 5f4590af: 2dde27309d carries the notice into the payload and routes the detector through run_git and fixes the head assertion, 80ab84d875 adds the cached reading keyed on the index signature and HEAD files, ae1a0ca34e records both in the node's own evidence fragment.",
+    "done_when": "the source done_when names tests/test_a_landing_leaves_the_index_at_head.py with four cases, a one-line log on a second read, an ignored untracked path raising nothing, a logged negative control, an untouched real crew home, no added importer failure and clean ruff; the file holds six cases and logs/gate-head.log records 7 passed EXIT=0.",
+    "goal": "the goal is to surface a main-checkout index that lacks a path HEAD and the working tree both hold as a notice with the path-limited restore; reckon/crew/obligations.py:2633-2686 derives it and reckon/crew/obligation_snapshot.py:1493 carries it into the published payload.",
+    "manifest": "read; it records gate 7 passed EXIT=0 at 80ab84d875, base module arm 6 failed, two negative controls at 1 failed each, and three importer arms with the obligations arm's 8 ids all inside the base failure set.",
+    "write_paths": "read the source prompt's FENCE \u2014 SCOPE (reckon/crew/obligations.py, the test file, the evidence fragment, the figures dir) and resume-2-advice.txt, which added obligation_snapshot.py and velocity.py; every path in the diff from 5f4590af to ae1a0ca3 is inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_leaves_the_index_at_head.py:143 now compares the notice's head against the checkout's own git rev-parse HEAD and the snapshot case at :189 has a logged negative control, but nothing fails if the cache added at reckon/crew/obligations.py:2653 never re-derives after the index or HEAD moves.",
+    "evidence": "logs/gate-head.log records 7 passed at 80ab84d875 ending EXIT=0, logs/base-arm.log 6 failed EXIT=1, and the two controls in logs/negative-control.log and logs/negative-control-snapshot.log each fail the case their mutation removes; the arm sets are not identical populations, so the two ids outside the base failure set are argued from separate measurements rather than shown in a recorded arm.",
+    "fit": "the notice is declared beside the module's other duty kinds at reckon/crew/obligations.py:275 and held by the hook's mirrored vocabulary at reckon/hooks/coordinator_obligations.py:248, with comments stating mechanism and no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1488-1497 now appends module._index_lag_notice to every session's published payload, so the notice the goal asks for reaches the prompt path the hook reads and not only reckon/crew/obligations.py:2685's derivation.",
+    "reuse": "reckon/crew/obligations.py:2603 adds _checkout_head_from_files, a second implementation of the capability reckon/git_head.py:82 _head_identity already owns, and a weaker one because it follows neither the .git-file pointer nor commondir; the run_git duplication the previous round raised is properly repaired by the env parameter at reckon/velocity.py:164.",
+    "scope_discipline": "the diff from 5f4590af to ae1a0ca3 touches only reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/velocity.py, tests/test_a_landing_leaves_the_index_at_head.py and the node's own evidence fragment, and the two new modules were granted by resume-2-advice.txt before they were edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to surface a main-checkout index lacking a path HEAD and the working tree both hold as a notice with the path-limited restore; reckon/crew/obligations.py:2633-2686 derives it and reckon/crew/obligation_snapshot.py:1488-1497 now carries it into the published payload.\nVERDICT done_when: the done_when names tests/test_a_landing_leaves_the_index_at_head.py with four cases, a one-line log on a second read, an ignored untracked path raising nothing, a logged negative control, an untouched real crew home, no added importer failure and clean ruff; the file holds six cases and logs/gate-head.log records 7 passed EXIT=0.\nVERDICT write_paths: read the source prompt's FENCE \u2014 SCOPE and resume-2-advice.txt, which added obligation_snapshot.py and velocity.py to the grant; every path in the diff is inside that scope.\nVERDICT manifest: read; it records gate 7 passed EXIT=0 at 80ab84d875, base module arm 6 failed, two negative controls at 1 failed each, and three importer arms with the obligations arm's 8 failure ids all inside the base failure set.\nVERDICT diff: read the three commits against 5f4590af; 2dde27309d carries the notice into the payload and routes the detector through run_git, 80ab84d875 caches the reading, ae1a0ca34e records both in the node's own evidence fragment.\nCALL_SITES: reckon/crew/station_obligations.py:189, reckon/crew/station_obligations.py:270, reckon/crew/obligation_snapshot.py:1493, reckon/crew/obligation_snapshot.py:1629, reckon/hooks/coordinator_obligations.py:798, reckon/mcp_views.py:4573, reckon/velocity.py:185, reckon/crew/routing.py:544, reckon/clones.py:402\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1493 appends the derivation's own notice to every session's published payload, so the condition now reaches the prompt path the hook reads and not only the CLI/MCP view.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/gate-head.log records 7 passed ending EXIT=0, logs/base-arm.log 6 failed, and both controls red, though the after arms run different file populations from the baseline's 81 files so two ids are argued from separate measurements rather than a recorded arm.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff from 5f4590af to ae1a0ca3 touches only the granted paths, the two new modules having been added to the grant in resume-2-advice.txt before they were edited.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_landing_leaves_the_index_at_head.py:143 compares the notice's head against the checkout's own git rev-parse HEAD and the snapshot case at :189 has a logged negative control, but no test fails if the cache at reckon/crew/obligations.py:2653 stops re-deriving.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:275 declares the kind beside the module's other duty kinds and reckon/hooks/coordinator_obligations.py:248 mirrors it, with mechanism-level comments and no plan or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligations.py:2603 duplicates reckon/git_head.py:82 _head_identity, the module that owns reading HEAD as files, without extending it and without its worktree or commondir handling.\nFINDING reckon/crew/obligations.py:2603 non-blocking: _checkout_head_from_files re-implements reckon/git_head.py:82 _head_identity, and its literal .git/HEAD read returns an empty head for a linked worktree or a packed ref, collapsing the cache key so a stale reading can survive a HEAD move.\nFINDING reckon/crew/obligations.py:2653 non-blocking: no test asserts the cached reading re-derives after the index or HEAD moves, so a broken key would pass every case in the node file and the station's steady-state case while serving a stale notice or silence.\n",
+  "review_run_id": "r-20261109T001544553130-review-of-a-main-checkout-index-that-lags-head-is-surfaced-ae1a0ca34e51",
+  "reviewed_base_sha": "5f4590af661932ace4aef4109a0dea543c8e4790",
+  "reviewed_head_sha": "ae1a0ca34e5165269a7314b2536954b5ef5e9be9",
+  "reviewed_run_id": "r-20261108T221135803822-a-main-checkout-index-that-lags-head-is-surfaced",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T00:33:08.058484+00:00",
+  "total": 93
+}
