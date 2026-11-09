@@ -2046,6 +2046,10 @@ def change_lane(
                     "argv": list(target_plan.argv),
                     "command": str(target_plan.argv[0]),
                     "dialect": target_plan.dialect,
+                    # The move's own resolution, so a resume of the moved run
+                    # searches the destination lane's declared directories
+                    # rather than the ones its previous attempt used.
+                    "backend_search_path": list(target_plan.backend_search_path),
                 }
             )
             current.pop("directive", None)
@@ -2055,6 +2059,10 @@ def change_lane(
                     "argv": None,
                     "command": None,
                     "dialect": None,
+                    # No plan was composed, so nothing was searched through a
+                    # declared path; a later move back to a cli lane resolves
+                    # the destination's declaration from the config.
+                    "backend_search_path": None,
                     "directive": {
                         "attach_with": (
                             f"reckon crew attach --run {run_id} --task <task-id>"
