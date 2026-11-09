@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:33:00.070Z",
+  "dispatched_at": "2026-11-09T14:28:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "a node following it changes nothing in `merge.py` and ships a run that stays live forever after its head lands, which is the same stuck-pointer state \u00a75 exists to remove.",
+      "text": "s5 says `crew merge --run` retires the kept pointer \"through the pending-landing path in `reckon/crew_run_commands.py` (near lines 3247\u20133253)\", but those lines are the `pending_landing.write_pending(...)` call inside `crew complete --land`'s `if land:` branch, which the plain-complete path never enters; `crew merge --run` is `crew_merge` (`reckon/crew_run_commands.py:251`) calling `merge.land_merge`, and `reckon/crew/merge.py` retires no live pointer anywhere; and the only code that finishes a pending landing skips every run whose pointer is still live \u2014 `pending_landing.finish_pending_landings` (`reckon/crew/pending_landing.py:233`) `continue`s on `if run_id in live and not (pointer or {}).get(\"pending_landing_repair\")`, and it unlinks the pointer only for a `pending_landing_repair` run (`reckon/crew/pending_landing.py:309-310`). A run kept live by the separate-merge flag is exactly the case that finish path skips, so the sentence promises a retirement that cannot happen and names the wrong file as its site",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "adding \"and the live pointer is gone afterwards, with the base revision keeping it\" turns the plan's second promise into a measure and is the arm that would have exposed the unreachable mechanism above.",
+      "text": "s5's second case stops at \"a later `crew merge --run` lands it\" and asserts nothing about the pointer, so the deliverable's promise that the run \"does not stay live after its head lands\" has no arm that can fail; a test that only checks the merge landed passes on such an implementation while the pointer is still on disk",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:64",
+      "id": "reasoning-2",
+      "reason": "naming the order \u2014 acquire `promotion-<run>` before the run's pointer lock, or probe it non-blocking \u2014 is one clause that keeps the node off a hang that no arm of its gate would show.",
+      "text": "s6 says a resume \"also takes or checks the run's promotion lock\" without naming the acquisition order, while promotion holds `promotion-<run>` and then takes the run's own lock (`reckon/crew/promotion.py:2072`, `with _promotion_lock(run_id), _pointer_lock(run_id)`, and again via `_remove_promoted_pointer` at `reckon/crew/promotion.py:166`), and `_pointer_lock` is a blocking `fcntl.flock(LOCK_EX)` with no timeout (`reckon/crew/runs.py:452-460`); a resume that takes the pointer lock where it already does (`reckon/crew/resumption.py:217`, `mark_resume_launching`) and then blocks on the promotion lock deadlocks against a promotion waiting on that pointer lock, and the done-when's controlled case (a promotion lock held with no promotion waiting for the pointer) cannot exhibit it",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "36fc747af1cbc6198dfb3041777e02ca76f56da0",
+  "plan_fingerprint": "7eca54cd46f8686455beca031944eae0080366bdf24081e7f45df9ace037f999",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T142620294078-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "3b370ffad1c380348fc5c11001bf28a249c192b5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_promotion_lock`/`_pointer_lock(\"promotion-<run>\")` at `reckon/crew/promotion.py:161-163`, the pointer-removal guard's `run ... changed while promotion ran` at `reckon/crew/promotion.py:191`, `_require_worker_stopped_before_promotion` at `reckon/crew/promotion_checks.py:787`, the run's own pointer lock at `reckon/crew/resumption.py:217`, and the pending-landing write at `reckon/crew_run_commands.py:3247-3253` all resolve; `D24` is absent from `reckon/crew/refusals.py` here, consistent with the claim about `origin/main`.",
+    "done_when": "a finding \u2014 s5's second arm (`crew merge --run` lands the kept run) asserts the landing but never asserts the pointer is retired, so the deliverable's \"does not stay live after its head lands\" cannot fail.",
+    "evidence_paths": "pass \u2014 s6 requires its logs under the run directory with a revision-and-command header and a trailing `EXIT=`, and s5's gate logs are carried by the run's own `test_logs` contract rather than a session-scratch path.",
+    "naming": "pass \u2014 both units name mechanisms (`_promotion_lock`, `pending-landing path`, `_require_worker_stopped_before_promotion`) and neither new symbol, filename nor comment carries a plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 s5's newly added retirement mechanism names a path that no command in the plain-complete scenario reaches, and s6 leaves the resume's lock acquisition order unnamed against a blocking flock.",
+    "single_goal": "pass \u2014 s5 has one goal (a plain complete never leaves a run reading landed while its head is unlanded), with the kept-pointer retirement as part of it rather than a second deliverable; s6 has one goal (a `--land` promotion records a landing only once the head is on the branch) with the resume race as the same goal's mechanism.",
+    "wiring": "pass \u2014 s6 declares `plan-section-depends-on` on `a-landing-is-on-main-when-it-says-so#s5` (plan line 29), s5 now names its four write paths and points at \u00a76's shared `reckon/crew/promotion.py`, and the open followup f-alomwiss-006 queues \u00a76."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "f25528f6a4d3f31023cc80a0488fbf0a9e5f625ed4521fd28532b69677b1df29",
+    "s6": "d7851b7b46cb7bd4ab7c0432dc5703db036bfbb3f4d1aebccea7086d95e9cdc3"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:44:27.670522+00:00",
+  "total": null
+}
