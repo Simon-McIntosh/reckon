@@ -1,0 +1,48 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T19:09:37.965Z",
+  "dispatched_at": "2026-11-09T19:02:12Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:72",
+      "id": "wiring-1",
+      "reason": "a \u00a78 builder reads that the mode it must use is delivered by \u00a76 and either waits on it or writes outside its own scope, and a \u00a76 builder reading the plan's other half could add the same `runs.py` change in a file \u00a76 does not own.",
+      "text": "\u00a78's Why says \"`_pointer_lock` \u2026 takes a blocking `flock(LOCK_EX)` only, so \u00a76 gives it a non-blocking mode, and a resume takes the run's promotion lock first in that mode\", but \u00a76 now assigns that race away (\"The race that let the pointer change \u2026 is \u00a78\") and its write paths drop `reckon/crew/runs.py` and `reckon/crew/resumption.py`, which \u00a78's write paths carry \u2014 so the two sections name each other's work as the other's, and `plan-section-depends-on` records no `s8` entry either",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9ca0a739bbcbe0a7a8f87c9fccb1add9bd0a5dad",
+  "plan_fingerprint": "25c9dcb8b33501c98d4aed6480a9853c595aec193dcde56da2783b62394e59d7",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 30,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T190030702850-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "6cb4c0d2808c70ea1e1fe97a7853617857ff2aef",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited anchor resolves in the tree as the plan describes it: `promotion.py:161` (`_promotion_lock`), `promotion.py:191` (the `changed while promotion ran` raise), `promotion.py:335-337` (the promotion's own lock order), `runs.py:453-462` (blocking `LOCK_EX` only), `resumption.py:217`, `promotion_checks.py:787`, `pending_landing.py:185/226-234`, `crew_run_commands.py:3217`, `recovery_review_acceptance.py:209-240/348`.",
+    "done_when": "pass \u2014 each of \u00a76, \u00a77 and \u00a78 states its measure with a declared negative control, and every control is a base-revision behaviour that was checked against the tree (`promotion.py`'s guard raising and preserving the pointer; `resumption.mark_resume_launching` taking the pointer lock unconditionally; `recovery_review_acceptance._commits_missing_from` probing local `HEAD`).",
+    "evidence_paths": "pass \u2014 all three sections put their logs and tests on paths that survive the run (the run directory, the repository's `tests/`), none in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the added units name no tickets, plan labels or stage names; the `\u00a7N` references are prose cross-references inside the plan, not code identifiers.",
+    "reasoning": "pass \u2014 \u00a76's cited cause matches its evidence (the guard at `promotion.py:191` raises before the merge, and `pending_landing.clear_pending` is reached only after a successful land, so the pending record \u00a76 needs is still on disk when the guard raises); \u00a78's lock argument is confirmed against the code (`_promotion_lock` is `_pointer_lock(\"promotion-<run>\")`, a different lock file from the run's own pointer lock, so the measured concurrent mutation is explained, and the live-worker check sits inside the promotion lock at `promotion.py:589`, so the fixed order closes the window rather than narrowing it); \u00a77's mechanism is reached from a real caller (`promotion_module.complete` at `recovery_review_acceptance.py:348`).",
+    "single_goal": "pass \u2014 \u00a76 carries only the pending-landing repair, \u00a77 only the reflex-acceptance remote check, \u00a78 only the resume-versus-promotion lock.",
+    "wiring": "a finding \u2014 \u00a78 attributes the non-blocking `_pointer_lock` to \u00a76, while \u00a76 now assigns it to \u00a78 and \u00a78's own write paths own it."
+  },
+  "section_digests": {
+    "_document": "ed7038c73809ec844834c0a7c431e92edd896a1af4ee4bffaef93166511aceee",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "21c36d0c92510ecabc472d79ecac52805626f4c009836573a6cafa61914b290c",
+    "s6": "525fd034351b8bbdc2b178f8fa24614e1db03e35c6c07a86a01079ab843e067d",
+    "s7": "1ed4e50f34954a6ae74043f849b506f475f1081cdde16a6b6973e93f9caf13c8",
+    "s8": "44029cb31ff510a81f289ebf833a65593b4ce3880e9fe2670586cb0001b15d2b"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T21:48:47.496327+00:00",
+  "total": null
+}
