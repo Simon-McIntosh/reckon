@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:57:46.230Z",
+  "dispatched_at": "2026-11-09T10:48:31Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html#s15",
+      "id": "done_when-1",
+      "reason": "without one added case (a direct `ledger.run_ids(project)` after the pass opens no aggregate read) the acceptance test certifies a narrower fix than the plan delivers, and the ledger cache the section exists to place can be skipped entirely.",
+      "text": "the gate counts `_load_aggregate` calls over one `live_work_populations` call and bars them at \"at most once per project\", a bar a memo added inside `recovery_review_dispatch._open_review_refusal` meets \u2014 and that file is in the section's write paths \u2014 while `ledger.run_ids`'s other callers (`obligations.py:693`, `review_lifecycle.py:414`, `run_store.py:430`) keep reading the aggregate once per call, so the node can pass without producing the outcome the Deliverable states (\"every caller pays at most one aggregate read per ledger change\")",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html#s15",
+      "id": "done_when-2",
+      "reason": "the primary measure (the `_load_aggregate` count) is unaffected and the fix is a read-side cache, so the clause being vacuous costs an assertion, not a deliverable.",
+      "text": "\"each duty's refusal text is unchanged\" measures a refusal the fixture never produces: `_reflex_open_refusal` returns a refusal only when `review_dispatch_refusal` reports `refused`, which needs a stored `open` review carrying an undisposed blocking finding, and the fixture specifies only a stored review covering an older head, so the duty prints the reflex-window text (`_reflex_review_command`) and the clause compares a text that is not a refusal",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-read-costs-what-changed.html#s15",
+      "id": "anchors_resolve-1",
+      "reason": "the attribution to \u00a712 is right and the date is context, so a reader who checks finds the commit a day earlier and loses nothing about the mechanism.",
+      "text": "\"it landed on 9 November with `a-review-dies-where-nobody-is-looking` \u00a712\" does not resolve: `git log -S '_reflex_open_refusal' -- reckon/crew/obligations.py` gives `21553c80c9`, authored and committed 2026-11-08 23:01 +0100 (22:01Z), and no commit on 9 November introduces the path",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b19ad84f6f796ef9d52d1fb443a3d363546375ec",
+  "plan_fingerprint": "cf4b3208ff06e585e31327dfb7ddb04ba0db2f35eb8239ad781430daa176938e",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 63,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T104700083665-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "2e48ad71898a97a18402e2da6a4806b60ab63e1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every file, section and line anchor resolves (`station.py:524`, `station_subscriber.live_work_populations`, `delivered_run_owes_review`, `obligations._review_duty_item` at :1744, `_reflex_owns_review` at :719, `_open_review_refusal` at :2497 with `ledger.run_ids` at :2539, `a-review-dies-where-nobody-is-looking` \u00a712), but the landing date does not: the commit that wrote `_reflex_open_refusal` is 2026-11-08 22:01Z, not 9 November.",
+    "done_when": "a finding \u2014 the count over `_load_aggregate` on the `live_work_populations` path cannot tell a cache in the ledger from a memo inside `reckon/crew/recovery_review_dispatch.py`, so the node passes its gate while the other `ledger.run_ids` callers keep paying per call.",
+    "evidence_paths": "pass \u2014 the gate writes `tests/test_a_review_duty_reads_the_ledger_once_per_pass.py` in the tree and puts its logs under the run directory, not a scratch path; the live per-tick figures go to the manifest.",
+    "naming": "pass \u2014 the new test file is named for the mechanism it measures, no plan label, ticket number or version tag reaches a symbol, path or comment, and no changelog prose is introduced.",
+    "reasoning": "pass \u2014 the cited stack sample matches the code: `_open_review_refusal` calls `ledger.run_ids` at `recovery_review_dispatch.py:2539`, `run_ids` calls `_load_aggregate` unconditionally at `ledger.py:1053`, and `_load_aggregate` reads `_store._load_json_envelope` (an unconditional `path.read_text()` + `json.loads`) at `ledger.py:992-999`, so the aggregate is rebuilt once per duty; the mechanism (a stat-validated cache in the ledger, `reckon/ledger.py` now in the write paths) reaches the production caller `station.py:524` and produces the done-when's count, and the claim that hoisting into the obligations view alone leaves the tick unchanged holds because the tick calls `obligations._review_duty_item` directly (`station_subscriber.py:145`) rather than through the view at `obligations.py:3013`.",
+    "single_goal": "pass \u2014 the Deliverable is one change (serve `ledger.run_ids` from a stat-validated cache) with its live measurement recorded; the retired \"or once per pass\" alternative is gone from the Deliverable, and the hoist it warns against is explicitly excluded.",
+    "wiring": "pass \u2014 s15 declares no dependency, and it is the only live section whose write paths name `reckon/ledger.py` (s13, the other, is descoped), so no node is ordered against it and no second node writes the same file."
+  },
+  "section_digests": {
+    "_document": "fadd834561014ac70b3c356334ec429206b493af2f66b7ab5d86276b95038750",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "0c1fedabb81edbc7b772bc1ea507f1459cac5e94e6f6cb0f18b3be5e22c558b8",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:06:09.515463+00:00",
+  "total": null
+}
