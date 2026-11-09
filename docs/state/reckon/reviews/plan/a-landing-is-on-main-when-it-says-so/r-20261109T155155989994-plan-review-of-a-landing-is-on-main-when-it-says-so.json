@@ -1,0 +1,54 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:58:32.849Z",
+  "dispatched_at": "2026-11-09T15:53:38Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "a node following the section literally would land a refusal that breaks the merge path the section tells coordinators to use, and the plan must say how the merge's dry run is exempted and add an arm showing `crew merge --run` still lands an unmerged head.",
+      "text": "\u00a75 states the refusal unconditionally and offers \"or merges it first\" as the coordinator's remedy, but `crew merge --run` validates the run through `merge.require_promotable_head` (`reckon/crew/merge.py:157-180`), which calls `promotion.complete_dry_run` (`reckon/crew/promotion.py:895-905`, \"the guards are the promotion's own\"), reached from `crew_run_commands.py:330-340` via `verify_promotion`; a head-ancestor guard added to the shared check list therefore refuses every `crew merge --run` on an unmerged head before `land_merge` builds the merge, so the remedy \u00a75 names stops working and no arm in \u00a75's done-when exercises that caller",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "the ref choice decides whether the guard closes the defect or only one of its two routes, and the section must name it (and whether a fetch is read) for the negative control to be a control over the delivered behaviour.",
+      "text": "the Deliverable says \"not an ancestor of the primary branch\" but names no ref, and the done-when's positive arm (\"a head already on the branch promotes as before\") is satisfied by either reading, while the repo holds both conventions (`merge._is_ancestor(repository, head, \"HEAD\")` for local `main` at `reckon/crew_run_commands.py:327`, versus the remote-tracking primary ref helper at `reckon/crew/recovery_review_dispatch.py:944`); a local-`HEAD` test passes a head that `land_merge` fast-forwarded locally and then failed to push (`MergePushOutstandingError`, `reckon/crew/merge.py:808`), which is exactly the \"ledger reads landed work that main does not carry\" state \u00a75 exists to prevent",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "847ee0e58cabee62d8bce7f540a9e7f99d797966",
+  "plan_fingerprint": "c9eec0e7b90f5a5fe49f72885b585b2f60001dcb3b0f1f7979c44a3046e406fa",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 16,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T155155989994-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "c868f5f71d8b6dbe1d758fbf8cab39aead3bb934",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75 cites only paths that exist (`reckon/crew/promotion.py`, `reckon/crew_run_commands.py`); the two new files it names are to be created, not citations; no line-number anchor was retained after the rewrite.",
+    "done_when": "a finding \u2014 the arm \"a plain complete on a head already on the branch promotes as before\" names no ref the ancestry test reads, so it passes against local `HEAD` while the Deliverable's stated purpose fails for a locally merged but unpushed head.",
+    "evidence_paths": "pass \u2014 the gate logs land \"under the run directory\", which is the durable crew run directory, not a scratchpad or a node-local temporary path; the new test lives under `tests/`.",
+    "naming": "pass \u2014 `tests/test_a_plain_complete_refuses_an_unmerged_head.py` names the behaviour it asserts, and no plan label, ticket number or version tag enters a symbol or comment in \u00a75.",
+    "reasoning": "a finding \u2014 \u00a75's refusal, implemented where a promotion's guards live, also fires inside `crew merge --run`'s dry run, which refuses the very merge \u00a75 offers as the remedy for an unmerged head.",
+    "single_goal": "pass \u2014 \u00a75 delivers one behaviour (a plain complete refuses an unmerged head) and its three arms are cases of that one refusal, not separate deliverables.",
+    "wiring": "pass \u2014 `plan-section-depends-on` carries s6\u2192s5 (plan.html:29) and open followup `f-alomwiss-007` drives `/reckon-build ... \u00a75` (plan.html:85-89), so \u00a75 is both driven and awaited."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "bbb7de0c7eb39429268737af113aa0d4615950f04f26e9302248fbd27a48d635",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:06:05.912362+00:00",
+  "total": null
+}
