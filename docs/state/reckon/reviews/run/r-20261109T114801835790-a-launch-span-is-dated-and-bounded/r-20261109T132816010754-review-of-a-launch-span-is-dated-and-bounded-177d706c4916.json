@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arms: baseline_suite at 930ce36532 completed with failure_count 1 and id tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path (logs/base-arm.log ends '1 failed, 80 passed' EXIT=1); after_suite at 177d706c49 completed with the identical single id (logs/after-arm-final.log ends '1 failed, 80 passed' EXIT=1). Delta zero, so no id is added.",
+  "call_sites": "reckon/crew/dispatch.py:3505, reckon/crew/dispatch.py:3511, reckon/crew/dispatch.py:3567",
+  "call_sites_note": "all three production call sites of refuse_a_released_launch: the two pre-spawn reads and the post-spawn read in dispatch.py's launch path, reached by the crew dispatch command. reckon/crew/dispatch.py:126 re-exports the name. The node's test file is not counted.",
+  "completed_at": "2026-11-09T13:40:54.266Z",
+  "dispatched_at": "2026-11-09T13:33:16Z",
+  "durability_note": "the two assertion groups each name the code change that reddens them: restoring the D23 literal at dispatch_refusals.py:306 reddens tests/test_a_launch_span_is_dated_and_bounded.py:131-133 (the plan-review remedy is asserted absent) and the D24 census test's negative lines; removing the D24 registry entry reddens the partitioned census at tests/test_crew_refusal_visibility.py:92 and makes format_refusal raise so the census test errors. The node test's 'at step claim-published' assertion reads a message production composed from a record production wrote, not a value the test handed to the code under test.",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "log-header wording; the content is identical and the landing re-runs the changed tests, the census test included, at base and head",
+      "recorded_at": "2026-11-09T13:48:54.972938+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew_refusal_visibility.py",
+      "line": 99,
+      "severity": "non-blocking",
+      "text": "the census assertion added in the final commit is verified only in a tree recorded as be28ac3490 'plus the D24 census assertion (uncommitted)' (logs/gate-repair-3.log), so no gate log names the committed head 177d706c49 for this file; the content is identical and the run passed, but a reader cannot reconcile the log header with the promoted sha."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 38c5c2284e to 177d706c49; three commits, four files, +31/-5, matching the manifest's changed paths.",
+    "done_when": "the done_when asks for a recorded refusal naming the step, the pinned-release worker signalled, holder/host/advancing step in claim.json, importer arms adding no failure and ruff clean on staged paths; the manifest records logs/gate-repair-3.log '40 passed' EXIT=0 and logs/after-arm-final.log '1 failed, 80 passed' EXIT=1 against a base with the same single failure, and the ruff state is a delta of one pre-existing F841 rather than clean.",
+    "goal": "the source node's goal is 'a launch span is bounded and a stalled launch becomes a recorded refusal'; the commits since the prior review carry the recorded-refusal half - reckon/crew/refusals.py:95 registers D24 with the dispatch-again remedy, and reckon/crew/dispatch_refusals.py:306 renders it.",
+    "manifest": "read; status complete, four commits ending 177d706c49, baseline_suite and after_suite both completed with one identical failure id, negative_control_log names a log whose last line is EXIT=1.",
+    "write_paths": "the increment touches the four files named in this review's own dispatch (reckon/crew/refusals.py and tests/test_crew_refusal_visibility.py were outside the original fence and granted in the repair round per resume-1-advice.txt and resume-2-advice.txt); the diff lies wholly inside them."
+  },
+  "negative_control_note": "logs/negative-control.log is red (3 failed, 1 passed, EXIT=1) with the bound raised out and the post-spawn read deleted, at be28ac3490; this increment changes no production behaviour beyond the family id, so the log still exercises the mutations it names.",
+  "node": "review-of-a-launch-span-is-dated-and-bounded-177d706c4916",
+  "plan": "a-dispatch-returns-without-its-worker",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'a launch span is bounded and a stalled launch becomes a recorded refusal'; the commits since the prior review carry the \"recorded refusal\" half, and reckon/crew/refusals.py:95 registers D24 with the resolving action '`reckon crew dispatch` the node again; the release removed the run directory, so the next launch starts afresh with a new claim', which reckon/crew/dispatch_refusals.py:306 now renders instead of the plan-review family.\nVERDICT done_when: the done_when (prompt FENCE-EVIDENCE: 'a release pinned between the pre-spawn and post-spawn reads caught with the worker signalled; claim.json names holder, host and an advancing step; importer arms add no failure; ruff clean on staged paths') was already satisfied by 38c5c2284e for the mechanism; the commits since then repair the one defect the prior review raised, and the manifest records the census gate logs/gate-repair-3.log ending '40 passed' EXIT=0 and the head importer arm logs/after-arm-final.log ending '1 failed, 80 passed' EXIT=1 with the same single pre-existing id as the base arm.\nVERDICT write_paths: the source node was fenced to reckon/crew/dispatch.py, reckon/crew/dispatch_claims.py, reckon/crew/queue_admission.py, reckon/crew/dispatch_refusals.py, tests/test_a_launch_span_is_dated_and_bounded.py, its evidence fragment and its figures directory; this increment also touches reckon/crew/refusals.py and tests/test_crew_refusal_visibility.py, both of which the coordinator granted in the repair round (resume-1-advice.txt names the refusals.py widen and resume-2-advice.txt grants tests/test_crew_refusal_visibility.py), so nothing here is unwarranted.\nVERDICT manifest: read; status complete, commits 38c5c2284e, fb39a8a0e1, be28ac3490, 177d706c49; baseline_suite and after_suite are both JSON with completed true, exit_status 1 and the identical failure id; negative_control_log names logs/negative-control.log, whose last line is EXIT=1 after '3 failed, 1 passed'.\nVERDICT diff: read commit by commit from 38c5c2284e to 177d706c49; three commits across four files (+31/-5): fb39a8a0e1 switches the family literal at reckon/crew/dispatch_refusals.py:306 from D23 to D24 and registers D24 in reckon/crew/refusals.py:95, be28ac3490 widens the census range to 25 and adds dispatch_refusals.py to the scanned sources, and 177d706c49 adds test_the_released_launch_family_resolves_with_its_own_action and strengthens the node test's remedy assertions.\nCALL_SITES: reckon/crew/dispatch.py:3505, reckon/crew/dispatch.py:3511, reckon/crew/dispatch.py:3567\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_refusals.py:306 now renders D24, whose registry entry at reckon/crew/refusals.py:95 tells the operator to dispatch the node again, so a released launch is a recorded refusal carrying a remedy that fits it.\nSCORE evidence: 17\nJUSTIFICATION evidence: tests/test_crew_refusal_visibility.py:99-110 was verified only in the run recorded at logs/gate-repair-3.log, whose header names be28ac3490 'plus the D24 census assertion (uncommitted)' rather than the committed head 177d706c49, and the ruff-clean claim is a delta of one pre-existing F841 at tests/test_crew_refusal_visibility.py:376 rather than a clean file.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every line of git diff 38c5c2284e..177d706c49 lies in paths the coordinator granted (dispatch_refusals.py in the original fence; refusals.py and tests/test_crew_refusal_visibility.py widened in the repair round), and no plan, index or peer path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_launch_span_is_dated_and_bounded.py:130 asserts the plan-review remedy is absent from the rendered message, which reddens exactly when the reverted D23 literal returns, and tests/test_crew_refusal_visibility.py:104-110 reddens both when D24 is unregistered and when it carries the wrong action.\nSCORE fit: 19\nJUSTIFICATION fit: the D24 entry at reckon/crew/refusals.py:95 follows the D21-D23 shape in the same mapping, and the census change at tests/test_crew_refusal_visibility.py:33 follows its existing constant-plus-range idiom; no plan, stage or author identifier appears.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the single owner of the remedy mapping, reckon/crew/refusals.py:DISPATCH_REFUSAL_REMEDIES, instead of forking it; a capability search over reckon/ for other refusal-remedy or refusal-family owners found only reckon/interface_counts.py, which counts format_refusal family literals for interface accounting and owns no remedies.\nFINDING tests/test_crew_refusal_visibility.py:99 non-blocking: the census assertion added in the final commit is verified only in a tree recorded as be28ac3490 'plus the D24 census assertion (uncommitted)' (logs/gate-repair-3.log), so no gate log names the committed head 177d706c49 for this file; the content is identical and the run passed, but a reader cannot reconcile the log header with the promoted sha.\n",
+  "reuse_note": "searched reckon/ for refusal-remedy owners and family registries: only reckon/crew/refusals.py:DISPATCH_REFUSAL_REMEDIES holds remedies and reckon/interface_counts.py counts family literals for interface accounting without owning a remedy. The change extends the former and adds no parallel mechanism.",
+  "review_run_id": "r-20261109T132816010754-review-of-a-launch-span-is-dated-and-bounded-177d706c4916",
+  "reviewed_base_sha": "38c5c2284e168b96bd9f0e96521ec2a8a1550ab8",
+  "reviewed_head_sha": "177d706c491648cd00b173f8cb6077f6e9ef6a5e",
+  "reviewed_run_id": "r-20261109T114801835790-a-launch-span-is-dated-and-bounded",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:54:55.016287+00:00",
+  "total": 113
+}
