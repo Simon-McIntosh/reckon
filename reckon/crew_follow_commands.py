@@ -1683,12 +1683,12 @@ def _follow_watch_lines(
         for a clock the caller has stopped advancing.
         """
         nonlocal lifetime_elapsed
-        if lifetime_deadline is not None and clock() >= lifetime_deadline:
-            lifetime_elapsed = True
-        elif (
+        deadline_passed = lifetime_deadline is not None and clock() >= lifetime_deadline
+        span_passed = (
             lifetime_span_deadline is not None
             and time.monotonic() >= lifetime_span_deadline
-        ):
+        )
+        if deadline_passed or span_passed:
             lifetime_elapsed = True
 
     def _stopped() -> bool:
