@@ -60,11 +60,12 @@ BATCH_ENTRY_FIELDS = frozenset(
 #: path when it names a directory (`src/payload.py`) or carries a source-file
 #: extension (`.py`, `.md`). Prose abbreviations such as ``e.g`` and version
 #: tags such as ``v1.2`` carry neither, so a sentence that names a file only by
-#: description ("the new test") yields no path for it. The optional leading
-#: slash keeps an absolute path absolute: a sentence naming a file outside the
-#: repository must derive that file's whole path, since a leading slash dropped
-#: turns it into a repository-relative path that resolves nowhere.
-_PATH_TOKEN = re.compile(r"/?[A-Za-z0-9_][A-Za-z0-9_./-]*")
+#: description ("the new test") yields no path for it. A leading ``./`` is
+#: taken as the relative prefix it is — never as a bare slash — and a leading
+#: ``/`` not preceded by a dot keeps an absolute path absolute: a sentence
+#: naming a file outside the repository must derive that file's whole path,
+#: since a slash dropped turns it into a relative path that resolves nowhere.
+_PATH_TOKEN = re.compile(r"(?:\./)*/?[A-Za-z0-9_][A-Za-z0-9_./-]*")
 _SOURCE_EXTENSIONS = frozenset(
     {
         ".py",

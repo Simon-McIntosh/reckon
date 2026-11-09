@@ -24,6 +24,7 @@ SESSION = "coordinator-a"
 PLAN = "plan-a"
 ABSOLUTE_RECORD = "/abs/data/record.json"
 RELATIVE_MODULE = "reckon/crew/x.py"
+DOT_RELATIVE_MODULE = "./docs/x.md"
 MISSING_RECORD = "docs/missing/record.json"
 DONE_WHEN = (
     "pytest -q tests/test_a_batch_derives_an_absolute_write_path.py reports passed."
@@ -50,6 +51,7 @@ SECTIONS = {
     "s1": ABSOLUTE_RECORD,
     "s2": RELATIVE_MODULE,
     "s3": MISSING_RECORD,
+    "s4": DOT_RELATIVE_MODULE,
 }
 
 
@@ -58,7 +60,7 @@ def _section(path: str) -> str:
         f"<p>The section writes one record.</p>"
         f"<p>Write paths: <code>{path}</code>.</p>"
         f"<p><strong>Done when</strong> pytest -q "
-        f"tests/test_a_batch_derives_an_absolute_write_path.py reports 3 "
+        f"tests/test_a_batch_derives_an_absolute_write_path.py reports 4 "
         f"passed.</p>"
     )
 
@@ -150,6 +152,12 @@ def test_a_section_naming_a_relative_path_derives_it_unchanged(
     batch_repo: Path,
 ) -> None:
     assert _derive(batch_repo, "s2") == [RELATIVE_MODULE]
+
+
+def test_a_dot_prefixed_relative_path_is_not_read_as_an_absolute_one(
+    batch_repo: Path,
+) -> None:
+    assert _derive(batch_repo, "s4") == ["docs/x.md"]
 
 
 def test_a_derived_relative_path_that_resolves_nowhere_is_refused_at_queue_time(
