@@ -1,0 +1,57 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch_launch.py:3369",
+    "reckon/crew/dispatch_launch.py:4560",
+    "reckon/crew/recovery_liveness.py:764",
+    "reckon/crew/queue_admission.py:1862",
+    "reckon/crew/dispatch_claims.py:973"
+  ],
+  "completed_at": "2026-11-09T16:58:54.903Z",
+  "dispatched_at": "2026-11-09T16:44:58Z",
+  "findings": [
+    {
+      "file": "tests/test_a_launch_claim_has_one_reader.py",
+      "line": "68",
+      "severity": "non-blocking",
+      "text": "non-blocking: the agreement case compares two callers that now delegate to the same owner, so it can only fail when their validation rules diverge; a regression that restores a duplicate local parse in _claim_registration_for_worker with the same rule stays green, and nothing asserts the single-reader property itself, which the done_when checks only by a manual grep."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "read the production callers: dispatch_launch.py:3369 and :4560, recovery_liveness.py:764 through the launch module, queue_admission.py:1862 and dispatch_claims.py:973 through read_launch_claim.",
+    "diff": "read commit by commit from d43afd40 to 64a1b154: 0d1968a1d9 is the three-module consolidation plus the new test, 64a1b15414 is the evidence fragment, and the product change is behaviour-preserving for both callers.",
+    "done_when": "tests/test_a_launch_claim_has_one_reader.py covers a well-formed claim, a claim for another run, an unreadable file and an absent one, the section's own tests pass unchanged (9 passed), and the negative control runs red (2 failed).",
+    "goal": "the goal is one path-taking reader every caller uses; reckon/crew/dispatch_launch.py:4673 now projects the record through read_claim and opens no file itself.",
+    "manifest": "read; it records the gate, both arms, the negative control and the importer ids, and every figure in it that the gate decides matches the logs I read.",
+    "write_paths": "the diff touches reckon/crew/dispatch_claims.py, reckon/crew/dispatch_launch.py, reckon/crew/recovery_liveness.py, tests/test_a_launch_claim_has_one_reader.py and the node's own evidence fragment, all inside the granted paths."
+  },
+  "justifications": {
+    "durability": "the agreement case at tests/test_a_launch_claim_has_one_reader.py:68 reddens when the old local parse returns with a different validation rule, but it compares behaviour rather than reader identity, so a duplicate reader with the same rule would leave it green.",
+    "evidence": "logs/after-arm.log ends EXIT=0 with 8 passed, logs/baseline-arm.log ends EXIT=0 with 9 passed, the two importer arms carry the same 19 failing ids, and logs/negative-control.log ends EXIT=1 with 2 failed including test_both_callers_agree_on_every_claim_shape[another-run], so every measurement the done_when names is recorded rather than claimed.",
+    "fit": "read_claim sits beside the claim's own writer in reckon/crew/dispatch_claims.py:944 and follows the module's existing dict-or-empty read idiom, and no added name carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:944 defines read_claim(run_directory, run_id), read_launch_claim delegates at :962 and _claim_registration_for_worker at reckon/crew/dispatch_launch.py:4675, and a grep of dispatch_launch.py for claim.json finds nothing, so the one path-taking reader the goal asks for is what every caller reaches.",
+    "reuse": "the change is itself a consolidation: a search of reckon/_store.py and reckon/crew for a shared JSON-record reader found only module-private helpers (_read_json in dispatch_* and others) and no owner for the launch claim, so read_claim extends the capability's existing owner rather than duplicating it.",
+    "scope_discipline": "every path in the two commits is inside the granted four product/test paths plus the run's own evidence fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-claim-has-one-reader.html, which the landing rule always permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is one path-taking claim reader every caller uses; reckon/crew/dispatch_launch.py:4673 now projects the record through read_claim and opens no file itself.\nVERDICT done_when: the diff adds tests/test_a_launch_claim_has_one_reader.py covering a well-formed claim, a claim for another run, an unreadable file and an absent one; logs/after-arm.log records 8 passed at 64a1b154 and logs/baseline-arm.log records 9 passed at d43afd40.\nVERDICT write_paths: read the manifest's declared paths and the two commits; every path in the diff is inside them, the test and the node's own evidence fragment included.\nVERDICT manifest: read; it records the gate, both arms, the negative control and the importer failing-id sets, and each figure the gate decides matches its log.\nVERDICT diff: read commit by commit from d43afd403d4f to 64a1b15414b5: three product modules, one new test and one evidence fragment, all inside the declared scope.\nCALL_SITES: reckon/crew/dispatch_launch.py:3369, reckon/crew/dispatch_launch.py:4560, reckon/crew/recovery_liveness.py:764, reckon/crew/queue_admission.py:1862, reckon/crew/dispatch_claims.py:973\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:944 defines read_claim(run_directory, run_id) and reckon/crew/dispatch_launch.py:4675 delegates to it, with no claim.json read left in the launch module.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm.log ends EXIT=0 with 8 passed, logs/baseline-arm.log ends EXIT=0 with 9 passed, the importer arms share the same 19 failing ids, and logs/negative-control.log ends EXIT=1 with the named agreement case among its 2 failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only the three granted product modules, the granted new test and docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-claim-has-one-reader.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_launch_claim_has_one_reader.py:68 reddens against a divergent local parse but stays green against a duplicate reader with the same rule, which is the regression the section exists to prevent.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:944 places the reader beside the claim's writer and follows the module's existing dict-or-empty read idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/_store.py and reckon/crew for a shared record reader found only module-private helpers and no owner of the launch claim, so reckon/crew/dispatch_claims.py:944 extends the existing owner rather than forking a capability.\nFINDING tests/test_a_launch_claim_has_one_reader.py:68 non-blocking: the agreement case compares two callers that now delegate to the same owner, so it can only fail when their validation rules diverge; a regression restoring a duplicate local parse with the same rule stays green, and nothing asserts the single-reader property the node exists to establish.\nReviewed base: d43afd403d4f4a6098cc2ce0463a9500cadde7c5\nReviewed head: 64a1b15414b5be74316116922674a77cc2b2f724\n",
+  "review_run_id": "r-20261109T164245945331-review-of-a-launch-claim-has-one-reader-64a1b15414b5",
+  "reviewed_base_sha": "d43afd403d4f4a6098cc2ce0463a9500cadde7c5",
+  "reviewed_head_sha": "64a1b15414b5be74316116922674a77cc2b2f724",
+  "reviewed_run_id": "r-20261109T155935374342-a-launch-claim-has-one-reader",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:09:36.188006+00:00",
+  "total": 114
+}
