@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-run-has-one-live-worker">
+  <meta name="plan-evidence-for" content="a-run-has-one-live-worker">
+  <title>The second launcher ran outside the allocation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>The second launcher ran outside the allocation</h1>
+      <p class="lead">Run <code>r-20261109T064500219481-a-figure-finding-names-its-rubric</code> was launched twice 51&nbsp;s apart. The second launch came from a process that was not inside the fleet allocation, and it got through the live-worker guard because the guard read attempt&nbsp;1's liveness on a machine that was not the machine attempt&nbsp;1's pid belonged to: <code>live_worker_reading</code> answers <em>unknown</em> for a record whose <code>launcher_host</code> is not the reading host, and <code>_launch_refused_by</code> refuses only an <em>alive</em> or a <em>placed-unknown</em> reading. Unknown is let through.</p>
+    </header>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-launcher">
+      <h2>The launcher: a process outside the allocation</h2>
+      <p>The discriminator is <code>argv[0]</code> in the three worker records.</p>
+      <table>
+        <tr><th>record</th><th><code>argv[0]</code></th><th><code>launched_at</code></th><th><code>claim_registered_at</code></th></tr>
+        <tr><td><code>attempt-1-worker.json</code></td><td><code>/home/ITER/mcintos/Code/reckon/reckon/host_shims/srun</code></td><td>06:53:08Z</td><td>06:51:42Z</td></tr>
+        <tr><td><code>attempt-2-worker.json</code></td><td><code>/usr/bin/srun</code></td><td>06:56:44Z</td><td>06:54:04Z</td></tr>
+        <tr><td><code>attempt-3-worker.json</code></td><td><code>/home/ITER/mcintos/Code/reckon/reckon/host_shims/srun</code></td><td>07:18:28Z</td><td>06:54:04Z</td></tr>
+      </table>
+      <p>The shim directory is prepended to the search path only inside an allocation. <code>_worker_environment</code> appends it under <code>if placement.in_allocation:</code> (<code>reckon/crew/dispatch_launch.py</code>:690) and puts the appended directories ahead of every inherited entry (<code>reckon/crew/dispatch_launch.py</code>:722). <code>apply_backend_placement</code> then resolves the scheduler with <code>shutil.which(scheduler, path=searched)</code> (<code>reckon/crew/dispatch_launch.py</code>:1354) and records <code>os.path.abspath(found)</code> as <code>argv[0]</code> (<code>reckon/crew/dispatch_launch.py</code>:1418). So <code>/usr/bin/srun</code> is not an inherited entry outranking the shim: the shim directory was <em>absent from the launching process's PATH</em>, which happens only when <code>in_allocation</code> is false. Attempt&nbsp;2's launcher ran outside the fleet allocation; attempts 1 and 3's launchers ran inside it.</p>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-door">
+      <h2>The door, and the doors it is not</h2>
+      <p>Every launch reaches exactly one worktree-creating call. <code>_create_worktree</code> (<code>reckon/crew/routing.py</code>:2275) has one caller, <code>reckon/crew/dispatch.py</code>:2867, inside <code>dispatch</code> (<code>reckon/crew/dispatch.py</code>:1549); its guard <code>_refuse_a_live_worker_before_the_worktree</code> (<code>reckon/crew/dispatch.py</code>:475) is called earlier in the same function at <code>reckon/crew/dispatch.py</code>:2545. Only these call into <code>dispatch</code>:</p>
+      <table>
+        <tr><th>door</th><th>call site</th></tr>
+        <tr><td>CLI batch (<code>crew dispatch --batch</code>)</td><td><code>reckon/crew/dispatch.py</code>:1143</td></tr>
+        <tr><td>picker primary / shadow</td><td><code>reckon/crew/dispatch.py</code>:1354, :1373</td></tr>
+        <tr><td>admitted queued launch</td><td><code>reckon/crew/queue_admission.py</code>:441</td></tr>
+        <tr><td>plan-review dispatch</td><td><code>reckon/crew/plan_review.py</code>:5351, :6103</td></tr>
+        <tr><td>follower review/repair dispatch</td><td><code>reckon/crew/recovery_review_dispatch.py</code>:3076</td></tr>
+      </table>
+      <p><strong>The CLI batch door is excluded by its own receipt.</strong> The dispatching session is <code>404513fc-8e68-4a0f-8060-29ac9ff3d5fd</code> (<code>shadow-picker.json</code> field <code>session</code>). Its transcript records the batch call at 06:44:48Z and the command's result at 06:48:03Z: <code>"ok": true "queued": 1 "refused": 0 "run_id": "r-20261109T064500219481-…"</code>. The batch queued the request and launched nothing.</p>
+      <p><strong>The coordinator session is excluded for the window.</strong> No <code>crew dispatch</code> of this run appears between the batch result (line 81603, 06:48:03Z) and line 81891 (07:16:52Z, a <code>grep</code> read of the manifest). The entries in between either repeat the 06:44:48Z batch command verbatim (api-request-blob echoes) or do not name the run, so no operator call from that session created attempt&nbsp;2 at 06:54:04Z.</p>
+      <p><strong>Not recovered: which admitted door.</strong> No surviving record names attempt&nbsp;2's launching pid. The node-dispatch claim is deleted on release (<code>release.json</code> <code>worktree_released: true</code>), the worker records carry only <code>argv</code>, <code>pid</code>, <code>launched_at</code>, <code>claim_registered_at</code> and <code>backend</code>, and <code>admission-verdicts.jsonl</code> now begins at <code>2026-11-09T10:55:13</code> — after the window — so reckon-0f's exclusion of the admit service cannot be re-established from it. What survives is that attempt&nbsp;1 and attempt&nbsp;2 registered the <em>same</em> queued request 51&nbsp;s apart, which is a double admission of one request, and that the second admission ran outside the allocation. Which of <code>queue_admission.py</code>:441 or <code>recovery_review_dispatch.py</code>:3076 made it is <em>unverified</em>.</p>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-liveness">
+      <h2>Liveness at 06:54:04Z, against the pids the exit records name</h2>
+      <table>
+        <tr><th>attempt</th><th>worker pid (exit record)</th><th>launched</th><th>exited</th><th>state at 06:54:04Z</th></tr>
+        <tr><td>1</td><td>2549004 (<code>attempt-1-exit.json</code>)</td><td>06:53:08Z</td><td>07:11:34Z</td><td><strong>live</strong> — 56&nbsp;s before the second claim</td></tr>
+        <tr><td>2</td><td>2573958 (<code>attempt-2-exit.json</code>)</td><td>06:56:44Z</td><td>07:11:59Z</td><td>not yet launched</td></tr>
+      </table>
+      <p><code>attempt-1-worker.json</code> names pid 2548605 with <code>launched_at</code> 06:53:08Z. Its exit record does not exist until 07:11:34Z, so attempt&nbsp;1 was unambiguously live when attempt&nbsp;2's claim registered at 06:54:04Z.</p>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-explanation">
+      <h2>Which of the three explanations holds</h2>
+      <p><strong>It is the second: the guard ran, and read attempt&nbsp;1's liveness as not-live.</strong> The reading is not <em>dead</em>, it is <em>unknown</em>, and unknown is exactly what the refusal predicate lets through.</p>
+      <ol>
+        <li><code>_refuse_a_live_worker_before_the_worktree</code> reads the pointer and calls <code>live_worker_reading(record)</code> (<code>reckon/crew/dispatch.py</code>:515).</li>
+        <li><code>live_worker_reading</code> answers <code>LivenessReading(LIVENESS_UNKNOWN, None)</code> immediately when <code>_launched_on_this_host(record)</code> is false (<code>reckon/crew/recovery_liveness.py</code>:1362). That gate is <code>record["launcher_host"] == socket.gethostname()</code> (<code>reckon/crew/recovery_liveness.py</code>:1219–1227), and the pointer's <code>launcher_host</code> is stamped from the creating host's <code>gethostname()</code> (<code>reckon/crew/runs.py</code>:396–433).</li>
+        <li><code>_launch_refused_by</code> refuses an <em>alive</em> reading (<code>reckon/crew/dispatch_launch.py</code>:2147) or a <em>placed</em> reading with unknown liveness (<code>reckon/crew/dispatch_launch.py</code>:2149); anything else falls to <code>return False</code> (<code>reckon/crew/dispatch_launch.py</code>:2158). An <code>UNKNOWN</code> arm therefore never refuses.</li>
+      </ol>
+      <p>This is consistent with, and caused by, the same fact the <code>argv[0]</code> clue establishes: attempt&nbsp;1 was created inside the allocation and attempt&nbsp;2's launcher ran outside it, so the two ran on different machines (<code>release.json</code> <code>scratch_host</code> is <code>98dci4-clu-2023.iter.org</code> for this run's own fleet node). A pid is meaningful only on the host that issued it, so the launcher could not have proved attempt&nbsp;1 alive even had it tried; the guard's host gate turned that inability into a pass.</p>
+      <p><strong>Explanation 1 (a door reaching <code>_create_worktree</code> without the check) is excluded</strong>: <code>_create_worktree</code> has exactly one call site, and the guard's call at <code>dispatch.py</code>:2545 precedes it at :2867 unconditionally in the same function; every door in the table above enters through <code>dispatch</code>.</p>
+      <p><strong>Explanation 3 (the launcher ran code older than the guard) is excluded for the admit service</strong>: its recorded stamp <code>01863fb71f4a09b9ff1cad3e31118577f8fdec11</code> recomposes to a code state whose commits span 2026-11-09T05:35:07+01:00..11:40:33+01:00 and include the guard commit <code>04cdce8990</code> as an ancestor (verified with <code>git merge-base --is-ancestor</code>). It is <em>unverified</em> for whichever other admitted door launched attempt&nbsp;2, because that process's stamp is not recoverable.</p>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-stamp">
+      <h2>How a crew process's code stamp maps to a commit</h2>
+      <p>The stamp is a git <em>tree</em>, not a commit. <code>_committed_reload_tree</code> (<code>reckon/checkout_trust.py</code>:343) composes it from <code>git ls-tree HEAD reckon skills</code> plus the blob at <code>docs/state/reckon/model-catalogue.yaml</code>, folding the catalogue's path with <code>git mktree</code>. So <code>git cat-file -p 01863fb71f</code> lists three entries (<code>docs</code>, <code>reckon</code>, <code>skills</code>) and matches <em>no single commit</em> — it matches every commit whose three entries compose to that tree. A commit that touches anything outside the three leaves the stamp unchanged.</p>
+      <p><strong>Recomposition</strong> (log: run directory <code>stamp-mapping.log</code>), over 900 revisions:</p>
+      <table>
+        <tr><th>stamp</th><th>commits composing it</th><th>date range (local)</th></tr>
+        <tr><td><code>1199ee62e4a3…</code></td><td>84</td><td>2026-11-09T11:36:48+01:00 .. 13:25:36+01:00</td></tr>
+        <tr><td><code>bb5e953f4710…</code></td><td>43</td><td>2026-11-09T12:44:50+01:00 .. 13:26:41+01:00</td></tr>
+        <tr><td><code>01863fb71f4a…</code></td><td>129</td><td>2026-11-09T05:35:07+01:00 .. 11:40:33+01:00</td></tr>
+      </table>
+      <p><strong>Negative control.</strong> The two stamps drawn from <code>admission-verdicts.jsonl</code> resolve to <em>disjoint</em> commit sets: <code>1199ee62e4a3…</code> (84 commits) and <code>bb5e953f4710…</code> (43 commits) share <strong>0</strong> commits. The mapping therefore discriminates — it is not a constant that matches everything.</p>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-repair">
+      <h2>What the repair must answer</h2>
+      <ul>
+        <li>A live worker on another host must refuse a relaunch, not fall into <code>UNKNOWN</code>: the scheduler arm cannot answer for this placement, so the record's own <code>launcher_host</code> mismatch must be treated as <em>held</em> rather than as <em>unproven</em>.</li>
+        <li>One queued request must not be admitted twice: attempt&nbsp;1 and attempt&nbsp;2 both registered at 06:54:04Z's claim from the same request.</li>
+      </ul>
+    </section>
+
+    <section id="find-the-second-launcher-of-a-figure-finding-inputs">
+      <h2>Evidence inputs</h2>
+      <ul>
+        <li>Run: <code>r-20261109T064500219481-a-figure-finding-names-its-rubric</code>; session <code>404513fc-8e68-4a0f-8060-29ac9ff3d5fd</code>.</li>
+        <li>Records: <code>attempt-{1,2,3}-worker.json</code>, <code>attempt-{1,2,3}-exit.json</code>, <code>release.json</code>, <code>shadow-picker.json</code>, <code>attempt-1-superseded.md</code>.</li>
+        <li><code>admission-verdicts.jsonl</code> first record <code>at</code> = <code>2026-11-09T10:55:13.658170+00:00</code>.</li>
+        <li>Coordinator transcript: <code>~/.claude/projects/-home-ITER-mcintos-Code-reckon/404513fc-8e68-4a0f-8060-29ac9ff3d5fd.jsonl</code> lines 81601–81603 (batch queued), none 81604–81879 naming the run.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>
