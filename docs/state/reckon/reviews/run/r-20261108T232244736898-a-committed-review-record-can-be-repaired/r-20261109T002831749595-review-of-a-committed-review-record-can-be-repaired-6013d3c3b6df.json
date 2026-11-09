@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: logs/after-arm-failing-files-base.log (revision cb1b92d1ce) and logs/importers-subset-after.log (revision 6013d3c3b6) each end \"21 failed, 331 passed\" with EXIT=1 and list the same 21 FAILED ids, so zero ids appear at the head that the base did not carry; the shared causes are pre-existing (role 'implement' is not configured, TaskNode.__init__ missing 'plan', KeyError 'argv').",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/cli.py:479",
+    "reckon/crew_run_commands.py:1334",
+    "reckon/crew/review_dispositions.py:286",
+    "reckon/crew/review_dispositions.py:502",
+    "reckon/crew/plan_review.py:2619"
+  ],
+  "completed_at": "2026-11-09T00:37:29.666Z",
+  "dispatched_at": "2026-11-09T00:29:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_committed_review_record_can_be_repaired.py",
+      "line": "120",
+      "severity": "non-blocking",
+      "text": "assert receipt[\"reason\"] == \"the record stopped before it measured anything\" compares the string the test passed in through --reason against the receipt's echo of it, so it holds for any code that echoes its argument and cannot redden on a repair that changed nothing."
+    },
+    {
+      "file": "tests/test_a_committed_review_record_can_be_repaired.py",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "the module docstring records the prior behaviour (\"the repair verb knew only ... had no repair path at all\") rather than the invariant the tests assert, which is changelog prose in a source docstring and rots once the defect is historical."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "1325",
+      "severity": "non-blocking",
+      "text": "the project reaches the repair only through _accept_a_matching_project, whose fallback is the --project argument, so a committed record whose run has neither a live pointer nor a ledger record is still refused as outside the review-records directory unless the operator adds --project, which is the same refusal \u00a726 exists to remove."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against cb1b92d1ce; 301 insertions and 14 deletions across the five declared files, adding committed_run_review_directory, a project keyword on repair_run_review, a set-valued path on commit_record_write, the project pass-through in crew_repair, and a new two-case test file.",
+    "done_when": "\u00a726's done-when names two cases, the importer arm, ruff and a declared negative control; the manifest records the node gate 2 passed EXIT=0 in logs/node-gate.log and the control 1 failed 1 passed EXIT=1 in logs/negative-control-staging-only-directory-check.log, and the two importer arms carry identical 21-id failure sets.",
+    "goal": "the goal is to let crew repair --review reach and commit a record at the run's committed review location; reckon/crew/review.py:3344 committed_run_review_directory resolves that directory through committed_review_root and repair_run_review at :3391 accepts it beside the staging directory.",
+    "manifest": "read; status complete, ten log paths named, baseline_suite at cb1b92d1ce completed with 21 failures and after_suite at 6013d3c3b6 completed with the same 21, and the declared negative control log named.",
+    "write_paths": "the declared paths are reckon/crew/review.py, reckon/crew/review_records.py, reckon/crew_run_commands.py, tests/test_a_committed_review_record_can_be_repaired.py and the landing fragment; the single commit 6013d3c3b6 changes exactly those five files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_committed_review_record_can_be_repaired.py:127-129 reads the committed blob with git show HEAD and :136 asserts git status is clean for docs, both independent of the repair's own return value.",
+    "evidence": "logs/node-gate.log ends \"2 passed\" with EXIT=0 and the control log ends \"1 failed, 1 passed\" with EXIT=1, but the base arm runs from a git-archive extraction under /tmp while the head arm runs in the worktree, so the identical 21 failure ids are a cross-environment comparison.",
+    "fit": "reckon/crew/review.py:3344-3354 follows the neighbouring committed_review_root docstring idiom, but the new test's module docstring at tests/test_a_committed_review_record_can_be_repaired.py:5 narrates the pre-change behaviour instead of the invariant.",
+    "goal_fidelity": "reckon/crew/review.py:3391-3396 admits the committed directory and keeps the refusal for a path under neither, and :3465 commits the rewrite through commit_record_write, which is every point \u00a726's deliverable names.",
+    "reuse": "no owner returns a committed run review directory; reckon/crew/review.py:2625 review_path composes the same directory only as part of a file path, so committed_run_review_directory extends rather than forks it.",
+    "scope_discipline": "git diff --stat cb1b92d1ce..6013d3c3b6 lists only the five declared paths, and the fragment is the landing record the dispatch always permits."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to let crew repair --review reach and commit a record at the run's committed review location, and reckon/crew/review.py:3344 committed_run_review_directory resolves that directory through committed_review_root while repair_run_review at :3391 accepts it beside the staging directory.\nVERDICT done_when: \u00a726's done-when names two cases plus the importer arm, ruff, and a declared negative control; the manifest records the node gate 2 passed EXIT=0 in logs/node-gate.log and the control 1 failed 1 passed EXIT=1 in logs/negative-control-staging-only-directory-check.log, and the two importer arms carry identical 21-id failure sets in logs/after-arm-failing-files-base.log and logs/importers-subset-after.log.\nVERDICT write_paths: the declared paths are reckon/crew/review.py, reckon/crew/review_records.py, reckon/crew_run_commands.py, tests/test_a_committed_review_record_can_be_repaired.py and the landing fragment; the single commit 6013d3c3b6 changes exactly those five files and nothing else.\nVERDICT manifest: read; status complete, it names the gate command, ten log paths, a completed baseline_suite at cb1b92d1ce with 21 failures and a completed after_suite at 6013d3c3b6 with the same 21, and names the declared negative control log.\nVERDICT diff: read commit by commit against cb1b92d1ce; 301 insertions and 14 deletions across the five declared files, adding committed_run_review_directory, a project keyword on repair_run_review, a set-valued path on commit_record_write, the project pass-through in crew_repair, and a new two-case test file.\nCALL_SITES: reckon/cli.py:479, reckon/crew_run_commands.py:1334, reckon/crew/review_dispositions.py:286, reckon/crew/review_dispositions.py:502, reckon/crew/plan_review.py:2619\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:3391-3396 admits the committed directory and keeps the refusal for a path under neither, and :3465 commits the rewrite through commit_record_write, which is every point \u00a726's deliverable names.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/node-gate.log ends \"2 passed\" with EXIT=0 and the control log ends \"1 failed, 1 passed\" with EXIT=1, but the base arm runs from a git-archive extraction under /tmp while the head arm runs in the worktree, so the identical 21 failure ids are a cross-environment comparison.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cb1b92d1ce..6013d3c3b6 lists only the five declared paths, and the fragment is the landing record the dispatch always permits.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_committed_review_record_can_be_repaired.py:127-129 reads the committed blob with git show HEAD and :136 asserts git status is clean for docs, both independent of the repair's own return value.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/review.py:3344-3354 follows the neighbouring committed_review_root docstring idiom, but the new test's module docstring at tests/test_a_committed_review_record_can_be_repaired.py:5 narrates the pre-change behaviour instead of the invariant.\nSCORE reuse: 18\nJUSTIFICATION reuse: no owner returns a committed run review directory; reckon/crew/review.py:2625 review_path composes the same directory only as part of a file path, so committed_run_review_directory extends rather than forks it.\nFINDING tests/test_a_committed_review_record_can_be_repaired.py:120 non-blocking: assert receipt[\"reason\"] == \"the record stopped before it measured anything\" compares the string the test passed in through --reason against the receipt's echo of it, so it holds for any code that echoes its argument and cannot redden on a repair that changed nothing.\nFINDING tests/test_a_committed_review_record_can_be_repaired.py:5 non-blocking: the module docstring records the prior behaviour (\"the repair verb knew only ... had no repair path at all\") rather than the invariant the tests assert, which is changelog prose in a source docstring and rots once the defect is historical.\nFINDING reckon/crew_run_commands.py:1325 non-blocking: the project reaches the repair only through _accept_a_matching_project, whose fallback is the --project argument, so a committed record whose run has neither a live pointer nor a ledger record is still refused as outside the review-records directory unless the operator adds --project, which is the same refusal \u00a726 exists to remove.",
+  "review_run_id": "r-20261109T002831749595-review-of-a-committed-review-record-can-be-repaired-6013d3c3b6df",
+  "reviewed_base_sha": "cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e",
+  "reviewed_head_sha": "6013d3c3b6df1d2ed435832adc51777a8233de47",
+  "reviewed_run_id": "r-20261108T232244736898-a-committed-review-record-can-be-repaired",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T00:54:50.835834+00:00",
+  "total": 107
+}
