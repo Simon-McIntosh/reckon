@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/ledger.py:269",
+    "reckon/ledger.py:307",
+    "reckon/run_record.py:237",
+    "reckon/flight.py:2120"
+  ],
+  "completed_at": "2026-11-09T22:41:35.891Z",
+  "dispatched_at": "2026-11-09T22:28:03Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220759508330-the-model-catalogue-path-resolves-once/logs/negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log header names revision 22cfac95 as the run's revision while the run executed in the head worktree and exercises tests/test_the_model_catalogue_path_resolves_once.py:50, a test that exists only at head, so the record states a revision the run cannot have read and a coordinator comparing revisions is misled."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/the-model-catalogue-path-resolves-once.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "the head-arm row names a93bda94 while both logs/gate-head.log and logs/after.log record their revision as f26be9c, so the fragment's revision column disagrees with the logs it cites even though the code content is identical between the two commits."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the change against the four production callers recorded on the CALL_SITES line; none of them changed signature and each still receives a pathlib.Path.",
+    "diff": "Read commit by commit from 22cfac95 to f26be9c3: a93bda94 caches the resolved default in reckon/flight.py, and f26be9c3 adds only the 66-line landing fragment.",
+    "done_when": "The done-when names tests/test_the_model_catalogue_path_resolves_once.py with three cases; all three exist and the gate logs record 5 passed at head and 2 passed at base, with the negative control failing at line 50.",
+    "goal": "The node goal is to resolve the model catalogue's package-relative default once per process; reckon/flight.py:288 satisfies it through a cached _default_catalogue_path while the environment override remains per-call at reckon/flight.py:308.",
+    "manifest": "The source manifest reports two commits, a 5-passed gate at head, a 2-passed base arm, a negative control with EXIT=1 and the module/cwd headers, and its status reads complete.",
+    "write_paths": "The declared scope is reckon/flight.py, tests/test_the_model_catalogue_path_resolves_once.py, the evidence fragment and the figure directory; the diff's three files all lie inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_the_model_catalogue_path_resolves_once.py:50 counts real pathlib.Path.resolve calls, so reinstating the per-call resolve reddens it, which the recorded negative control demonstrates (1000 counted against 0 expected), and cases two and three fail if the override or the file-identity read is dropped.",
+    "evidence": "The gate named by the done-when ran (tests/test_the_model_catalogue_path_resolves_once.py plus tests/test_a_reload_image_carries_the_model_catalogue.py, 5 passed EXIT=0 in logs/gate-head.log) and the negative control in logs/negative-control.log fails at tests/test_the_model_catalogue_path_resolves_once.py:50 counting 1000, but logs/negative-control.log:1 names the base revision for a run made in the head worktree.",
+    "fit": "reckon/flight.py:289 adds one private helper beside the existing shipped_defaults_path at reckon/flight.py:282, follows the module's docstring style, and introduces no plan, version or ticket identifier.",
+    "goal_fidelity": "reckon/flight.py:288 caches the package-relative default in _default_catalogue_path while reckon/flight.py:308 still reads RECKON_MODEL_CATALOGUE on every call, so the deliverable in section 62 lands as written with no caller changed.",
+    "reuse": "No owner of a once-per-process package-relative path exists: a search over reckon/ for Path(__file__).resolve() helpers found only per-call path builders (reckon/flight.py:284, reckon/mcp.py:396, reckon/served_code.py:82), and the addition uses functools.cache, already the idiom at reckon/hooks/coordinator_obligations.py:127.",
+    "scope_discipline": "The diff touches only reckon/flight.py, tests/test_the_model_catalogue_path_resolves_once.py and the landing fragment, all inside the four declared write paths; the declared figure directory is unused and no plan file is edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to resolve the model catalogue's package-relative default once per process; reckon/flight.py:288 satisfies it through a cached _default_catalogue_path while the environment override remains per-call at reckon/flight.py:308.\nVERDICT done_when: the done-when names tests/test_the_model_catalogue_path_resolves_once.py with three cases; all three exist and the gate logs record 5 passed at head and 2 passed at base, with the negative control failing at line 50.\nVERDICT write_paths: the declared scope is reckon/flight.py, tests/test_the_model_catalogue_path_resolves_once.py, the evidence fragment and the figure directory; the diff's three files all lie inside it.\nVERDICT manifest: the source manifest reports two commits, a 5-passed gate at head, a 2-passed base arm, a negative control with EXIT=1 and the module/cwd headers, and its status reads complete.\nVERDICT diff: read commit by commit from 22cfac95 to f26be9c3: a93bda94 caches the resolved default in reckon/flight.py, and f26be9c3 adds only the 66-line landing fragment.\nCALL_SITES: reckon/ledger.py:269, reckon/ledger.py:307, reckon/run_record.py:237, reckon/flight.py:2120\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/flight.py:288 caches the package-relative default in _default_catalogue_path while reckon/flight.py:308 still reads RECKON_MODEL_CATALOGUE on every call, so the deliverable in section 62 lands as written with no caller changed.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate named by the done-when ran (tests/test_the_model_catalogue_path_resolves_once.py plus tests/test_a_reload_image_carries_the_model_catalogue.py, 5 passed EXIT=0 in logs/gate-head.log) and the negative control in logs/negative-control.log fails at tests/test_the_model_catalogue_path_resolves_once.py:50 counting 1000, but logs/negative-control.log:1 names the base revision for a run made in the head worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/flight.py, tests/test_the_model_catalogue_path_resolves_once.py and the landing fragment, all inside the four declared write paths; the declared figure directory is unused and no plan file is edited.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_model_catalogue_path_resolves_once.py:50 counts real pathlib.Path.resolve calls, so reinstating the per-call resolve reddens it, which the recorded negative control demonstrates (1000 counted against 0 expected), and cases two and three fail if the override or the file-identity read is dropped.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/flight.py:289 adds one private helper beside the existing shipped_defaults_path at reckon/flight.py:282, follows the module's docstring style, and introduces no plan, version or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a once-per-process package-relative path exists: a search over reckon/ for Path(__file__).resolve() helpers found only per-call path builders (reckon/flight.py:284, reckon/mcp.py:396, reckon/served_code.py:82), and the addition uses functools.cache, already the idiom at reckon/hooks/coordinator_obligations.py:127.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220759508330-the-model-catalogue-path-resolves-once/logs/negative-control.log:1 non-blocking: the log header names revision 22cfac95 as the run's revision while the run executed in the head worktree and exercises tests/test_the_model_catalogue_path_resolves_once.py:50, a test that exists only at head, so the record states a revision the run cannot have read and a coordinator comparing revisions is misled.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/the-model-catalogue-path-resolves-once.html:43 non-blocking: the head-arm row names a93bda94 while both logs/gate-head.log and logs/after.log record their revision as f26be9c, so the fragment's revision column disagrees with the logs it cites even though the code content is identical between the two commits.",
+  "review_run_id": "r-20261109T222321824272-review-of-the-model-catalogue-path-resolves-once-f26be9c313e1",
+  "reviewed_base_sha": "22cfac9512b555d0bf1f638756a615ca94167c92",
+  "reviewed_head_sha": "f26be9c313e11c2d9eefd04a9c0f6fa5d30445f7",
+  "reviewed_run_id": "r-20261109T220759508330-the-model-catalogue-path-resolves-once",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T22:54:26.881495+00:00",
+  "total": 115
+}
