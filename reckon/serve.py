@@ -3906,7 +3906,7 @@ class Handler(BaseHTTPRequestHandler):
         state["modified"] = datetime.now().strftime("%Y-%m-%d")
         state["version"] = cur_version + 1
 
-        new_text = _plan_html.write_state(text, state)
+        new_text = _plan_html.write_state(text, state, drop_authored_impl_meta=True)
 
         # Idempotency guard: if the only difference between the new and current
         # file would be the version/modified stamps (i.e. the patch carried no

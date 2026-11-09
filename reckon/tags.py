@@ -127,7 +127,7 @@ def backfill_tags_from_preimage(
             tags.append(tag)
             state["tags"] = tags
             state["version"] = int(state.get("version") or 0) + 1
-            rendered = write_state(original, state)
+            rendered = write_state(original, state, drop_authored_impl_meta=True)
             prepared.append(
                 {"path": source_path, "original": original, "rendered": rendered}
             )

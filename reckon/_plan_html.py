@@ -2216,10 +2216,21 @@ def _impl_is_carried_by_records(state: dict, html_text: str) -> bool:
     return bool(_section_record_elements(BeautifulSoup(html_text or "", "html.parser")))
 
 
-def write_state(html_text: str, state: dict) -> str:
+def write_state(
+    html_text: str, state: dict, *, drop_authored_impl_meta: bool = False
+) -> str:
     """Regenerate the reckon-owned meta + sections from `state`.
 
     Authored prose (everything outside the data-reckon sections) is untouched.
+
+    ``drop_authored_impl_meta`` is the full-state writer's opt-in. When the
+    state's impl is derived from the declarations, the serialiser emits no
+    ``plan-impl`` meta — a derived figure is the server's, never the file's —
+    but it also rewrites only the names it is given, so an authored
+    ``plan-impl`` already on disk would otherwise survive every write and read as
+    the plan's figure forever. With the opt-in set, such a write removes it, so
+    the file and the server agree from the first full-state write. The default
+    is unchanged, so a round-trip or a reader-only serialise stays byte-identical.
     """
     out = html_text
     artifact_type = _canonical_type(state.get("type", "plan"))
@@ -2279,6 +2290,8 @@ def write_state(html_text: str, state: dict) -> str:
     # stop being byte-identical.
     lifecycle_block: list[tuple[str, str]] = []
     impl_is_derived = state.get("impl_source") in {"computed", "declarations"}
+    if drop_authored_impl_meta and impl_is_derived:
+        out = _remove_meta(out, "plan-impl")
     if (
         "impl" in state
         and not impl_is_derived
