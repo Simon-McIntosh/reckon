@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T23:36:48.326Z",
+  "dispatched_at": "2026-11-09T23:24:41Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-run-has-one-live-worker/r-20261109T232220111186-plan-review-of-a-run-has-one-live-worker/plan.html:176",
+      "id": "reasoning-1",
+      "reason": "the section's central rule (\"every launch reserves\") rests in its own text on an ordering that its added paragraph, and the code, show false on the resume door, so one clause must name that exception (the earlier marker or receipts are what its gate sees) or the gate must be lifted there; otherwise a node implements one of two different mechanisms.",
+      "text": "\u00a716 states \"The marker is written before the reservation block on every door, so run_holds_an_attempt_record, left unchanged, always sees at least the launch's own marker, and every launch reserves\", and then, in the paragraph added since d747387675, states the opposite for the resume door: \"The resume door (supervised_launch, dispatch_launch.py) reserves before _prepare_attempt_records writes its marker\". The code confirms the contradiction: the dispatch door writes `attempt.json` at dispatch.py:2775 before its reservation at :2863, while `supervised_launch` reserves at dispatch_launch.py:3077 and writes the marker only inside `_prepare_attempt_records` at :3090. On the resume door `run_holds_an_attempt_record` is therefore satisfied by the previous attempt's trace rather than the launch's own marker, and it is false for a resume of a run whose directory holds neither `attempt.json` nor a receipt \u2014 so the gate the section keeps skips the reservation and the new max-key repair never runs. A node reading the two sentences must choose between moving `_prepare_attempt_records` ahead of the reservation (the universal's literal instruction, a larger change than the section describes) and the max-key repair the added paragraph specifies",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cb8059587df43f6432190a6fa67ad49f42284579",
+  "plan_fingerprint": "9e4ef75f677dcad02f9b78dc9e52d4d49ae80f6c9731c302c1dd58a1bffe4d01",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 152,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T232220111186-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "5f9ccc30e90037d2d2663bd32167326639d5dfb6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor the changed text names resolves at HEAD cb8059587d: `supervised_launch` (dispatch_launch.py:3037), `_prepare_attempt_records` (:2545), `reserve_launch_attempt` (:2457), `run_holds_an_attempt_record` (:2284), `attempt = reservation.attempt` (dispatch.py:2868), `require_run_id=True` (dispatch_launch.py:2159), the spawn-guard asserts (tests/test_a_concurrent_launch_is_refused.py:446,461), the fresh-run case (:782 \u2192 :776), and the \u00a715 review record it cites.",
+    "done_when": "pass \u2014 \u00a716 keeps a declared negative control (the fresh-run case under a mutation that removes the marker write before the reservation block, logged with FAILED ids and a non-zero `EXIT=`), and the added resume case names the attempt it must reserve and the receipt that must free the hold.",
+    "evidence_paths": "pass \u2014 gate logs live under the run directory, and this review's deliverable is the report at the dispatch-named path.",
+    "naming": "pass \u2014 the changed text adds no plan label, stage name or ticket number to a symbol; the renamed case `test_a_fresh_run_ids_reservation_ends_with_its_launch` states the behaviour it measures.",
+    "reasoning": "a finding \u2014 the resume-door paragraph added since the last review proves the marker is written after the reservation block on that door, contradicting the section's earlier universal claim that the marker precedes it on every door, which is the stated reason every launch reserves.",
+    "single_goal": "pass \u2014 the added resume-door repair belongs to the section's one deliverable, that the reservation names the attempt the launch runs; the split of the claim-pair sweep into \u00a717 already landed.",
+    "wiring": "pass \u2014 \u00a716's declared edges (`s16: [#s15, #s13]`) both resolve, and \u00a717, which took the claim-pair sweep, keeps its own `#s13` edge."
+  },
+  "section_digests": {
+    "_document": "80dd6f0c86f7d8ce96d4b0d52647a0910b34fb714f16722d7027495ab5c14f63",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "2bd8970405009b3ddbf7d5b65cf707c5b545e66ec9bbf6db6b5baad7d26a4d20",
+    "s17": "bb665736aa7d4971c04b56545f57d4897174a7defa4f53f034d75ee0991da03b",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T23:49:19.206581+00:00",
+  "total": null
+}
