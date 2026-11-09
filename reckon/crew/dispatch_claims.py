@@ -12,6 +12,7 @@ import sqlite3
 import time
 from dataclasses import (
     dataclass,
+    replace,
 )
 from datetime import (
     timedelta,
@@ -35,6 +36,7 @@ from reckon._timestamps import (
 )
 from reckon.crew.node import (
     CrewError,
+    _git_answer,
     ScopeConflict,
     TaskNode,
     WAITING_REQUEST_PHASES,
@@ -1381,6 +1383,7 @@ def _live_conflict_rows(
         else set()
     )
     shared_files = _shared_write_paths(project, repo)
+    candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
     conflicts: list[dict[str, Any]] = []
     for claim in claims:
         if claim.unread:
@@ -1893,6 +1896,93 @@ def _settle_racing_winner(
         pause(RACING_WINNER_POLL_SECONDS)
 
 
+def _fragment_scope_paths(
+    absolute: Path,
+    node_id: str,
+    *,
+    repository: Path | None,
+    worktree: str = "",
+    base_sha: str = "",
+) -> tuple[Path, ...]:
+    """Compare a plan fragment directory as its node's named and written files.
+
+    Explicit file claims remain separate entries. The node's default fragment
+    covers a directory-only declaration before it writes anything; worktree
+    changes retain custom fragment names once they have been written.
+    """
+    if absolute.parts[-3:-1] != ("evidence", "fragments") or not node_id:
+        return (absolute,)
+    paths = {absolute / f"{node_id}.html"}
+    if worktree and repository is not None:
+        relative = absolute.relative_to(repository).as_posix()
+        tree = Path(worktree)
+        changed = _git_answer(
+            tree,
+            "diff",
+            "--name-only",
+            "--no-renames",
+            "-z",
+            base_sha or "HEAD",
+            "--",
+            relative,
+        )
+        untracked = _git_answer(
+            tree, "ls-files", "--others", "--exclude-standard", "-z", "--", relative
+        )
+        if changed is None or untracked is None:
+            return (absolute,)
+        paths.update(
+            repository / path
+            for path in (changed + "\0" + untracked).split("\0")
+            if path
+        )
+    return tuple(sorted(paths))
+
+
+def _fragment_comparison_scopes(
+    candidates: Iterable[tuple[Path | None, str, Path, str, str | None]],
+    claims: Iterable[_RepositoryScopeClaim],
+    node_id: str,
+) -> tuple[
+    list[tuple[Path | None, str, Path, str, str | None]],
+    tuple[_RepositoryScopeClaim, ...],
+]:
+    """Narrow fragment directories for the enforcer and its conflict report."""
+    entries = [
+        (
+            repository,
+            path.relative_to(repository).as_posix() if repository else str(path),
+            path,
+            declared,
+            derived,
+        )
+        for repository, _candidate, absolute, declared, derived in candidates
+        for path in _fragment_scope_paths(absolute, node_id, repository=repository)
+    ]
+    compared = tuple(
+        replace(
+            claim,
+            path=path.relative_to(claim.repository).as_posix()
+            if claim.repository
+            else str(path),
+            absolute_path=path,
+        )
+        for claim in claims
+        for path in (
+            (claim.absolute_path,)
+            if claim.unread or not claim.binding
+            else _fragment_scope_paths(
+                claim.absolute_path,
+                claim.node_id,
+                repository=claim.repository,
+                worktree=claim.worktree,
+                base_sha=claim.base_sha,
+            )
+        )
+    )
+    return entries, compared
+
+
 def _raise_repository_scope_conflict(
     node: TaskNode,
     *,
@@ -1914,7 +2004,7 @@ def _raise_repository_scope_conflict(
     shared = _shared_landing_paths(node, project=project, authority=authority)
     shared_files = _shared_write_paths(project, repo)
     landing_fragments = _landing_fragment_paths(node, authority=authority)
-    claims = tuple(claims)
+    candidates, claims = _fragment_comparison_scopes(candidates, claims, node.id)
     accepted_directories = {
         (claim.run_id, claim.absolute_path)
         for repository, _candidate, absolute, _declared, _derived_from in candidates
