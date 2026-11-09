@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:3235",
+    "reckon/crew/refusals.py:DISPATCH_REFUSAL_REMEDIES"
+  ],
+  "completed_at": "2026-11-09T19:38:35.984Z",
+  "dispatched_at": "2026-11-09T19:26:00Z",
+  "findings": [
+    {
+      "file": "logs/negative-control-guard-removed.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "logs/negative-control-guard-removed.log:1 names revision c1cbdb3d52c14484d0482e81ba92d80fb5c42d99 as the tree the control ran at, but the mutation it exercises is introduced by 49440be29c, which post-dates the log; the log was written against an uncommitted worktree whose committed revision did not contain the patch it proves works, so a reader cannot identify the tree the red log measured. Re-running the control at 65e4ad4 reproduces the red result (1 failed, EXIT=1, exit_code 0 at tests/test_a_plain_complete_refuses_an_unmerged_head.py:194), so the defect is in the record's provenance, not in the repair."
+    },
+    {
+      "file": "logs/census-arm.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "logs/census-arm.log:1 likewise names revision c1cbdb3d52c14484d0482e81ba92d80fb5c42d99 while the D25 census change it reports as 37 passed landed in 49440be29c; the census passes here at 65e4ad4 (37 passed), so again the tree identifier is stale rather than the result wrong."
+    },
+    {
+      "file": "manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "manifest.md:11 records the gate command without the -n 4 the log it cites actually ran, while manifest.md:18's after_suite names the same after-arm.log; the recorded command and the log header disagree, so promotion's gate receipt cannot be re-run to reproduce the cited result."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against c1cbdb3d52: 49440be29c retargets the mutation patch and extends the refusal census to D25, and 65e4ad429d rewrites the fragment's measure paragraph; 23 insertions, 10 deletions across 3 files.",
+    "done_when": "the section's done_when names tests/test_a_plain_complete_refuses_an_unmerged_head.py plus importer arms and ruff; the manifest records the node arm at 10 passed and the census at 37 passed, both reproduced here as 47 passed at 65e4ad4.",
+    "goal": "the goal is that a plain passed complete refuses an implementation head off the remote primary branch; the delta leaves reckon/crew_run_commands.py:3235 and the guard at 3324 unchanged and repairs their verification.",
+    "manifest": "read; it records status complete, the 10-passed head arm, the 37-passed census arm, the corrected mutation and its log, and cites its logs under the run directory.",
+    "write_paths": "the delta's three paths are the node's declared fragment and test plus the repaired tests/test_crew_refusal_visibility.py granted in resume-1-advice.txt, and nothing else changed."
+  },
+  "justifications": {
+    "durability": "re-running the named test at 65e4ad4 with RECKON_COMPLETE_SKIP_HEAD_CHECK=1 makes it fail at tests/test_a_plain_complete_refuses_an_unmerged_head.py:194 with exit_code 0, so the corrected patch really removes the guard and the assertion reddens on the regression.",
+    "evidence": "the node arm reports 10 passed and the census arm 37 passed, both reproduced here at 65e4ad4 (47 passed); the negative control is red at the reviewed head with the guard removed, but logs/negative-control-guard-removed.log:1 and logs/census-arm.log:1 name revision c1cbdb3d although the code they exercised is introduced by 49440be29c, so the logs cannot identify the tree they measured.",
+    "fit": "tests/test_a_plain_complete_refuses_an_unmerged_head.py:54 documents in its docstring why the name is patched where it resolves, matching the module's existing helper idiom, and no added name carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "the delta repairs exactly the two defects the prior review raised: tests/test_a_plain_complete_refuses_an_unmerged_head.py:54-66 patches the guard in reckon.crew_run_commands, the module whose crew_complete resolves the name at reckon/crew_run_commands.py:3235, and tests/test_crew_refusal_visibility.py:33 extends the census to D25.",
+    "reuse": "the delta adds no definition: it retargets the existing _skip_the_guard_if_declared helper and extends the existing CONVERTED_REFUSAL_FAMILIES and REFUSAL_SOURCE_PATHS census, so no capability is forked.",
+    "scope_discipline": "the delta touches only tests/test_a_plain_complete_refuses_an_unmerged_head.py, tests/test_crew_refusal_visibility.py and the evidence fragment; tests/test_crew_refusal_visibility.py was granted in the repair advice and the other two are in the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261109T192322350852-review-of-a-plain-complete-refuses-an-unmerged-head-65e4ad429dc0",
+  "reviewed_base_sha": "c1cbdb3d52c14484d0482e81ba92d80fb5c42d99",
+  "reviewed_head_sha": "65e4ad429dc0931bc92ca9403c0682b66d89e4c6",
+  "reviewed_run_id": "r-20261109T181933671262-a-plain-complete-refuses-an-unmerged-head",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T19:47:05.375490+00:00",
+  "total": 112,
+  "verdicts": [
+    "VERDICT goal: the delta answers the prior review's two findings; tests/test_a_plain_complete_refuses_an_unmerged_head.py:60 now patches the guard in the module whose crew_complete resolves it at reckon/crew_run_commands.py:3235.",
+    "VERDICT done_when: the gate the done_when names, tests/test_a_plain_complete_refuses_an_unmerged_head.py plus tests/test_crew_refusal_visibility.py, was re-run here at 65e4ad4 and passed 47 tests, and the manifest records both arms.",
+    "VERDICT write_paths: the delta stays inside the declared fragment and test paths plus the census file granted in the repair advice, with no other path touched.",
+    "VERDICT manifest: read; it reports complete work, the corrected mutation, census D25 and its arm results, and names every log it cites.",
+    "VERDICT diff: read against c1cbdb3d52; two commits, 3 files, 23 insertions and 10 deletions, all within the granted scope."
+  ]
+}
