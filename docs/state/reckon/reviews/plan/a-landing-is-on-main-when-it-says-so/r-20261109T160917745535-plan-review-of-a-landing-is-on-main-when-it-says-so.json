@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:16:44.736Z",
+  "dispatched_at": "2026-11-09T16:11:05Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "without a stated no-ref and fetch-failure policy the guard's behaviour on the unresolvable case is undefined and a worker can satisfy every arm of the done-when while leaving the hole it was written to close.",
+      "text": "\u00a75 says the branch is \"the remote-tracking primary ref, read through the existing helper in `reckon/crew/recovery_review_dispatch.py` (near line 944) after a fetch\", but no fetch exists anywhere in `reckon/` (grep for `\"fetch\"` over `reckon/crew/*.py` and `reckon/crew_run_commands.py` returns nothing), the helper answers the empty string when no `origin` remote-tracking ref exists (`recovery_review_dispatch.py:986-988`, with `INTEGRATION_REMOTE = \"origin\"` hard-coded at line 939), and the plan states neither who fetches, nor what a fetch failure does, nor whether an empty ref refuses or promotes \u2014 so the worker must invent the policy, and the two available answers are opposites: refusing blocks every plain complete in a repo with no `origin` (temp repos, local-only clones, a remote named otherwise), while promoting on an empty ref is a fail-open on exactly the \"ledger says landed, main does not carry it\" state the section exists to catch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "as written those arms cannot be built in the tree the done-when names, so the two cases that separate a remote read from a local-`HEAD` read would be dropped or silently approximated, and the section's central mechanism would be measured only by the arms that cannot distinguish it.",
+      "text": "two of the five arms (\"a plain complete on a head already on the branch promotes as before\", and \"a head fast-forwarded on local `main` whose push failed is refused, with a negative control in which reading local `HEAD` promotes it\") both require a resolvable remote-tracking primary ref, but the done-when sets them \"with a temporary repository\" and never names a bare remote or a push, unlike \u00a72 at line 44 which says \"a temporary repository and a bare remote\"; and it does not say that the bare remote must diverge from local `main` for the fast-forward arm to have anything to distinguish",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-2",
+      "reason": "the plan's reader is told the state is closed when one neighbouring caller keeps producing it, so the plan needs either that caller in \u00a75's scope or a named followup carrying it, otherwise the next coordinator meets the same incident with the plan reading as answered.",
+      "text": "a second production caller reaches the same state this section closes: `recovery_review_acceptance._commits_missing_from` (`reckon/crew/recovery_review_acceptance.py:209-240`) tests the run's commits against local `HEAD` and then promotes via `promotion_module.complete(...)` at line 348, so a checkout whose `main` was fast-forwarded and whose push failed passes that test and writes a passed ledger row for a head `origin/main` does not carry \u2014 precisely the case \u00a75's own fourth arm demonstrates, reached by a route \u00a75 neither names nor defers; the plan's only statement about coverage is \u00a76's \"\u00a75 closes the plain-complete route to that state\"",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5098c341a400755bd28e82b21efcdc0f3a721767",
+  "plan_fingerprint": "44025eda8e4b371875d84472cd61f20d26015370d0772447924fae63f8d55e22",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T160917745535-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "e11c19954873b2b0ef86354293883c7aee07de58",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `promotion.complete_dry_run` exists (`reckon/crew/promotion.py:895`), `merge.require_promotable_head` exists and calls it at `reckon/crew/merge.py:163` inside the cited 157\u2013180 window, `_integration_ref` is the helper at `reckon/crew/recovery_review_dispatch.py:943` (\"near line 944\"), and `reckon/crew_run_commands.py` carries both the plain promotion (`crew_module.complete(` at line 3257) and the `--land` branch; the new test file is correctly named as one that does not exist yet.",
+    "done_when": "a finding \u2014 \u00a75's five arms are stated for \"a temporary repository\", but the two arms that anchor the on-branch reading need a remote-tracking ref that a temporary repository does not carry: \u00a72's analogous done-when says \"a temporary repository and a bare remote\" and \u00a75 omits the remote entirely.",
+    "evidence_paths": "pass \u2014 gate logs are required \"under the run directory starting with the revision and command and ending in `EXIT=`\", and the write paths are product source plus one test file; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 `tests/test_a_plain_complete_refuses_an_unmerged_head.py` names the behaviour it asserts, and no plan label, stage name, ticket number or version tag reaches the deliverable.",
+    "reasoning": "a finding \u2014 the plan specifies how to find the branch but not what the guard does when the branch ref cannot be resolved, and it names only one of the production callers that reaches the state it exists to prevent.",
+    "single_goal": "pass \u2014 \u00a75 names one deliverable (a plain `crew complete` refuses an unmerged head), with the separate-merge flag explicitly out of scope; the five arms all measure that one refusal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s6 -> a-landing-is-on-main-when-it-says-so#s5`, s5 is `implementable`, and the driving followup `f-alomwiss-007` (`data-status=\"open\"`) carries `/reckon-build a-landing-is-on-main-when-it-says-so \u00a75`; no cycle and no missing dependency."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "99552f6e4bfb0e432f6e6cfc4bb6761105a236975b09d7df6d051d8503c2f809",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:26:36.209741+00:00",
+  "total": null
+}
