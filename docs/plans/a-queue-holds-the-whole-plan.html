@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="317">
+<meta name="plan-version" content="318">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -735,7 +735,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261108T232332477115-a-released-request-takes-the-sections-current-contract covering only the commits gained since its first review (6b5e2d2baf..2fff65748c) stores a parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 12, with 0 added failures from the base and head importer arms and four non-blocking findings (stale refusal record never cleared; a second hold-reason channel no reader reads; the release loop's narrowed exception guard can abort a whole admission pass; and pre-existing marks digesting under the removed helper's spelling).</p></div>
 </div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261109T025427141733-review-of-a-released-request-takes-the-sections-current-contract-487a6cea3367" data-who="reckon-build" data-when="2026-11-09T03:07:02.805Z">
-    <div class="r-comment-body"><p>Review of run r-20261108T232332477115-a-released-request-takes-the-sections-current-contract at head 487a6cea33 (base 29b47d2cb8): a parsed record scoring all six dimensions, added_failure_count 0 with an empty id list derived from the reviewed run&#x27;s baseline_suite 108 failed and after_suite 109 failed where the single differing id fails identically at the base revision in logs/importers-base-single.log and reads as ERROR there; three non-blocking findings (two unasserted section-derived fields, a dead mark-clearing clause naming time_budget, and an after_suite field naming a pre-change revision).</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261108T232332477115-a-released-request-takes-the-sections-current-contract at head 487a6cea33 (base 29b47d2cb8): a parsed record scoring all six dimensions, added_failure_count 0 with an empty id list derived from the reviewed run's baseline_suite 108 failed and after_suite 109 failed where the single differing id fails identically at the base revision in logs/importers-base-single.log and reads as ERROR there; three non-blocking findings (two unasserted section-derived fields, a dead mark-clearing clause naming time_budget, and an after_suite field naming a pre-change revision).</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261108T232332477115-a-released-request-takes-the-sections-current-contract" data-who="reckon-build" data-when="2026-11-09T02:50:09Z">
+    <div class="r-comment-body"><p>A released request re-derives its section-supplied node fields (done-when among them) from the section at the finishing base, records the old and new digest of each by digesting text so an unchanged value reports no change, and launches on the re-derived node, while a dispatcher-supplied or queue-edited field is kept; a release whose section cannot be read is refused per request — the request stays held with the reason in its hold, and the pass continues for every other request and project; the node gate passes 7/7, the first case asserts on the launched worker&#x27;s prompt, and three negative controls log EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261109T002614744446-review-of-a-queued-brief-run-rebuilds-its-node-5b357803cd3b" data-who="reckon-build" data-when="2026-11-09T00:36:25.902Z">
     <div class="r-comment-body"><p>§39 review of r-20261109T000341614945-a-queued-brief-run-rebuilds-its-node at head 5b357803cd3b: parsed, scored 20/18/20/18/18/20 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse, total 114), 0 added failures; the guard narrowing and its three-case gate hold, with one non-blocking finding that the third test's spec_level assertion cannot fail on any variant of the guard.</p></div>
