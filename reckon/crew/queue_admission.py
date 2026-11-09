@@ -1461,6 +1461,167 @@ def _is_until_changed_failure(failure: Any) -> bool:
     return _CAPACITY_REFUSAL_REMEDY not in text
 
 
+def _review_record_refusal_subject(pointer: Mapping[str, Any]) -> str:
+    """The reviewed run a review's own refused record path names, or empty.
+
+    A run review delivers its record inside the reviewed run's
+    ``review-records`` directory, so a declared write path there names the run
+    the review is about even when the review's node id no longer resolves one —
+    and it is exactly that unresolvable id that leaves the path outside every
+    writable root once the reviewed run has left the fleet. The recorded
+    refusal must name that same path: a review refused for any other reason is
+    not this pass's to retire.
+
+    Both halves are read through the review module's own rules rather than
+    repeated here: the run directory comes from the declarations, and the
+    landing of each declaration is judged by the same location rule the
+    dispatch fence grants a record through, so a change to what counts as a
+    review's record path reaches this retirement too.
+    """
+    from reckon.crew import recovery_review_delivery
+
+    node = pointer.get("node") or {}
+    if str(node.get("role") or "") != REVIEW_ROLE:
+        return ""
+    text = _failure_text(pointer.get("failure"))
+    if _NODE_CONTRACT_REFUSAL not in text:
+        return ""
+    run_directory = recovery_review_delivery._declared_record_directory(pointer)
+    if run_directory is None:
+        return ""
+    for declared in node.get("write_paths") or ():
+        if str(declared) not in text:
+            continue
+        if (
+            recovery_review_delivery._delivered_record_location(
+                str(declared), run_directory
+            )
+            is None
+        ):
+            continue
+        return run_directory.name
+    return ""
+
+
+def _landed_review_subject(
+    pointer: Mapping[str, Any], *, live: Sequence[Mapping[str, Any]]
+) -> str:
+    """The reviewed run whose promotion has stranded this review, or empty.
+
+    A review is stranded when three facts hold together: it names a record path
+    under a run's ``review-records`` directory that its own refusal reports
+    unreachable, that run has no live pointer, and that run's record is
+    promoted. A review of a run still in the fleet is admitted as it always
+    was, and a review that has never been refused is left alone.
+    """
+    subject = _review_record_refusal_subject(pointer)
+    if not subject:
+        return ""
+    if any(str(pointer_row.get("run_id") or "") == subject for pointer_row in live):
+        return ""
+    project = str(pointer.get("project") or "") or None
+    if not runs._promoted_record_project(subject, project):
+        return ""
+    return subject
+
+
+def _review_dispose_commands(project: str, subject: str) -> tuple[str, str]:
+    """The two commands that answer a finding kept against a landed run.
+
+    Rendered by the disposition writer itself, so the command a coordinator is
+    handed is one that writer accepts. The review never launched, so no finding
+    of its own exists: the index is a placeholder, as the node and reason
+    placeholders are, and the coordinator fills it from the findings they are
+    acting on.
+    """
+    from reckon.crew import review_dispositions
+
+    return review_dispositions.dispose_commands(project, subject, "--finding <index>")
+
+
+def _retire_landed_review(
+    pointer: Mapping[str, Any],
+    subject: str,
+    *,
+    moment: datetime,
+    result: dict[str, Any],
+) -> str:
+    """Discard a review whose subject landed before it launched.
+
+    The departure is recorded where every discard is read, with the reason
+    naming the landed run, and one obligation names that run and how to dispose
+    of any finding the review would have carried. The pointer is only recorded
+    as retired once the discard has gone through: a discard that refuses leaves
+    the request queued and the next pass tries again, rather than reporting a
+    retirement that never happened.
+    """
+    from reckon.crew import recovery_review_dispatch
+
+    run_id = str(pointer.get("run_id") or "")
+    project = str(pointer.get("project") or "")
+    reason = (
+        f"retired without launching: its subject {subject!r} was promoted "
+        f"before the review was admitted, so the reviewed run is no longer in "
+        f"the fleet and the grant that resolves the review's record directory "
+        f"from its node id names no run directory"
+    )
+    outcome = recovery_review_dispatch._discard_stranded_review(run_id, reason=reason)
+    if project:
+        fold, exempt = _review_dispose_commands(project, subject)
+        remedy = (
+            f"dispose any finding it would have carried with `{fold}` or `{exempt}`"
+        )
+    else:
+        remedy = (
+            f"dispose any finding it would have carried against run "
+            f"{subject!r} with `reckon crew dispose --project <project> "
+            f"--run {subject} ...`"
+        )
+    detail = (
+        f"review {run_id!r} was retired without launching: its subject "
+        f"{subject!r} landed before the review was admitted; {remedy}"
+    )
+    result["obligations"].append({"run_id": run_id, "detail": detail})
+    if runs.pointer_path(run_id).is_file():
+        _record_retirement(pointer, subject=subject, moment=moment, outcome=outcome)
+        return f"{subject}: {outcome}"
+    return subject
+
+
+def _record_retirement(
+    pointer: Mapping[str, Any], *, subject: str, moment: datetime, outcome: str
+) -> None:
+    """Record a retirement on a request whose pointer could not be removed.
+
+    A discard that refused or failed leaves the pointer where it was, so the
+    retirement is written onto it: the next pass finds the subject promoted
+    again and retires it again, and a reader of the request sees why rather
+    than only that it is still queued.
+    """
+    run_id = str(pointer.get("run_id") or "")
+    if not run_id:
+        return
+    record = {
+        "verdict": "retired-landed-review",
+        "reason": (
+            f"its subject {subject!r} was promoted before the review was "
+            f"admitted: {outcome}"
+        ),
+        "landed_subject": subject,
+        "recorded_at": moment.isoformat(),
+    }
+
+    def stamp(current: dict[str, Any]) -> dict[str, Any]:
+        current[RECORDED_HOLD_FIELD] = record
+        current["reason"] = record["reason"]
+        return current
+
+    try:
+        runs._mutate_pointer(run_id, stamp)
+    except CrewError:
+        return
+
+
 def _until_changed_hold(
     pointer: Mapping[str, Any],
     *,
@@ -2191,6 +2352,8 @@ def _pass_verdict_record(
         "admissible_age_seconds": result.get("admissible_age_seconds"),
         "stalls": list(result.get("stalls") or ()),
         "pointers": list(verdicts),
+        "retired": list(result.get("retired") or ()),
+        "obligations": list(result.get("obligations") or ()),
         "landing": landing,
     }
 
@@ -4990,6 +5153,7 @@ def admit_once(
         "verdicts": [],
         "routed": [],
         "moved": [],
+        "retired": [],
         "obligations": [],
     }
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
@@ -5135,6 +5299,26 @@ def admit_once(
                 allowance_sources[allowance_key] = source
             allowance = remaining[allowance_key]
             allowance_source = allowance_sources[allowance_key]
+            landed_subject = _landed_review_subject(pointer, live=live)
+            if landed_subject:
+                # A review whose subject landed before it launched can never be
+                # admitted, so no lane state — a congested gate included — may
+                # keep it queued. It is retired here rather than held, before
+                # any hold this pass could record for it.
+                result["retired"].append(str(pointer["run_id"]))
+                detail = _retire_landed_review(
+                    pointer, landed_subject, moment=moment, result=result
+                )
+                verdicts.append(
+                    _verdict_row(
+                        pointer,
+                        allowance=allowance,
+                        allowance_source=allowance_source,
+                        verdict="retired-landed-review",
+                        detail=detail,
+                    )
+                )
+                continue
             if allowance is not None and allowance <= 0:
                 result["held"].append(str(pointer["run_id"]))
                 record_hold(

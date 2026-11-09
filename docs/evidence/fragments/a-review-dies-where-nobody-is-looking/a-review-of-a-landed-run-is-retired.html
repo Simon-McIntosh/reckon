@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-review-dies-where-nobody-is-looking">
+  <meta name="plan-evidence-for" content="reckon:a-review-dies-where-nobody-is-looking">
+  <meta name="plan-verifies" content="reckon:a-review-dies-where-nobody-is-looking#s13">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-09">
+  <meta name="evidence-commit" content="ae6985fc82">
+  <title>A review of a landed run is retired | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-review-of-a-landed-run-is-retired">
+  <h2>A review of a landed run is retired</h2>
+
+  <p>Read at base <code>fdf8faabb</code>, changed at <code>ae6985fc82</code>. Two
+  nova figure reviews had sat queued for over a day, held
+  <code>held-until-changed</code> on a refusal nothing could change. The refusal was
+  reproduced at base against a live queued pointer, the retirement was added to the
+  admission pass, and the same pass now removes the request with its reason recorded
+  and one obligation naming the landed run.</p>
+
+  <h3 id="a-review-of-a-landed-run-is-retired-why">Why the write path is unreachable once the subject lands</h3>
+
+  <p>A figure review's whole deliverable is a record stored beside the run it read:
+  <code>runs/&lt;reviewed run&gt;/review-records/&lt;reviewed run&gt;.figure.json</code>, plus
+  its <code>.at-&lt;sha&gt;</code> sibling. The review's node id carries the reviewed run's
+  name and a head suffix, and dispatch turns that id back into a run directory in
+  order to grant the directory. The resolution goes: the node id's source
+  (<code>bank-drive-continuation</code>) is looked up in the durable run store, the
+  row's head is compared against the <code>b818dab4d60f</code> suffix, and the matched
+  row's tree is what the grant is built from.</p>
+
+  <p>Promotion removes that row's tree. The live pointer is gone and the committed
+  ledger row carries neither <code>worktree</code> nor <code>repo</code>, so the head
+  lookup returns nothing, the matched run id falls back to the bare source
+  <code>bank-drive-continuation</code>, and that names no run directory under the crew
+  home. Nothing is granted, both declared record paths fall outside every writable root
+  in the resolved <code>read-only</code> tier, and the launch is refused as a node
+  contract failure. The refusal text, verbatim from the live pointer at
+  <code>2026-11-09</code>, 75 attempts in:</p>
+
+  <pre><code>CrewError: node is not dispatchable — scoped: write path
+'/home/ITER/mcintos/.config/reckon/crew/runs/r-20261107T195900261697-bank-drive-continuation/review-records/r-20261107T195900261697-bank-drive-continuation.figure.json'
+is unreachable in resolved sandbox tier 'read-only'; writable grants:
+/dev/shm/... , .../reports , .../reviews , .../&lt;review run&gt;</code></pre>
+
+  <p>That refusal is the same on every pass, so the hold keyed to it never releases.
+  The subject landed before the review launched; there is no future in which the
+  directory reappears.</p>
+
+  <h3 id="a-review-of-a-landed-run-is-retired-rule">What the pass does now</h3>
+
+  <p>A queued request is retired instead of held when four things hold together: its
+  node role is <code>review</code>; its recorded failure is the node-contract refusal
+  and names one of its own declared paths under a
+  <code>runs/&lt;id&gt;/review-records/</code> directory; the reviewed run has no live
+  pointer; and the durable ledger records that run as promoted. A review of a run still
+  in the fleet is admitted exactly as before, and a run that left the fleet without
+  landing is left alone — it may still be resumed, and retiring its review would
+  discard work that still has somewhere to go.</p>
+
+  <p>Neither half of that recognition is spelled out again here. The reviewed run's
+  directory comes from the review module's declared-record rule, and each declared
+  path is located by the same rule the dispatch fence grants a record through, so a
+  change to what counts as a review's record path reaches the retirement as well as
+  the fence. A copy of the directory shape in this pass would have been a second
+  spelling that could drift from the one the grant is decided by.</p>
+
+  <p>The retirement discards the request through the same store every discard uses,
+  writes the reason into the marker, records a
+  <code>retired-landed-review</code> verdict row in the pass log, and raises one
+  obligation naming the landed run with the dispose commands for any finding the
+  review would have carried.</p>
+
+  <h3 id="a-review-of-a-landed-run-is-retired-negative">The check could have failed</h3>
+
+  <p>Dropping the promoted-subject check leaves the first request
+  <code>held-until-changed</code> on every pass — the declared negative control, run
+  with a faithful mutation of the new helper and logged at
+  <code>logs/negative-control.log</code>: 3 of the 6 cases fail, naming the retirement
+  cases the head arm passes.</p>
+
+  <p>The importer measure is a delta against the base one arm at a time at
+  <code>-n 4</code>: the 23 tests that fail in the after arm fail identically at the
+  base revision, id for id, so the change adds no failure.</p>
+</section>
+</main>
+</body>
+</html>
