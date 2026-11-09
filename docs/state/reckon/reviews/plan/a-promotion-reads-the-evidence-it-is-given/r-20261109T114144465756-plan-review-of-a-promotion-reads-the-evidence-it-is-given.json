@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:49:23.051Z",
+  "dispatched_at": "2026-11-09T11:43:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-promotion-reads-the-evidence-it-is-given.html:103",
+      "id": "done_when-1",
+      "reason": "a worker implementing only what the section says adds a ruff finding on its primary write path and its own gate fails; the Deliverable must name removing the now-unused `noqa` and the \"not a collected test\" note it carries, which is a one-line addition to the section.",
+      "text": "the Deliverable renames `test_temp_config_home` but says nothing about the `# noqa: PT028` on that signature, and PT028 only fires on a pytest-collected name, so the rename turns the directive unused; with `RUF` selected in `[tool.ruff.lint]` this yields `RUF100 Unused noqa directive (unused: PT028)` on `tests/conftest.py`, a staged path, which the section's own done-when (\"Ruff, counted by delta on the staged paths against the base, adds no finding\") forbids",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "934e2ec9c13cecde3c852e3526bc26020bcab3fc",
+  "plan_fingerprint": "fec8b0f6b7d540877dce3d1fbadd06937caf2a23b2e0029daf34ea008225da6c",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 66,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T114144465756-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "41edcf3fa9d5865796d6e6ec81187453da1c664f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/conftest.py` (the helper at 1065, the genuine test at 1552, the F841 at 1057), the three caller files and the not-yet-existing new test all resolve as described, and `a-crew-process-writes-only-what-it-owns#s6` resolves to a real section (it does not itself mention `tests/conftest.py`; that anchor was raised and answered by an earlier review and is not re-raised here).",
+    "done_when": "a finding \u2014 the section's ruff-delta clause cannot be met by the rename it requires: renaming the helper makes its `# noqa: PT028` directive unused, which ruff reports as RUF100 on a staged path.",
+    "evidence_paths": "pass \u2014 the done-when requires every gate log to open with its revision and literal command and close with a bare `EXIT=` line, and no log location is named that a later reader could not open; the run's own directory carries them under the dispatch contract.",
+    "naming": "pass \u2014 `make_temp_config_home` and `tests/test_a_conftest_helper_is_never_collected.py` are named by what they do, with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "pass \u2014 the root cause reproduces exactly as stated (`pytest tests/conftest.py` gives `1 passed, 1 error`, `fixture 'prefix' not found` at conftest.py:1065), and the mechanism runs on the real path: `_node_test_files` (promotion_records.py:499) arms any write path for which `is_test_path` is true, which is true of `tests/conftest.py`, so the armed command does target the conftest.",
+    "single_goal": "pass \u2014 one deliverable (the helper rename, with its callers and its collection test) and one verdict closes it.",
+    "wiring": "pass \u2014 s10 carries no depends-on and needs none (it repairs test collection hygiene in its own write paths), and the open followup f-aprteig-010 sequences it as the plan's one remaining instruction."
+  },
+  "section_digests": {
+    "_document": "cc32472b73a29009d06a1d56714ce28cdfd50ffda0668f99fdd4b618abeb08ed",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:56:38.473375+00:00",
+  "total": null
+}
