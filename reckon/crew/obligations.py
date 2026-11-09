@@ -61,6 +61,7 @@ from reckon.crew.routing import (
     record_names_worktree,
 )
 from reckon.crew.run_paths import crew_home
+from reckon.git_head import _git_directory, _head_identity
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.velocity import run_git
 
@@ -2600,34 +2601,28 @@ def _record_index_lag(paths: Sequence[str], head: str, *, now: datetime) -> None
         return
 
 
-def _checkout_head_from_files(repository: Path) -> str:
-    """HEAD as the checkout records it, read from the files git maintains.
+def _index_lag_reading_key(repository: Path) -> tuple[Any, ...] | None:
+    """What must move for a cached lag reading to stop describing this checkout.
 
-    Read without running git so a caller can key a cached reading on it: the
-    station recomputes a payload on every tick, and a subprocess per tick to
-    learn that nothing moved is the cost this avoids. The detector's own head
-    still comes from ``git rev-parse``, and the tests compare the two.
+    The index's stat identity moves on any write to it, and the head identity
+    moves whenever the resolved commit does, so the key changes on both of the
+    events that can make a cached notice wrong. The head identity is the one
+    the follower's per-second freshness read uses: it resolves a linked
+    worktree's pointer and packed refs as files, never by spawning git. None
+    means the head cannot be read as files, and the caller then caches
+    nothing — an unreadable identity is not a stable one.
     """
-    git_dir = repository / ".git"
+    head_identity = _head_identity(repository)
+    if head_identity is None:
+        return None
+    git_dir = _git_directory(repository)
     try:
-        head_text = (git_dir / "HEAD").read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
-    if not head_text.startswith("ref:"):
-        return head_text
-    try:
-        return (git_dir / head_text[4:].strip()).read_text(encoding="utf-8").strip()
-    except OSError:
-        return ""
-
-
-def _index_lag_reading_key(repository: Path) -> tuple[Any, ...]:
-    """What must move for a cached lag reading to stop describing this checkout."""
-    try:
-        index_signature: Any = file_memo.file_signature(repository / ".git" / "index")
+        index_signature: Any = file_memo.file_signature(
+            (git_dir if git_dir is not None else repository / ".git") / "index"
+        )
     except OSError:
         index_signature = None
-    return (str(repository), index_signature, _checkout_head_from_files(repository))
+    return (str(repository), index_signature, head_identity)
 
 
 def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
@@ -2650,7 +2645,8 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     if repository is None:
         return None
     key = _index_lag_reading_key(repository)
-    cached = _INDEX_LAG_READINGS.get(key[0])
+    store_key = str(repository)
+    cached = _INDEX_LAG_READINGS.get(store_key) if key is not None else None
     if cached is not None and cached[0] == key:
         notice = cached[1]
         if notice is None:
@@ -2659,7 +2655,8 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
             return dict(notice)
     paths, head = _index_lag_paths(repository)
     if not paths:
-        _INDEX_LAG_READINGS[key[0]] = (key, None)
+        if key is not None:
+            _INDEX_LAG_READINGS[store_key] = (key, None)
         return None
     _record_index_lag(paths, head, now=now)
     restore = "git -C {} reset -q -- {}".format(
@@ -2679,7 +2676,8 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
         ),
         "next_command": restore,
     }
-    _INDEX_LAG_READINGS[key[0]] = (key, notice)
+    if key is not None:
+        _INDEX_LAG_READINGS[store_key] = (key, notice)
     return dict(notice)
 
 

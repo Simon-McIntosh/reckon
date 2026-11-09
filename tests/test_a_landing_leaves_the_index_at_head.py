@@ -14,7 +14,9 @@ untracked and ignored is not one either. The first case also pins that the log
 holds one line for the lag however many times the view is read, and that reading
 the view never repairs the index on the coordinator's behalf. A fifth case
 publishes a snapshot and reads it back the way the stop hook does, because the
-prompt path sees only the snapshot and never the derivation.
+prompt path sees only the snapshot and never the derivation. A sixth runs the
+restore the notice prints and requires the next read to be silent, which is
+what holds the cached reading to the index and the head.
 
 The last case asserts the real crew home is untouched, because a reader that
 wrote to the fleet's live state would make the check a monitor of the machine
@@ -25,6 +27,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import subprocess
 from pathlib import Path
 
@@ -184,6 +187,29 @@ def test_an_untracked_ignored_path_raises_nothing(checkout: Path) -> None:
 
     assert _notice_rows(payload) == []
     assert _log_lines() == []
+
+
+def test_the_offered_restore_ends_the_notice(checkout: Path) -> None:
+    """The command the notice prints is the repair, and the next read is clean.
+
+    A cached reading is only safe while it moves on the two events that can
+    make it wrong, so this case repairs the index with the notice's own command
+    and requires the very next read to be silent. A key that ignored the index
+    and HEAD would keep serving the notice it had already taken.
+    """
+    _git(checkout, "rm", "--cached", "-q", "--", TRACKED)
+    first = obligations_module.obligations(PROJECT, SESSION)
+    rows = _notice_rows(first)
+    assert len(rows) == 1, first["obligations"]
+    assert len(_log_lines()) == 1
+
+    subprocess.run(shlex.split(rows[0]["next_command"]), check=True)
+    assert _staged_deletions(checkout) == []
+
+    again = obligations_module.obligations(PROJECT, SESSION)
+    assert _notice_rows(again) == [], again["obligations"]
+    # The repair is not a new lag, so it appends nothing to the log either.
+    assert len(_log_lines()) == 1
 
 
 def test_a_published_snapshot_carries_the_notice_to_the_prompt_path(
