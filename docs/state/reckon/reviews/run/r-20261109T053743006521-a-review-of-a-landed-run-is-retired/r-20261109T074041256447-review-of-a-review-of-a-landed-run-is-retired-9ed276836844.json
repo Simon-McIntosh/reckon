@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T10:12:12Z",
+  "dispatched_at": "2026-11-09T07:42:55Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "record wording only; the reviewer verified both arms ran and the tested content matches 425cb1ef56, and the landing re-runs the armed pair",
+      "recorded_at": "2026-11-09T10:19:02.704024+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "record wording only; the reviewer verified both arms ran and the tested content matches 425cb1ef56, and the landing re-runs the armed pair",
+      "recorded_at": "2026-11-09T10:19:28.342832+00:00"
+    }
+  },
+  "findings": [
+    {
+      "line": 1,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/logs/node-tests-repair.log",
+      "severity": "non-blocking",
+      "text": "the passing gate's header records 'repair round at 64a00fcc8dbc3b41158b6a59a3d330a7faba1548 + uncommitted queue_admission.py' rather than the commit that carries the tested content, so the receipt does not name the revision it covers without an external diff; verified here that logs/queue_admission.py.repair-pre-negative-control is byte-identical to 425cb1ef56:reckon/crew/queue_admission.py, so the measurement is sound and the gap is in the record's provenance"
+    },
+    {
+      "line": 23,
+      "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/manifest.md",
+      "severity": "non-blocking",
+      "text": "the baseline_suite and after_suite command fields carry unsubstituted placeholders ('<the 23 failing ids of the after arm>', '<23 importer files of reckon.crew.queue_admission, logs/importers-subset.txt>'), which the record contract refuses as a command that cannot be re-run; both arms did run and their logs exist at logs/importers-base-failing-ids.log and logs/importers-repair-after.log, so this is a record-shape defect rather than a missing measurement"
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "VERDICT call_sites: admit_once at reckon/crew/queue_admission.py:5302 is the production path, reaching the changed _review_record_refusal_subject (:1464) through _landed_review_subject (:1517); admit_until_stopped at :5990 drives admit_once from the service loop, and reckon/crew_run_commands.py:4548 is the crew admit CLI entry that calls it.",
+    "diff": "VERDICT diff: read 425cb1ef56 and 9ed2768368 against 64a00fcc; together they are 26 insertions and 7 deletions over two files \u2014 the helper now resolves the run directory through recovery_review_delivery._declared_record_directory (:196) and each declaration through _delivered_record_location (:150), and the fragment gains one paragraph describing that.",
+    "done_when": "VERDICT done_when: the done_when names the six-case test file, an importers arm against the base, and a ruff arm; at head 9ed2768368 logs/node-tests-repair.log records '6 passed' EXIT=0 (tested content verified byte-identical to 425cb1ef56), logs/importers-repair-after.log records 23 failed / 119 passed with exactly the base arm's 23 ids, and logs/ruff.log records 'All checks passed!' plus '2 files already formatted' EXIT=0.",
+    "goal": "VERDICT goal: the source node's goal is 'Retire a queued review refused on its own review-records write path once its subject has landed' (dispatch-detail.json admit_request.node.goal); of the two commits gained since 64a00fcc, 425cb1ef56 changes _review_record_refusal_subject at reckon/crew/queue_admission.py:1464 to read both halves through recovery_review_delivery rather than restating the shape, and 9ed2768368 records that in the evidence fragment; the retirement decision the goal names is unchanged by the pair.",
+    "manifest": "VERDICT manifest: read manifest.md; it records the repair round's 6-passed node run EXIT=0, a red negative control (3 of 6 failed, EXIT=1), the importer arm pair with identical 23 failing ids, and logs/ruff.log, and it names 425cb1ef56 as the landing commit.",
+    "write_paths": "VERDICT write_paths: the source node declared reckon/crew/queue_admission.py, tests/test_a_review_of_a_landed_run_is_retired.py and docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-review-of-a-landed-run-is-retired.html (dispatch-detail.json admit_request.node.write_paths); the two gained commits touch only queue_admission.py and the evidence fragment, both inside that declaration."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'Retire a queued review refused on its own review-records write path once its subject has landed' (dispatch-detail.json admit_request.node.goal); of the two commits gained since 64a00fcc, 425cb1ef56 rewrites _review_record_refusal_subject at reckon/crew/queue_admission.py:1464 to read both halves through recovery_review_delivery, and 9ed2768368 records it in the evidence fragment.\nVERDICT done_when: the done_when names the six-case test file, an importers arm against the base, and a ruff arm; logs/node-tests-repair.log records 6 passed EXIT=0, logs/importers-repair-after.log records 23 failed / 119 passed against a base arm of the same 23 ids, and logs/ruff.log records EXIT=0 at 9ed2768368.\nVERDICT write_paths: the declared paths are queue_admission.py, the test file and the evidence fragment (dispatch-detail.json admit_request.node.write_paths); the two gained commits touch only queue_admission.py and the fragment, both declared.\nVERDICT manifest: read manifest.md; it reports the 6-passed node run, a negative control with 3 of 6 cases failed at EXIT=1, the importer arm pair with identical ids, and the ruff log; it names 425cb1ef56 as the landing.\nVERDICT diff: read 425cb1ef56 and 9ed2768368 against 64a00fcc; 26 insertions and 7 deletions over reckon/crew/queue_admission.py and the evidence fragment: the helper now calls recovery_review_delivery._declared_record_directory (:196) and _delivered_record_location (:150) instead of restating the directory shape, and the fragment gains one paragraph saying so.\nCALL_SITES: reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:4548\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:1490 recovers the run directory through recovery_review_delivery._declared_record_directory, so the retirement the goal names is reached by the owner's rule rather than a second spelling.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/importers-repair-after.log records 23 failed and 119 passed with the same 23 ids as logs/importers-base-failing-ids.log, and logs/ruff.log carries EXIT=0 at 9ed2768368, though the node-test log's header names an uncommitted tree rather than the commit.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 64a00fcc 9ed2768368 lists only reckon/crew/queue_admission.py and docs/evidence/fragments/a-review-dies-where-nobody-is-looking/a-review-of-a-landed-run-is-retired.html, both declared at dispatch-detail.json admit_request.node.write_paths.\nSCORE durability: 12\nJUSTIFICATION durability: neither gained commit adds or changes an assertion, so reinstating the hardcoded shape rule at reckon/crew/queue_admission.py:1484 would leave all six cases green; the retirement behaviour itself stays guarded by the negative control where 3 of 6 cases fail.\nSCORE fit: 19\nJUSTIFICATION fit: the in-function import at reckon/crew/queue_admission.py:1487 matches the module's existing lazy-import idiom (queue_admission.py:4829, :4935) and the precedent at dispatch_admission.py:2241, and no added name carries a plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the repair calls the owner recovery_review_delivery._delivered_record_location:150 and _declared_record_directory:196, and the 'review-records' shape literal now lives once, at recovery_review_delivery.py:169 reading review_module.RUN_REVIEW_RECORD_DIRNAME.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/logs/node-tests-repair.log:1 non-blocking: the passing gate's header names '64a00fcc8dbc3b41158b6a59a3d330a7faba1548 + uncommitted queue_admission.py' rather than the commit carrying the tested content, so the receipt does not identify the revision it covers without an external diff; the tested file is byte-identical to 425cb1ef56, verified here.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T053743006521-a-review-of-a-landed-run-is-retired/manifest.md:23 non-blocking: the baseline_suite and after_suite command fields carry unsubstituted placeholders, which the record contract refuses as commands that cannot be re-run; both arms did run and their logs exist, so the measurement is present and the defect is in the record's shape.",
+  "review_run_id": "r-20261109T074041256447-review-of-a-review-of-a-landed-run-is-retired-9ed276836844",
+  "reviewed_base_sha": "64a00fcc8dbc3b41158b6a59a3d330a7faba1548",
+  "reviewed_head_sha": "9ed2768368440bb7c5612d0394c3bcf355372f20",
+  "reviewed_run_id": "r-20261109T053743006521-a-review-of-a-landed-run-is-retired",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:27:35.395135+00:00",
+  "total": 107
+}
