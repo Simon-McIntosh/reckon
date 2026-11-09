@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T07:50:49.576Z",
+  "dispatched_at": "2026-11-09T07:37:06Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:113",
+      "id": "done_when-1",
+      "reason": "a worker building the stated fixture gets a duty that never enters the measured branch, and must invent an armed follower, a superseded stored review and a scoring classification the plan does not mention; the plan's claim that its fixture \"reaches the measured path\" is false as written.",
+      "text": "the fixture clause (\"each delivered run has at least one stored review record \u2026 and each duty is aged past `_reflex_review_window_seconds()`\") still does not reach `_open_review_refusal`'s `run_ids` call: `_reflex_open_refusal` is reached only at reckon/crew/obligations.py:1974, inside `if item[\"kind\"] == \"review-missing\" and classification == \"scoring\"` (:1955) and only when `_reflex_owns_review(project, pointer)` is true (:1966, which needs `runs.follower_state(...)[\"live\"]` for the pointer's session, :726-736); the duty reads `review-missing` only when the stored review is open and covers a *superseded* head (:1920-1954), its newest review carries no undisposed blocking finding (:1858-1892), no refusal record speaks for the revision (:1911), and no queued review placement exists (:1943-1952) \u2014 a stored review for the current head turns the duty into `review-ready` and never calls `run_ids`, so the test's own positive assertion (that `_open_review_refusal` reached the call for every run) cannot pass on the fixture the plan states",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:113",
+      "id": "done_when-2",
+      "reason": "the measure must distinguish the two offered fixes and must not attribute the index build to the duty, otherwise the worker either reports a false failure or hoists the read into a shape the section did not intend.",
+      "text": "the gate \"one obligations pass calls `_load_aggregate` at most once per project, counted through a patch\" cannot hold at head on the fresh temporary crew home the fixture specifies: `ledger.read_records` calls `_load_aggregate` when its SQLite index stamp is cold (reckon/ledger.py:1535, `aggregate_changed = meta.get(\"stamp\") != aggregate_stamp`), which is exactly the first pass over a newly built temp home, so the count is (index build) + (duty reads); and because the patch counts entries to `_load_aggregate`, the second offered fix \u2014 serving `run_ids` from a stat-validated cache placed inside `_load_aggregate`/`_store._load_json_envelope` \u2014 keeps the count at the number of duties, so a correct implementation of an offered branch fails the gate",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-read-costs-what-changed.html:113",
+      "id": "reasoning-1",
+      "reason": "the section already instructs the worker to measure \"whether `_load_aggregate` is served from a cache\" and to add one if not, so the inaccurate premise costs the worker one verification and changes no deliverable; naming the memo's home would only sharpen the brief.",
+      "text": "\"`run_ids` is served from the stat-validated cache the ledger already keeps\" overstates what exists: the aggregate read is `_store._load_json_envelope` (reckon/_store.py:422-447), an unconditional `path.read_text()` + `json.loads` per call, and the ledger's only stat-validated cache is the per-run document memo `read_document` (`_RUN_DOCUMENT_KIND`, reckon/ledger.py:1283-1298) \u2014 and the natural home for an aggregate memo, `reckon/_store.py`, is outside the section's write paths",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "a94af5437d1f33acb90b5a54d7c5de2dcddc8260",
+  "plan_fingerprint": "f9ea1a01156f224a80f126425aa6345c715e1517642c51ee106003a6234c005e",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 61,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T073559663378-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "09749223ed44da7c2fc1b30a69f272d23585815c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ledger.run_ids` (reckon/ledger.py:1051), `_load_aggregate` (reckon/ledger.py:992), `_open_review_refusal` (reckon/crew/recovery_review_dispatch.py:2474, the `run_ids` call at :2516 exactly), `_reflex_open_refusal` (reckon/crew/obligations.py:779) and `_reflex_review_window_seconds` (:739) all resolve, and `docs/plans/a-review-dies-where-nobody-is-looking.html` exists.",
+    "done_when": "a finding \u2014 the gate counts `_load_aggregate` calls per project to prove the fix, but `ledger.read_records` also calls `_load_aggregate` (reckon/ledger.py:1535) when its index stamp is cold, which a fresh temporary crew home is, so the bound \"at most once per project\" is not reachable from the fixture with either offered fix applied.",
+    "evidence_paths": "pass \u2014 the test log and the live per-tick before/after figures are declared under the run directory, which is durable on the shared config home, not a scratchpad.",
+    "naming": "pass \u2014 `tests/test_a_review_duty_reads_the_ledger_once_per_pass.py` names the mechanism and carries no plan label, stage name or ticket number.",
+    "reasoning": "a finding \u2014 the section's own mechanism claim that the offered cache is \"the stat-validated cache the ledger already keeps\" describes a cache that exists for per-run documents only (`ledger.read_document`, `_RUN_DOCUMENT_KIND`, reckon/ledger.py:1293), not for the aggregate `run_ids` reads; the aggregate read in `_load_json_envelope` is uncached (`reckon/_store.py:422-447`, a plain `read_text` + `json.loads` every call).",
+    "single_goal": "pass \u2014 one deliverable (the ledger read hoisted or cached once per pass), and the \"or\" is two implementations of that one change, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a715 declares no depends-on, informs or gates edge (`data-links=\"\"`), and it consumes nothing another section must land first; the ledger, obligations and review-dispatch modules it names all exist at the reviewed revision."
+  },
+  "section_digests": {
+    "_document": "fadd834561014ac70b3c356334ec429206b493af2f66b7ab5d86276b95038750",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "44944e58628a4b7ec505b435be72d546ae015b0ddf790a0761f11578148172cb",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:08:04.540290+00:00",
+  "total": null
+}
