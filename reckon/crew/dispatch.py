@@ -3485,7 +3485,9 @@ def dispatch(
                     )
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
-                    spawned_pid = _start_supervisor(spec_path, directory, run_id)
+                    spawned_pid = _start_supervisor(
+                        spec_path, directory, run_id, reservation=reservation
+                    )
                 else:
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)

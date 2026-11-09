@@ -615,6 +615,59 @@ def test_an_in_harness_relaunch_is_refused_while_a_cli_launch_holds_one(
     assert calls == [], "the in-harness relaunch cut the worktree"
 
 
+def test_a_dispatch_is_held_by_the_supervisor_it_recorded(
+    repo_context: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A dispatch leaves behind a reservation naming the supervisor it started.
+
+    The admitting process is this one and stays alive for the whole case, as the
+    admit service's does. What frees the run must be the supervisor's own end,
+    so the reservation the dispatch leaves on disk has to name that supervisor
+    rather than the door that took it.
+    """
+    _config_home, repo = repo_context
+    tree, _head, _note = _stand_in_tree(repo)
+    _window_run(tmp_path, tree)
+    directory = runs_module.run_dir(RUN_ID)
+
+    supervisor = _live_child()
+    try:
+        monkeypatch.setattr(
+            dispatch_launch_module,
+            "_spawn_detached_supervisor",
+            lambda argv, stderr_path: supervisor.pid,
+        )
+        monkeypatch.setattr(
+            dispatch_launch_module,
+            "_confirm_supervisor_survived",
+            lambda pid, run_directory, run_id: None,
+        )
+        _dispatch(repo, tmp_path / "manifests" / "first.md", launcher=None)
+
+        held = dispatch_launch_module.held_launch_reservation(directory)
+        assert held is not None
+        assert held["supervisor_pid"] == supervisor.pid, (
+            "the reservation names the door that took it, not the supervisor"
+        )
+        _refused(
+            lambda: dispatch_launch_module.reserve_launch_attempt(
+                directory, RUN_ID, kind="dispatch"
+            )
+        )
+    finally:
+        _stop(supervisor)
+
+    assert dispatch_launch_module.held_launch_reservation(directory) is None, (
+        "a supervisor that ended leaves the run launchable while the door lives"
+    )
+    again = dispatch_launch_module.reserve_launch_attempt(
+        directory, RUN_ID, kind="dispatch"
+    )
+    dispatch_launch_module.release_launch_reservation(again)
+
+
 def test_a_fresh_run_id_takes_no_reservation(
     repo_context: tuple[Path, Path], tmp_path: Path
 ) -> None:
