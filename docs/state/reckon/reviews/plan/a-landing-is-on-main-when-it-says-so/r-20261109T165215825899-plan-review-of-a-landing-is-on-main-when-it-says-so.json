@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:59:54.594Z",
+  "dispatched_at": "2026-11-09T16:54:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "a node implementing the deliverable literally blocks the failure-recording path, and the plan's own thesis is that only landed work must be on main, so the refusal must be scoped to a passing promotion.",
+      "text": "\u00a75 refuses \"a plain crew complete on an implementation run whose reviewed head is not an ancestor of the remote primary branch\" without conditioning the refusal on a passing gate, so a run completed with `--gate failed` or `--gate not-run` (the documented surface is `--gate passed|failed|not-run`, `reckon/crew/AGENTS.md:28)`, whose head is by construction unmerged, is refused; the only remedies \u00a75 names are `--land` or merging first, which would put rejected work on main",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "a node builds controls literally, and a control bound to the wrong arm either measures nothing or is dropped, so the unpushed-head guard would have no negative control in a strict-verification gate.",
+      "text": "the done-when reads \"a reachable remote that carries no primary ref refuses naming the missing ref, with a negative control in which reading that empty answer as promotable promotes it, with a negative control in which reading local HEAD promotes it\": the local-HEAD control has been comma-attached to the missing-ref arm, where it does not control that arm, while the arm it actually falsifies (\"a head fast-forwarded on local `main` but not pushed\") now names no control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-2",
+      "reason": "the deliverable must keep three causes distinct because the done-when requires each named separately, and the clause as written invites a node to report a missing-ref or fetch-failure cause for the unpushed head.",
+      "text": "\u00a75's sentence \"If the fetch fails, or the helper answers no remote-tracking ref, the complete refuses and names that cause rather than promoting, which a fast-forwarded but unpushed head already satisfies\" attaches the unpushed-head case to the fetch-failure/missing-ref causes, but a fast-forwarded local `main` against a reachable remote with a present primary ref produces neither of those causes: the fetch succeeds and the ref exists, so the refusal is the ancestry one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fe19043b48675fd8f26769af4eccf6a2c8970491",
+  "plan_fingerprint": "1191ec1a6650ae467785d5fd661984113b10fe9d11e51918e41e28c3c8f17d27",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T165215825899-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "d35e1161d4eb5fff464fd17af34341efc593fccf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_integration_ref` sits at `reckon/crew/recovery_review_dispatch.py:945` (cited \"near line 944\"), `merge.require_promotable_head` calls `promotion.complete_dry_run` at `reckon/crew/merge.py:157-180`, `crew_complete` is at `reckon/crew_run_commands.py:3065`, and `_commits_missing_from` reads local `HEAD` at `reckon/crew/recovery_review_acceptance.py:209-240` with `promotion_module.complete(...)` at line 349; \"nothing in reckon/ fetches today\" holds (grep for `\"fetch\"` over `reckon/` returns no git invocation).",
+    "done_when": "a finding \u2014 \u00a75's negative-control clause for \"reading local HEAD promotes it\" now dangles after the missing-ref arm, leaving the fast-forwarded-but-unpushed arm without its control and the missing-ref arm with two.",
+    "evidence_paths": "pass \u2014 both sections place gate logs under the run directory, a durable path, with the revision and command header and an `EXIT=` terminator.",
+    "naming": "pass \u2014 both new test filenames are behaviour-named (`test_a_plain_complete_refuses_an_unmerged_head.py`, `test_reflex_acceptance_reads_the_remote_primary.py`) and no plan labels, ticket numbers or changelog prose enter a symbol or comment.",
+    "reasoning": "a finding \u2014 \u00a75's refusal is stated for every plain complete regardless of gate verdict, so a failed or blocked implementation run, whose head was deliberately never merged, can never be recorded; \u00a75's \"which a fast-forwarded but unpushed head already satisfies\" is also attached to the fetch-failure/missing-ref clause it does not describe.",
+    "single_goal": "pass \u2014 \u00a75 is one refusal plus the shared fetch function that serves it and \u00a77; \u00a77 is one acceptance change.",
+    "wiring": "pass \u2014 s6 and s7 both declare `plan-section-depends-on` s5, s7's deliverable names the function \u00a75 adds, and \u00a75's write paths grant `recovery_review_dispatch.py` which \u00a77 consumes."
+  },
+  "section_digests": {
+    "_document": "c3f74979bb9780a63126e7eeaad4a960272df0e9892371b22989f2a1123ccf23",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "8b804d90738202c8b5c3bb2477eee0609774fcc0a1c38f7bd69439dd5c7aa2d8",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27",
+    "s7": "8bc90ae3525f9de845f012d8a6db903090289d9304ef9bceeb017eb832f22cc8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:07:55.487166+00:00",
+  "total": null
+}
