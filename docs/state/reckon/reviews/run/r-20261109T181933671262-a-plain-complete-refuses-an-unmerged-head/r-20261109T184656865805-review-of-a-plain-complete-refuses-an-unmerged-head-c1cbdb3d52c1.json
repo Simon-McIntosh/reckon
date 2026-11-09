@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:crew_complete",
+    "reckon/crew/merge.py:_push_and_confirm",
+    "reckon/crew/merge.py:_remote_head",
+    "reckon/crew/promotion.py:_run_promoted_revision"
+  ],
+  "completed_at": "2026-11-09T18:59:16.469Z",
+  "dispatched_at": "2026-11-09T18:50:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_plain_complete_refuses_an_unmerged_head.py",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "the declared mutation RECKON_COMPLETE_SKIP_HEAD_CHECK=1 patches reckon.cli._refuse_a_plain_complete_off_the_branch, which reckon/cli.py does not import and whose crew_complete resolves the name in reckon.crew_run_commands, so the helper raises AttributeError instead of removing the guard; running the unmerged-head test at the reviewed head with that variable set fails at tests/test_a_plain_complete_refuses_an_unmerged_head.py:56 with that AttributeError, so the manifest's rubric.durability and the fragment's 'the declared mutation removes the guard' claim a falsification control that does not work"
+    },
+    {
+      "file": "tests/test_crew_refusal_visibility.py",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "adding refusal family D25 leaves the refusal census red: tests/test_crew_refusal_visibility.py:33 builds CONVERTED_REFUSAL_FAMILIES from range(1, 25), so tests/test_crew_refusal_visibility.py::test_the_dispatch_refusal_census_is_partitioned_without_gaps fails at the head with 'Extra items in the left set: D25' until the sibling node owning that file extends the range; the node records this under outside_scope, and the coordinator must sequence that repair rather than landing this change alone"
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_run_commands.py:3235 (crew_complete), reckon/crew/merge.py:790 (_push_and_confirm through _remote_head), and reckon/crew/promotion.py:1442 which resolves the same promoted revision the guard checks.",
+    "diff": "read commit by commit against fb8c7733b6: 94279c6c70 adds merge._read_remote_head/head_on_remote_branch, the D25 remedy and the plain-complete guard; c1cbdb3d52 adds only the evidence fragment; 737 insertions, 3 deletions across 5 files.",
+    "done_when": "the done_when names tests/test_a_plain_complete_refuses_an_unmerged_head.py over a temporary repository and bare origin; the manifest records that gate's base arm (6 failed, 4 passed) and head arm (10 passed) with logs under the run directory.",
+    "goal": "the goal is that a plain passed complete refuses an implementation head off the remote primary branch; reckon/crew_run_commands.py:3234-3237 and 3388-3393 implement exactly that refusal.",
+    "manifest": "read; it states the gate command and both arms, the negative-control log path, the declared mutation, and records the refusal-census failure under outside_scope.",
+    "write_paths": "the declared paths are reckon/crew/merge.py, reckon/crew_run_commands.py, reckon/crew/refusals.py, the new test and the evidence fragment; the diff touches exactly those five files."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plain_complete_refuses_an_unmerged_head.py::test_a_plain_complete_on_an_unmerged_head_refuses_and_leaves_the_run fails at the base revision and passes at the head, but the declared mutation RECKON_COMPLETE_SKIP_HEAD_CHECK=1 patches a name reckon/cli.py does not carry and raises AttributeError instead of removing the guard (verified here at head).",
+    "evidence": "tests/test_a_plain_complete_refuses_an_unmerged_head.py covers every arm the done_when names, and the manifest records the base arm at 6 failed/4 passed and the head arm at 10 passed under logs/ with EXIT lines; the negative-control log shows the base revision promoting with ok true and pointer_removed true.",
+    "fit": "reckon/crew/merge.py:662 extends the module's own remote-read and ancestry idiom, and no added name carries a plan, stage or ticket identifier.",
+    "goal_fidelity": "reckon/crew_run_commands.py:3234-3237 calls _refuse_a_plain_complete_off_the_branch before promotion for a non-land, passed-gate run, and its D25 message names the reviewed head and origin/main.",
+    "reuse": "reckon/crew/merge.py:619 extends the existing _remote_head read and reckon/crew/merge.py:662 composes _is_ancestor, _rev_parse and the port-443 helpers; a search over reckon for ls-remote and ancestry owners found no other capability that answers this question.",
+    "scope_discipline": "every path in the diff (reckon/crew/merge.py, reckon/crew_run_commands.py, reckon/crew/refusals.py, the new test and the evidence fragment) is inside the declared write paths, and nothing else changed."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261109T184656865805-review-of-a-plain-complete-refuses-an-unmerged-head-c1cbdb3d52c1",
+  "reviewed_base_sha": "fb8c7733b6342cd73c06c54dfc89a6e1506141f2",
+  "reviewed_head_sha": "c1cbdb3d52c14484d0482e81ba92d80fb5c42d99",
+  "reviewed_run_id": "r-20261109T181933671262-a-plain-complete-refuses-an-unmerged-head",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T19:18:24.643664+00:00",
+  "total": 108,
+  "verdicts": [
+    "VERDICT goal: the goal is that a plain passed complete refuses an implementation head off the remote primary branch; reckon/crew_run_commands.py:3234-3237 and 3388-3393 implement exactly that refusal.",
+    "VERDICT done_when: the done_when names tests/test_a_plain_complete_refuses_an_unmerged_head.py over a temporary repository and bare origin; the manifest records that gate's base arm (6 failed, 4 passed) and head arm (10 passed) with logs under the run directory.",
+    "VERDICT write_paths: the declared paths are reckon/crew/merge.py, reckon/crew_run_commands.py, reckon/crew/refusals.py, the new test and the evidence fragment; the diff touches exactly those five files.",
+    "VERDICT manifest: read; it states the gate command and both arms, the negative-control log path, the declared mutation, and records the refusal-census failure under outside_scope.",
+    "VERDICT diff: read commit by commit against fb8c7733b6: 94279c6c70 adds merge._read_remote_head/head_on_remote_branch, the D25 remedy and the plain-complete guard; c1cbdb3d52 adds only the evidence fragment; 737 insertions, 3 deletions across 5 files."
+  ]
+}

@@ -24,7 +24,7 @@
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
+<meta name="plan-version" content="31">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
@@ -116,6 +116,9 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 </div>
 <div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-08T09:40:00Z">
     <div class="r-comment-body"><p>§3 landed by reckon-0f directly: commit <code>99159671ab</code>, merged into main by <code>088c13da18</code>. The cause was the pre-merge release record that the post-merge release could not replace; <code>_record_release_on_ledger</code> now takes the post-merge reading under <code>--land</code>. Confirmed live: the next landings (a-gate-halts §6, crew-state §2, monitor §17) exited 0.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261109T184656865805-review-of-a-plain-complete-refuses-an-unmerged-head-c1cbdb3d52c1" data-who="reckon-build" data-when="2026-11-09T18:59:16.469Z">
+    <div class="r-comment-body"><p>review of r-20261109T181933671262-a-plain-complete-refuses-an-unmerged-head at head c1cbdb3d52 scored goal_fidelity 19, evidence 18, scope_discipline 19, durability 15, fit 18, reuse 19 with added_failure_count 0, and raised two non-blocking findings: the declared RECKON_COMPLETE_SKIP_HEAD_CHECK mutation patches reckon.cli, which does not carry the guard, so it raises AttributeError instead of removing it (verified at the reviewed head), and D25 leaves the sibling refusal census red until its owning node extends the range.</p></div>
 </div>
 </section>
 </main>
