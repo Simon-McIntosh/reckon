@@ -2213,6 +2213,7 @@ def launch_reservation_key(run_directory: Path) -> int:
     records are read too, by the attempt they carry. A canonical record written
     before the attempt field existed is the run's first attempt, which is how
     every other reader of those records takes one that names no attempt.
+
     """
     numbers = attempt_receipt_numbers(run_directory)
     for name in (WORKER_RECORD_NAME, EXIT_RECORD_NAME):
@@ -2235,15 +2236,16 @@ def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
 
 
 def _reservation_taken_by_this_process(
-    run_directory: Path,
+    run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
     """The live reservation this process owns, so a launch can adopt its own.
 
     A door that reserves an attempt and then launches through a seam that does
     not carry the reservation must still have the supervisor recorded on the
     reservation it took, or the hold names the door and is freed only when the
-    door exits. Only an unrecorded reservation this very process took is
-    adopted; another process's hold is never taken over.
+    door exits. Only an unrecorded reservation this very process took, for this
+    launch's attempt or a later one, is adopted; another process's hold is never
+    taken over, and neither is an earlier attempt's.
     """
     try:
         names = [path.name for path in run_directory.iterdir()]
@@ -2261,6 +2263,8 @@ def _reservation_taken_by_this_process(
         if payload.get("supervisor_pid") is not None:
             continue
         if payload.get("pid") != pid:
+            continue
+        if int(match.group(1)) < at_least:
             continue
         return LaunchReservation(
             run_id=str(payload.get("run_id") or run_directory.name),
@@ -2970,23 +2974,31 @@ def supervised_launch(
     stream_name = Path(log_path).name
     attempt_kind = "lane-change" if stream_name.startswith("lane-change-") else "resume"
     attempt_started_at = _utc_now()
+    from_record = int(record.get("attempt") or 1) + 1
     if reservation is None:
         # A door that reserved the attempt and then launched through a seam that
         # does not carry the reservation leaves it on disk unclaimed. That
-        # reservation was taken by this process for this launch, so it is
-        # adopted here and the supervisor is recorded on it: the hold then
-        # follows the worker rather than the door that took it.
-        reservation = _reservation_taken_by_this_process(run_directory)
+        # reservation was taken by this process for a launch at or after the
+        # attempt this run's record names, so it is adopted here and the
+        # supervisor is recorded on it: the hold then follows the worker rather
+        # than the door that took it.
+        reservation = _reservation_taken_by_this_process(
+            run_directory, at_least=from_record
+        )
+    reserved_here = False
     if reservation is None and run_holds_an_attempt_record(run_directory):
         reservation = reserve_launch_attempt(
             run_directory, run_directory.name, kind=attempt_kind
         )
+        reserved_here = reservation is not None
     if attempt is None:
-        # A launch starts exactly the attempt its door reserved; a launch whose
-        # door reserved nothing takes the attempt after the one the run's own
-        # record names.
-        from_record = int(record.get("attempt") or 1) + 1
+        # A door launches exactly the attempt it reserved. A launch that
+        # reserved its own attempt has only the run's records to go on, and its
+        # record may name an attempt that left no receipt at all, so it takes
+        # the later of the key and the record's next attempt.
         attempt = reservation.attempt if reservation is not None else from_record
+        if reserved_here and reservation is not None:
+            attempt = max(reservation.attempt, from_record)
     try:
         _prepare_attempt_records(
             run_directory,

@@ -244,25 +244,40 @@ def test_two_doors_reading_one_attempt_launch_only_once(
     )
     stale = dict(record)
 
+    refusals: list[CrewError] = []
+
+    def racing_launcher(plan: Any, **kwargs: Any) -> int:
+        # The second door arrives while the first launch is still in flight.
+        # A launch that has returned is over, so the race is run from inside
+        # the launch the first door is holding, which is the window the
+        # reservation exists to cover.
+        # The second door is another process's, which cannot see this one's
+        # in-flight set; clearing it makes this door reach the reservation the
+        # first one holds, which is the guard under test.
+        resumption._LAUNCHES_IN_THIS_PROCESS.discard(TWO_DOOR_RUN)
+        try:
+            resumption._resume(
+                TWO_DOOR_RUN,
+                stale,
+                config=CONFIG,
+                launcher=_launcher(liveness._absent_pid()),
+                advice="a second coordinator's answer",
+            )
+        except CrewError as refused:
+            refusals.append(refused)
+        return liveness._absent_pid()
+
     launched = resumption._resume(
         TWO_DOOR_RUN,
         stale,
         config=CONFIG,
-        launcher=_launcher(liveness._absent_pid()),
+        launcher=racing_launcher,
         advice="carry on from the same node",
     )
     assert launched["pid"] == liveness._absent_pid(), launched
+    assert refusals, "the second door launched beside the first"
 
-    with pytest.raises(CrewError) as refused:
-        resumption._resume(
-            TWO_DOOR_RUN,
-            stale,
-            config=CONFIG,
-            launcher=_launcher(liveness._absent_pid()),
-            advice="a second coordinator's answer",
-        )
-
-    refusal = str(refused.value)
+    refusal = str(refusals[0])
     assert TWO_DOOR_RUN in refusal, refusal
     # Either door may answer first: the process-local claim says a resume is
     # already launching, and the attempt reservation says an attempt is in
