@@ -1,26 +1,64 @@
 <section id="parallel-nodes-on-one-module-measure">
   <h3>Shared-root claim measurements</h3>
-  <p>The before snapshot provides the positive control: held-on-claim refusals occurred on file paths that fall under the configured shared roots. The after copy is an interim sample only; it has not met the required elapsed window or same-file pair count.</p>
+  <p>The before snapshot positively records held-on-claim verdicts under configured shared roots. Across all three retained after copies, deduplicated by timestamp and code stamp, shared-root file holds are zero. The run ledger covers 15.14 hours after the admission service reload and yields six file-specific concurrent claim pairs across four distinct run pairs.</p>
   <table>
     <thead>
-      <tr><th>Window</th><th>Admission passes</th><th>File claim results</th><th>Concurrent same-file pairs</th></tr>
+      <tr><th>Window</th><th>Admission passes</th><th>Held file claims</th><th>Shared-root file holds</th><th>Other file holds</th><th>Unclassified held verdicts</th></tr>
     </thead>
     <tbody>
       <tr>
-        <td>Before: 2026-11-07 05:38:15Z to 2026-11-08 12:33:24Z</td>
-        <td>212</td>
-        <td>296 held-on-claim events; 276 classified file events: 263 under shared roots and 13 outside; 20 events could not be joined to a project policy.</td>
-        <td>30 unique held pairs across the window.</td>
+        <td>Before snapshot: 2026-11-07 05:38:15Z to 2026-11-08 12:33:24Z</td>
+        <td>212</td><td>276</td><td>263</td><td>13</td><td>20 of 296 held verdicts had no classifiable file path</td>
       </tr>
       <tr>
-        <td>Interim after copy: 2026-11-09 07:48:43Z to 2026-11-09 10:36:43Z</td>
-        <td>399</td>
-        <td>396 held-on-claim file events; 0 under shared roots and 396 outside. All repeat one pair on <code>scripts/iter/integrated_simulation.py</code> in <code>power_convertor</code>, whose current declaration has no shared roots.</td>
-        <td>1 unique held pair, outside the shared-root population. The log does not enumerate successful live claims, so the qualifying pair inventory and outcomes remain unmeasured.</td>
+        <td>Retained after copies: 2026-11-09 07:39:30Z to 2026-11-09 22:10:28Z, in two sampled intervals</td>
+        <td>1,275 unique passes after deduplication</td><td>1,186</td><td>0</td><td>1,186</td><td>0</td>
       </tr>
     </tbody>
   </table>
-  <h4 id="parallel-nodes-on-one-module-window-limit">Why this is not a completed after window</h4>
-  <p>The admission loop captures a <code>code_stamp</code> when it starts and re-execs when the source identity changes. The first retained feature-capable record is <code>01863fb71f4a09b9ff1cad3e31118577f8fdec11</code> at 07:39:30Z; that tree contains both the <code>shared_roots</code> claim handler and the <code>merge-conflict</code> repair marker. Later stamps also contain both markers. The combined retained records reach 10:37:06Z, a 2.96-hour span, below the required 12 hours. The current 1 MiB live log holds about 2 hours 48 minutes at this write rate, so additional bounded copies must preserve the span. The result remains unmeasured until the retained window reaches 12 hours and at least five shared-root same-file pairs have landing outcomes.</p>
-  <p>Inputs: before log <code>/home/ITER/mcintos/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code>; overlapping after copies <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-interim.jsonl</code> (1,047,663 bytes, SHA-256 <code>5d57aadce1f05c85d642fddbe4f8c58e57e022dbaeb04e99825bc5f4b83e30f6</code>) and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-20261109T103644Z.jsonl</code> (1,046,072 bytes, SHA-256 <code>55f8c1ce3e7618297ac5f89b3403a3b04881612ae0dbe64c383bfca856fda92e</code>). The split counts and pair list are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-window-current.log</code>; the span probe returns <code>WINDOW_WAIT</code> in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/after-window-probe.log</code>.</p>
+  <p>The first two after copies overlap and were deduplicated by <code>(at, code_stamp)</code>; 313 duplicate rows were removed and there were no row-content mismatches. The three copies contain 1,588 passes before deduplication. Their observed intervals are 07:39:30Z–10:24:40Z (404 passes), 07:48:43Z–10:36:43Z (399 passes), and 20:47:17Z–22:10:28Z (785 passes). They cover about 4 hours 20 minutes of samples across a 14.5-hour span, with an unsampled gap between the second and third copy.</p>
+  <h4 id="parallel-nodes-on-one-module-pairs">Concurrent same-file claims and landing outcomes</h4>
+  <p>The main run ledger was read over 2026-11-09 07:39:30Z–22:48:00Z (15.14 hours). Each row below is one run-pair/file overlap: six file-specific overlaps across four distinct run pairs. The minimum of five run-pair/file overlaps is met: six distinct file-specific pairings span four distinct run-ID pairs. The same runs claiming two different shared-root files count as two separate run-pair/file entries. Dispatch intervals overlap on the named shared-root file, and each run has a promoted ledger revision. No corresponding run manifest contains a merge-conflict or merge-repair marker. The receipt detector recognized a positive control receipt and found no repair receipt in the 12 run-pair/path checks.</p>
+  <table>
+    <thead><tr><th>Run A (dispatch → landing)</th><th>Run B (dispatch → landing)</th><th>Shared-root file</th><th>Outcome</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>r-20261109T050437514521-promoting-a-review-keeps-its-dispositions</code><br>05:11:47Z → 10:06:00Z</td>
+        <td><code>r-20261109T064500219481-a-figure-finding-names-its-rubric</code><br>06:56:28Z → 10:32:23Z</td>
+        <td><code>reckon/crew/review_dispositions.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+      <tr>
+        <td><code>r-20261109T050437514521-promoting-a-review-keeps-its-dispositions</code><br>05:11:47Z → 10:06:00Z</td>
+        <td><code>r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one</code><br>07:10:56Z → 12:51:22Z</td>
+        <td><code>reckon/crew/review.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+      <tr>
+        <td><code>r-20261109T050437514521-promoting-a-review-keeps-its-dispositions</code><br>05:11:47Z → 10:06:00Z</td>
+        <td><code>r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one</code><br>07:10:56Z → 12:51:22Z</td>
+        <td><code>reckon/crew/review_records.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+      <tr>
+        <td><code>r-20261109T120446544718-producer-tick-reads-live-pointers-once</code><br>12:06:58Z → 16:02:01Z</td>
+        <td><code>r-20261109T121831256216-a-follower-sweep-runs-off-its-delivery-thread</code><br>13:38:54Z → 15:11:17Z</td>
+        <td><code>reckon/crew/resumption.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+      <tr>
+        <td><code>r-20261109T155935374342-a-launch-claim-has-one-reader</code><br>16:02:08Z → 17:16:32Z</td>
+        <td><code>r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch</code><br>16:45:46Z → 19:06:08Z</td>
+        <td><code>reckon/crew/dispatch_launch.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+      <tr>
+        <td><code>r-20261109T155935374342-a-launch-claim-has-one-reader</code><br>16:02:08Z → 17:16:32Z</td>
+        <td><code>r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch</code><br>16:45:46Z → 19:06:08Z</td>
+        <td><code>reckon/crew/recovery_liveness.py</code></td>
+        <td>Landed cleanly</td>
+      </tr>
+    </tbody>
+  </table>
+  <p>Evidence inputs: before snapshot <code>/home/ITER/mcintos/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code> (212 passes, 296 held verdicts); after copies <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-interim.jsonl</code> (1,047,663 bytes; SHA-256 <code>5d57aadce1f05c85d642fddbe4f8c58e57e022dbaeb04e99825bc5f4b83e30f6</code>), <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-20261109T103644Z.jsonl</code> (1,046,072 bytes; SHA-256 <code>55f8c1ce3e7618297ac5f89b3403a3b04881612ae0dbe64c383bfca856fda92e</code>), and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-verdicts-after-20261109T2212Z.jsonl</code> (1,048,405 bytes; SHA-256 <code>3ea37d5c2c35b802c6c250a8e0e8b7de23a6a825711c0d1b1a36697469b10c94</code>). Measurement summaries and the full pair inventory are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/amended-held-counts.log</code> and <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/ledger-concurrent-pairs.json</code>; every command is recorded in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/command-log.jsonl</code>.</p>
 </section>
