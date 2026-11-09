@@ -124,8 +124,14 @@ def test_a_released_launch_resumes_into_a_refusal_rather_than_a_spawn(
     with pytest.raises(CrewError) as refused:
         _launch(repo, config_home, "resumed", launcher=launcher, run_id=RUN_ID)
 
-    assert "released as a stranded launch" in str(refused.value)
-    assert "claim-published" in str(refused.value)
+    message = str(refused.value)
+    assert "released as a stranded launch" in message
+    assert "at step claim-published" in message
+    # The remedy the operator is told must fit a released launch, so the
+    # plan-review action registered for another refusal must not ride along.
+    assert "allow-unreviewed-plan" not in message
+    assert "reckon crew review" not in message
+    assert "`reckon crew dispatch` the node again" in message
     assert spawned == [], "the released launch spawned a worker anyway"
 
 

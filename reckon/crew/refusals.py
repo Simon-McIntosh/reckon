@@ -92,6 +92,10 @@ DISPATCH_REFUSAL_REMEDIES: Mapping[str, str | None] = {
         "reason, then `reckon crew dispatch`; or `reckon crew dispatch "
         "--allow-unreviewed-plan` to waive the review"
     ),
+    "D24": (
+        "`reckon crew dispatch` the node again; the release removed the run "
+        "directory, so the next launch starts afresh with a new claim"
+    ),
 }
 
 

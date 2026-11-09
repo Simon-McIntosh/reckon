@@ -303,7 +303,7 @@ def refuse_a_released_launch(
     )
     raise CrewError(
         format_refusal(
-            "D23",
+            "D24",
             f"run {run_id!r} was released as a stranded launch at step {step} {when}; "
             "the launch is refused",
         )
