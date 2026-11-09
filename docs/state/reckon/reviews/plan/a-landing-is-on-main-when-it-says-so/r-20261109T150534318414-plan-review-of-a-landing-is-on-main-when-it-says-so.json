@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:15:20.069Z",
+  "dispatched_at": "2026-11-09T15:07:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-1",
+      "reason": "the mechanism's exit condition must be pinned to the remote-tracking ref (as \u00a72's \"ancestor of the remote branch\" is), or the skip silently re-arms the failure it was added to prevent.",
+      "text": "\u00a75 makes `crew gc`'s live-pointer reap skip a pointer \"until its head is on the branch\" but never says which branch the ancestry test reads; `_is_ancestor` against the checkout's own HEAD is an ancestor check on local `main`, so a run whose head the coordinator merged locally and failed to push would have its kept pointer reaped by gc, leaving the ledger reading landed work the remote does not carry \u2014 the exact state \u00a72 and this plan's own summary define as the defect",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "done_when-1",
+      "reason": "the plan's own definition of a landing is the remote, so the arm that removes the handle must be paired with one that keeps it when only the local branch moved.",
+      "text": "\u00a75's second case stops at a successful `crew merge --run` leaving no live pointer, with no arm for a land whose fast-forward succeeded and whose push did not (`land_merge` raises `MergePushOutstandingError` at `reckon/crew/merge.py:808`, after the fast-forward has already moved the branch); a worker that unlinks the pointer whenever `land_merge` has touched the branch passes the gate while the head is not on the remote",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-is-on-main-when-it-says-so.html:60",
+      "id": "reasoning-2",
+      "reason": "the chosen mechanism (`crew_merge` retires the pointer after the land) is unaffected and the gc skip is still needed; only the rationale's \"every\" overstates an existing escape hatch the section could equally have used.",
+      "text": "the claim that `pending_landing.finish_pending_landings` \"skips every run whose pointer is still live\" is not exact: the skip at `reckon/crew/pending_landing.py:233` is `if run_id in live and not (pointer or {}).get(\"pending_landing_repair\")`, so a live pointer marked `pending_landing_repair` is processed",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "91051444169fefb720d095e6e13fc070416ab49c",
+  "plan_fingerprint": "1d6d71ba4a8f3f0c75663184ae16c0933ff69aeca05e1eeefbbafc8a826f973e",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 14,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T150534318414-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "b916c647d64487a39a95248efff12d852801d206",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/gc.py` near 722\u2013739 is exactly the live-pointer reap (loop at 722, `pointer_path(record_run_id).unlink()` at 739, ledger rows built at 715); `reckon/crew_run_commands.py` near 251 is `def crew_merge` at 251; `reckon/crew/pending_landing.py` near 233 is the live-pointer `continue` at 233; `merge.land_merge` (`reckon/crew/merge.py:691`) holds no pointer path at all, so \"removes no live pointer\" is exact.",
+    "done_when": "a finding \u2014 \u00a75's retirement arm asserts only that a successful `crew merge --run` leaves no live pointer, and no arm covers a merge whose fast-forward landed while its push did not.",
+    "evidence_paths": "pass \u2014 the gate is a committed test under `tests/` with the gate log in the run/manifest record, and nothing depends on a node-local or session-scratch path.",
+    "naming": "pass \u2014 the changed text introduces no plan label, stage name, ticket number or version tag; the mechanism is named by what it does.",
+    "reasoning": "a finding \u2014 the gc skip's exit condition says the pointer is kept \"until its head is on the branch\" without naming which branch, and an ancestry test against the local checkout's HEAD retires the pointer for a head that was merged locally but never pushed.",
+    "single_goal": "pass \u2014 the refusal, the separate-merge flag's pointer lifetime and the gc skip are one deliverable (a plain complete may not imply a landing, and the handle to the unlanded head survives until it lands); supplementary rationale, one section, one test file.",
+    "wiring": "pass \u2014 \u00a75 declares its write paths (`promotion.py`, `merge.py`, `gc.py`, `crew_run_commands.py` and the new test), \u00a76 carries `plan-section-depends-on s6\u2192s5` and waits, and f-alomwiss-007 drives \u00a75 while f-alomwiss-006 drives \u00a76."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "2c28594426cd1f5fb1b17f78f795a297c6c7ebd2087f6b500ce5e6b719cf9715",
+    "s6": "091ac2eae56e04d256f0dddc5fd602b6ba80a51c6d9a6b6cd665ca7cbdc49f27"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:25:18.750578+00:00",
+  "total": null
+}
