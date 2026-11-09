@@ -3357,6 +3357,29 @@ def committed_run_review_directory(
     return Path(committed_root) / COMMITTED_RUN_DIRNAME / reviewed_run_id
 
 
+def committed_record_project(
+    record_path: str | Path, reviewed_run_id: str
+) -> str | None:
+    """The project a committed run-review path names, or ``None``.
+
+    A record under ``<checkout>/docs/state/<project>/reviews/run/<run>/`` names
+    its own project in its path, so a repair of a committed record resolves the
+    project without a live pointer or a ledger row for the reviewed run — the
+    two sources that are absent exactly when the run was promoted from another
+    checkout and its live pointer has since been cleared.
+    """
+    parts = Path(record_path).expanduser().resolve().parts
+    if len(parts) < 6:
+        return None
+    if parts[-2] != reviewed_run_id:
+        return None
+    if parts[-3] != COMMITTED_RUN_DIRNAME or parts[-4] != COMMITTED_REVIEWS_DIRNAME:
+        return None
+    if parts[-6] != "state" or not parts[-5]:
+        return None
+    return parts[-5]
+
+
 def repair_run_review(
     reviewed_run_id: str,
     record_path: str | Path,
@@ -3374,6 +3397,11 @@ def repair_run_review(
     committed store keys it, rather than requiring the reviewed run's id the
     staging directory keys on. A path under neither is still refused.
 
+    A committed record names its project in its own path, so the project is
+    taken from there when the caller resolved none — a promoted run whose live
+    pointer and ledger row are both gone is still repairable from the record
+    alone.
+
     A committed record is a tracked file, so its rewrite is committed here as
     the other committed record writes are: an uncommitted write is visible only
     to the checkout that made it. The as-delivered copy is kept beside it under
@@ -3385,6 +3413,8 @@ def repair_run_review(
     source = Path(record_path).expanduser().resolve()
     staging = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
     in_staging = source.parent == staging and source.name.startswith(reviewed_run_id)
+    if not project and not in_staging and source.name.endswith(".json"):
+        project = committed_record_project(source, reviewed_run_id)
     committed = (
         committed_run_review_directory(project, reviewed_run_id) if project else None
     )

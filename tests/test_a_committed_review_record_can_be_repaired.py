@@ -1,16 +1,15 @@
-"""A committed review record is repaired in place and the repair is committed.
+"""A committed review record is repairable, and the repair is committed.
 
-A promotion lands each review record in the project's committed reviews tree,
-``docs/state/<project>/reviews/run/<run>/<review-run>.json``. The repair verb
-knew only the host review-records directory a live reviewer delivers into, so
-a committed record had no repair path at all: the operator was told the record
-was "outside the reviewed run's review-records directory" while the file sat
-exactly where the promotion put it.
+The invariant: a record a promotion landed in the project's committed reviews
+tree, ``docs/state/<project>/reviews/run/<run>/<review-run>.json``, is repairable
+in place — the rewrite is committed to that checkout, the record's project is
+resolved from the record's own path when no pointer or ledger row names it, and
+the promotion gate's selection then reads the repaired status. A path outside
+both review-record locations is refused and left untouched.
 
-These tests write the record where a promotion writes it, drive the repair
-through the command an operator runs, and read the result back through the
-selection the promotion gate uses, so what is asserted is the record the gate
-will see rather than the file the repair happened to rewrite.
+Each case drives the operator's command and reads the result back through
+``select_review_for_head``, so what is asserted is the record the gate sees
+rather than the file a repair happened to rewrite.
 """
 
 from __future__ import annotations
@@ -91,14 +90,12 @@ def _invoke(*args: str):
     return CliRunner().invoke(main, ["crew", *args])
 
 
-def _repair(record: Path):
+def _repair(record: Path, project: str | None = PROJECT):
+    arguments = ["repair", "--review", "--run", REVIEWED_RUN]
+    if project is not None:
+        arguments += ["--project", project]
     return _invoke(
-        "repair",
-        "--review",
-        "--run",
-        REVIEWED_RUN,
-        "--project",
-        PROJECT,
+        *arguments,
         "--record",
         str(record),
         "--set",
@@ -116,9 +113,14 @@ def test_a_committed_record_is_repaired_and_the_repair_is_committed(
     result = _repair(committed_record)
 
     assert result.exit_code == 0, result.output
-    receipt = json.loads(result.output)
-    assert receipt["reason"] == "the record stopped before it measured anything"
+    # The gate's own selection reads the repaired status: a repair that wrote
+    # nothing leaves it reading the record's original status.
+    stored, stale = select_review_for_head(PROJECT, REVIEWED_RUN, HEAD)
+    assert stale == ""
+    assert stored is not None
+    assert stored["status"] == REPAIRED_STATUS
 
+    receipt = json.loads(result.output)
     relative = committed_record.relative_to(repository).as_posix()
     committed = _git(repository, "show", f"HEAD:{relative}")
     assert committed.returncode == 0, committed.stderr
@@ -131,18 +133,34 @@ def test_a_committed_record_is_repaired_and_the_repair_is_committed(
     preserved = Path(receipt["as_delivered"])
     assert preserved.is_file()
     assert json.loads(preserved.read_text(encoding="utf-8")) == _record()
-
-    # The selection the promotion gate reads returns the repaired record. The
-    # as-delivered copy sits under a name the committed reader's ``*.json``
+    # The as-delivered copy sits under a name the committed reader's ``*.json``
     # glob cannot select, or the original would win over the repair.
     assert not preserved.name.endswith(".json")
     assert preserved.name.startswith(committed_record.name)
 
-    stored, stale = select_review_for_head(PROJECT, REVIEWED_RUN, HEAD)
 
+def test_the_project_is_resolved_from_the_committed_path_alone(
+    committed_record: Path,
+) -> None:
+    """No live pointer, no ledger row and no --project: the path names it."""
+    repository = committed_record.parents[6]
+    assert _git(repository, "status", "--porcelain", "--", "docs").stdout.strip() == ""
+
+    result = _repair(committed_record, project=None)
+
+    assert result.exit_code == 0, result.output
+    stored, stale = select_review_for_head(PROJECT, REVIEWED_RUN, HEAD)
     assert stale == ""
     assert stored is not None
     assert stored["status"] == REPAIRED_STATUS
+
+    # The commit is the proof the project resolved: a repair with no project
+    # cannot commit, and would leave the rewrite as a modified tracked file.
+    assert _git(repository, "status", "--porcelain", "--", "docs").stdout.strip() == ""
+    relative = committed_record.relative_to(repository).as_posix()
+    committed = _git(repository, "show", f"HEAD:{relative}")
+    assert committed.returncode == 0, committed.stderr
+    assert json.loads(committed.stdout)["status"] == REPAIRED_STATUS
 
 
 def test_a_record_under_neither_location_is_still_refused(tmp_path: Path) -> None:
