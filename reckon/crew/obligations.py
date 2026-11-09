@@ -704,7 +704,7 @@ def _review_dispatch_refusal(
             continue
         index, _finding = undisposed[0]
         fold, exempt = recovery_review_dispatch._finding_dispose_commands(
-            project, run_id, index
+            project, run_id, index, review=record
         )
         return {
             "reason": str(recorded.get("reason") or "")
@@ -807,7 +807,15 @@ def _reflex_open_refusal(
     if not indices or not run_id or not reason:
         return {"reason": reason, "next_command": reason}
     fold, exempt = recovery_review_dispatch._finding_dispose_commands(
-        project, run_id, indices[0]
+        project,
+        run_id,
+        indices[0],
+        # The report names the record the findings were raised on, so a figure
+        # review's finding is answered on its own record here too.
+        review={
+            "rubric": str(report.get("review_rubric") or ""),
+            "review_run_id": str(report.get("review_run_id") or ""),
+        },
     )
     return {
         "reason": reason,

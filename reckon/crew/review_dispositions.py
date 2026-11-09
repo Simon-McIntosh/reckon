@@ -90,18 +90,23 @@ def declared_dimension_floors(config: Mapping[str, Any] | None) -> dict[str, int
     return floors
 
 
-def _newest_delivered_review_run_id(project: str, run_id: str) -> str:
+def _newest_delivered_review_run_id(
+    project: str, run_id: str, *, rubric: str | None = None
+) -> str:
     """The review run id of the run's newest delivered review, or ``""``.
 
     A rendered command names the round it answers, and the round the verb would
     select without the flag is the run's newest delivered review. A store that
     cannot be read yields the empty string, so the command renders as it did
     before rather than failing the reader that prints it.
+
+    ``rubric`` selects the review family the round belongs to, so a figure
+    review's own run is named rather than the text review stored beside it.
     """
     from reckon.crew import review_records
 
     try:
-        record = review_records.newest_delivered_review(project, run_id)
+        record = review_records.newest_delivered_review(project, run_id, rubric=rubric)
     except (OSError, ValueError):
         return ""
     return str((record or {}).get("review_run_id") or "").strip()
@@ -582,6 +587,7 @@ def dispose_commands(
     selector: str,
     *,
     review_run_id: str | None = None,
+    rubric: str | None = None,
 ) -> tuple[str, str]:
     """The two commands that answer one duty, as ``(fold, exempt)``.
 
@@ -603,14 +609,25 @@ def dispose_commands(
     which is the record the verb would otherwise select. A run carrying no
     staging record renders the command without the flag, exactly as before,
     because no newer round exists for the verb to prefer.
+
+    ``rubric`` names the review family the finding belongs to, and each family
+    is stored beside the others rather than in place of them: the verb selects
+    a figure record only when the command carries ``--rubric figure``, so a
+    command composed for a figure finding without it selects no record and is
+    refused. Omitted, the command answers the run's text review and renders as
+    it did before.
     """
+    named_rubric = str(rubric or "").strip()
     named = str(review_run_id or "").strip()
     if not named:
-        named = _newest_delivered_review_run_id(project, run_id)
+        named = _newest_delivered_review_run_id(
+            project, run_id, rubric=named_rubric or None
+        )
     review_flag = f"--review {shlex.quote(named)} " if named else ""
+    rubric_flag = f"--rubric {shlex.quote(named_rubric)} " if named_rubric else ""
     base = (
         f"reckon crew dispose --project {shlex.quote(project)} "
-        f"--run {shlex.quote(run_id)} {review_flag}{selector}"
+        f"--run {shlex.quote(run_id)} {review_flag}{rubric_flag}{selector}"
     )
     return (
         f"{base} --kind folded --node '<the node the finding went into>'",
