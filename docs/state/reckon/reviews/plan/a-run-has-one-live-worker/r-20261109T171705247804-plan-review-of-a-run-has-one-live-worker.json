@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T17:24:56.105Z",
+  "dispatched_at": "2026-11-09T17:19:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "reasoning-1",
+      "reason": "an implementer following the stated rule literally returns 1 and fails the section's own failing-at-base case, and the only thing that would catch it is that case, which is then the temptation to weaken.",
+      "text": "the What-changes says `launch_reservation_key` \"answers the newest receipt plus one only when a receipt exists\" and that \"with only the marker, the launch keeps the attempt it was dispatched with\", but the function (`reckon/crew/dispatch_launch.py:2218`) reads only `attempt_receipt_numbers` and the canonical `worker.json`/`exit.json`, and returns `1` when none exists \u2014 the marker `attempt.json` is written at `reckon/crew/dispatch.py:2774`, before the reservation block at `:2856`, and carries the dispatched attempt, yet the plan never says the key reads it, so the paired shadow arm's first launch gets attempt 1 rather than its dispatched 2",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "done_when-1",
+      "reason": "it is a labelling error in the record, not a mechanism error; the exit-receipt sub-case does fail at base and carries the measure.",
+      "text": "the Done-when opens \"each behaviour change has a case that fails at the dispatch base and passes at the head\", but the (3) sub-case \"when the supervisor rewrite fails, the reservation still refuses a second launch while the worker runs\" holds at base too, since base `held_launch_reservation` already refuses on a live admitting process, so the blanket claim misdescribes which cases carry the failing-at-base control",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "reasoning-2",
+      "reason": "the done-when already pins the fixture that makes the point (a node with an earlier committed run, so attempt 2 or more), so no node builds the wrong case from it.",
+      "text": "defect (1) says the shadow arm's attempt is \"derived from the primary line\", but a paired shadow arm has `paired_masks` set, so the primary-line branch at `reckon/crew/dispatch.py:2737` does not run and the attempt comes from the node's own prior committed runs at `:2746`\u2013`:2759`",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "6e36ce78774f0e7fe41df9f780f34e74afe8e63f",
+  "plan_fingerprint": "2a28c2473014312a2e74e98fb7fa462dc6f1d4b60b4bc9360b5d93520ddc3ef5",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 137,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T171705247804-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "1ee1566fe3f4ecc23c1988bbecac5b5d4f7b4ac5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `run_holds_an_attempt_record` (`reckon/crew/dispatch_launch.py:2211`), `launch_reservation_key` (:2218), `held_launch_reservation` (:2318), `reserve_launch_attempt` (:2384), `refuse_held_launch` (:2445) with its caller at `reckon/crew/dispatch.py:2871`, `_record_reservation_supervisor` (`dispatch.py:2856`) and `_current_attempt_number` (`recovery_liveness.py:537`) all resolve; the two deleted test names exist at `tests/test_a_resume_never_launches_beside_another_node.py:343` and `:367`.",
+    "done_when": "a finding \u2014 every behaviour change is covered by a case with a declared mutation control, but the supervisor-rewrite sub-case (a refusal that already holds at base) is folded into a sentence claiming each case fails at base, so the record does not distinguish the protective case from the failing-at-base one.",
+    "evidence_paths": "pass \u2014 gate logs are declared under the run directory, each opening with its revision and command and ending in a bare `EXIT=`.",
+    "naming": "pass \u2014 no plan labels or ticket numbers reach the renamed symbol or the new cases; `test_a_fresh_run_ids_reservation_ends_with_its_launch` names the behaviour.",
+    "reasoning": "a finding \u2014 the repair for (1) is stated as the launch \"keeping the attempt it was dispatched with\" but names no read of the attempt marker, and `launch_reservation_key` has no other source for that number, so the stated mechanism does not by itself produce the done-when's dispatched attempt of 2 or more.",
+    "single_goal": "pass \u2014 the four items are one deliverable (the reservation's lifetime), and each is measured separately inside the node.",
+    "wiring": "pass \u2014 \u00a716's declared dependency on \u00a715 is present in `plan-section-depends-on` and resolves to a node that exists; both touch `dispatch_launch.py` and the ordering is conservative rather than wrong."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "a770136045eb3a85160c628b8342a6129769698d3e595835ab5a8078eec8c852",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:38:05.794656+00:00",
+  "total": null
+}
