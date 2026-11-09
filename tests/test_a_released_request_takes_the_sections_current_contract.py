@@ -292,9 +292,80 @@ def test_an_unreadable_section_refuses_the_release(project: Path) -> None:
     pointer = _pointer(run_id)
     assert pointer["phase"] == queue_admission.HELD_PHASE, pointer
     assert OLD_DONE_WHEN in str(pointer["node"]["done_when"]), pointer["node"]
-    refused = pointer["section_rederivation_refused"]
-    assert PLAN in refused["detail"], refused
-    assert refused["at"], refused
+    # The reason lives in the hold the request is already under, and goes with
+    # that hold when the request is released.
+    detail = pointer["queue_hold"]["detail"]
+    assert "cannot be read" in detail, detail
+    assert PLAN in detail, detail
+    assert "section_rederivation_refused" not in pointer, pointer
+
+
+def test_a_reader_failure_holds_only_the_request_it_hit(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A section reader that raises anything else refuses this request, not the pass."""
+    run_id = _queue(project)
+    _move_the_section(project, NEW_DONE_WHEN)
+    queue_admission.admit_once(config_for=_config_for(), launcher=_launcher([]))
+    assert _pointer(run_id)["phase"] == queue_admission.HELD_PHASE, _pointer(run_id)
+    _store_review(project / "docs" / "plans" / f"{PLAN}.html", run_id="review-two")
+
+    def unreadable(*_args, **_kwargs):
+        raise RuntimeError("the plan reader fell over")
+
+    monkeypatch.setattr(dispatch_batch, "_PlanRead", unreadable)
+
+    launched: list[str] = []
+    result = queue_admission.admit_once(
+        config_for=_config_for(), launcher=_launcher(launched)
+    )
+
+    # The pass returns its verdicts rather than raising out of the loop, and
+    # the request stays held with the failure named on its hold.
+    assert isinstance(result, dict), result
+    assert result["released_plan_review"] == [], result
+    assert launched == []
+    pointer = _pointer(run_id)
+    assert pointer["phase"] == queue_admission.HELD_PHASE, pointer
+    detail = pointer["queue_hold"]["detail"]
+    assert "RuntimeError" in detail, detail
+    assert "the plan reader fell over" in detail, detail
+
+
+def test_unchanged_text_is_not_recorded_as_a_rederivation(project: Path) -> None:
+    """A mark in an older spelling does not make unchanged text read as changed."""
+    run_id = _queue(project)
+    _move_the_section(project, NEW_DONE_WHEN)
+    queue_admission.admit_once(config_for=_config_for(), launcher=_launcher([]))
+    assert _pointer(run_id)["phase"] == queue_admission.HELD_PHASE, _pointer(run_id)
+
+    # The section returns to the text the request was queued against, and an
+    # older writer's mark sits on the request under another spelling of the
+    # same value.
+    _write_plan(project, OLD_DONE_WHEN)
+    _commit(project, "chore: restore the section")
+
+    def restamp(current: dict) -> dict:
+        node_block = dict(current.get("node") or {})
+        marks = dict(node_block.get("section_derived") or {})
+        marks["done_when"] = "a-digest-from-an-earlier-spelling"
+        node_block["section_derived"] = marks
+        current["node"] = node_block
+        return current
+
+    runs._mutate_pointer(run_id, restamp)
+
+    launched: list[str] = []
+    result = queue_admission.admit_once(
+        config_for=_config_for(), launcher=_launcher(launched)
+    )
+    assert result["released_plan_review"] == [run_id], result
+
+    pointer = _pointer(run_id)
+    assert OLD_DONE_WHEN in str(pointer["node"]["done_when"]), pointer["node"]
+    # The stored value and the re-derived value are the same text, so the stale
+    # spelling of the mark reports no change.
+    assert "done_when" not in (pointer.get("section_rederivation") or {}), pointer
 
 
 def test_the_real_crew_home_is_untouched(project: Path) -> None:

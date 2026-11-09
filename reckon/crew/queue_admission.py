@@ -4581,6 +4581,7 @@ def _section_rederivation(
         section=node.section,
         repo_root=str(pointer.get("repo") or ""),
         marked=marks,
+        stored=dict(pointer.get("node") or {}),
     )
 
 
@@ -4601,9 +4602,11 @@ def _apply_section_rederivation(
         marks[name] = digests[name]["new"]
     node_block["section_derived"] = marks
     pointer["node"] = node_block
-    pointer["section_rederivation"] = {
-        name: dict(pair) for name, pair in digests.items()
+    changed = {
+        name: dict(pair) for name, pair in digests.items() if pair["old"] != pair["new"]
     }
+    if changed:
+        pointer["section_rederivation"] = changed
 
 
 def _record_rederivation_refusal(
@@ -4614,20 +4617,30 @@ def _record_rederivation_refusal(
     The stored fields are not a fallback for a re-derivation that failed: they
     describe the text the plan has moved past, which is the disagreement the
     re-derivation exists to remove. So the release is refused, the request
-    stays held, and the reason is written on the pointer where the next reader
-    of the queue finds it.
+    stays held, and the reason goes into the hold the request is already under
+    — the record the plan-review hold owns — where the next reader of the queue
+    finds it. Releasing removes that hold, so the reason goes with it.
     """
     refused_at = _now().isoformat()
-    record = {"detail": detail, "at": refused_at}
+    refused = (
+        "the section this request was queued under cannot be read, so its "
+        f"section-supplied fields cannot be brought to the current text: {detail}"
+    )
 
     def refuse(current: dict[str, Any]) -> dict[str, Any]:
-        current["section_rederivation_refused"] = dict(record)
+        hold = dict(current.get("queue_hold") or {})
+        hold["detail"] = refused
+        hold["rederivation_refused_at"] = refused_at
+        current["queue_hold"] = hold
         return current
 
     with contextlib.suppress(Exception):
         runs._mutate_pointer(run_id, refuse)
     if isinstance(pointer, dict):
-        pointer["section_rederivation_refused"] = dict(record)
+        hold = dict(pointer.get("queue_hold") or {})
+        hold["detail"] = refused
+        hold["rederivation_refused_at"] = refused_at
+        pointer["queue_hold"] = hold
 
 
 def _release_plan_review_holds(
@@ -4642,8 +4655,6 @@ def _release_plan_review_holds(
     coordinator call. A hold a coordinator wrote carries no ``automatic`` mark
     and is never released here, and a request so held stays held.
     """
-    from reckon.crew.dispatch_batch import BatchEntryRefusedError
-
     released: list[str] = []
     for pointer in live:
         if str(pointer.get("phase") or "") != HELD_PHASE:
@@ -4666,8 +4677,12 @@ def _release_plan_review_holds(
         # the request was queued under.
         try:
             rederived, digests = _section_rederivation(pointer)
-        except BatchEntryRefusedError as exc:
-            _record_rederivation_refusal(pointer, run_id, str(exc))
+        except Exception as exc:  # noqa: BLE001 - one request's section cannot
+            # stop the pass for every other request and project, so a failure
+            # here holds this request and records why.
+            _record_rederivation_refusal(
+                pointer, run_id, f"{type(exc).__name__}: {exc}"
+            )
             continue
 
         def release(

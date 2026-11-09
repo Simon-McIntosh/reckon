@@ -388,20 +388,26 @@ def rederived_section_fields(
     section: str,
     repo_root: str | Path,
     marked: Mapping[str, str],
+    stored: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, dict[str, str]]]:
     """Re-derive a stored request's section-supplied fields from the plan now.
 
     ``marked`` is the field-to-digest record the queue writer left on the
-    request, naming which of its node fields the section supplied. The values
-    come back with both digests, so the pointer records what the release
-    changed. A field the section no longer states is absent from the values,
-    which is what keeps the request's stored value.
+    request, naming which of its node fields the section supplied, and
+    ``stored`` is the node those fields sit on. Both digests are taken here, the
+    old one by digesting the stored field rather than by trusting its mark: a
+    mark written under an earlier spelling of the same value is not a change,
+    and comparing text the two sides both mean is what says so. A field the
+    section no longer states is absent from the values, which is what keeps the
+    request's stored value.
 
     A plan or section that cannot be read raises ``BatchEntryRefusedError``.
     The caller must not read that as "nothing was derived": releasing on the
     stored fields would put the request back on the text the plan has left
     behind, which is exactly what the release re-derivation exists to stop.
     """
+    from reckon.crew.plan_review import _digest
+
     read = _PlanRead(project, plan, Path(repo_root))
     derivation = section_derivation(read, section)
     values: dict[str, Any] = {}
@@ -412,7 +418,8 @@ def rederived_section_fields(
             continue
         value, digest = fresh
         values[name] = value
-        digests[name] = {"old": str(stored_digest), "new": digest}
+        previous = _digest(stored[name]) if name in stored else str(stored_digest)
+        digests[name] = {"old": previous, "new": digest}
     return values, digests
 
 
