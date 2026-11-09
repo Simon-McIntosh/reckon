@@ -1108,7 +1108,7 @@ def _list_live_records(
 
 # Each cooperative tick returns control within this interval plus the cost of
 # the pointer already being processed. No partial population is published.
-PRODUCER_TICK_SECONDS = 10.0
+PRODUCER_TICK_SECONDS = 25.0
 
 
 class _ProducerTickExpired(BaseException):
