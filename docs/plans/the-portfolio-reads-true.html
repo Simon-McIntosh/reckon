@@ -24,7 +24,7 @@
   <title>The Portfolio Reads True | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-portfolio-reads-true#s8&quot;],&quot;s10&quot;:[&quot;the-portfolio-reads-true#s2&quot;]}">
 </head>
@@ -244,6 +244,9 @@
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261109T214717093364-review-of-a-derived-impl-drops-the-authored-meta-d5cf3f72e581" data-who="reckon-build" data-when="2026-11-09T22:06:28.574Z">
     <div class="r-comment-body"><p>independent review of run r-20261109T162908121506-a-derived-impl-drops-the-authored-meta over the commits it gained since 1729897a6155 (0f523d209f, d5cf3f72e5): a parsed record scoring goal_fidelity 19, evidence 20, scope_discipline 20, durability 20, fit 18, reuse 20, with added_failure_count 0 and no added failure ids; two non-blocking findings (the case table still states case (b)'s old criterion; the mutation log names no revision and a tree path that resolves nowhere). Both prior review findings are answered: the dispatch-base gate is now a readable log and case (b) measures the write, with an executed mutation control that reddens it.</p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261109T162908121506-a-derived-impl-drops-the-authored-meta" data-who="reckon-build" data-when="2026-11-09T18:58:21Z">
+    <div class="r-comment-body"><p>§10 — write_state gained the drop_authored_impl_meta opt-in; the four full-state writers (store write path, replace_plan_text, the POST handler, backfill_tags_from_preimage) pass it, so a derived plan loses its stale authored plan-impl meta on its first full write (0.67 authored vs 0.5 derived before; no plan-impl meta and no impl-meta-stale after), the default serialise and a no-change patch move no bytes, and the node gate is 8 passed at head against 4 failed at base on exactly cases (a),(d),(e),(f).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261010T210538240807-review-of-impl-derives-from-declarations" data-who="reckon-build" data-when="2026-10-10T21:12:40.934Z">
     <div class="r-comment-body"><p>stored a parsed 6-dimension review of r-20261010T203035296182-impl-derives-from-declarations (total 101; base 156ea48556, head c50f84141) with one blocking finding naming the four superseded tests that fail at head and one follow-on on an untyped return</p></div>
