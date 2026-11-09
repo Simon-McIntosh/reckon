@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:13:10.890Z",
+  "dispatched_at": "2026-11-09T10:02:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:169",
+      "id": "reasoning-1",
+      "reason": "the done-when requires the mapping demonstrated on one running process, and with this command it cannot be; the plan must name `source_code_identity` (reckon/checkout_trust.py:388) or the `ls-tree HEAD reckon skills` + catalogue composition as the comparison, or the investigating node either reports a false \"uncommitted code\" verdict or spends its budget on a mismatch it cannot resolve.",
+      "text": "the Why says the admit service's `code_stamp` (01863fb71f) \"is compared against the reckon tree of a commit, not against a commit: `git rev-parse <commit>:reckon` must equal it\", but 01863fb71f is the composed reload tree of `reckon` + `skills` + the docs catalogue blob (`git cat-file -p 01863fb71f` prints three entries: docs 4781e2f6, reckon b339396f, skills 9369d6f4), while `git rev-parse HEAD:reckon` is b339396f on the reviewed base \u2014 the inner subtree, never the stamp; `checkout_trust._committed_reload_tree` composes the stamp from `git ls-tree HEAD reckon skills` plus the catalogue, so a node running the prescribed command compares a 40-char subtree id against a different object and finds no commit for any revision, reinstating exactly the \"matched no commit\" false negative \u00a714 exists to correct",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:169",
+      "id": "done_when-1",
+      "reason": "one line naming a discriminating control (a second stamp from a different revision that must resolve to a different commit) is what makes the demonstration a measurement, and the plan's own mapping text is wrong in a way such a control would have exposed.",
+      "text": "the done-when requires \"the mapping from a crew process's code stamp to a commit, demonstrated on one running process\" but declares no negative control, so a demonstration that maps every stamp to the same commit, or that matches by chance, satisfies the text",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:245",
+      "id": "wiring-1",
+      "reason": "the open followup is the one-line hand-off a build node reads, so it re-dispatches \u00a713 over landed code; resolving it with s13's landed outcome closes the chain the same way f-arolw-006 to -010 were closed.",
+      "text": "f-arolw-013 is still `data-status=\"open\"` while `plan-section-declarations` marks s13 `done` and the s13 landing comment (docs/plans/a-run-has-one-live-worker.html:296) records the landed reservation behaviour, so a coordinator reading the followups sees outstanding work for a shipped section",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a6082eaa0422ca0b02b33bc2fb3e7d31deb442bc",
+  "plan_fingerprint": "0fefd8efc9aa02a9b78fa629b04d592164431938a424b2b8f1957f12a444a1da",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 116,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T095947631651-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "8adedd6e510d9ff1de90852d8d4958c9b6fa85b0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited record and commit resolves: `attempt-1-worker.json` (pid 2548605, argv[0] `/home/ITER/mcintos/Code/reckon/reckon/host_shims/srun`, launched_at 06:53:08Z), `attempt-2-worker.json` (pid 2573955, argv[0] `/usr/bin/srun`), `attempt-3-worker.json` (argv[0] the shim), `attempt-1-exit.json` (worker_pid 2549004), `attempt-2-exit.json` (worker_pid 2573958), `claim.json` (claim_registered_at 06:54:04Z), `attempt-1-superseded.md`, and commits 7f24f669e0 / f4aa6c7dc6 / 9587a26dd7 all exist as commits; `_create_worktree` is called from `reckon/crew/dispatch.py:2867`.",
+    "done_when": "a finding \u2014 s14's done-when names no declared negative control, so nothing in it can fail if the code-stamp mapping is a constant rather than a mapping.",
+    "evidence_paths": "pass \u2014 the fragment is written to `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html`, a durable repo path beside the nine fragments its landing siblings wrote, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or changelog prose reaches the fragment's name or the section's wording; the fragment is named for what the investigation does.",
+    "reasoning": "a finding \u2014 the section's stated code-stamp-to-commit mapping uses the wrong git object, so the mechanism it prescribes cannot produce the done-when's demonstrated mapping.",
+    "single_goal": "pass \u2014 s14 carries one deliverable, a read-only investigation writing one evidence fragment; it changes no code and its repair is deferred to a later section.",
+    "wiring": "a finding \u2014 s14's own followup f-arolw-014 is open and matches its `implementable` declaration; the finding is the stale open followup on the landed \u00a713 (docs/plans/a-run-has-one-live-worker.html:245)."
+  },
+  "section_digests": {
+    "_document": "1c3d70f0e54cc9a6e35ef49c72011f0d48ac62ffe138725d2f876465d599cf6a",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "7e7b6b66dbdf70536f8d101325b04d25700ac956142fd1ddc3f4bacf5447beaf",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:30:55.604992+00:00",
+  "total": null
+}
