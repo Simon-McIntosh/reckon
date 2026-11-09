@@ -115,7 +115,10 @@
   already taken. <code>launch_reservation_key</code> now reads every record the
   run holds &mdash; the retired receipts by their name, the canonical records by
   the attempt they carry &mdash; and a launch starts exactly the attempt its
-  door reserved, never a larger number computed from the pointer. The dispatch
+  door reserved &mdash; only a launch that reserved its own attempt from the
+  run's records, with no door naming one, takes the later of that key and the
+  record's next attempt, because a record may name an attempt that left no
+  receipt. The dispatch
   door records the returned supervisor pid itself; a resume that reserves and
   then launches through the seam has its own unrecorded reservation adopted by
   that launch, so the hold follows the worker; a bare seam releases it on
