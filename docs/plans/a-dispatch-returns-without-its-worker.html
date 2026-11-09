@@ -24,7 +24,7 @@
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-impl" content="0.96">
-<meta name="plan-version" content="186">
+<meta name="plan-version" content="187">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-depends-on" content="{&quot;s21&quot;:[&quot;a-dispatch-returns-without-its-worker#s20&quot;]}">
 </head>
@@ -1345,6 +1345,12 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261108T191436869159-a-launch-finds-its-backend-on-the-declared-path" data-who="reckon-build" data-when="2026-11-08T22:00:53Z">
     <div class="r-comment-body"><p>§20 — a backend command resolves through a `search_path` declared per backend in the flight layer (new `BackendConfig.search_path`, schema regenerated), read from the backend entry the caller holds so a project layer's declaration applies; `launch_search_path` appends those directories after the inherited PATH and the composed worker environment persists the widened PATH, while a command on neither path refuses naming both; 6 tests pass at bb92bb806b (two of them declaring the path only in a project layer), both controls fire, and the 53-file importer population differs from base by one timing-sensitive id at each revision.</p></div>
 </div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261109T024059510313-review-of-the-availability-report-searches-the-declared-path-aea70be5236c" data-who="reckon-build" data-when="2026-11-09T02:50:20.432Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261109T015847463373 at base ad25de31ce and head aea70be523. Verdict: sound and landable. The report now searches the process PATH first and the declared backend search path after it (reckon/flight.py:2353-2366), adds command_source naming which search held the command, and keeps a neither-path backend reading false. Scores: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 18 (total 114). Added failures against base: 0 (both 21-id importer arms identical). One non-blocking finding: an awkward phrase in the helper docstring at reckon/flight.py:2404.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261109T015847463373-the-availability-report-searches-the-declared-path" data-who="reckon-build" data-when="2026-11-09T02:39:03.654Z">
+    <div class="r-comment-body"><p>The flight availability report searched backends with a bare shutil.which, reporting a declared-path-only backend as command_found false while a launch resolved it; probe_availability now searches the process PATH first and the resolved backend&#x27;s declared search_path after, adds command_source naming which search held the command, and names the declared directories when nothing is found. Gate: tests/test_the_availability_report_searches_the_declared_path.py, 6 passed. Importer population of 78 files: head 20 failed/957 passed/1 error, base 20 failed/951 passed/1 error, identical failure-id sets.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260923T114521056430-review-of-a-dispatch-returns-without-its-worker" data-who="reckon-ship" data-when="2026-09-23T12:35:43.928Z">
     <div class="r-comment-body"><p>read-back of a-dispatch-returns-without-its-worker: 44 multi-reading sentences, 30 material; ranked items resolved at 3f4a19c5</p></div>
 </div>
@@ -1473,9 +1479,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260928T1650-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:50:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch).</p><ul><li><b>Done, with passing tests:</b> §3 (5 passed), §5 (6 passed) and §7 (2 passed).</li><li><b>§9: superseded, now declared done.</b> The work landed under a-crew-process-ends-with-its-owner as <code>c4684acf</code>, and <code>tests/test_discard_releases_a_clean_worktree.py</code> reports 4 passed. The test name this section gives, test_discard_removes_an_empty_worktree.py, was never created.</li><li><b>§10: partly done.</b> test_dispatch_spawns_through_the_fleet.py reports 6 passed and test_fleet_supervisor.py 14 passed; the on-node half remains.</li><li><b>Still open:</b> §2 is partly done (its probe is opt-in), §6 has no asserting test, and §8's cap is still enforced.</li><li><b>Stale wording:</b> §4's skill paths are corrected to reckon-build. §8 still says "reckon-ship contract"; read it as reckon-build.</li></ul></div>
-</div>
-<div class="r-comment" data-section="s22" data-id="c-run-r-20261109T024059510313-review-of-the-availability-report-searches-the-declared-path-aea70be5236c" data-who="reckon-build" data-when="2026-11-09T02:50:20.432Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261109T015847463373 at base ad25de31ce and head aea70be523. Verdict: sound and landable. The report now searches the process PATH first and the declared backend search path after it (reckon/flight.py:2353-2366), adds command_source naming which search held the command, and keeps a neither-path backend reading false. Scores: goal_fidelity 20, evidence 19, scope_discipline 20, durability 19, fit 18, reuse 18 (total 114). Added failures against base: 0 (both 21-id importer arms identical). One non-blocking finding: an awkward phrase in the helper docstring at reckon/flight.py:2404.</p></div>
 </div>
 </section>
 </main>
