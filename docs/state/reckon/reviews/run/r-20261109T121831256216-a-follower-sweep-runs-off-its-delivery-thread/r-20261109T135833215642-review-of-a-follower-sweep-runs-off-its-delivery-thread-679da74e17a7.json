@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3155 (_follow_watch_lines driven by the follower's own consumer loop)",
+    "reckon/cli.py:335 (_follow_watch_lines re-export binding)"
+  ],
+  "completed_at": "2026-11-09T14:12:44.510Z",
+  "dispatched_at": "2026-11-09T14:02:09Z",
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "line": "1686",
+      "severity": "blocking",
+      "text": "blocking: the added `elif` in _check_lifetime duplicates the branch body and trips SIM114 under the declared ruff selection; `ruff check` reports 2 findings on the file at cf73cde and 3 at 679da74e, so the change adds one, against the done_when's \"Ruff check ... add no findings on the staged paths\" and the manifest's claim that the edit adds none; fold both conditions into one `if ... or ...` and set the flag once."
+    },
+    {
+      "file": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm runs 3 of the 32 test files that inject `sweep=` into _follow_watch_lines (8 were exercised at head, 6 of the 12 that inject `lifetime=`), so \"the test files importing reckon.crew_follow_commands add no failure against the base revision\" is established on a subset rather than the named population."
+    },
+    {
+      "file": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py",
+      "line": "38",
+      "severity": "non-blocking",
+      "text": "non-blocking: _Clock, _line and _Follower are near-verbatim copies of tests/test_follow_sweep_cadence.py:33-200 rather than a shared or extended harness, so a change to the follower harness must now be made twice."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against cf73cde40a: 7c5b8e89f7 moves both sweep branches onto a daemon thread with a kept-thread single-flight guard (reckon/crew_follow_commands.py:1838-1902), 610e09fc50 adds the monotonic arming span at reckon/crew_follow_commands.py:1542-1552 and its read in _check_lifetime at 1678-1695, and 679da74e17 adds only the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_follower_sweep_runs_off_its_delivery_thread.py with a sweep held on an event and a counter on the sweep entry point; the file's three cases assert a row and the following tick while the sweep is held and that a cadence due during it starts no second sweep, and the manifest records 3 passed with both negative controls at 3 failed each; the ruff clause of the done_when does not hold (see the SIM114 finding).",
+    "goal": "\u00a726 asks the follower to run its review sweep, and any launch it starts, off its delivery thread; at 679da74e reckon/crew_follow_commands.py:_sweep_on_cadence starts a daemon thread on both the former inline path and the former join path and never joins it, so the delivery loop no longer waits on a sweep.",
+    "manifest": "read; it records commits 7c5b8e89f7, 610e09fc50 and 679da74e17, a 3-passed gate, a 32-passed base arm and two 3-failed negative controls; its statement that the edit adds no ruff finding is contradicted by the measured delta of one on reckon/crew_follow_commands.py.",
+    "write_paths": "the declared paths are reckon/crew_follow_commands.py, reckon/crew/resumption.py, the new test and the evidence fragment; the diff touches the follow-commands module, the test and the fragment and nothing else, and resumption.py is untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:220 asserts sweep_moments == [0.0] and the recorded no-guard control reddens it at [0.0, 10.0], so the guard is falsified by reinstating the regression.",
+    "evidence": "the gate at tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:180-260 measures the done_when and its result is recorded, but the done_when's ruff clause fails on reckon/crew_follow_commands.py:1686 and the base arm covers 3 of the 32 test files that inject a sweep.",
+    "fit": "the thread and guard follow the daemon-thread idiom at reckon/crew/runs.py:3247-3253 and the names are mechanism-named, but the added elif at reckon/crew_follow_commands.py:1686 is a finding the project's own ruff selection rejects.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1889-1897 starts the sweep on a daemon thread and drops the join, which is the deliverable's two branches moved off the delivery thread.",
+    "reuse": "tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:38-200 re-implements the _Clock, _line and _Follower harness owned by tests/test_follow_sweep_cadence.py:33-200 (135 of 272 lines verbatim) rather than extending it; the production edit adds no new definition and a search over reckon/ and tests/ found no shared follower-harness owner.",
+    "scope_discipline": "every path in the three commits is inside the declared write paths, and the only non-source addition is the declared evidence fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-follower-sweep-runs-off-its-delivery-thread.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: \u00a726 asks the follower to run its review sweep, and any launch it starts, off its delivery thread; at 679da74e reckon/crew_follow_commands.py:_sweep_on_cadence starts a daemon thread on both the former inline path and the former join path and never joins it, so the delivery loop no longer waits on a sweep.\nVERDICT done_when: the done_when names tests/test_a_follower_sweep_runs_off_its_delivery_thread.py with a sweep held on an event and a counter on the sweep entry point; the file's three cases assert a row and the following tick while the sweep is held and that a cadence due during it starts no second sweep, and the manifest records 3 passed with both negative controls at 3 failed each; the ruff clause of the done_when does not hold (see the SIM114 finding).\nVERDICT write_paths: the declared paths are reckon/crew_follow_commands.py, reckon/crew/resumption.py, the new test and the evidence fragment; the diff touches the follow-commands module, the test and the fragment and nothing else, and resumption.py is untouched.\nVERDICT manifest: read; it records commits 7c5b8e89f7, 610e09fc50 and 679da74e17, a 3-passed gate, a 32-passed base arm and two 3-failed negative controls; its statement that the edit adds no ruff finding is contradicted by the measured delta of one on reckon/crew_follow_commands.py.\nVERDICT diff: read commit by commit against cf73cde40a: 7c5b8e89f7 moves both sweep branches onto a daemon thread with a kept-thread single-flight guard (reckon/crew_follow_commands.py:1838-1902), 610e09fc50 adds the monotonic arming span at reckon/crew_follow_commands.py:1542-1552 and its read in _check_lifetime at 1678-1695, and 679da74e17 adds only the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:3155 (_follow_watch_lines driven by the follower's own consumer loop), reckon/cli.py:335 (_follow_watch_lines re-export binding)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1889-1897 starts the sweep on a daemon thread and drops the join, which is the deliverable's two branches moved off the delivery thread.\nSCORE evidence: 12\nJUSTIFICATION evidence: the gate at tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:180-260 measures the done_when and its result is recorded, but the done_when's ruff clause fails on reckon/crew_follow_commands.py:1686 and the base arm covers 3 of the 32 test files that inject a sweep.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the three commits is inside the declared write paths, and the only non-source addition is the declared evidence fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-follower-sweep-runs-off-its-delivery-thread.html.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:220 asserts sweep_moments == [0.0] and the recorded no-guard control reddens it at [0.0, 10.0], so the guard is falsified by reinstating the regression.\nSCORE fit: 16\nJUSTIFICATION fit: the thread and guard follow the daemon-thread idiom at reckon/crew/runs.py:3247-3253 and the names are mechanism-named, but the added elif at reckon/crew_follow_commands.py:1686 is a finding the project's own ruff selection rejects.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:38-200 re-implements the _Clock, _line and _Follower harness owned by tests/test_follow_sweep_cadence.py:33-200 (135 of 272 lines verbatim) rather than extending it; the production edit adds no new definition and a search over reckon/ and tests/ found no shared follower-harness owner.\nFINDING reckon/crew_follow_commands.py:1686 blocking: the added `elif` in _check_lifetime duplicates the branch body and trips SIM114 under the declared ruff selection; `ruff check` reports 2 findings on the file at cf73cde and 3 at 679da74e, so the change adds one, against the done_when's \"Ruff check ... add no findings on the staged paths\" and the manifest's claim that the edit adds none; fold both conditions into one `if ... or ...` and set the flag once.\nFINDING tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:1 non-blocking: the base arm runs 3 of the 32 test files that inject `sweep=` into _follow_watch_lines (8 were exercised at head, 6 of the 12 that inject `lifetime=`), so \"the test files importing reckon.crew_follow_commands add no failure against the base revision\" is established on a subset rather than the named population.\nFINDING tests/test_a_follower_sweep_runs_off_its_delivery_thread.py:38 non-blocking: _Clock, _line and _Follower are near-verbatim copies of tests/test_follow_sweep_cadence.py:33-200 rather than a shared or extended harness, so a change to the follower harness must now be made twice.\n",
+  "review_run_id": "r-20261109T135833215642-review-of-a-follower-sweep-runs-off-its-delivery-thread-679da74e17a7",
+  "reviewed_base_sha": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+  "reviewed_head_sha": "679da74e17a7c4c7c2168a52043225454146ecd3",
+  "reviewed_run_id": "r-20261109T121831256216-a-follower-sweep-runs-off-its-delivery-thread",
+  "scores": {
+    "durability": 18,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:19:21.281303+00:00",
+  "total": 88
+}
