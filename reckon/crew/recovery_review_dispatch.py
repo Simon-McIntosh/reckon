@@ -2110,11 +2110,7 @@ def _resolved_review_config(
     project: str, config: Mapping[str, Any] | None
 ) -> Mapping[str, Any]:
     """The flight config a review dispatch resolves its local lane against."""
-    if config is not None:
-        return config
-    from reckon import flight
-
-    return flight.resolve(project=project).config
+    return runs.resolved_tick_config(project, config)
 
 
 def _standing_plan_review(

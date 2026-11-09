@@ -48,7 +48,7 @@ import os
 import re
 import subprocess
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, suppress
 from datetime import UTC, datetime
 from pathlib import Path
@@ -59,7 +59,7 @@ from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
 from reckon._timestamps import parse_utc
-from reckon.crew import plan_review
+from reckon.crew import plan_review, runs
 from reckon.crew.dispatch import (
     _WORKER_DONE_MANIFEST_STATUSES,
     BudgetHold,
@@ -2165,6 +2165,7 @@ def sweep(
     project: str,
     *,
     session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
     config: Mapping[str, Any] | None = None,
     dry_run: bool = False,
     launcher: Callable[..., int] | None = None,
@@ -2210,7 +2211,8 @@ def sweep(
     skipped: list[dict[str, Any]] = []
     considered = 0
 
-    for pointer in list_live(project=project):
+    live = list_live(project=project) if pointers is None else pointers
+    for pointer in runs._tick_pointers(live):
         # A session-scoped sweep resumes only the runs that session owns: a
         # follower resuming another session's run restarts a worker under a
         # coordinator that did not choose its lane or its member.
@@ -2446,7 +2448,11 @@ def sweep(
     if not dry_run:
         try:
             reviews = dispatch_awaiting_reviews(
-                project=project, config=config, launcher=launch, session=session
+                project=project,
+                config=config,
+                launcher=launch,
+                session=session,
+                pointers=live,
             )
         except (CrewError, OSError) as exc:
             # A review pass that cannot run must not take the resume pass's
@@ -2471,6 +2477,7 @@ def sweep(
             launcher=launch,
             now_seconds=_now(now).timestamp(),
             dry_run=dry_run,
+            pointers=live,
         )
     except (CrewError, OSError) as exc:
         plan_reviews = {"error": str(exc)}

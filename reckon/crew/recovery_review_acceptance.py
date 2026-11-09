@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from reckon import review_tiers
+from reckon.crew import runs
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
@@ -529,6 +530,7 @@ def dispatch_awaiting_reviews(
     config: Mapping[str, Any] | None = None,
     launcher: Callable[..., Any] | None = None,
     session: str | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Dispatch the review every scoring run composes, and report each outcome.
 
@@ -560,7 +562,8 @@ def dispatch_awaiting_reviews(
     lane_paused: list[str] = []
     repaired: list[str] = []
     sweeping = session if session is not None else _sweeping_session(project)
-    for pointer in list_live(project=project):
+    live = list_live(project=project) if pointers is None else pointers
+    for pointer in runs._tick_pointers(live):
         if (
             str(pointer.get("project") or "")
             and project
@@ -597,7 +600,9 @@ def dispatch_awaiting_reviews(
         withdraw_superseded_review(pointer)
         scan: dict[str, Any] | None = None
         try:
-            scan = classify_pointer(pointer)
+            scan = classify_pointer(
+                pointer, **({"pointers": live} if pointers is not None else {})
+            )
         except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
             scan = None
         if scan is not None and scan["classification"] == "scoring":
