@@ -1,0 +1,45 @@
+<section class="evidence-record" id="promoting-a-review-keeps-its-dispositions">
+  <h2>Promoting a review keeps its dispositions</h2>
+
+  <p>A review run delivers its record twice: once into the reviewed run's own
+  <code>review-records</code> directory, and once into the host staging store,
+  where the supervisor files it. A coordinator answering a duty disposes a
+  finding and a sub-floor dimension on the <em>store</em> copy. Promoting the
+  review run refiles the delivered copies into the store, and that filing writes
+  the delivered body over the store file — so an answer recorded on the store
+  copy alone is gone, and the obligations reading raises the same sub-floor duty
+  again.</p>
+
+  <h3>Reproduction, before the change</h3>
+  <p>In a temporary crew home and committed tree, the record is delivered at
+  both granted paths, a finding and an <code>evidence</code> dimension are
+  disposed on the store copy, and the review run is promoted with
+  <code>crew.complete(..., gate="passed")</code>. The write that drops them is
+  <code>file_delivered_run_review_report</code> → <code>store_review</code>,
+  reached from promotion's <code>_file_delivered_run_reviews</code>. Base-arm
+  log <code>base-arm.log</code>: <code>EXIT=1</code>, the committed record
+  carries no <code>finding_dispositions</code> key at all.</p>
+
+  <h3>Change</h3>
+  <ul>
+    <li><code>reckon/crew/review_dispositions.py</code> — a disposition is now
+    written into every delivered copy of the record inside the reviewed run's
+    <code>review-records</code> directory as well as into the store copy the
+    call selected (<code>_delivered_copies_of_record</code>, a rubric- and
+    run-id-matched selection; <code>_carry_answer_to_delivered_copies</code>,
+    a per-name merge by the entry's own stamp that writes nothing when the copy
+    already carries it). A later filing therefore carries the answer into the
+    store rather than overwriting it.</li>
+    <li><code>tests/test_promoting_a_review_keeps_its_dispositions.py</code> —
+    the case above, asserting both dispositions in the committed record and no
+    sub-floor duty in the obligations reading.</li>
+  </ul>
+
+  <h3>Measure</h3>
+  <p>Gate, head arm: <code>1 passed</code>, <code>EXIT=0</code>
+  (<code>head-arm.log</code>). Base arm, the same test over the exported base
+  revision: <code>1 failed</code>, <code>EXIT=1</code>
+  (<code>base-arm.log</code>). Declared mutation — the promoted record written
+  without carrying the dispositions — is red on this case
+  (<code>negative-control.log</code>).</p>
+</section>
