@@ -57,17 +57,45 @@
     </tbody>
   </table>
 
-  <p>Ten negative controls, each applied to the module and restored: accepting a log with no
-  <code>EXIT=</code> line accepts the seventh case; dropping the pytest-summary refusal
-  accepts the eighth; dropping the count and id comparisons accepts the first case;
-  selecting the log's first run for both the count and the ids accepts the first case;
-  reading ids from the whole log drops the ids from the first case's refusal; counting only
-  the failed figure refuses the fifth case; requiring a pytest summary of every command
-  refuses the ninth case; comparing without the identity condition refuses the sixth;
-  checking only that log ids are covered drops the receipt's extra ids from the first
-  case's refusal; and requiring a count makes the fourth case refuse. The first three are
-  the declared string, applied together and one at a time; each of the three runs fails,
-  <code>EXIT=1</code>, naming the case it removes the protection from.</p>
+  <p>The repair gate runs both gate-log files, as
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_receipt_agrees_with_its_log.py tests/test_crew_gate_log_agrees.py</code>.
+  Over that pair the repair's base <code>b4b70562</code> reads 3 failed, 24 passed,
+  <code>EXIT=1</code>: the three cases in
+  <code>tests/test_crew_gate_log_agrees.py</code> whose cited logs carry neither a terminal
+  <code>EXIT=</code> record nor, for a pytest command, a summary line. Those fixtures
+  predate the refusals; they gain the records their runs would have written, and the head
+  <code>231f3d8b</code> reads 27 passed, <code>EXIT=0</code>. Logs:
+  <code>logs/base-arm.log</code> and <code>logs/head-arm.log</code>.</p>
+
+  <p>Ten negative controls were applied in this round, each a source mutation of the code
+  under test, restored before the next was applied. Each was measured against the gate
+  command and each caught the case it names, <code>EXIT=1</code> in all ten runs:</p>
+
+  <table>
+    <thead><tr><th>control</th><th>case that must fail</th><th>caught</th></tr></thead>
+    <tbody>
+      <tr><td>accepting a log with no <code>EXIT=</code> line</td><td><code>test_a_log_with_no_exit_record_is_refused</code></td><td>yes</td></tr>
+      <tr><td>dropping the pytest-summary refusal</td><td><code>test_a_pytest_gate_whose_last_run_reached_no_summary_is_refused</code></td><td>yes</td></tr>
+      <tr><td>dropping the count and id comparisons</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>selecting the first run for both count and ids</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>reading ids from the whole log</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>counting only the failed figure</td><td><code>test_an_error_is_counted_with_the_failures</code></td><td>yes</td></tr>
+      <tr><td>requiring a pytest summary of every command</td><td><code>test_a_ctest_log_compares_its_ids_and_not_its_count</code></td><td>yes</td></tr>
+      <tr><td>comparing without the identity condition</td><td><code>test_an_arm_describing_another_log_is_not_compared</code></td><td>yes</td></tr>
+      <tr><td>checking only that log ids are covered</td><td><code>test_a_receipt_copied_from_the_first_run_is_refused_naming_count_and_ids</code></td><td>yes</td></tr>
+      <tr><td>requiring a count</td><td><code>test_an_arm_recording_no_count_is_judged_on_exit_status_only</code></td><td>yes</td></tr>
+    </tbody>
+  </table>
+
+  <p>An earlier round declared ten controls and ran three, and this page described all ten as
+  measured. That was an overstatement of what had been run and is corrected here: the
+  per-control logs are <code>logs/controls/neg-01…neg-10*.log</code> in the run directory,
+  each headed with the control, the case it must fail, whether it was caught and its
+  <code>EXIT=</code> line. The harness that applies them is the run's
+  <code>ten_controls.py</code>; it anchors every edit exactly once, writes both mutated
+  files back before each run and restores both afterwards, and reports a control whose
+  anchor does not match or whose case stays green as a miss rather than counting it.</p>
 
   <p>The two new refusals were then run over every reckon run promoted in the last 14 days:
   309 passing gates judged, 304 of their cited logs readable from here. The no-exit-record
