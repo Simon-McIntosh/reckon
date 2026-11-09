@@ -10,14 +10,19 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import plan_review, recovery, runs
+from reckon.crew import plan_review, recovery, recovery_classification, runs
 from reckon.crew import review as review_module
 from tests.helpers.git import git
 
 obligations = importlib.import_module("reckon.crew.obligations")
 PROJECT = "obligation-fixture"
 SESSION = "obligation-session"
-NOW = datetime.now(tz=UTC)
+IMPORTED_AT = datetime.now(tz=UTC)
+# A duty ages a run against the clock it is handed, and the fixture stamps its
+# manifest from that same instant. Pinning the clock past import makes the age
+# the fixture states a fact about the fixture, not a reading of how long the
+# suite took to reach this test.
+NOW = IMPORTED_AT + timedelta(minutes=2)
 FINDING = {
     "file": "src/guard.py",
     "line": "8",
@@ -32,6 +37,10 @@ def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> tuple[Path, str]:
     config.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config))
     monkeypatch.setattr(obligations, "_utc_now", lambda: NOW)
+    # The duty's rows are classified without a caller-supplied instant, so the
+    # classifier reads its own clock; pin that boundary too, or the age is read
+    # from the wall clock this fixture never advanced.
+    monkeypatch.setattr(recovery_classification, "_utc_seconds", NOW.timestamp)
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
     (root / "seed.txt").write_text("seed\n", encoding="utf-8")

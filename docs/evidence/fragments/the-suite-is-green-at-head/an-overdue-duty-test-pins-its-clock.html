@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="An overdue duty test pins its clock">
+  <meta name="plan-summary" content="The obligations fixture now pins the classifier's own clock boundary as well as the view's, so the review-duty age is the fixture's stated 50 minutes whatever instant the wall clock holds.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s65">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="tests,clock,evidence">
+  <title>An overdue duty test pins its clock | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="an-overdue-duty-test-pins-its-clock" data-reckon="landed" data-when="2026-11-09">
+  <h2 id="an-overdue-duty-test-pins-its-clock-title">An overdue duty test pins its clock</h2>
+  <p id="an-overdue-duty-test-pins-its-clock-change"><strong>Change.</strong>
+  The obligations fixture in
+  <code>tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
+  pinned <code>obligations._utc_now</code> only. The review-duty row is built by
+  <code>obligations._classified_rows</code>, which calls
+  <code>recovery.classify_pointer(pointer)</code> with no
+  <code>now_seconds</code>, so the classifier read
+  <code>recovery_classification._utc_seconds()</code> — the wall clock — and the
+  run's age was never the instant the fixture supplied. The fixture now pins
+  that boundary to the same instant, and the module states its pin as
+  <code>IMPORTED_AT + timedelta(minutes=2)</code> rather than at import time, so
+  the pinned clock is demonstrably not the wall clock.</p>
+  <p id="an-overdue-duty-test-pins-its-clock-measure"><strong>Measure.</strong>
+  Gate:
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_obligation_never_offers_a_promotion_past_a_blocking_finding.py</code>
+  — 7 passed, <code>EXIT=0</code>, with the fixture's clock advanced two minutes
+  past import. Base arm, the committed test at the same revision, runs the same
+  command over the base file: 7 passed, <code>EXIT=0</code>. <code>ruff check</code>
+  and <code>ruff format --check</code> report no findings on the changed path.</p>
+  <p id="an-overdue-duty-test-pins-its-clock-control"><strong>Negative control.</strong>
+  Declared mutation: restore the import-time instant as the pinned clock while
+  the manifest stamp stays on the advanced one. Applied to a scratch copy of the
+  gate file, logged at <code>negative-control.log</code>:
+  <code>test_overdue_review_duty_reports_age_without_a_dispatch_command</code>
+  fails, <code>1 failed, 6 passed</code>, <code>EXIT=1</code>, on
+  <code>review overdue by 48m 0s</code> — the age fell to the wall-clock reading
+  the pin exists to replace. The reproduction is the same fact before the change:
+  an advanced pinned clock alone reported <code>48m</code>.</p>
+  <p id="an-overdue-duty-test-pins-its-clock-scope"><strong>Scope note.</strong>
+  The un-parameterised classifier call at <code>reckon/crew/obligations.py:993</code>
+  is why the wall clock was reachable at all; it is outside this node's write
+  scope and is recorded for the coordinator.</p>
+</article>
+</body>
+</html>
