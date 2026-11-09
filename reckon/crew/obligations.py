@@ -2187,9 +2187,10 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     document is stat'ed and decoded once for the call and handed on unshared.
     Records are filed into one index of the trees they name, so an inspected
     tree is one lookup rather than a comparison against every record, and the
-    row the merged ledger's own order puts last holds the tree. A tree no row
-    names falls back to the whole ledger, which reads the merged history once
-    for the session however many trees need it.
+    row the merged ledger's own order puts last holds the tree. A tree no
+    screened row names is looked up in a second index built from the rows the
+    screen left out, so the fallback costs one filing per left-out row rather
+    than one path resolution per row per unresolved tree.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -2284,13 +2285,21 @@ def _held_worktree_records_read(
     else:
         namings, rows = fresh
     index = WorktreeRecordIndex()
+    left_out: list[Mapping[str, Any]] = []
     for row in rows:
         # A row that can name no inspected tree on either route the naming rule
         # applies is left out of the index: the match is then bounded by the
         # trees that are held rather than by the corpus, and the answer is
-        # unchanged because a row the screen excludes names none of them.
+        # unchanged because a row the screen excludes names none of them. A row
+        # carrying no run id is the one row the screen cannot read: it has no
+        # namings entry, so it is kept for the bounded fallback below rather
+        # than dropped. Every other excluded row was read and names none of the
+        # inspected trees, so filing it again would resolve its path a second
+        # time to learn nothing.
         if _row_may_name_a_tree(row, names, trees, namings):
             index.add(row)
+        elif not str(row.get("run_id") or ""):
+            left_out.append(row)
     matched: dict[Path, Mapping[str, Any]] = {}
     unresolved: list[Path] = []
     for worktree in inspected:
@@ -2300,13 +2309,22 @@ def _held_worktree_records_read(
         else:
             matched[worktree] = record
     if unresolved:
-        # A tree the screened rows do not name is left to the whole-ledger scan,
-        # which matches on every recorded row and refuses a damaged one exactly
-        # where the whole-ledger reader always has.
-        for record in rows:
-            for worktree in unresolved:
-                if _names_worktree(record, worktree):
-                    matched[worktree] = record
+        # A tree the screened rows do not name can be named, if at all, only by
+        # a row the screen could not read. Those rows are filed once into an
+        # index of their own, built from the same rule's keys as the first, so
+        # each inspected tree costs a lookup rather than a pass over every row
+        # with a path resolution for each. The answer is unchanged: a tree
+        # reaches this path only when no screened row names it, so the rows
+        # left out are the only candidates it has, and the last of them in
+        # ledger order holds it exactly as the whole-ledger reader would have
+        # put it.
+        fallback = WorktreeRecordIndex()
+        for row in left_out:
+            fallback.add(row)
+        for worktree in unresolved:
+            record = _holding_record(worktree, fallback)
+            if record is not None:
+                matched[worktree] = record
 
     held: dict[Path, Mapping[str, Any]] = {}
     for worktree, record in matched.items():
