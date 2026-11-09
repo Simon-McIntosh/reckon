@@ -433,6 +433,37 @@ def test_the_spawn_guard_admits_its_own_attempt_and_refuses_another(
     assert "attempt 3" in str(refused_guard) and IN_FLIGHT in str(refused_guard)
 
 
+def test_an_earlier_attempts_reservation_does_not_guard_a_later_launch(
+    home: Path,
+) -> None:
+    """A superseded attempt's reservation cannot refuse the launch after it."""
+    _ended_previous_attempt(home)
+    # Attempt 3's launch is still alive, but the spec launches attempt 4: the
+    # earlier reservation belongs to a launch that attempt 4 supersedes.
+    _reservation(home, 3, pid=os.getpid())
+    pid = dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 4))
+    try:
+        assert pid > 0, "the guard refused on a reservation older than the launch"
+    finally:
+        with contextlib.suppress(OSError):
+            os.kill(pid, signal.SIGTERM)
+
+
+def test_a_reservation_whose_attempt_already_ended_is_skipped(home: Path) -> None:
+    """An ending on the reserved attempt frees it however its processes read."""
+    _ended_previous_attempt(home)
+    # The reservation is at a later attempt than the spec's, which refuses on
+    # its own; the recorded ending is what makes it not a hold.
+    _reservation(home, 3, pid=os.getpid())
+    _retired_exit(home, 3)
+    pid = dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 2))
+    try:
+        assert pid > 0, "the guard refused on an attempt that had already ended"
+    finally:
+        with contextlib.suppress(OSError):
+            os.kill(pid, signal.SIGTERM)
+
+
 # ── a reserved attempt is launched ──────────────────────────────────────────
 
 
