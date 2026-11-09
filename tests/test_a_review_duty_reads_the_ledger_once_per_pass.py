@@ -20,6 +20,7 @@ from __future__ import annotations
 import importlib
 import json
 import os
+import sqlite3
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -255,3 +256,64 @@ def test_a_station_pass_reads_the_ledger_once(
     assert base_texts == texts, "the duty text does not move with the read path"
     assert {str(record.get("run_id")) for record in opened} == entered
     assert len(reads) - before, "the control path does read the aggregate per run"
+
+
+def _runs_directory() -> Path:
+    return ledger_module.ledger_path(PROJECT).parent / "runs"
+
+
+def _write_run(run_id: str, status: str = "complete") -> Path:
+    path = _runs_directory() / f"{run_id}.json"
+    path.write_text(
+        json.dumps({"run_id": run_id, "project": PROJECT, "status": status}),
+        encoding="utf-8",
+    )
+    return path
+
+
+def _indexed_status(run_id: str) -> Any:
+    """The status the published index currently holds for one run."""
+    path = ledger_module._run_index_path(PROJECT, None)
+    with sqlite3.connect(path) as connection:
+        row = connection.execute(
+            "SELECT payload FROM records WHERE name=?", (run_id,)
+        ).fetchone()
+    return None if row is None or row[0] is None else json.loads(row[0])["status"]
+
+
+def test_a_run_file_added_after_the_read_is_membership(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A file written after the warm read is counted, with no aggregate parse.
+
+    The index is current only while it describes the files the directory holds;
+    the added file breaks that, so the read refreshes. A read served stale would
+    drop the new id, and a read that rebuilt from the aggregate would pay a
+    parse the station tick cannot afford.
+    """
+    ledger_module.read_records(PROJECT)
+    reads = _count_aggregate_reads(monkeypatch)
+    _write_run("run-added")
+    assert ledger_module.run_ids(PROJECT) == {
+        pointer["run_id"] for pointer in fleet["pointers"]
+    } | {"run-added"}
+    assert not reads, "a stale index is refreshed without parsing the aggregate"
+
+
+def test_a_run_file_rewritten_in_place_is_not_served_stale(
+    fleet: dict[str, Any], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An in-place edit is noticed and refreshed, not answered from the old row.
+
+    Directory metadata cannot see this: the name is unchanged, so only the
+    file's own stat identity shows the edit. Membership is the same either way,
+    so the evidence is the index's stored row, which must carry the rewritten
+    status rather than the one it held before.
+    """
+    ledger_module.read_records(PROJECT)
+    assert _indexed_status("run-00") == "complete"
+    reads = _count_aggregate_reads(monkeypatch)
+    _write_run("run-00", status="blocked")
+    assert "run-00" in ledger_module.run_ids(PROJECT)
+    assert _indexed_status("run-00") == "blocked", "the index was served stale"
+    assert not reads, "an in-place edit is refreshed without an aggregate parse"

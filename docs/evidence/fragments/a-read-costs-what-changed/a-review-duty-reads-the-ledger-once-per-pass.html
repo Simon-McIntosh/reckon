@@ -6,10 +6,16 @@
   publishes, through a new <code>_indexed_run_ids</code> that reads the index's ids only,
   instead of parsing the aggregate on every call. The index is trusted while the aggregate's stat
   identity matches the one it recorded and every run file carries the stamp it stored; otherwise
-  the read falls back to the aggregate and the run documents, the read it made before. It is
-  deliberately not <code>load</code>: <code>load</code> rebuilds the index and decodes rows a
-  membership caller did not ask for, and the run store's cross-check requires membership to stay
-  cheap. The station evaluates every delivered run's review duty on every tick,
+  the read is refreshed through <code>load</code> and answered from the refreshed index. It is
+  deliberately not <code>load</code> unconditionally: <code>load</code> rebuilds the index and
+  decodes rows a membership caller did not ask for, and the run store's cross-check requires
+  membership to stay cheap.
+  Both halves are taken from the owners that already held them rather than restated:
+  <code>_open_current_index</code> is the read-only connection and aggregate-stamp check
+  <code>_last_good_index_data</code> already performed, and <code>_index_membership</code> is the
+  union <code>_index_payload</code>'s header read already built, extended to count a run file whose
+  stored record the index could not decode. A membership read and a header read therefore cannot
+  disagree about such a file. The station evaluates every delivered run's review duty on every tick,
   and each duty asks <code>ledger.run_ids</code> whether the run is closed — through
   <code>station_subscriber.live_work_populations</code>,
   <code>delivered_run_owes_review</code>, <code>obligations._review_duty_item</code>,
@@ -29,22 +35,28 @@
   <code>_load_aggregate</code> <strong>0</strong> times (the gate asserts at most <strong>1</strong>
   per project). A direct <code>ledger.run_ids(project)</code> after the pass opens no further
   aggregate read, and the same pass run with the aggregate-reading
-  <code>run_ids</code> returns the identical duty text for every run. Head gate:
-  <strong>1 passed, EXIT=0</strong>.</p>
+  <code>run_ids</code> returns the identical duty text for every run. Two further cases exercise the currency check
+  itself: a run file written after the warm read is counted by <code>run_ids</code>, and a run file
+  rewritten in place is refreshed rather than answered from the index row it replaced, each without
+  a single <code>_load_aggregate</code> call. Head gate: <strong>3 passed, EXIT=0</strong>.</p>
 
   <p id="a-review-duty-reads-the-ledger-once-per-pass-negative-control"><strong>Declared negative
   control, executed and logged.</strong> Reverting <code>run_ids</code> to
   <code>_load_aggregate(project, root)</code> makes the pass read the aggregate
   <strong>3</strong> times, once per delivered run, and the gate fails on
   <code>assert 3 &lt;= 1</code> — <strong>1 failed, EXIT=1</strong>. Log:
-  <code>logs/negative-control.log</code>.</p>
+  <code>logs/negative-control.log</code>. Two further controls, each run at the final code and logged:
+  returning the index's ids without the file-stat currency check leaves the added and rewritten
+  files unseen, and making the refresh branch fall back to <code>_load_aggregate</code> leaves the
+  index row stale; each turns both new cases red (<strong>2 failed, 1 passed, EXIT=1</strong>). Logs:
+  <code>logs/negative-control-currency.log</code>, <code>logs/negative-control-refresh.log</code>.</p>
 
   <p id="a-review-duty-reads-the-ledger-once-per-pass-importers"><strong>Importer arm.</strong>
   Eight test files importing <code>reckon.ledger</code>, <code>reckon.crew.obligations</code> or
   <code>reckon.crew.recovery_review_dispatch</code> run one arm at a time at <code>-n 4</code>:
   <strong>140 passed, EXIT=0</strong> against the base revision's <code>ledger.py</code> and
-  <strong>141 passed, EXIT=0</strong> at the head, the extra case being this node's own test. No
-  failure is added. The importer population named by the done-when is 323 files, and one of them
+  <strong>143 passed, EXIT=0</strong> at the head once this node's own test and its two new cases
+  are included. No failure is added. The importer population named by the done-when is 323 files, and one of them
   alone (<code>tests/test_ledger.py</code>) exceeded four minutes on this host, so the full
   population was not run inside the node's budget; the subset run here is the files that reach the
   index, the membership read and the review-duty path directly. Logs:
