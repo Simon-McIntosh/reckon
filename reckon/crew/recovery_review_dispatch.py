@@ -2455,7 +2455,13 @@ def _undisposed_blocking_findings(
     ]
 
 
-def _finding_dispose_commands(project: str, run_id: str, index: int) -> tuple[str, str]:
+def _finding_dispose_commands(
+    project: str,
+    run_id: str,
+    index: int,
+    *,
+    review: Mapping[str, Any] | None = None,
+) -> tuple[str, str]:
     """The two commands that answer one blocking finding by its index.
 
     The rendering is the disposition writer's own rendering, so the command a
@@ -2463,11 +2469,28 @@ def _finding_dispose_commands(project: str, run_id: str, index: int) -> tuple[st
     prints for a finding are one function's output. The disposition either
     command writes is the one :func:`blocking_finding_dispositions` reads back,
     so the command a refusal prints is the one that lifts the refusal.
+
+    ``review`` is the stored record the finding was raised on. A run may be
+    reviewed under more than one rubric and each family is stored beside the
+    others, so the record is the only place the family and the round are known:
+    a figure review's finding is answered by index into the figure record and
+    naming that round, and a command composed without them names no record the
+    verb can select. A caller holding no record renders the text form exactly
+    as before.
     """
     from reckon.crew import review_dispositions as review_dispositions_module
 
+    rubric: str | None = None
+    review_run_id: str | None = None
+    if isinstance(review, Mapping):
+        rubric = str(review.get("rubric") or "").strip().lower() or None
+        review_run_id = str(review.get("review_run_id") or "").strip() or None
     return review_dispositions_module.dispose_commands(
-        project, run_id, f"--finding {index}"
+        project,
+        run_id,
+        f"--finding {index}",
+        review_run_id=review_run_id,
+        rubric=rubric,
     )
 
 
@@ -2531,7 +2554,9 @@ def _open_review_refusal(
         described: list[str] = []
         for index, finding in undisposed:
             place = repair_module._finding_location(finding) or "the review's findings"
-            fold, exempt = _finding_dispose_commands(project, run_id, index)
+            fold, exempt = _finding_dispose_commands(
+                project, run_id, index, review=stored
+            )
             described.append(f"{place} — dispose it with `{fold}` or `{exempt}`")
         rendered = "; ".join(described)
         reason = (
@@ -2547,6 +2572,11 @@ def _open_review_refusal(
             "refused": True,
             "reason": reason,
             "undisposed_findings": [index for index, _finding in undisposed],
+            # The record the findings were raised on, so a reader that holds
+            # only this report can compose the same command the reason names:
+            # a figure review's findings are answered on its own record.
+            "review_rubric": review_module._review_record_rubric(stored),
+            "review_run_id": str(stored.get("review_run_id") or "").strip(),
         }
     return None
 
