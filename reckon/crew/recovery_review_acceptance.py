@@ -600,7 +600,9 @@ def dispatch_awaiting_reviews(
         withdraw_superseded_review(pointer)
         scan: dict[str, Any] | None = None
         try:
-            scan = classify_pointer(pointer, pointers=live)
+            scan = classify_pointer(
+                pointer, **({"pointers": live} if pointers is not None else {})
+            )
         except Exception:  # noqa: BLE001 - one unreadable run must not stop the sweep
             scan = None
         if scan is not None and scan["classification"] == "scoring":
