@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:21:12.854Z",
+  "dispatched_at": "2026-11-09T11:16:16Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:103",
+      "id": "done_when-1",
+      "reason": "the worker either fixes an unrelated pre-existing finding outside the section's deliverable or deviates from an exact-spec gate, and the repo's own rule is delta-not-absolute, so the gate should say so.",
+      "text": "\u00a710 requires that \"Ruff adds no findings on the staged paths\", but `tests/conftest.py` \u2014 the first of its declared write paths \u2014 already reports `F841 Local variable dispatch_module is assigned to but never used` at line 1057, and the section gives no instruction for it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:115",
+      "id": "anchors_resolve-1",
+      "reason": "this is the plan's one open build instruction, and a reader taking its summary over the section is told a mechanism the section explicitly rejects and a file it never touches.",
+      "text": "the open followup `f-aprteig-010` says \u00a710 \"stops the armed suite command naming a granted `tests/conftest.py` as a test target\" and \"writes `reckon/crew/promotion_records.py`\", both of which \u00a710 now contradicts (the conftest stays armed; `promotion_records.py` is absent from the write paths)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e6d18b9a1e90d21f9cb9e13a20885e66030a3891",
+  "plan_fingerprint": "8758953bf47d1fc9fa782a9052a5fa96b8bba75d96a81b785adbd57b1d0336be",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 64,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T111425864583-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "b585c5454e3d4954326a538043a3163efb0ac989",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the open followup `f-aprteig-010` still describes the superseded \u00a710 and names a write path \u00a710 no longer carries.",
+    "done_when": "a finding \u2014 the \"Ruff adds no findings on the staged paths\" gate cannot be met, because `tests/conftest.py:1057` already carries an F841 that \u00a710's write paths do not authorise fixing.",
+    "evidence_paths": "pass \u2014 \u00a710 names no scratch path and the run-directory convention governs its gate logs; weak but not wrong.",
+    "naming": "pass \u2014 `make_temp_config_home` and `tests/test_a_conftest_helper_is_never_collected.py` carry no plan label, stage name or ticket id.",
+    "reasoning": "pass \u2014 the stated root cause (the helper's `test_` prefix, not the conftest's presence) is exactly what the reproduction shows, the rename does satisfy the collection gate, and the runner is pytest's own collection, named in the done-when as the subprocess command.",
+    "single_goal": "pass \u2014 one deliverable (rename the helper, update its callers) with one gate.",
+    "wiring": "pass \u2014 \u00a710 declares no depends-on, and its write paths (`tests/` files) are disjoint from every other section, so no relationship is missing."
+  },
+  "section_digests": {
+    "_document": "cc32472b73a29009d06a1d56714ce28cdfd50ffda0668f99fdd4b618abeb08ed",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "8950eb217e2b33d8f1f252a0fd4bc9ed5793875160da9ac4120856ae00245f71",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:31:45.984114+00:00",
+  "total": null
+}
