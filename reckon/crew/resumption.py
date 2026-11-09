@@ -2420,7 +2420,11 @@ def sweep(
     if not dry_run:
         try:
             reviews = dispatch_awaiting_reviews(
-                project=project, config=config, launcher=launch, session=session
+                project=project,
+                config=config,
+                launcher=launch,
+                session=session,
+                pointers=live,
             )
         except (CrewError, OSError) as exc:
             # A review pass that cannot run must not take the resume pass's

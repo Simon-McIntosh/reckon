@@ -44,7 +44,7 @@ def tick(project, monkeypatch):
                 "run_id": run_id,
                 "project": "sample",
                 "repo": str(repo),
-                "session": "author",
+                "session": f"author-{index % 4}",
                 "phase": "working",
                 "created_at": created,
                 "node": {"id": f"author-{index}", "plan": "fixture"},
@@ -83,6 +83,8 @@ def tick(project, monkeypatch):
     monkeypatch.setattr(
         plan_review, "_project_plan_paths", lambda _: ([("fixture", plan)], [])
     )
+    compose = Mock(wraps=plan_review.compose_owed_plan_reviews)
+    monkeypatch.setattr(plan_review, "compose_owed_plan_reviews", compose)
     dispatch = Mock(return_value={"run_id": "r-composed", "dispatched": True})
     monkeypatch.setattr(recovery, "dispatch_review_for_run", dispatch)
 
@@ -99,11 +101,11 @@ def tick(project, monkeypatch):
     monkeypatch.setattr(runs, "_publish_watch_stream", publish)
     resolve = Mock(wraps=flight.resolve)
     monkeypatch.setattr(flight, "resolve", resolve)
-    return listing, publish, resolve, dispatch, producer
+    return listing, publish, resolve, dispatch, producer, compose
 
 
 def test_one_whole_tick_shares_its_live_pointers_and_flight(tick):
-    listing, publish, resolve, dispatch, _producer = tick
+    listing, publish, resolve, dispatch, _producer, compose = tick
     stream = recovery_watch.watch_ticker("sample", poll_interval=0)
     try:
         events = [next(stream) for _ in range(40)]
@@ -116,16 +118,23 @@ def test_one_whole_tick_shares_its_live_pointers_and_flight(tick):
     }
     print(json.dumps(counts, sort_keys=True))
     assert len(events) == 40
+    assert compose.call_count == 4, "each unattended session must be swept"
     assert dispatch.call_count == 1, "the whole tick must reach the owed plan review"
     assert counts == {"list_live": 1, "publish": 1, "flight.resolve": 1}
 
 
+@pytest.mark.parametrize("slow_stage", ["publication", "acceptance"])
 def test_an_overdue_tick_reaches_the_reload_check_before_all_pointers(
-    tick, monkeypatch
+    tick, monkeypatch, slow_stage
 ):
-    _listing, _publish, _resolve, _dispatch, producer = tick
+    _listing, _publish, _resolve, _dispatch, producer, _compose = tick
     visited = []
-    original = recovery_watch._compute_watch_snapshot
+    module, name = (
+        (recovery_watch, "_compute_watch_snapshot")
+        if slow_stage == "publication"
+        else (recovery_review_acceptance, "classify_pointer")
+    )
+    original = getattr(module, name)
     clock = [0.0]
 
     def slow_pointer(pointer, **kwargs):
@@ -137,7 +146,7 @@ def test_an_overdue_tick_reaches_the_reload_check_before_all_pointers(
     def reload_check(_interval):
         raise ReloadCheckReachedError
 
-    monkeypatch.setattr(recovery_watch, "_compute_watch_snapshot", slow_pointer)
+    monkeypatch.setattr(module, name, slow_pointer)
     monkeypatch.setattr(runs, "PRODUCER_TICK_SECONDS", 10.0, raising=False)
     monkeypatch.setattr(runs.time, "monotonic", lambda: clock[0])
     stream = recovery_watch.watch_ticker(
@@ -150,4 +159,9 @@ def test_an_overdue_tick_reaches_the_reload_check_before_all_pointers(
         stream.close()
     print(f"pointer visits before reload check: {len(visited)}")
     assert 0 < len(visited) < 40
-    assert not producer.known, "an incomplete population must not publish departures"
+    if slow_stage == "publication":
+        assert not producer.known, (
+            "an incomplete population must not publish departures"
+        )
+    else:
+        assert len(producer.known) == 40, "the last complete publication must survive"
