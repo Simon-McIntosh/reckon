@@ -69,6 +69,13 @@
   ],
   "completed_at": "2026-11-09T13:00:22Z",
   "dispatched_at": "2026-11-09T12:31:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The diff changes only reckon/crew/dispatch_claims.py (runs.py is untouched), so the population that matters is dispatch_claims' callers. All 14 test files importing dispatch_claims are inside the coordinator's 33-file claims population, which also takes every test touching scope conflicts, fragment paths and shared-write paths. It read an identical 28 failure ids at base 6a3aae57b2 and head 8ecbbfcf87 (587 to 596 passed, the 9 new tests); logs/population-{base,head}-coord.log. -n 6 against the stated -n 4 changes worker count, not coverage. Same disposition as the claims s2 importer finding.",
+      "recorded_at": "2026-11-09T13:10:53.972889+00:00"
+    }
+  },
   "findings": [
     {
       "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/fragment-claim-never-blocks-a-sibling.html",
