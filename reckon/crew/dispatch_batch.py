@@ -60,12 +60,14 @@ BATCH_ENTRY_FIELDS = frozenset(
 #: path when it names a directory (`src/payload.py`) or carries a source-file
 #: extension (`.py`, `.md`). Prose abbreviations such as ``e.g`` and version
 #: tags such as ``v1.2`` carry neither, so a sentence that names a file only by
-#: description ("the new test") yields no path for it. A leading ``./`` is
-#: taken as the relative prefix it is — never as a bare slash — and a leading
+#: description ("the new test") yields no path for it. A leading ``./`` or
+#: ``../`` is taken as the prefix it is — never as a bare slash — and a leading
 #: ``/`` not preceded by a dot keeps an absolute path absolute: a sentence
 #: naming a file outside the repository must derive that file's whole path,
 #: since a slash dropped turns it into a relative path that resolves nowhere.
-_PATH_TOKEN = re.compile(r"(?:\./)*/?[A-Za-z0-9_][A-Za-z0-9_./-]*")
+#: The prefix is matched whole so a parent segment stays visible in the token,
+#: where ``write_paths`` can refuse it rather than derive a shortened form.
+_PATH_TOKEN = re.compile(r"(?:\.{1,2}/)*/?[A-Za-z0-9_][A-Za-z0-9_./-]*")
 _SOURCE_EXTENSIONS = frozenset(
     {
         ".py",
@@ -304,6 +306,15 @@ class _PlanRead:
             sentence = sentence[: stop.start()]
         found: list[str] = []
         for token in _PATH_TOKEN.findall(sentence):
+            if ".." in token.split("/") and (
+                "/" in token or Path(token).suffix.lower() in _SOURCE_EXTENSIONS
+            ):
+                raise BatchEntryRefusedError(
+                    f"{self.project}:{self.plan}#{section}: write path {token} "
+                    f"carries a parent-directory segment, so it is refused rather "
+                    f"than derived in a shortened form, from the sentence: "
+                    f"{sentence.strip()}"
+                )
             # A leading ``./`` is a relative prefix and goes; a leading ``/`` is
             # the path's own root and stays.
             trimmed = token
