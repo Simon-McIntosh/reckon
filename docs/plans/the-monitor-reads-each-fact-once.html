@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="130">
+<meta name="plan-version" content="131">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -757,6 +757,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261109T153519901822-review-of-producer-tick-reads-live-pointers-once-c73a7d1dd049" data-who="reckon-build" data-when="2026-11-09T15:46:11Z">
+    <div class="r-comment-body"><p>Independent review of 3118c2969a13d7158cfdd43db3db67747bcb2c66..c73a7d1dd049d32d118393910fa32edb49f85277 stored; broader importing-module evidence blocks landing.</p></div>
 </div>
 </section>
 </main>
