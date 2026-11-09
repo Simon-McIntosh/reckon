@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="143">
+<meta name="plan-version" content="144">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
@@ -523,6 +523,12 @@
 <div class="r-comment" data-section="s22" data-id="c-s22-svg-census-baseline" data-who="reckon-build" data-when="2026-10-22T23:24:00Z">
     <div class="r-comment-body"><p>Baseline for §22's effect, taken before the PNG-only rule merged: over the 75 figure reviews launched from 2026-10-20T00:00Z to 2026-10-22T22:44:15Z, 509 of 4,190 tool calls named an <code>.svg</code> path, in 50 of the 75 runs. The census is <code>~/.config/reckon/crew/reports/reckon/figure-review-svg-census/census.py</code> (a run counts when its id ends in <code>-figure</code>; a call counts when its <code>tool_use</code> input contains <code>.svg</code>), and its log is <code>census-before-png-only.log</code> beside it. No figure review has launched since the merge, so the after-measure waits on the next ones; the rule holds if that count is zero.</p></div>
 </div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T081528266909-review-of-a-figure-finding-names-its-rubric-32f8e7773dfb" data-who="reckon-build" data-when="2026-11-09T08:23:59.177Z">
+    <div class="r-comment-body"><p>reviewed r-20261109T064500219481-a-figure-finding-names-its-rubric at 7d4f59320b..32f8e7773d; scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 17, fit 19, reuse 20; four non-blocking findings, no blocking findings, zero added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T064500219481-a-figure-finding-names-its-rubric" data-who="reckon-build" data-when="2026-11-09T08:00:05Z">
+    <div class="r-comment-body"><p>§24: a figure finding&#x27;s duty now hands over a dispose command naming `--rubric figure` and the figure review&#x27;s own run, composed once from the stored record and threaded through `_finding_dispose_commands` from both `obligations._review_dispatch_refusal` and `_open_review_refusal`; the node gate `tests/test_a_figure_finding_names_its_rubric.py` passes 2/2 (`EXIT=0`) and its declared negative control, dropping the rubric from the composer, fails 1 of 2 (`EXIT=1`) with the reported &quot;carries no record&quot; refusal.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-s3-executable-as-s8" data-who="reckon-build" data-when="2026-10-13T02:30:00Z">
     <div class="r-comment-body"><p>§3 states the evaluation but carries no done-when, control or write paths, so it is not dispatched as written. Its executable node is §8, which keeps §3's pairs and its format question and adds the gate. §3 is deferred in its favour.</p></div>
 </div>
@@ -663,9 +669,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-17T16:35:00Z">
     <div class="r-comment-body"><p>§9 landed. <code>tests/test_codex_declares_image_input.py</code> resolves the repository's own project flight layer with an empty host layer and asserts codex declares image input, so an edit that drops the declaration now turns the suite red. 1 passed, and the stripped-line control fails. Merged as <code>a68042d64</code>, and <code>verify-gate</code> passed. 0 added failures over the flight importers. Review: 113/120. Spent nothing: it ran on the local lane. <a href="/reckon/evidence/archive/a-review-can-see-the-figure-landed.html#s9-declaration-held-by-test">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s24" data-id="c-run-r-20261109T081528266909-review-of-a-figure-finding-names-its-rubric-32f8e7773dfb" data-who="reckon-build" data-when="2026-11-09T08:23:59.177Z">
-    <div class="r-comment-body"><p>reviewed r-20261109T064500219481-a-figure-finding-names-its-rubric at 7d4f59320b..32f8e7773d; scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 17, fit 19, reuse 20; four non-blocking findings, no blocking findings, zero added failures.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
