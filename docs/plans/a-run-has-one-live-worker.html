@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="144">
+<meta name="plan-version" content="145">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -330,6 +330,9 @@
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261109T174319675089-review-of-a-worker-on-another-host-refuses-a-relaunch-1ba776d85605" data-who="reckon-build" data-when="2026-11-09T17:52:41.870Z">
     <div class="r-comment-body"><p>review of r-20261109T164136876838 at 1ba776d856: parsed record, 6 scores, total 107, added_failure_count 0, two non-blocking findings (inline duplication of the exit-record owner read rules; a receipt that parses while naming no run still frees a foreign launch)</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261109T183250271017-review-of-a-worker-on-another-host-refuses-a-relaunch-af3da92f842f" data-who="reckon-build" data-when="2026-11-09T18:49:32.516Z">
+    <div class="r-comment-body"><p>review of r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch at af3da92f842f, covering 1ba776d856..af3da92f84 (ceea2ae24b, af3da92f84), stored parsed at af3da92f842f0f0e7f1df85c3d33e82ca5681512 with scores goal_fidelity 20, evidence 18, scope_discipline 20, durability 16, fit 19, reuse 20, added_failure_count 0, and three non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-second-instance" data-who="reckon-build" data-when="2026-10-08T04:05:00Z">
     <div class="r-comment-body"><p>A second instance, reported by the nova S21 coordinator: run <code>r-20261008T004354567004-cfs-edge-term-tangents</code> on codex-astra. After H200 job 1281977 completed at 05:54:42 CEST, the wait sweep resumed the run (resume 2). Its stderr reads <code>thread/resume failed: thread 01a1192e-8494-7fc0-a551-721fb3acada8 already has an active writer (code -32600)</code> at 03:56:32Z while a codex worker in the same worktree went on working. The follower then reported <em>exited with code 1 with 11 commits beyond its recorded base</em> and, a second later, <em>ended by SIGKILL</em>. The investigation should name the guard for both runs: here the backend refused the second writer, while the claude run of §1 admitted it.</p></div>

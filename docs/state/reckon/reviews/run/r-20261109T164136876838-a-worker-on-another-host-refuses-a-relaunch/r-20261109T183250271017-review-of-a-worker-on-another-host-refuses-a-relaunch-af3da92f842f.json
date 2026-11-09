@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker",
+    "reckon/crew/dispatch_launch.py:_prepare_attempt_records",
+    "reckon/sprint_liveness.py:_run_exit_record",
+    "reckon/crew/recovery_wait.py:_run_exit_record",
+    "reckon/crew/resumption.py:_run_exit_record"
+  ],
+  "completed_at": "2026-11-09T18:49:32.516Z",
+  "dispatched_at": "2026-11-09T18:38:45Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2158",
+      "severity": "non-blocking",
+      "text": "non-blocking: the retired-receipt call buys the strict reading but no case exercises it, so deleting require_run_id=True there leaves all 13 cases green; the commit's claim that both shapes cannot be freed on different terms is asserted for the canonical name only."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment reports the neighbouring population at 29 passed EXIT=0 \"at both arms\", but the log behind the head arm carries a header naming fc13619cea plus uncommitted repair work rather than the reviewed head, so the cited measurement predates this round; the requirement itself is still met by the 53-file importer population run at ceea2ae24b, which includes both neighbour files at delta zero."
+    },
+    {
+      "file": "manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite, and the tests line at manifest.md:11, record the gate command with a relative .venv/bin/python path, where the manifest contract asks for the literal command with absolute paths."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read ceea2ae24b and af3da92f84 commit by commit against 1ba776d856; the guard-local _exit_receipt_shows_ended is deleted, _run_exit_record gains a receipt name and a strict run-id reading, both call sites use the owner, one test case and the fragment are updated.",
+    "done_when": "the done_when names tests/test_a_worker_on_another_host_refuses_a_relaunch.py with (a1)/(a2) failing at the dispatch base and passing at head, a clean neighbours pair and clean ruff by delta; baseline-arm.log ends \"6 failed, 7 passed\" EXIT=1, after-arm.log and my own run end \"13 passed\" EXIT=0, neighbours are covered by the importer population at ceea2ae24b, and ruff shows 2 pre-existing findings and 3 pre-existing format hunks at both base and head.",
+    "goal": "the goal is to refuse a relaunch beside a worker launched on another host until an exit receipt shows that launch ended; reckon/crew/dispatch_launch.py:2228 now frees a foreign launch only on a receipt read by the owner under its strict reading.",
+    "manifest": "read; it records commits fc13619cea/1ba776d856/ceea2ae24b/af3da92f84, both suite arms with revision, command, exit status, log path and failure ids, the declared negative control at 6 failed EXIT=1, importer populations at delta zero, and a write_scope_extension note for recovery_liveness.py.",
+    "write_paths": "the round's declared paths are the fragment, dispatch_launch.py, recovery_liveness.py and the test file; every hunk in the diff lies in exactly those four."
+  },
+  "justifications": {
+    "durability": "the new case at tests/test_a_worker_on_another_host_refuses_a_relaunch.py:363 reddens at 1ba776d856 (1 failed, 12 passed), but dropping require_run_id at reckon/crew/dispatch_launch.py:2158 reddens no test, so the retired receipt's strictness is unguarded.",
+    "evidence": "baseline-arm.log and after-arm.log carry revision, command and a bare EXIT= line whose figures I reproduced at head, but the fragment's neighbours claim at docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html:36 cites a head arm whose log header names fc13619cea plus uncommitted work.",
+    "fit": "reckon/crew/dispatch_launch.py:2155-2156 keeps the file's function-local cross-module import idiom and the new keyword and docstring carry no plan, ticket or author identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2228 and :2158 free an off-host launch only on a receipt the owner reads with require_run_id, and 37,282 of 37,282 receipts on disk carry this run's own run_id, so no genuinely ended launch is withheld.",
+    "reuse": "the change deletes the forked reader and extends the existing owner at reckon/crew/recovery_liveness.py:1499 with a receipt name and a strict reading, and a search for other exit-receipt readers in reckon/crew found only that owner.",
+    "scope_discipline": "every hunk in git diff 1ba776d856..af3da92f84 lies in the four paths the round declares, and the write_scope_extension note covers recovery_liveness.py honestly."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to refuse a relaunch beside a worker launched on another host until an exit receipt shows that launch ended; reckon/crew/dispatch_launch.py:2228 now frees a foreign launch only on a receipt read by the owner under its strict reading.\nVERDICT done_when: the done_when names tests/test_a_worker_on_another_host_refuses_a_relaunch.py with (a1)/(a2) failing at the dispatch base and passing at head, a clean neighbours pair and clean ruff by delta; baseline-arm.log ends \"6 failed, 7 passed\" EXIT=1, after-arm.log and my own run end \"13 passed\" EXIT=0, neighbours are covered by the importer population at ceea2ae24b, and ruff shows 2 pre-existing findings and 3 pre-existing format hunks at both base and head.\nVERDICT write_paths: the round's declared paths are the fragment, dispatch_launch.py, recovery_liveness.py and the test file; every hunk in the diff lies in exactly those four.\nVERDICT manifest: read; it records commits fc13619cea/1ba776d856/ceea2ae24b/af3da92f84, both suite arms with revision, command, exit status, log path and failure ids, the declared negative control at 6 failed EXIT=1, importer populations at delta zero, and a write_scope_extension note for recovery_liveness.py.\nVERDICT diff: read ceea2ae24b and af3da92f84 commit by commit against 1ba776d856; the guard-local _exit_receipt_shows_ended is deleted, _run_exit_record gains a receipt name and a strict run-id reading, both call sites use the owner, one test case and the fragment are updated.\nVERDICT call_sites: read reckon/crew/dispatch.py:517 and reckon/crew/dispatch_launch.py:2515 and :3453 for the guard, and the default-argument callers of _run_exit_record (sprint_liveness.py:148, recovery_wait.py:1395, resumption.py:1360, recovery_classification.py:959, recovery_review_acceptance.py:454), none of which the new default changes.\nCALL_SITES: reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker, reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/sprint_liveness.py:_run_exit_record, reckon/crew/recovery_wait.py:_run_exit_record, reckon/crew/resumption.py:_run_exit_record\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2228 and :2158 free an off-host launch only on a receipt the owner reads with require_run_id, and 37,282 of 37,282 receipts on disk carry this run's own run_id, so no genuinely ended launch is withheld.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline-arm.log and after-arm.log carry revision, command and a bare EXIT= line whose figures I reproduced at head, but the fragment's neighbours claim at docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html:36 cites a head arm whose log header names fc13619cea plus uncommitted work.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every hunk in git diff 1ba776d856..af3da92f84 lies in the four paths the round declares, and the write_scope_extension note covers recovery_liveness.py honestly.\nSCORE durability: 16\nJUSTIFICATION durability: the new case at tests/test_a_worker_on_another_host_refuses_a_relaunch.py:363 reddens at 1ba776d856 (1 failed, 12 passed), but dropping require_run_id at reckon/crew/dispatch_launch.py:2158 reddens no test, so the retired receipt's strictness is unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2155-2156 keeps the file's function-local cross-module import idiom and the new keyword and docstring carry no plan, ticket or author identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the forked reader and extends the existing owner at reckon/crew/recovery_liveness.py:1499 with a receipt name and a strict reading, and a search for other exit-receipt readers in reckon/crew found only that owner.\nFINDING reckon/crew/dispatch_launch.py:2158 non-blocking: the retired-receipt call buys the strict reading but no case exercises it, so deleting require_run_id=True there leaves all 13 cases green; the commit's claim that both shapes cannot be freed on different terms is asserted for the canonical name only.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html:36 non-blocking: the fragment reports the neighbouring population at 29 passed EXIT=0 \"at both arms\", but the log behind the head arm carries a header naming fc13619cea plus uncommitted repair work rather than the reviewed head, so the cited measurement predates this round; the requirement itself is still met by the 53-file importer population run at ceea2ae24b, which includes both neighbour files at delta zero.\nFINDING manifest.md:17 non-blocking: baseline_suite and after_suite, and the tests line at manifest.md:11, record the gate command with a relative .venv/bin/python path, where the manifest contract asks for the literal command with absolute paths.\n",
+  "review_rubric": "text",
+  "review_run_id": "r-20261109T183250271017-review-of-a-worker-on-another-host-refuses-a-relaunch-af3da92f842f",
+  "reviewed_base_sha": "1ba776d8560532ddd138f115ad8ff649257e9185",
+  "reviewed_head_sha": "af3da92f842f0f0e7f1df85c3d33e82ca5681512",
+  "reviewed_run_id": "r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:58:07.041586+00:00",
+  "total": 113
+}
