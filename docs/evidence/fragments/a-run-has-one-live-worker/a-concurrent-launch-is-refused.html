@@ -1,0 +1,20 @@
+<section id="a-concurrent-launch-is-refused" data-reckon="fragment">
+  <h3 id="a-concurrent-launch-is-refused-landed">A relaunch is refused while another launch of the run is in flight</h3>
+  <p>Every relaunch of an existing run id now takes an exclusive reservation before the
+  worktree is touched, keyed once on the newest attempt receipt in the run's own directory
+  plus one. Two racing doors compute the same key, so exactly one holds it, and a door that
+  loses is refused naming the attempt in flight. The launched attempt is carried from the
+  reservation rather than re-derived, so a resume no longer launches the pointer's attempt
+  plus one. The spawn guard admits the attempt its own reservation covers and refuses another.</p>
+  <p>A reservation is freed by its launch's own end and never by age or by comparing the
+  pointer with its key: the reserving process holds it until a supervisor is recorded, and
+  the supervisor's exit frees it thereafter, which is what lets the long-lived admit service
+  launch repeatedly while a scheduler wait outlasts the launch window. An in-harness
+  relaunch takes no reservation and is refused while a CLI launch holds one.</p>
+  <p>Measured at head d36e465b39: 18 cases pass. At the dispatch base 29b47d2cb8, with the
+  new test copied in, 16 fail and 2 pass &#8212; the window is reproduced, including the
+  further launch being admitted. Eight of twelve declared mutations redden the case they
+  name; four were not made to redden (free by age, freeing by pointer comparison, freeing
+  only while the pointer is short of its key, and keying the resume on the pointer's
+  attempt) and are recorded as uncovered rather than claimed.</p>
+</section>
