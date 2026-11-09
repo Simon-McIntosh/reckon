@@ -22,7 +22,12 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import resumption, runs
+from reckon.crew import queue_admission, resumption, runs
+from tests.test_a_queued_launch_ignores_the_coordinator_backlog import (
+    _config_for,
+    _queue,
+    admit_repo,  # noqa: F401 - the imported fixture is also a parameter
+)
 from tests.test_scoring_dispatches_its_review import (
     CONFIG,
     _scoring_pointer,
@@ -64,7 +69,7 @@ def test_a_sweep_launched_review_reaches_its_attempt_record(
 ) -> None:
     """The positive half: the sweep's launcher reaches the supervisor's gate."""
     config_home, repo = isolated_project
-    source = _scoring_pointer(config_home, repo, "r-awaiting-review")
+    _scoring_pointer(config_home, repo, "r-awaiting-review")
     dispatch_module = _dispatch_module()
     started: list[str] = []
 
@@ -83,7 +88,6 @@ def test_a_sweep_launched_review_reaches_its_attempt_record(
     assert (directory / "claim.json").exists()
     assert (directory / "attempt.json").exists()
     assert started == [review_id]
-    assert source["run_id"]
 
 
 def test_a_refused_launch_leaves_no_claim_behind(
@@ -100,6 +104,7 @@ def test_a_refused_launch_leaves_no_claim_behind(
     config_home, repo = isolated_project
     _scoring_pointer(config_home, repo, "r-awaiting-review")
     dispatch_module = _dispatch_module()
+    runs_before = sorted(path.name for path in runs.runs_dir().iterdir())
 
     def refuse(*args: object, **kwargs: object) -> None:
         raise OSError("the launcher refused this run")
@@ -110,6 +115,10 @@ def test_a_refused_launch_leaves_no_claim_behind(
 
     assert not report["reviews"].get("dispatched"), report["reviews"]
     assert _review_runs() == [], _review_runs()
+    assert sorted(path.name for path in runs.runs_dir().iterdir()) == runs_before, (
+        "the refused launch left a run directory behind, which reads afterwards "
+        "as a launch that stopped rather than one that was refused"
+    )
 
 
 def test_a_launcher_that_ends_stops_after_its_attempt_record(
@@ -145,3 +154,39 @@ def test_a_launcher_that_ends_stops_after_its_attempt_record(
         "reads afterwards as a launch that never started"
     )
     assert not (directory / "worker.json").exists()
+
+
+def test_a_refused_queue_launch_keeps_no_attempt_record(
+    admit_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A refused queue launch goes back to waiting, not to a stopped attempt.
+
+    A queued request is launched by admission rather than discarded, so its
+    refusal restores the pointer to the phase it waited in instead of removing
+    the run directory. The attempt record published with the starting claim
+    describes an attempt that never ran; kept, the restored request reads
+    afterwards as a launch that stopped after its claim.
+    """
+    _, resolve = _config_for()
+    runs.queue_dispatch(_queue(admit_repo, node_id="queued", run_id="r-queued"))
+    attempt = runs.run_dir("r-queued") / "attempt.json"
+    dispatch_module = _dispatch_module()
+
+    def refuse(*args: object, **kwargs: object) -> None:
+        raise OSError("the launcher refused this run")
+
+    monkeypatch.setattr(dispatch_module, "_create_worktree", refuse)
+
+    queue_admission.admit_once(
+        config_for=resolve,
+        launcher=lambda *args, **kwargs: pytest.fail(
+            "a refused launch must not start a worker"
+        ),
+    )
+
+    restored = runs.read_pointer("r-queued")
+    assert restored["phase"] == "queued", restored.get("phase")
+    assert not attempt.exists(), (
+        "the restored request kept the attempt record of the launch that was "
+        "refused, which reads afterwards as a stranded launch"
+    )

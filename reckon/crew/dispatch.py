@@ -1531,8 +1531,19 @@ def _request_claim_restored_on_refusal(run_id, request):
         if discard_recorded(run_id):
             _release_launch_claim(run_id)
         else:
+            # The starting claim published the attempt record beside the claim.
+            # The request is going back to the queue rather than being launched,
+            # so the record it published describes an attempt that never
+            # happened: kept, the restored request would read afterwards as a
+            # launch that stopped after its claim. The claim itself stays,
+            # exactly as it did before the record was published with it.
+            _attempt_record_for(run_id).unlink(missing_ok=True)
             _write_json(pointer_path(run_id), request)
         raise
+
+
+def _attempt_record_for(run_id: str) -> Path:
+    return run_dir(run_id) / ATTEMPT_RECORD_NAME
 
 
 def dispatch(
@@ -3600,6 +3611,12 @@ def dispatch(
                     _stamp_failure,
                 )
 
+                # The starting claim published the attempt record beside the
+                # claim. This request is going back to the queue rather than
+                # running, so the record describes an attempt that never
+                # happened: kept, the restored request reads afterwards as a
+                # launch that stopped after its claim.
+                _attempt_record_for(run_id).unlink(missing_ok=True)
                 failure = f"{type(exc).__name__}: {exc}"
 
                 def restore(pointer: dict[str, Any]) -> dict[str, Any]:
