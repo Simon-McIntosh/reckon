@@ -38,7 +38,7 @@
     <thead><tr><th>case</th><th>writer</th><th>derived plan</th><th>authored plan</th></tr></thead>
     <tbody>
       <tr><td>(a)</td><td>store write path (<code>edit_plan</code> state op)</td><td>meta gone, no <code>impl-meta-stale</code></td><td>—</td></tr>
-      <tr><td>(b)</td><td>no-change patch; round-trip without the opt-in</td><td>file bytes unchanged</td><td>—</td></tr>
+      <tr><td>(b)</td><td>no-change patch; round-trip without the opt-in</td><td>no write occurs (mtime and inode unchanged); round-trip text byte-identical</td><td>—</td></tr>
       <tr><td>(c)</td><td>store write path</td><td>—</td><td><code>plan-impl</code> 0.3 kept, source <code>authored</code></td></tr>
       <tr><td>(d)</td><td>POST <code>/plan/&lt;project&gt;/&lt;slug&gt;</code></td><td>meta gone</td><td>—</td></tr>
       <tr><td>(e)</td><td><code>replace_plan_text</code></td><td>meta gone</td><td>—</td></tr>
