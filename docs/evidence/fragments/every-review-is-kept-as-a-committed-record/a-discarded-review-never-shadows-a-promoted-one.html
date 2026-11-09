@@ -20,8 +20,8 @@
     <section id="a-discarded-review-never-shadows-a-promoted-one-what-landed">
       <h2>What landed</h2>
       <ul>
-        <li><code>reckon/crew/review_records.py</code> &mdash; <code>_select_stored_record</code>, the by-head selection behind <code>stored_record</code>, <code>select_review_for_head</code> and the disposition writer, now reads each head-matching candidate's discard marker through <code>promotion.discard_record_path(review_run_id)</code> and the shared spool beside it, and drops a discarded record while another record stands at that head. A lone record at the head is still returned, so a head carrying one record is never made unreadable by its disposal. Within the remaining pool the existing rule still prefers a complete record over an incomplete one, and a parsed record now wins over one that measured nothing &mdash; the case a figure review leaves behind when it blocked without reading its images.</li>
-        <li><code>tests/test_a_discarded_review_never_shadows_a_promoted_one.py</code> (new) &mdash; three cases over a temporary crew home and a committed reviews tree holding the records. Each paired case pins the discarded record's filename before the promoted one, so a selection that ignored the discard marker would keep the discarded record. The first case resolves through <code>stored_record(..., rubric="figure")</code> to the parsed promoted record and then records a disposition through <code>crew dispose --review &lt;promoted&gt; --rubric figure</code>, asserting the receipt names the promoted file and the discarded file is untouched; the second pairs two parsed records and asserts the promoted one wins; the third holds a lone unparsed record and asserts it still resolves.</li>
+        <li><code>reckon/crew/review_records.py</code> &mdash; <code>_select_stored_record</code>, the by-head selection behind <code>stored_record</code>, <code>select_review_for_head</code> and the disposition writer, now asks <code>promotion.discard_recorded</code> &mdash; the rule's one owner, imported at call time &mdash; for each head-matching candidate's review run, and drops a discarded record while another record stands at that head. A lone record at the head is still returned, so a head carrying one record is never made unreadable by its disposal. Within the remaining pool the existing rule still prefers a complete record over an incomplete one, and a parsed record now wins over one that measured nothing &mdash; the case a figure review leaves behind when it blocked without reading its images. The same filter applies in <code>_filed_match</code>, the store's content-keyed lookup for a record filed under another run id, so a discarded review cannot shadow a promoted one through that path either.</li>
+        <li><code>tests/test_a_discarded_review_never_shadows_a_promoted_one.py</code> (new) &mdash; four cases over a temporary crew home and a committed reviews tree holding the records. Each paired case pins the discarded record ahead of the promoted one, by filename or by modification time, so a selection that ignored the discard marker would keep the discarded record. The first case resolves through <code>stored_record(..., rubric="figure")</code> to the parsed promoted record and then records a disposition through <code>crew dispose --review &lt;promoted&gt; --rubric figure</code>, asserting the receipt names the promoted file and the discarded file is untouched; the second pairs two parsed records and asserts the promoted one wins; the third holds a lone unparsed record and asserts it still resolves; the fourth files both records under their own review run ids in the staging store and asserts the misfiled lookup returns the promoted one, flagged as misfiled.</li>
       </ul>
     </section>
 
@@ -30,22 +30,23 @@
       <p>With the base revision's <code>_select_stored_record</code> in place, the new test failed exactly as the plan records: the selection at the head returned the discarded unparsed record, so the operator's <code>crew dispose --review</code> could not reach the promoted review.</p>
       <pre><code>FAILED tests/test_a_discarded_review_never_shadows_a_promoted_one.py::test_a_discarded_unparsed_record_never_shadows_a_promoted_parsed_one
 FAILED tests/test_a_discarded_review_never_shadows_a_promoted_one.py::test_a_discarded_parsed_record_never_shadows_a_promoted_parsed_one
-2 failed, 2 passed</code></pre>
+FAILED tests/test_a_discarded_review_never_shadows_a_promoted_one.py::test_a_discarded_review_filed_under_another_run_never_shadows_a_promoted_one
+3 failed, 2 passed</code></pre>
     </section>
 
     <section id="a-discarded-review-never-shadows-a-promoted-one-measure">
       <h2>Measure</h2>
       <ul>
-        <li>Node gate, <code>tests/test_a_discarded_review_never_shadows_a_promoted_one.py</code>: <code>4 passed</code>, <code>EXIT=0</code>.</li>
-        <li>Negative control, the base revision's selection applied in place: <code>2 failed, 2 passed</code>, <code>EXIT=1</code>, naming the two paired cases; the lone-record case passes in both arms.</li>
-        <li>The importer arm and the suite-delta arms are recorded in the node's manifest with their logs.</li>
+        <li>Node gate, <code>tests/test_a_discarded_review_never_shadows_a_promoted_one.py</code>: <code>5 passed</code>, <code>EXIT=0</code>.</li>
+        <li>Negative control, the base revision's selection applied in place: <code>3 failed, 2 passed</code>, <code>EXIT=1</code>. The three paired cases fail because the base returns the discarded record; the lone-record case passes in both arms.</li>
+        <li>Importer gate: all 194 importer test files ran at the head revision in five <code>-n 4</code> chunks and produced 49 failing ids across 21 files. Those 21 files ran at the base revision with the same 49 ids, so the change adds no failure against the base.</li>
         <li><code>ruff check</code> and <code>ruff format --check</code>: no findings on <code>reckon/crew/review_records.py</code>, <code>reckon/crew/review.py</code> and the new test.</li>
       </ul>
     </section>
 
     <section id="a-discarded-review-never-shadows-a-promoted-one-commits">
       <h2>Commits and records</h2>
-      <p>Code and test: <code>3a82333421</code>. Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/logs/</code>: <code>after-arm.log</code>, <code>negative-control.log</code>, <code>importers-head-arm.log</code>, <code>importers-base-arm.log</code>.</p>
+      <p>Code and test: <code>3a82333421</code> and <code>05cc4a25a2</code>. Logs under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/logs/</code>: <code>after-arm.log</code>, <code>negative-control.log</code>, <code>importers-head-arm.log</code>, <code>importers-base-arm.log</code>, <code>importers-base-failing-ids.log</code>.</p>
     </section>
   </main>
 </body>
