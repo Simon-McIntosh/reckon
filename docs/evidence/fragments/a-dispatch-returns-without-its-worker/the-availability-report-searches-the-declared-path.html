@@ -1,0 +1,36 @@
+<article class="r-fragment" id="the-availability-report-searches-the-declared-path">
+  <h3 id="the-availability-report-searches-the-declared-path-title">The availability report searches the declared path</h3>
+  <p id="the-availability-report-searches-the-declared-path-landing">
+    The flight availability report located a backend with a bare
+    <code>shutil.which(command)</code>, so a command the launcher could only find
+    through a search path declared in the flight layer was reported
+    <code>command_found: false</code> with the detail "not on PATH" while a
+    launch resolved it. The two views of one backend disagreed. The report now
+    searches the process PATH first and the backend's declared directories
+    after it, reading the declaration from the resolved backend entry it was
+    handed, so a directory declared only in a project's own layer is seen too.
+    The entry carries a new <code>command_source</code> naming which search held
+    the command — <code>"PATH"</code> or the declared directory — and a command
+    found on neither still reads <code>command_found: false</code>, with a
+    detail that names the declared directories when there are any. A backend
+    that declares no search path reads exactly as before.
+  </p>
+  <p id="the-availability-report-searches-the-declared-path-gate">
+    The gate is <code>tests/test_the_availability_report_searches_the_declared_path.py</code>
+    at head: <strong>6 passed</strong>, <code>EXIT=0</code>. With a temporary
+    project layer declaring a directory holding a stub, a host layer declaring
+    none, and a launcher PATH that misses it, the report marks the stub
+    <code>command_found</code> true and sets <code>command_source</code> to the
+    declared directory. A host-layer declaration locates it the same way; a
+    command present on the process PATH reports <code>command_source</code>
+    <code>"PATH"</code>; and a declaration pointing at an empty directory leaves
+    the report reading false.
+  </p>
+  <p id="the-availability-report-searches-the-declared-path-control">
+    Negative control: the declared arm is replaced by a bare
+    <code>shutil.which(command)</code>, and the first case fails —
+    <code>test_a_project_layer_declared_path_locates_the_backend</code> and its
+    host-layer sibling report <code>command_found</code> false, 2 failed and 4
+    passed, <code>EXIT=1</code>.
+  </p>
+</article>
