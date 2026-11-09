@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T11:04:45.009Z",
+  "dispatched_at": "2026-11-09T10:52:54Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:169",
+      "id": "evidence_paths-1",
+      "reason": "the investigation is required to prove each excluded door \"with the record that rules it out\", and this exclusion has no openable record, so the node must either take the admit's innocence on trust or reopen the one candidate whose launcher pid and code stamp the handover would have named.",
+      "text": "the Why rules out the admit service with \"its code stamp did not change from 06:40 to 07:00, and no pass around 06:54:04 names the run\", but `admission-verdicts.jsonl` is trimmed to its newest 1 MB (`ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576`) and now begins at 2026-11-09T07:59:29Z, so no surviving record covers the window the exclusion rests on and the node cannot cite the field that rules the admit door out",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-run-has-one-live-worker.html:169",
+      "id": "reasoning-1",
+      "reason": "the sentence presents the shim as the marker of a reckon launch and then attributes the shim-less launch to reckon components, so a node reading it can exclude the very dispatch door it should test; naming the in-allocation condition turns the discriminator into the in-allocation/out-of-allocation split the evidence actually supports.",
+      "text": "\"reckon's own shim \u2026 which `reckon/crew/dispatch_launch.py` puts on a reckon launch's PATH\" is stated unconditionally, but `dispatch_launch.py:684-693` appends the srun shim only when the launching process's own `host.host_facts().in_allocation` is true and the launch is unfenced (`host.py:228-243`), so a `crew dispatch` or `crew resume` invoked from a login-node shell, a follower or the station records `/usr/bin/srun` exactly as attempt 2 does",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4c9c3a35e23181082c30da4be70ee512923f8d4c",
+  "plan_fingerprint": "725127efcb5df0e7ed2b809f78cc65f26add6d1948161fb41b554e737e4c1032",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 117,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T105011501437-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "6d28086748f906b4f1bccb756606b541d67bbabb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the attempt records, `claim.json`, `attempt-1-superseded.md`, `reckon/crew/dispatch_launch.py`, `checkout_trust._committed_reload_tree`, commit 7f24f669e0 and the evidence-fragment directory all resolve; `git cat-file -p 01863fb71f` lists the three entries the plan names.",
+    "done_when": "pass \u2014 every required output names the record field or file it must cite, and the added negative control (two stamps from different revisions must resolve to different commits) is a check that fails if the mapping ignores its input, so it can be red.",
+    "evidence_paths": "a finding \u2014 the admit service is excluded by \"its own verdicts\" for 06:40\u201307:00, and the only log that holds those verdicts is size-trimmed, with its earliest retained row at 2026-11-09T07:59:29Z.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the section or its write path; the fragment filename names the run under investigation, which is a record identity rather than a plan label.",
+    "reasoning": "a finding \u2014 the shim discriminator is stated as if every reckon launch carries `host_shims/srun`, while `dispatch_launch.py:689-690` adds it only when `placement.in_allocation`, so the field separates in-allocation from out-of-allocation launches, not reckon launches from other launchers.",
+    "single_goal": "pass \u2014 s14 delivers one read-only investigation; the code-stamp mapping is the sub-question that decides its third explanation, not a separable deliverable.",
+    "wiring": "pass \u2014 s14 is an investigation with no section it must wait on (the guards it reads, \u00a710 and \u00a711, are landed), the plan-level `depends-on a-crew-process-ends-with-its-owner` resolves, and the plan declares no informs/gates relation for s14 that could point at the wrong node."
+  },
+  "section_digests": {
+    "_document": "1c3d70f0e54cc9a6e35ef49c72011f0d48ac62ffe138725d2f876465d599cf6a",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "bb87c092b98c2abcd94ee3385697253096c22e7ae0828887cb91a55c0a6cd285",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T11:21:03.804587+00:00",
+  "total": null
+}
