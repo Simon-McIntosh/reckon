@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:09:56.387Z",
+  "dispatched_at": "2026-11-09T14:03:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "reasoning-1",
+      "reason": "the node must either change `run_holds_an_attempt_record` or move the reservation ahead of the marker, and \u00a716 says neither, so a literal implementation satisfies one clause by breaking the other and re-breaks \u00a713's fresh-launch rule for every dispatch.",
+      "text": "\u00a716 asks for two things that pull against each other and names no discriminator between them: \"The attempt marker is written for a fresh launch, in a directory that exists by then\" and \"A first launch under a fresh run id takes no reservation and keeps the attempt it was dispatched with\". The marker is written at `dispatch.py:2773` and the reservation is decided at `dispatch.py:2857` by `run_holds_an_attempt_record(run_dir(run_id))`, whose first clause is `(run_directory / ATTEMPT_RECORD_NAME).exists()` (`dispatch_launch.py:2212`). Making the directory exist for a fresh launch therefore makes that launch's own `attempt.json` the reason it takes a reservation, so the repair for defect (2) reproduces defect (1) for every fresh launch, not only the paired shadow's \u2014 and \u00a713 explicitly declares the in-flight `attempt.json` \"deliberately not a receipt\" for the key, which this predicate contradicts",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s15",
+      "id": "reasoning-2",
+      "reason": "the third change is stated in full immediately below the miscount and the section's own (b1) case reddens without it, so the gate catches it before the node closes.",
+      "text": "\u00a715 says \"Two paths in `_launch_refused_by` change\" and then enumerates First, Second and Third, where the third (reading the canonical `exit.json` while `worker.json` exists) is what makes done-when case (b1) pass; a node implementing exactly the two paths the sentence counts would leave (b1) red",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16",
+      "id": "done_when-1",
+      "reason": "the three listed test files are the only ones a node can write under the fence, so the case lands in `test_a_concurrent_launch_is_refused.py` by elimination; naming it would remove a coin-flip rather than change what is built.",
+      "text": "\u00a716's done-when requires three new failing-at-base cases but names no file to put them in, while its write paths list only three existing test files and no new one (`tests/test_a_concurrent_launch_is_refused.py`, `tests/test_a_resume_never_launches_beside_another_node.py`, `tests/test_staged_write_inventory.py`)",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "05936bd7d1c33f5f7c93574537d7e4e1681a222f",
+  "plan_fingerprint": "bc7684ac308b1de63531131e25e04f30275a4871ff26b5945c523d6eff566016",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 128,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T140120075633-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "b3c68d5a522cf0a173bee958f255124a9873a35a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 checked and resolving: `_launch_refused_by` at `dispatch_launch.py:2125` (as \u00a715 says), `_retired_attempt_ended` at :2083, `live_worker_reading`'s off-host `return LivenessReading(LIVENESS_UNKNOWN, None)` at `recovery_liveness.py:~1362`, `_record_is_known_foreign` at :1231, `_live_worker_refusal` at :2044 with exactly three callers (`dispatch.py:521`, `dispatch_launch.py:2516`, `:3454`), `contextlib.suppress(OSError)` around the supervisor write at `dispatch_launch.py:~2440`, paired-arm pre-create at `dispatch.py:1351`, `_store_brief` at :2558, the marker at :2773, the later `directory.mkdir` at :2894, `claim_next_attempt` at `resumption.py:389`, and both evidence anchors (`docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html`, `docs/evidence/archive/a-run-has-one-live-worker-landed.html`).",
+    "done_when": "pass \u2014 \u00a715 names a declared negative control (the base arm: \"(a1) and (a2) fail at the dispatch base and pass at the head\"), \u00a716 names a base arm per behaviour change plus a declared mutation with logged FAILED ids, and the guard-shaped cases that pass at both arms (c)/(d) are labelled as guards rather than passed off as controls.",
+    "evidence_paths": "pass \u2014 every gate log is named under the run directory (`~/.config/reckon/crew/runs/<run>`), never a scratchpad or node-local `/tmp`; the \u00a715 and \u00a716 evidence is a test file plus run-directory logs.",
+    "naming": "pass \u2014 the new test files are named by behaviour (`test_a_worker_on_another_host_refuses_a_relaunch.py`, `test_a_concurrent_launch_is_refused.py`); no version tags, ticket numbers or stage names reach any path, symbol or comment named by the plan.",
+    "reasoning": "a finding \u2014 \u00a715's root cause reproduces exactly and its mechanism reaches it, but \u00a716 states two repairs that are in tension with the predicate the launch uses today. Verified root cause: `_launch_refused_by` (`dispatch_launch.py:2125`) refuses `alive is True` and `arm == LIVENESS_PLACED and alive is None`, then `return False`, so the `LivenessReading(LIVENESS_UNKNOWN, None)` that `live_worker_reading` returns for a foreign `launcher_host` admits the launch \u2014 \"there is no worker\" is the code's own answer, as \u00a715 says. \u00a715's three `_launch_refused_by` changes also match the code they repair (`_retired_attempt_ended` is skipped while `worker.json` exists; the branch then ends on `_worker_record_liveness(record) is not False`, which is `True` for the `None` a foreign record answers). \u00a716's claims are likewise exact against the code (`run_holds_an_attempt_record` counts `attempt.json`; `_supervisor_write` returns False without creating the directory; the reserved `attempt` overwrites the ledger-derived one). The one defect is the discriminator \u00a716 leaves unnamed.",
+    "single_goal": "pass \u2014 each section names one goal; \u00a716's six folded defects are all the launch reservation's own lifecycle (keying, marker, supervisor record, dead claim pair), not six unrelated deliverables.",
+    "wiring": "pass \u2014 `plan-depends-on` `a-crew-process-ends-with-its-owner` exists at `docs/plans/a-crew-process-ends-with-its-owner.html`; every `plan-section-depends-on` edge (s7\u2192s6, s9\u2192s8, s10\u2192s11, s15\u2192s13, s16\u2192s15) resolves to a section, and each matches the shared-write-path reason its followup states (\u00a716 writes `dispatch.py` and `dispatch_launch.py` as \u00a715 does; \u00a715 writes `dispatch_launch.py` as \u00a713 does)."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "1889fab3878052c0948c5278d33126d867c5d9280fc2c51c5428ef2435209a27",
+    "s16": "9ee2fb3ef7d4ab57117ff6d02aa8e0e051154b468f3de14fff39363a99fbfe8b",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:18:17.188203+00:00",
+  "total": null
+}
