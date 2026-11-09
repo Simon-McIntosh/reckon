@@ -206,19 +206,18 @@ def _recorded_gate_passed(
     return gate_check, tuple(commits)
 
 
-def _commits_missing_from(repository: Path, commits: Sequence[str]) -> list[str]:
+def _commits_missing_from_local_head(
+    repository: Path, commits: Sequence[str]
+) -> list[str]:
     """The named commits that are not ancestors of the repository's HEAD.
 
-    A run's work is only landable once a coordinator has merged it onto the
-    branch the checkout carries; a run reaching acceptance straight after its
-    review has not been merged, so its commits are absent from the primary
-    branch and a gate re-run here would verify a tree the change is not in.
-    ``git merge-base --is-ancestor`` answers with status 0 for an ancestor, 1
-    for a commit present but not an ancestor, and any other status for an
-    instrument fault — an unresolvable object, a checkout that is not a work
-    tree, git itself failing. Status 1 is the only one read as "not merged";
-    every other failure raises, because an instrument that cannot answer must
-    not be reported as the answer "not an ancestor".
+    The answer for a checkout that configures no remote, where there is no
+    remote branch to be off. ``git merge-base --is-ancestor`` answers with
+    status 0 for an ancestor, 1 for a commit present but not an ancestor, and
+    any other status for an instrument fault — an unresolvable object, a
+    checkout that is not a work tree, git itself failing. Status 1 is the only
+    one read as "not merged"; every other failure raises, because an instrument
+    that cannot answer must not be reported as the answer "not an ancestor".
     """
     missing: list[str] = []
     for commit in commits:
@@ -250,6 +249,78 @@ def _commits_missing_from(repository: Path, commits: Sequence[str]) -> list[str]
             f"{(probe.stderr or probe.stdout).strip()}"
         )
     return missing
+
+
+def _commits_missing_from(
+    repository: Path, commits: Sequence[str]
+) -> tuple[list[str], dict[str, Any] | None]:
+    """The named commits the remote primary branch does not carry, and any refusal.
+
+    A run's work is only landable once a coordinator has merged it onto the
+    branch the remote carries. A checkout whose ``main`` was fast-forwarded and
+    whose push then failed carries the run's commits locally while the remote
+    has never seen them, so reading the checkout's own HEAD would promote work
+    no other reader can find. The answer therefore comes from the module that
+    lands work, :func:`reckon.crew.merge.head_on_remote_branch`, and is the
+    same ancestry the merge lands by rather than a second convention.
+
+    The remote is the authority, so a remote that could not be read, or one
+    carrying no primary ref, is never read as "not missing" — either answer
+    would promote work the remote may not have. Those return a refusal in place
+    of the missing list, naming the cause, for the caller to record instead of
+    promoting. A checkout that configures no remote has no remote branch to be
+    off, so there the local branch is judged as it was before.
+    """
+    from reckon.crew import merge as merge_module
+
+    missing: list[str] = []
+    shas = [str(commit).strip() for commit in commits if str(commit).strip()]
+    for sha in shas:
+        try:
+            answer = merge_module.head_on_remote_branch(repository, sha)
+        except merge_module.MergeError as fault:
+            return [], {
+                "cause": merge_module.REMOTE_UNREACHABLE,
+                "head": sha,
+                "detail": str(fault),
+            }
+        cause = answer.get("cause")
+        if cause == merge_module.REMOTE_UNCONFIGURED:
+            return _commits_missing_from_local_head(repository, shas), None
+        if cause is not None:
+            return [], {
+                "cause": cause,
+                "head": sha,
+                "remote": answer.get("remote"),
+                "branch": answer.get("branch"),
+                "detail": answer.get("detail"),
+            }
+        if not answer.get("on_branch"):
+            missing.append(sha)
+    return missing, None
+
+
+def _remote_unreadable_reason(
+    refusal: Mapping[str, Any], commits: Sequence[str]
+) -> str:
+    """Why acceptance could not ask the remote, in the words a coordinator reads."""
+    from reckon.crew import merge as merge_module
+
+    names = ", ".join(
+        str(commit).strip()[:12] for commit in commits if str(commit).strip()
+    )
+    remote = str(refusal.get("remote") or "origin")
+    branch = str(refusal.get("branch") or "the primary branch")
+    if refusal.get("cause") == merge_module.REMOTE_UNREACHABLE:
+        return (
+            f"{remote} could not be read, so it is unknown whether the run's "
+            f"commits ({names}) are on {branch}: "
+            f"{str(refusal.get('detail') or '').strip()}"
+        )
+    return (
+        f"{remote} carries no {branch}, so the run's commits ({names}) are not "
+        "on the primary branch"
+    )
 
 
 def accept_clean_review(
@@ -307,12 +378,20 @@ def accept_clean_review(
             "accepted": False,
             "reason": "the run records no passing gate to re-run at the merged head",
         }
-    # The run's work must already be on the branch this checkout carries. A run
+    # The run's work must already be on the branch the remote carries. A run
     # reaching acceptance straight after its review has not been merged, so a
     # gate re-run here would verify a tree the change is not in and record a
-    # promotion whose commits never landed. Only a coordinator merges; this
-    # handler stands down and says which commits are missing.
-    missing = _commits_missing_from(checkout, commits)
+    # promotion whose commits never landed. A remote that cannot be read, or
+    # that carries no primary ref, is that same state with no way to check it,
+    # so acceptance stands down naming the cause rather than promoting blind.
+    missing, remote_refusal = _commits_missing_from(checkout, commits)
+    if remote_refusal is not None:
+        return {
+            "run_id": run_id,
+            "accepted": False,
+            "reason": _remote_unreadable_reason(remote_refusal, commits),
+            "remote_cause": remote_refusal.get("cause"),
+        }
     if missing:
         return {
             "run_id": run_id,
