@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T08:02:26Z",
+  "dispatched_at": "2026-11-09T05:28:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:550",
+      "id": "reasoning-1",
+      "reason": "the remedy as written removes the tick's own publication along with the re-publication that causes the cost, and the clause must be scoped to the owed-review pass's read.",
+      "text": "\u00a719's deliverable says \"no read inside the tick publishes the watch stream\", but the tick's own `pointers = list_live(project=project)` (`reckon/crew/recovery_watch.py:3339`) is exactly what publishes it (`reckon/crew/runs.py:1132`), so a worker implementing the clause literally stops the producer publishing its own stream, which is the seat's job",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:550",
+      "id": "done_when-1",
+      "reason": "a limb with no record to read and no base comparison cannot be shown to fail, so the node's gate cannot prove it.",
+      "text": "\u00a719's \"three consecutive producer ticks for project reckon, each under 30 s\" names no instrument to read a completed tick's duration and no negative control; the station's tick record carries a tick's start (`reckon/crew/station.py:433\u2013438`, \"the start is what makes the tick's age measurable at all\"), which dates a running tick rather than giving the duration of a finished one",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:549",
+      "id": "single_goal-1",
+      "reason": "one verdict would prove neither, and the tick bound can land, and be reviewed, without the read-dedup.",
+      "text": "\u00a719 bundles two independently closable deliverables: reading the pointer set once and passing it through the pass, and bounding the tick so it reaches the reload check; each has its own test and its own mechanism",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:22",
+      "id": "wiring-1",
+      "reason": "a coordinator dispatching the plan's next step from its followups would never reach \u00a719, so the new section would sit unbuilt.",
+      "text": "`_document` declares \u00a719 `implementable`, but the plan's only open followup is `f-tmref-004`, which recommends \u00a77 (\u00a78\u2013\u00a712 are named in its body as accompanying it); nothing in the followups carries \u00a719's invocation",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:544",
+      "id": "done_when-2",
+      "reason": "the section text and its own closing comment disagree, and the stale limb is a done-when that passes on the unfixed tree, so \u00a718's gate proves only the reaper half.",
+      "text": "the `_document` change declares \u00a718 done and adds a comment saying the re-delivery limb \"already holds at base\" and is withdrawn, but the \u00a718 body still asserts the re-delivery deliverable and its done-when still measures a run \"resumed twice \u2026 gets its review dispatched by the next sweep\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d866b6a75e97d36203125bbd8b73d69c37070778",
+  "plan_fingerprint": "52d49c61f91d0202a98cbe6765f9ee7de2a759d51d71ea24f28fecca76a1b797",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 127,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T052656190592-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "3f0d3e25070846234952055e1be0eaa513a02846",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `plan_review.py:3782` is the `_standing_plan_review` call, and `_publish_watch_stream` (`runs.py:1132`), `_compute_watch_snapshot` (`recovery_watch.py:1373`), `classify_pointer` (`recovery_classification.py:792`), `_resolved_review_config` (`recovery_review_dispatch.py:2109`), `flight.resolve` (`flight.py:2093`) and both test files \u00a718's comment cites all resolve.",
+    "done_when": "a finding \u2014 \u00a719's live measure (\"three consecutive producer ticks \u2026 each under 30 s\") names no instrument and no negative control; \u00a718, declared done, still carries the re-delivery limb its own close comment says was withdrawn, and that limb's done-when passes on the unfixed tree.",
+    "evidence_paths": "pass \u2014 the gate test lives in `tests/` and the plan's convention puts census and run logs in the run directory; the live measure's missing log is recorded under `done_when`.",
+    "naming": "pass \u2014 the section's symbols are named by the mechanism (a tick reads live pointers once; a tick does not outlive its reload), and the test file carries no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a719's own remedy (\"no read inside the tick publishes the watch stream\") contradicts the code path it describes, because `watch_ticker` lists the fleet with `list_live(project=project)` (`recovery_watch.py:3339`) and that call is what publishes the stream (`runs.py:1132`).",
+    "single_goal": "a finding \u2014 \u00a719 carries two independently closable behaviours, reading the pointer set once and bounding the tick so it reaches the reload check, each with its own test and its own mechanism.",
+    "wiring": "a finding \u2014 \u00a719 is declared `implementable`, but the plan's only open followup is `f-tmref-004`, which recommends \u00a77; no open followup names \u00a719, so the build chain carries no pointer to the new section."
+  },
+  "section_digests": {
+    "_document": "45b1cf4f712fbc2ead523cafde5258f887bf6ae067d3a2e50095557ca1db086d",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "2e33fce810bfc3db181424eb6a3b484e884773cf8d252af96c6d7b484498eb07",
+    "s19": "d328fa60cb034c8639714ed68fa057714c31544fae8556eabe99e5d4ba740b09",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:07:04.776042+00:00",
+  "total": null
+}
