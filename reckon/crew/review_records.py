@@ -459,19 +459,30 @@ def _select_stored_record(
     Every candidate file is read once. A named head keeps only a record whose
     normalised head carries it — a stored record's head is compared to the named
     one as a prefix in either direction, so a short sha names its full record
-    and a full sha names its short preservation copy. Among the records at that
-    head a complete one is preferred over an incomplete one, whichever is
-    newer: a re-review that finished its scoring is the evidence the gate needs,
-    and the file order that names the review runs says nothing about whether a
-    run measured anything. Where no complete record sits at the head, the first
-    head-matching record is returned, so an incomplete review is still read and
-    the gate still refuses on it rather than reporting that no review exists.
-    Without a named head the newest file is returned. A file that cannot be read
-    or does not parse — a record a review worker is composing by hand can be met
-    mid-write — is skipped and named to the caller, because a truncated file
-    would otherwise read as "this run has no review". ``(None, None)`` means no
-    readable record among the candidates; the caller decides whether that
-    settles the search or falls through to another tree.
+    and a full sha names its short preservation copy.
+
+    A record whose review run was discarded — asked of
+    :func:`reckon.crew.promotion.discard_recorded`, the rule's one owner — is
+    not selected while another record exists at that head: the discard says the
+    fleet gave that review up, and a later review of the same revision is the
+    evidence a reader means. A lone record is still read, so a head whose only
+    review was discarded still describes that review rather than reporting that
+    no review exists.
+
+    Among the remaining records a complete one is preferred over an incomplete
+    one, whichever is newer, and a parsed one over one that measured nothing: a
+    re-review that finished its scoring, or a figure review whose images it
+    actually read, is the evidence the gate needs, and the file order that names
+    the review runs says nothing about whether a run measured anything. Where no
+    such record sits at the head, the first head-matching record is returned, so
+    an incomplete review is still read and the gate still refuses on it rather
+    than reporting that no review exists. Without a named head the newest file
+    is returned. A file that cannot be read or does not parse — a record a
+    review worker is composing by hand can be met mid-write — is skipped and
+    named to the caller, because a truncated file would otherwise read as "this
+    run has no review". ``(None, None)`` means no readable record among the
+    candidates; the caller decides whether that settles the search or falls
+    through to another tree.
     """
     records: list[tuple[Path, Any, int]] = []
     for path in paths:
@@ -490,18 +501,35 @@ def _select_stored_record(
         path, record, _mtime_ns = max(records, key=lambda item: item[2])
         return path, record
     named = reviewed_head_sha.strip().lower()
-    first_match: tuple[Path, Any] | None = None
+    matches: list[tuple[Path, Any]] = []
     for path, record, _mtime_ns in records:
         _, _, carried_head, stored_head = _review.carried_revision_pair(record)
         if not carried_head or not stored_head:
             continue
         actual = stored_head.lower()
         if actual.startswith(named) or named.startswith(actual):
-            if _record_reads_complete(record):
-                return path, record
-            if first_match is None:
-                first_match = (path, record)
-    return first_match if first_match is not None else (None, None)
+            matches.append((path, record))
+    if not matches:
+        return None, None
+    from reckon.crew import promotion
+
+    undiscarded = [
+        item
+        for item in matches
+        if not promotion.discard_recorded(
+            str(item[1].get("review_run_id") or "").strip()
+        )
+    ]
+    pool = undiscarded or matches
+
+    def rank(item: tuple[Path, Any]) -> tuple[bool, bool]:
+        _path, record = item
+        return (
+            _record_reads_complete(record),
+            str(record.get("status") or "") == "parsed",
+        )
+
+    return max(pool, key=rank)
 
 
 def _record_with_merged_answers(
@@ -975,7 +1003,16 @@ def _filed_match(
     newest candidate that does match is returned carrying
     :data:`MISFILED_KEY`, because a file sitting at another run's path is what
     this lookup exists to report.
+
+    A record whose review run was discarded loses to one whose run was kept, the
+    same rule the run's own files are selected under, so a discarded review's
+    record filed under another run id cannot shadow a promoted one. With no
+    undiscarded match a discarded record is still returned: the lookup answers
+    what the store holds rather than reporting that it holds nothing.
     """
+    from reckon.crew import promotion
+
+    matches: list[tuple[Path, dict[str, Any]]] = []
     for entry in sorted(candidates, key=lambda item: item["mtime_ns"], reverse=True):
         if not _indexed_head_matches(entry, named):
             continue
@@ -1001,10 +1038,19 @@ def _filed_match(
             actual = stored_head.lower()
             if not (actual.startswith(named) or named.startswith(actual)):
                 continue
-        record = dict(record)
-        record[_review.MISFILED_KEY] = True
-        return path, record
-    return None
+        filed = dict(record)
+        filed[_review.MISFILED_KEY] = True
+        matches.append((path, filed))
+    if not matches:
+        return None
+    undiscarded = [
+        item
+        for item in matches
+        if not promotion.discard_recorded(
+            str(item[1].get("review_run_id") or "").strip()
+        )
+    ]
+    return (undiscarded or matches)[0]
 
 
 # ── The store index ─────────────────────────────────────────────────────────

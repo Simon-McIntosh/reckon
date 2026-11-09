@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own gate logs: baseline_suite at 3118c2969a13 and after_suite at 2022e984b4 both completed with failure_count 5 and the identical five ids (three in test_a_crashed... )",
+  "call_sites": "reckon/crew/fleet_node.py:216, reckon/crew/fleet_supervisor.py:2625",
+  "call_sites_note": "fleet_node.py:196 builds ' --standby' as supervisor_args and :216 execs fleet-supervisor in the requeued batch script, which reaches main() at fleet_supervisor.py:2625 and serve(environ, standby=True); restarted_own_job has no other caller.",
+  "completed_at": "2026-11-09T12:38:59.960Z",
+  "dispatched_at": "2026-11-09T12:30:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "test-strength or log-header note; the discriminating assertion and the importer after-arm at the head carry the evidence",
+      "recorded_at": "2026-11-09T12:42:41.652588+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "test-strength or log-header note; the discriminating assertion and the importer after-arm at the head carry the evidence",
+      "recorded_at": "2026-11-09T12:42:53.231514+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_requeued_fleet_job_resumes_service.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "text": "assert published[\"job_id\"] == \"1291586\" compares against the record the test itself seeded, so it holds whatever the code does; negative-control.log shows it passing at the base revision while line 166 is what reddens."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": 2512,
+      "severity": "non-blocking",
+      "text": "the auto-promotion block restates promote()'s sequence (publish_record, reserve_fleet_projects, reload, ensure) instead of sharing promote() at :2537, so a later added step never reaches the requeued-restart path."
+    },
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": 578,
+      "severity": "non-blocking",
+      "text": "restarted_own_job repeats the state-record read and job_id comparison that requeue_notice performs at :559-566; a shared reader would keep both requeue judgements on one definition."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T120446808104-a-requeued-fleet-job-resumes-its-services/gate-head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the gate log header names revision 3118c2969a13 while the tree carried the uncommitted head change, so the 3-passed receipt cannot be tied to 2022e984b4 from its own header; the importer after-arm at 2022e984b4 does carry it."
+    }
+  ],
+  "node": "a-requeued-fleet-job-resumes-its-services",
+  "plan": "work-is-never-stuck-behind-the-admission-loop",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a requeued fleet job's standby supervisor promotes itself and starts its services; reckon/crew/fleet_supervisor.py:2511 derives is_standby = standby and not restarted_own_job(environ), so a requeued standby takes the non-standby path and starts the station and declared services.\nVERDICT done_when: the done-when names tests/test_a_requeued_fleet_job_resumes_service.py with a restart case, an other-job case and a base-revision negative control; the manifest records the gate at 3 passed EXIT=0 and the negative control at 1 failed EXIT=1, and the importer arms at 0 added failure ids.\nVERDICT write_paths: the manifest declares fleet_supervisor.py, the new test, an evidence fragment and a figures directory; the commit touches exactly the first three, so every changed path is inside the declared scope.\nVERDICT manifest: read; it states status complete, commit 2022e984b4, gate 3 passed EXIT=0, negative control 1 failed EXIT=1, importer arms 5 failed/164 passed base against 5 failed/167 passed head, and names all four logs on disk.\nVERDICT diff: read commit 2022e984b4 against base 3118c2969a13; it adds restarted_own_job at fleet_supervisor.py:578, computes is_standby once at :2511 and threads it through the publish, the starter calls, the promote closure and the re-exec at :2601, and adds a three-case test file plus a landing fragment.\nCALL_SITES: reckon/crew/fleet_node.py:216, reckon/crew/fleet_supervisor.py:2625\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: fleet_supervisor.py:2511 implements the plan's exact predicate through restarted_own_job at :578 (record job_id equals SLURM_JOB_ID and SLURM_RESTART_COUNT above zero) and the other-job and no-restart cases at tests/test_a_requeued_fleet_job_resumes_service.py:170 and :180 keep the standby behaviour.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-head.log ends 3 passed in 10.12s EXIT=0 and negative-control.log fails at tests/test_a_requeued_fleet_job_resumes_service.py:166 with 'some-old-node' == '98dci4-clu-2023', but gate-head.log:1 names revision 3118c296 rather than the head 2022e984b4, so that receipt cannot be tied to the reviewed commit by its own header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/fleet_supervisor.py, tests/test_a_requeued_fleet_job_resumes_service.py and the evidence fragment, all inside the manifest's declared write paths, with no unrelated change.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_requeued_fleet_job_resumes_service.py:166 and :167 redden when the restart check is removed, as negative-control.log shows at the base revision, though the adjacent :165 assertion is not independent of the value the test wrote.\nSCORE fit: 15\nJUSTIFICATION fit: restarted_own_job at fleet_supervisor.py:578 follows the module's Mapping/state_directory idiom and carries no plan label, but the auto-promotion block at :2512-2514 and :2533-2535 restates promote()'s body at :2537-2547 instead of sharing it.\nSCORE reuse: 13\nJUSTIFICATION reuse: no existing owner computes restart detection (grep found no other SLURM_RESTART_COUNT reader), but fleet_supervisor.py:578 repeats the state-record read and job_id comparison that requeue_notice already performs at :559-566.\nFINDING tests/test_a_requeued_fleet_job_resumes_service.py:165 non-blocking: assert published[\"job_id\"] == \"1291586\" compares against the record the test itself seeded (record_job=\"1291586\"), so it holds whatever the code does; negative-control.log proves it, passing at line 165 at the base revision and failing only at line 166. The independent node assertion at :166 makes this redundant rather than load-bearing.\nFINDING reckon/crew/fleet_supervisor.py:2512 non-blocking: the auto-promotion block repeats promote()'s sequence (publish_record, reserve_fleet_projects, then services.reload and station_process.ensure at :2533-2535) instead of sharing :2537-2547, so a step later added to promote() will not reach the requeued-restart path.\nFINDING reckon/crew/fleet_supervisor.py:578 non-blocking: restarted_own_job re-reads the state record and compares its job_id exactly as requeue_notice does at :559-566; a shared reader would keep the two requeue judgements on one definition of the record's job identity.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T120446808104-a-requeued-fleet-job-resumes-its-services/gate-head.log:1 non-blocking: the gate log's header names revision 3118c2969a13 while the tree it measured carried the uncommitted head change, so the 3-passed receipt cannot be tied to 2022e984b4 from its own header; the importer after-arm at revision 2022e984b4 does carry it and shows the three new cases among 167 passed.\n",
+  "review_run_id": "r-20261109T122811409201-review-of-a-requeued-fleet-job-resumes-its-services-2022e984b4c4",
+  "reviewed_base_sha": "3118c2969a13d7158cfdd43db3db67747bcb2c66",
+  "reviewed_head_sha": "2022e984b4c4a1c10045682a040d53e457c2b6fb",
+  "reviewed_run_id": "r-20261109T120446808104-a-requeued-fleet-job-resumes-its-services",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:36:24.285008+00:00",
+  "total": 100
+}

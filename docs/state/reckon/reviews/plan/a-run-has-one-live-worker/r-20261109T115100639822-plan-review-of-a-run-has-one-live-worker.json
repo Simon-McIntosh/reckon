@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T12:01:14.634Z",
+  "dispatched_at": "2026-11-09T11:53:00Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:169",
+      "id": "reasoning-1",
+      "reason": "\u00a714's done-when directs the investigation to start from that field and to rule out the other doors from it, so a premise stated backwards is the sentence a node leans on when it decides which launch doors to exclude.",
+      "text": "\u00a714 states that `dispatch_launch.py` \"appends that scheduler shim to a launch's PATH\", but `_worker_environment` composes `os.pathsep.join([*directories, *inherited_entries, *declared_entries])` where the scheduler shim directory is inside the leading `directories` block and only the backend's declared search path is appended last (`reckon/crew/dispatch_launch.py:689`, `:717`); as written a reader concludes an inherited directory outranks the shim, which would make `argv[0] == /usr/bin/srun` say nothing about allocation membership, while the true prepend is exactly what makes \"launched from outside the allocation\" follow",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:100",
+      "id": "anchors_resolve-1",
+      "reason": "each anchor also names its file and symbol, so a node greps the name and lands correctly; correcting the numbers changes no design decision, only a reader's first jump.",
+      "text": "five \"near line\" anchors in the unbuilt and adjacent sections no longer point near their symbol: `_supervisor_spawn_worker` \"near line 2759\" (\u00a75) and \"near line 2809\" (\u00a79) is at `dispatch_launch.py:3042`; `_prepare_attempt_records` \"near line 1943\" (\u00a79) and \"near line 1958\" (\u00a713) is at `dispatch_launch.py:2161`; \"`dispatch.py` creates the worktree first, near line 2773\" (\u00a710) is `_create_worktree` called at `dispatch.py:2867`",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "930ce36532fba7666a0701e6a0b063774b603a16",
+  "plan_fingerprint": "dc8470324d8a33c80444b912229326a0005385f6377094c5b17aa33a04b73b33",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 120,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "the dispatch states the shim's precedence explicitly: _worker_environment places the scheduler shim directory ahead of inherited PATH entries (dispatch_launch.py near :689 and :717), so /usr/bin/srun as argv[0] means the shim was absent, not outranked",
+      "when": "2026-11-09T12:11:17.428681+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "each pointer names its function, so a reader resolves it by symbol, as the reviewer notes; the line numbers drift with every landing and rewriting them changes no work",
+      "when": "2026-11-09T12:11:24.581599+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "each pointer names its function, so a reader resolves it by symbol, as the reviewer notes; the line numbers drift with every landing and rewriting them changes no work",
+      "when": "2026-11-09T12:11:24.581599+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "the dispatch states the shim's precedence explicitly: _worker_environment places the scheduler shim directory ahead of inherited PATH entries (dispatch_launch.py near :689 and :717), so /usr/bin/srun as argv[0] means the shim was absent, not outranked",
+      "when": "2026-11-09T12:11:17.428681+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-run-has-one-live-worker.v120.json",
+  "review_run_id": "r-20261109T115100639822-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "4ae5bfb28dffb3d2a7a8582ba84fd46458a45951",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every cited symbol and file resolves (`claim_next_attempt`, `_claim_may_be_reclaimed`, `_retired_attempt_ended`, `admit_once`, `_committed_reload_tree`, `ADMISSION_VERDICT_LOG_MAX_BYTES`, `record_resumption`, `supervised_launch`, the evidence directory, the companion plan), but five \"near line\" anchors no longer sit near their symbol.",
+    "done_when": "pass \u2014 each unbuilt node names a reproducing measure plus declared negative controls that redden a named case: \u00a713 lists 15 cases with 15 controls each keyed to the case it reddens (e.g. \"freeing by age fails the launcher-waiting case\"), and \u00a714's control (two code stamps that must resolve to different commits) can fail, so neither done-when is an assertion that holds however the code behaves.",
+    "evidence_paths": "pass \u2014 \u00a713 requires every gate log under the run directory with a revision header and a bare `EXIT=` last line, and \u00a714 writes `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html`, a durable repo path in a directory that already holds nine sibling fragments; no node puts evidence in a scratchpad.",
+    "naming": "pass \u2014 no new symbol, file or comment carries a plan label, stage name or ticket number; the proposed work names mechanisms (\"reservation\", \"session-walk arm\", \"placed reading\") and the `\u00a7N` references appear only in the plan document itself, which is their home.",
+    "reasoning": "a finding \u2014 \u00a714 states that the dispatcher \"appends\" the scheduler shim to a launch's PATH and concludes from `/usr/bin/srun` that the launcher was outside the allocation; the code prepends it, which is what makes the conclusion sound, so the stated mechanism and the conclusion it supports disagree.",
+    "single_goal": "pass \u2014 \u00a713 is one deliverable (one attempt reservation taken at every relaunch door), \u00a714 is one deliverable (a read-only investigation naming the launching door), and the landed sections each close on a single verdict.",
+    "wiring": "pass \u2014 `plan-depends-on: a-crew-process-ends-with-its-owner` resolves to `docs/plans/a-crew-process-ends-with-its-owner.html`; every `plan-section-depends-on` key (`s7`\u2192`s6`, `s9`\u2192`s8`, `s10`\u2192`s11`) names a section that exists and is `done`, and the two open followups (`f-arolw-013` \u00a713, `f-arolw-014` \u00a714) recommend the sections that are `implementable`, with no write-path collision between them (`\u00a713` writes `reckon/crew/*`, `\u00a714` writes one evidence fragment)."
+  },
+  "section_digests": {
+    "_document": "1c3d70f0e54cc9a6e35ef49c72011f0d48ac62ffe138725d2f876465d599cf6a",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:10:09.296407+00:00",
+  "total": null
+}

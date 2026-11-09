@@ -1,0 +1,114 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T13:49:30.722Z",
+  "dispatched_at": "2026-11-09T13:39:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "reasoning-1",
+      "reason": "a node implementing \u00a715 as written reaches a case its gate requires to proceed and that the mechanism refuses, so it either blocks on (b1) or invents the missing canonical-exit read, and the plan must name that read (the canonical exit receipt, or a widened `_retired_attempt_ended` that also answers the canonical shape) before dispatch.",
+      "text": "\u00a715 frees an off-host refusal on \"the canonical `exit.json` beside a canonical `worker.json`\", but the only two changes it declares are routing a foreign unknown reading into the placed-unknown branch and giving `_retired_attempt_ended` the launching-host rule; neither reads a canonical exit receipt, and `_retired_attempt_ended` is skipped entirely while `worker.json` exists, so the branch's last word is `_worker_record_liveness(record) is not False`, which answers `None` for a foreign record whatever `exit.json` says. Probe (scratch copy, `RECKON_HOME` redirected): with a foreign record carrying `worker.json` + `exit.json`, `live_worker_reading` returns `unknown/None`, `_worker_record_liveness` returns `None`, and the described mechanism returns `True` (refused) \u2014 done-when (b1) cannot pass",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:177",
+      "id": "reasoning-2",
+      "reason": "(2)'s repair targets a directory that is already there, and its required \"fresh-launch marker\" case would pass at the dispatch base, so the node would either chase a non-defect or contrive an empty-brief launch to make its own control fail; the real defect is the fresh launch reading its own marker as a relaunch, which is (1)'s mechanism and is what a single corrected statement of the cause should carry.",
+      "text": "\u00a716's item (1) has the shadow arm's first launch \"finds `attempt.json`\" and take a reservation, while item (2) says the early marker at `dispatch.py:2772` \"is dropped for an ordinary fresh launch\" because the run directory \"is created only later (near line 2894)\"; both cannot hold, and the code sides with (1): `_store_brief` writes the brief into the run directory at `dispatch.py:2558` and `runs.store_brief` creates that directory (`destination.parent.mkdir(parents=True, exist_ok=True)`, `reckon/crew/runs.py:703`) whenever the node carries a brief, so the marker at 2772 lands for an ordinary fresh launch. This run's own directory is the evidence: `r-20261109T133759173326-\u2026` is a fresh run id, `brief.md` was written at 14:38:52 and `attempt-1.reservation` exists at 14:39:53, which is only possible if `run_holds_an_attempt_record` saw an `attempt.json` at `dispatch.py:2861` \u2014 the marker (2) says is dropped",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:29",
+      "id": "anchors_resolve-1",
+      "reason": "an earlier review raised this and the answer recorded it as corrected in the same edit, but the meta was not changed and the declarations have moved again (s13 `done`, s16 added), so the file still reports a figure the store derives differently and the next write is the only thing that will settle it.",
+      "text": "`plan-impl` is still 0.67 while the snapshot's own section records derive 0.857955; running `doccheck.audit_html` on the served snapshot reports `warn impl-meta-stale | plan-impl meta is 0.67 but the section records derive 0.857955 (impl_source: declarations)`, so the served surface and the file disagree",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+  "plan_fingerprint": "128397f53fb353b3a7da0a8b74708cd15a6f461de4162c1b8529da065d3c0547",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 127,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a715 now names the canonical-exit read: in the off-host branch a canonical worker.json with its exit.json beside it is shown ended, read through the same exit-receipt check _retired_attempt_ended uses.",
+      "reason": "",
+      "when": "2026-11-09T13:59:43.607277+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a716 item (2) is restated: the marker is dropped only for a fresh launch whose node carries no brief (every --plan/--section dispatch), since only _store_brief creates the run directory before it; a briefed launch already has it.",
+      "reason": "",
+      "when": "2026-11-09T13:59:53.265255+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+      "commit_basis": "edit",
+      "note": "\u00a715 now names the canonical-exit read: in the off-host branch a canonical worker.json with its exit.json beside it is shown ended, read through the same exit-receipt check _retired_attempt_ended uses.",
+      "reason": "",
+      "when": "2026-11-09T13:59:43.607277+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "cf73cde40a579e9cf4c498983785ed82dd9f6460",
+      "commit_basis": "edit",
+      "note": "\u00a716 item (2) is restated: the marker is dropped only for a fresh launch whose node carries no brief (every --plan/--section dispatch), since only _store_brief creates the run directory before it; a briefed launch already has it.",
+      "reason": "",
+      "when": "2026-11-09T13:59:53.265255+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-run-has-one-live-worker/r-20261109T133727576509-plan-review-of-a-run-has-one-live-worker.json",
+  "review_run_id": "r-20261109T133727576509-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "6f710cb680bb53333d749d7c1e4e2759472db57d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `_document` still carries `plan-impl` 0.67 while the snapshot's section records derive 0.857955, so `reckon/doccheck.py`'s `impl-meta-stale` check fires on this exact snapshot.",
+    "done_when": "pass \u2014 \u00a715 declares (a1)/(a2) failing at the dispatch base and passing at the head with the four record shapes named, and \u00a716 declares a logged mutation with its FAILED ids and a non-zero `EXIT=`; each has a stated negative control. (The mechanism that would let \u00a715's (b1) pass does not exist, which is recorded under `reasoning`.)",
+    "evidence_paths": "pass \u2014 both sections declare write paths and the gate-log rule, the planned tests live under `tests/`, and the \u00a715 evidence fragment `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html` exists at HEAD.",
+    "naming": "pass \u2014 the new test `tests/test_a_worker_on_another_host_refuses_a_relaunch.py` and the symbols the sections name carry no plan labels, stage names or ticket numbers, and no changelog prose reached source.",
+    "reasoning": "two findings \u2014 \u00a715's stated two changes cannot produce its done-when (b1) because nothing in the placement branch reads a canonical `exit.json`, and \u00a716 items (1) and (2) contradict each other about whether the early attempt marker is written at all.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (an off-host relaunch is refused until the launch is shown to have ended); \u00a716 carries one remedy for one mechanism (the launch reservation leaves no stray state) even though it lists six sub-findings.",
+    "wiring": "pass \u2014 `plan-section-depends-on` now declares `s15 \u2192 s13` and `s16 \u2192 s15`; s13 is declared `done`, and both followups `f-arolw-013` (resolved) and `f-arolw-016` (open, recommending \u00a716) agree with the declarations."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "7c48edf216a20870ad8b54b1097a5448196636570e80e388c23990939a5566b1",
+    "s16": "8de19b8af54057a22282c6b105920f5d1e4a00bb4c64917042ae4ee433ccbf36",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:57:57.072277+00:00",
+  "total": null
+}

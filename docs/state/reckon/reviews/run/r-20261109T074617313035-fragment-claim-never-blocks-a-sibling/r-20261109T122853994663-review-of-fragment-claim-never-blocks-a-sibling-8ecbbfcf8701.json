@@ -1,0 +1,276 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No self-confirming regression assertion found: claimed_path is compared with the independently established peer file, and the recorded base control disproves the directory-owner claimed-path assertion. The run-ID inequality alone is only a distinct-run control.",
+  "assertions": [
+    {
+      "fails_if": "The live claim census loses the owner run or does not retain its declared directory; this is a positive fixture control, not the sibling regression guard.",
+      "lines": "26-28"
+    },
+    {
+      "fails_if": "Restoring directory-wide comparison raises ScopeConflict for either sibling case at the facade or real dispatch; both cases actually failed in the recorded base control.",
+      "lines": "30-33"
+    },
+    {
+      "fails_if": "The second dispatch reuses the owner run identity; this checks distinct runs and is not counted alone as proof of sibling admission.",
+      "lines": "34"
+    },
+    {
+      "fails_if": "The facade stops refusing the same concrete fragment; removing its overlap refusal makes pytest.raises fail.",
+      "lines": "46-49"
+    },
+    {
+      "fails_if": "The facade attributes the conflict to a run other than the independently launched owner.",
+      "lines": "50"
+    },
+    {
+      "fails_if": "Restoring raw directory comparison reports the directory instead of the independently established owner fragment; this assertion actually fails in the recorded base control.",
+      "lines": "51"
+    },
+    {
+      "fails_if": "Real dispatch stops refusing the same fragment even if the facade still refuses.",
+      "lines": "53-54"
+    },
+    {
+      "fails_if": "Real dispatch reports a different owner or reports the directory instead of its concrete fragment; the claimed-path expectation has an independent peer claim, not merely an echoed candidate.",
+      "lines": "55-56"
+    },
+    {
+      "fails_if": "Removing changed-file enumeration admits committed custom.html, or removing untracked enumeration admits untracked custom.html.",
+      "lines": "83-84"
+    },
+    {
+      "fails_if": "The custom-file refusal identifies the wrong live owner or does not identify the independently written custom.html file.",
+      "lines": "85-86"
+    },
+    {
+      "fails_if": "The conflict check drops explicitly named file claims while normalizing the owner directory.",
+      "lines": "98-99"
+    },
+    {
+      "fails_if": "The explicit-file refusal identifies the wrong live owner or fails to report the independently stored named.html claim.",
+      "lines": "100-101"
+    },
+    {
+      "fails_if": "Restoring unconditional relative_to(repository), or dropping the outside-repository guard for fragment-shaped paths, raises ValueError for unrelated external claims.",
+      "lines": "116-121"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:1696",
+    "reckon/crew/dispatch.py:2678",
+    "reckon/crew/dispatch.py:3408",
+    "reckon/crew/dispatch_plan.py:1125",
+    "reckon/crew/dispatch_plan.py:1134",
+    "reckon/crew/dispatch_claims.py:2310"
+  ],
+  "completed_at": "2026-11-09T13:00:22Z",
+  "dispatched_at": "2026-11-09T12:31:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The diff changes only reckon/crew/dispatch_claims.py (runs.py is untouched), so the population that matters is dispatch_claims' callers. All 14 test files importing dispatch_claims are inside the coordinator's 33-file claims population, which also takes every test touching scope conflicts, fragment paths and shared-write paths. It read an identical 28 failure ids at base 6a3aae57b2 and head 8ecbbfcf87 (587 to 596 passed, the 9 new tests); logs/population-{base,head}-coord.log. -n 6 against the stated -n 4 changes worker count, not coverage. Same disposition as the claims s2 importer finding.",
+      "recorded_at": "2026-11-09T13:10:53.972889+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Corrected rather than declined: the base arm is re-run with the head's new test file copied into the base tree, which is the node's negative control. 6 failed, 3 passed, EXIT=1 at base; 9 passed, EXIT=0 at head; baseline_suite now records completed with those six failure ids (logs/armed-base-coord.log names the copied file).",
+      "recorded_at": "2026-11-09T13:11:01.541963+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/fragment-claim-never-blocks-a-sibling.html",
+      "line": "15",
+      "severity": "blocking",
+      "text": "blocking: the declared importer comparison remains incomplete; the coordinator's 33-file population logs report the same 28 failures and zero added IDs, but run at -n 6 and cover a subset of the saved 694-file population, so they do not satisfy the done_when requiring the importer files at at most -n 4; finish and record the required serial base/head comparison before accepting the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/manifest.md",
+      "line": "19",
+      "severity": "blocking",
+      "text": "blocking: baseline_suite.completed is true even though logs/armed-base-coord.log says no tests ran, reports the newly added test file missing and exits 4; correct the arm record and obtain a valid baseline using the dispatched base-arm resolution before treating its empty failure list as a completed measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read all five commits from 6a3aae57b27dac3423ec5dc6a74d77d9f38ea18b through 8ecbbfcf8701806f63af95263cc1e43bd3504af1, comprising the reproducer, shared normalization, evidence, external-path repair and final evidence update in exactly three granted paths.",
+    "done_when": "source prompt.txt:113-114 requires sibling admission, same-file refusal and no added importer failures at at most four workers; focused-final-head.log records nine passes, but logs/population-{base,head}-coord.log cover only 33 files at six workers and do not complete the declared importer measure.",
+    "goal": "source prompt.txt:38 asks to compare a fragments-directory claim as the files its node writes, and reckon/crew/dispatch_claims.py:1899-2017 implements that comparison for the shared live-conflict enforcer and report.",
+    "manifest": "source manifest.md:19 marks the base arm completed despite logs/armed-base-coord.log recording no tests and EXIT=4, while manifest.md:24 correctly preserves the incomplete broad importer comparison.",
+    "write_paths": "source prompt.txt:80-85 grants runs.py, dispatch_claims.py, the focused test, the evidence fragment and figure topic; the base-to-head diff changes only dispatch_claims.py, the focused test and its granted evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_fragment_claim_never_blocks_a_sibling.py:26-101 independently observes live claims, requires actual sibling dispatch success and overlapping-file refusals, and the recorded base negative control fails both sibling cases and the concrete claimed-path assertion.",
+    "evidence": "source negative-control-resumed.log proves the base refusal and focused-final-head.log records nine passes, but source manifest.md:19 misclassifies an EXIT=4 collection refusal as completed and the coordinator population logs do not satisfy prompt.txt:114.",
+    "fit": "reckon/crew/dispatch_claims.py:1899-2017 uses the existing repository-claim representation, dataclasses.replace and node._git_answer, while the added test reuses the temporary repository and dispatch fixtures without adding forbidden names.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:1899-1993 expands directory claims into default and changed or untracked fragment files, preserves exact-file claims and retains the directory when Git cannot answer.",
+    "reuse": "the added definitions extend dispatch_claims.py, which already owns _landing_fragment_paths and both conflict consumers; the capability search also opened node.py:1533 and recovery_watch.py:338, whose recovery census loses the unread-versus-empty distinction and is not a substitute for the scoped fail-closed comparison.",
+    "scope_discipline": "the three paths changed between the recorded revisions are all explicitly granted at source prompt.txt:81-84, and each change serves the fragment-claim goal or its evidence."
+  },
+  "negative_control_evidence": {
+    "exit_status": 1,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/focused-final-head.log",
+    "head_summary": "9 passed in 36.08s",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/negative-control-resumed.log",
+    "reproduction": "write scope 'docs/evidence/fragments/plan-a/joiner.html' conflicts with live claim 'docs/evidence/fragments/plan-a'",
+    "summary": "3 failed, 1 passed in 19.34s"
+  },
+  "population_evidence": {
+    "acceptance_limit": "at most -n 4; all declared importer test files",
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "base": {
+      "exit_line": "EXIT=1",
+      "failure_count": 28,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_node_is_queued_once.py::test_a_dispatch_after_a_put_back_updates_that_one_pointer",
+        "tests/test_a_node_is_queued_once.py::test_a_queued_node_is_redispatched_in_place_with_no_scope_conflict",
+        "tests/test_crew.py::test_dispatch_launches_a_cli_backend_and_records_the_run",
+        "tests/test_crew.py::test_live_view_rechecks_a_killed_worker_without_observation",
+        "tests/test_crew.py::test_no_reader_promotes_a_run_without_commit_or_manifest",
+        "tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest",
+        "tests/test_crew.py::test_stop_observe_and_recover_preserve_the_stopped_state",
+        "tests/test_crew.py::test_terminal_phase_without_a_manifest_is_abandoned",
+        "tests/test_crew_dispatch_guard.py::test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_cycle_through_existing_requests_still_refuses",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_foreign_broken_wait_does_not_refuse_own_ready_section",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_own_missing_wait_still_refuses",
+        "tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted",
+        "tests/test_ledger.py::test_hold_check_backs_off_after_a_version_conflict",
+        "tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted",
+        "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused",
+        "tests/test_skill_contracts.py::test_each_skills_documented_examples_apply",
+        "tests/test_skill_contracts.py::test_each_skills_documented_landing_links_a_record_section",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/population-base-coord.log",
+      "summary": "28 failed, 587 passed in 471.61s (0:07:51)"
+    },
+    "declared_header": "command pytest -n 6 <33-file claims population>",
+    "head": {
+      "exit_line": "EXIT=1",
+      "failure_count": 28,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_node_is_queued_once.py::test_a_dispatch_after_a_put_back_updates_that_one_pointer",
+        "tests/test_a_node_is_queued_once.py::test_a_queued_node_is_redispatched_in_place_with_no_scope_conflict",
+        "tests/test_crew.py::test_dispatch_launches_a_cli_backend_and_records_the_run",
+        "tests/test_crew.py::test_live_view_rechecks_a_killed_worker_without_observation",
+        "tests/test_crew.py::test_no_reader_promotes_a_run_without_commit_or_manifest",
+        "tests/test_crew.py::test_resumed_attempt_owns_its_stream_phase_and_manifest",
+        "tests/test_crew.py::test_stop_observe_and_recover_preserve_the_stopped_state",
+        "tests/test_crew.py::test_terminal_phase_without_a_manifest_is_abandoned",
+        "tests/test_crew_dispatch_guard.py::test_occupied_project_reuses_the_watcher_armed_by_the_first_dispatch",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_cycle_through_existing_requests_still_refuses",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_foreign_broken_wait_does_not_refuse_own_ready_section",
+        "tests/test_dead_wait_blocks_only_its_request.py::test_own_missing_wait_still_refuses",
+        "tests/test_ledger.py::test_a_dead_run_that_delivered_nothing_is_interrupted",
+        "tests/test_ledger.py::test_hold_check_backs_off_after_a_version_conflict",
+        "tests/test_ledger.py::test_recovery_counts_running_scoring_and_interrupted",
+        "tests/test_overlapping_queued_requests_launch_in_turn.py::test_a_new_dispatch_over_a_queued_claim_at_the_session_cap_is_refused",
+        "tests/test_skill_contracts.py::test_each_skills_documented_examples_apply",
+        "tests/test_skill_contracts.py::test_each_skills_documented_landing_links_a_record_section",
+        "tests/test_skill_contracts.py::test_every_registered_crew_verb_is_documented_or_exempt",
+        "tests/test_skill_contracts.py::test_no_routing_identifier_leaks_into_skills_or_source",
+        "tests/test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/population-head-coord.log",
+      "summary": "28 failed, 596 passed in 482.94s (0:08:02)"
+    },
+    "valid_for_declared_measure": false
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 asks to compare a fragments-directory claim as the files its node writes, and reckon/crew/dispatch_claims.py:1899-2017 implements that comparison for the shared live-conflict enforcer and report.\nVERDICT done_when: source prompt.txt:113-114 requires sibling admission, same-file refusal and no added importer failures at at most four workers; focused-final-head.log records nine passes, but logs/population-{base,head}-coord.log cover only 33 files at six workers and do not complete the declared importer measure.\nVERDICT write_paths: source prompt.txt:80-85 grants runs.py, dispatch_claims.py, the focused test, the evidence fragment and figure topic; the base-to-head diff changes only dispatch_claims.py, the focused test and its granted evidence fragment.\nVERDICT manifest: source manifest.md:19 marks the base arm completed despite logs/armed-base-coord.log recording no tests and EXIT=4, while manifest.md:24 correctly preserves the incomplete broad importer comparison.\nVERDICT diff: read all five commits from 6a3aae57b27dac3423ec5dc6a74d77d9f38ea18b through 8ecbbfcf8701806f63af95263cc1e43bd3504af1, comprising the reproducer, shared normalization, evidence, external-path repair and final evidence update in exactly three granted paths.\nCALL_SITES: reckon/crew/runs.py:1696, reckon/crew/dispatch.py:2678, reckon/crew/dispatch.py:3408, reckon/crew/dispatch_plan.py:1125, reckon/crew/dispatch_plan.py:1134, reckon/crew/dispatch_claims.py:2310\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:1899-1993 expands directory claims into default and changed or untracked fragment files, preserves exact-file claims and retains the directory when Git cannot answer.\nSCORE evidence: 10\nJUSTIFICATION evidence: source negative-control-resumed.log proves the base refusal and focused-final-head.log records nine passes, but source manifest.md:19 misclassifies an EXIT=4 collection refusal as completed and the coordinator population logs do not satisfy prompt.txt:114.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths changed between the recorded revisions are all explicitly granted at source prompt.txt:81-84, and each change serves the fragment-claim goal or its evidence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_fragment_claim_never_blocks_a_sibling.py:26-101 independently observes live claims, requires actual sibling dispatch success and overlapping-file refusals, and the recorded base negative control fails both sibling cases and the concrete claimed-path assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatch_claims.py:1899-2017 uses the existing repository-claim representation, dataclasses.replace and node._git_answer, while the added test reuses the temporary repository and dispatch fixtures without adding forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added definitions extend dispatch_claims.py, which already owns _landing_fragment_paths and both conflict consumers; the capability search also opened node.py:1533 and recovery_watch.py:338, whose recovery census loses the unread-versus-empty distinction and is not a substitute for the scoped fail-closed comparison.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/fragment-claim-never-blocks-a-sibling.html:15 blocking: the declared importer comparison remains incomplete; the coordinator's 33-file population logs report the same 28 failures and zero added IDs, but run at -n 6 and cover a subset of the saved 694-file population, so they do not satisfy the done_when requiring the importer files at at most -n 4; finish and record the required serial base/head comparison before accepting the node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/manifest.md:19 blocking: baseline_suite.completed is true even though logs/armed-base-coord.log says no tests ran, reports the newly added test file missing and exits 4; correct the arm record and obtain a valid baseline using the dispatched base-arm resolution before treating its empty failure list as a completed measurement.\n",
+  "reuse_search": {
+    "capabilities": [
+      "fragment-directory scope normalization",
+      "base-to-worktree tracked and untracked path census",
+      "git failure versus empty result"
+    ],
+    "conclusion": "Both new helpers extend the existing conflict owner; the recovery census has a different failure contract and traverses the whole worktree.",
+    "owners_opened": [
+      "reckon/crew/dispatch_claims.py:_landing_fragment_paths",
+      "reckon/crew/node.py:_git_answer",
+      "reckon/crew/recovery_watch.py:_worktree_diff_paths"
+    ]
+  },
+  "review_run_id": "r-20261109T122853994663-review-of-fragment-claim-never-blocks-a-sibling-8ecbbfcf8701",
+  "reviewed_base_sha": "6a3aae57b27dac3423ec5dc6a74d77d9f38ea18b",
+  "reviewed_commits": [
+    "f6f09c0a9fb6f78d2240df483db27079581cbe6d",
+    "b1c4b6ce668c14132ee9852cbc1a4b860f8bf757",
+    "95ce85899b9248bf403da58f5c715e6e730ccb63",
+    "f389c117daadc6d6769a3f2a4407740e6279c9da",
+    "8ecbbfcf8701806f63af95263cc1e43bd3504af1"
+  ],
+  "reviewed_head_sha": "8ecbbfcf8701806f63af95263cc1e43bd3504af1",
+  "reviewed_run_id": "r-20261109T074617313035-fragment-claim-never-blocks-a-sibling",
+  "scores": {
+    "durability": 20,
+    "evidence": 10,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_note": "The required fields are the literal FAILED-ID set difference from the source manifest baseline_suite and after_suite log paths; zero is not a valid completed-suite verdict because the base arm exited 4 before collection. The separate coordinator population pair is complete and nonempty but smaller than the required importer population and used six workers.",
+  "suite_delta_valid": false,
+  "suite_evidence": {
+    "after_log_receipt": {
+      "exit_line": "EXIT=0",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/armed-head-coord.log",
+      "summary": "9 passed in 33.60s"
+    },
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fragment_claim_never_blocks_a_sibling.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/armed-head-coord.log",
+      "revision": "8ecbbfcf8701806f63af95263cc1e43bd3504af1"
+    },
+    "baseline_log_receipt": {
+      "exit_line": "EXIT=4",
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/armed-base-coord.log",
+      "summary": null
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_fragment_claim_never_blocks_a_sibling.py",
+      "completed": true,
+      "exit_status": 4,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T074617313035-fragment-claim-never-blocks-a-sibling/logs/armed-base-coord.log",
+      "revision": "6a3aae57b27dac3423ec5dc6a74d77d9f38ea18b"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:09:54.147898+00:00",
+  "total": 110
+}

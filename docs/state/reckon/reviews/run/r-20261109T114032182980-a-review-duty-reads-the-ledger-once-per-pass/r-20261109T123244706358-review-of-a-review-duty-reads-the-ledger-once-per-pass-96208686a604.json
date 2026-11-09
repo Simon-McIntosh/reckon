@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T12:44:26.047Z",
+  "dispatched_at": "2026-11-09T12:34:42Z",
+  "finding_dispositions": {
+    "3": {
+      "kind": "exempted",
+      "reason": "the literal commands are in both logs headers and agree with the manifest; the repair round restates them",
+      "recorded_at": "2026-11-09T12:48:43.823611+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/ledger.py",
+      "line": 1091,
+      "severity": "non-blocking",
+      "text": "The index-currency predicate (the length check at 1089 and the per-file stamp loop at 1091-1093) has no assertion anywhere: the gate's fixture writes every ledger run file before its warm-up read_records call and never mutates the ledger afterwards, so deleting the whole validation block leaves the gate green while run_ids would serve a stale index's membership after a run file is added or rewritten in place. Exercise it by adding a run file after the warm-up and asserting the next run_ids includes it."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": 1113,
+      "severity": "non-blocking",
+      "text": "The stale-index refresh branch introduced by the final commit (run_ids calls load(..., headers_only=True) when the index exists but is not current) is never entered by the gate, because the warm-up read leaves the index current for the whole test. A regression that dropped the refresh and fell straight back to _load_aggregate would still pass, since the one-pass count assertion is satisfied by the fresh-index path alone."
+    },
+    {
+      "file": "reckon/ledger.py",
+      "line": 1051,
+      "severity": "non-blocking",
+      "text": "_indexed_run_ids repeats the read-only index prologue owned by _last_good_index_data (the connection and aggregate-stamp comparison at 1070-1077 against 1475-1482) and a variant of the membership union owned by _index_payload (1082-1083 against 1406-1408), extending neither. The two unions already differ on a run file whose record the index could not decode: _indexed_run_ids counts it by name while _index_payload's headers_only projection drops it, so the two expressions of one question can drift. The capability it needs, validated membership without decoding, genuinely has no owner yet, which is why this is recorded rather than treated as a fork."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T114032182980-a-review-duty-reads-the-ledger-once-per-pass/manifest.md",
+      "line": 19,
+      "severity": "non-blocking",
+      "text": "The baseline_suite and after_suite command values carry a placeholder, \"<eight importer test files>\", which the manifest contract refuses because the arm cannot be re-run from it. The literal commands are recoverable from the two logs' own # command: headers and agree with the manifest's claim, so both arms are sound; the recorded field is what needs repairing."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that ledger.run_ids is served from the ledger's stat-validated cache; reckon/ledger.py:1097-1120 now answers membership from the run index and falls back to the aggregate only when the index is absent or stale, so the goal is met.\nVERDICT done_when: read the done_when at prompt.txt:111-112 and the gate at tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:198-233; the gate asserts _open_review_refusal for every run, at most one _load_aggregate after a warm-up read, and no read on a later direct run_ids, which are the three clauses it names.\nVERDICT write_paths: read the declared scope at prompt.txt:80-84; the diff touches reckon/ledger.py, tests/test_a_review_duty_reads_the_ledger_once_per_pass.py and the landing fragment, all inside it.\nVERDICT manifest: read; it records the four commits, the gate log, the negative-control log, both importer arms and the live before/after timings, and its status is complete.\nVERDICT diff: read commit by commit from 642a2c64 to 96208686; three files, 374 insertions and 2 deletions, all inside the declared scope, and the head tree is clean at 96208686a6.\nCALL_SITES: reckon/crew/obligations.py:693, reckon/crew/recovery_review_dispatch.py:2539, reckon/crew/recovery_repair_dispatch.py:904, reckon/crew/recovery_watch.py:1889, reckon/crew/review_lifecycle.py:414\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1097-1114 serves run_ids from _indexed_run_ids and reaches the aggregate only when the index is absent or not current.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_review_duty_reads_the_ledger_once_per_pass.py:213 with logs/negative-control.log shows the gate reddens at assert 3 <= 1 on the base body, but the manifest records nothing for the ruff clause of the done_when and its suite command fields carry a placeholder.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 642a2c64..96208686 lies inside the four declared write paths, and no plan or shared state was touched.\nSCORE durability: 12\nJUSTIFICATION durability: the pass-cost assertion fails on the base body, but the currency and refresh logic at reckon/ledger.py:1088-1093 and 1113 can be deleted without reddening any assertion.\nSCORE fit: 18\nJUSTIFICATION fit: the docstring register and the read-only sqlite pattern at reckon/ledger.py:1069-1094 match _last_good_index_data at 1444-1482, and no name here is one the naming rules forbid.\nSCORE reuse: 12\nJUSTIFICATION reuse: reckon/ledger.py:1051 extends run_ids, the owner of membership, but re-expresses the prologue of _last_good_index_data (1444) and the union of _index_payload (1384) instead of extracting one owner.\nFINDING reckon/ledger.py:1091 non-blocking: the index-currency predicate has no assertion, so a regression deleting it passes the gate.\nFINDING reckon/ledger.py:1113 non-blocking: the stale-index refresh branch is never entered by the gate's fixture.\nFINDING reckon/ledger.py:1051 non-blocking: the read-only index prologue and membership union are repeated from _last_good_index_data and _index_payload.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T114032182980-a-review-duty-reads-the-ledger-once-per-pass/manifest.md:19 non-blocking: the suite command fields carry a placeholder instead of the literal command that ran.",
+  "review_run_id": "r-20261109T123244706358-review-of-a-review-duty-reads-the-ledger-once-per-pass-96208686a604",
+  "reviewed_base_sha": "642a2c640ac47d1a0c1c0417adebbcaa81427062",
+  "reviewed_head_sha": "96208686a6041dca94f598fbd4c84e59c6fc4391",
+  "reviewed_run_id": "r-20261109T114032182980-a-review-duty-reads-the-ledger-once-per-pass",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 12,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:54:04.219582+00:00",
+  "total": 96
+}

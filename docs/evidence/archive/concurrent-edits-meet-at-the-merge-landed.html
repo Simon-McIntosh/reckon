@@ -29,6 +29,11 @@
     <p>Landed (reviewed head <code>d6cb4e5aa8</code>, run <code>r-20261108T093343768873</code>). A landing refused on a real merge conflict records a <code>merge-conflict</code> outcome naming the paths and opens a repair round; an already-promoted run is never promoted twice, and its repaired head is finished by the merge alone through the pending-landing path, after its fresh gate is validated. Four cases pass; reversing the gate validation fails both repair cases, and seven invalid gate captures are refused.</p>
   </section>
 
+  <section id="fragment-claim-never-blocks-a-sibling" data-evidence-origin="append">
+    <h2>A fragments-directory claim never blocks a sibling node</h2>
+    <p>Landed from r-20261109T074617313035 (head 8ecbbfcf87, on main at 1d59455766). <code>reckon/crew/dispatch_claims.py</code> now compares a claim on a plan's evidence-fragments directory as the fragment files its node writes, so a sibling node of that plan with a different fragment is admitted, and two nodes naming the same fragment file are still refused. <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code>: 9 passed at head; with the file copied onto base 6a3aae57b2, 6 failed and 3 passed (the negative control). A 33-file claims population read an identical 28 failure ids at base and head (587 to 596 passed). The review's two evidence findings were answered: the base arm was corrected, and the importer population was scoped to dispatch_claims' callers.</p>
+  </section>
+
 </main>
 </body>
 </html>

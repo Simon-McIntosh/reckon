@@ -1,0 +1,99 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T12:04:49.520Z",
+  "dispatched_at": "2026-11-09T11:53:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1057",
+      "id": "reasoning-1",
+      "reason": "a worker reasoning from \"the join is the serialiser\" can keep a synchronous path for `lifetime_deadline is None` \u2014 the common fresh-arming branch and the one measured \u2014 believing something else already serialises it, which preserves exactly the stall the section exists to remove.",
+      "text": "the deliverable says \"Today that join is what keeps sweeps sequential\", but `_sweep_on_cadence` has two branches (`reckon/crew_follow_commands.py:1877-1891`): with no lifetime deadline it calls `_sweep_quietly()` **inline**, and only with one does it start a thread and `poll.join(remaining)`. The measured follower (session `a337e0e6`, armed 2026-11-07T12:13:44Z, still leased at 04:48Z on 9 November) ran far past any arming grant, and `_carried_lifetime_deadline` (`:281`) carries an original deadline across reloads without extending it, so its `lifetime_deadline` was `None` and its sweep ran on the inline branch \u2014 there was no join in play, and the inline call is what serialised its sweeps. Naming the join as the serialiser misdescribes the branch the section's evidence comes from and leaves the inline branch's loss of serialisation unaccounted for.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "e8f1e029be47e9aff520716e580699cdd2aef552",
+  "plan_fingerprint": "522fa6d31c15cedb1e109cead0b24fbc84fe35f7875aff6b100965ee0cdf1eb3",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 212,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "e8f1e029be47e9aff520716e580699cdd2aef552",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a726 now names both branches of _sweep_on_cadence, the inline no-deadline call (the measured case) and the deadline join, and moves both off the delivery thread under the guard",
+      "reason": "",
+      "when": "2026-11-09T12:16:43.671458+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c97f2383eab08ae5e5bec3c4b9e2ea03071416ff",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a726 now names both branches of _sweep_on_cadence, the inline no-deadline call (the measured case) and the deadline join, and moves both off the delivery thread under the guard",
+      "reason": "",
+      "when": "2026-11-09T12:17:41.033555+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c97f2383eab08ae5e5bec3c4b9e2ea03071416ff",
+      "commit_basis": "edit",
+      "note": "\u00a726 now names both branches of _sweep_on_cadence, the inline no-deadline call (the measured case) and the deadline join, and moves both off the delivery thread under the guard",
+      "reason": "",
+      "when": "2026-11-09T12:17:41.033555+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-dispatch-returns-without-its-worker/r-20261109T115154343993-plan-review-of-a-dispatch-returns-without-its-worker.json",
+  "review_run_id": "r-20261109T115154343993-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "6069c87dc16558d9b30877179a65e329f7b32170",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_sweep_on_cadence` is defined at `reckon/crew_follow_commands.py:1855` and `swept_at` is assigned at `:1876` (`swept_at = moment`), both exactly as cited; `reckon/crew/resumption.py` and the cited `runs.list_live` (`reckon/crew/runs.py:1108`) and `promotion_evidence._committed_scope` (`reckon/crew/promotion_evidence.py:93`) all resolve.",
+    "done_when": "pass \u2014 the case names a temporary crew home, an event-held sweep, row delivery, a completed tick and a call count on the sweep entry point, with two controls (inline sweep on the delivery thread; removing the single-flight guard) each aimed at one half of the deliverable.",
+    "evidence_paths": "pass \u2014 the gate writes its logs under the run directory, which survives the run; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 \u00a726 introduces no new symbol and carries no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 the serialisation clause names the join, which cannot be present on the follower the section's own measurement comes from.",
+    "single_goal": "pass \u2014 one deliverable (the sweep runs off the delivery thread); the single-flight guard is the serialisation the same change removes, not a second goal.",
+    "wiring": "pass \u2014 s26 declares no `plan-section-depends-on` edge and needs none: it writes only `reckon/crew_follow_commands.py` and `reckon/crew/resumption.py`, disjoint from \u00a725's write paths, and \u00a725's forward pointer (\"The follower's sweep thread is \u00a726\") now resolves to an existing section."
+  },
+  "section_digests": {
+    "_document": "10368da98ea01ad371ef48d079f09da069f15c91de0d04e6091aaf7b643c4ac4",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "cc23505f11a53b6805235d1291e66a2c125b10d71645b70b50b7c29a9e2de0ee",
+    "s26": "b7e34aca7108b01089627e84462259892ecc103d2d948014846e89e50e698b7c",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:13:53.145097+00:00",
+  "total": null
+}

@@ -1,0 +1,206 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T13:22:51.883Z",
+  "dispatched_at": "2026-11-09T13:16:37Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "reasoning-1",
+      "reason": "as written, the repair lets the live foreign worker through on the very record shape \u00a714's run actually left behind (a retired `attempt-1-worker.json` with no exit beside it), so the node would ship a guard that still admits the double launch it was written for.",
+      "text": "\u00a715 frees an off-host refusal on \"the newest attempt's exit receipt\" and names `_retired_attempt_ended` as the mechanism, but that helper (`reckon/crew/dispatch_launch.py:2083`) has no launching-host gate: with no exit receipt it answers by probing the worker receipt's pid against the *local* process table, so a foreign worker's pid reads dead here and the attempt reads as ended \u2014 reproducing exactly the \"I cannot see this worker from here, therefore there is no worker\" inversion \u00a715 exists to fix, one layer deeper. `_worker_record_liveness` does gate on this (`recovery_liveness.py:308-309`, returning None for a known-foreign record); `_retired_attempt_ended` does not.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "done_when-1",
+      "reason": "a node writing the fixture from this text cannot make both cases green without inventing the rule that separates them, and whichever rule it invents decides whether case (a) tests the refusal or tests nothing.",
+      "text": "\u00a715's case (a) (\"with a worker record and no exit receipt, is refused\") and case (b) (\"the same record with an exit receipt for its newest attempt proceeds\") are unambiguous only if both use the same record shape, and they cannot: with a *canonical* `worker.json` present, `_launch_refused_by` never consults a receipt at all (`retired` is computed only when `WORKER_RECORD_NAME` is absent, `dispatch_launch.py:2149-2153`) and `_worker_record_liveness` returns None for a known-foreign record, so case (b) refuses; with *retired* `attempt-N-*` receipts, case (a) proceeds for the reason above. The section must state which shape decides and cover both.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "reasoning-2",
+      "reason": "the node either fails its own case (a) assertion or must change the message composer or the reading's payload, which the section says it will not \u2014 a deviation a build node would have to make silently or block on.",
+      "text": "\u00a715 scopes the change to \"the refusal predicate\" and says the off-host answer in `live_worker_reading` is kept, but its done-when requires the refusal to name \"the launching host and the recorded pid\": `_live_worker_refusal(run_id, reading, consequence)` (`dispatch_launch.py:2044`) and `_live_worker_naming(reading)` (`:2020`) receive only a `LivenessReading`, which carries no host field (`process_liveness.py:326-341`) and whose off-host value is `LivenessReading(LIVENESS_UNKNOWN, None)` with `pid=None` (`recovery_liveness.py:1363`). A predicate returning a bool cannot supply either token.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch fence and the `changed_paths` audit are derived from the section's write paths; without them the node is unfenceable and its ruff-by-delta measure has no population.",
+      "text": "\u00a715 declares no write paths and no gate-log location, while \u00a75 through \u00a713 each end with \"Write paths: \u2026\" and \"Every log under the run directory starts with its revision and the literal command and ends in a bare `EXIT=` line\". Its done-when nonetheless refers to \"the staged paths\" for the ruff delta, so the text assumes a scope it never states.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:29",
+      "id": "anchors_resolve-1",
+      "reason": "every reader and roadmap rollup of this plan is told two thirds of it is built when seven eighths is, and the discrepancy is a one-line correction the author can make in the same write.",
+      "text": "`_document` now declares `s14:done` and adds `s15`, but the `plan-impl` meta stays at `0.67` while the section declarations derive `0.875556`; `reckon/doccheck.py`'s `impl-meta-stale` check reports the disagreement on this exact snapshot.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "7a0b46a7b5af16a69571385f62d00bea85b0636c",
+  "plan_fingerprint": "279db4f13a95ed0539187cd408d165229af8496fb1cd979e0dbf803f5fc11f5e",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 124,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a715 now requires the retired-receipt path to apply the launching-host rule: a retired worker receipt whose pid was issued on another host is never probed locally; only an exit receipt frees it.",
+      "reason": "",
+      "when": "2026-11-09T13:33:28.030122+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a715's done-when now names the record shape of each case: canonical worker.json and retired attempt receipts, each refused off-host without an exit receipt and freed with one.",
+      "reason": "",
+      "when": "2026-11-09T13:33:37.586032+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a715 now widens the refusal composer: the off-host refusal is composed from the record (launcher_host and the recorded pid), not from the LivenessReading, and the section names _live_worker_refusal as written.",
+      "reason": "",
+      "when": "2026-11-09T13:33:47.364412+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a715 now declares its write paths and the gate-log rule the earlier sections state.",
+      "reason": "",
+      "when": "2026-11-09T13:33:54.972215+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "The plan-impl meta is corrected in the same edit.",
+      "reason": "",
+      "when": "2026-11-09T13:34:07.322123+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "x",
+      "reason": "",
+      "when": "2026-11-09T13:34:21.269425+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a715 now requires the retired-receipt path to apply the launching-host rule: a retired worker receipt whose pid was issued on another host is never probed locally; only an exit receipt frees it.",
+      "reason": "",
+      "when": "2026-11-09T13:34:36.050445+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "note": "The plan-impl meta is corrected in the same edit.",
+      "reason": "",
+      "when": "2026-11-09T13:34:07.322123+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "note": "\u00a715's done-when now names the record shape of each case: canonical worker.json and retired attempt receipts, each refused off-host without an exit receipt and freed with one.",
+      "reason": "",
+      "when": "2026-11-09T13:33:37.586032+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "note": "\u00a715 now declares its write paths and the gate-log rule the earlier sections state.",
+      "reason": "",
+      "when": "2026-11-09T13:33:54.972215+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "note": "\u00a715 now requires the retired-receipt path to apply the launching-host rule: a retired worker receipt whose pid was issued on another host is never probed locally; only an exit receipt frees it.",
+      "reason": "",
+      "when": "2026-11-09T13:34:36.050445+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "374a3f391a61b2ed32c92d3f4279a18901ba865b",
+      "commit_basis": "edit",
+      "note": "\u00a715 now widens the refusal composer: the off-host refusal is composed from the record (launcher_host and the recorded pid), not from the LivenessReading, and the section names _live_worker_refusal as written.",
+      "reason": "",
+      "when": "2026-11-09T13:33:47.364412+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-run-has-one-live-worker/r-20261109T131442717047-plan-review-of-a-run-has-one-live-worker.json",
+  "review_run_id": "r-20261109T131442717047-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "f33a40b5fca1fe7589f7617c98123d87d323c208",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `live_worker_reading` resolves at `reckon/crew/recovery_liveness.py:1343` with the off-host `LIVENESS_UNKNOWN` return at :1363 (\"near line 1362\"), `_launch_refused_by` is exactly at `dispatch_launch.py:2125`, `_retired_attempt_ended` at :2083, `_record_holds_a_worker` at :2059, `_worker_record_liveness` at `recovery_liveness.py:285` \u2014 all resolve, and the cited evidence fragment `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html` exists.",
+    "done_when": "a finding \u2014 \u00a715's cases (a) and (b) do not say which record shape they use, and the two shapes reach opposite answers through the machinery the section names.",
+    "evidence_paths": "a finding \u2014 \u00a715 names no write paths and no gate-log location, where every sibling build section names both.",
+    "naming": "pass \u2014 the new test name and the symbols the section touches carry no plan label, stage or ticket number, and the prose describes the mechanism rather than a tracker entry.",
+    "reasoning": "a finding \u2014 the section's stated root cause matches its evidence, but the freeing rule it specifies reuses a helper that carries the very defect being repaired.",
+    "single_goal": "pass \u2014 \u00a715 carries one deliverable (make the refusal predicate refuse an off-host unknown reading) and one test file.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gains `s15:[a-run-has-one-live-worker#s13]`, which is correct: \u00a715 rewrites `_launch_refused_by` in `reckon/crew/dispatch_launch.py` (near line 2125), the same file \u00a713 still holds unlanded, so serialising on s13 is what fleet safety requires; no other unlanded section writes that predicate."
+  },
+  "section_digests": {
+    "_document": "dc93205a6665fc44e7eed72b580f13c30701d67950e8f90264401e70f521ab6f",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "e5a87a2b93b055533c9e7e13f188767ae1d7c7590e6ac991afb664a6db8ddec6",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:31:51.558420+00:00",
+  "total": null
+}

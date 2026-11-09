@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title" content="A requeued fleet job resumes its services">
+  <meta name="plan-summary" content="A standby fleet supervisor promotes itself when the published record already names its job and SLURM reports a restart, so a requeued allocation resumes its station and declared services instead of holding forever; a standby whose record names another job keeps standing by. Three cases, one negative control at the base revision, 0 importer failures added.">
+  <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <title>A requeued fleet job resumes its services | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A requeued fleet job resumes its services</h1>
+
+    <section id="a-requeued-fleet-job-resumes-its-services-what-changed">
+      <h2>What changed</h2>
+      <p><code>reckon/crew/fleet_supervisor.py</code>: a new
+        <code>restarted_own_job</code> answers whether this start is a restart of the
+        fleet the published record already names — <code>SLURM_JOB_ID</code> equals
+        the record's <code>job_id</code> and <code>SLURM_RESTART_COUNT</code> is above
+        zero. <code>serve</code> asks it once, before it decides whether to stand by,
+        and a standby that answers yes is not a standby at all: it publishes its own
+        record, reserves its projects and starts the station and the declared
+        services on the spot, logging that it promoted instead of standing by.</p>
+      <p>A standby whose record names a different job is a migration still in
+        progress and is unchanged: it publishes nothing, starts nothing, and waits for
+        the <code>promote</code> request as before. A first start of a job the record
+        already names, with no restart count, also holds.</p>
+    </section>
+
+    <section id="a-requeued-fleet-job-resumes-its-services-measure">
+      <h2>Measure</h2>
+      <p>Gate: <code>tests/test_a_requeued_fleet_job_resumes_service.py</code>, three
+        cases driving a real <code>serve</code> loop in its own process over a
+        temporary state and runtime directory with the station and the declared
+        services replaced by recorders of their own calls — 3 passed,
+        <code>EXIT=0</code>.</p>
+      <p>Negative control: the first case at the base revision, whose
+        <code>serve</code> has no restart check, stays in standby and leaves the
+        record naming the dead node —
+        <code>assert 'some-old-node' == '98dci4-clu-2023'</code>, 1 failed,
+        <code>EXIT=1</code>.</p>
+      <p>Importer population (20 test files importing
+        <code>reckon.crew.fleet_supervisor</code>, at most <code>-n 4</code>), base
+        <code>3118c296</code> against head: the same five failure ids in both arms, 0
+        added at head (base 5 failed / 164 passed, head 5 failed / 167 passed). The
+        five are the machine-state surfaces of a shared host — producer seat, staging
+        inventory, admission log trim, station reload image — not this change.</p>
+    </section>
+
+    <section id="a-requeued-fleet-job-resumes-its-services-caveat">
+      <h2>Caveat</h2>
+      <p>This gate measures this node's change only. Whether a live requeued
+        allocation actually resumes its services on the fleet node is a property of a
+        running job, and belongs to the separately dispatched test node.</p>
+    </section>
+  </main>
+</body>
+</html>

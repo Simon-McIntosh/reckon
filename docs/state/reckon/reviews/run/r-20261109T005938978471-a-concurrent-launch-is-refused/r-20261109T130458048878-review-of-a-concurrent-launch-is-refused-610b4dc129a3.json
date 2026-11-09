@@ -1,0 +1,124 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:2861",
+    "reckon/crew/dispatch.py:3536",
+    "reckon/crew/dispatch.py:3551",
+    "reckon/crew/dispatch.py:3635",
+    "reckon/crew/resumption.py:1724",
+    "reckon/crew/dispatch_launch.py:3001",
+    "reckon/crew/dispatch_launch.py:3442",
+    "reckon/crew/dispatch_sessions.py:2461"
+  ],
+  "completed_at": "2026-11-09T13:15:55.282Z",
+  "dispatched_at": "2026-11-09T13:06:40Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:21:50.410741+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:22:02.306315+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:22:13.086069+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:22:22.719832+00:00"
+    },
+    "4": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:22:35.583191+00:00"
+    },
+    "5": {
+      "kind": "folded",
+      "node": "the-launch-reservation-leaves-no-stray-state",
+      "recorded_at": "2026-11-09T13:22:48.085001+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "id": "b4c1a90e7d22",
+      "line": 446,
+      "severity": "non-blocking",
+      "text": "Both spawn-guard cases assert only `pid > 0` (here and at :461), which cannot fail for any successful return of _supervisor_spawn_worker; the discriminating signal is the absence of the _reservation_refusal raise. The cases do redden on the regression, as logs/repair-4-controls.log shows, but the assertion itself guards nothing."
+    },
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "id": "2f7a5c81b903",
+      "line": 782,
+      "severity": "non-blocking",
+      "text": "The fresh-run case's `assert not list(directory.glob('attempt-*.reservation'))` is not independent of the guard it claims to cover: its _dispatch helper passes a caller-supplied launcher, so reckon/crew/dispatch.py:3551 releases any reservation the launch took, and the assertion would still pass if the run_holds_an_attempt_record guard at reckon/crew/dispatch.py:2861 were removed entirely."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "9d3e6b40c1a7",
+      "line": 1351,
+      "severity": "non-blocking",
+      "text": "paired dispatch pre-creates both arms' run directories, so the shadow arm's first launch finds attempt.json written at :2772, takes a reservation at :2863, and has its attempt overwritten by the key from its own empty directory, discarding the attempt it derived from the primary line; the section requires a first launch under a fresh run id to take no reservation and keep that attempt."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "id": "6a0c58f2e4bd",
+      "line": 2772,
+      "severity": "non-blocking",
+      "text": "_supervisor_write refuses to create the run directory, and an ordinary fresh launch creates it only at :2894, so the attempt marker this block exists to write is silently dropped for exactly the case its comment describes (a launcher that ends before writing anything); it lands only for relaunches, which already hold attempt receipts."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "id": "cd51b7e09a36",
+      "line": 389,
+      "severity": "non-blocking",
+      "text": "claim_next_attempt and release_attempt_claim at :358 lost their last production caller when the resume door moved to reserve_launch_attempt, leaving a second attempt-claiming mechanism in the module that only tests exercise."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "id": "e83f26b104ca",
+      "line": 2440,
+      "severity": "non-blocking",
+      "text": "the supervisor record is written under contextlib.suppress(OSError), so a failed write leaves the reservation naming the reserving process; on the admit service, which outlives every run it launches, that keeps the run unlaunchable for as long as the service lives with no record of why."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read the sixteen commits against 29b47d2cb8: seven files, the reservation block and its freeing at reckon/crew/dispatch_launch.py:2150-2310, the dispatch door at reckon/crew/dispatch.py:2861, the resume door at reckon/crew/resumption.py:1724, and the supervisor handover at reckon/crew/dispatch.py:3536.",
+    "done_when": "The done-when asks for the window reproduced in a temporary crew home and one case per hazard with logged negative controls; docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html records the base arm admitting the further launch, and tests/test_a_concurrent_launch_is_refused.py carries a case per hazard whose controls are in logs/repair-4-controls.log and logs/repair-3-controls.log.",
+    "goal": "The node goal is that a relaunch of an existing run id is refused while another launch of that run is in flight and that no ended or killed launch leaves the run unlaunchable; reckon/crew/dispatch.py:2863 refuses the second door and reckon/crew/dispatch_launch.py:2306 frees the hold by liveness, so the goal is met for every door the section names.",
+    "manifest": "Read the reviewed manifest.md; it records status complete, the sixteen commits headed by 610b4dc129, baseline_suite and after_suite with revisions and log paths, negative_control_log logs/repair-4-controls.log, and an empty retry_failures.",
+    "write_paths": "Read the fragment's declared paths and the manifest; every path in 29b47d2cb8..06f62cb6db is inside them, the sixth test file having been added by the repair round's extended scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_concurrent_launch_is_refused.py:284 reddens if a reservation were freed by age and :307 if it were freed by the pointer, but :446 and :461 assert only pid > 0 and :782 passes whenever the caller-launcher seam at reckon/crew/dispatch.py:3551 releases the reservation, so it would survive removal of the guard it claims to cover.",
+    "evidence": "logs/merge-gate-head.log records 28 passed EXIT=0 at 610b4dc129 and logs/repair-5-base.log records 19 failed, 9 passed EXIT=1 at 29b47d2cb8, both carried as baseline_suite and after_suite with revisions, literal commands and log paths; logs/repair-4-controls.log and logs/repair-3-controls.log show each declared mutation reddening the case it names.",
+    "fit": "The new block follows the module's own idiom (a frozen dataclass, a pattern constant, a documented refusal) at reckon/crew/dispatch_launch.py:2150 and adds no plan, sprint or ticket identifier, and ruff check adds no finding on the staged paths, but reckon/crew/dispatch_launch.py:2440 swallows the supervisor-record write so a failed record leaves the reservation naming the door for as long as it lives.",
+    "goal_fidelity": "The reservation is taken before _create_worktree at reckon/crew/dispatch.py:2861 and released by the supervisor's own exit at reckon/crew/dispatch.py:3536, and every door in the section's list has a case in tests/test_a_concurrent_launch_is_refused.py, but a paired dispatch pre-creates both run directories at reckon/crew/dispatch.py:1351 so its first launch takes a reservation the section says a fresh run must not, and the early attempt marker at :2772 is a silent no-op for an ordinary fresh launch whose directory appears only at :2894.",
+    "reuse": "launch_reservation_key and reserve_launch_attempt are a second attempt-claiming mechanism beside claim_next_attempt at reckon/crew/resumption.py:389, which the section's measured constraints justify not reusing, but the superseded owner is left in place with no production caller and is now exercised only by tests.",
+    "scope_discipline": "git diff --stat 29b47d2cb8..06f62cb6db lists only the four declared modules, the new test, the extended tests/test_a_resume_never_launches_beside_another_node.py and the evidence fragment; the 149 files in 610b4dc129 are the merge of primary main, not authored changes."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261109T130458048878-review-of-a-concurrent-launch-is-refused-610b4dc129a3",
+  "reviewed_base_sha": "29b47d2cb8dc87054d1ba97457c8cfbe48f10544",
+  "reviewed_head_sha": "610b4dc129a39d1b155e980b718a317bd70a31eb",
+  "reviewed_run_id": "r-20261109T005938978471-a-concurrent-launch-is-refused",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:25:00+00:00",
+  "total": 101
+}

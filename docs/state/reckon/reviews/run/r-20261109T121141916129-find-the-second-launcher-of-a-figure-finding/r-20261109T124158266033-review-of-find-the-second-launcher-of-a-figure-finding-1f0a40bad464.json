@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T12:51:53.853Z",
+  "dispatched_at": "2026-11-09T12:44:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "every door enters dispatch and meets the live-worker guard before _create_worktree, so the repair is at the guard's off-host UNKNOWN arm whichever door or code revision launched attempt 2; naming the door would not change it",
+      "recorded_at": "2026-11-09T13:07:20.272774+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "every door enters dispatch and meets the live-worker guard before _create_worktree, so the repair is at the guard's off-host UNKNOWN arm whichever door or code revision launched attempt 2; naming the door would not change it",
+      "recorded_at": "2026-11-09T13:07:30.414304+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "record-only defect in a delivered investigation: the stamp mapping is reproduced in the fragment's table and its negative control; no code depends on re-running it",
+      "recorded_at": "2026-11-09T13:07:41.392576+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "non-blocking: the launched door is unresolved \u2014 the fragment names queue_admission.py:441 and recovery_review_dispatch.py:3076 as the two remaining candidates and never rules out the plan_review.py:5351/:6103 doors, so the done_when's fallback (name the launch door and prove every other door excluded) is unmet."
+    },
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html",
+      "line": 70,
+      "severity": "non-blocking",
+      "text": "non-blocking: explanation 3 (the launcher ran code older than the guard) is excluded only for the admit service and recorded unverified for the other candidate door, so the done_when requirement to rule out each of the other two explanations is only partly met."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T121141916129-find-the-second-launcher-of-a-figure-finding/manifest.md",
+      "line": 11,
+      "severity": "non-blocking",
+      "text": "non-blocking: the manifest's tests line says the full gate script is 'saved ... as stamp-mapping.log', but that log carries only a one-line description of the command rather than the script, so the stamp recomposition cannot be re-run from the record."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the plan section's one-sentence deliverable beside the fragment; the fragment names the code path and proves why the guard did not refuse the relaunch, but it names no launching process and leaves the door unresolved.\nVERDICT done_when: checked the fragment against every done_when clause; it starts from the /usr/bin/srun launcher, checks liveness against the exit-record worker pids, and demonstrates the stamp mapping with a two-stamp negative control, but it names no single launch door and does not prove every other door excluded as the fallback requires.\nVERDICT write_paths: read the reviewed manifest's declared write paths; the diff's only path, docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html, is inside them.\nVERDICT manifest: read; it records commit 1f0a40bad4, a single changed path, the stamp-mapping gate and its log, and states no suite pair (read-only node, suite unarmed).\nVERDICT diff: read against base 0b29270f; one commit, one new 105-line HTML evidence file, no production code or test changed.\nCALL_SITES: reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree, reckon/crew/dispatch_launch.py:_launch_refused_by, reckon/crew/recovery_liveness.py:live_worker_reading\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: the fragment proves the guard reads LIVENESS_UNKNOWN and _launch_refused_by falls to return False (reckon/crew/dispatch_launch.py:2147-2158), but no process is named and the door is left open at docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html:47.\nSCORE evidence: 14\nJUSTIFICATION evidence: the stamp-mapping gate ran to EXIT=0 and its 84/43/129 counts match stamp-mapping.log, but it measures only the mapping claim and not the door the done_when requires.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the single changed path of 1f0a40bad4 is inside the declared write paths in the reviewed manifest.\nSCORE durability: 12\nJUSTIFICATION durability: no assertion was added (the diff is documentation), and the only falsifiable control is the two-stamp disjointness in stamp-mapping.log, which guards the instrument rather than the fragment's claims.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment's head meta set and <main class=\"plan-doc\"> sections match the sibling docs/evidence/fragments/a-follower-lives-as-long-as-its-session/a-dry-run-predicts-host-delivery.html.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no function, class or module, so nothing can duplicate a capability the repository already owns.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html:47 non-blocking: the launched door is unresolved \u2014 the fragment names queue_admission.py:441 and recovery_review_dispatch.py:3076 as the two remaining candidates and never rules out the plan_review.py:5351/:6103 doors, so the done_when's fallback (name the launch door and prove every other door excluded) is unmet.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html:70 non-blocking: explanation 3 (the launcher ran code older than the guard) is excluded only for the admit service and recorded unverified for the other candidate door, so the done_when requirement to rule out each of the other two explanations is only partly met.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T121141916129-find-the-second-launcher-of-a-figure-finding/manifest.md:11 non-blocking: the tests line says the full gate script is 'saved ... as stamp-mapping.log', but that log carries only a one-line description of the command rather than the script, so the stamp recomposition cannot be re-run from the record.\n",
+  "review_run_id": "r-20261109T124158266033-review-of-find-the-second-launcher-of-a-figure-finding-1f0a40bad464",
+  "reviewed_base_sha": "0b29270f2699bd7882b7de5faf256bd1496a3221",
+  "reviewed_head_sha": "1f0a40bad464d21fec87e19ccb049ce29976a93e",
+  "reviewed_run_id": "r-20261109T121141916129-find-the-second-launcher-of-a-figure-finding",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 13,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:04:06.522157+00:00",
+  "total": 97
+}
