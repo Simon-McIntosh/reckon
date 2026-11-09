@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T22:33:46.832Z",
+  "dispatched_at": "2026-11-09T22:19:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:593",
+      "id": "wiring-1",
+      "reason": "with no build line naming \u00a721 the section is never dispatched, and the chain terminates at \u00a720, which is the same defect earlier reviews raised for \u00a719 and \u00a720 and which the author's own answer to wiring-1 claimed to have fixed for the new section.",
+      "text": "`_document` declares `data-id=\"s21\"` as `implementable`, but the only followup that could carry its invocation (f-tmref-006, added in this change) has `<pre class=\"r-fu-prompt\">/reckon-build the-monitor-reads-each-fact-once \u00a720</pre>` and an empty `data-recommends-skill`; \u00a721 appears only in the followup's prose body, which is not an invocation this plan's own precedent accepts",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0b3e40fe621b496dcdec0191a6ecd547037aeebe",
+  "plan_fingerprint": "5c31dd1a0779abe74b4ad2ce21fe1eadf44fa409dfa8b3114db0330ebc24b6d4",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 135,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T221509725768-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "ca21f013cd8f059c6012eb281c4404ecbb0e2ee5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `recovery_review_delivery.py:262` is exactly the `list_live(project=project)` call; `recovery_watch.py:1234` is the `_classification_inputs` call inside `_snapshot_reuse_key`; `recovery_classification.py:836` is the `_classification_inputs` call at the head of `classify_pointer`.",
+    "done_when": "pass \u2014 \u00a720 and \u00a721 each assert a countable bound (one `list_live` call per tick and one `_review_input_identities` call per run per tick) and each declares a negative control that fails at the base revision.",
+    "evidence_paths": "pass \u2014 the pre-landing comparison path `~/.config/reckon/crew/runs/r-20261109T120446544718-producer-tick-reads-live-pointers-once/logs/post-landing-heartbeats.log` exists on disk, and both sections log the post-landing sample in the implementing node's own run directory.",
+    "naming": "pass \u2014 the proposed test filenames and the prose carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 each root cause matches the code path it cites: `_declared_head_keyed_record` (`recovery_review_delivery.py:121`) calls `_review_store_record_paths` without `pointers=`, which sets `pointers=None` at `_review_record_delivery_directory` (`:190`) and reaches `list_live` at `:262`; `_crew_home_change_token` (`recovery_watch.py:3024`), `_watch_snapshot` (`:1553`) and `classify_pointer` (`recovery_classification.py:836`) each reach `_review_input_identities` through `_classification_inputs`, so the base tick reads it at least twice per run.",
+    "single_goal": "pass \u2014 \u00a720 is one deliverable (thread the tick's pointer set into the delivered-review stop); \u00a721 is one deliverable (a per-tick memo of each run's classification inputs).",
+    "wiring": "a finding \u2014 `_document` declares `s21` implementable, but the only followup added for the pair (f-tmref-006) carries a build line naming \u00a720 alone, so \u00a721 has no entry point."
+  },
+  "section_digests": {
+    "_document": "4913274f4534fd2aec1af4c7f03c71ed472a0861c44bcfe7bf92b337e486bbee",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T22:54:03.837935+00:00",
+  "total": null
+}
