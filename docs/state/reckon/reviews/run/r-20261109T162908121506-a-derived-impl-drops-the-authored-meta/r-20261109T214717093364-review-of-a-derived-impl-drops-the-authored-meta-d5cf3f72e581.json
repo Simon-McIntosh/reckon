@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T22:06:28.574Z",
+  "dispatched_at": "2026-11-09T21:49:40Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html",
+      "line": 41,
+      "severity": "non-blocking",
+      "summary": "The case table still records case (b)'s criterion as 'file bytes unchanged' while the paragraph added at line 55 and the test at tests/test_a_derived_impl_drops_the_authored_meta.py:220-227 now measure that no write occurred; a reader who takes the table alone gets the weaker claim the previous review rejected."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T162908121506-a-derived-impl-drops-the-authored-meta/no-change-mutation.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "The mutation log carries no revision line and its tree header reads '/reckon/_store.py', a path that resolves nowhere, so a reader cannot tell which head commit was mutated, and the log is the only evidence that case (b)'s assertion fails under a reinstated regression."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Remove a derived plan's authored plan-impl meta on every full-state write through a write_state opt-in'; the two commits this review covers (0f523d209f, d5cf3f72e5) change no product code and leave the opt-in at reckon/_plan_html.py:2219-2295 as the previous review read it, so the goal still holds at the reviewed head.\nVERDICT done_when: the done_when names tests/test_a_derived_impl_drops_the_authored_meta.py covering cases (a)-(f) with (a),(d),(e),(f) red at the dispatch base; the delta rewrites case (b) at tests/test_a_derived_impl_drops_the_authored_meta.py:190-231 and cites node-gate-base.log:1-5, which records 4 failed / 4 passed / EXIT=1 at 9ac9d2af9f over the head copy of the gate file.\nVERDICT write_paths: the declared scope carries tests/test_a_derived_impl_drops_the_authored_meta.py and docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html; git diff --stat 1729897a..d5cf3f72 lists exactly those two files and nothing else.\nVERDICT manifest: read; status complete, commits through d5cf3f72e5, test_logs now naming node-gate-base.log and no-change-mutation.log beside head-arm.log, and baseline_suite and after_suite both completed with failure_count 0 at base-arm.log and head-arm.log respectively.\nVERDICT diff: read both commits against 1729897a; 0f523d209f replaces the content-only case (b) assertion with a write_atomically spy plus an inode/size/mtime comparison and clears RECKON_RUN_ID so the run-scope refusal stops answering for the store, and d5cf3f72e5 cites the base gate log and adds a paragraph stating case (b) is measured on the write; both commits stay inside the declared scope.\nCALL_SITES: reckon/_store.py:_write_plan_state (idempotency guard and write_atomically call at reckon/_store.py:1740-1751), reckon/mcp_deadlines.py:_run_scoped_write_guard\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta at tests/test_a_derived_impl_drops_the_authored_meta.py:190-231 and docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html:52-59 repairs the evidence for the landed opt-in and leaves the product behaviour at reckon/_plan_html.py:2292-2295 unchanged.\nSCORE evidence: 20\nJUSTIFICATION evidence: the dispatch-base gate result is now a readable log (node-gate-base.log:4-5, 4 failed, 4 passed, EXIT=1) and case (b)'s negative control is executed and logged at no-change-mutation.log:1-6 with 1 failed, EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1729897a..d5cf3f72 changes only tests/test_a_derived_impl_drops_the_authored_meta.py and docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html, both named in the node's write paths.\nSCORE durability: 20\nJUSTIFICATION durability: the assertion at tests/test_a_derived_impl_drops_the_authored_meta.py:220 fails when the idempotency guard at reckon/_store.py:1740-1751 is forced through, and no-change-mutation.log records that mutation failing on exactly that line.\nSCORE fit: 18\nJUSTIFICATION fit: the added spy and the explanatory comments follow the surrounding test idiom and name no plan or ticket, but the case table at docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html:41 still states case (b)'s criterion as bytes unchanged, against the paragraph at line 55.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no production definition and no second capability; the test reuses the module-level reckon/_store.py:569 write_atomically through a spy rather than introducing a parallel write path.\nFINDING docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html:41 non-blocking: the case table still reads 'file bytes unchanged' for case (b) while the paragraph at line 55 and tests/test_a_derived_impl_drops_the_authored_meta.py:220-227 measure that no write occurred, so the table alone understates what the case now protects.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T162908121506-a-derived-impl-drops-the-authored-meta/no-change-mutation.log:1 non-blocking: the mutation log names no revision and its tree header reads '/reckon/_store.py', which resolves nowhere, so the provenance of the only evidence that case (b) fails under a reinstated regression cannot be checked.",
+  "review_run_id": "r-20261109T214717093364-review-of-a-derived-impl-drops-the-authored-meta-d5cf3f72e581",
+  "reviewed_base_sha": "1729897a6155d892bfba8d4d3b052626912e21bb",
+  "reviewed_head_sha": "d5cf3f72e58111ea7d0e015220ecd0fa2952dee1",
+  "reviewed_run_id": "r-20261109T162908121506-a-derived-impl-drops-the-authored-meta",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T22:17:12.807608+00:00",
+  "total": 117
+}
