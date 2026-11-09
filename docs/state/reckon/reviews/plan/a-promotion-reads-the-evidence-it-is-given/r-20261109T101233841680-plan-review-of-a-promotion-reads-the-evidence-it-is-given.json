@@ -1,0 +1,58 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:23:59.540Z",
+  "dispatched_at": "2026-11-09T10:14:13Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:107",
+      "id": "wiring-1",
+      "reason": "resolving the followup and leaving `f-aprteiig-010` (Build \u00a710) as the one open instruction is a plan-state write the plan currently forbids by leaving the stale one open.",
+      "text": "with s2\u2013s9 now declared done, `f-aprteiig-001` should be resolved; as written it is the plan's only multi-section build instruction and its prompt names \u00a72, a section that has landed (its s2 comments at lines 122\u2013130 record the build and two reviews), so a coordinator picking up the plan redispatch a finished section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:103",
+      "id": "done_when-1",
+      "reason": "stating the case as \"arms no command\" makes it assert the empty result the deliverable names and locks the placeholder-resolution guard instead of one no-conftest substring.",
+      "text": "\u00a710's second case asks only that a conftest-only node \"arms no conftest target\", while `_scoped_suite_command` returns `\"\"` for an empty file list (promotion_records.py:566) and a broken resolution that substituted nothing would emit a bare `pytest` over the whole suite \u2014 a command naming no conftest at all, so the case passes on a result the section forbids and its single negative control covers only the first case",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2823f2dc91ac0239f47090a77517c53a127b1843",
+  "plan_fingerprint": "9d5234d8b4b2309c30fde4df3eb69ff2f6774dcfde5600c20e08b8dc6a611288",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T101233841680-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "8e4b6eaa8b7e7f40d60ab5a51fd2cd5da0466058",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_node_test_files` (reckon/crew/promotion_records.py:499), `_scoped_suite_command` (:534), `is_test_path` (reckon/crew/node.py:1018) and the `test_temp_config_home` fixture (tests/conftest.py:1065) all resolve, and \"crew-process \u00a76\" resolves to a-crew-process-writes-only-what-it-owns \u00a76, whose node `restart-only-the-hosts-own-followers` records `tests/conftest.py` in its granted write paths.",
+    "done_when": "a finding \u2014 \u00a710's second case asserts only that a conftest-only node \"arms no conftest target\", which a command naming every other file, or a bare whole-suite pytest invocation, also satisfies; the deliverable's own sentence is the stronger \"arms no command from it\".",
+    "evidence_paths": "pass \u2014 \u00a710 sends its negative-control and gate logs to the run directory through the dispatch manifest's `test_logs`/`negative_control_log` fields and names no scratchpad, while requiring each log to open with its revision and literal command and close with a bare `EXIT=` line.",
+    "naming": "pass \u2014 \u00a710 introduces no plan label, stage name, ticket number or version tag into code; the new test file is named for the behaviour (`test_an_armed_command_names_no_conftest.py`).",
+    "reasoning": "pass \u2014 the stated root cause reproduces: `pytest tests/conftest.py --collect-only` collects `tests/conftest.py::test_temp_config_home` as a test, and run `r-20261108T173215608133-restart-only-the-hosts-own-followers` records the armed command naming `tests/conftest.py` with one ERROR \"fixture 'prefix' not found\" in both arms; the mechanism runs on the production path, since `_scoped_suite_command` (promotion_records.py:561) is what resolves the armed command in dispatch.py:1462 and in promotion/queue-landing validation, and it returns the empty string when its file list empties (promotion_records.py:566), which is the \"arms no command\" behaviour the deliverable states.",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, filtering `conftest.py` out of `_node_test_files`, with the test as its evidence.",
+    "wiring": "a finding \u2014 the plan's driving build followup `f-aprteiig-001` is still open and still recommends `/reckon-build \u2026 \u00a72` while `_document` now declares s2 through s9 done and the s2 comments record that section landing, so the only build prompt the plan offers for \u00a72 would redispatch finished work."
+  },
+  "section_digests": {
+    "_document": "cc32472b73a29009d06a1d56714ce28cdfd50ffda0668f99fdd4b618abeb08ed",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "194a786b3d8850191f215df471769ed3ba5ff83b71abb6b8a38117d7543ef267",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:38:19.244106+00:00",
+  "total": null
+}
