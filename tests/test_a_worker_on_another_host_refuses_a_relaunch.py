@@ -360,6 +360,29 @@ def test_an_exit_receipt_for_another_run_on_another_host_still_refuses(
     ), "another run's exit receipt was read as this run's end"
 
 
+def test_an_exit_receipt_naming_no_run_on_another_host_still_refuses(
+    run_directory: Path,
+) -> None:
+    """(a1) A receipt that parses but names no run is absent, not the end.
+
+    Its presence proves only that something wrote a JSON object here. A
+    foreign launch is freed by this run's own account of its end, so a
+    receipt carrying no run id — or any other run's — frees nothing.
+    """
+    pointer_pid = _dead_pid()
+    _write_canonical_worker(run_directory, _dead_pid())
+    _truncate(run_directory / "exit.json", "{}")
+    _write_pointer(pid=pointer_pid)
+
+    text = _refused(run_directory)
+
+    assert text == (
+        f"run {RUN_ID!r} cannot read whether its worker is live "
+        f"(launched on host {FOREIGN_HOST}, pid {pointer_pid}): "
+        f"{SPAWN_TAIL}; {FOREIGN_REMEDY}"
+    ), "a receipt naming no run was read as this run's end"
+
+
 def test_a_canonical_worker_on_another_host_with_its_exit_spawns(
     run_directory: Path,
 ) -> None:

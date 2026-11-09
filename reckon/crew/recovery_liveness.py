@@ -1496,23 +1496,43 @@ def _run_chain_manifest_freshness(record: Mapping[str, Any]) -> tuple[bool, bool
 EXIT_RECORD_NAME = "exit.json"
 
 
-def _run_exit_record(record: Mapping[str, Any]) -> dict[str, Any] | None:
+def _run_exit_record(
+    record: Mapping[str, Any],
+    name: str = EXIT_RECORD_NAME,
+    *,
+    require_run_id: bool = False,
+) -> dict[str, Any] | None:
     """The supervisor's exit record for a run, or None when there is none.
 
     Read verbatim and defensively: a file that cannot be read or parsed, or
     that names a different run, is absent rather than an error, so a damaged
     record classifies a run on its other evidence instead of refusing it.
+
+    ``name`` selects which receipt in the run directory is read. The canonical
+    ``exit.json`` sits beside the current worker record; a retired attempt
+    leaves the same payload under ``attempt-N-exit.json``, and a resume retires
+    one into the other. Both are read here so the two shapes cannot answer on
+    different terms.
+
+    ``require_run_id`` asks for the stricter reading a launch guard needs: the
+    receipt must name this run. The default stays lenient for the callers that
+    classify a run on its other evidence, where a receipt that omits a run id
+    is still this run's own.
     """
     run_id = str(record.get("run_id") or "")
     try:
         payload = json.loads(
-            (_run_directory(record) / EXIT_RECORD_NAME).read_text(encoding="utf-8")
+            (_run_directory(record) / name).read_text(encoding="utf-8")
         )
     except (OSError, ValueError):
         return None
     if not isinstance(payload, Mapping):
         return None
     recorded = str(payload.get("run_id") or "")
+    if require_run_id:
+        if not run_id or recorded != run_id:
+            return None
+        return dict(payload)
     if run_id and recorded and recorded != run_id:
         return None
     return dict(payload)
