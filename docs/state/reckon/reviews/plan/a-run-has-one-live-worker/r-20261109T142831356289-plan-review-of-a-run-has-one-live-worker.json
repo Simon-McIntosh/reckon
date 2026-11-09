@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:37:25.081Z",
+  "dispatched_at": "2026-11-09T14:30:34Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:177",
+      "id": "reasoning-1",
+      "reason": "the discriminator needs splitting into a key source (receipts only) and a relaunch test (any launch trace, marker included), and `s16` needs a two-door first-attempt case; without that the node closes `s13`'s window while appearing to tidy up.",
+      "text": "`s16` changes `run_holds_an_attempt_record` to read only worker/exit/`attempt-N` receipts, and that is the clause that catches a run's *first* attempt in flight: `dispatch.py:2772` writes the `attempt.json` marker 85 lines *before* the reservation block at `dispatch.py:2857`, so door B currently sees `attempt.json`, takes a reservation keyed off receipts (none) plus one, and is refused by door A's hold; with the clause gone the discriminator answers \"never launched\", the launch takes no reservation, and door B is admitted beside a door A still between its marker and its supervisor's `worker.json` \u2014 the exact window `s13` closed. `s16` justifies the removal by saying `s13` \"declares `attempt.json` is no receipt\", but `s13` excludes it from the reservation *key* so two racing doors derive the same key, not from the relaunch *decision*. `s16`'s done-when has no case for two doors racing on a run's first attempt, so its gate cannot see this.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "reasoning-2",
+      "reason": "without naming the naming owner, the node either adds a second naming path beside `_live_worker_naming` (the duplication `s8` and `s9` were written to remove) or fails its own (a1)/(a2) assertions, and a reader of the refusal would be told the worker is \"an unrecorded process\" or \"placed on a scheduler job\" when the run was launched on another machine.",
+      "text": "`s15` makes a foreign record's unknown reading \"take the placed-unknown branch\" of `_launch_refused_by` (`dispatch_launch.py:2151`, gated on `reading.arm == LIVENESS_PLACED`) and makes `_live_worker_refusal` \"name its `launcher_host` and recorded pid\", but a foreign reading is `LivenessReading(LIVENESS_UNKNOWN, None)` \u2014 arm `unknown`, no pid, no session (`recovery_liveness.py:1362`) \u2014 so the refusal's naming comes from `_live_worker_naming` (`dispatch_launch.py:2020`), which `s15` never mentions: it branches on the arm and would answer `\"an unrecorded process\"` for an unknown arm, or `\"placed on a scheduler job, liveness unknown\"` if the branch is reached by widening the arm test. `s15`'s done-when requires each of (a1)/(a2) to name the recorded `launcher_host` and pid, so as written the mechanism cannot produce the measure it asserts.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:173",
+      "id": "done_when-1",
+      "reason": "the base arm is the only control showing the guard is what turns (a1)/(a2) green, and as stated it can pass on a missing file, leaving the node's whole measure resting on an arm that never exercised the base code.",
+      "text": "`s15` writes a brand-new test file (`tests/test_a_worker_on_another_host_refuses_a_relaunch.py`, confirmed absent from the tree) and states only that \"(a1) and (a2) fail at the dispatch base and pass at the head\", while every sibling section says \"with the new test copied into the base tree\" (`s9`, `s10`, `s11`, `s12`, `s13`, `s16`). Run at the dispatch base without the copy, the arm exits non-zero because the path does not exist, so the declared control is satisfied by run and proves nothing about the guard.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:115",
+      "id": "anchors_resolve-1",
+      "reason": "a citation pointing at a 140 KB module that does not hold the symbol sends the next reader of \"where are opened repair rounds recorded\" to the wrong file, and the repair is a one-line correction to the section text.",
+      "text": "`s6` cites \"the pointer's record of opened rounds in `reckon/crew/recovery_review_dispatch.py`\" in a bullet a later node reads as the owner of that fact; `def _opened_repair_rounds` is at `reckon/crew/recovery_repair_dispatch.py:966` and appears nowhere in `recovery_review_dispatch.py`, and `s6`'s own landed record on this page (line 374) and its first review (line 368) both name `recovery_repair_dispatch.py`.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "9ebe85abc31be4e0599c3006b6c87bbd78faba09",
+  "plan_fingerprint": "ec6c90b20c60f2b06e454d7d3c1745ea791d87c6f0563d9f24c927f2675891b6",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 129,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T142831356289-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "924bcdb23f3c0dffb2b671ff1c1f248fe3fff0fc",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 `s6` names `reckon/crew/recovery_review_dispatch.py` as the owner of the pointer's record of opened rounds, and that module does not hold it; every line number cited by the open nodes (`s15`, `s16`) resolves against the tree (`_launch_refused_by` 2125, `live_worker_reading` 1343, `_supervisor_write` 1947, paired-dispatch pre-create 1354, attempt marker 2772, `claim_next_attempt` 389), and the extensionless evidence hrefs resolve as `<path>.html`.",
+    "done_when": "a finding \u2014 `s15`'s base-arm control is stated without the \"new test copied into the base tree\" clause that every sibling section carries, so at the dispatch base the control fires on a file that does not exist rather than on a guard that does not refuse.",
+    "evidence_paths": "pass \u2014 gate logs land under each run's own directory, the archive record (`docs/evidence/archive/a-run-has-one-live-worker-landed.html`) and the fragment directory (`docs/evidence/fragments/a-run-has-one-live-worker/`) both exist, and no gate log is asked for in a session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new test and symbol names state the mechanism they guard (`test_a_worker_on_another_host_refuses_a_relaunch`, `run_holds_an_attempt_record`), and no section label, sprint id or ticket number reaches a symbol, filename or comment.",
+    "reasoning": "two findings \u2014 `s16`'s discriminator change drops the only clause that makes a second door reserve during a run's *first* launch, reopening the concurrent-launch window `s13` exists to close; and `s15` names three changes in `_launch_refused_by` plus `_live_worker_refusal` but never names `_live_worker_naming`, which is the function that actually produces the wording its done-when asserts.",
+    "single_goal": "pass \u2014 each open node names one deliverable, and `s16`'s six folded review items all repair one thing, the launch reservation's stray state, with a case per behaviour.",
+    "wiring": "pass \u2014 the declared chain honours every write-path overlap that exists (`s7`\u2192`s6`, `s9`\u2192`s8`, `s10`\u2192`s11`, `s15`\u2192`s13`, `s16`\u2192`s15`), `plan-depends-on` (a-crew-process-ends-with-its-owner) resolves to a live plan, and each declared wait is justified by an actual shared file (`s15`/`s16` both write `reckon/crew/dispatch_launch.py`); the only undeclared consumption is `s15` reading `s14`'s evidence fragment, and `s14` is already landed so no queue consequence follows."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "fa995ea7b53dd53d52132d4edc60aaa03abfc3be549c92732953ffe594ee5f49",
+    "s16": "e156f6e3a5ed0bf673883fa5da80b9c97c55a8945d639180c7511ff51ed9190e",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "63bd79fcdd7baf06c8cc0bbc04ef21beec3605a6fdb13eed90b3ad410f8516e7",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:44:43.342474+00:00",
+  "total": null
+}
