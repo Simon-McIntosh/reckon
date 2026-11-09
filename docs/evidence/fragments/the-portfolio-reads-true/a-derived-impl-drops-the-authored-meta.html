@@ -55,4 +55,20 @@
   (<strong>4 failed, 4 passed</strong>, <code>EXIT=1</code>) with the same four FAILED ids and none
   that the head arm fails. The mutation was applied in a scratch tree, never to the committed
   bytes.</p>
+
+  <h3>The change adds no failing test</h3>
+
+  <p>Two arms ran the same 380 importing modules at <code>-n 6</code>: the dispatch base
+  (<strong>56 failed, 7458 passed, 4 errors</strong>) and the head (<strong>57 failed, 7457 passed,
+  5 errors</strong>). The opt-in exposed two genuine head-only failures, both in tests outside this
+  node's write scope: a corpus round-trip test whose outside-editable comparison saw the dropped
+  meta, and a monkeypatched rendering double that did not accept the new keyword. Both are repaired
+  at the head and now pass.</p>
+
+  <p>What remains head-only is not this change. Three browser-geometry cases fail at the head and
+  pass at the base when each arm runs alone, but they fail as a <code>BrowserProbeError</code> rather
+  than an assertion: the page never becomes ready and the probe names the boundary as Chrome's
+  Network Service above Internet stream-socket creation, a host-browser runtime owner's repair.
+  Five further head-only errors are <code>pytest-timeout</code> at 120 s under the six-worker arm,
+  and the same file passes 6 of 6 in 55 s when run alone.</p>
 </section>
