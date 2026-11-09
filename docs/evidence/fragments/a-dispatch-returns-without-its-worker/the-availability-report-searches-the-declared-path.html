@@ -26,6 +26,18 @@
     <code>"PATH"</code>; and a declaration pointing at an empty directory leaves
     the report reading false.
   </p>
+  <p id="the-availability-report-searches-the-declared-path-population">
+    The seventy-eight test files that import <code>reckon.flight</code>, built
+    from the head's <code>tests/</code> with grep, run one arm at a time with
+    <code>-n 4</code>: head reports <strong>20 failed, 957 passed, 2 skipped, 1
+    error</strong>, and the base revision with the node's own new file dropped
+    reports <strong>20 failed, 951 passed, 2 skipped, 1 error</strong>. The
+    diff of the two failure-id sets is empty, so the node adds no failure; the
+    six-test difference is the new file. Both arms carry the same
+    <code>tests/conftest.py::test_temp_config_home</code> collection error,
+    because that file's helper is named like a test and is collected when the
+    file is passed explicitly — it reads nothing this node changed.
+  </p>
   <p id="the-availability-report-searches-the-declared-path-control">
     Negative control: the declared arm is replaced by a bare
     <code>shutil.which(command)</code>, and the first case fails —
