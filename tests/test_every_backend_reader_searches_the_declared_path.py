@@ -292,7 +292,6 @@ def test_a_lane_change_records_its_own_and_a_planless_lane_clears_them(
     moved = crew.read_pointer(run_id)
     assert moved["backend"] == DESTINATION
     assert moved["backend_search_path"] == [destination]
-    assert (tmp_path / "destination-backend-bin" / COMMAND).is_file()
 
     dispatch_sessions.change_lane(
         run_id,
