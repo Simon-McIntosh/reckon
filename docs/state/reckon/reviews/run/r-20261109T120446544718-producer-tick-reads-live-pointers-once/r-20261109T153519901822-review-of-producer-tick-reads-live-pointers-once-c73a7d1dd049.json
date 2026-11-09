@@ -64,6 +64,11 @@
       "kind": "exempted",
       "reason": "Answered by evidence the review did not read: before it was dispatched, the coordinator ran all 786 importing test files at base 3118c2969a and head c73a7d1dd0 in 13 slices (-n 8, 60 s per-test timeout). Five head-only ids appeared; on rerun none holds: the shadow-paths test passes at head 6/6, the producer-config test also fails at base 1/3, and the three queue-bound cases fail identically at base and head alone. Per-slice logs and summary.txt in logs/pop/; repair note on the run at 15:29:39Z.",
       "recorded_at": "2026-11-09T15:53:15.329102+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking and correct: the event count follows from the fixture, but the list_live, publish and flight.resolve counters and the tick-bound deadline assertions carry the regression guard, and their base negative control fails. Left as is rather than reopening the node for a redundant assertion.",
+      "recorded_at": "2026-11-09T15:53:28.787849+00:00"
     }
   },
   "findings": [
