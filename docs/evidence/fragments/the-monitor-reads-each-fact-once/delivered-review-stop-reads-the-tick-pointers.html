@@ -1,0 +1,32 @@
+<section id="delivered-review-stop-reads-the-tick-pointers-outcome">
+<h3>Delivered reviews share the tick's pointer set</h3>
+<p>The regression fixture contains 40 live pointers, including five reviewers
+with valid head-keyed records and complete manifests. Their streams continue
+600 seconds beyond delivery, past the 300-second grace. The test patches every
+loaded binding of <code>list_live</code>, including aliases, and verifies all
+five stop signals and the corresponding persisted stop receipts. It also
+checks the reviewed run and node carried by each review event.</p>
+<table>
+<thead><tr><th>Measure</th><th>Base code</th><th>Changed code</th></tr></thead>
+<tbody>
+<tr><td>Live pointers in the synthetic crew home</td><td>40</td><td>40</td></tr>
+<tr><td>Delivered reviewers stopped</td><td>5</td><td>5</td></tr>
+<tr><td><code>list_live</code> calls in one synchronous tick</td><td>11</td><td>1</td></tr>
+</tbody>
+</table>
+<p>The pointer set now travels through the delivery verdict, declared record
+lookup and reviewed-run resolver. The tick's review events pass it to the same
+resolver as well. Standalone callers retain the optional-pointer fallback.
+The independent obligations publisher holds its sweep lock during this
+synchronous-tick measurement, using the existing producer fixture.</p>
+<p>The negative control at base
+<code>0a50d367fc7e69a5d957323c24f045f181bf3d22</code> fails the final count
+assertion with <code>assert 11 == 1</code>. The head probe passes with one
+listing and five stopped-review receipts. Logs and exact commands are retained
+in the node run directory alongside the manifest. The importer comparison and
+any unmet validation conditions are recorded there; this fragment does not
+claim an importing-suite pass.</p>
+<p>Scoped lint adds zero findings: four existing watcher findings are unchanged,
+and every changed Python file passes the format check. The coordinator owns
+the live producer sampling after landing and the merged-head verification.</p>
+</section>
