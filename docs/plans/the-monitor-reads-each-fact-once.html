@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-blocks" content="crew-state-stays-bounded">
   <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;the-monitor-reads-each-fact-once#s5&quot;],&quot;s7&quot;:[&quot;the-monitor-reads-each-fact-once#s6&quot;],&quot;s8&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s9&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;],&quot;s10&quot;:[&quot;the-monitor-reads-each-fact-once#s7&quot;,&quot;the-monitor-reads-each-fact-once#s8&quot;],&quot;s12&quot;:[&quot;the-monitor-reads-each-fact-once#s8&quot;,&quot;the-monitor-reads-each-fact-once#s9&quot;,&quot;the-monitor-reads-each-fact-once#s10&quot;,&quot;the-monitor-reads-each-fact-once#s11&quot;,&quot;the-monitor-reads-each-fact-once#s13&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="135">
+<meta name="plan-version" content="136">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -591,6 +591,11 @@ staged paths.</p>
     <h4 class="r-fu-title">Land the review-store reads</h4>
     <div class="r-fu-body"><p>§20 and §21 each remove a repeated per-run read from the producer tick; they touch different call paths and can run together.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §20</pre>
+    </article>
+<article class="r-fu" data-id="f-tmref-007" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-09 23:50" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Land the shared per-tick classification inputs</h4>
+    <div class="r-fu-body"><p>§21 is running as r-20261109T220405605375; land it beside §20, then sample the producer's busy share.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §21</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
