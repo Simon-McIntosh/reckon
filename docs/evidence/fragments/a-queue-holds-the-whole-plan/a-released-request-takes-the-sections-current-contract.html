@@ -1,0 +1,48 @@
+<section id="a-released-request-takes-the-sections-current-contract-landing">
+  <h2>A released request takes the section's current contract</h2>
+
+  <p><strong>What changed.</strong> A batch entry that omits a node field takes
+  the section's value, and a queued request stored that value as if it were the
+  dispatcher's own. A request held because its plan had moved was then released
+  onto the text the plan moved to, while its stored <code>done_when</code> still
+  described the text it was queued against — so the worker's prompt and its plan
+  disagreed. <code>_entry_node</code> (<code>reckon/crew/dispatch_batch.py</code>)
+  now records which node fields its section supplied, each with the digest of
+  the value taken, and the batch writer stores that mark on the request beside
+  the node it describes. <code>_release_plan_review_holds</code>
+  (<code>reckon/crew/queue_admission.py</code>) re-derives every marked field
+  from the section at the release base before the request leaves
+  <code>held</code>, records the old and new digest of each under
+  <code>section_rederivation</code>, and publishes the re-derived node on the
+  same pass's in-memory record, so a request released and launched in one pass
+  runs the current contract. <code>crew queue edit</code>
+  (<code>reckon/crew/queue_edit.py</code>) clears the mark on any field it sets,
+  so a coordinator's edit is kept; a field the dispatcher supplied carries no
+  mark from the start.</p>
+
+  <h3 id="a-released-request-takes-the-sections-current-contract-measured">Measured</h3>
+
+  <p>Three cases in
+  <code>tests/test_a_released_request_takes_the_sections_current_contract.py</code>
+  run against a synthesised mounted project under <code>RECKON_HOME</code> with
+  <code>plan_review_gate</code> set to <code>enforce</code>, so the plan change
+  takes a hold. In the first, a request whose section supplied its done-when is
+  held when the section's done-when changes, released once a review of the new
+  text is stored, and launches with the new text: the pointer's
+  <code>done_when</code> carries it, and
+  <code>section_rederivation.done_when</code> records the digest of the stored
+  value as <code>old</code> and of the launched value as <code>new</code>. In the
+  second, a done-when the dispatcher supplied survives the same change. In the
+  third, a done-when set by <code>crew queue edit</code> survives it.</p>
+
+  <p>The negative control is logged at
+  <code>logs/negative-control.log</code> in the run directory: releasing with
+  the stored fields, as before this change, makes the first case launch the old
+  done-when and the case fails with
+  <code>assert 'pytest -q tests/test_new.py reports 5 passed' in 'Done when :
+  pytest -q tests/test_old.py reports 2 passed.'</code>, <code>EXIT=1</code>.
+  The four cases pass at the head. Every test file importing
+  <code>reckon.crew.queue_admission</code> runs at the base revision and at the
+  head in one arm at a time with <code>-n 4</code>; the two arms are compared by
+  delta and the logs sit under <code>logs/</code> in the run directory.</p>
+</section>
