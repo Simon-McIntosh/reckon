@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:05:13.496Z",
+  "dispatched_at": "2026-11-09T14:55:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:176",
+      "id": "reasoning-1",
+      "reason": "a node that honours `\u00a713`'s rule leaves the brief-less first-attempt race `\u00a716` exists to close wide open, and a node that honours `\u00a716` falsifies `\u00a713`'s stated measure, so the section that supersedes the other must say so in one line.",
+      "text": "`\u00a716` says \"`run_holds_an_attempt_record` counts every launch trace, the in-flight `attempt.json` included\" and that \"the attempt marker is written for every fresh launch, in a run directory created before it, briefed or not\"; the marker is written at `reckon/crew/dispatch.py:2773` and the reservation check is at `dispatch.py:2861`, so after this repair a first launch under a fresh run id writes its own marker and then takes a reservation \u2014 while `\u00a713` (line 165) states \"A first launch under a fresh run id \u2026 takes no reservation and keeps the attempt the ledger derives for it, as today\" and its done-when lists \"a first launch under a fresh run id \u2026 takes no reservation\", so the plan holds two opposite rules and `\u00a716`'s brief-less two-door case depends on the one `\u00a713` forbids",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:176",
+      "id": "done_when-1",
+      "reason": "a node running the stated command sees two surviving hits with no instructed action, so it must either record its own gate as failed or make an unstated edit to a fixture the section never says to touch.",
+      "text": "`\u00a716`'s done-when requires `git grep -n \"claim_next_attempt\\|release_attempt_claim\"` over `reckon tests scripts skills` to return nothing once the pair is deleted, but `tests/test_staged_write_inventory.py:168` and `:198` contain both identifiers inside `ast.parse(\"\"\"\u2026\"\"\")` fixture sources that model the analyser's exclusive-create-then-move-aside shape and call the real functions nowhere, while the same done-when says that file only \"adds no failure\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bbfc74d229d509ba698b0f6b47a6a15cd3b38ee5",
+  "plan_fingerprint": "b64d3da11643320304acaef6d91354e52706288fc1f019afad1d19735e077c0e",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 130,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T145332495167-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "0bb5487c66309d978dd45b152eec3b0c3586836c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor in the two units resolves at the snapshot base: `dispatch.py:1351`\u21921352 (paired `mkdir`), `2772`\u21922773 (marker write), `2894` (late `mkdir`), `dispatch_launch.py:2440` (`contextlib.suppress(OSError)` around the supervisor record), `2558` (`_store_brief`), `resumption.py:389` (`claim_next_attempt`, with `release_attempt_claim` at 358), `recovery_liveness.py:1362` (foreign early return in `live_worker_reading`), and `tests/test_a_concurrent_launch_is_refused.py:446/461/782` (`assert pid > 0`, fresh-run case; file is 783 lines). The cited evidence fragment `docs/evidence/fragments/a-run-has-one-live-worker/find-the-second-launcher-of-a-figure-finding.html` exists.",
+    "done_when": "a finding \u2014 `\u00a716`'s `git grep -n \"claim_next_attempt\\|release_attempt_claim\"` (docs/plans/a-run-has-one-live-worker.html:176) cannot return nothing, because two analyser fixtures in `tests/test_staged_write_inventory.py` carry both identifiers inside `ast.parse` source strings.",
+    "evidence_paths": "pass \u2014 both units now declare write paths and the gate-log rule, and every gate log lands in the launching run's durable directory under `/home/ITER/mcintos/.config/reckon/crew/runs/`, not a scratchpad.",
+    "naming": "pass \u2014 no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment in either unit; `\u00a715`/`\u00a716` appear only as section prose, which is the plan's own vocabulary.",
+    "reasoning": "a finding \u2014 `\u00a716`'s repair (2) makes every fresh launch write `attempt.json` before the reservation check and `\u00a716` keeps `run_holds_an_attempt_record` counting that marker, so a fresh run id takes a reservation, contradicting `\u00a713`'s live statement that it takes none.",
+    "single_goal": "pass \u2014 `\u00a715` names one deliverable (an off-host record refuses a relaunch until an exit receipt shows the launch ended), and `\u00a716`'s four behaviour changes plus two test repairs are one theme, the reservation leaving no stray state, each carrying its own case.",
+    "wiring": "pass \u2014 neither changed unit adds or needs a `depends-on`, `informs` or `gates` edge; the plan's single dependency `a-crew-process-ends-with-its-owner` is unchanged and both units are sequenced behind `s14`/`s13` by section order only."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "4a57fef6e2f6d6ff8021de0ff55c23a1f03954d373b613dd52d08983385aab3a",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:17:46.933027+00:00",
+  "total": null
+}
