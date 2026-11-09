@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:13:24.869Z",
+  "dispatched_at": "2026-11-09T14:06:17Z",
+  "findings": [
+    {
+      "anchor": "plan.html:176",
+      "id": "reasoning-1",
+      "reason": "",
+      "text": "\u2014 \u00a710 requires both \"a state write to a plan whose impl is derived removes the authored `plan-impl` meta\" and \"a no-change parse and serialise stays byte-identical, so a reader-only pass never touches the file\", but the write path it names, `write_state` (`reckon/_plan_html.py:2219`), takes only `(html_text, state)` and is a pure text transform with no notion of whether a write changes state; the no-op protection in production lives in the caller instead, `serve.py:3913`'s state-dict comparison with `version`/`modified` stripped, which skips the disk write for a patch carrying no content change. An implementer reading \u00a710 in isolation can therefore only key removal on the meta disagreeing with the served figure \u2014 which fires on a no-change parse and serialise too and makes case (b) unsatisfiable on the stale-meta fixture the section describes \u2014 or invent a signal the plan does not specify, most plausibly comparing the incoming `version` with the file's existing `plan-version` meta. The section also names no caller at all, where \u00a78 names `edit_plan` and \u00a79 names `_replayed_response`. WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: without the entry point and the detection rule named, the node either strips the meta on a reader-only serialise (the churn \u00a710 explicitly forbids) or invents a gate, and case (b)'s \"that plan\" is ambiguous between the stale-meta fixture and the post-removal plan, so the requirement it is meant to pin is not pinned.",
+      "type": "reasoning",
+      "would_change": null
+    }
+  ],
+  "plan_commit": "f4ee9d5cee2f7c17a5863a515c217a5d33eca9f8",
+  "plan_fingerprint": "d09c5f42bf05723eb6dbf1dbcef91f9d9767ff87a305c6854087905e81683f66",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 72,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T140442153862-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "b9b1753b256a239795f3d397e56f5c718775d428",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_plan_html.py` near line 2281, `_set_meta_block`,",
+    "done_when": "pass \u2014 case (a) is a measurable assertion with a stated negative control (\"fails",
+    "evidence_paths": "pass \u2014 gates and logs go under the run directory, a durable path, not a",
+    "naming": "pass \u2014 the section names no plan labels, ticket numbers or version tags, and its test",
+    "reasoning": "a finding \u2014 \u00a710 places the removal in `write_state` but names neither the",
+    "single_goal": "pass \u2014 \u00a710 carries one deliverable, dropping the authored `plan-impl` meta on a",
+    "wiring": "pass \u2014 \u00a710's only upstream, \u00a72, is done and needs no wire; the plan's single"
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "070e82420a939c1f5cd654a23b7b9a3ae2310853df8b7e03ba4637720ee06bee",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:23:28.267133+00:00",
+  "total": null
+}
