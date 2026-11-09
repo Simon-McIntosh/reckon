@@ -1,0 +1,67 @@
+<section id="read-manifest-evidence-in-written-shapes-landing">
+  <h2>Manifest evidence is read in the shapes workers write it</h2>
+  <p><code>reports._split_entry_tokens</code> reads a guarded list field whose
+  whitespace-separated tokens are each entry-shaped as those tokens in order, so
+  a <code>test_logs</code> line of two paths is two logs rather than one path
+  that does not exist. An entry carrying a prose word keeps its present reading,
+  which leaves a commit id followed by its subject one entry.
+  <code>orientation_write_paths</code> joined <code>_MANIFEST_LIST_KEYS</code>,
+  so the coercion loop reaches it and <code>dispatch_launch</code>'s hand-built
+  union reads the one set.</p>
+  <p><code>reports._refuse_glued_suite_arm_key</code> refuses a suite observation
+  folded onto the word before it (<code>resolved herebaseline_suite: {…}</code>)
+  as a <code>ManifestParseError</code> naming the field it sits in and the arm,
+  when the manifest records no arm of that name on its own line. Prose that
+  quotes the key after a space or a backtick is not refused.</p>
+  <p><code>promotion_evidence._missing_suite_arms_clause</code> makes the
+  passing-verdict refusal beside a nonzero exit say that the manifest records
+  neither arm, and names the shape each arm takes by calling
+  <code>ledger.suite_observation_missing_fields</code> rather than restating its
+  fields.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Defect reproduction at dispatch base
+      <code>1f74899e3f</code>, the two cited power_convertor manifests beside a
+      log ending <code>EXIT=1</code></td>
+      <td>Reproduced before any change: the joined <code>test_logs</code> line
+      read as 1 entry whose path does not exist, and the glued manifest recorded
+      <code>baseline_suite</code> as absent.</td></tr>
+      <tr><td>Armed suite at dispatch base, new test copied into a scratch tree</td>
+      <td>5 failed, 5 passed; exit 1.</td></tr>
+      <tr><td>Armed suite at head</td><td>10 passed; exit 0.</td></tr>
+      <tr><td>Declared mutations: reading <code>test_logs</code> as one entry;
+      splitting <code>test_logs</code> alone; leaving <code>commits</code>
+      unsplit</td>
+      <td>3 runs, each exit 1: 2 failed / 1 failed / 1 failed respectively, each
+      naming the case the declaration predicts.</td></tr>
+      <tr><td>Census over
+      <code>~/.config/reckon/crew/runs/r-202610*/manifest.md</code> and
+      <code>r-202611*/manifest.md</code>, by name, under
+      <code>timeout 600</code></td>
+      <td>14,874 read by both arms, neither timed out. Base refused 174; the new
+      reader refused 174, and refused none the base parsed. 14,694 manifests
+      change reading, of which 14,694 are <code>orientation_write_paths</code>
+      now typed as a list; entry counts grow for 554 <code>test_logs</code>
+      lines, 63 <code>changed_paths</code> lines and 1 <code>commits</code>
+      line.</td></tr>
+      <tr><td>Commits lines holding a token that is not entry-shaped</td>
+      <td>3,982 manifests, measured before the rule was widened.</td></tr>
+      <tr><td>Glued-arm scan over 17,437 <code>manifest.md*</code> variants</td>
+      <td>2 files refused, both attempts of the cited
+      <code>r-20261107T042213595047-vs1-edge-train-settled</code> manifest.</td></tr>
+      <tr><td>Related manifest and resolver tests, base and head</td>
+      <td>Both arms 1 failed / 167 passed; the single failure is
+      <code>test_only_the_shared_parser_calls_fromisoformat</code>, present at
+      the base and outside this node's scope. Zero added.</td></tr>
+      <tr><td>Ruff check and format on the staged paths</td>
+      <td>No added findings; the two remaining <code>dispatch_launch.py</code>
+      findings are present at the base.</td></tr>
+    </tbody>
+  </table>
+  <p>The one <code>commits</code> line whose entry count grows carries a sha
+  followed by parenthesised paths on one line; its shas are now read separately
+  and the parenthetical fragments drop as unresolvable, where the whole line was
+  dropped silently before. Logs and census arm outputs are in run
+  <code>r-20261107T233013473203-read-manifest-evidence-in-written-shapes</code>.</p>
+</section>

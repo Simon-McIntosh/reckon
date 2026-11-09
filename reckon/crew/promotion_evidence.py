@@ -14,6 +14,9 @@ from typing import Any
 from reckon import (
     _store,
 )
+from reckon import (
+    ledger as ledger_module,
+)
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     CrewError,
@@ -1354,6 +1357,34 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
     return None
 
 
+_SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
+
+
+def _missing_suite_arms_clause(manifest: Mapping[str, Any] | None) -> str:
+    """Name the arm shapes a manifest recording no suite observation lacks.
+
+    A passing verdict beside a nonzero exit can only be the delta verdict when
+    the run records both arms, and a manifest recording neither has no delta to
+    read: the refusal says so rather than leaving the reader to infer it from a
+    rule about arms that are not there. The shape each arm takes is read from
+    ``ledger.suite_observation_missing_fields`` rather than restated, so a field
+    added to the arm's contract is named here without a second edit.
+    """
+    if isinstance(manifest, Mapping) and any(
+        manifest.get(name) is not None for name in _SUITE_ARM_NAMES
+    ):
+        return ""
+    shapes = "; then ".join(
+        ", ".join(ledger_module.suite_observation_missing_fields({}, name=name))
+        for name in _SUITE_ARM_NAMES
+    )
+    return (
+        ", and the manifest it promotes records neither a 'baseline_suite' nor "
+        "an 'after_suite' arm, so it holds no suite observation to read a delta "
+        f"against: each arm takes the fields {shapes}"
+    )
+
+
 _UNCOVERED_IDS_SHOWN = 20
 
 
@@ -1416,7 +1447,9 @@ def _require_verdict_matches_exit_status(
     uncovered = _red_base_uncovered_ids(record, gate_check)
     if uncovered == set():
         return
-    incomplete = _arm_without_completion(_fresh_manifest(record))
+    fresh_manifest = _fresh_manifest(record)
+    incomplete = _arm_without_completion(fresh_manifest)
+    missing_arms = _missing_suite_arms_clause(fresh_manifest)
     withheld = (
         ""
         if incomplete is None
@@ -1432,7 +1465,7 @@ def _require_verdict_matches_exit_status(
         "passed verdict states the check succeeded and a nonzero exit status "
         "states it did not, so the row would record two contradictory readings "
         f"of one run. Found: gate 'passed' with a nonzero exit status, "
-        f"'{asserted}'{withheld}{named}. Re-promote with the verdict the evidence "
+        f"'{asserted}'{withheld}{named}{missing_arms}. Re-promote with the verdict the evidence "
         "shows, or — when the base this check measures against is itself red, "
         "the head adds no failure to it, and both suite arms record "
         "completed: true — the passing verdict states the zero added against "

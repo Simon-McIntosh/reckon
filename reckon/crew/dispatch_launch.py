@@ -3581,7 +3581,7 @@ def _worker_manifest_is_whole(manifest_path: Path) -> bool:
     """
     from reckon.crew.reports import _MANIFEST_LIST_KEYS
 
-    keys = frozenset((*_MANIFEST_LIST_KEYS, "orientation_write_paths"))
+    keys = _MANIFEST_LIST_KEYS
     try:
         text = manifest_path.read_text(encoding="utf-8")
     except OSError:

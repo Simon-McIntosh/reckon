@@ -87,6 +87,7 @@ _MANIFEST_LIST_KEYS = (
     "changed_paths",
     "retry_failures",
     "test_logs",
+    "orientation_write_paths",
     "artifacts",
     "evidence_inputs",
     OUTSIDE_SCOPE,
@@ -166,7 +167,7 @@ _TEXT_SHAPE = frozenset({"text"})
 _LIST_SHAPE = frozenset({"list"})
 _MAPPING_SHAPE = frozenset({"mapping"})
 _MANIFEST_SCHEMA: dict[str, frozenset[str]] = {
-    **dict.fromkeys((*_MANIFEST_LIST_KEYS, "orientation_write_paths"), _LIST_SHAPE),
+    **dict.fromkeys(_MANIFEST_LIST_KEYS, _LIST_SHAPE),
     "evidence_inputs": frozenset({"list", "mapping"}),
     "tests": frozenset({"text", "mapping"}),
     "failure_attribution": frozenset({"text", "mapping"}),
@@ -867,15 +868,19 @@ def _normalise_manifest_fields(
         retired = fields.pop(RETIRED_OUTSIDE_SCOPE)
         fields.setdefault(OUTSIDE_SCOPE, retired)
     has_retry_failures = "retry_failures" in fields
+    _refuse_glued_suite_arm_key(fields, path=path)
     for name in _GUARDED_LIST_KEYS:
         _refuse_joined_list_separator(name, fields.get(name), path=path)
     for name in _MANIFEST_LIST_KEYS:
         value = fields.get(name)
-        fields[name] = (
+        coerced = (
             _coerce_commit_identifiers(value)
             if name == "commits"
             else _coerce_list_field(value)
         )
+        if name in _GUARDED_LIST_KEYS:
+            coerced = _split_entry_tokens(coerced)
+        fields[name] = coerced
     for name in ("baseline_suite", "after_suite"):
         fields[name] = _typed_suite_observation(fields.get(name))
     fields["failure_attribution"] = _typed_failure_attribution(
@@ -954,6 +959,32 @@ def _joined_list_separator_candidates(value: Any) -> list[str]:
     return []
 
 
+def _split_entry_tokens(value: Any) -> Any:
+    """Split one guarded list entry that holds several entry-shaped tokens.
+
+    A worker commonly writes several paths or commit ids on one line separated by
+    spaces, and the list parser splits on commas and newlines only, so the line
+    is one entry: the guard that consumes the entries one at a time reads the
+    first token as the whole path or identifier and every token after it is never
+    read. A value whose whitespace-separated tokens are each entry-shaped is
+    therefore read as those tokens in order. Anything carrying a token that is
+    not entry-shaped keeps its present reading, so a commit id followed by its
+    subject — or a path followed by a prose word — stays one entry.
+    """
+    if not isinstance(value, list):
+        return value
+    split: list[Any] = []
+    for item in value:
+        tokens = item.split() if isinstance(item, str) else []
+        if len(tokens) > 1 and all(
+            _looks_like_a_list_entry_token(token) for token in tokens
+        ):
+            split.extend(tokens)
+        else:
+            split.append(item)
+    return split
+
+
 def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -> None:
     """Refuse a guarded list field whose entries a semicolon joins.
 
@@ -980,6 +1011,46 @@ def _refuse_joined_list_separator(field: str, value: Any, *, path: str | None) -
                 "consumes them one at a time — write the entries "
                 "comma-separated or as a JSON array"
             )
+
+
+# A suite-observation key glued onto the word before it, with no separator and an
+# object after it: a missing newline folded ``baseline_suite: {…}`` into the
+# trailing prose of the field above. The lookbehind requires a letter or digit
+# immediately before the key, so prose that quotes the key after a space or a
+# backtick is ordinary text and keeps parsing. The arm is not a field then — the
+# parser reads it as prose — so the manifest records no suite observation at all.
+_GLUED_SUITE_ARM_KEY = re.compile(
+    r"(?<=[A-Za-z0-9])(baseline_suite|after_suite):[^\S\n]*\{",
+    re.IGNORECASE,
+)
+_SUITE_ARM_KEYS = ("baseline_suite", "after_suite")
+
+
+def _refuse_glued_suite_arm_key(fields: dict[str, Any], *, path: str | None) -> None:
+    """Refuse a suite observation folded into another field's prose.
+
+    A worker's missing newline writes ``resolved herebaseline_suite: {…}``, and
+    the reader keeps the whole line as the value of the field above it: the arm
+    is never a field, so the manifest records no suite observation and a red-base
+    admission has nothing to read. The refusal names the field the observation
+    sits in and the arm, so its author moves the observation onto its own line.
+    An arm the manifest does record on a line of its own is not this shape; the
+    glued copy is then a quotation and is left as written.
+    """
+    for field, value in fields.items():
+        for candidate in _joined_list_separator_candidates(value):
+            for match in _GLUED_SUITE_ARM_KEY.finditer(candidate):
+                arm = match.group(1).lower()
+                if arm in fields:
+                    continue
+                where = f" at {path}" if path else ""
+                raise ManifestParseError(
+                    f"cannot read manifest{where}: field '{field}' carries "
+                    f"'{arm}:' glued onto the prose before it with no separator, "
+                    f"and the manifest has no '{arm}' line of its own, so the "
+                    "observation is read as prose and the arm is lost; write the "
+                    f"'{arm}' observation on its own line"
+                )
 
 
 def _coerce_commit_identifiers(value: Any) -> Any:
