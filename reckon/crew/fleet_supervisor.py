@@ -543,6 +543,31 @@ def publish_record(runtime: Path, environ: Mapping[str, str] | None = None) -> P
     return path
 
 
+def record_of_own_job(environ: Mapping[str, str] | None = None) -> Mapping | None:
+    """The published fleet record when it names this allocation's job, else None.
+
+    The record is where a fleet says which allocation is hosting it, so every
+    reader that asks whether this start continues that fleet reads it here: a
+    restart carries the dead node's record forward, a migration still in
+    progress leaves another job's record in place.
+    """
+    environ = os.environ if environ is None else environ
+    job = (environ.get("SLURM_JOB_ID") or "").strip()
+    if not job:
+        return None
+    try:
+        previous = json.loads(
+            (state_directory(environ) / RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(previous, Mapping):
+        return None
+    if str(previous.get("job_id") or "") != job:
+        return None
+    return previous
+
+
 def requeue_notice(environ: Mapping[str, str] | None = None) -> str | None:
     """The notice for an allocation restarted on another node, or None.
 
@@ -553,18 +578,15 @@ def requeue_notice(environ: Mapping[str, str] | None = None) -> str | None:
     start publishes its own record over the old one.
     """
     environ = os.environ if environ is None else environ
-    job = environ.get("SLURM_JOB_ID", "")
-    state = state_directory(environ)
-    try:
-        previous = json.loads((state / RECORD_NAME).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
+    previous = record_of_own_job(environ)
+    if previous is None:
         return None
-    if not isinstance(previous, Mapping):
-        return None
+    job = (environ.get("SLURM_JOB_ID") or "").strip()
     lost = str(previous.get("node") or "")
     node = _short_hostname()
-    if not job or str(previous.get("job_id") or "") != job or not lost or lost == node:
+    if not lost or lost == node:
         return None
+    state = state_directory(environ)
     return (
         f"{_utc_now()} fleet job {job} restarted on {node} after losing {lost}. "
         f"Every session on {lost} died; each pane started through fleet-claude "
@@ -587,22 +609,11 @@ def restarted_own_job(environ: Mapping[str, str] | None = None) -> bool:
     keeps standing by.
     """
     environ = os.environ if environ is None else environ
-    job = (environ.get("SLURM_JOB_ID") or "").strip()
-    if not job:
-        return False
     try:
         restarts = int((environ.get("SLURM_RESTART_COUNT") or "0").strip() or 0)
     except ValueError:
         return False
-    if restarts <= 0:
-        return False
-    try:
-        previous = json.loads(
-            (state_directory(environ) / RECORD_NAME).read_text(encoding="utf-8")
-        )
-    except (OSError, ValueError):
-        return False
-    return isinstance(previous, Mapping) and str(previous.get("job_id") or "") == job
+    return restarts > 0 and record_of_own_job(environ) is not None
 
 
 def announce_requeue(environ: Mapping[str, str] | None = None) -> str | None:
@@ -2508,8 +2519,9 @@ def serve(
     announce_requeue(environ)
     # A standby that is a restart of the job the record names has no migration
     # left to hold for, so it takes the fleet rather than standing by.
-    is_standby = standby and not restarted_own_job(environ)
-    if not is_standby:
+    resuming = standby and restarted_own_job(environ)
+    is_standby = standby
+    if not standby:
         publish_record(runtime, environ)
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
@@ -2522,17 +2534,9 @@ def serve(
         f"fleet supervisor on {_short_hostname()}, "
         f"job {environ.get('SLURM_JOB_ID') or '?'}, runtime {runtime}"
     )
-    if standby and not is_standby:
-        log(
-            f"job {environ.get('SLURM_JOB_ID') or '?'} restarted on "
-            f"{_short_hostname()}; promoting instead of standing by"
-        )
     start_health_sampler(environ)
     services = DeclaredServices(runtime, environ)
     station_process = StationProcess(runtime, environ)
-    if not is_standby:
-        services.reload()
-        station_process.ensure()
 
     def promote() -> None:
         nonlocal is_standby
@@ -2544,6 +2548,16 @@ def serve(
         services.reload()
         station_process.ensure()
         log("fleet supervisor promoted")
+
+    if resuming:
+        log(
+            f"job {environ.get('SLURM_JOB_ID') or '?'} restarted on "
+            f"{_short_hostname()}; promoting instead of standing by"
+        )
+        promote()
+    elif not is_standby:
+        services.reload()
+        station_process.ensure()
 
     stopping = threading.Event()
     threading.Thread(
