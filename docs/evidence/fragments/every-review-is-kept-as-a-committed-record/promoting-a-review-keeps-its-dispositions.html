@@ -25,11 +25,16 @@
     <li><code>reckon/crew/review_dispositions.py</code> — a disposition is now
     written into every delivered copy of the record inside the reviewed run's
     <code>review-records</code> directory as well as into the store copy the
-    call selected (<code>_delivered_copies_of_record</code>, a rubric- and
-    run-id-matched selection; <code>_carry_answer_to_delivered_copies</code>,
-    a per-name merge by the entry's own stamp that writes nothing when the copy
-    already carries it). A later filing therefore carries the answer into the
-    store rather than overwriting it.</li>
+    call selected (<code>_carry_answer_to_delivered_copies</code>, a per-name
+    merge by the entry's own stamp that writes nothing when the copy already
+    carries it). A later filing therefore carries the answer into the store
+    rather than overwriting it.</li>
+    <li><code>reckon/crew/review.py</code> —
+    <code>_records_naming_this_review</code> owns which files belong to a
+    review: the review's own id is read from <code>run_id</code> on a run
+    pointer or <code>review_run_id</code> on a stored record, with an optional
+    rubric narrowing. The disposition writer and the filing read that one rule,
+    so they cannot disagree about which copies the answer must reach.</li>
     <li><code>tests/test_promoting_a_review_keeps_its_dispositions.py</code> —
     the case above, asserting both dispositions in the committed record and no
     sub-floor duty in the obligations reading.</li>

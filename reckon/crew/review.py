@@ -3277,7 +3277,10 @@ def delivered_run_review_paths(
 
 
 def _records_naming_this_review(
-    record: Mapping[str, Any], run_directory: str | Path
+    record: Mapping[str, Any],
+    run_directory: str | Path,
+    *,
+    rubric: str | None = None,
 ) -> list[Path]:
     """Records in the reviewed run's record directory that name this review.
 
@@ -3288,8 +3291,17 @@ def _records_naming_this_review(
     head names itself, not this run, so it is left where it is and cannot
     displace the record already stored for that head or the dispositions
     written on it.
+
+    The review's own id is read from ``run_id``, which a run pointer carries, or
+    from ``review_run_id``, which a stored review record carries, so a
+    disposition writer answering from a record selects exactly the copies a
+    filing of that review selects. ``rubric`` narrows the selection to records
+    of one rubric; a caller that names none takes every rubric, because a run
+    pointer does not carry the rubric its reviewer eventually wrote under.
     """
-    review_run_id = str(record.get("run_id") or "").strip()
+    review_run_id = str(
+        record.get("run_id") or record.get("review_run_id") or ""
+    ).strip()
     reviewed_run_id = Path(run_directory).name
     if not review_run_id or not reviewed_run_id:
         return []
@@ -3304,6 +3316,8 @@ def _records_naming_this_review(
         if str(body.get("review_run_id") or "").strip() != review_run_id:
             continue
         if str(body.get("reviewed_run_id") or "").strip() != reviewed_run_id:
+            continue
+        if rubric is not None and _review_record_rubric(body) != rubric:
             continue
         found.append(candidate)
     return found
