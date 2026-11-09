@@ -1,0 +1,86 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T14:14:13.188Z",
+  "dispatched_at": "2026-11-09T14:07:30Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:73",
+      "id": "wiring-1",
+      "reason": "an admit or coordinator pass that reads open followups dispatches a section that has already landed, spending a node to redo work and giving it no scope to write.",
+      "text": "f-alomwiss-002 is `data-status=\"open\"` and its prompt is `/reckon-build a-landing-is-on-main-when-it-says-so \u00a73`, while s3 is declared `done` and comment c-close-s3 (line 93) records it landed as `99159671ab`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:59",
+      "id": "wiring-2",
+      "reason": "with no declared write paths the two implementable sections can be dispatched concurrently into one module, which is the collision the plan's own \u00a73 history shows costs a merge.",
+      "text": "\u00a75 names no `Write paths:` line and no `plan-section-depends-on`, while \u00a76 declares `reckon/crew/promotion.py`, which is exactly where a plain-complete refusal belongs (`crew complete` calls `crew_module.complete`, i.e. `reckon/crew/promotion.py:271`)",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:63",
+      "id": "done_when-1",
+      "reason": "an arm that passes on the unfixed code proves nothing about the change and would let \u00a76 be closed with the race still open.",
+      "text": "\u00a76's second arm, \"a promotion started while the pointer records a resumed turn in progress refuses\", already holds at the base revision because `_require_worker_stopped_before_promotion` (`reckon/crew/promotion_checks.py:787-845`) refuses a promotion whose recorded process is alive and whose attempt has written no terminal verdict, so the arm cannot fail and carries no negative control",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:63",
+      "id": "reasoning-1",
+      "reason": "the section would ship a start-time check that is already in place, leaving the mid-promotion resume unexcluded, so a second lander can still write a passed row for an unmerged head.",
+      "text": "the measured incident is a resume that began after promotion's live-worker check had already passed, so a guard that \"refuses to start while the run has a resumed turn in progress\" checks the same instant the existing guard already checks and cannot prevent the observed failure; the code shows the two sides take different locks (`_promotion_lock` = `_pointer_lock(\"promotion-<run>\")` at `reckon/crew/promotion.py:161-162` vs resumption's `_pointer_lock(run_id)` at `reckon/crew/resumption.py:217`), and only the field comparison in `_remove_promoted_pointer` caught the interleaving",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:59",
+      "id": "reasoning-2",
+      "reason": "the worker would implement a pointer that is kept and never cleared, replacing one false-landing state with a run that can never be promoted or released again.",
+      "text": "under the separate-merge flag the deliverable keeps the live pointer \"until the head reaches the branch\", but no mechanism is named that retires it: `crew merge` never removes a live pointer (`reckon/crew/merge.py` has no pointer unlink), so the run stays live with a passed ledger row after its head lands, and the plan ignores the pending-landing path it already owns (`reckon/crew_run_commands.py:3247-3253`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-landing-is-on-main-when-it-says-so.html:35",
+      "id": "reasoning-3",
+      "reason": "the plan tells two different stories about the same section, and the stale body is the one a reader of \u00a72 sees, so a future audit or repair node would act on a cause the plan has already disproved.",
+      "text": "\u00a71 still states \"\u00a72 and \u00a74, written on that reading, are descoped\" while s2 is declared `done` (line 23) and comment c-close-s2 (line 90) records it landed as `1ea62a11c4`, and \u00a72's body (lines 39-46) still asks the worker to reproduce the unmerged-head premise that \u00a71 itself retracts",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a7bedf1572b2be421f197c8982ff2ea8f2bd16b9",
+  "plan_fingerprint": "4349678884b4763e47c5f3bc61bda061005196c06b1c81c146702ebe4f9d77f6",
+  "plan_slug": "a-landing-is-on-main-when-it-says-so",
+  "plan_version": 9,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T140605754264-plan-review-of-a-landing-is-on-main-when-it-says-so",
+  "reviewed_blob_sha": "e0a96f7775aee11326e0689cf6abbe39a82e37e2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion.py` near line 189 resolves to the pointer guard at line 191 with the exact text quoted; commit `7b71afeb13`, head `177d706c49`, the run id, and the `reckon.crew_run_commands` module all resolve; `D24` is absent from `reckon/crew/refusals.py` as claimed. No extensionless hrefs are used.",
+    "done_when": "a finding \u2014 \u00a76's second arm (docs/plans/a-landing-is-on-main-when-it-says-so.html:63) passes at the base revision because a promotion with a live worker is already refused, and no negative control is declared for it; \u00a75's done-when is otherwise measurable against a real negative control.",
+    "evidence_paths": "pass \u2014 both units send gate logs to the run directory with a revision-and-command header and a terminal `EXIT=` line; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 both new test filenames name the behaviour they check (`test_a_plain_complete_refuses_an_unmerged_head.py`, `test_a_landing_record_waits_for_the_merge.py); no plan slug, stage label or ticket number reaches a symbol or path, and `D24` is the repository's existing refusal-family identifier.",
+    "reasoning": "findings \u2014 \u00a76's stated race guard cannot close the race it names, and \u00a75 keeps a live pointer with no mechanism that ever retires it; separately, \u00a71's prose still reports \u00a72 as descoped while \u00a72 is declared done and its body still carries the premise \u00a71 retracts.",
+    "single_goal": "pass \u2014 \u00a75 and \u00a76 each name one landing-record guarantee; \u00a76's pointer-race sentence is treated under reasoning and done_when as the wrong mechanism for that same goal rather than a second goal.",
+    "wiring": "a finding \u2014 followup f-alomwiss-002 (docs/plans/a-landing-is-on-main-when-it-says-so.html:73) is open and recommends `/reckon-build \u2026 \u00a73`, which the same plan declares done; and \u00a75 (line 59) declares no write paths and no `plan-section-depends-on` while \u00a76 (line 63) writes the module \u00a75's refusal would most plausibly change."
+  },
+  "section_digests": {
+    "_document": "fc4e17f4ce4e20029d3be485567ec9c8e88332608fd3790f1445f57c6b5017b9",
+    "s1": "05ac3d6e03690e2b89165f9f94837ea8c4512d631bcd3ac39fc8da7f82f0c09d",
+    "s2": "149e271a33a741a3e21acbc6868426506a9b7a830161a2d4facbe8b470325a6b",
+    "s3": "cdb0f79fd2bb33808cc8402e31a02d04129b676c41f969a6800c40e258ce96ba",
+    "s4": "55d76701d62b3ac97080ccfae73af492db19d104fcaf19059cad41cacd5cecbb",
+    "s5": "4942954cb108f883d2b1780f4961f6107bc05b7e0d5280cce8b926cd0da955e7",
+    "s6": "0847a97dc4bed06714728a2ac188fe4c503ef4149a842d6b59bf09d5748414c0"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T14:21:50.123118+00:00",
+  "total": null
+}
