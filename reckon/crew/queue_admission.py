@@ -236,7 +236,16 @@ def _node_from_pointer(pointer: Mapping[str, Any]) -> TaskNode:
         # An empty string is a stored field that was never filled, so a field
         # whose dataclass default is a non-empty string keeps that default
         # rather than being launched with nothing where the default belongs.
-        if value == "" and spec.default_factory is MISSING and spec.default:
+        # Only a real non-empty string default qualifies: ``MISSING``, the
+        # default of a field that has none, is truthy, and a stored empty
+        # string there is the value the run was dispatched with. A brief-carried
+        # review stores ``plan=""`` and must rebuild with it.
+        if (
+            value == ""
+            and spec.default_factory is MISSING
+            and isinstance(spec.default, str)
+            and spec.default
+        ):
             continue
         values[spec.name] = value
     return TaskNode(**values)
