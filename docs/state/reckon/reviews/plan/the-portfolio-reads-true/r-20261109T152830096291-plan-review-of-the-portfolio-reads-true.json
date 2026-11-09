@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:37:08.681Z",
+  "dispatched_at": "2026-11-09T15:29:56Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:176",
+      "id": "reasoning-1",
+      "reason": "a node implementing exactly the three named writers ships a rule that leaves the meta stale on two landing writes, and the archive caller additionally needs a full state read before the opt-in can fire, which the plan does not say.",
+      "text": "\u00a710 states \"All three state writers pass the opt-in\" and names the store write, `_replace_plan_text` and the `serve.py` POST handler, but `apply_archive_candidates` (`reckon/archive.py:132`, reached by `reckon archive --apply` via `run_archive_pass`) and `backfill_tags_from_preimage` (`reckon/tags.py:130`) also call `write_state` on a plan and write the result to disk; neither passes an opt-in, so a derived plan archived or retagged keeps its stale `plan-impl`, which is exactly the \"stale for good, nothing repairs it\" condition the section's Why sets out to end, and `archive.py` passes the partial dict `{\"archived\": \"1\"}`, so the opt-in's stated condition (\"the state's impl is derived\") cannot hold there even if it were passed \u2014 the opt-in's unstated precondition is a full `read_state`.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "",
+  "plan_fingerprint": "0e87b3f9501d4334fa9c283a0c53a35345d634836b60398cf4f41bbe8eec75f5",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 76,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T152830096291-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "acdbafd046963369d293dd52b19b5acc3ca04b04",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_plan_html.py:2281` (the `impl_source in {computed, declarations}` suppression in the lifecycle block), `_set_meta_block` (`_plan_html.py:2064`, which rewrites only the names it is given), `_store.py:1717` (the store write, with its parsed-state no-change guard at :1733-1748), `_store.py:2448` (the `write_state` call inside `_replace_plan_text`, whose identical-pair refusal is at :2390), `serve.py:3909` (the POST handler, `_content_equal` at :3911) and the cited measurement in `docs/plans/a-run-has-one-live-worker.html` (meta 0.67, declarations deriving 0.8579545 today) all resolve; the \"141 plans under `docs/plans` carry a `plan-impl` meta\" count reproduces exactly.",
+    "done_when": "pass \u2014 the five cases name three arms that fail at the dispatch base (a), (d), (e) and two keeps (b), (c), and the population is \"the test files that import `reckon._plan_html`, `reckon._store` or `reckon.serve`\" run at base and head, so the gate can fail and its negative controls are declared.",
+    "evidence_paths": "pass \u2014 \"every log under the run directory starts with its revision and the literal command and ends in a bare `EXIT=` line\", and the run directory is a durable path, not a scratchpad or node-local temp.",
+    "naming": "pass \u2014 the test file and the opt-in are named by mechanism (`test_a_derived_impl_drops_the_authored_meta.py`), with no plan labels, section ids, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a710 claims all three state writers pass the opt-in, but two further production callers re-render a plan document with state and land the write, so the mechanism does not reach every path that writes a plan.",
+    "single_goal": "pass \u2014 one deliverable, a derived impl dropping the authored `plan-impl` meta; the three-writer list and the byte-identical default are scope for that one outcome, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a710 declares no wire and needs none: \u00a72, which creates the derived impl and the `impl-meta-stale` warning, and \u00a77, which last rewrote `reckon/serve.py`, are both done, so no unlanded section holds this one."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "8996698b695289c488b0d8f2562a42110fa068f0cc0735d7a748edf92e608d54",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:45:32.257716+00:00",
+  "total": null
+}
