@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree",
+    "reckon/crew/dispatch_launch.py:_launch_refused_by (callers at :2611 and :3550)",
+    "reckon/crew/dispatch_launch.py:_retired_attempt_ended"
+  ],
+  "completed_at": "2026-11-09T17:52:41.870Z",
+  "dispatched_at": "2026-11-09T17:47:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2137",
+      "severity": "non-blocking",
+      "text": "non-blocking: the retired-receipt branch copies the exit-record owner's read rules (parse, Mapping, run_id match) verbatim from reckon/crew/recovery_liveness.py:1499-1518 rather than extending that owner with a receipt-name argument, so the two readers can drift and only one of them is exercised by the owner's own tests."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2147",
+      "severity": "non-blocking",
+      "text": "non-blocking: a receipt that parses but names no run, such as a zeroed or partially rewritten file left as \"{}\", is reported as showing the attempt ended, so it frees a foreign launch exactly as the existence check this round removed did; no case covers that shape and the docstring's claim that a receipt must name this run is stronger than the code."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "read fc13619cea..1ba776d856 commit by commit; one production function reworked at dispatch_launch.py:2115-2147 and its two call sites updated at :2185 and :2252, three test cases added, and the fragment's claims and citation corrected.",
+    "done_when": "the done_when measures the gate tests/test_a_worker_on_another_host_refuses_a_relaunch.py at head and at the repair base; head-arm.log records 12 passed EXIT=0 and base-arm-fc13619cea.log records the three receipt cases failing with 3 failed, 9 passed EXIT=1.",
+    "goal": "the goal is to free an off-host launch only on an exit receipt and to repair the two review findings; reckon/crew/dispatch_launch.py:2115 now reads the receipt's content, and the fragment's dead run id is replaced.",
+    "manifest": "read; it records both arms with revision, command, exit status, log path and failure ids, plus the scaffolding attribution for eight fixture failures and a neighbours run of 29 passed at both arms.",
+    "write_paths": "the manifest declares three paths for this round and the diff touches exactly those three: dispatch_launch.py, the test file and the evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_another_host_refuses_a_relaunch.py:292 and :318 redden at fc13619cea on the existence-only read, but no case covers a receipt that parses while naming no run, which dispatch_launch.py:2147 still frees a launch on.",
+    "evidence": "base-arm-fc13619cea.log ends \"3 failed, 9 passed\" EXIT=1 naming exactly the three new ids and head-arm.log ends \"12 passed\" EXIT=0, though negative-control.log's header line still says \"(a1) and (a2) fail\" while the log beneath it lists five.",
+    "fit": "reckon/crew/dispatch_launch.py:2131-2132 follows the file's existing idiom of function-local cross-module imports (see :2042, :2099) and neither the symbol nor its docstring carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2115-2147 replaces the existence test with a content read on both receipt shapes, which is what the node's goal and both prior findings asked for.",
+    "reuse": "the canonical branch calls the owner _run_exit_record at recovery_liveness.py:1499, but the retired branch re-implements that owner's parse, Mapping and run_id rules inline at dispatch_launch.py:2137-2147 instead of extending it with a receipt name.",
+    "scope_discipline": "every hunk in the diff lies in docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html, reckon/crew/dispatch_launch.py or tests/test_a_worker_on_another_host_refuses_a_relaunch.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to free an off-host launch only on an exit receipt and to repair the two review findings; reckon/crew/dispatch_launch.py:2115 now reads the receipt's content, and the fragment's dead run id is replaced.\nVERDICT done_when: the done_when measures the gate tests/test_a_worker_on_another_host_refuses_a_relaunch.py at head and at the repair base; head-arm.log records 12 passed EXIT=0 and base-arm-fc13619cea.log records the three receipt cases failing with 3 failed, 9 passed EXIT=1.\nVERDICT write_paths: the manifest declares three paths for this round and the diff touches exactly those three: dispatch_launch.py, the test file and the evidence fragment.\nVERDICT manifest: read; it records both arms with revision, command, exit status, log path and failure ids, plus the scaffolding attribution for eight fixture failures and a neighbours run of 29 passed at both arms.\nVERDICT diff: read fc13619cea..1ba776d856 commit by commit; one production function reworked at dispatch_launch.py:2115-2147 and its two call sites updated at :2185 and :2252, three test cases added, and the fragment's claims and citation corrected.\nCALL_SITES: reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree, reckon/crew/dispatch_launch.py:_launch_refused_by (callers at :2611 and :3550), reckon/crew/dispatch_launch.py:_retired_attempt_ended\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2115-2147 replaces the existence test with a content read on both receipt shapes, which is what the node's goal and both prior findings asked for.\nSCORE evidence: 19\nJUSTIFICATION evidence: base-arm-fc13619cea.log ends \"3 failed, 9 passed\" EXIT=1 naming exactly the three new ids and head-arm.log ends \"12 passed\" EXIT=0, though negative-control.log's header line still says \"(a1) and (a2) fail\" while the log beneath it lists five.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every hunk in the diff lies in docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html, reckon/crew/dispatch_launch.py or tests/test_a_worker_on_another_host_refuses_a_relaunch.py.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_on_another_host_refuses_a_relaunch.py:292 and :318 redden at fc13619cea on the existence-only read, but no case covers a receipt that parses while naming no run, which dispatch_launch.py:2147 still frees a launch on.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2131-2132 follows the file's existing idiom of function-local cross-module imports (see :2042, :2099) and neither the symbol nor its docstring carries a plan or ticket identifier.\nSCORE reuse: 13\nJUSTIFICATION reuse: the canonical branch calls the owner _run_exit_record at recovery_liveness.py:1499, but the retired branch re-implements that owner's parse, Mapping and run_id rules inline at dispatch_launch.py:2137-2147 instead of extending it with a receipt name.\nFINDING reckon/crew/dispatch_launch.py:2137 non-blocking: the retired-receipt branch copies the exit-record owner's read rules (parse, Mapping, run_id match) verbatim from reckon/crew/recovery_liveness.py:1499-1518 rather than extending that owner with a receipt-name argument, so the two readers can drift and only one of them is exercised by the owner's own tests.\nFINDING reckon/crew/dispatch_launch.py:2147 non-blocking: a receipt that parses but names no run, such as a zeroed or partially rewritten file left as \"{}\", is reported as showing the attempt ended, so it frees a foreign launch exactly as the existence check this round removed did; no case covers that shape and the docstring's claim that a receipt must name this run is stronger than the code.\n",
+  "review_rubric": "text",
+  "review_run_id": "r-20261109T174319675089-review-of-a-worker-on-another-host-refuses-a-relaunch-1ba776d85605",
+  "reviewed_base_sha": "fc13619cea3d29bd23a83da484e7f549ab6219a6",
+  "reviewed_head_sha": "1ba776d8560532ddd138f115ad8ff649257e9185",
+  "reviewed_run_id": "r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:00:08.888056+00:00",
+  "total": 107
+}
