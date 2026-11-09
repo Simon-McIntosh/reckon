@@ -1,0 +1,78 @@
+<section id="a-queued-brief-run-rebuilds-its-node-landing">
+  <h2>A queued brief-carried run rebuilds its node</h2>
+
+  <p><strong>What changed.</strong> <code>_node_from_pointer</code> in
+  <code>reckon/crew/queue_admission.py</code> rebuilds a queued request's
+  <code>TaskNode</code> from the stored pointer at admission. Its empty-string
+  guard dropped a stored empty string whenever the field's dataclass default was
+  truthy, which is the rule that keeps a real default rather than launching a
+  field with nothing. The default of a field that has <em>no</em> default is
+  <code>dataclasses.MISSING</code>, and <code>MISSING</code> is truthy, so the
+  guard also dropped a brief-carried review's stored <code>plan=""</code>. The
+  constructor then raised on the missing required argument, and every queued
+  brief-carried run failed once it had to wait for a slot.</p>
+
+  <p>The guard now requires that the dataclass default be a non-empty string.
+  A brief-carried node rebuilds with <code>plan=""</code> and its brief kept, a
+  plan-carried pointer rebuilds unchanged, and a stored empty string against a
+  real default still keeps that default.</p>
+
+  <h3 id="a-queued-brief-run-rebuilds-its-node-measured">Measured</h3>
+
+  <p>The defect was reproduced before it was repaired, in a base tree extracted
+  from the node's base revision with <code>git archive</code>. A brief-carried
+  review node, stored as the dispatcher writes it, reached
+  <code>_node_from_pointer</code> and raised
+  <code>TypeError: TaskNode.__init__() missing 1 required positional argument:
+  'plan'</code> &mdash; the failure the plan records from the live queue. The
+  same fixture rebuilt with the repaired guard returns
+  <code>plan=""</code> and the brief unchanged.</p>
+
+  <table id="a-queued-brief-run-rebuilds-its-node-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Logs are
+    under the run's <code>logs/</code> directory.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>defect reproduction, base tree</td>
+        <td>45640cfc6d9a</td>
+        <td>TypeError on the missing <code>plan</code></td>
+      </tr>
+      <tr>
+        <td>node gate, head</td>
+        <td>45640cfc6d9a + change</td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td>negative control: today's guard restored</td>
+        <td>45640cfc6d9a + change</td>
+        <td>1 failed, 2 passed &mdash; the brief-carried case raises the
+        <code>TypeError</code></td>
+      </tr>
+      <tr>
+        <td>supporting control: the guard deleted outright</td>
+        <td>45640cfc6d9a + change</td>
+        <td>1 failed, 2 passed &mdash; the real-default case launches an empty
+        <code>role</code></td>
+      </tr>
+      <tr>
+        <td>75 importer test files, base tree</td>
+        <td>45640cfc6d9a</td>
+        <td>118 failed, 400 passed</td>
+      </tr>
+      <tr>
+        <td>76 importer test files, head</td>
+        <td>45640cfc6d9a + change</td>
+        <td>109 failed, 412 passed</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The importer arms add no failure against the base: every failing test id
+  at the head also fails at the base. Nine tests fail at the base and pass at
+  the head, and all nine are queued brief-carried or plan-review scenarios &mdash;
+  the population this repair serves. The failures common to both arms are a
+  queue-time refusal in <code>reckon/crew/dispatch.py</code> for a node with no
+  manifest path, which this node did not touch and does not triage.</p>
+</section>
