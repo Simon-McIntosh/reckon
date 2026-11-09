@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T10:37:49.381Z",
+  "dispatched_at": "2026-11-09T10:30:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "reasoning-1",
+      "reason": "a node following the text either writes a pid it cannot know at publish time or leaves the expiry bound reading a step nobody advances, which is the one mechanism the release rests on.",
+      "text": "\u00a725 states \"The claim's holder fields are written by _publish_launch_claim\", but that function runs before the worker exists: it writes claim.json as {\"run_id\", \"claim_registered_at\"} (reckon/crew/dispatch_claims.py:911-914) and its own docstring says \"The record carries no pid\"; the pid and its start time become known only after _start_supervisor returns (reckon/crew/dispatch.py:3527) and are published by attach_launch_identity at dispatch.py:3560, which this change stopped naming at all. So the fields the section requires \u2014 and the \"step reached\" the admit pass is meant to read when deciding expiry \u2014 have no writer, and the pass cannot tell a span that has ended from one that has not.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-dispatch-returns-without-its-worker.html:1053",
+      "id": "anchors_resolve-1",
+      "reason": "the unit's whole subject is where each read sits relative to the spawn, and an anchor naming the definition's module points the edit at a file the launch span never executes in.",
+      "text": "the pre-spawn read is specified as \"beside _refuse_a_discarded_launch (reckon/crew/dispatch_claims.py)\", which is the function's definition at dispatch_claims.py:942, while the pre-spawn call it must join is in dispatch.py at :3503 (supervisor branch) and :3507 (launcher branch); the sibling anchor for the second read correctly names the dispatch.py call site, so the two reads are anchored to different kinds of location.",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "820b3b0ca49d77e6bc3bbf45fc63258ce4ee8bb4",
+  "plan_fingerprint": "f61cea5b4037f5bfb1b284f34d9b0123c886a186d2b6868a3e232e6ea54d3703",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 208,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T102800281309-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "ecfa0290342680a9788233f6c8620c7877a30069",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the pre-spawn read is anchored to reckon/crew/dispatch_claims.py, which is where the function is defined, while the span it must join runs in reckon/crew/dispatch.py at two call sites.",
+    "done_when": "a finding \u2014 case 3 (\"claim.json names the pid, host and step reached\") measures a file whose only writer runs before the worker exists and emits two fields, so the measure cannot be met by the mechanism the section names.",
+    "evidence_paths": "pass \u2014 the gate logs land \"under the run directory\" and the refusal lands in the crew home's refusal-traces store (reckon/crew/dispatch_refusals.py:37), both durable paths a later reader can open.",
+    "naming": "pass \u2014 the new artefacts are mechanism-named (tests/test_a_launch_span_is_dated_and_bounded.py, the holder fields), and no plan label, stage name or ticket number reaches a symbol, file or comment.",
+    "reasoning": "a finding \u2014 the section requires the claim to record pid, host and step \"updated as the launch advances\" but names as their writer a function that runs before the pid exists, and the change removed the only site that carries it.",
+    "single_goal": "pass \u2014 the bounded release and the off-delivery-thread sweep each carry their own case and negative control in the changed done-when; the earlier split concern was declined and the changed text does not alter that shape.",
+    "wiring": "pass \u2014 s25 declares depends-on a-dispatch-returns-without-its-worker#s24, which the plan's declarations record as done, and no relationship the changed unit needs is missing."
+  },
+  "section_digests": {
+    "_document": "9d8b5eb99b289222dc1da8e95d48ec0f60a46c52db671aa9b4efecdf24045674",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "f404e07361cc0cba99df359b02ab752999f43e938960de2821ee313dfd728232",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:49:40.497934+00:00",
+  "total": null
+}
