@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own manifest records, checked against the logs they name: baseline_suite at 3118c2969a records completed=true, exit_status 1, failure_count 1, failure_ids [tests/conftest.py::test_temp_config_home] (logs/base-suite.log:19 reads `25 passed, 1 error`, EXIT=1); after_suite at 0d43cd6d49 records completed=true, exit_status 0, failure_count 0 (logs/after-suite.log reads `27 passed`, EXIT=0). The only base failure id is absent at head and no head failure id is new, so added_failure_count is 0.",
+  "call_sites": [],
+  "call_sites_emission": "none",
+  "completed_at": "2026-11-09T12:28:32.118Z",
+  "dispatched_at": "2026-11-09T12:18:56Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T115833356983-a-conftest-helper-is-never-collected/logs/base-suite.log",
+      "id": "fee59230ae1",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the base arm's `# module under test:` line names the worktree's tests/conftest.py, which at base still carries the collected test_temp_config_home name being disproved, while the same log's traceback shows the file actually collected was /tmp/reckon-crew-scratch/.../acd-base-sUG3/tests/conftest.py:1065; the manifest's measurement_module copies the wrong absolute path, so a reader who opens it to check the base arm reads the post-fix file and cannot reproduce the ERROR from it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T115833356983-a-conftest-helper-is-never-collected/logs/new-test.log",
+      "id": "f262b14c0bd",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "this log's revision line names 3118c2969a (the base) while the tree it ran carried the uncommitted rename, which is the only way the guard passes there (2 passed); read at face value it says the new test passes at the base revision, which logs/negative-control.log:19-38 directly contradicts, so the log's provenance line should have named the working-tree mutation as the negative-control log does."
+    },
+    {
+      "file": "tests/test_a_conftest_helper_is_never_collected.py",
+      "id": "f6d5dbdcb12",
+      "line": "58",
+      "severity": "non-blocking",
+      "text": "`assert not any(node_id.endswith(f\"::{HELPER}\") for node_id in collected)` cannot fail: pytest collects only functions matching python_functions (default `test*`, no override in pyproject.toml:58-62), so a collected node id can never end with `::make_temp_config_home`; the protection at this point in the test comes entirely from the line 61 old-name assertion, which is the one the negative control reddens."
+    },
+    {
+      "file": "tests/test_a_conftest_helper_is_never_collected.py",
+      "id": "f7cb37ab3b0",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "the added _pytest and _collected_node_ids duplicate the capability already owned by tests/test_browser_population_is_its_own_row.py:65 (_collect runs `pytest --collect-only -q` in a subprocess and returns node ids via _NODE_ID_RE at :53) rather than extending it; the difference is only the target path, which that helper already takes as `extra`."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit by commit against the base; one commit (0d43cd6d49) renames the helper and drops the PT028 noqa at tests/conftest.py:1065, updates four import/call lines across three test modules, adds tests/test_a_conftest_helper_is_never_collected.py (81 lines, two subprocess cases) and the landing fragment.",
+    "done_when": "the done_when asks for a subprocess `--collect-only` case, a no-ERROR conftest run, the callers passing, a logged negative control, no added failure and no added ruff finding; tests/test_a_conftest_helper_is_never_collected.py:50-81 covers the first two, the base/after arms cover the third and fifth, logs/negative-control.log covers the fourth.",
+    "goal": "the goal is to rename the conftest helper so pytest never collects it and to update its three callers; tests/conftest.py:1065 defines make_temp_config_home, the three callers import it, and no file outside docs/evidence history still names test_temp_config_home.",
+    "manifest": "read; it states the after arm 27 passed / exit 0 at 0d43cd6d49, the base arm 25 passed / 1 error at 3118c2969a, the negative control 2 failed, and a ruff delta of one pre-existing F841; each of the four log paths it names exists and carries its own revision, command and EXIT line.",
+    "write_paths": "read the declared write paths and the diff 3118c2969a..0d43cd6d49: six changed files, all inside the declared set, plus the landing fragment the dispatch always permits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_conftest_helper_is_never_collected.py:61 and :73 both redden when the `test_` name is reinstated, as logs/negative-control.log:19-38 shows with the collection id and `ERROR at setup of test_temp_config_home`; the assertion at :58 cannot fail at all, since the new helper name never matches pytest's default `test*` collection pattern and pyproject.toml:58-62 declares no python_functions override.",
+    "evidence": "the done_when names a subprocess collection case, a no-ERROR run, the three callers, a logged negative control and a ruff delta, and all five are recorded with a revision and literal command per log; docked because logs/base-suite.log:3 records the module under test as the worktree's post-fix conftest while its own traceback shows the base scratch tree's conftest.py:1065 was collected, and the manifest's measurement_module copies that path.",
+    "fit": "the new module follows the tests/ idiom of a module-private subprocess helper plus named constants (tests/test_a_conftest_helper_is_never_collected.py:26-47), and every name states its mechanism with no plan, phase or ticket label.",
+    "goal_fidelity": "tests/conftest.py:1065 now defines make_temp_config_home and all three callers import it (tests/test_watch_arming_isolation.py:251 and :327, tests/test_budget_group_declaration.py:32, tests/test_bookend_reserve_by_group.py:42), and a re-run of `pytest --collect-only tests/conftest.py` at head collects exactly one item, test_shared_home_fixture_never_targets_the_real_store.",
+    "reuse": "the added _pytest and _collected_node_ids re-implement the subprocess `pytest --collect-only -q` and node-id parsing already owned by tests/test_browser_population_is_its_own_row.py:65 (_collect) with its _NODE_ID_RE at :53, in a repository whose test modules do import one another's private helpers (tests/test_bookend_reserve_by_group.py:42 imports two).",
+    "scope_discipline": "the diff 3118c2969a..0d43cd6d49 touches six files, every one of them a declared write path (tests/conftest.py, the three caller test modules, the new test module and the landing fragment), and carries nothing the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to rename the conftest helper so pytest never collects it and to update its three callers; tests/conftest.py:1065 defines make_temp_config_home, the three callers import it, and no file outside docs/evidence history still names test_temp_config_home.\nVERDICT done_when: the done_when asks for a subprocess `--collect-only` case, a no-ERROR conftest run, the callers passing, a logged negative control, no added failure and no added ruff finding; tests/test_a_conftest_helper_is_never_collected.py:50-81 covers the first two, the base/after arms cover the third and fifth, logs/negative-control.log covers the fourth.\nVERDICT write_paths: read the declared write paths and the diff 3118c2969a..0d43cd6d49: six changed files, all inside the declared set, plus the landing fragment the dispatch always permits.\nVERDICT manifest: read; it states the after arm 27 passed / exit 0 at 0d43cd6d49, the base arm 25 passed / 1 error at 3118c2969a, the negative control 2 failed, and a ruff delta of one pre-existing F841; each of the four log paths it names exists and carries its own revision, command and EXIT line.\nVERDICT diff: read commit by commit against the base; one commit (0d43cd6d49) renames the helper and drops the PT028 noqa at tests/conftest.py:1065, updates four import/call lines across three test modules, adds tests/test_a_conftest_helper_is_never_collected.py (81 lines, two subprocess cases) and the landing fragment.\nCALL_SITES: none\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/conftest.py:1065 now defines make_temp_config_home and all three callers import it (tests/test_watch_arming_isolation.py:251 and :327, tests/test_budget_group_declaration.py:32, tests/test_bookend_reserve_by_group.py:42), and a re-run of `pytest --collect-only tests/conftest.py` at head collects exactly one item, test_shared_home_fixture_never_targets_the_real_store.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done_when's five facts are each measured and logged, but logs/base-suite.log:3 records the module under test as the worktree's post-fix conftest while its own traceback shows the base scratch tree's conftest.py:1065 was collected, and the manifest's measurement_module copies that path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff 3118c2969a..0d43cd6d49 touches six files, every one a declared write path, with no change the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_conftest_helper_is_never_collected.py:61 and :73 redden when the `test_` name is reinstated (logs/negative-control.log:19-38), while the assertion at :58 cannot fail because the new helper name never matches pytest's default `test*` collection pattern.\nSCORE fit: 18\nJUSTIFICATION fit: the new module follows the tests/ idiom of a module-private subprocess helper plus named constants (tests/test_a_conftest_helper_is_never_collected.py:26-47) and carries no plan, phase or ticket label.\nSCORE reuse: 13\nJUSTIFICATION reuse: the added _pytest and _collected_node_ids re-implement the subprocess collect-and-parse capability already owned by tests/test_browser_population_is_its_own_row.py:65 rather than extending it.",
+  "review_run_id": "r-20261109T121444597200-review-of-a-conftest-helper-is-never-collected-0d43cd6d49b4",
+  "reviewed_base_sha": "3118c2969a13d7158cfdd43db3db67747bcb2c66",
+  "reviewed_head_sha": "0d43cd6d49b47b340f26b65827288db643e220f9",
+  "reviewed_run_id": "r-20261109T115833356983-a-conftest-helper-is-never-collected",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T12:33:01.179857+00:00",
+  "total": 103
+}
