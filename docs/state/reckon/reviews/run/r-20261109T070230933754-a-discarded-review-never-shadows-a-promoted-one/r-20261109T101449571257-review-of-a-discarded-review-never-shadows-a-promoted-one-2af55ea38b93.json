@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_run_commands.py:730, :947, :1066 and :1288 call review_module.stored_record",
+    "reckon/crew/review.py:3771 calls stored_record",
+    "reckon/crew/review_dispositions.py:265, :364 and :471 call stored_record",
+    "reckon/crew/promotion_checks.py:697 and reckon/crew/reports.py:1914 call stored_record",
+    "reckon/crew/recovery_review_subject.py:113 defines select_review_for_head, reached from reckon/crew/recovery_review_acceptance.py:287, reckon/crew/promotion_release.py:1078 and reckon/crew/queue_landing.py:177"
+  ],
+  "completed_at": "2026-11-09T10:25:14.981Z",
+  "dispatched_at": "2026-11-09T10:16:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "450",
+      "severity": "non-blocking",
+      "text": "_review_run_was_discarded duplicates promotion.discard_recorded (reckon/crew/promotion.py:1994) line for line \u2014 same two marker paths, same is_file() read, same OSError-skip and same unreadable-means-False rule \u2014 instead of calling the owner; delete the helper and call promotion.discard_recorded at the call-time import the docstring already performs."
+    },
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "1012",
+      "severity": "non-blocking",
+      "text": "the discard filter was added only to _select_stored_record, so _filed_match still returns the newest head-matching record filed under another run id without consulting the discard marker; the same shadowing stays reachable through the misfiled-record path, which the worker disclosed under outside_scope."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "test_logs cites logs/importers-base-arm.log, which does not exist; the importer base arm was written to logs/importers-base-failing-ids.log at 11:14, ten minutes after the 11:04 manifest, and artifacts still describes both arms as 'running this turn', so the delivered manifest points a reader at a path that resolves to nothing."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to keep a discarded review run's record from winning stored-review selection at a head; reckon/crew/review_records.py:450-472 adds the discard filter and :544-556 applies it before ranking, and the negative control shows the base selection returning the discarded file.\nVERDICT done_when: The done_when names the node's own test file, the negative control under logs/, the promotion.discard_record_path read, the importer arms and ruff; logs/after-arm.log ends '4 passed' EXIT=0, logs/negative-control.log ends '2 failed, 2 passed' EXIT=1, logs/importers-head-arm.log records 2 failures and logs/importers-base-failing-ids.log shows both ids failing at base 82722a11, so the importer clause adds no failure, but the manifest's cited importers-base-arm.log does not exist.\nVERDICT write_paths: The source brief grants review_records.py, review.py, the node's test file and its evidence fragment; git diff 82722a11..2af55ea38b changes reckon/crew/review_records.py, tests/test_a_discarded_review_never_shadows_a_promoted_one.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/a-discarded-review-never-shadows-a-promoted-one.html, every one of them inside the grant.\nVERDICT manifest: Read manifest.md; it reports commits 3a82333421 and 2af55ea38b, the 4-passed after arm, the 2-failed negative control and the importer arms, with its test_logs line naming logs/importers-base-arm.log, a path that does not exist; the actual base evidence is logs/importers-base-failing-ids.log.\nVERDICT diff: Read both commits against base 82722a11: 3a82333421 adds _review_run_was_discarded and the discard-then-rank selection in reckon/crew/review_records.py plus the 329-line test file, and 2af55ea38b adds only the 52-line evidence fragment; no path outside the declared scope changed.\nCALL_SITES: reckon/crew_run_commands.py:730, :947, :1066 and :1288 call review_module.stored_record; reckon/crew/review.py:3771 calls stored_record; reckon/crew/review_dispositions.py:265, :364 and :471 call stored_record; reckon/crew/promotion_checks.py:697 and reckon/crew/reports.py:1914 call stored_record; select_review_for_head at reckon/crew/recovery_review_subject.py:113 is reached from recovery_review_acceptance.py:287, promotion_release.py:1078 and queue_landing.py:177\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:544-556 filters discarded candidates before the complete/parsed ranking, which is the reported defect, though reckon/crew/review_records.py:1012 leaves the same shadowing reachable through the misfiled-record path.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-arm.log records 4 passed EXIT=0 and logs/negative-control.log records 2 failed EXIT=1, and both importer failures are shown failing at base in logs/importers-base-failing-ids.log, though manifest.md:13 cites an importers-base-arm.log that does not exist.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 82722a1163ff767c6ec18a3fb18eadcf6fae1f71..2af55ea38b939aa3c9ed3ea9fee0ab2bbcfa8bc8 touches only review_records.py, the new test file and the evidence fragment, all four declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control.log shows tests/test_a_discarded_review_never_shadows_a_promoted_one.py:235 and :297 reddening when the base _select_stored_record is applied in place, so the two paired assertions fail on the regression they guard.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_records.py:450-472 follows the file's own call-time-import idiom established at :435-447 and carries no plan label or attribution.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/review_records.py:450 re-implements promotion.discard_recorded at reckon/crew/promotion.py:1994 with identical marker paths, is_file() read and OSError handling instead of calling it.\nFINDING reckon/crew/review_records.py:450 non-blocking: _review_run_was_discarded duplicates promotion.discard_recorded (reckon/crew/promotion.py:1994) line for line \u2014 same two marker paths, same is_file() read, same OSError-skip and same unreadable-means-False rule \u2014 instead of calling the owner; delete the helper and call promotion.discard_recorded at the call-time import the docstring already performs.\nFINDING reckon/crew/review_records.py:1012 non-blocking: the discard filter was added only to _select_stored_record, so _filed_match still returns the newest head-matching record filed under another run id without consulting the discard marker; the same shadowing stays reachable through the misfiled-record path, which the worker disclosed under outside_scope.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one/manifest.md:13 non-blocking: test_logs cites logs/importers-base-arm.log, which does not exist; the importer base arm was written to logs/importers-base-failing-ids.log at 11:14, ten minutes after the 11:04 manifest, and artifacts still describes both arms as 'running this turn'.\n",
+  "review_run_id": "r-20261109T101449571257-review-of-a-discarded-review-never-shadows-a-promoted-one-2af55ea38b93",
+  "reviewed_base_sha": "82722a1163ff767c6ec18a3fb18eadcf6fae1f71",
+  "reviewed_head_sha": "2af55ea38b939aa3c9ed3ea9fee0ab2bbcfa8bc8",
+  "reviewed_run_id": "r-20261109T070230933754-a-discarded-review-never-shadows-a-promoted-one",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T10:40:00+00:00",
+  "total": 95
+}
