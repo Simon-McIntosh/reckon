@@ -1,0 +1,67 @@
+<section id="a-review-delta-comes-from-the-runs-own-commits-landing">
+  <h2>A review's delta is the run's own commits, taken against the remote-tracking integration ref</h2>
+
+  <p><strong>What changed.</strong> A run's changes are now read by one helper,
+  <code>reckon/clones.py::own_changed_paths(tree, older, tip, *,
+  integration_ref=...)</code>, which returns the paths of commits reachable
+  from <code>tip</code> but from neither the run's base nor the integration
+  branch. Its first pass walks <code>rev-list --no-merges</code> and diffs each
+  commit; a second <code>rev-list --merges</code> pass adds the combined diff of
+  the run's own merge commits, so a conflict resolution the run wrote survives
+  a range that drops merges. The helper returns <code>None</code> when the
+  history cannot be compared &mdash; no remote, or a ref <code>git</code> cannot
+  resolve &mdash; and every caller reads <code>None</code> as an unshown delta
+  rather than an empty one.</p>
+
+  <p>The integration ref is resolved by
+  <code>recovery_review_dispatch._integration_ref</code>: the symbolic
+  <code>refs/remotes/origin/HEAD</code> when the clone carries one, otherwise
+  <code>origin/main</code>, otherwise <code>origin/master</code>, otherwise the
+  empty string. A local branch is never the selector: it can lag the remote, so
+  a range taken against it readmits commits the integration branch already has.</p>
+
+  <p><strong>The two callers.</strong> <code>review_head_move</code> measures the
+  delta between a stored review's head and the head the run now carries, and
+  returns <code>{}</code> when the delta cannot be shown, so no review is
+  carried forward on an unmeasured move. <code>_changed_figure_paths</code>
+  keeps its failure-as-no-figure reading. <code>_review_delivered_paths</code>
+  and <code>changed_paths</code> are untouched.</p>
+
+  <h3 id="a-review-delta-comes-from-the-runs-own-commits-measured">Measured</h3>
+
+  <p>The node test drives three real histories. A run that merges main mid-flight
+  reads only its own paths and stays classified as a non-runtime move, while the
+  lagging local branch is shown admitting an integration path. A run that
+  resolves a conflict in its own merge keeps that resolution, which the
+  no-merges pass alone cannot see. A repository with no remote reads the move as
+  uncomparable.</p>
+
+  <table id="a-review-delta-comes-from-the-runs-own-commits-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node gate</td><td>6a1d6d06b2dc</td><td>3 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td><td>6a1d6d06b2dc + two-dot call restored</td><td>3 failed, <code>EXIT=1</code> &mdash; the first fixture reports the integration paths entering the set and the runtime-source classification flipping to <code>True</code></td></tr>
+      <tr><td>importer arm, base</td><td>5a0bd041014c</td><td>191 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer arm, delivered</td><td>6a1d6d06b2dc</td><td>194 passed, <code>EXIT=0</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The fixtures.</strong> Three existing review fixtures built
+  repositories with no remote at all, so their delta was uncomparable and their
+  tests asserted the empty reading. Each now records
+  <code>refs/remotes/origin/main</code> at its seed commit &mdash; the state a
+  dispatched run sees after its clone's fetch. One fixture also wrote the same
+  figure with the same message as the commit its test reviews, so a commit made
+  in the same second produced the same object as the fixture's own: the reviewed
+  head was already carried by the integration ref and the figure review was never
+  composed. The reviewed commit now carries its own message, so the two cannot
+  collapse onto one sha.</p>
+
+  <p><strong>Commits.</strong> The helper and its callers landed at
+  <code>beb6dfff11bd</code>; the fixture integration refs at
+  <code>256138788295</code>; the fixture commit-message split at
+  <code>6a1d6d06b2dc</code>. A repository with no remote still reads as
+  uncomparable.</p>
+</section>

@@ -16,7 +16,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
-from reckon import ledger, review_tiers
+from reckon import clones, ledger, review_tiers
 from reckon._timestamps import parse_utc
 from reckon.crew import lane_document as _lane_document
 from reckon.crew import plan_review, runs
@@ -934,6 +934,60 @@ CARRY_FORWARD_FIELD = "review_carry_forward"
 REVIEW_SETTLE_SECONDS = 300
 
 
+# The remote a clone records the integration branch under, and the branch names
+# a remote uses for its primary line when its own ``HEAD`` is not set.
+INTEGRATION_REMOTE = "origin"
+INTEGRATION_BRANCHES = ("main", "master")
+
+
+def _integration_ref(tree: Path | None) -> str:
+    """The remote-tracking ref of the project's primary branch, or empty.
+
+    Only a remote-tracking ref names what the integration branch holds. A local
+    branch can sit behind it, so a range taken against the local branch lets the
+    commits the integration branch already carries back into a run's own delta —
+    which is the whole defect this ref exists to avoid. The remote's ``HEAD`` is
+    its own name for its primary branch; when a clone carries none, the
+    conventional branch names are tried. A repository with no such ref — no
+    remote at all, most often — answers empty, and a caller reads the history as
+    uncomparable rather than as an empty delta.
+    """
+    if tree is None:
+        return ""
+    try:
+        head = subprocess.run(
+            [
+                "git",
+                "symbolic-ref",
+                "--quiet",
+                f"refs/remotes/{INTEGRATION_REMOTE}/HEAD",
+            ],
+            cwd=tree,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if not head.returncode:
+            ref = head.stdout.strip()
+            prefix = "refs/remotes/"
+            if ref.startswith(prefix):
+                return ref[len(prefix) :]
+        for branch in INTEGRATION_BRANCHES:
+            candidate = f"{INTEGRATION_REMOTE}/{branch}"
+            probe = subprocess.run(
+                ["git", "rev-parse", "--verify", "--quiet", candidate],
+                cwd=tree,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if not probe.returncode:
+                return candidate
+    except OSError:
+        return ""
+    return ""
+
+
 def _changed_paths_between(
     tree: Path | None, older: str, newer: str
 ) -> list[str] | None:
@@ -966,10 +1020,14 @@ _FIGURE_IMAGE_SUFFIXES = frozenset({".svg", ".png", ".jpg", ".jpeg", ".gif", ".w
 def _changed_figure_paths(record: Mapping[str, Any]) -> list[str]:
     """Images below a figures directory that this run added or changed."""
     tree = _review_tree(record)
+    if tree is None:
+        return []
     base = str(record.get("base_sha") or record.get("base") or "").strip()
     head = _reviewed_run_head(record)
-    changed = _changed_paths_between(tree, base, head)
-    if tree is None or changed is None:
+    changed = clones.own_changed_paths(
+        tree, base, head, integration_ref=_integration_ref(tree)
+    )
+    if changed is None:
         return []
     images: list[str] = []
     for raw_path in changed:
@@ -1088,7 +1146,9 @@ def review_head_move(record: Mapping[str, Any]) -> dict[str, Any]:
     reviewed_head = review_described_head(stored, tree=tree)
     if not reviewed_head or same_revision(reviewed_head, head):
         return {}
-    paths = _changed_paths_between(tree, reviewed_head, head)
+    paths = clones.own_changed_paths(
+        tree, reviewed_head, head, integration_ref=_integration_ref(tree)
+    )
     if paths is None:
         return {}
     delivered = _review_delivered_paths(tree, stored)

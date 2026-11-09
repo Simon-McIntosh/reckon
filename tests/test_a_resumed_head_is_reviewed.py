@@ -113,6 +113,7 @@ def world(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     ):
         _git(repo, *arguments)
     _commit(repo, {"seed.txt": "seed\n"}, "chore: seed")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     reviewed = _commit(
         repo,
         {

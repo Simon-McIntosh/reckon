@@ -200,6 +200,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
     (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
     _git(repo, "add", "seed.txt")
     _git(repo, "commit", "-q", "-m", "chore: seed")
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     base_sha = _git(repo, "rev-parse", "HEAD")
 
     figure_path = repo / FIGURE

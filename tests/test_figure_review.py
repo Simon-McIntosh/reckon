@@ -86,6 +86,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict:
         ("commit", "-q", "-m", "chore: seed fixture"),
     ):
         _git(repo, *args)
+    _git(repo, "update-ref", "refs/remotes/origin/main", "HEAD")
     base_sha = _git(repo, "rev-parse", "HEAD")
     figure_path = repo / FIGURE
     figure_path.parent.mkdir(parents=True)
@@ -207,7 +208,9 @@ def test_changed_figure_dispatches_an_image_review_with_a_png(
         encoding="utf-8",
     )
     _git(reviewed_tree, "add", FIGURE)
-    _git(reviewed_tree, "commit", "-q", "-m", "feat: add figure")
+    # Distinct from the fixture's message: an identical tree, message and
+    # second collapse to one sha, leaving the reviewed head already integrated.
+    _git(reviewed_tree, "commit", "-q", "-m", "feat: add the reviewed figure")
     head_sha = _git(reviewed_tree, "rev-parse", "HEAD")
     project["head_sha"] = head_sha
     (project["home"] / "mounts.json").write_text(
