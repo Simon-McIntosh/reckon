@@ -27,7 +27,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="109">
+<meta name="plan-version" content="110">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -355,6 +355,9 @@
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261109T014036849812-review-of-a-concurrent-launch-is-refused-34d0376761a9" data-who="reckon-build" data-when="2026-11-09T01:53:19.040Z">
     <div class="r-comment-body"><p>Independent review of r-20261109T005938978471-a-concurrent-launch-is-refused at head 34d0376761 (base 29b47d2cb8) is parsed with all six dimensions scored and two blocking findings: the dispatch door starts its supervisor without passing its reservation, so its hold is never tied to the launch and the admit door would refuse the run indefinitely.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261109T021829039080-review-of-a-concurrent-launch-is-refused-227b1e55809c" data-who="reckon-build" data-when="2026-11-09T02:29:48.081Z">
+    <div class="r-comment-body"><p>Independent review of r-20261109T005938978471-a-concurrent-launch-is-refused at 227b1e5580 over 34d0376761..227b1e5580: both prior blocking findings are answered (dispatch now hands its reservation to the supervisor it starts, and a case drives a dispatch to completion asserting the reservation names that supervisor and frees when it exits); every dimension scores 18 or above; one non-blocking prose defect is recorded at docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html:27</p></div>
 </div>
 </section>
 </main>
