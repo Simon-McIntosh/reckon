@@ -2112,17 +2112,38 @@ def _record_holds_a_worker(record: Mapping[str, Any]) -> bool:
 _ATTEMPT_RECEIPT_PATTERN = re.compile(r"^attempt-(\d+)-(?:worker|exit)\.json$")
 
 
-def _exit_receipt_shows_ended(run_directory: Path, name: str) -> bool:
+def _exit_receipt_shows_ended(record: Mapping[str, Any], name: str) -> bool:
     """Whether the exit receipt filed as ``name`` shows that attempt had ended.
 
     The receipt is written by the supervisor that held the worker, when that
-    worker exits, so its presence on the shared run directory is the attempt's
-    own account of its end and reads the same from every host. One reader serves
-    both shapes a run files it under — the canonical ``exit.json`` beside a
-    canonical worker record, and the immutable ``attempt-N-exit.json`` a retire
-    leaves behind — so the two cannot disagree about what ends an attempt.
+    worker exits, so it is the attempt's own account of its end, and it travels
+    with the shared run directory, where it reads the same from every host.
+
+    A file on disk is not yet a receipt. It is read the way the exit-record
+    owner reads one — verbatim and defensively — so a receipt truncated
+    mid-write, one that does not parse, and one naming a different run are all
+    absent rather than evidence that the work ended. The canonical name is read
+    by that owner itself; a retired attempt's immutable receipt is the same
+    payload under an attempt-specific name and is read here by the same rules,
+    because both shapes come through this one function and so cannot be freed
+    on different terms.
     """
-    return (run_directory / name).exists()
+    from reckon.crew.recovery_liveness import _run_exit_record
+    from reckon.crew.recovery_wait import _run_directory
+
+    if name == EXIT_RECORD_NAME:
+        return _run_exit_record(record) is not None
+    try:
+        payload = json.loads(
+            (_run_directory(record) / name).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return False
+    if not isinstance(payload, Mapping):
+        return False
+    run_id = str(record.get("run_id") or "")
+    recorded = str(payload.get("run_id") or "")
+    return not (run_id and recorded and recorded != run_id)
 
 
 def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
@@ -2161,7 +2182,7 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     if not numbers:
         return None
     attempt = max(numbers)
-    if _exit_receipt_shows_ended(directory, f"attempt-{attempt}-exit.json"):
+    if _exit_receipt_shows_ended(record, f"attempt-{attempt}-exit.json"):
         return True
     try:
         data = json.loads(
@@ -2228,7 +2249,7 @@ def _launch_refused_by(record: Mapping[str, Any], reading: LivenessReading) -> b
             return not retired
         if not _record_holds_a_worker(record):
             return False
-        if foreign and _exit_receipt_shows_ended(directory, EXIT_RECORD_NAME):
+        if foreign and _exit_receipt_shows_ended(record, EXIT_RECORD_NAME):
             return False
         return _worker_record_liveness(record) is not False
     return False
