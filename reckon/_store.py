@@ -1714,7 +1714,9 @@ def _write_state_locked(
     authored_text_changed = source_text != text
     if state_type == "plan":
         _require_heading_for_section_records(source_text, new_data.get("sections"))
-    new_text = _plan_html.write_state(source_text, new_data)
+    new_text = _plan_html.write_state(
+        source_text, new_data, drop_authored_impl_meta=True
+    )
     if state_type == "plan":
         # The coverage half reads the declarations the write produces, carried by
         # the rendered HTML, and compares them against the stored plan as it
@@ -2445,7 +2447,9 @@ def _replace_plan_text(
         stamped_state = dict(current_state)
         stamped_state["modified"] = date.today().isoformat()
         stamped_state["version"] = current_version + 1
-        rendered = _plan_html.write_state(replaced, stamped_state)
+        rendered = _plan_html.write_state(
+            replaced, stamped_state, drop_authored_impl_meta=True
+        )
         if str(current_state.get("type", "plan") or "plan") == "plan":
             # A text replacement never enters _write_state_locked, so the same
             # heading/declaration coverage guard runs here, against the rendered
