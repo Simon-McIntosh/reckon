@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree",
+    "reckon/crew/dispatch_launch.py:_prepare_attempt_records",
+    "reckon/crew/dispatch_launch.py:_supervisor_spawn_worker"
+  ],
+  "completed_at": "2026-11-09T17:21:34.305Z",
+  "dispatched_at": "2026-11-09T17:14:00Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites run r-20260914T064500219481, which resolves to no run directory and matches neither the timestamp nor the node slug of the run \u00a715 and the runs directory both name, r-20261109T064500219481-a-figure-finding-names-its-rubric, so a reader following the citation finds nothing."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2125",
+      "severity": "non-blocking",
+      "text": "non-blocking: _exit_receipt_shows_ended frees a foreign launch on the receipt's presence alone, while the repository's exit-record owner reckon/crew/recovery_liveness.py:1499 treats an unreadable or other-run receipt as absent, so a truncated exit.json beside a foreign worker record readmits the launch this node exists to refuse; the plan directed this presence check, and the retired shape already had it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit fc13619cea3 against base 099653a40d \u2014 530 insertions across three production/test files and one evidence fragment; the guard change, the naming change and the three caller updates all match \u00a715.",
+    "done_when": "the done_when names cases (a1), (a2), (b1), (b2), (c) and (d); tests/test_a_worker_on_another_host_refuses_a_relaunch.py carries all nine cases, head-arm.log records 9 passed EXIT=0 and base-arm-099653a.log records 2 failed, 7 passed EXIT=1 with the two named ids.",
+    "goal": "the node's goal is to refuse a relaunch beside a worker launched on another host until an exit receipt shows that launch ended; reckon/crew/dispatch_launch.py:2217-2232 now takes the placed-unknown branch for an off-host unknown reading and frees it only on an exit receipt.",
+    "manifest": "read; it records both arms' counts, 29 passed for the neighbouring suites at each arm, a ruff delta of zero, and the commits and log paths.",
+    "write_paths": "the four declared paths hold every path the diff touches \u2014 reckon/crew/dispatch_launch.py, reckon/crew/dispatch.py, the new test file and the evidence fragment \u2014 and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worker_on_another_host_refuses_a_relaunch.py:246 fails when the foreign arm is removed, as negative-control.log shows, but no case drives the dispatch.py:528 caller and only the retired-exit control falsifies the freeing reads.",
+    "evidence": "head-arm.log ends \"9 passed ... EXIT=0\" at fc13619cea and base-arm-099653a.log ends \"2 failed, 7 passed ... EXIT=1\", the exact measure the done_when asserts, and I re-measured the ruff delta as +0 with the project config.",
+    "fit": "reckon/crew/dispatch_launch.py:2024-2088 follows the file's own idiom of a private cross-module import inside the function and a docstring stating the mechanism, and no added name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_launch.py:2217-2232 refuses an off-host unknown reading and frees it only through the exit receipt read at :2231, matching \u00a715's three named paths.",
+    "reuse": "the change extends _record_is_known_foreign and _worker_record_liveness rather than copying them, but reckon/crew/dispatch_launch.py:2125 re-reads the canonical exit record by existence where reckon/crew/recovery_liveness.py:1499 already owns that read.",
+    "scope_discipline": "the four files in the diff are the four declared write paths, and reckon/crew/dispatch.py:528 gains a single argument the goal implies."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to refuse a relaunch beside a worker launched on another host until an exit receipt shows that launch ended; reckon/crew/dispatch_launch.py:2217-2232 now takes the placed-unknown branch for an off-host unknown reading and frees it only on an exit receipt.\nVERDICT done_when: the done_when names cases (a1), (a2), (b1), (b2), (c) and (d); tests/test_a_worker_on_another_host_refuses_a_relaunch.py carries all nine cases, head-arm.log records 9 passed EXIT=0 and base-arm-099653a.log records 2 failed, 7 passed EXIT=1 with the two named ids.\nVERDICT write_paths: the four declared paths hold every path the diff touches \u2014 reckon/crew/dispatch_launch.py, reckon/crew/dispatch.py, the new test file and the evidence fragment \u2014 and nothing outside them.\nVERDICT manifest: read; it records both arms' counts, 29 passed for the neighbouring suites at each arm, a ruff delta of zero, and the commits and log paths.\nVERDICT diff: read commit fc13619cea3 against base 099653a40d \u2014 530 insertions across three production/test files and one evidence fragment; the guard change, the naming change and the three caller updates all match \u00a715.\nCALL_SITES: reckon/crew/dispatch.py:_refuse_a_live_worker_before_the_worktree, reckon/crew/dispatch_launch.py:_prepare_attempt_records, reckon/crew/dispatch_launch.py:_supervisor_spawn_worker\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2217-2232 refuses an off-host unknown reading and frees it only through the exit receipt read at :2231, matching \u00a715's three named paths.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm.log ends \"9 passed ... EXIT=0\" at fc13619cea and base-arm-099653a.log ends \"2 failed, 7 passed ... EXIT=1\", the exact measure the done_when asserts, and I re-measured the ruff delta as +0 with the project config.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four files in the diff are the four declared write paths, and reckon/crew/dispatch.py:528 gains a single argument the goal implies.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_worker_on_another_host_refuses_a_relaunch.py:246 fails when the foreign arm is removed, as negative-control.log shows, but no case drives the dispatch.py:528 caller and only the retired-exit control falsifies the freeing reads.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2024-2088 follows the file's own idiom of a private cross-module import inside the function and a docstring stating the mechanism, and no added name carries a plan or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: the change extends _record_is_known_foreign and _worker_record_liveness rather than copying them, but reckon/crew/dispatch_launch.py:2125 re-reads the canonical exit record by existence where reckon/crew/recovery_liveness.py:1499 already owns that read.\nFINDING docs/evidence/fragments/a-run-has-one-live-worker/a-worker-on-another-host-refuses-a-relaunch.html:8 non-blocking: the fragment cites run r-20260914T064500219481, which resolves to no run directory and matches neither the timestamp nor the node slug of the run \u00a715 and the runs directory both name, r-20261109T064500219481-a-figure-finding-names-its-rubric, so a reader following the citation finds nothing.\nFINDING reckon/crew/dispatch_launch.py:2125 non-blocking: _exit_receipt_shows_ended frees a foreign launch on the receipt's presence alone, while the repository's exit-record owner reckon/crew/recovery_liveness.py:1499 treats an unreadable or other-run receipt as absent, so a truncated exit.json beside a foreign worker record readmits the launch this node exists to refuse; the plan directed this presence check, and the retired shape already had it.\n",
+  "review_rubric": "text",
+  "review_run_id": "r-20261109T170928941836-review-of-a-worker-on-another-host-refuses-a-relaunch-fc13619cea3d",
+  "reviewed_base_sha": "099653a40dfb985e2d94c09008f43e1a49a33bf5",
+  "reviewed_head_sha": "fc13619cea3d29bd23a83da484e7f549ab6219a6",
+  "reviewed_run_id": "r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T17:30:49.549058+00:00",
+  "total": 107
+}

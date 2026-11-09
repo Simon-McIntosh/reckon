@@ -22,12 +22,12 @@
   <meta name="plan-depends-on" content="a-crew-process-ends-with-its-owner">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-run-has-one-live-worker#s6&quot;],&quot;s9&quot;:[&quot;a-run-has-one-live-worker#s8&quot;],&quot;s10&quot;:[&quot;a-run-has-one-live-worker#s11&quot;],&quot;s15&quot;:[&quot;a-run-has-one-live-worker#s13&quot;],&quot;s16&quot;:[&quot;a-run-has-one-live-worker#s15&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.67">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-modified" content="2026-11-09">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -405,6 +405,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261109T170928941836-review-of-a-worker-on-another-host-refuses-a-relaunch-fc13619cea3d" data-who="reckon-build" data-when="2026-11-09T17:21:34.305Z">
+    <div class="r-comment-body"><p>review of r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch at fc13619cea: parsed record scoring all six dimensions (goal_fidelity 18, evidence 18, scope_discipline 20, durability 17, fit 19, reuse 15) with reviewed_base_sha 099653a40d and reviewed_head_sha fc13619cea, added_failure_count 0 from the run&#x27;s own baseline_suite (2 failed) and after_suite (0 failed); two non-blocking findings, one a mis-cited run id in the evidence fragment and one a presence-only canonical exit-receipt read</p></div>
 </div>
 </section>
 </main>
