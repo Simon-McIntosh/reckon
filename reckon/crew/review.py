@@ -2189,8 +2189,30 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
     return ids
 
 
+_EXIT_RECORD_LINE_RE = re.compile(r"^\s*EXIT=-?\d+\s*$", re.MULTILINE)
+
+
+def last_run_text(log_text: str) -> str:
+    """The log's last run, read after its second-to-last ``EXIT=`` line.
+
+    A capture that runs two commands into one log appends one ``EXIT=<n>``
+    record per command, so the run whose status the receipt asserts is the text
+    after the second-to-last of them. A log carrying a single record, or none,
+    holds one run and is returned whole: there is no earlier run to cut away,
+    and cutting at the only record would discard the output the status belongs
+    to.
+    """
+    records = list(_EXIT_RECORD_LINE_RE.finditer(log_text))
+    if len(records) < 2:
+        return log_text
+    return log_text[records[-2].end() :]
+
+
 def gate_log_failure_ids(
-    log_text: str, arm_directory: str | Path | None = None
+    log_text: str,
+    arm_directory: str | Path | None = None,
+    *,
+    last_run: bool = False,
 ) -> set[str] | None:
     """Return the failing ids a gate log names, in whichever format it is written.
 
@@ -2205,13 +2227,19 @@ def gate_log_failure_ids(
     whether it recorded failures: the caller reads that as unmeasured rather
     than as a zero. A log whose format is recognised but which lists no failures
     reads the empty set — it was read, and it names nothing.
+
+    ``last_run`` reads only the log's final run, cut by :func:`last_run_text`,
+    so a log holding two commands reports the failures of the one whose exit
+    status is also read from the tail. Reading the whole text would answer for
+    a run the receipt does not describe.
     """
-    log_format = _gate_log_format(log_text)
+    read = last_run_text(log_text) if last_run else log_text
+    log_format = _gate_log_format(read)
     if log_format is None:
         return None
     if log_format == "ctest":
-        return _ctest_failure_ids(log_text)
-    return _pytest_failure_ids(log_text, arm_directory)
+        return _ctest_failure_ids(read)
+    return _pytest_failure_ids(read, arm_directory)
 
 
 def _gate_log_format(log_text: str) -> str | None:
