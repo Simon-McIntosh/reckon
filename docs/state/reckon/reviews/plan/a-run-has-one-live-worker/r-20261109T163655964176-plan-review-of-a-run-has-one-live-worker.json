@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T16:46:03.607Z",
+  "dispatched_at": "2026-11-09T16:39:09Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16:177",
+      "id": "reasoning-1",
+      "reason": "a node implementing the text as written would add `skip_ended` at one call site and leave the sibling door refused, and the section's own claim that an exit receipt frees the reservation whatever process it names would be false on a real caller.",
+      "text": "\u00a716 names the door change as `reserve_launch_attempt` skipping an ended reservation as the spawn guard does with `skip_ended=True`, but there is a second production reader of the same reservation: `refuse_held_launch` (`reckon/crew/dispatch_launch.py:2444`) also calls `held_launch_reservation(run_directory)` with no `skip_ended`, and it is the branch a non-cli launch of an existing run id takes (`reckon/crew/dispatch.py:2871`), so a reservation left naming the long-lived admit service after a failed supervisor rewrite still refuses that door for the service's lifetime \u2014 the exact defect (3) claims to repair",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html#s16:177",
+      "id": "done_when-1",
+      "reason": "the write set and the promised controls differ depending on which sentence the node follows, and leaving the test as is leaves the defect the Why reports standing.",
+      "text": "the Why names \"the spawn-guard cases near lines 446 and 461\" as test defects because they \"assert only `pid > 0`\", and the What-changes says \"the spawn-guard cases assert the reservation was taken and released\", but the done-when then says \"The spawn guard's existing `test_a_reservation_whose_attempt_already_ended_is_skipped` stays as it is\" \u2014 line 461 is that case's assertion (`tests/test_a_concurrent_launch_is_refused.py:461`, `assert pid > 0`), so the section both requires and forbids strengthening the same test, and the node cannot tell whether its write set includes it",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "099653a40dfb985e2d94c09008f43e1a49a33bf5",
+  "plan_fingerprint": "f5a25c6f098015a0f2384307d80e446b9ca774e9f6358c09e8baf2c463d1ac0c",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 135,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T163655964176-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "5e4691e59049b76a8c5cad6474350f2f4a6200f5",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `held_launch_reservation` is called without `skip_ended` at `reckon/crew/dispatch_launch.py:2392` and with `skip_ended=True` at `:3446`, the marker is at `reckon/crew/dispatch.py:2772`, claim publication is skipped for shadow lineage at `:2577` and published at `:2582`, `launch_reservation_key` is at `dispatch_launch.py:2217`, and the cited test cases resolve at `tests/test_a_concurrent_launch_is_refused.py:446`, `:452`, `:776`.",
+    "done_when": "a finding \u2014 \u00a716's done-when says `test_a_reservation_whose_attempt_already_ended_is_skipped` \"stays as it is\", while the same section's Why names that case's assertion at `tests/test_a_concurrent_launch_is_refused.py:461` as a defect to repair.",
+    "evidence_paths": "pass \u2014 gate logs go under the run directory with a revision header and a bare `EXIT=` line, and no gate writes to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the one renamed test names the behaviour (`test_a_fresh_run_ids_reservation_ends_with_its_launch`) and no plan label, stage name or ticket number reaches a symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a716 states that an exit receipt frees the reservation \"whatever process it names\" and names only `reserve_launch_attempt` as the reader that changes, but `refuse_held_launch` reads the same reservation for the in-harness door with no `skip_ended`, so a hold naming the admit service stays live on that path.",
+    "single_goal": "pass \u2014 the four repairs (key computation, solo-shadow run directory, failed supervisor rewrite, dead claim pair) all serve one goal, that a launch reservation leaves no stray state.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s16` depends on `s15`, which exists and declares `s13`; no required dependency is missing and no relationship points at a wrong node."
+  },
+  "section_digests": {
+    "_document": "21b05b2a994087e634a677fb0aba7776346973fa47c4313a75f12eea06198d51",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "0c1c2205930548e073f9425fc6551c39d205ec09801cf2d903fc16e4d69ffd4a",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:51:10.689441+00:00",
+  "total": null
+}
