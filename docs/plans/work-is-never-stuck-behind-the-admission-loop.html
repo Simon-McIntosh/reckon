@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="354">
+<meta name="plan-version" content="355">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -862,6 +862,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
+</div>
+<div class="r-comment" data-section="s50" data-id="c-run-r-20261109T122714057898-a-resume-records-the-host-that-launched-it" data-who="reckon-build" data-when="2026-11-09T15:44:41.977Z">
+    <div class="r-comment-body"><p>A resume and an admitted launch now record the host that issued the worker&#x27;s pid — `record_resumption` writes `launcher_host` on the resumed attempt and the launch record merged by `attach_launch_identity` writes it for a queued request; every other pointer write still carries the recorded host forward. Four cases in `tests/test_a_resume_records_the_host_that_launched_it.py`: base tree 4 failed, after tree 4 passed, declared control 3 failed / 1 passed (EXIT=1).</p></div>
 </div>
 </section>
 </main>
