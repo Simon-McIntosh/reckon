@@ -1,0 +1,81 @@
+<section id="a-released-request-takes-the-sections-current-contract-landing">
+  <h2>A released request takes the section's current contract</h2>
+
+  <p><strong>What changed.</strong> A batch entry that omits a node field takes
+  the section's value, and a queued request stored that value as if it were the
+  dispatcher's own. A request held because its plan had moved was then released
+  onto the text the plan moved to, while its stored <code>done_when</code> still
+  described the text it was queued against — so the worker's prompt and its plan
+  disagreed. <code>_entry_node</code> (<code>reckon/crew/dispatch_batch.py</code>)
+  now records which node fields its section supplied, each with the digest of
+  the value taken, and the batch writer stores that mark on the request beside
+  the node it describes. <code>_release_plan_review_holds</code>
+  (<code>reckon/crew/queue_admission.py</code>) re-derives every marked field
+  from the section at the release base before the request leaves
+  <code>held</code>, records the old and new digest of each under
+  <code>section_rederivation</code>, and publishes the re-derived node on the
+  same pass's in-memory record, so a request released and launched in one pass
+  runs the current contract. <code>crew queue edit</code>
+  (<code>reckon/crew/queue_edit.py</code>) clears the mark on any field it sets,
+  so a coordinator's edit is kept; a field the dispatcher supplied carries no
+  mark from the start.</p>
+
+  <p>A release that cannot read the section is refused rather than released on
+  the stored fields: the request stays <code>held</code> and the reason goes
+  into the hold record the plan-review hold already owns
+  (<code>queue_hold.detail</code>), which the release removes along with the
+  hold. Releasing on the stored fields would put the request back on the text
+  the plan has left behind, which is the disagreement the re-derivation exists
+  to remove. The catch is at the per-request boundary and covers any exception,
+  not only the refusal the plan reader raises, so one unreadable section holds
+  that one request instead of aborting the admission pass for every project.
+  The marks are read before the pointer is rebuilt into a node, so a request
+  whose fields the dispatcher supplied pays no rebuild and cannot fail in the
+  release loop.</p>
+
+  <p>Both digests are taken by digesting text through the plan reader's one
+  canonical function — the old one from the stored field, not from the mark
+  recorded beside it — and only fields whose text actually moved are recorded
+  under <code>section_rederivation</code>. A mark written under an earlier
+  spelling of an unchanged value therefore reports no change, and is brought up
+  to the current digest without inventing a re-derivation.</p>
+
+  <h3 id="a-released-request-takes-the-sections-current-contract-measured">Measured</h3>
+
+  <p>Seven cases in
+  <code>tests/test_a_released_request_takes_the_sections_current_contract.py</code>
+  run against a synthesised mounted project under <code>RECKON_HOME</code> with
+  <code>plan_review_gate</code> set to <code>enforce</code>, so the plan change
+  takes a hold. In the first, a request whose section supplied its done-when is
+  held when the section's done-when changes, released once a review of the new
+  text is stored, and launched: the assertion is on
+  <code>prompt.txt</code> — the text the launch writes and the worker reads —
+  which carries the section's current done-when and not the one the request was
+  queued under. The pointer's <code>done_when</code> carries it too, and
+  <code>section_rederivation.done_when</code> records an <code>old</code> digest
+  that differs from its <code>new</code>. In the second, a done-when the
+  dispatcher supplied survives the same change. In the third, a done-when set by
+  <code>crew queue edit</code> survives it. In the fourth, the plan document is
+  removed after the review is stored: the pass releases nothing, launches
+  nothing, leaves the request <code>held</code> on its stored done-when, and
+  names the refusal in its hold. In the fifth, the plan reader raises a
+  <code>RuntimeError</code>: the pass still returns its verdicts, and that one
+  request stays held with the failure named. In the sixth, a mark written in an
+  earlier spelling sits over text that has not moved, and the release records no
+  re-derivation. The seventh asserts the operator's crew home is untouched.</p>
+
+  <p>Three negative controls are logged at
+  <code>logs/negative-control.log</code> in the run directory, each with its
+  command and <code>EXIT=1</code>. Deleting the in-memory re-derivation the pass
+  launches from leaves the launched node on the stored fields, and the first
+  case fails on the launched prompt. Narrowing the per-request catch back to the
+  plan reader's refusal lets a <code>RuntimeError</code> escape the release
+  loop, and the reader-failure case raises out of <code>admit_once</code>.
+  Taking the old digest from the stored mark instead of re-digesting the stored
+  field makes an unchanged value report a change, and the stale-mark case fails
+  on the recorded <code>section_rederivation</code>. The seven cases pass at the
+  head. Every test file importing <code>reckon.crew.queue_admission</code> runs
+  at the base revision and at the head in one arm at a time with
+  <code>-n 4</code>; the two arms are compared by delta and the logs sit under
+  <code>logs/</code> in the run directory.</p>
+</section>
