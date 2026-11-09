@@ -44,12 +44,13 @@
   control, executed and logged.</strong> Reverting <code>run_ids</code> to
   <code>_load_aggregate(project, root)</code> makes the pass read the aggregate
   <strong>3</strong> times, once per delivered run, and the gate fails on
-  <code>assert 3 &lt;= 1</code> — <strong>1 failed, EXIT=1</strong>. Log:
-  <code>logs/negative-control.log</code>. Two further controls, each run at the final code and logged:
-  returning the index's ids without the file-stat currency check leaves the added and rewritten
-  files unseen, and making the refresh branch fall back to <code>_load_aggregate</code> leaves the
-  index row stale; each turns both new cases red (<strong>2 failed, 1 passed, EXIT=1</strong>). Logs:
-  <code>logs/negative-control-currency.log</code>, <code>logs/negative-control-refresh.log</code>.</p>
+  <code>assert 3 &lt;= 1</code> — and, with the two currency cases added, <strong>3 failed, EXIT=1</strong>.
+  Log: <code>logs/negative-control.log</code>. Two further controls, each run at the final code and
+  logged: returning the index's ids without the file-stat currency check leaves the added and
+  rewritten files unseen, and making the refresh branch fall back to <code>_load_aggregate</code>
+  leaves the index row stale; each turns both new cases red
+  (<strong>2 failed, 1 passed, EXIT=1</strong>). Logs: <code>logs/negative-control-currency.log</code>,
+  <code>logs/negative-control-refresh.log</code>.</p>
 
   <p id="a-review-duty-reads-the-ledger-once-per-pass-importers"><strong>Importer arm.</strong>
   Eight test files importing <code>reckon.ledger</code>, <code>reckon.crew.obligations</code> or
