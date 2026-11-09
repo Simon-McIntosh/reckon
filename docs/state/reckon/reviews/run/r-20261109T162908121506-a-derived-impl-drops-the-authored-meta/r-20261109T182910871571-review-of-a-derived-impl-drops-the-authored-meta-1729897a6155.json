@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T18:36:52.048Z",
+  "dispatched_at": "2026-11-09T18:30:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html",
+      "line": 51,
+      "severity": "non-blocking",
+      "summary": "The manifest and this fragment state the dispatch-base node gate ran 4 failed / 4 passed at 9ac9d2af9f, but no log for that arm survives on disk and test_logs cites base-arm.log, which now holds the 10-passed scoped-suite arm; the base measurement is claimed rather than recorded. The negative-control log at head with the opt-in made a no-op reproduces the same four ids, so the claim is corroborated but not base-logged."
+    },
+    {
+      "file": "tests/test_a_derived_impl_drops_the_authored_meta.py",
+      "line": 203,
+      "severity": "non-blocking",
+      "summary": "test_a_no_change_patch_leaves_the_file_untouched asserts only that the file's text is unchanged, so a regression that rewrote byte-identical content (a write where none should occur) would still pass; the assertion does not measure the no-write it claims."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'Remove a derived plan's authored plan-impl meta on every full-state write through a write_state opt-in'; reckon/_plan_html.py:2219-2297 adds the keyword-only opt-in and reckon/_plan_html.py:2292-2295 removes plan-impl when the state's impl is derived.\nVERDICT done_when: the done_when names tests/test_a_derived_impl_drops_the_authored_meta.py covering cases (a)-(f) with (a),(d),(e),(f) red at the dispatch base; the file adds exactly those six cases (tests/test_a_derived_impl_drops_the_authored_meta.py:173-308) and head-arm.log records 18 passed, EXIT=0, while the base 4-failed result has no surviving log (see FINDING).\nVERDICT write_paths: the declared scope is reckon/_plan_html.py, reckon/_store.py, reckon/serve.py, reckon/tags.py, tests/test_a_derived_impl_drops_the_authored_meta.py and the plan fragment/figures; every diff path lies inside it except tests/test_landing_append_is_commutative.py and tests/test_section_body_records_are_read.py, which the resume advice grants explicitly.\nVERDICT manifest: read; it records status complete, four commits (b56368038f, 34d117079d, 5e74530f15, 1729897a61), head/base/negative-control log paths, and the two granted test adaptations.\nVERDICT diff: read commit by commit against 9ac9d2af9f; b56368038f is the 27-line product change plus the 308-line gate, 34d117079d and 1729897a61 are the evidence fragment, and 5e74530f15 adapts the two exposed tests, all inside the declared or granted scope.\nCALL_SITES: reckon/_store.py:_write_state_locked, reckon/_store.py:_replace_plan_text, reckon/serve.py:Handler.do_POST, reckon/tags.py:backfill_tags_from_preimage, reckon/archive.py:apply_archive_candidates, reckon/_plan_html.py:render_state\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:2292-2295 drops the authored meta only when the opt-in is set and the state's impl source is computed/declarations, exactly what the goal and plan section 10 state.\nSCORE evidence: 17\nJUSTIFICATION evidence: head-arm.log:1-9 records 18 passed at 5e74530f15 and negative-control.log:1-159 reproduces the four ids at head, but the dispatch-base gate result at docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html:51 has no surviving log.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every product edit is in reckon/_plan_html.py, reckon/_store.py, reckon/serve.py and reckon/tags.py, and the only paths outside the original fence (tests/test_landing_append_is_commutative.py:110 and tests/test_section_body_records_are_read.py:126) are granted by resume-1-advice.txt.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_derived_impl_drops_the_authored_meta.py:181 asserts no plan-impl meta against independent literals, and negative-control.log shows the same suite red (4 failed) when the opt-in is made a no-op, while the no-change assertion at line 203 is weaker than its claim.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_plan_html.py:2219-2295 follows the module's existing keyword-only helper idiom and reuses _remove_meta at reckon/_plan_html.py:2037, with no plan or ticket identifiers in names, comments or commits.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends write_state and calls the existing _remove_meta at reckon/_plan_html.py:2037 rather than introducing a second meta-removal mechanism.\nFINDING docs/evidence/fragments/the-portfolio-reads-true/a-derived-impl-drops-the-authored-meta.html:51 non-blocking: the dispatch-base gate result is recorded only in prose while base-arm.log holds the 10-passed suite arm, so the base measurement cannot be opened.\nFINDING tests/test_a_derived_impl_drops_the_authored_meta.py:203 non-blocking: the no-change assertion compares content only and would pass on a byte-identical rewrite, so it does not prove no write occurred.",
+  "review_run_id": "r-20261109T182910871571-review-of-a-derived-impl-drops-the-authored-meta-1729897a6155",
+  "reviewed_base_sha": "9ac9d2af9f3861d949968438320492b1fb291aca",
+  "reviewed_head_sha": "1729897a6155d892bfba8d4d3b052626912e21bb",
+  "reviewed_run_id": "r-20261109T162908121506-a-derived-impl-drops-the-authored-meta",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T18:45:58.810377+00:00",
+  "total": 113
+}
