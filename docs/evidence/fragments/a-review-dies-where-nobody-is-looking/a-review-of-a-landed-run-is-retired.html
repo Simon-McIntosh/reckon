@@ -68,6 +68,13 @@ is unreachable in resolved sandbox tier 'read-only'; writable grants:
   landing is left alone — it may still be resumed, and retiring its review would
   discard work that still has somewhere to go.</p>
 
+  <p>Neither half of that recognition is spelled out again here. The reviewed run's
+  directory comes from the review module's declared-record rule, and each declared
+  path is located by the same rule the dispatch fence grants a record through, so a
+  change to what counts as a review's record path reaches the retirement as well as
+  the fence. A copy of the directory shape in this pass would have been a second
+  spelling that could drift from the one the grant is decided by.</p>
+
   <p>The retirement discards the request through the same store every discard uses,
   writes the reason into the marker, records a
   <code>retired-landed-review</code> verdict row in the pass log, and raises one
