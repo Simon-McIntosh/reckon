@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-09T15:02:19.662Z",
+  "dispatched_at": "2026-11-09T14:52:46Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "log-header label only; the reviewer confirms the control is the right mutation and its population is sound",
+      "recorded_at": "2026-11-09T15:05:08.967949+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T141619145654-the-store-index-lookup-test-builds-once/negative/negative-run-02.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The negative-control logs stamp '# revision: d7d3cba9bd10f30683d0f2a5eabb62c4ec832a5a', the base commit, but the tree they measured was the head copy of the test file with the XDG_RUNTIME_DIR line removed: the traceback lands on tests/test_reviews_read_the_committed_store_first.py:254, which is head line 255 shifted by the single deleted line, while the base file asserts at line 248. The control is therefore the right mutation and its population is right, but a reader who compares the header's revision against the tree it measured cannot tell which code the red run exercised; a tree-state line naming the mutation (or the mutation recorded beside the log) would make the control auditable from the log alone."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the store-index lookup test isolates the persisted index so it builds once on every run; the landed change pins XDG_RUNTIME_DIR to tmp_path/\"run\" in the root fixture at tests/test_reviews_read_the_committed_store_first.py:50, so the node-local cache that reckon/crew/review_records.py:1086 keys under XDG_RUNTIME_DIR lands inside the per-test tmp tree and cannot be inherited from a previous run.\nVERDICT done_when: the done_when (plan \u00a766) is 50 consecutive runs at one fixed --basetemp with logs ending in EXIT=, the cause named with the persisted document, importer arms adding no failure and ruff clean on staged paths; the manifest records gate-head/gate-head.log at the committed head with 'failures=0 of 50' and EXIT=0 over runs each headed by their revision and command, the cause with evidence/persisted-store-index-repro.json naming the store under bt-repro, importers-after.log 113 passed against importers-base.log 113 passed, and I re-ran ruff check and ruff format --check on the head copy of the staged test file (All checks passed!, 1 file already formatted).\nVERDICT write_paths: the node was fenced to tests/test_reviews_read_the_committed_store_first.py, docs/evidence/fragments/the-suite-is-green-at-head/the-store-index-lookup-test-builds-once.html and a figures directory; git diff --numstat d7d3cba9 3f12aee2 changes only the first two, 8 additions and 1 deletion in the test file and a new 66-line evidence fragment, and no figure was written.\nVERDICT manifest: read; it reads complete, records commits bcf3f4530 and 3f12aee28, its baseline_suite and after_suite both name their revision, command and log and report 0 failures with EXIT=0, its negative_control_log is the bare path negative/negative.log whose 50-run head-loss list fails 49 of 50 on test_the_review_run_lookup_serves_from_the_store_index, and its artifacts line reconciles with the summary line of every log it cites.\nVERDICT diff: read commit by commit against d7d3cba9bd10f30683d0f2a5eabb62c4ec832a5a; bcf3f4530 adds one monkeypatch.setenv(\"XDG_RUNTIME_DIR\", str(tmp_path / \"run\")) to the root fixture plus a docstring paragraph stating the mechanism, and 3f12aee28 adds the landed evidence fragment; nothing else is touched.\nCALL_SITES: reckon/crew/review_records.py:1477 _store_indexes, reckon/crew/review_records.py:1446 _load_persisted_entries, reckon/crew/review_records.py:1216 _index_cache_path\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_reviews_read_the_committed_store_first.py:50 confines the cache that reckon/crew/review_records.py:1216 resolves through node_local_cache_dir, so the fixture's store resolves to a fresh document on every run while production's cross-process reuse at reckon/crew/review_records.py:1500 is untouched.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head/gate-head.log records 50 runs at one fixed --basetemp with 'failures=0 of 50' and EXIT=0 at the committed head, negative/negative.log records 49 of 50 failing on the same fixed path, and both importer arms read 113 passed; the deduction is the negative-control header, which stamps the base commit while its traceback line proves the tree carried the head file minus one line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat d7d3cba9 3f12aee2 lists only tests/test_reviews_read_the_committed_store_first.py (8/1) and the new evidence fragment (66/0), the two paths the manifest declares, with conventional subjects and bodies and no attribution.\nSCORE durability: 16\nJUSTIFICATION durability: the surviving assertion at tests/test_reviews_read_the_committed_store_first.py:255 reddens if the fixture line is reverted, but only when a basetemp path recurs, so no single ordinary pytest invocation guards the isolation and the guard is carried by the 50-run fixed-basetemp gate the done_when prescribes.\nSCORE fit: 20\nJUSTIFICATION fit: the added line is the same idiom already used at tests/test_the_review_store_index_re_reads_only_what_changed.py:73, the docstring states the mechanism rather than a ticket, and no added name carries a plan, stage or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all; a grep for XDG_RUNTIME_DIR over tests/ returns 30 or more files using this exact inline isolation and no shared helper exists to extend, so the change follows the repository's established mechanism rather than forking one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T141619145654-the-store-index-lookup-test-builds-once/negative/negative-run-02.log:1 non-blocking: the negative-control logs stamp '# revision: d7d3cba9bd10f30683d0f2a5eabb62c4ec832a5a', the base commit, but the tree they measured was the head copy of the test file with the XDG_RUNTIME_DIR line removed: the traceback lands on tests/test_reviews_read_the_committed_store_first.py:254, which is head line 255 shifted by the single deleted line, while the base file asserts at line 248. The control is therefore the right mutation and its population is right, but a reader who compares the header's revision against the tree it measured cannot tell which code the red run exercised; a tree-state line naming the mutation (or the mutation recorded beside the log) would make the control auditable from the log alone.\n",
+  "review_run_id": "r-20261109T144858552118-review-of-the-store-index-lookup-test-builds-once-3f12aee28d64",
+  "reviewed_base_sha": "d7d3cba9bd10f30683d0f2a5eabb62c4ec832a5a",
+  "reviewed_head_sha": "3f12aee28d6471692f340511191be35dce89bc15",
+  "reviewed_run_id": "r-20261109T141619145654-the-store-index-lookup-test-builds-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T15:08:54.007257+00:00",
+  "total": 114
+}
