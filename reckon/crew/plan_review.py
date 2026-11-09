@@ -1152,7 +1152,7 @@ def review_coverage(
     from reckon.roadmap import implementable_sections
 
     if config is None:
-        config = flight.resolve(project=project).config
+        config = runs.resolved_tick_config(project)
     threshold = flight.plan_review_change_threshold(config)
 
     document = _as_document(plan)
@@ -3485,7 +3485,10 @@ def _run_moment(record: Mapping[str, Any]) -> float | None:
 
 
 def plan_authoring_runs(
-    project: str, *, now_seconds: float | None = None
+    project: str,
+    *,
+    now_seconds: float | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, dict[str, str]]:
     """The newest crew run on each plan under a day old, keyed by plan slug.
 
@@ -3508,9 +3511,8 @@ def plan_authoring_runs(
 
     moment = time.time() if now_seconds is None else now_seconds
     newest: dict[str, tuple[float, str, str]] = {}
-    candidates: list[dict[str, Any]] = [
-        dict(pointer) for pointer in runs.list_live(project=project)
-    ]
+    live = runs.list_live(project=project) if pointers is None else pointers
+    candidates: list[dict[str, Any]] = [dict(pointer) for pointer in live]
     try:
         rows, _version = ledger.read_records(project, with_figures=False)
     except Exception:  # noqa: BLE001 — an unreadable ledger names no run
@@ -3739,6 +3741,7 @@ def _owed_review_skip_reason(
     now_seconds: float | None,
     authors: Mapping[str, Mapping[str, str]],
     records: Iterable[Mapping[str, Any]] | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
 ) -> str | None:
     """Why the reflex must not compose this plan's review now, or ``None``.
 
@@ -3779,7 +3782,9 @@ def _owed_review_skip_reason(
             f"{PLAN_REVIEW_BURST_SECONDS // 3600}h, so no session would read "
             "its review; it is left to its coordinator"
         )
-    standing = recovery_review_dispatch._standing_plan_review(project, plan_slug)
+    standing = recovery_review_dispatch._standing_plan_review(
+        project, plan_slug, pointers=pointers
+    )
     if standing:
         return f"a plan review is already in flight as the live run {standing}"
     # Coverage, not the existence of a covering record: a stored review that
@@ -3808,6 +3813,7 @@ def compose_owed_plan_reviews(
     base_dir: str | Path | None = None,
     now_seconds: float | None = None,
     dry_run: bool = False,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Compose the review a plan owes after its author's burst, and note its own.
 
@@ -3901,7 +3907,7 @@ def compose_owed_plan_reviews(
     passed = dict(weighed)
     # One reading of each store for the whole pass, so the authoring run each
     # plan is dispatched under costs one lookup rather than one ledger load.
-    authors = plan_authoring_runs(project, now_seconds=now_seconds)
+    authors = plan_authoring_runs(project, now_seconds=now_seconds, pointers=pointers)
     # A plan's edit age is one stat, so the burst window is applied to the whole
     # project before anything is weighed. Only a plan inside the window can owe
     # a review, and the read slot is spent on one of those rather than on
@@ -4002,6 +4008,7 @@ def compose_owed_plan_reviews(
                 now_seconds=now_seconds,
                 authors=authors,
                 records=records,
+                pointers=pointers,
             )
             if reason is not None:
                 report["skipped"].append({"plan": plan_slug, "reason": reason})
@@ -5340,12 +5347,10 @@ def dispatch_code_review(
                 fields, ["--local"] if subject.get("local") else []
             ),
         }
-    from reckon import flight
-
     resolved = (
         config
         if config is not None
-        else flight.resolve(project=str(fields["project"])).config
+        else runs.resolved_tick_config(str(fields["project"]))
     )
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     result = dispatch_module.dispatch(
@@ -6092,12 +6097,10 @@ def dispatch_portfolio_review(
                 fields, ["--local"] if subject.get("local") else []
             ),
         }
-    from reckon import flight
-
     resolved = (
         config
         if config is not None
-        else flight.resolve(project=str(fields["project"])).config
+        else runs.resolved_tick_config(str(fields["project"]))
     )
     dispatch_module = importlib.import_module("reckon.crew.dispatch")
     result = dispatch_module.dispatch(

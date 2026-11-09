@@ -3015,7 +3015,9 @@ def _crew_home_change_token(
         file_stamp(runs.handover_dir()),
         file_stamp(_lifts_path()),
     ]
-    for pointer in sorted(pointers, key=lambda item: str(item.get("run_id") or "")):
+    for pointer in runs._tick_pointers(
+        sorted(pointers, key=lambda item: str(item.get("run_id") or ""))
+    ):
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
@@ -3050,7 +3052,7 @@ def _quiet_beat_snapshots(
     exists to leave unread.
     """
     current: dict[str, dict[str, Any]] = {}
-    for pointer in pointers:
+    for pointer in runs._tick_pointers(pointers):
         run_id = str(pointer.get("run_id") or "")
         if not run_id:
             continue
@@ -3306,200 +3308,215 @@ def watch_ticker(
         pointers: list[dict[str, Any]] = []
         handed: set[str] = set()
         while True:
-            if not runs.renew_watch_host_lease(project):
-                return
-            # An unlinked seat record is rewritten before anything else, so a
-            # producer whose file was removed is findable by unwatch again, and
-            # one superseded by a replacement producer ends here.
-            if not _recreate_unlinked_registration(project, watcher):
-                return
-            remaining = _lease_remaining()
-            if remaining is not None and remaining <= 0:
-                return
-            # Every stream the tick reads is counted, so the registration
-            # carries what this poll actually parsed. An unchanged fleet
-            # resumes from every cursor and parses nothing, which is the value
-            # a reader uses to see the poll is stat-only rather than re-reading
-            # the whole of every transcript. The admission check's own reads are
-            # counted and reset on the same beat, so the two counters describe
-            # one poll each.
-            from reckon import _backends
+            try:
+                with runs._producer_tick():
+                    if not runs.renew_watch_host_lease(project):
+                        return
+                    # An unlinked seat record is rewritten before anything else, so a
+                    # producer whose file was removed is findable by unwatch again, and
+                    # one superseded by a replacement producer ends here.
+                    if not _recreate_unlinked_registration(project, watcher):
+                        return
+                    remaining = _lease_remaining()
+                    if remaining is not None and remaining <= 0:
+                        return
+                    # Every stream the tick reads is counted, so the registration
+                    # carries what this poll actually parsed. An unchanged fleet
+                    # resumes from every cursor and parses nothing, which is the value
+                    # a reader uses to see the poll is stat-only rather than re-reading
+                    # the whole of every transcript. The admission check's own reads are
+                    # counted and reset on the same beat, so the two counters describe
+                    # one poll each.
+                    from reckon import _backends
 
-            _backends.take_parsed_stream_bytes()
-            take_admission_stream_bytes()
-            # The crew home's fingerprint. The listing, the run-directory
-            # walk and the git sweeps fire only when it moves; between moves the
-            # producer reuses the pointer set it last listed and takes only the
-            # per-run liveness probe, because a process can die with every file
-            # untouched and no stamp would move.
-            token = _crew_home_change_token(project, pointers)
-            sweep = home_token is None or token != home_token
-            if sweep:
-                handed = handover_run_ids(project)
-                pointers = list_live(project=project)
-                home_token = _crew_home_change_token(project, pointers)
-                # The lift document is folded on the same poll as the fleet, so
-                # a coordinator watching this project's stream sees a peer lift
-                # a group and sees the lift end on its own. The sweep writes
-                # only when a lift moved, and it never ends the seat: an
-                # unreadable document is the un-lifted state and is skipped
-                # with the memory kept.
-                lift_seen = _sweep_lift_rows(project, lift_seen)
-            # Two sweeps act on the clock rather than on a document, so they
-            # ride their own cadence instead of the change gate: a session left
-            # unattended past its grace and a review outliving its delivery both
-            # become due with every file still, and a gate waiting on a document
-            # would never fire. The orphan sweep's pass reaches the sessions no
-            # follower serves -- the watcher names the session explicitly and
-            # records itself as the writer -- and both are best-effort, because
-            # a sweep that raises must not end a seat whose whole job is to go on
-            # reporting the fleet.
-            passed_at = _utc_seconds()
-            if passed_at - swept_at >= WATCHER_SWEEP_INTERVAL_SECONDS:
-                swept_at = passed_at
-                try:
-                    runs.sweep_unfollowed_sessions(project)
-                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                    print(f"orphan-sweep-failure: {project}: {exc}", flush=True)
-                try:
-                    _stop_delivered_reviews(pointers, signal_run=signal_run)
-                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                    print(f"review-stop-failure: {project}: {exc}", flush=True)
-                # The model catalogue check rides the same cadence. It refreshes
-                # only when its snapshot is older than the configured refresh
-                # age, so a sweep inside the age fetches nothing; a refresh that
-                # raises is printed and never ends the seat.
-                try:
-                    from reckon.crew import model_catalogue
+                    _backends.take_parsed_stream_bytes()
+                    take_admission_stream_bytes()
+                    # The crew home's fingerprint. The listing, the run-directory
+                    # walk and the git sweeps fire only when it moves; between moves the
+                    # producer reuses the pointer set it last listed and takes only the
+                    # per-run liveness probe, because a process can die with every file
+                    # untouched and no stamp would move.
+                    token = _crew_home_change_token(project, pointers)
+                    sweep = home_token is None or token != home_token
+                    if sweep:
+                        handed = handover_run_ids(project)
+                        pointers = list_live(project=project)
+                        home_token = _crew_home_change_token(project, pointers)
+                        # The lift document is folded on the same poll as the fleet, so
+                        # a coordinator watching this project's stream sees a peer lift
+                        # a group and sees the lift end on its own. The sweep writes
+                        # only when a lift moved, and it never ends the seat: an
+                        # unreadable document is the un-lifted state and is skipped
+                        # with the memory kept.
+                        lift_seen = _sweep_lift_rows(project, lift_seen)
+                    # Two sweeps act on the clock rather than on a document, so they
+                    # ride their own cadence instead of the change gate: a session left
+                    # unattended past its grace and a review outliving its delivery both
+                    # become due with every file still, and a gate waiting on a document
+                    # would never fire. The orphan sweep's pass reaches the sessions no
+                    # follower serves -- the watcher names the session explicitly and
+                    # records itself as the writer -- and both are best-effort, because
+                    # a sweep that raises must not end a seat whose whole job is to go on
+                    # reporting the fleet.
+                    passed_at = _utc_seconds()
+                    if passed_at - swept_at >= WATCHER_SWEEP_INTERVAL_SECONDS:
+                        swept_at = passed_at
+                        try:
+                            runs.sweep_unfollowed_sessions(project, pointers=pointers)
+                        except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                            print(f"orphan-sweep-failure: {project}: {exc}", flush=True)
+                        try:
+                            _stop_delivered_reviews(pointers, signal_run=signal_run)
+                        except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                            print(f"review-stop-failure: {project}: {exc}", flush=True)
+                        # The model catalogue check rides the same cadence. It refreshes
+                        # only when its snapshot is older than the configured refresh
+                        # age, so a sweep inside the age fetches nothing; a refresh that
+                        # raises is printed and never ends the seat.
+                        try:
+                            from reckon.crew import model_catalogue
 
-                    model_catalogue.check_model_catalogue(project)
-                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                    print(
-                        f"model-catalogue-refresh-failure: {project}: {exc}", flush=True
-                    )
-                # A limit reset becomes due on the clock rather than on a
-                # document moving: an announced instant passes, and a store the
-                # change gate's fingerprint does not cover is written, with every
-                # file the gate reads still. So its sweep rides this cadence
-                # beside the neighbours rather than the gate above, and it is
-                # best-effort on the same terms.
-                reset_seen = _sweep_reset_rows(project, reset_seen)
-                # A coordinator's own gate run is the third record that becomes
-                # due on the clock: its end is its process going away, with no
-                # file written, so a gate waiting on a document would read as
-                # running until the next unrelated change. Best-effort on the
-                # same terms as its neighbours.
-                gate_seen = _sweep_gate_rows(project, gate_seen)
-            moment = _utc_seconds()
-            if sweep:
-                current = {
-                    str(pointer.get("run_id") or ""): _watch_snapshot(
-                        pointer,
-                        moment=moment,
-                        stall_seconds=stall_seconds,
-                        cache=snapshot_cache,
-                        pointers=pointers,
-                    )
-                    for pointer in pointers
-                    if pointer.get("run_id")
-                }
-            else:
-                current = _quiet_beat_snapshots(
-                    pointers,
-                    snapshot_cache,
-                    moment=moment,
-                    stall_seconds=stall_seconds,
-                )
-            # An overrun becomes due on the clock, not on a document moving, so
-            # it is checked every pass rather than behind the change gate. The
-            # write happens at most once per run — the message's own exclusive
-            # create is what makes that true — so a quiet fleet costs one
-            # existence test per live pointer.
-            for pointer in pointers:
-                try:
-                    notify_budget_overrun(pointer, now_seconds=moment)
-                except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
-                    print(f"budget-notice-failure: {project}: {exc}", flush=True)
-            if current:
-                # A wake that sees a live run ends any back-off: the producer's
-                # interval is its base again from this pass.
-                poll_interval_current = poll_interval
-            update_watch_registration(
-                project,
-                poll_interval_seconds=poll_interval_current,
-                bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
-            )
-            if not current and not fleet_seen:
-                if _wait(poll_interval_current):
-                    return
-                poll_interval_current = min(
-                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
-                )
-                continue
-
-            counts = _transition_counts(current)
-            if not fleet_seen:
-                fleet_seen = True
-                known = {run_id: dict(snapshot) for run_id, snapshot in current.items()}
-                for snapshot in current.values():
-                    run_id = str(snapshot.get("run_id") or "")
-                    state = str(snapshot["state"])
-                    published = published_states.get(run_id)
-                    # A run the stream named at another state moved while the
-                    # seat was down, so the row is the news a session wakes on;
-                    # a run the stream never named, or that stands where it last
-                    # did, is inventory and reads as a baseline, exactly as it
-                    # did before the replacement learned the stream's memory.
-                    yield _watch_transition(
+                            model_catalogue.check_model_catalogue(project)
+                        except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                            print(
+                                f"model-catalogue-refresh-failure: {project}: {exc}",
+                                flush=True,
+                            )
+                        # A limit reset becomes due on the clock rather than on a
+                        # document moving: an announced instant passes, and a store the
+                        # change gate's fingerprint does not cover is written, with every
+                        # file the gate reads still. So its sweep rides this cadence
+                        # beside the neighbours rather than the gate above, and it is
+                        # best-effort on the same terms.
+                        reset_seen = _sweep_reset_rows(project, reset_seen)
+                        # A coordinator's own gate run is the third record that becomes
+                        # due on the clock: its end is its process going away, with no
+                        # file written, so a gate waiting on a document would read as
+                        # running until the next unrelated change. Best-effort on the
+                        # same terms as its neighbours.
+                        gate_seen = _sweep_gate_rows(project, gate_seen)
+                    moment = _utc_seconds()
+                    if sweep:
+                        current = {
+                            str(pointer.get("run_id") or ""): _watch_snapshot(
+                                pointer,
+                                moment=moment,
+                                stall_seconds=stall_seconds,
+                                cache=snapshot_cache,
+                                pointers=pointers,
+                            )
+                            for pointer in runs._tick_pointers(pointers)
+                            if pointer.get("run_id")
+                        }
+                    else:
+                        current = _quiet_beat_snapshots(
+                            pointers,
+                            snapshot_cache,
+                            moment=moment,
+                            stall_seconds=stall_seconds,
+                        )
+                    # An overrun becomes due on the clock, not on a document moving, so
+                    # it is checked every pass rather than behind the change gate. The
+                    # write happens at most once per run — the message's own exclusive
+                    # create is what makes that true — so a quiet fleet costs one
+                    # existence test per live pointer.
+                    for pointer in runs._tick_pointers(pointers):
+                        try:
+                            notify_budget_overrun(pointer, now_seconds=moment)
+                        except Exception as exc:  # noqa: BLE001 - one bad pass ends nothing
+                            print(
+                                f"budget-notice-failure: {project}: {exc}", flush=True
+                            )
+                    if current:
+                        # A wake that sees a live run ends any back-off: the producer's
+                        # interval is its base again from this pass.
+                        poll_interval_current = poll_interval
+                    update_watch_registration(
                         project,
-                        kind=(
-                            "transition"
-                            if published is not None and published != state
-                            else "baseline"
-                        ),
-                        snapshot=snapshot,
-                        previous=published if published != state else None,
-                        current=state,
-                        counts=counts,
-                        spend_runs=pointers,
-                        rate_statuses=rate_statuses,
+                        poll_interval_seconds=poll_interval_current,
+                        bytes_parsed_last_poll=_backends.take_parsed_stream_bytes(),
                     )
-                continue
+                    if not current and not fleet_seen:
+                        if _wait(poll_interval_current):
+                            return
+                        poll_interval_current = min(
+                            poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                        )
+                        continue
 
-            # The handovers are read on both sides of the pointer listing, so a
-            # request an admission pass takes during the listing is named by
-            # one read or the other.
-            folded, next_known = fleet_transitions(
-                known,
-                current,
-                ledger_run_ids=_ledger_run_id_reader(project),
-                handovers=handed | handover_run_ids(project),
-            )
-            events = [
-                _watch_transition(
-                    project,
-                    kind="transition",
-                    snapshot=snapshot,
-                    previous=previous,
-                    current=state,
-                    counts=event_counts,
-                    spend_runs=pointers,
-                    rate_statuses=rate_statuses,
-                )
-                for snapshot, previous, state, event_counts in folded
-            ]
-            known = next_known
-            if events:
-                yield from events
-                if not current:
+                    counts = _transition_counts(current)
+                    if not fleet_seen:
+                        fleet_seen = True
+                        known = {
+                            run_id: dict(snapshot)
+                            for run_id, snapshot in current.items()
+                        }
+                        for snapshot in current.values():
+                            run_id = str(snapshot.get("run_id") or "")
+                            state = str(snapshot["state"])
+                            published = published_states.get(run_id)
+                            # A run the stream named at another state moved while the
+                            # seat was down, so the row is the news a session wakes on;
+                            # a run the stream never named, or that stands where it last
+                            # did, is inventory and reads as a baseline, exactly as it
+                            # did before the replacement learned the stream's memory.
+                            yield _watch_transition(
+                                project,
+                                kind=(
+                                    "transition"
+                                    if published is not None and published != state
+                                    else "baseline"
+                                ),
+                                snapshot=snapshot,
+                                previous=published if published != state else None,
+                                current=state,
+                                counts=counts,
+                                spend_runs=pointers,
+                                rate_statuses=rate_statuses,
+                            )
+                        continue
+
+                    # The handovers are read on both sides of the pointer listing, so a
+                    # request an admission pass takes during the listing is named by
+                    # one read or the other.
+                    folded, next_known = fleet_transitions(
+                        known,
+                        current,
+                        ledger_run_ids=_ledger_run_id_reader(project),
+                        handovers=handed | handover_run_ids(project),
+                    )
+                    events = [
+                        _watch_transition(
+                            project,
+                            kind="transition",
+                            snapshot=snapshot,
+                            previous=previous,
+                            current=state,
+                            counts=event_counts,
+                            spend_runs=pointers,
+                            rate_statuses=rate_statuses,
+                        )
+                        for snapshot, previous, state, event_counts in folded
+                    ]
+                    known = next_known
+                    if events:
+                        yield from events
+                        if not current:
+                            return
+                        continue
+                    if _wait(poll_interval_current):
+                        return
+                    if not current:
+                        poll_interval_current = min(
+                            poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
+                        )
+            except runs._ProducerTickExpired:
+                # Keep the previous complete fleet; a partial read cannot
+                # establish that an unvisited run departed. Retry after yielding
+                # to the producer's reload and lease checks.
+                home_token = None
+                if _wait(poll_interval):
                     return
-                continue
-            if _wait(poll_interval_current):
-                return
-            if not current:
-                poll_interval_current = min(
-                    poll_interval_current * 2.0, IDLE_POLL_INTERVAL_CAP_SECONDS
-                )
 
 
 def watch_follow(

@@ -21,6 +21,7 @@ from collections.abc import (
     Mapping as Mapping,
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
+from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
@@ -1103,6 +1104,60 @@ def _list_live_records(
             continue
         records.append(data)
     return records
+
+
+# Each cooperative tick returns control within this interval plus the cost of
+# the pointer already being processed. No partial population is published.
+PRODUCER_TICK_SECONDS = 10.0
+
+
+class _ProducerTickExpired(BaseException):
+    """Cancel a tick through best-effort handlers at a pointer boundary."""
+
+
+@dataclass
+class _ProducerTick:
+    stops_at: float
+    configs: dict[str, Mapping[str, Any]] = field(default_factory=dict)
+
+
+_PRODUCER_TICK: ContextVar[_ProducerTick | None] = ContextVar(
+    "producer_tick", default=None
+)
+
+
+@contextmanager
+def _producer_tick():
+    token = _PRODUCER_TICK.set(_ProducerTick(time.monotonic() + PRODUCER_TICK_SECONDS))
+    try:
+        yield
+    finally:
+        _PRODUCER_TICK.reset(token)
+
+
+def _tick_pointers(pointers):
+    """Check the active tick's clock before starting another pointer."""
+    for pointer in pointers:
+        tick = _PRODUCER_TICK.get()
+        if tick is not None and time.monotonic() >= tick.stops_at:
+            raise _ProducerTickExpired
+        yield pointer
+
+
+def resolved_tick_config(
+    project: str, config: Mapping[str, Any] | None = None
+) -> Mapping[str, Any]:
+    """Resolve each project's flight once inside a tick, freshly outside it."""
+    if config is not None:
+        return config
+    from reckon import flight
+
+    tick = _PRODUCER_TICK.get()
+    if tick is None:
+        return flight.resolve(project=project).config
+    if project not in tick.configs:
+        tick.configs[project] = flight.resolve(project=project).config
+    return tick.configs[project]
 
 
 def list_live(
@@ -2767,7 +2822,7 @@ def _watch_stream_snapshots(
         str(record.get("run_id") or ""): _watch_snapshot(
             record, moment=moment, stall_seconds=stall_seconds, pointers=pointers
         )
-        for record in pointers
+        for record in _tick_pointers(pointers)
         if record.get("run_id")
     }
 
@@ -4287,6 +4342,7 @@ def sweep_unfollowed_sessions(
     project: str,
     *,
     launcher: Callable[..., int] | None = None,
+    pointers: Iterable[Mapping[str, Any]] | None = None,
     config: Mapping[str, Any] | None = None,
     now: datetime | None = None,
     dry_run: bool = False,
@@ -4318,7 +4374,9 @@ def sweep_unfollowed_sessions(
     now_seconds = moment.timestamp()
 
     grouped: dict[str, list[dict[str, Any]]] = {}
-    for pointer in list_live(project=project):
+    live = list_live(project=project) if pointers is None else pointers
+    live = list(live)
+    for pointer in _tick_pointers(live):
         session = str(pointer.get("session") or "")
         if not session:
             continue
@@ -4327,8 +4385,8 @@ def sweep_unfollowed_sessions(
     swept: list[dict[str, Any]] = []
     skipped: list[dict[str, Any]] = []
     for session in sorted(grouped):
-        pointers = grouped[session]
-        if any(_record_is_known_foreign(pointer) for pointer in pointers):
+        session_pointers = grouped[session]
+        if any(_record_is_known_foreign(pointer) for pointer in session_pointers):
             skipped.append({"session": session, "reason": "pointer-names-another-host"})
             continue
         # A live registration excludes the session whatever its ages say. The
@@ -4341,7 +4399,7 @@ def sweep_unfollowed_sessions(
             skipped.append({"session": session, "reason": "follower-live"})
             continue
         unattended = _unattended_seconds(
-            project, session, now_seconds=now_seconds, pointers=pointers
+            project, session, now_seconds=now_seconds, pointers=session_pointers
         )
         if unattended is not None and unattended < WATCHER_SWEEP_GRACE_SECONDS:
             skipped.append(
@@ -4355,6 +4413,7 @@ def sweep_unfollowed_sessions(
         report = sweep(
             project,
             session=session,
+            pointers=live,
             config=config,
             dry_run=dry_run,
             launcher=launcher,

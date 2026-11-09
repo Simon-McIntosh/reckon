@@ -1,0 +1,24 @@
+<section id="producer-tick-reads-live-pointers-once-checkpoint">
+<h3>Producer tick checkpoint</h3>
+<p>The synthetic crew home contains 40 live pointers and one plan owing a review.
+The full synchronous tick is measured through patched call counters; the independent
+obligations publisher holds its sweep lock during the measurement.</p>
+<table>
+<thead><tr><th>Measure</th><th>Base</th><th>Scoped checkpoint</th><th>Required</th></tr></thead>
+<tbody>
+<tr><td>Live-pointer listings</td><td>6</td><td>2</td><td>1</td></tr>
+<tr><td>Watch-stream publication calls</td><td>6</td><td>2</td><td>1</td></tr>
+<tr><td>Flight resolutions</td><td>2</td><td>1</td><td>1 per project</td></tr>
+<tr><td>Slow-pointer visits before returning control</td><td>80</td><td>1</td><td>Fewer than 40</td></tr>
+</tbody>
+</table>
+<p>The scoped implementation forwards pointers through the unattended-session,
+resumption, plan-authoring and standing-plan-review paths. A tick-local flight
+cache resolves review configuration once. A ten-second cooperative bound checks
+pointer boundaries and retains the prior complete population on interruption.</p>
+<p>This is a recovery checkpoint, not a completed delivery. The focused gate
+reports one failure and one pass; the whole-tick single-read assertion remains
+red. Importing-module regression checks and operational heartbeat measurements
+remain outstanding. The manifest records the scope condition that prevents
+completion and names the durable base and checkpoint logs.</p>
+</section>
