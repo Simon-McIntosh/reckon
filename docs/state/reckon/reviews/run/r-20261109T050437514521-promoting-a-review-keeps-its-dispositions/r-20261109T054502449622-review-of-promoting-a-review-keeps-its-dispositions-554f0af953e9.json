@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:1085",
+    "reckon/crew_run_commands.py:1095",
+    "reckon/crew/recovery_repair_dispatch.py:826",
+    "reckon/crew/recovery_repair_dispatch.py:842",
+    "reckon/crew/recovery_review_acceptance.py:169",
+    "reckon/crew/promotion.py:338"
+  ],
+  "completed_at": "2026-11-09T06:05:44.614Z",
+  "dispatched_at": "2026-11-09T05:48:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 165,
+      "severity": "non-blocking",
+      "text": "_delivered_copies_of_record duplicates the delivered-record selection owned by _records_naming_this_review at reckon/crew/review.py:3279 (same directory, glob, parse-and-skip and identity-pair filter) instead of extending it, and the two read different identity keys, so drift in one will not reach the other.",
+      "type": "reuse"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "evidence_inputs cites logs/repro.log as the reproduction, but that log records '1 passed' and logs/probe.log records 'FILED []'; the reproduction is base-arm.log's KeyError at the committed-record assertion.",
+      "type": "evidence"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the done_when's ruff check and ruff format --check arm is recorded nowhere; both re-run clean at the reviewed head during this review, so the arm holds but the run left no record of it.",
+      "type": "evidence"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"Keep dispositions recorded on a review's staging record through that review run's promotion\"; reckon/crew/review_dispositions.py:374 and :596 now carry the answer into every delivered copy so the refile at reckon/crew/review.py:3337 does not drop it.\nVERDICT done_when: the done_when names tests/test_promoting_a_review_keeps_its_dispositions.py asserting the finding and the sub-floor dimension in the committed record and the obligations reading; head-arm.log records 1 passed EXIT=0 at 554f0af953e956fbf4a14c2aa7f3f70053fb18a8 and base-arm.log 1 failed EXIT=1 with the gate's own KeyError, and ruff check plus ruff format --check on the two staged Python paths are clean, though the manifest records no ruff arm.\nVERDICT write_paths: read the manifest's declared scope; the diff changes only reckon/crew/review_dispositions.py, tests/test_promoting_a_review_keeps_its_dispositions.py and docs/evidence/fragments/every-review-is-kept-as-a-committed-record/promoting-a-review-keeps-its-dispositions.html, all declared, with review_records.py declared and left untouched.\nVERDICT manifest: read; it states the head arm passed and names logs/head-arm.log, logs/base-arm.log, the negative control and both importer arms with EXIT lines, but its evidence_inputs line cites logs/repro.log as the reproduction and that log records \"1 passed\".\nVERDICT diff: read commit by commit against the base; one commit at 554f0af953e956fbf4a14c2aa7f3f70053fb18a8 touches three files, adding two private helpers and two call sites in review_dispositions.py plus a 285-line test and a landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:1085, reckon/crew_run_commands.py:1095, reckon/crew/recovery_repair_dispatch.py:826, reckon/crew/recovery_repair_dispatch.py:842, reckon/crew/recovery_review_acceptance.py:169, reckon/crew/promotion.py:338\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review_dispositions.py:374 writes the entry into every delivered copy so the promotion refile at reckon/crew/promotion.py:338 no longer overwrites the answer, as base-arm.log's KeyError and head-arm.log's pass show.\nSCORE evidence: 15\nJUSTIFICATION evidence: head-arm.log and base-arm.log record the gate's two arms with EXIT=0 and EXIT=1 and negative-control.log records the declared mutation red, but manifest.md:20 records no ruff arm and manifest.md:21 cites a repro.log that shows \"1 passed\".\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --name-status against 37995ffee710c8c915355b1c092588deaaeb675a lists three paths, every one inside the declared write paths, and reckon/crew/review_records.py was read but not modified.\nSCORE durability: 19\nJUSTIFICATION durability: base-arm.log fails on the committed-record assertion (KeyError 'finding_dispositions') and negative-control.log fails on the declared mutation, so tests/test_promoting_a_review_keeps_its_dispositions.py:284 reddens if the carry calls are removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/review_dispositions.py:165 follows the module's private-helper, lazy-import and docstring idiom and introduces no name the naming rules forbid.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/review_dispositions.py:165 re-implements the selection that reckon/crew/review.py:3279 _records_naming_this_review already owns rather than extending it.\nFINDING reckon/crew/review_dispositions.py:165 non-blocking: _delivered_copies_of_record duplicates the delivered-record selection owned by _records_naming_this_review at reckon/crew/review.py:3279 (same directory, same glob, same parse-and-skip, same identity-pair filter) instead of extending it, and the two already read different identity keys (run_id there, review_run_id here), so a fix to one will not reach the other.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md:21 non-blocking: the evidence_inputs line cites logs/repro.log as the reproduction of the dropped dispositions, but that log records \"1 passed in 4.94s\" and logs/probe.log records \"FILED []\", so a reader sent there finds no reproduction; the reproduction the record should cite is base-arm.log's KeyError.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T050437514521-promoting-a-review-keeps-its-dispositions/manifest.md:20 non-blocking: the done_when's ruff arm (ruff check and ruff format --check on the staged paths) is recorded neither in artifacts nor in test_logs; both were re-run clean at 554f0af953e956fbf4a14c2aa7f3f70053fb18a8 during this review, so the arm holds but the run left no record of it.\n",
+  "review_run_id": "r-20261109T054502449622-review-of-promoting-a-review-keeps-its-dispositions-554f0af953e9",
+  "reviewed_base_sha": "37995ffee710c8c915355b1c092588deaaeb675a",
+  "reviewed_head_sha": "554f0af953e956fbf4a14c2aa7f3f70053fb18a8",
+  "reviewed_run_id": "r-20261109T050437514521-promoting-a-review-keeps-its-dispositions",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T06:31:57.428029+00:00",
+  "total": 94,
+  "verdicts": {
+    "diff": "read: one commit at 554f0af953e956fbf4a14c2aa7f3f70053fb18a8 adding two helpers and two call sites in review_dispositions.py, a 285-line test and a landing fragment.",
+    "done_when": "measured: head-arm.log 1 passed EXIT=0, base-arm.log 1 failed EXIT=1, negative control red, importers add 0 failures, ruff clean when re-checked.",
+    "goal": "met: reckon/crew/review_dispositions.py:374 writes the disposition into every delivered copy, so the refile at reckon/crew/promotion.py:338 no longer drops it.",
+    "manifest": "read: records both arms and the negative control, but misattributes the reproduction log and records no ruff arm.",
+    "write_paths": "kept: three changed paths, all declared; reckon/crew/review_records.py untouched."
+  }
+}
