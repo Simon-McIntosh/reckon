@@ -1,0 +1,143 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from reviewed manifest baseline_suite and after_suite logs: baseline scoped file absent (positive control confirms package/source), EXIT=5; head six passes, EXIT=0. This scoped zero does not replace the broader importer comparison.",
+  "assertion_review": [
+    {
+      "failure_condition": "Barrier release or arrival fails within 30 seconds; a fixture missing the production promotion path fails before acquisition is judged.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:89,125"
+    },
+    {
+      "failure_condition": "No real first-run acquisition by the sweep, or no sweep started; these prevent an empty fixture passing.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:126,138"
+    },
+    {
+      "failure_condition": "Restoring the enclosing pointer-lock block makes the contender wait five seconds and fail; a delayed but successful acquisition also fails the independent one-second clock bound.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:130,132"
+    },
+    {
+      "failure_condition": "Any observed lock survives joined sweeps, or promotion fails to retire the delivered pointer.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:139,140"
+    },
+    {
+      "failure_condition": "Restoring unconditional unlink removes the replacement pointer and fails the expected CrewError and subsequent attempt/pid reads. The expected injected identity is not tautological: deletion or rollback destroys that observable state.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:164-173"
+    },
+    {
+      "failure_condition": "Dropping the promotion flock lets nonblocking flock succeed inside pytest.raises; skipping the check leaves checked empty; leaking the lock prevents post-promotion reacquisition.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:191-201"
+    },
+    {
+      "failure_condition": "Holding the pointer lock through workspace cleanup prevents the competing thread acquiring within one second; skipped withdrawal or retirement fails the returned receipt booleans.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:217,224-225"
+    },
+    {
+      "failure_condition": "Restoring stale-record _write_json removes probe_observation; disabling refusal removes SuiteDeltaError or its persisted status. The supplied fresh marker is checked after an intervening refusal write that formerly lost it, so the assertion is regression-sensitive.",
+      "lines": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:245-249"
+    }
+  ],
+  "broader_importer_delta": {
+    "added_failure_ids": [
+      "tests/test_reviews_read_the_committed_store_first.py::test_the_review_run_lookup_serves_from_the_store_index"
+    ],
+    "base_completed": true,
+    "base_failure_count": 45,
+    "head_completed": true,
+    "head_failure_count": 44,
+    "removed_failure_ids": [
+      "tests/test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated",
+      "tests/test_external_wait.py::test_the_sweep_resumes_only_after_the_condition_terminates"
+    ]
+  },
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/station.py:SweepBeat._run:281",
+    "reckon/crew/resumption.py:sweep:2420",
+    "reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:497",
+    "reckon/crew/promotion.py:complete:354",
+    "reckon/crew/promotion.py:complete:664",
+    "reckon/crew/promotion.py:_complete_locked:1245",
+    "reckon/crew/promotion.py:_complete_locked:1897"
+  ],
+  "commits_reviewed": [
+    "3acc0114a7435fc176e85d70a0042eb8ace84df0",
+    "c483bf61fe2dae59d6c4fbec31d70bd7325b3948",
+    "489d008e8e72bab60b193fac154836331b051c18",
+    "9e8e6251264eb85547fde60efceb50d83484a0fa"
+  ],
+  "completed_at": "2026-11-09T13:22:57Z",
+  "dispatched_at": "2026-11-09T13:11:47Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the added id test_the_review_run_lookup_serves_from_the_store_index is flaky on main without this change:  of 8 runs failed (logs/coordinator-flake-on-main.log); filed as the-suite-is-green-at-head \u00a766",
+      "recorded_at": "2026-11-09T13:26:28.856742+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-station-never-holds-a-run-lock-across-its-tick.html",
+      "line": "20",
+      "severity": "blocking",
+      "text": "blocking: The importer comparison records one added failing ID despite a lower total failure count; the required zero-added-failure measure is not established until that discrepancy is adjudicated with evidence or the gate is repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "Read commits 3acc0114a7435fc176e85d70a0042eb8ace84df0, c483bf61fe2dae59d6c4fbec31d70bd7325b3948, 489d008e8e72bab60b193fac154836331b051c18 and 9e8e6251264eb85547fde60efceb50d83484a0fa individually; the four-file diff introduces promotion serialization, guarded pointer retirement, current-pointer refusal mutation, six regressions and evidence.",
+    "done_when": "Read live plan section s48 and resume advice; tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:60-146 and armed-head.log prove the scoped measure, but importers-head.log adds one unmatched failing ID so the broader zero-added-failure condition is unproved.",
+    "goal": "Read prompt.txt's goal that pointer locks protect only pointer operations; reckon/crew/promotion.py:337-340 separates promotion serialization from its short pointer snapshot and line 724 releases waiters outside the pointer lock.",
+    "manifest": "Read manifest.md and its cited gate logs; armed-head.log records six passes, negative-control.log records the five-second acquisition timeout, and the manifest candidly preserves the broader importer discrepancy.",
+    "write_paths": "Read manifest.md orientation_write_paths and both scope-extension advice files; all four changed paths in the base-to-head diff are granted, including promotion.py and promotion_records.py."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:130 fails when the lexical pointer-lock block is restored as negative-control.log demonstrates, while lines 172-173, 194, 224-225 and 248-249 independently detect stale deletion, missing serialization, withdrawal and stale refusal writes.",
+    "evidence": "tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:124-146 has a real event-held sweep and joined threads with recorded red/green logs, but the evidence fragment's line 20 reports an unmatched added importer failure.",
+    "fit": "reckon/crew/promotion.py:160-198 uses the surrounding context-manager and CrewError idioms with mechanism-based names, and promotion_records.py:719 uses the established atomic pointer owner.",
+    "goal_fidelity": "reckon/crew/promotion.py:337-340 keeps pointer access short while the existing host lease and separate promotion flock cover checks and the waiter release at line 724.",
+    "reuse": "Capability searches for promotion serialization and attempt-checked retirement found no other owner, promotion.py:161 wraps runs.py:452 rather than duplicating flock, promotion_records.py:719 reuses runs.py:464, and the tests extend test_a_review_run_promotes_itself.py's existing fixture.",
+    "scope_discipline": "The four paths in the reviewed diff match manifest.md's widened write scope, and promotion_records.py:190 and :719 repair atomicity required by releasing the enclosing lock."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt's goal that pointer locks protect only pointer operations; reckon/crew/promotion.py:337-340 separates promotion serialization from its short pointer snapshot and line 724 releases waiters outside the pointer lock.\nVERDICT done_when: Read live plan section s48 and resume advice; tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:60-146 and armed-head.log prove the scoped measure, but importers-head.log adds one unmatched failing ID so the broader zero-added-failure condition is unproved.\nVERDICT write_paths: Read manifest.md orientation_write_paths and both scope-extension advice files; all four changed paths in the base-to-head diff are granted, including promotion.py and promotion_records.py.\nVERDICT manifest: Read manifest.md and its cited gate logs; armed-head.log records six passes, negative-control.log records the five-second acquisition timeout, and the manifest candidly preserves the broader importer discrepancy.\nVERDICT diff: Read commits 3acc0114a7435fc176e85d70a0042eb8ace84df0, c483bf61fe2dae59d6c4fbec31d70bd7325b3948, 489d008e8e72bab60b193fac154836331b051c18 and 9e8e6251264eb85547fde60efceb50d83484a0fa individually; the four-file diff introduces promotion serialization, guarded pointer retirement, current-pointer refusal mutation, six regressions and evidence.\nCALL_SITES: reckon/crew/station.py:SweepBeat._run:281, reckon/crew/resumption.py:sweep:2420, reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:497, reckon/crew/promotion.py:complete:354, reckon/crew/promotion.py:complete:664, reckon/crew/promotion.py:_complete_locked:1245, reckon/crew/promotion.py:_complete_locked:1897\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:337-340 keeps pointer access short while the existing host lease and separate promotion flock cover checks and the waiter release at line 724.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:124-146 has a real event-held sweep and joined threads with recorded red/green logs, but the evidence fragment's line 20 reports an unmatched added importer failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the reviewed diff match manifest.md's widened write scope, and promotion_records.py:190 and :719 repair atomicity required by releasing the enclosing lock.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_station_never_holds_a_run_lock_across_its_tick.py:130 fails when the lexical pointer-lock block is restored as negative-control.log demonstrates, while lines 172-173, 194, 224-225 and 248-249 independently detect stale deletion, missing serialization, withdrawal and stale refusal writes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/promotion.py:160-198 uses the surrounding context-manager and CrewError idioms with mechanism-based names, and promotion_records.py:719 uses the established atomic pointer owner.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for promotion serialization and attempt-checked retirement found no other owner, promotion.py:161 wraps runs.py:452 rather than duplicating flock, promotion_records.py:719 reuses runs.py:464, and the tests extend test_a_review_run_promotes_itself.py's existing fixture.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/the-station-never-holds-a-run-lock-across-its-tick.html:20 blocking: The importer comparison records one added failing ID despite a lower total failure count; the required zero-added-failure measure is not established until that discrepancy is adjudicated with evidence or the gate is repaired.\n",
+  "reuse_search": "Searched reviewed revision reckon/crew for promotion locks, pointer retirement/removal, attempt matching and pointer mutation. Opened runs.py:452-476 and existing promotion host lease; no duplicate retirement owner found. Existing review fixture is extended.",
+  "review_run_id": "r-20261109T130657528184-review-of-the-station-never-holds-a-run-lock-across-its-tick-9e8e6251264e",
+  "reviewed_base_sha": "9cdb3223087e254a841f0588d948ce8f63d1340f",
+  "reviewed_head_sha": "9e8e6251264eb85547fde60efceb50d83484a0fa",
+  "reviewed_run_id": "r-20261109T112715307342-the-station-never-holds-a-run-lock-across-its-tick",
+  "scores": {
+    "durability": 20,
+    "evidence": 15,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_never_holds_a_run_lock_across_its_tick.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T112715307342-the-station-never-holds-a-run-lock-across-its-tick/armed-head.log",
+      "revision": "489d008e8e72bab60b193fac154836331b051c18"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q",
+      "completed": true,
+      "exit_status": 5,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T112715307342-the-station-never-holds-a-run-lock-across-its-tick/armed-base-empty.log",
+      "revision": "9cdb3223087e254a841f0588d948ce8f63d1340f"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T13:28:43.336878+00:00",
+  "total": 115
+}
