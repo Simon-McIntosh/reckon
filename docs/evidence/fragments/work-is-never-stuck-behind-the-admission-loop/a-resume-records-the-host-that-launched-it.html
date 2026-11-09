@@ -1,0 +1,93 @@
+<section id="a-resume-records-the-host-that-launched-it-landing">
+  <h2>An attempt records the host that issued its worker's pid</h2>
+
+  <p><strong>What changed.</strong> A pid answers only on the machine that
+  issued it, and the crew configuration home is shared across login nodes, so a
+  live pointer's <code>launcher_host</code> is what lets a reader decide whether
+  its own process table can speak for the worker. Two writes issue a worker pid
+  and recorded no host.</p>
+
+  <ul>
+    <li><strong>A resume.</strong> <code>record_resumption</code> in
+    <code>reckon/crew/dispatch_sessions.py</code> published the attempt's pid and
+    phase without a host, so the pointer kept the dispatching machine's. Once
+    that machine was gone no host could prove the worker dead:
+    <code>recovery_liveness._launched_on_this_host</code> answers false, the
+    reading becomes <em>liveness unknown</em>, and every later resume is refused.
+    The record now names the launching host, so the attempt is judged on the
+    machine that started it.</li>
+    <li><strong>An admitted launch.</strong> <code>_queued_request_record</code>
+    stores a held request with <code>launcher_host: None</code>, because no
+    process exists while it waits, and the launch record that
+    <code>attach_launch_identity</code> merges over it carried no host either.
+    The launch record now names the launching host, so an admission pass running
+    on a different machine than the dispatch is recorded as the attempt's
+    launcher.</li>
+  </ul>
+
+  <p>Every other pointer write is unchanged and still carries the recorded host
+  forward: <code>runs._stamp_pointer_launch_host</code> leaves a payload that
+  states no host alone unless the pointer is new, so a station sweep rewriting
+  the pointer from a third machine cannot claim an attempt it did not start.</p>
+
+  <h3 id="a-resume-records-the-host-that-launched-it-reproduced">Reproduced before repair</h3>
+
+  <p>At the base revision, a pointer naming <code>host-a</code> and holding a
+  dead pid, with the socket naming <code>host-b</code>, gives both halves of the
+  measured incident in one call:</p>
+
+  <pre>refusal on the base pointer (launcher_host host-a): run 'r-probe-host' is not
+resumed: the process reading is 'liveness unknown' — no pid was checked dead on
+this host and no supervisor exit was recorded — so nothing observed the end the
+lift would rest on
+launcher_host after a resume on host-b: host-a
+attempt: 2</pre>
+
+  <p>After the repair the same probe reads <code>launcher_host: host-b</code>,
+  and the reading above is reached only for a pointer whose host really is
+  another machine.</p>
+
+  <h3 id="a-resume-records-the-host-that-launched-it-arms">Arms</h3>
+
+  <table id="a-resume-records-the-host-that-launched-it-arms-table">
+    <caption>Each arm is a log whose first lines name its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>; the logs
+    live under the run directory's <code>logs/</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base (the new test file run against the base tree's modules)</td>
+        <td><code>036243a793</code></td>
+        <td>4 failed — the pointer keeps the dispatch host, the second resume is
+        refused, a third host's write claims the attempt, and an admitted launch
+        carries the queued absence</td>
+      </tr>
+      <tr>
+        <td>after</td>
+        <td><code>ce2635c018</code></td>
+        <td>4 passed</td>
+      </tr>
+      <tr>
+        <td>declared negative control</td>
+        <td><code>ce2635c018</code> with the resume record restored to the base
+        behaviour and, separately, a writer that stamps the writing host on every
+        pointer write</td>
+        <td>3 failed, 1 passed (<code>EXIT=1</code>) — the two resume cases and
+        the third-host case are the ones the declared string names</td>
+      </tr>
+      <tr>
+        <td>related files importing <code>reckon.crew.runs</code>,
+        <code>resumption</code> and <code>dispatch</code></td>
+        <td><code>ce2635c018</code></td>
+        <td>62 passed, 2 failed — both failures are the same two test ids at the
+        base revision, so the change adds none</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the cases pin.</strong> A resume on the launching machine puts
+  that machine on the pointer; a second resume after a stop there is not refused
+  as liveness unknown; a write from a third machine that is not a launch keeps
+  the launch host; and a queued request launched here carries this host on its
+  pointer once the launch record is merged over the queued one.</p>
+</section>
