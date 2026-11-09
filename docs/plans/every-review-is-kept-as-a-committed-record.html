@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-impl" content="0.97">
-<meta name="plan-version" content="195">
+<meta name="plan-version" content="196">
 <meta name="plan-modified" content="2026-11-09">
 </head>
 <body>
@@ -550,6 +550,9 @@
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261109T011224982264-review-of-a-committed-review-record-can-be-repaired-cb4c580378c4" data-who="reckon-build" data-when="2026-11-09T01:23:13.572Z">
     <div class="r-comment-body"><p>Reviewed run r-20261108T232244736898-a-committed-review-record-can-be-repaired over base 6013d3c3b6df1d2ed435832adc51777a8233de47 to head cb4c580378c495c0caa9c67884a3c468ed5e8c6c — the two commits it gained since its previous review — and stored a parsed record scoring goal_fidelity 19, evidence 14, scope_discipline 20, durability 19, fit 18, reuse 18 (total 108) with 3 non-blocking findings and 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261108T232244736898-a-committed-review-record-can-be-repaired" data-who="reckon-build" data-when="2026-11-09T01:07:46Z">
+    <div class="r-comment-body"><p>`crew repair --review` repairs a record at the run&#x27;s committed location `docs/state/&lt;project&gt;/reviews/run/&lt;run&gt;/` as well as the host review-records directory, refuses a path under neither, and commits the rewrite through `commit_record_write` with the as-delivered copy kept outside the reader&#x27;s `*.json` glob. A committed record&#x27;s project is read from its own path when the run has no live pointer and no resolvable ledger row, so the repair needs no `--project`. Node gate 3 passed EXIT=0; under the declared directory mutation 2 failed / 1 passed EXIT=1, and under a no-op repair the status assertion fails with `&#x27;incomplete&#x27; == &#x27;unparsed&#x27;`.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261006T140311245358-review-of-review-records-have-a-committed-root" data-who="reckon-build" data-when="2026-10-06T14:10:37.516Z">
     <div class="r-comment-body"><p>Independent review of run r-20261006T134946510136-review-records-have-a-committed-root (reckon:every-review-is-kept-as-a-committed-record §3) stored a parsed record at both fence paths — scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 16, fit 20, reuse 20 (total 112), reviewed_base_sha 3c7a3f36a and reviewed_head_sha 2e05df719, added_failure_count null (the reviewed manifest carries no baseline_suite/after_suite arm) — with two follow-on findings: review_path's committed branch defaults a missing review_run_id to reviewed_run_id where its sibling plan_review_path refuses, and run_record_times' live-pointer fallback is untested. No blocking finding; the node's committed-store mechanism is correct and its declared guard fires.</p></div>
