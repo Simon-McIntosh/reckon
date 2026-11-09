@@ -78,12 +78,15 @@
         The five pre-existing ids are the four parametrisations of
         <code>test_complete_preserves_the_promotion_commit_through_release</code> and
         <code>test_the_cli_flag_promotes_a_landing_that_did_not_move_the_plan</code>,
-        which fail identically at the base revision. The one new failure is
-        <code>test_crew_refusal_visibility.py</code>'s refusal census, whose
-        recognised set is <code>range(1, 25)</code> and now meets
-        <code>D25</code>; that file is a sibling node's write scope and the
-        one-line repair is recorded in <code>outside_scope</code>. Ruff check and
-        format are clean on the four staged paths.</p>
+        which fail identically at the base revision. The refusal census in
+        <code>tests/test_crew_refusal_visibility.py</code> carries <code>D25</code>:
+        its converted set and its expected range now run to
+        <code>range(1, 26)</code>, and <code>reckon/crew_run_commands.py</code>
+        joins the sources the formatter census walks, so a reachable family is not
+        reported absent because its raising file was never read. That arm reports
+        37 passed. Ruff check and format are clean on the code paths; the census
+        file carries the same single finding and the same formatting diff at the
+        base revision as at the head, so this change adds none.</p>
     </section>
   </main>
 </body>
