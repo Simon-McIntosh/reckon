@@ -3298,6 +3298,11 @@ def dispatch(
                     "pid": None,
                     "pid_start_time": None,
                     "argv": list(plan.argv),
+                    # The directories this plan resolved for its backend, so a
+                    # resume or a lane change composes the worker's PATH from
+                    # what this launch searched rather than from whatever the
+                    # flight layers declare when the later attempt runs.
+                    "backend_search_path": list(plan.backend_search_path),
                     "command": harness_command,
                     "dialect": plan.dialect,
                     "session_resumed": _launched_prior_session(plan) is not None,
