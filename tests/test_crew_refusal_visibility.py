@@ -30,7 +30,7 @@ from reckon.crew.refusals import (
     format_refusal,
 )
 
-CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 24))
+CONVERTED_REFUSAL_FAMILIES = frozenset(f"D{number:02d}" for number in range(1, 25))
 COMMAND_BOUNDARY_FAMILIES = frozenset()
 REFUSAL_SOURCE_PATHS = (
     "reckon/crew_dispatch_commands.py",
@@ -43,6 +43,7 @@ REFUSAL_SOURCE_PATHS = (
     "reckon/crew/dispatch_peer.py",
     "reckon/crew/dispatch_picker.py",
     "reckon/crew/dispatch_plan.py",
+    "reckon/crew/dispatch_refusals.py",
     "reckon/crew/dispatch_sections.py",
     "reckon/crew/dispatch_sessions.py",
     "reckon/crew/dispatch_watch.py",
@@ -88,7 +89,7 @@ def _formatter_family_calls() -> set[str]:
 
 
 def test_the_dispatch_refusal_census_is_partitioned_without_gaps() -> None:
-    expected = {f"D{number:02d}" for number in range(1, 24)}
+    expected = {f"D{number:02d}" for number in range(1, 25)}
 
     assert set(DISPATCH_REFUSAL_REMEDIES) == expected
     assert expected == CONVERTED_REFUSAL_FAMILIES | COMMAND_BOUNDARY_FAMILIES
