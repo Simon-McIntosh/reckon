@@ -1,0 +1,88 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T05:11:22.692Z",
+  "dispatched_at": "2026-11-09T04:55:27Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:329",
+      "id": "reasoning-1",
+      "reason": "the repair must also stop the command naming a text review and must obtain the figure review run id, neither of which \u00a724 mentions, so a node following it would add `--rubric figure` to a command that still names the text round and ship a command that fails differently from the one described.",
+      "text": "\u00a724's Why says the suggested command \"fails with 'carries no record' because a figure record is selected only with `--rubric figure`\", but `dispose_commands` (reckon/crew/review_dispositions.py:506-525) is never given `review_run_id` by any production caller \u2014 its only callers are `_finding_dispose_commands` (reckon/crew/recovery_review_dispatch.py:2458-2471) and the dimension loop (reckon/crew/obligations.py:2510), and none passes it \u2014 so it falls back to `_newest_delivered_review_run_id`, which calls `newest_delivered_review(..., rubric=None)`, where `_review_rubric_matches` excludes figure records (reckon/crew/review.py:2717-2718); the fallback there never names the figure review run. The real outcome is worse than the stated one: with a text review present the command names the text review and `crew dispose --finding N` writes the figure record's index onto the text record, and with no text review it raises \"no stored review for run \u2026 to record a disposition against\" (reckon/crew_run_commands.py:1049-1055).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:329",
+      "id": "done_when-1",
+      "reason": "without naming those call sites as write paths and stating that the composer must be handed the rubric and the figure review run, the node hits its write fence mid-implementation and either stops as blocked or widens scope unilaterally.",
+      "text": "\u00a724's first measured case (a duty's dispose command includes `--rubric figure` and running it records the disposition) is not reachable from the section's write paths: `dispose_commands` alone cannot tell a figure duty from a text one, because its only knowledge of the record is `review_run_id`, which no caller passes; the rubric is in hand only at the loops that hold the record \u2014 `_finding_dispose_commands` (reckon/crew/recovery_review_dispatch.py:2458-2471) and reckon/crew/obligations.py:706,809 \u2014 while the write paths are `reckon/crew/review_dispositions.py` and the new test. Passing `--rubric figure` beside the fallback's text `--review` makes the command fail \"carries no record from review run <text>\" (reckon/crew_run_commands.py:930-935), so the case cannot pass without editing files the section does not grant.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:329",
+      "id": "reasoning-2",
+      "reason": "a worker taking \"sub-floor\" literally inspects the dimension path, finds no figure duty raised there, and can conclude the defect does not reproduce or that the fix belongs in `_sub_floor_items_by_session`, where it would change nothing for a figure review.",
+      "text": "\u00a724 calls the defect \"a sub-floor figure-review finding\", which names the wrong duty path: a figure review scores no dimensions (reckon/crew_run_commands.py:898-903 refuses `--dimension` on a figure record, and `_sub_floor_items_by_session` reads only the text record through `stored_review_for_run`, reckon/crew/obligations.py:2478-2513), so the duty a figure finding actually raises is the blocking-finding review refusal (`_open_review_refusal` \u2192 `_undisposed_blocking_findings`, reckon/crew/recovery_review_dispatch.py:2489-2545).",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-can-see-the-figure.html:381",
+      "id": "wiring-1",
+      "reason": "the followup is how the plan closes its chain visibly; without one naming \u00a724, the recommended invocation points at a section that cannot run while the runnable one is invisible to a coordinator reading the followups.",
+      "text": "\u00a724 was added as `implementable` but the plan's only open followup, `f-arcstf-009`, still recommends `/reckon-build a-review-can-see-the-figure \u00a720` (held on `imas-ambix:a-tool-call-carries-no-model-markup#s3`), and no followup names \u00a724, so the plan hands a coordinator no one-line invocation for the section it just made dispatchable.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "52c5f67636c15458eaaeaa291bf40020ac73f61c",
+  "plan_fingerprint": "b531973b4454f1748ab78348c2928bd57cc5df4b19f1fc041448e45e506d934a",
+  "plan_slug": "a-review-can-see-the-figure",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T045244724073-plan-review-of-a-review-can-see-the-figure",
+  "reviewed_blob_sha": "06ff7a62ecebe0fd8123ebf24aab8bb1c43c5160",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_CodexDialect.argv` in `reckon/_backends.py` resolves and emits one `-i` per image (reckon/_backends.py:1326-1360), and `dispose_commands` resolves in `reckon/crew/review_dispositions.py` (def at line 506), which is what \"near line 515\" lands on.",
+    "done_when": "a finding \u2014 \u00a724's first case (a duty's dispose command carrying `--rubric figure` that runs and records the disposition) cannot be produced from the section's declared write paths, because the rubric and the figure review run id are only available at call sites outside them.",
+    "evidence_paths": "pass \u2014 the new test lives in `tests/` and its logs go under the run directory, both durable; no scratchpad or node-local temporary path is named.",
+    "naming": "pass \u2014 \u00a724 and the intro carry no plan labels, stage names, ticket numbers or version tags into symbols, filenames or comments, and the prose states mechanisms rather than changelog.",
+    "reasoning": "findings \u2014 \u00a724's stated failure is not the failure its own composer produces, its proposed mechanism does not by itself make the command select the figure record, and its \"sub-floor\" wording names the wrong duty path.",
+    "single_goal": "pass \u2014 \u00a724 names one deliverable library change (the dispose composer names the review's rubric); its two test cases measure that one change.",
+    "wiring": "a finding \u2014 \u00a724 is newly declared `implementable` but the plan's only open followup (`f-arcstf-009`) still recommends `/reckon-build a-review-can-see-the-figure \u00a720`, so nothing in the plan routes a coordinator to \u00a724."
+  },
+  "section_digests": {
+    "_document": "4f2abf995c31090eac676777c02d82b9ada741150dd44d2cecdebae20c85839a",
+    "s1": "6f91847c26df4249f7e99f6d661c548de475be73869ba4799469bc0c04801047",
+    "s10": "aee314dbe26192cd678dc467a9b229b8cb46873cacefcd4ce369fcbe469a1e37",
+    "s11": "22d519df0a82a0edfb23ceef10d63c14a08f3d8d656ce95a4cd03e5049d4e228",
+    "s12": "234f9999257c9e64bf69518cdf0b98e319850465374deeac091e90b1ed118647",
+    "s13": "d2f0977c2749f5e1d4e28f3962e8b01a182615a0a75edb530e5e4fde18d9a123",
+    "s14": "f06507899a512533562b6d0b348e9b18bec6d1667d6e619d05352d7ce535eb7c",
+    "s15": "18683ff3a4d13534aa9e29ac4a495e86d07a452b032538d3ae4b7a47d2a9966b",
+    "s16": "a1648c89c8b99c37facb6da9eb6deca43ba8418449557c78627654670ea39fa1",
+    "s17": "c856114a206af086b77fc4d7b867a4cf4dbafd15fdce96f7d52c4a2a36c1e544",
+    "s18": "d6fb6505577d6af2a722c58e82e85d9efd01bb5ce9b4d5fa6408d237ab731651",
+    "s19": "43a12c4fa79a496156abb38028fc5f1c3ea4245ebaaea0e2f007f25079c44f2d",
+    "s2": "48353069f5981e05b9d1248e19c4f56817113396a3555a2fe6e05b67a505d3f7",
+    "s20": "ab2db294a1f747ecd69c0027b85fc38e86bf9e2aead12af975002255af4af1b5",
+    "s21": "c9ed658bd81ee95aca671c4c50b6f524c6200537628625fad8284c60c56925f0",
+    "s22": "c459fe692437be93f44bffcad0813f9f98189d953074b617c388d7375ba98df2",
+    "s23": "30eaa8240d92bb5c2483fd1bf90d172ec8d8b1ee1bcb4be519a3c31b60e00c41",
+    "s24": "d112d990f6e34f01f20589ca8e10239afdd334e94d4ac91dfb5d553941095cbc",
+    "s3": "f8f9ad248d1ff3713092ca3da6a8795cbcecd4726a79d20dc2f63f64ceff2d87",
+    "s4": "994ed10fbb9803a9ae4914f05275f2373d788b16292a7fefaa8350883803056a",
+    "s5": "52bd0da92f26e42df8184445e6ab07cae636d7072675b3a1900951957b3a077d",
+    "s6": "ce9705dbaad70ab2b3a9425eead9900cc284deb7f1d5ecacb553d3745679b3d7",
+    "s7": "e4673147c5a3a66171bb0892dbe6927ce54eabc205870310627b08054076101a",
+    "s8": "2c200fdd964f328342811e9362e4cd14da60f3c8352368899ccf87797d9e7f5b",
+    "s9": "b62ffeb55dd71d5f62b49f372e069f227a57c7caec9c6c3b45f81a945d284e11"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T05:28:59.970230+00:00",
+  "total": null
+}
