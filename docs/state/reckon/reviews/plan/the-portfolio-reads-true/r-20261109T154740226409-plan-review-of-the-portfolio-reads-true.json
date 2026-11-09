@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T15:54:34.423Z",
+  "dispatched_at": "2026-11-09T15:49:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:155",
+      "id": "done_when-1",
+      "reason": "the node inherits a control it can never pass, so it will either redden its own gate on a false reading or drop the control and lose the attribution the section exists to establish; the control must be restated against the count taken immediately before the round, not the 2026-10-10 figure.",
+      "text": "\u00a76's negative control says \"the same count taken before the round must read 63 or more, or the reduction is not attributable to it\", but \u00a76's own recorded rounds already reduced the non-shipped count to 57 (`c-s6-second-round-1012`, line 342: \"so 57 plans are non-shipped against the 50 measure\"), and \u00a76 is still open with `f-tprt-004` unresolved, so the pre-round count the node will actually take cannot reach 63",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:176",
+      "id": "reasoning-1",
+      "reason": "the exclusion rests on a false premise about the caller, so a node implementing \u00a710 verbatim leaves a full-state writer un-opted-in and the meta survives the very write class the section exists to repair; the section should either opt that writer in or state the true reason for leaving it out.",
+      "text": "\u00a710 excludes `backfill_tags_from_preimage` (`reckon/tags.py`) as a writer that \"write[s] partial state\", which \"the opt-in needs a full `read_state`\" so cannot support; the code does the opposite \u2014 `reckon/tags.py:126` reads `state = read_state(original)`, appends the tag at :127-130 and passes that full state to `write_state` at :130, so it holds exactly the full state the opt-in requires, and a plan whose impl is derived keeps its stale `plan-impl` meta through every tag backfill",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:29",
+      "id": "wiring-1",
+      "reason": "the admission queue orders only what the plan declares, so \u00a710 is admitted on prose alone and the four shared-module serialisations are unenforceable if any of those sections is re-dispatched; \u00a76's three gates do give it a real dependency mechanism, but \u00a710 has none.",
+      "text": "the declared `plan-section-depends-on` map holds one entry, `s6: [the-portfolio-reads-true#s8]`, while \u00a710 (line 175, status `implementable`) extends \u00a72's `impl_source: declarations` value and its done-when case (a) depends on that derivation existing, and \u00a73/\u00a74/\u00a75/\u00a77 each carry a prose \"This section runs after \u00a7N\" ordering constraint on a module they write in common (`reckon/doccheck.py`, `reckon/roadmap.py`) that no declaration encodes",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-portfolio-reads-true.html:45",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a73 states the rule (\"Functions are cited by name because line numbers in these modules moved during this sprint\") and every anchor \u00a710 adds resolves correctly, so the drifted ones are a live inconsistency a reader will follow into the wrong code; citation repair changes no mechanism and is cheap.",
+      "text": "the cited line ranges have drifted off the code they name, and the plan elsewhere acknowledges exactly this failure mode: `derive_impl_from_sections` is cited at `reckon/_plan_html.py:800-841` and is at :950; the \"authoritative\" `impl_source` assignments are cited at :1125 and :2234 and are at :1373/:1375 and :2518/:2520, with the reader cited at :1939 at :2281; `ACTIVE_PLAN_STALE_AFTER_DAYS` is cited at `reckon/doccheck.py:154` and is at :181; the mtime read is cited at `doccheck.py:531`, which is `_external_followup_refs`; the `unwired-plan` rule is cited at `doccheck.py:874-901`, which is the sprint-membership and foreign-followup loop (`unwired_plan_finding` is at :1184); `IMPL_SOURCE_ENUM` is cited at `reckon/_schema.py:112` and is at :120 (`SECTION_DECLARATION_ENUM` is at :112); the `impl_source` documentation is cited at `reckon/crew/plan_review.py:122` and is at :131; the authoring refusal is cited at `reckon/_store.py:2606`, which falls inside `_plan_states`'s docstring; and \u00a79's `reckon/mcp_edit_plan.py` line anchors (:1324 for `_replayed_response`, :1728 for the `partial_write` result, :1744 for the receipt) are at :1460, :716 and :858-:2014 respectively",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a14d38209c03b2bcb90239610e37a8da45e5d688",
+  "plan_fingerprint": "20605f60d6ac76dcee6de72cae5bd38e472073a3bd48345c86ab2c9002f6296c",
+  "plan_slug": "the-portfolio-reads-true",
+  "plan_version": 77,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T154740226409-plan-review-of-the-portfolio-reads-true",
+  "reviewed_blob_sha": "abf4cfee7745d81f5efa7eb5469c89c976707512",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the module names all resolve, but the cited line ranges in \u00a71, \u00a72 and \u00a79 no longer point at the code they name.",
+    "done_when": "a finding \u2014 \u00a76's declared negative control (line 155) requires a pre-round count of 63 or more, which the plan's own recorded rounds have already made impossible.",
+    "evidence_paths": "pass \u2014 gates cite `docs/evidence/archive/the-portfolio-reads-true-landed.html` (present, 16410 bytes) and `docs/state/reckon/review.html` (present), both under versioned `docs/`, and \u00a78/\u00a79/\u00a710 send logs to the run directory rather than a node-local temp.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols the sections name, and the new audit codes are named for what they measure.",
+    "reasoning": "a finding \u2014 \u00a710 classes `backfill_tags_from_preimage` as a partial-state writer, but it passes a full `read_state`, which is the exact condition the opt-in is said to require.",
+    "single_goal": "pass \u2014 each section names one deliverable (a derivation, an audit code, a write path, a review round), and \u00a710's three writers are one goal reached through one opt-in.",
+    "wiring": "a finding \u2014 the declared map carries only `s6: [the-portfolio-reads-true#s8]` (line 29), so \u00a710's dependency on \u00a72 and the prose \"runs after \u00a7N\" constraints on \u00a73/\u00a74/\u00a75/\u00a77 are unencoded."
+  },
+  "section_digests": {
+    "_document": "01de26d9d39512375dd57910cac3fdc429fa930f716bb295f69fd8df29cdcfa1",
+    "s1": "56204248c9050844c40ac7e00bff909830602caaa4b95be87bacea51b1495a03",
+    "s10": "b6f06dc4885989c0cecdf6e4145cfb4ea0b02ef60d09124bbdf287c7713c637b",
+    "s2": "69b86246adb4ea89719f367ac57f43940ed14fb88c5c89408cf18a6b59911f57",
+    "s3": "5902125b920ccad233230b403ba1e4cb62c75743d8265014bc35f38e0c9915c3",
+    "s4": "9280ec81cafc36b7de1295b0f22745c6162986e93d9731a8e8b99c51d658a217",
+    "s5": "e5d24ffe43f8fdfcdb88130b1632bc368dc94fd8641f628befb77b4c1f95b435",
+    "s6": "3b386242a01bc207ce0810ef1ee5ccbd8a9d5ea78f77a5dd6fc61b2f207c53d0",
+    "s7": "b5d0f90a4e8a113321b55e0ed0aeaa0624369e3b41b03dde61dc10c9a6f8e5ef",
+    "s8": "4aa77c0b14a2d21a80398b3aaf025a91b1d30ea4d3a1d3682146ddd1571aa233",
+    "s9": "54a93d7a8c229a7e83406269881fc9089bd55e02de98bfa9288e64d664469626"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-09T16:06:24.950320+00:00",
+  "total": null
+}
