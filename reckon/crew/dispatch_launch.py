@@ -30,6 +30,7 @@ from reckon import (
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
+    read_claim,
 )
 from reckon._timestamps import (
     parse_utc,
@@ -4671,13 +4672,7 @@ def _file_delivered_review_records(
 
 def _claim_registration_for_worker(run_directory: Path, run_id: str) -> str:
     """Read this run's registration instant for its worker receipt."""
-    try:
-        claim = json.loads((run_directory / "claim.json").read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return ""
-    if not isinstance(claim, Mapping) or claim.get("run_id") != run_id:
-        return ""
-    return str(claim.get("claim_registered_at") or "")
+    return str(read_claim(run_directory, run_id).get("claim_registered_at") or "")
 
 
 def _remember_claim_launch_interval(

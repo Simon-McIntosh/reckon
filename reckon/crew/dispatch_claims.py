@@ -941,15 +941,25 @@ def _launch_holder(at: str, *, step: str) -> dict[str, Any]:
     }
 
 
-def read_launch_claim(run_id: str) -> dict[str, Any]:
-    """This run's launch claim as the span published it, or an empty record."""
+def read_claim(run_directory: Path, run_id: str) -> dict[str, Any]:
+    """A run's launch claim from the run directory holding it, or an empty record.
+
+    The one reader of a run's ``claim.json``: the directory a caller already
+    holds and the run id the claim must name are both required, so a claim
+    belonging to another run and an unreadable file read alike as no claim.
+    """
     try:
-        claim = json.loads((run_dir(run_id) / "claim.json").read_text(encoding="utf-8"))
+        claim = json.loads((run_directory / "claim.json").read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return {}
     if not isinstance(claim, Mapping) or claim.get("run_id") != run_id:
         return {}
     return dict(claim)
+
+
+def read_launch_claim(run_id: str) -> dict[str, Any]:
+    """This run's launch claim as the span published it, or an empty record."""
+    return read_claim(run_dir(run_id), run_id)
 
 
 def advance_launch_step(run_id: str, step: str) -> None:
