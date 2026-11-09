@@ -447,6 +447,33 @@ def _record_reads_complete(record: Mapping[str, Any]) -> bool:
     return _review_is_complete(candidate)
 
 
+def _review_run_was_discarded(review_run_id: str) -> bool:
+    """Whether the fleet recorded a deliberate discard of this review run.
+
+    A discard leaves a marker in the run's own directory, read here through
+    :func:`reckon.crew.promotion.discard_record_path`, and records it in the
+    shared spool instead when the run never had a directory — a review launch
+    that never spawned a worker. An unreadable marker answers ``False``: a
+    departure nobody can corroborate is read as one nobody recorded, the same
+    rule :func:`reckon.crew.promotion.discard_recorded` applies. The import is
+    at call time because ``promotion`` reads this store.
+    """
+    if not review_run_id:
+        return False
+    from reckon.crew import promotion
+
+    for path in (
+        promotion.discard_record_path(review_run_id),
+        promotion.discard_spool_path(review_run_id),
+    ):
+        try:
+            if path.is_file():
+                return True
+        except OSError:
+            continue
+    return False
+
+
 def _select_stored_record(
     paths: Iterable[Path],
     reviewed_head_sha: str | None,
@@ -459,19 +486,28 @@ def _select_stored_record(
     Every candidate file is read once. A named head keeps only a record whose
     normalised head carries it — a stored record's head is compared to the named
     one as a prefix in either direction, so a short sha names its full record
-    and a full sha names its short preservation copy. Among the records at that
-    head a complete one is preferred over an incomplete one, whichever is
-    newer: a re-review that finished its scoring is the evidence the gate needs,
-    and the file order that names the review runs says nothing about whether a
-    run measured anything. Where no complete record sits at the head, the first
-    head-matching record is returned, so an incomplete review is still read and
-    the gate still refuses on it rather than reporting that no review exists.
-    Without a named head the newest file is returned. A file that cannot be read
-    or does not parse — a record a review worker is composing by hand can be met
-    mid-write — is skipped and named to the caller, because a truncated file
-    would otherwise read as "this run has no review". ``(None, None)`` means no
-    readable record among the candidates; the caller decides whether that
-    settles the search or falls through to another tree.
+    and a full sha names its short preservation copy.
+
+    A record whose review run was discarded is not selected while another
+    record exists at that head: the discard says the fleet gave that review up,
+    and a later review of the same revision is the evidence a reader means. A
+    lone record is still read, so a head whose only review was discarded still
+    describes that review rather than reporting that no review exists.
+
+    Among the remaining records a complete one is preferred over an incomplete
+    one, whichever is newer, and a parsed one over one that measured nothing: a
+    re-review that finished its scoring, or a figure review whose images it
+    actually read, is the evidence the gate needs, and the file order that names
+    the review runs says nothing about whether a run measured anything. Where no
+    such record sits at the head, the first head-matching record is returned, so
+    an incomplete review is still read and the gate still refuses on it rather
+    than reporting that no review exists. Without a named head the newest file
+    is returned. A file that cannot be read or does not parse — a record a
+    review worker is composing by hand can be met mid-write — is skipped and
+    named to the caller, because a truncated file would otherwise read as "this
+    run has no review". ``(None, None)`` means no readable record among the
+    candidates; the caller decides whether that settles the search or falls
+    through to another tree.
     """
     records: list[tuple[Path, Any, int]] = []
     for path in paths:
@@ -490,18 +526,33 @@ def _select_stored_record(
         path, record, _mtime_ns = max(records, key=lambda item: item[2])
         return path, record
     named = reviewed_head_sha.strip().lower()
-    first_match: tuple[Path, Any] | None = None
+    matches: list[tuple[Path, Any]] = []
     for path, record, _mtime_ns in records:
         _, _, carried_head, stored_head = _review.carried_revision_pair(record)
         if not carried_head or not stored_head:
             continue
         actual = stored_head.lower()
         if actual.startswith(named) or named.startswith(actual):
-            if _record_reads_complete(record):
-                return path, record
-            if first_match is None:
-                first_match = (path, record)
-    return first_match if first_match is not None else (None, None)
+            matches.append((path, record))
+    if not matches:
+        return None, None
+    undiscarded = [
+        item
+        for item in matches
+        if not _review_run_was_discarded(
+            str(item[1].get("review_run_id") or "").strip()
+        )
+    ]
+    pool = undiscarded or matches
+
+    def rank(item: tuple[Path, Any]) -> tuple[bool, bool]:
+        _path, record = item
+        return (
+            _record_reads_complete(record),
+            str(record.get("status") or "") == "parsed",
+        )
+
+    return max(pool, key=rank)
 
 
 def _record_with_merged_answers(
