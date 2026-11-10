@@ -2607,6 +2607,16 @@ def _review_options(callback):
     for decorator in (
         click.option("--project", required=True),
         click.option("--plan", "plan_slug", default=""),
+        click.option(
+            "--section",
+            "review_sections",
+            multiple=True,
+            help=(
+                "Plan section this review is scoped to (sN); repeatable. The "
+                "review still reads the whole plan, traces the code of these "
+                "sections only, and carries every earlier finding on them."
+            ),
+        ),
         click.option("--around", "around_plan", default=""),
         click.option("--path", "paths", multiple=True),
         click.option("--sprint", "sprint_id", default=""),
@@ -2663,6 +2673,7 @@ def _review_options(callback):
 def crew_review(
     project,
     plan_slug,
+    review_sections,
     around_plan,
     paths,
     sprint_id,
@@ -2691,6 +2702,7 @@ def crew_review(
     review that raised the finding, acted on or declined with a reason. An
     accepted edit is recorded on the newest stored review, which covers the
     units the plan's edits changed until a later edit changes them again.
+    ``--section`` scopes a plan review to the sections named.
     """
     _run_review(
         project,
@@ -2710,6 +2722,7 @@ def crew_review(
         portfolio=portfolio,
         note=note,
         accept_edits=accept_edits,
+        review_sections=review_sections,
     )
 
 
@@ -2732,6 +2745,7 @@ def _run_review(
     portfolio=False,
     note="",
     accept_edits="",
+    review_sections=(),
 ):
     """Compose and dispatch one review, or answer a plan finding.
 
@@ -2761,7 +2775,17 @@ def _run_review(
         named.append("sprint")
     detail = ""
     accept_reason = str(accept_edits or "").strip()
-    if review_run and not answer:
+    sections = tuple(
+        str(item).strip() for item in (review_sections or ()) if str(item).strip()
+    )
+    if sections and (answer or accept_reason or code_subject or portfolio_subject):
+        detail = (
+            "--section scopes a plan content or design review, not an answer, an "
+            "accepted edit, a code subject or a portfolio"
+        )
+    elif sections and not plan_slug:
+        detail = "--section requires --plan PLAN"
+    elif review_run and not answer:
         detail = "--review-run applies only to --answer FINDING_ID"
     elif accept_reason and answer:
         detail = (
@@ -3098,17 +3122,21 @@ def _run_review(
         subject = recovery.plan_review_subject(
             project, plan_slug, session, rubric=rubric, local=local
         )
-        result = recovery.dispatch_review_for_run(subject, dry_run=dry_run)
-        if dry_run:
-            # The plan brief is composed rather than given and a preview writes
-            # nothing, so the composed text is read back here for the caller
-            # that compares one preview against another.
-            result = {
-                **result,
-                "brief_text": recovery._review_dispatch_fields(subject, write=False)[
-                    "brief_text"
-                ],
-            }
+        # The composed brief and the sidecar are written inside this block, so
+        # the scope the command named narrows both: a reviewer reads the sections
+        # it was asked about, and the record it delivers covers exactly those.
+        with plan_review.reviewing_sections(sections):
+            result = recovery.dispatch_review_for_run(subject, dry_run=dry_run)
+            if dry_run:
+                # The plan brief is composed rather than given and a preview
+                # writes nothing, so the composed text is read back here for the
+                # caller that compares one preview against another.
+                result = {
+                    **result,
+                    "brief_text": recovery._review_dispatch_fields(
+                        subject, write=False
+                    )["brief_text"],
+                }
         if result.get("queued") or result.get("error") == "lane-paused":
             # A held composition is an acceptance, not a refusal: it is reported
             # on the same channel a held dispatch uses, so a caller reads a
