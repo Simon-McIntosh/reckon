@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T15:05:47.702Z",
+  "dispatched_at": "2026-11-10T14:56:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "reasoning-1",
+      "reason": "the sentence is the node's statement of what the 22% actually is, and it points the repair at the cheap part; a node reading it can hoist the per-run directory stat and still leave `_store_index` called per run, which pays the glob-and-stat walk whenever the store moves, so the section would land without removing the 22% it was written for.",
+      "text": "\u00a722 says `_misfiled_review_candidates`'s 22% is \"the per-run stat and lookup work around the cached index, not a fresh listing\", but the cited profile attributes that 22% to the cache-missing update pass: of the 302 main-thread samples in `post-landing-profile-75s.raw`, 67 (22.2%) sit under `_misfiled_review_candidates`, and 46 of those 67 sit at `path.stat()` inside `_store_indexes`'s update branch (`review_records.py:1361`), 6 more in the `sorted(directory.glob(\"*.json\"))` that begins that walk (`review_records.py:1356`), and 10 in `_persist_store_entries` that the same miss triggers. That branch runs only after the directory's stat identity has moved and itself performs one `glob` listing plus a stat of every record file, so the measured cost is a fresh listing and a full stat walk, not cheap lookup around a warm cache \u2014 the cache-hit path would have shown the leaf in `_store_directory_identity`'s `directory.stat()` instead, and it does not appear.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "reasoning-2",
+      "reason": "the chain still takes four fifths of the publish, so the argument's direction and the section's target are unchanged; only the figure needs stating as 81%.",
+      "text": "\"82% of those\" samples in `classify_pointer > _stored_review > select_review_for_head > read_review` measures 80.8%: 126 of the 156 main-thread samples whose stack contains `_publish_watch_stream`, with the same profile's other cited shares reproducing (`_publish_watch_stream` 51.7%, `_review_input_identities` 36.8%, `_misfiled_review_candidates` 22.2%, leaf `stat` 50.7%, leaf `scandir` 12.9%).",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:589",
+      "id": "wiring-1",
+      "reason": "resolving it with its landing evidence is a plan-state change of the same kind the author already made for `f-tmref-006` and `f-tmref-007`, and while it stays open a reader following the chain can re-dispatch \u00a719.",
+      "text": "`f-tmref-005` is `open` with prompt `/reckon-build the-monitor-reads-each-fact-once \u00a719` and an empty `data-recommends-skill`, while \u00a719 is `done` in `plan-section-declarations` and \u00a720's Why records it landing on 9 November, so the plan keeps a live build entry point for a finished section and no outcome resolving its promised heartbeat-gap measurement.",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b3a0052d935adc3c3cf09d7396561862de90a7cf",
+  "plan_fingerprint": "121f268e0271e5a2a15058ceff3d5bff89657eeb6f65cb99b4a7b1a268d08763",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 144,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T145233978859-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "30c3835dd5ad1e32e0e05bd0b8198cf20e998b4a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every name in \u00a722 resolves: `classify_pointer > _stored_review > select_review_for_head > read_review` is the exact stack at `recovery_classification.py:1306` / `recovery_review_subject.py:1284` / `recovery_review_subject.py:141` / `review.py:3785`, `_review_input_identities` is `recovery_memo.py:387`, `_misfiled_review_candidates` is `recovery_memo.py:370`, `review_records._store_index` is `review_records.py:1572` with the per-process cache and its hit path in `_store_indexes` (`review_records.py:1497\u20131499`), `annotate_review_of_run` (`review.py:3021`) does read `manifest.md` and the two gate logs it names (`_MANIFEST_FILE_NAME = \"manifest.md\"`, `review.py:1872`), and `tests/test_a_tick_reads_the_review_store_once.py` is a new path.",
+    "done_when": "pass \u2014 the head assertion (\"a second producer tick with no change calls `read_review` zero times \u2026 counted through patches on every name that binds them\") is measurable and the negative control (base calls `read_review` at least once per run, so the head assertion fails there) is one the profile itself corroborates at 126 main-thread samples in `read_review`; the trailing \"no per-run stat of review-store files\" clause reads as per-run-loop calls, which the per-tick enumeration does not issue.",
+    "evidence_paths": "pass \u2014 both cited artifacts exist on durable paths under `~/.config/reckon/crew/runs/r-20261109T220051547043-\u2026/logs/` (`post-landing-busy-share.log`, 264 B, and `post-landing-profile-75s.raw`, 213 091 B, py-spy raw), and the post-landing sample is written to the landed node's run directory rather than a scratch path.",
+    "naming": "pass \u2014 the section title, the test filename and every symbol named in \u00a722 are mechanism words (\"reads the review store once\"), with no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the mechanism and its caller hold (the tick's own `watch_ticker` \u2192 `_publish_watch_stream` \u2192 `_watch_snapshot` \u2192 `classify_pointer` \u2192 `_stored_review` \u2192 `select_review_for_head` \u2192 `read_review` path is the publisher's, as the profile stack shows, and hoisting the read to once per tick does produce the zero-read second tick), but \u00a722's explanation of the remaining 22% does not match the profile it now cites.",
+    "single_goal": "pass \u2014 one deliverable: answer every run's `_stored_review`/`select_review_for_head` from a per-tick review-store read keyed on record identity, manifest and gate logs, with the misfiled lookup reusing the same read; the misfiled reuse is part of that one read, not a second outcome.",
+    "wiring": "a finding \u2014 \u00a722's own wiring is complete (`s22` is `implementable` and `f-tmref-008` at :600 carries `/reckon-build the-monitor-reads-each-fact-once \u00a722`; it needs no `depends-on` because \u00a720 and \u00a721 are `done`), but `f-tmref-005` at :589 is still open against a section that has landed."
+  },
+  "section_digests": {
+    "_document": "cd634bdc4957f910833806e9c913e3dedd24bed89241ecca72753a8915ce540f",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "82b33dd3a3f1673f563e0805ce9a59a1e2e61c5652ec8122d454ae3941147c36",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:16:08.483606+00:00",
+  "total": null
+}
