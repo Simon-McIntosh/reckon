@@ -129,6 +129,7 @@ _PARAM_MAP: dict[str, dict[str, str]] = {
         "note": "note",
         "declined": "declined",
         "session": "session",
+        "review_run": "review_run",
     },
     "widen": {
         "run_id": "run_id",

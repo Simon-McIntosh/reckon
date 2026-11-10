@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="an-answer-reaches-the-newest-review-that-raised-the-finding">
+<meta name="plan-title" content="An answer reaches the newest review that raised the finding">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s43">
+<meta name="plan-recorded-at" content="2026-11-10">
+<meta name="plan-verdict" content="passed">
+<title>An answer reaches the newest review that raised the finding | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="an-answer-reaches-the-newest-review-that-raised-the-finding-verification">
+<h1>An answer reaches the newest review that raised the finding</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Two equal-version reviews, both raising <code>wiring-1</code></td><td><code>read_plan_review</code> returns the newer</td><td>8/8 cases in <code>tests/test_an_answer_reaches_the_newest_review.py</code> pass</td></tr>
+<tr><td>Answer without <code>--review-run</code></td><td>Written to the newer review; the older one's responses unchanged</td><td><code>test_an_answer_without_a_review_run_lands_on_the_newer_review</code></td></tr>
+<tr><td>Answer naming the older review</td><td>Written to that review on both surfaces</td><td>CLI <code>--review-run</code> case and the crew tool's <code>review_run</code> case</td></tr>
+<tr><td>Fingerprints do not match the plan</td><td>Per-section branch returns both as covering; the newer is served</td><td><code>test_read_plan_review_returns_the_newer_when_fingerprints_do_not_match</code>, which first asserts both reviews are contributing</td></tr>
+<tr><td>Two covering reviews, one with no timestamp</td><td>Answer refused, naming both review runs</td><td><code>test_an_unorderable_covering_pair_is_refused_naming_both</code>; neither review is written</td></tr>
+<tr><td>An older design review that raised the finding</td><td>Answer written to it by <code>--review-run</code></td><td><code>test_an_answer_naming_an_older_design_review_is_written_there</code>; two design rounds stored, the newer one untouched</td></tr>
+<tr><td>A lone covering review with no timestamp</td><td>Answer written to it</td><td><code>test_a_lone_unstamped_covering_review_is_answered</code>; a single cover is the answer whatever its stamps</td></tr>
+<tr><td>Head gate</td><td>59 passed; EXIT=0</td><td><code>logs/head-gate.log</code> — the new test plus <code>tests/test_staged_write_inventory.py</code></td></tr>
+<tr><td>Affected suites, head against base</td><td>118 passed at head, 118 at base, EXIT=0 both</td><td><code>logs/head-affected.log</code>, <code>logs/base-affected.log</code>; delta zero across the twelve files importing the changed modules</td></tr>
+<tr><td>Nine declared negative controls</td><td>Each mutation fails at least one case; EXIT=1 for all nine runs</td><td><code>logs/negative-controls.log</code>: read-order tie breaks cases 1, 2 and 5; deleting the refusal answers case 6; leaving either reader on its old <code>max(plan_version)</code> breaks case 5 or case 1 respectively; keeping the refusal breaks case 2; limiting <code>--review-run</code> to the newest review breaks case 3; dropping the tool parameter breaks case 4; dropping design reviews from the candidate set breaks the older-design case; requiring a stamp of a lone cover breaks the lone-cover case</td></tr>
+<tr><td>Scoped lint and format</td><td><code>ruff check</code> clean, <code>ruff format --check</code> clean</td><td>On the five staged paths</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p><code>crew review --answer</code> now builds its covering set from every stored review of the plan that raises the finding — content and design rounds alike — plus the plan's newest design review, instead of from the one record the coverage read returned and the design review. With no <code>--review-run</code> the answer lands on the newest of those, <code>plan_review.newest_covering_review</code>, which orders them by the plan commit each read and falls back to the record's own timestamp. A lone cover is the answer whatever it carries: an ambiguous answer needs a second record to be ambiguous against, so the only refused set is two or more covering reviews one of which names no order — every covering run is named in that refusal rather than the answer landing on a guess.</p>
+<p><code>--review-run</code> matches any covering review of the two rubrics, so a caller naming an older content or design round reaches it, and the crew tool gained <code>review_run</code>: the parameter on <code>_crew</code>, its pass-through to <code>_crew_write_action</code>, and the <code>answer</code> entry of the action argument map, which is the seam that decides whether an argument reaches the verb.</p>
+<p>The coverage read already reduced a covering set by the plan commits its reviews read — the deliverable's two <code>max(plan_version)</code> sites had been replaced by <code>_newest_by_plan_commit</code> in an earlier change — so this node verified that behaviour through the first and fifth cases rather than reimplementing it, and the two mutations that revert each reader to its version comparison show the cases bite (<code>logs/negative-controls.log</code>, controls 3 and 4).</p>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding/manifest.md</td></tr>
+<tr><td>head gate</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding/logs/head-gate.log</td></tr>
+<tr><td>affected suites, head and base</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding/logs/head-affected.log, .../logs/base-affected.log</td></tr>
+<tr><td>negative controls</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding/logs/negative-controls.log</td></tr>
+</tbody></table>
+</section></main></body></html>
