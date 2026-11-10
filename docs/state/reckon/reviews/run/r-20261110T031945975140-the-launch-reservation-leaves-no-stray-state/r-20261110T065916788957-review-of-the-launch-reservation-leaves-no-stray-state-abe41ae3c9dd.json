@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "7fcd9780c51b3e8329188498878d5611a7874092",
+    "abe41ae3c9dd8daa2b503402d9f47ebf2aa4105c"
+  ],
+  "completed_at": "2026-11-10T07:07:40.108Z",
+  "dispatched_at": "2026-11-10T07:00:53Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T031945975140-the-launch-reservation-leaves-no-stray-state/head-arm-repair.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The head-arm gate recorded at the reviewed head runs three files (tests/test_a_concurrent_launch_is_refused.py, tests/test_a_worker_on_another_host_refuses_a_relaunch.py, tests/test_staged_write_inventory.py), while the node's done_when names four files that must add no failure including tests/test_a_resume_never_launches_beside_another_node.py and tests/test_a_queued_run_launches_once.py. Those two are covered only by four-file-head.log, whose header reads revision 42484b4484 and so predates the two commits under review; their no-failure receipt is therefore not re-measured at abe41ae3c9."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 2601,
+      "severity": "non-blocking",
+      "text": "The docstring justifies not storing the failure on the pointer with the universal claim that no later launch clears it, but reckon/crew/dispatch.py:3039 builds a fresh run record and :3494 writes it over pointer_path(run_id) wholesale, so a later launch of the same run through the dispatch door replaces the pointer and would clear the field. The behaviour (report on stderr, store nothing) is sound; the stated reason is unqualified and the same sentence is published to readers in docs/evidence/fragments/a-run-has-one-live-worker/the-launch-reservation-leaves-no-stray-state.html."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every launch door reserve exactly the attempt it launches from one on-disk key, freed only by that attempt's exit receipt; this increment (9661abd500..abe41ae3c9) removes the pointer-stored reservation_supervisor_recorded field and reports a dropped supervisor rewrite from one helper at reckon/crew/dispatch_launch.py:2595, which the four door call sites all use.\nVERDICT done_when: the done_when requires the four named test files to add no failure; the recorded after_suite at abe41ae3c9 runs three files with 102 passed and EXIT=0, and the receipt covering the other two (four-file-head.log) is at 42484b4484, predating this window \u2014 so the measure is asserted at the head for one of the two remaining done-when files and not re-measured for the other.\nVERDICT write_paths: the window's diff touches exactly the declared paths \u2014 reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, tests/test_a_concurrent_launch_is_refused.py and docs/evidence/fragments/a-run-has-one-live-worker/the-launch-reservation-leaves-no-stray-state.html \u2014 and nothing else.\nVERDICT manifest: read; its baseline_suite (0f3cd968, 9 failed / 90 passed / 2 environment errors, EXIT=1) and after_suite (abe41ae3c9, 102 passed, EXIT=0) both resolve to logs I opened and whose summary and EXIT= lines match the recorded JSON.\nVERDICT diff: read commit by commit \u2014 7fcd9780c5 replaces _record_supervisor_reporting with record_supervisor, prints SUPERVISOR_UNRECORDED_WARNING to stderr and drops the pointer field; abe41ae3c9 updates the fragment's freeing bullet to match; no stale reference to the removed field survives in reckon/ or tests/ except the new negative assertions.\nCALL_SITES: reckon/crew/dispatch.py:3569, reckon/crew/dispatch_launch.py:3218, reckon/crew/dispatch_launch.py:3260, reckon/crew/dispatch_launch.py:3270\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2595 is the single reporter every door now calls, and the pointer field the goal's previous round carried is absent from the landed tree.\nSCORE evidence: 16\nJUSTIFICATION evidence: head-arm-repair.log:1 records 102 passed with EXIT=0 at abe41ae3c9, but its command omits two of the four files the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 9661abd500..abe41ae3c9 lists four paths and all four are in the node's declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control-unconditional-report.log fails test_a_landed_supervisor_rewrite_reports_no_failure when the warning is emitted unconditionally, and negative-control-revert-reporting-flow.log fails all three supervisor cases when 7fcd9780c5 is reverted.\nSCORE fit: 18\nJUSTIFICATION fit: the stderr print at reckon/crew/dispatch_launch.py:2607 follows the surrounding style, but the justification at :2601 overstates that no later launch clears the pointer field.\nSCORE reuse: 20\nJUSTIFICATION reuse: record_supervisor at reckon/crew/dispatch_launch.py:2595 wraps the existing writer record_reservation_supervisor rather than duplicating it, and no shared owner of a failed-rewrite report exists in reckon/crew.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T031945975140-the-launch-reservation-leaves-no-stray-state/head-arm-repair.log:1 non-blocking: the head-arm gate runs three files, so the done_when's no-failure claim for tests/test_a_resume_never_launches_beside_another_node.py and tests/test_a_queued_run_launches_once.py is not re-measured at the reviewed head.\nFINDING reckon/crew/dispatch_launch.py:2601 non-blocking: the docstring's claim that no later launch clears a pointer field is contradicted by the wholesale pointer write from a fresh record at reckon/crew/dispatch.py:3494, and the same unqualified claim is published in the evidence fragment.",
+  "review_run_id": "r-20261110T065916788957-review-of-the-launch-reservation-leaves-no-stray-state-abe41ae3c9dd",
+  "reviewed_base_sha": "9661abd50077c88e27ee77de35d1d3fadec2ec16",
+  "reviewed_head_sha": "abe41ae3c9dd8daa2b503402d9f47ebf2aa4105c",
+  "reviewed_run_id": "r-20261110T031945975140-the-launch-reservation-leaves-no-stray-state",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T07:14:38.926628+00:00",
+  "total": 112
+}
