@@ -61,6 +61,16 @@
   so an unproven row never stands in for a promotion. Both callers now share one
   helper parameterised on that answer.</p>
 
+  <p><strong>Either source is the record.</strong> A row the aggregate carries
+  with no per-run document beside it is the run's ledger row — the promotion
+  path reads it as one and the ledger's own reader returns it — so it proves
+  the row, as the base revision answered. A call that finds only that shape
+  therefore finishes the cleanup too, which a case drives through
+  <code>crew complete</code> with a differing narrative: it retires the
+  pointer and reports both narratives instead of raising the double refusal.
+  Reading it as unproven, the over-corrected half of the round above, is what
+  the negative control restores to red that case.</p>
+
   <p><strong>The receipt names an entity once.</strong> The stored and requested
   bodies were unescaped for comparison and then stripped by the plan reader's
   tag stripper, which unescapes again, so a narrative that writes
@@ -123,9 +133,32 @@
         <code>&lt;</code> where the narrative wrote <code>&amp;lt;</code></td>
       </tr>
       <tr>
-        <td>negative control: an aggregate row alone answers written</td>
-        <td><code>e595f9f236</code> + change + mutation</td>
-        <td>1 failed, 6 passed &mdash; the disagreement case reads as proof</td>
+        <td>gate cohort, aggregate-row round</td>
+        <td><code>8f8a96a1b4</code></td>
+        <td>59 passed &mdash; the 8 cases here plus the 51 the inventory file
+        carries</td>
+      </tr>
+      <tr>
+        <td>the same command, base scratch tree</td>
+        <td><code>9260a0096d</code></td>
+        <td>58 passed &mdash; one fewer case, no failure</td>
+      </tr>
+      <tr>
+        <td>negative control: an aggregate-only row answers unproven</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>2 failed, 6 passed &mdash; the aggregate-only unit case and the
+        <code>crew complete</code> case, the latter raising the double
+        refusal</td>
+      </tr>
+      <tr>
+        <td>negative control: the receipt strips the already-unescaped bodies</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>1 failed, 7 passed &mdash; the entity case</td>
+      </tr>
+      <tr>
+        <td>negative control: the differing branch raises unconditionally</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>3 failed, 5 passed &mdash; every case that reaches that branch</td>
       </tr>
     </tbody>
   </table>
