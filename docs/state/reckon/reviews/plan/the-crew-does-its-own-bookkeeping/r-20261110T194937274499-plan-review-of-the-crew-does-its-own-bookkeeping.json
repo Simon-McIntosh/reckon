@@ -1,0 +1,93 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T20:29:35.581Z",
+  "dispatched_at": "2026-11-10T20:17:15Z",
+  "findings": [
+    {
+      "anchor": "plan.html:169",
+      "id": "wiring-1",
+      "reason": "the plan's own dispatch mechanism cannot reach the section without a followup carrying `/reckon-build the-crew-does-its-own-bookkeeping \u00a729`.",
+      "text": "\u00a729 is declared implementable but the followups section (plan.html:173) holds no article recommending it; every other open section s1\u2013s28 has one, and a coordinator working the followup chain would never dispatch \u00a729, so the section ships only if someone remembers it by hand",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:171",
+      "id": "reasoning-1",
+      "reason": "without it the node can implement a fix against a defect it never observed, which is exactly what the plan's opening paragraph says each section exists to prevent.",
+      "text": "\u00a729's Deliverable begins at the mechanism, omitting the clause every other section carries (\"First confirm that the defect still reproduces at main ... and record the reproduction in the manifest\", the convention stated at plan.html:35); `_commit_state_write` already stages and commits once, so the defect could be closed or moved by a later commit, and a node without the reproduction step has no instruction to find out before writing code",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:171",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch contract and \u00a713's manifest check both require run-directory logs ending in `EXIT=`, so the omission costs a re-run at worst rather than changing what the section asks for.",
+      "text": "\u00a729's done-when says only that the test files importing `reckon.ledger` add no failure and that ruff adds none, where every other section adds \"Every log is under the run directory, starts with its revision and the literal command, and ends in `EXIT=`\"; the node is left with no stated durable path for its base and head arms",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "plan.html:186",
+      "id": "single_goal-1",
+      "reason": "a followup title is the dispatch text a coordinator copies, so it still advertises a goal its section no longer carries.",
+      "text": "`f-tcdiob-003` is titled \"Build \u00a73: a coordinator's review brief is used, and a resumed run's brief names its current head\" and `f-tcdiob-007` (plan.html:206) is titled \"Build \u00a77: resume and reopen take a halted run, need no new write path, and report their own success\", although \u00a73 and \u00a77 were retitled to their own single goal and the second half of each now belongs to \u00a720 and \u00a719; the same defect the author fixed for `f-tcdiob-016` by resolving and replacing it",
+      "type": "single_goal",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c5083fa4012e6ea86301f593bc491432aa663d53",
+  "plan_fingerprint": "473fb55b0ad46f90a25f637d428f71ab8675148ed242420074c083dfd328cf0b",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 106,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T194937274499-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "1909f258b1ab6311baf8cd23f4bfec489a25814c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `ledger._commit_state_write` resolves at reckon/ledger.py:2730 and `merge._run_waiting_out_a_held_index_lock` at reckon/crew/merge.py:570, both reachable from the named callers (`reckon/crew/plan_review.py:2921`, `reckon/crew/review_records.py:421`), and every landing commit the new close comments cite (`47384b1917`, `3761dd333e`, `3c38186c12`, `bd2ddb4870`, `53bc0d08b`) resolves.",
+    "done_when": "pass \u2014 \u00a729's three cases name what makes each pass, and its negative control removes the wait and states that the first case then raises, so the guard is falsifiable.",
+    "evidence_paths": "a finding \u2014 \u00a729's done-when names no log location and no log discipline, unlike every other section, so the node's gate evidence has no stated durable path.",
+    "naming": "pass \u2014 \u00a729's heading, symbols and write paths carry no plan label, stage name, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a729's deliverable drops the reproduction step that `_document` (plan.html:35) declares every section opens with, so the node may build a fix for a defect nobody confirmed still reproduces.",
+    "single_goal": "a finding \u2014 the followups recommending \u00a73 and \u00a77 still title them with the half that was moved out of each section, so the dispatch text and the section heading disagree.",
+    "wiring": "a finding \u2014 \u00a729 (plan.html:169) is declared implementable in `plan-section-declarations` but no followup recommends it, so nothing in the plan's dispatch chain will build it."
+  },
+  "section_digests": {
+    "_document": "4b063cf37113d14cb28c5f54fb630e2fe82b865beb828d7baad62bc13b532755",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "eb071af115c6cb885404bfcecff89e32a49dff5e2320cb170f63c531701d4409",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "be10222fbb926fdc4d836974d1d08c2536144a9031126f7495a6287ee8824637",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "b78dc61ddf33b375b1ce609a25ab41c3b7817ded96a1793e664ead8b6f3be994",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s29": "a46c5812122ec04f4c595fd3862dfd7ad12593763523e368c78041e99cbda682",
+    "s3": "82923ffe5453d6953374033d35019e07de5b29917533560cbc5730ff737bbe8f",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "97a25d1bcb177fd8366f65079625d64835768889b839d6734ae89fa8e922189b",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:52:18.384089+00:00",
+  "total": null
+}
