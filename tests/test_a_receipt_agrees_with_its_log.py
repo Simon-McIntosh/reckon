@@ -11,8 +11,8 @@ temporary manifest: a stale receipt refused naming its count and ids, an honest
 receipt accepted, a bare receipt id covering a qualified log id, an arm stating
 no count judged on status alone, an error counted as a failure, an arm
 describing another log left alone, a log with no exit record refused, a pytest
-gate that never reached its summary refused, and a ctest log whose failures are
-compared while its count is not.
+gate that never reached its summary refused, and a ctest log whose failures and
+count are both read from its FAILED block.
 """
 
 from __future__ import annotations
@@ -194,11 +194,11 @@ def test_a_pytest_gate_whose_last_run_reached_no_summary_is_refused(
     assert "reaches no pytest summary" in str(refusal.value)
 
 
-def test_a_ctest_log_compares_its_ids_and_not_its_count(tmp_path: Path) -> None:
+def test_a_ctest_logs_count_is_read_from_its_failed_block(tmp_path: Path) -> None:
     arm = _arm_for(
         tmp_path,
         exit_status=1,
-        failure_count=5,
+        failure_count=1,
         failure_ids=["SOLVER/XPOINT"],
     )
     _guard(
