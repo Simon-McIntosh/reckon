@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 2,
+  "added_failure_ids": [
+    "tests/test_arm_lock_is_never_held_by_a_follower.py::test_contended_arming_refuses_within_bound",
+    "tests/test_crew_dispatch_arming.py::test_dispatch_refuses_a_session_whose_runs_would_finish_unheard"
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:340 queue_requests calls validate_node) per entry before any pointer is written",
+    "reckon/crew/dispatch_plan.py:841 plan_dispatch calls validate_node for the single path",
+    "reckon/crew/queue_edit.py:195 the queue-edit path calls validate_node on the edited node"
+  ],
+  "completed_at": "2026-11-10T18:01:56.329Z",
+  "dispatched_at": "2026-11-10T17:43:35Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: test_logs names logs/gate-head.log, whose header line reads revision 00bea984ea (the pre-repair commit), and the new test file appears zero times in logs/importer-files.txt, so neither recorded arm measures tests/test_a_batch_entry_is_checked_when_queued.py at the reviewed head 5c29da3b3c; a re-run at the reviewed head (3 passed EXIT=0) confirms the gate is green, so the defect is the record's evidence rather than the code."
+    },
+    {
+      "file": "manifest.md",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite were both measured in /tmp git-archive extractions, but the manifest carries no measurement_module or measurement_cwd line, which the delivery contract requires for a gate or base-arm measurement run in a scratch tree so a later reader can tell which module the run actually imported."
+    },
+    {
+      "file": "manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires the importer arms be run one arm at a time with at most -n 4, but retry_failures records that the two arms overlapped at -n 4 each, which is the stated cause of the two extra timing-bound ids in added_failure_ids; the deviation is disclosed and the two ids are shown to pass alone, but it departs from the measure as written."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both gained commits against c8e0018c20: 92472c82d9 replaces 225 inlined fixture lines with imports from tests/test_every_path_meets_the_node_contract (36 added) and rewrites the docstring to state the mechanism, and 5c29da3b3c adds one importer-arm paragraph to the evidence fragment.",
+    "done_when": "The done_when names three facts, the negative control, one-arm-at-a-time importer arms, and clean ruff; I re-ran the named gate at head 5c29da3b3c and it reports 3 passed EXIT=0, but the recorded gate log is at the pre-repair revision 00bea984ea and the 168-file importer arm does not include the new test file.",
+    "goal": "The goal states a batch entry is refused at queue time for the node contract a launch would refuse; the gained commits change no product source, and the batch case at tests/test_a_batch_entry_is_checked_when_queued.py:52 asserts refused==1 naming negative_control with exactly one pointer written for the valid sibling, reaching the guard at reckon/crew/dispatch.py:340 through dispatch_batch.queue_batch (reckon/crew/dispatch_batch.py:649).",
+    "manifest": "Read the manifest: status complete, the six rubric lines are present, baseline_suite and after_suite carry revision, command, exit_status, completed and failure ids, and negative_control_log is a bare path; measurement_module and measurement_cwd are absent although both arms ran in /tmp git-archive scratch trees.",
+    "write_paths": "The source prompt's fence grants five product/test paths plus the evidence fragment; the gained diff c8e0018c20..5c29da3b3c touches only tests/test_a_batch_entry_is_checked_when_queued.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_is_checked_when_queued.py:60 asserts result['refused'] == 1 and :66 asserts exactly one pointer, which both fail if the validate_node call at reckon/crew/dispatch.py:340 is removed, but the recorded negative-control.log predates the repair so the demonstration is not from the reviewed head.",
+    "evidence": "The recorded gate log logs/gate-head.log opens at revision 00bea984ea, before the repair commit 92472c82d9, and the new test file appears zero times in logs/importer-files.txt, so no recorded run measures the gate at the reviewed head, though my re-run at 5c29da3b3c gives 3 passed EXIT=0.",
+    "fit": "tests/test_a_batch_entry_is_checked_when_queued.py:23-38 imports fixtures by the same private-name pattern used at tests/test_a_bulleted_finding_is_read.py:29 and tests/test_a_claim_hold_reads_the_holder_again.py:25, and its docstring at :1 states the mechanism.",
+    "goal_fidelity": "tests/test_a_batch_entry_is_checked_when_queued.py:52 pins the refusal at the batch path's own call to the shared contract at reckon/crew/dispatch.py:340, and the repair kept every assertion while removing the duplicate fixture it restated.",
+    "reuse": "The repair removes the duplicate fixture: tests/test_a_batch_entry_is_checked_when_queued.py:23-38 imports _entry, _queue, _pointers, _dry_run, _dry_run_details and both fixtures from the owner at tests/test_every_path_meets_the_node_contract.py:92-241, extending that file's capability rather than cloning it.",
+    "scope_discipline": "git diff c8e0018c20..5c29da3b3c changes only the test file and the evidence fragment, both inside the source fence at prompt.txt:80-87, and it adds no product source."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal states a batch entry is refused at queue time for the node contract a launch would refuse; the gained commits change no product source, and tests/test_a_batch_entry_is_checked_when_queued.py:52 asserts refused==1 naming negative_control with one pointer written, reaching reckon/crew/dispatch.py:340 through dispatch_batch.queue_batch at reckon/crew/dispatch_batch.py:649.\nVERDICT done_when: the done_when names three facts, the negative control, one-arm-at-a-time importer arms and clean ruff; I re-ran the named gate at head 5c29da3b3c and it reports 3 passed EXIT=0, but logs/gate-head.log is at pre-repair 00bea984ea and the 168-file arm excludes the new test file.\nVERDICT write_paths: the source fence at prompt.txt:80-87 grants five product/test paths plus the evidence fragment; git diff c8e0018c20..5c29da3b3c touches only tests/test_a_batch_entry_is_checked_when_queued.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html, both inside it.\nVERDICT manifest: read; status complete, six rubric lines present, both suite arms carry revision/command/exit_status/completed/failure ids, negative_control_log is a bare path, but measurement_module and measurement_cwd are absent though both arms ran in /tmp git-archive scratch trees.\nVERDICT diff: read both gained commits against c8e0018c20; 92472c82d9 replaces 225 inlined fixture lines with 36 lines importing tests/test_every_path_meets_the_node_contract and rewrites the docstring to the mechanism, and 5c29da3b3c adds one importer-arm paragraph to the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:340 queue_requests calls validate_node per entry before any pointer is written, reckon/crew/dispatch_plan.py:841 plan_dispatch calls validate_node for the single path, reckon/crew/queue_edit.py:195 the queue-edit path calls validate_node on the edited node\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_batch_entry_is_checked_when_queued.py:52 pins the refusal at the batch path's own call to the shared contract at reckon/crew/dispatch.py:340, and the repair kept every assertion while removing the duplicate fixture.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/gate-head.log opens at revision 00bea984ea before the repair commit 92472c82d9 and the new test file appears zero times in logs/importer-files.txt, so no recorded run measures the gate at the reviewed head, though a re-run at 5c29da3b3c gives 3 passed EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c8e0018c20..5c29da3b3c changes only the test file and the evidence fragment, both inside the source fence at prompt.txt:80-87, and adds no product source.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_batch_entry_is_checked_when_queued.py:60 and :66 fail if the validate_node call at reckon/crew/dispatch.py:340 is removed, but the recorded negative-control.log predates the repair so the demonstration is not from the reviewed head.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_a_batch_entry_is_checked_when_queued.py:23-38 imports fixtures by the same private-name pattern as tests/test_a_bulleted_finding_is_read.py:29, and its docstring at :1 states the mechanism.\nSCORE reuse: 19\nJUSTIFICATION reuse: the repair imports _entry, _queue, _pointers, _dry_run, _dry_run_details and both fixtures from the owner at tests/test_every_path_meets_the_node_contract.py:92-241 instead of cloning it.\nFINDING manifest.md:22 non-blocking: test_logs names logs/gate-head.log at pre-repair revision 00bea984ea and the new test file appears zero times in logs/importer-files.txt, so no recorded arm measures the gate at reviewed head 5c29da3b3c; a re-run there is 3 passed EXIT=0, so this is a record-evidence defect rather than a code defect.\nFINDING manifest.md:25 non-blocking: both suite arms were run in /tmp git-archive extractions but the manifest has no measurement_module or measurement_cwd line, which the delivery contract requires for a scratch-tree measurement.\nFINDING manifest.md:13 non-blocking: the done_when requires the importer arms one at a time with at most -n 4, but retry_failures records they overlapped at -n 4 each, the stated cause of the two extra timing-bound ids in added_failure_ids.\n",
+  "review_run_id": "r-20261110T173756784516-review-of-a-batch-entry-is-refused-at-queue-time-for-the-node-contract-5c29da3b3ce7",
+  "reviewed_base_sha": "c8e0018c20faa85a447664fa2660e07ae6afabfd",
+  "reviewed_head_sha": "5c29da3b3ce7e64c72665ef18965e176a5a68598",
+  "reviewed_run_id": "r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract",
+  "scores": {
+    "durability": 15,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:58:00+00:00",
+  "total": 101
+}
