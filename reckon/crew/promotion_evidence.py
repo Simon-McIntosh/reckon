@@ -1182,6 +1182,31 @@ def _arm_describes_the_cited_log(
     return False
 
 
+def _log_failure_count(log_text: str) -> int | None:
+    """The failure figure a gate log states, read in the log's own format.
+
+    A pytest log states its own total on its summary line, so that figure is
+    read as it always was. A ctest log states no such total: its last line
+    carries a percentage, and its test programs print counts of their own
+    (``0 failed`` among them), so the pytest reader matched a program's line
+    and reported zero for a suite with failures. ctest's own count is the
+    number of entries in its ``The following tests FAILED:`` block, which is
+    the same set the ids comparison reads, so the two figures cannot disagree
+    about which tests failed.
+
+    ``None`` means the log is in neither format and so states no count at all.
+    The caller leaves the count uncompared rather than reading the absence as
+    zero.
+    """
+    log_format = review_module._gate_log_format(log_text)
+    if log_format is None:
+        return None
+    if log_format == "ctest":
+        log_ids = review_module.gate_log_failure_ids(log_text)
+        return None if log_ids is None else len(log_ids)
+    return review_module.pytest_summary_failure_count(log_text)
+
+
 def _receipt_mismatches(
     arm: Mapping[str, Any] | None, log_path: str, log_text: str
 ) -> list[str]:
@@ -1193,6 +1218,10 @@ def _receipt_mismatches(
     run's figures beside the second run's status passes every check that reads
     only the tail — so each figure is read from the log's last run, the one the
     status comes from.
+
+    The failure count is read in the log's own format (``_log_failure_count``),
+    so a ctest receipt is counted by its FAILED block rather than by a pytest
+    summary line the log never prints.
 
     Each field is compared only when the arm records it, so an arm that states
     one figure is not refused for the absence of another. The ids are compared
@@ -1208,7 +1237,7 @@ def _receipt_mismatches(
     mismatches: list[str] = []
     recorded_count = arm.get("failure_count")
     if isinstance(recorded_count, int) and not isinstance(recorded_count, bool):
-        measured = review_module.pytest_summary_failure_count(last_run)
+        measured = _log_failure_count(last_run)
         if measured is not None and measured != recorded_count:
             mismatches.append(
                 f"its failure_count records {recorded_count} and the log's last "
@@ -1268,9 +1297,10 @@ def _require_gate_log_agrees(
       has filed contradictory evidence.
     * a receipt figure the log does not agree with — the ``after_suite`` arm
       naming this log, when its failure count differs from the failed plus
-      errored figure of the log's last pytest summary, or its failure ids
-      differ from the ids of the log's last run in either direction. Both are
-      read from the last run, the one whose status the tail records.
+      errored figure of the log's last run in that log's own format, or its
+      failure ids differ from the ids of the log's last run in either
+      direction. Both are read from the last run, the one whose status the
+      tail records.
     * no evidence the command ran — a line carrying the shell's own
       command-not-found diagnostic, when the log carries nothing that shows a
       command did run, states the command never executed. A runner log may
