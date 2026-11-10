@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-review-gate-judges-what-it-covers">
   <meta name="plan-title" content="A Review Gate Judges What It Covers">
   <meta name="plan-summary" content="The plan-review gate refuses a reviewed, unchanged section when another changed, and a fix a review asked for owes another review; judge per section.">
-  <meta name="plan-status" content="in-progress">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="5.75">
   <meta name="plan-capability-version" content="1.0">
@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-after" content="a-plan-is-reviewed-before-it-is-built,the-review-loop-runs-without-hand-steps">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="75">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s14&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;],&quot;s15&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;,&quot;a-review-gate-judges-what-it-covers#s14&quot;]}">
 </head>
@@ -147,7 +147,7 @@
     </p>
 
     <h2 id="s6">§6 — A printed review command runs as printed</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
     <p>
       <strong>Deliverable.</strong> The dispatch's <code>health_review</code> block composes its command from the
       write paths of the dispatch that printed it (<code>--around &lt;path&gt;</code> for each), not from the plan,
@@ -221,10 +221,11 @@
     <pre class="r-fu-prompt">/reckon-build a-review-gate-judges-what-it-covers §8</pre>
     <p class="r-fu-outcome">Section 8 landed at merge effacd38d: every plan write answers uncovered_by_write beside review_owed. Review 110, zero added failures against a red base. f-rgjc-001 carries the next build, section 2.</p>
     </article>
-<article class="r-fu" data-id="f-rgjc-002" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-42" data-written-at="2026-10-28" data-recommends-skill="/reckon-build a-review-gate-judges-what-it-covers §2" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-rgjc-002" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-42" data-written-at="2026-10-28" data-recommends-skill="/reckon-build a-review-gate-judges-what-it-covers §2" data-resolved-at="2026-11-10T06:07:23+00:00" data-resolved-by="coordinator">
     <h4 class="r-fu-title">Build the write-time review: §2, §3, §9 and §11 now, §10 and §12 after them</h4>
     <div class="r-fu-body"><p>§2, §3 and §7 to §12 are done. Still to build: §4 to §6, then §13, §14 and §15 in that order. §14 and §15 wait on §13 through their declared section waits.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-gate-judges-what-it-covers</pre>
+    <p class="r-fu-outcome">Every section is done: write-time review, section-scoped admission holds, noted answers and section-scoped review rounds have landed, with §6's printed remedy already on main. Done, no followup.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -263,6 +264,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s15" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed: reviewed head <code>23588d921d</code> (run r-20261103T054937809738). A review composed with <code>--section</code> reads the whole plan, traces only the named sections, carries every prior finding on them in full, and stores the units it traced (every unit when a first round widens), so coverage counts exactly those. Three review rounds: the first raised a blocking finding (a widened round recorded only the asked-for section), repaired; the coordinator importer population then caught an MCP answer-action regression (<code>crew_review</code> gained a required <code>review_sections</code>), repaired with a default. Final review 107/120; population over 192 files added 0 (head 83 failed against base 90). Remaining non-blocking findings exempted. Evidence: <a href="/reckon/evidence/fragments/a-review-gate-judges-what-it-covers/a-review-round-is-section-scoped.html">the section's landing record</a>.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s6" data-who="" data-when="">
+    <div class="r-comment-body"><p>Already on main: commit <code>92a92d2e19</code> (2026-11-03) composes the dispatch's health-review remedy from the write paths of the dispatch that printed it when the plan declares no section write paths. Checked on 2026-11-10: <code>tests/test_review_remedy_uses_dispatch_paths.py</code> runs the printed command verbatim and passes 2/2, with the plan-slug negative control. The section stayed declared implementable after it landed.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-s10-one-unit-rule" data-who="" data-when="">
     <div class="r-comment-body"><p>The code review of the gate modules on 28 October (<code>r-20261028T090444966085-review-code-6c1b39603c08</code>) proposed one treatment, which this section's node carries. <code>plan_review_units</code> is defined twice, at <code>reckon/crew/routing.py:2434</code> and again at <code>reckon/crew/queue_admission.py:2255</code>, and the two bodies are identical. The rule for which units a request is gated on, which this section changes, therefore lives in two places, and admission and the dispatch gate can disagree. The node deletes the copy in <code>queue_admission.py</code> and imports the one in <code>routing.py</code>, and a test asserts the two names are one object. <code>reckon/crew/routing.py</code> joins this section's write paths for that import.</p></div>
