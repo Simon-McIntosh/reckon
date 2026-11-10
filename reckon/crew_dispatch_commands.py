@@ -2983,11 +2983,22 @@ def _run_review(
                 and answer in plan_review.finding_ids(design)
             ):
                 record = design
-            # Every stored review that raises this finding is a covering review.
-            # A finding carried by two of them names an ambiguous answer.
+            # Every stored content review of the plan that raises this finding
+            # is a covering review, and the plan's design review joins them.
+            # Finding ids are reused between rounds, so the review a caller
+            # means is the newest one that raised the id — never whichever
+            # review a coverage read happened to hand back first.
             covering = []
             seen_identities = set()
-            for candidate in (record, design):
+            stored_raisers = [
+                stored
+                for stored in plan_review.list_plan_reviews(project, plan_slug)
+                if not plan_review.is_design_review(stored)
+                and answer in plan_review.finding_ids(stored)
+            ]
+            if design is not None:
+                stored_raisers.append(design)
+            for candidate in stored_raisers:
                 if candidate is None or answer not in plan_review.finding_ids(
                     candidate
                 ):
@@ -2998,30 +3009,18 @@ def _run_review(
                 seen_identities.add(identity)
                 covering.append(candidate)
             if wanted_review:
-                # A named review need not be the newest covering one, and the
-                # search above may already have selected it, so every stored
-                # review of the plan that raises the finding is a candidate.
-                candidates = list(covering)
-                seen_candidates = {
-                    _covering_review_identity(candidate) for candidate in candidates
-                }
-                for stored in plan_review.list_plan_reviews(project, plan_slug):
-                    if answer not in plan_review.finding_ids(stored):
-                        continue
-                    identity = _covering_review_identity(stored)
-                    if identity in seen_candidates:
-                        continue
-                    seen_candidates.add(identity)
-                    candidates.append(stored)
+                # A named review need not be the newest covering one: the
+                # caller says which review raised the finding, so every stored
+                # review that raises it is a candidate for the name.
                 matched = [
                     candidate
-                    for candidate in candidates
+                    for candidate in covering
                     if plan_review._record_run_id(candidate) == wanted_review
                 ]
                 if not matched:
                     named_ids = ", ".join(
                         repr(plan_review._record_run_id(candidate) or "unattributed")
-                        for candidate in candidates
+                        for candidate in covering
                     )
                     detail = (
                         f"--review-run {review_run!r} does not raise finding "
@@ -3032,20 +3031,25 @@ def _run_review(
                     _emit({"error": "crew_error", "detail": detail}, pretty)
                     raise click.exceptions.Exit(1)
                 record = matched[0]
-            elif len(covering) > 1:
-                named_ids = ", ".join(
-                    repr(plan_review._record_run_id(candidate) or "unattributed")
-                    for candidate in covering
-                )
-                detail = (
-                    f"finding {answer!r} is carried by {len(covering)} covering "
-                    f"reviews; name --review-run to choose which one answers it: "
-                    f"{named_ids}"
-                )
-                _emit({"error": "crew_error", "detail": detail}, pretty)
-                raise click.exceptions.Exit(1)
-            elif len(covering) == 1:
-                record = covering[0]
+            elif covering:
+                # With no review named the answer belongs to the newest review
+                # that raised the finding, which is the one a reader sees. A
+                # pair the store cannot order names no newest, so the answer is
+                # refused rather than guessed onto one of them.
+                newest = plan_review.newest_covering_review(covering, project)
+                if newest is None:
+                    named_ids = ", ".join(
+                        repr(plan_review._record_run_id(candidate) or "unattributed")
+                        for candidate in covering
+                    )
+                    detail = (
+                        f"finding {answer!r} is carried by {len(covering)} covering "
+                        "reviews whose order cannot be read; name --review-run to "
+                        f"choose which one answers it: {named_ids}"
+                    )
+                    _emit({"error": "crew_error", "detail": detail}, pretty)
+                    raise click.exceptions.Exit(1)
+                record = newest
             path = plan_review.record_response(
                 record,
                 answer,

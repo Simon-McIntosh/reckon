@@ -2691,6 +2691,7 @@ def _crew(
     acted: bool = False,
     note: str | None = None,
     declined: str | None = None,
+    review_run: str | None = None,
 ) -> dict[str, Any]:
     """Read crew state or perform one recovery action through the crew surface.
 
@@ -2710,7 +2711,7 @@ def _crew(
     pushing the reviewed head), ``dispose`` (``project``, ``run_id``,
     ``dimension``, ``finding_index``, ``kind``, ``node``, ``reason``), ``ack``
     (``run_id``, ``reason``, ``until``), ``answer`` (``project``, ``plan``,
-    ``finding``, ``acted``, ``declined``, ``session``), ``widen`` (``run_id``,
+    ``finding``, ``acted``, ``declined``, ``session``, ``review_run``), ``widen`` (``run_id``,
     ``write_paths``), ``stop`` (``run_id``) and ``discard`` (``run_id``). Three
     act on a request that has not launched: ``queue-edit`` (``run_id``,
     ``brief_path``, ``done_when``, ``write_paths``, ``time_budget``,
@@ -2858,6 +2859,7 @@ def _crew(
             acted=acted,
             note=note,
             declined=declined,
+            review_run=review_run,
         )
     if action is not None:
         return _crew_recover(

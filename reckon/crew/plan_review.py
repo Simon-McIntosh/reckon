@@ -1096,6 +1096,29 @@ def _newest_by_plan_commit(
     return newest
 
 
+def newest_covering_review(
+    records: Iterable[Mapping[str, Any]], project: str
+) -> Mapping[str, Any] | None:
+    """The newest of the covering reviews, or ``None`` when none is newest.
+
+    A review is placed by the plan commit it read, or by the moment the store
+    wrote it. An answer naming only a finding lands on the newest review that
+    raised it, so a set holding a record with neither is answered with ``None``
+    rather than ordered by whatever a read happened to reach first: only a
+    hand-written record carries no timestamp, because the store stamps every
+    record it writes.
+    """
+    pool = list(records)
+    repo = _project_repo_root(project)
+    for record in pool:
+        if str(record.get("timestamp") or "").strip():
+            continue
+        if repo is not None and _record_plan_commit(record):
+            continue
+        return None
+    return _newest_by_plan_commit(pool, project)
+
+
 def _records_oldest_first(
     records: Iterable[Mapping[str, Any]], project: str
 ) -> list[Mapping[str, Any]]:
