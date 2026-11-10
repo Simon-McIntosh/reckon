@@ -39,9 +39,9 @@ half-wall threshold and the fixed label; the computing case then reports
 <code>storage-slow</code> and the run fails, <code>1 failed, 4 passed</code>,
 <code>EXIT=1</code>.</p>
 
-<p id="a-slow-read-names-what-it-measured-outside">One existing test encodes the
-superseded contract and sits outside this node's write scope:
-<code>tests/test_mcp_deadline_names_its_cause.py:54</code> asserts a computing
-body keeps <code>error == "storage-slow"</code>. That assertion now fails by
-design and needs the one-line update to <code>"read-slow"</code> in a follow-on
-node.</p>
+<p id="a-slow-read-names-what-it-measured-outside">One existing test encoded the
+superseded contract: <code>tests/test_mcp_deadline_names_its_cause.py:54</code>
+asserted a computing body keeps <code>error == "storage-slow"</code>. It sat
+outside this node's write fence at first, and the coordinator granted the file
+so the assertion and the module docstring now name <code>read-slow</code> for a
+computing body. The importer arms carry no failure the base revision does not.</p>
