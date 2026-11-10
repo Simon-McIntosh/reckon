@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T05:32:53.287Z",
+  "dispatched_at": "2026-11-10T05:26:09Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "decided-units-dropped-for-a-direct-caller",
+      "line": 1781,
+      "severity": "non-blocking",
+      "text": "_record_decided_units discards the decision when no reviewing_sections block is active (holder is None), so a direct caller of the public review_scope(..., sections=[...]) composes a brief scoped to those sections and stores a sidecar with no traced_units, which _traced_units reads as whole-plan coverage (plan_review.py:3501: 'if not traced or unit in traced'). Every production path is safe today because crew_dispatch_commands.py:3128 wraps the composition, but the public sections parameter now has no effect on what the record claims, and the error runs in the unsafe direction: a record that over-claims coverage lets a section the round never traced pass the review gate. The prior review's finding was the same latent-caller family with the opposite direction, so this repair moved the asymmetry rather than closing it. Returning the decided units from review_scope instead of side-effecting them, or having a direct call establish its own holder, removes it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "four production call sites read: crew_dispatch_commands.py:3128 wraps every composition in reviewing_sections, mcp_crew_actions.py:317 reaches the answer action with no section scope, crew_run_commands.py:165 forwards the carried-answer kwargs, and recovery_review_subject.py:833 calls review_scope during composition.",
+    "diff": "read the single commit 23588d921d against 5db68db75d; it moves review_sections to a defaulted keyword at reckon/crew_dispatch_commands.py:2691, replaces the bare tuple context variable with a dict holder made and reset by reviewing_sections at reckon/crew/plan_review.py:1813-1826, and adds the two accessors at 1770-1782.",
+    "done_when": "the section's done_when names tests/test_a_review_round_is_section_scoped.py; the reviewed run records that file passing at both arms (7 passed, EXIT=0 in logs/baseline-suite.log and logs/after-suite.log), which is not the gate this commit needed and is judged under evidence.",
+    "goal": "the node's goal is a review round scoped to the sections asked and a record keeping the units it traced; the landed commit keeps that reachable from every caller by defaulting review_sections at reckon/crew_dispatch_commands.py:2691 and by pairing the decided units with the composing block at reckon/crew/plan_review.py:1813.",
+    "manifest": "read the delivered manifest; it states the repair, the caller population it answers and four named failure ids, and points at logs/repair2-gate.log and logs/repair2-negative-control.log, both of which exist and read as stated.",
+    "write_paths": "the source node declared reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, tests/test_a_review_round_is_section_scoped.py and its evidence paths; the diff at 23588d921d touches the first two only, both inside the declared scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261110T052438424440-review-of-a-review-round-is-section-scoped-23588d921db5",
+  "reviewed_base_sha": "5db68db75d5d589afb80e70d79fb37d0239f9b17",
+  "reviewed_head_sha": "23588d921db528f53511a995150611334ca12f9d",
+  "reviewed_run_id": "r-20261103T054937809738-a-review-round-is-section-scoped",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T05:42:07.308889+00:00",
+  "total": 107
+}
