@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="a-follower-reads-only-what-moved">
+  <meta name="plan-title" content="A Follower Reads Only What Moved">
+  <meta name="plan-summary" content="Each crew follower runs git and re-parses the model catalogue every second; it should read them again only when HEAD or the file has moved.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="2.5">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="standard">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-sprint" content="S27">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-after" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;implementable&quot;}">
+  <title>A Follower Reads Only What Moved | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="3">
+<meta name="plan-modified" content="2026-11-10">
+</head>
+<body>
+  <main class="plan-doc">
+    <p>On 2026-11-10 the fleet node <code>98dci4-clu-2023</code> (8 CPUs) ran at a load average of 55 to 114. A
+      <code>stat</code> in the crew home took 11 to 16 ms, and <code>crew dispatch</code>, <code>crew complete</code> and
+      <code>crew review</code> timed out at 590 s, leaving half-made pointers behind. By the <code>ps</code> lifetime
+      average, reckon's own monitor held about six of the eight CPUs: nine <code>crew follow</code> processes at 319 %,
+      six <code>crew watch</code> at 176 % and <code>crew station</code> at 99 %, with <code>mmfsd</code> at 155 %. A
+      10 s <code>/proc/&lt;pid&gt;/io</code> delta put each reckon follower at about 14 MB/s read. The station side is
+      the subject of <code>the-monitor-reads-each-fact-once</code>, whose §12 also moves followers onto the station.
+      This plan takes two follower-side costs that need no station and can land first.</p>
+    <p>A 15 s <code>strace -f</code> of follower <code>3597827</code> recorded 8,556 path syscalls. Six of its seven pids
+      were short-lived <code>git</code> children, and each child stat'ed about 34 files under
+      <code>.git/objects/pack</code> (the checkout holds 34 packs) as well as <code>.git/config</code>,
+      <code>packed-refs</code> and both gitconfig files. The follower itself opened the reload tree's
+      <code>docs/state/reckon/model-catalogue.yaml</code> 86 times.</p>
+
+    <h2 id="s1">§1 — A follower derives its code identity only when HEAD moves</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> <code>_FollowerReloader</code> in <code>reckon/crew/follower_reload.py</code> checks for a code
+      move every <code>FOLLOWER_FRESHNESS_SECONDS</code>, which is 1.0 s (<code>reckon/crew/follower_registration.py</code>
+      near line 554). Each check calls <code>runs.follower_code_stamp()</code>, which reaches
+      <code>checkout_trust.source_code_identity</code>. For a git checkout that is <code>_committed_reload_tree</code>
+      in <code>reckon/checkout_trust.py</code>: <code>git ls-tree HEAD reckon skills</code>, a second
+      <code>ls-tree</code> for the catalogue blob, and one or two <code>git mktree</code> calls. So every follower starts
+      several git processes a second. Each of them opens the repository's config and every pack index on GPFS, and
+      the answer changes only when HEAD's commit changes.</p>
+    <p><strong>What changes.</strong> The follower keys its identity on a cheap reading of where HEAD points: the
+      <code>stat</code> of <code>.git/HEAD</code>, of the ref it names, and of <code>packed-refs</code>, all resolved
+      without starting git. It re-derives the identity, with the same git calls as today, only when that key changes.
+      Otherwise it returns the identity it holds. The key is read through the same <code>.git</code> resolution git
+      uses, so a worktree checkout and a main checkout both read correctly. A checkout outside git keeps its content
+      stamp path unchanged. A read that fails yields <code>IDENTITY_UNKNOWN</code> exactly as today, so a partial read
+      never stands for an unmoved HEAD.</p>
+    <p><strong>Done when.</strong> A new <code>tests/test_a_follower_reads_its_identity_only_when_head_moves.py</code>,
+      working in a temporary git repository, shows four things. With <code>subprocess.run</code> counted, 20 identity
+      reads against an unmoved HEAD start git only on the first read. A new commit touching <code>reckon/</code> moves
+      the key, and the next read re-derives and returns the new identity. A commit touching only a file outside
+      <code>reckon/</code>, <code>skills/</code> and the catalogue moves the key but leaves the identity equal. A
+      key-read failure yields <code>IDENTITY_UNKNOWN</code>. Negative control: drop the key comparison so every read
+      re-derives, and the first case fails while the others pass. The test files importing
+      <code>reckon.checkout_trust</code>, <code>reckon.crew.follower_reload</code> or
+      <code>reckon.crew.follower_registration</code> add no failure against the base revision, run in place on the
+      fleet node with <code>-n 6 --timeout 120</code>, one arm at a time. After landing, once followers have reloaded,
+      a 15 s <code>strace -f -e trace=execve</code> of one reckon follower records no <code>git</code> execve while HEAD
+      does not move. The before and after counts are logged.</p>
+    <p><strong>Write paths:</strong> <code>reckon/checkout_trust.py</code>, <code>reckon/crew/follower_reload.py</code>,
+      <code>reckon/crew/follower_registration.py</code>,
+      <code>tests/test_a_follower_reads_its_identity_only_when_head_moves.py</code>. Every log under the run directory
+      starts with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff
+      format --check are clean on those paths by delta.</p>
+
+    <h2 id="s2">§2 — The model catalogue is parsed once per file stamp</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Why.</strong> The same follower opened and parsed <code>docs/state/reckon/model-catalogue.yaml</code> 86
+      times in 15 s, about six a second. The catalogue changes only when a commit changes it. It is read through
+      <code>flight.read_layer_file</code> (<code>reckon/flight.py</code> near line 624) from at least
+      <code>ledger.resolve_name</code> and <code>ledger.lanes_declaring_model</code> (<code>reckon/ledger.py</code>
+      near lines 255 and 297), and the YAML parse costs CPU on every call. The reload tree's copy sits on node-local
+      <code>/tmp</code>, but a checkout's copy is on GPFS.</p>
+    <p><strong>What changes.</strong> The catalogue's parsed content is held in memory, keyed on the file's path,
+      <code>st_mtime_ns</code> and <code>st_size</code>, and re-parsed only when that key changes. Callers receive a
+      value they cannot mutate into the cache: either an immutable view, or a copy. The memo lives at the one read
+      boundary every catalogue reader already passes through, not beside each caller. A missing file still reads as
+      it does today.</p>
+    <p><strong>Done when.</strong> A new <code>tests/test_the_model_catalogue_is_parsed_once_per_stamp.py</code> shows
+      that 50 reads of an unchanged catalogue parse it once. Rewriting the file with a different size or mtime makes
+      the next read return the new content. A caller mutating the returned value does not change what the next read
+      returns. A deleted catalogue reads as it does today. Negative control: drop the stamp comparison, and the parse
+      count case fails. The test files importing <code>reckon.flight</code> or <code>reckon.ledger</code> add no failure
+      against the base revision, run in place on the fleet node with <code>-n 6 --timeout 120</code>, one arm at a
+      time. After landing and a reload, a 15 s <code>strace -e trace=openat</code> of one reckon follower opens the
+      catalogue at most once while it is unchanged. The before and after counts are logged.</p>
+    <p><strong>Write paths:</strong> <code>reckon/flight.py</code>, <code>reckon/ledger.py</code>,
+      <code>tests/test_the_model_catalogue_is_parsed_once_per_stamp.py</code>. Every log under the run directory starts
+      with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff format
+      --check are clean on those paths by delta.</p>
+
+    
+  <section data-reckon="followups" id="followups" class="r-followups">
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-afrowm-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-10" data-recommends-skill="/reckon-build a-follower-reads-only-what-moved §1" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §1</h4>
+    <div class="r-fu-body"><p>§1 stops each follower starting git every second: it re-derives its code identity only when HEAD moves.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-reads-only-what-moved §1</pre>
+    </article>
+<article class="r-fu" data-id="f-afrowm-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-10" data-recommends-skill="/reckon-build a-follower-reads-only-what-moved §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §2</h4>
+    <div class="r-fu-body"><p>§2 parses the model catalogue once per file stamp.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-follower-reads-only-what-moved §2</pre>
+    </article>
+</section>
+</main>
+</body>
+</html>
