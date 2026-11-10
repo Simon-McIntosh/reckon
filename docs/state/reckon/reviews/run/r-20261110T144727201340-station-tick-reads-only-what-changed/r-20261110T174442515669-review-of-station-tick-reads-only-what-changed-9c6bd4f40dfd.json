@@ -74,6 +74,13 @@
   ],
   "completed_at": "2026-11-10T18:06:30Z",
   "dispatched_at": "2026-11-10T17:48:59Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Answered with the census the review asked for: strace -f of read and pread64 on the live station (pid 3622219) over 62 s, 598 MiB in all, by path in logs/station-byte-census-60s.txt. ~/.config/reckon/crew/run_store.db is 81.7% (489 MiB) and a metadata-index JSON is 11.6%, together 93.3%, above the 90% the done-when asks for. The run store is what ledger.load queries, and this node adds activity_since filters to those queries, so the fix targets the dominant path. The post-landing live window is the coordinator's.",
+      "recorded_at": "2026-11-10T18:34:11.923386+00:00"
+    }
+  },
   "findings": [
     {
       "file": "docs/research/monitor-storage-load-rca.html",
