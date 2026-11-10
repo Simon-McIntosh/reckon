@@ -1,41 +1,43 @@
 <article class="r-evidence-fragment" id="attribute-a-promotions-time-by-stage">
   <h2 id="attribute-a-promotions-time-by-stage-title">Attribute a promotion's time by stage (partial)</h2>
   <p id="attribute-a-promotions-time-by-stage-outcome">
-    The no-code promotion verb was profiled from process start with
-    <code>py-spy record --format raw</code> at two seeded crew-home populations
-    (300 and 22&nbsp;304 run directories) with the node at load 91&ndash;102, and
-    its filesystem calls counted with <code>strace -f -c -e trace=%file</code>.
-    The implement-landing verb was not captured: the seeded fixture refused its
-    release step because the run's worktree was its own repository root. The
-    measure the plan states &mdash; both profiles, at least 90&nbsp;% of each
-    verb's main-thread samples attributed &mdash; is therefore unmet.
+    A no-code promotion (<code>crew complete --gate not-run</code>) was profiled
+    from process start with <code>py-spy record --format raw</code> at two
+    populations of the store it actually reads &mdash; the committed ledger, at
+    the live 7&nbsp;787 run documents and at one twentieth of that &mdash; with
+    the node at load 70&ndash;102, and its filesystem calls counted with
+    <code>strace -f -c -e trace=%file</code>. A first round at 300 and
+   22&nbsp;304 seeded run <em>directories</em> showed that population is not the
+    driver. The implement-landing verb is still unprofiled, so the plan's
+    both-verbs measure is unmet.
   </p>
   <table id="attribute-a-promotions-time-by-stage-stages">
     <caption>
-      Deepest reckon frame under <code>_complete_locked</code>, no-code
-      <code>crew complete --gate not-run</code>, population 22&nbsp;304:
-      111 of 316 main-thread samples are inside the promotion body.
+      Deepest reckon frame under <code>_complete_locked</code>. 59.5&nbsp;% of
+      the command's main-thread samples are inside the promotion body at the
+      full ledger (62.6&nbsp;% at one twentieth); the rest is import.
     </caption>
     <thead>
-      <tr><th>stage</th><th>share of promotion body</th><th>population dependence</th></tr>
+      <tr><th>stage</th><th>7&nbsp;787 ledger rows</th><th>389 ledger rows</th><th>reading</th></tr>
     </thead>
     <tbody>
-      <tr><td><code>_migrate_runs</code></td><td>28.8&nbsp;%</td><td>flat at 29.8&nbsp;% at population 300</td></tr>
-      <tr><td>ledger and run-record writes (<code>_create</code>, <code>append</code>)</td><td>22.5&nbsp;%</td><td>&plusmn;0.10 in samples over a &times;74 population</td></tr>
-      <tr><td>git subprocesses (<code>run_git</code>, <code>_git_stdout</code>)</td><td>8.1&nbsp;%</td><td>flat</td></tr>
-      <tr><td>path and index resolution (<code>_config_home</code>, <code>_run_index_path</code>, <code>_index_stamp_members</code>, <code>_file_identity</code>)</td><td>20.8&nbsp;%</td><td>flat</td></tr>
+      <tr><td><code>_index_payload</code></td><td>49.8&nbsp;%</td><td>7.1&nbsp;%</td><td>linear in ledger rows &mdash; the only stage that grows</td></tr>
+      <tr><td>plan-body parse (<code>_authored_child_count</code>, <code>read_state</code>, <code>_comment_elements</code>, <code>_structural_spans</code>)</td><td>23.1&nbsp;%</td><td>71.1&nbsp;%</td><td>flat in rows; a fixed ~7&nbsp;s per landing</td></tr>
+      <tr><td><code>_migrate_runs</code></td><td>3.0&nbsp;%</td><td>2.9&nbsp;%</td><td>per-call fixed cost</td></tr>
+      <tr><td><code>_run_snapshot</code></td><td>2.7&nbsp;%</td><td>absent</td><td>appears only with ledger history; §64's subject</td></tr>
+      <tr><td>wall clock</td><td>54&nbsp;s</td><td>23&nbsp;s</td><td>&times;2.3 for &times;20 rows</td></tr>
+      <tr><td>filesystem calls</td><td>163&nbsp;532</td><td>37&nbsp;403</td><td>&times;4.4 for &times;20 rows</td></tr>
     </tbody>
   </table>
   <p id="attribute-a-promotions-time-by-stage-findings">
-    Two findings worth carrying into a proposal. Run-directory population is not
-    what this verb's stages scale on: promotion-body samples moved
-    94&nbsp;&rarr;&nbsp;111 (&times;1.18) while the population grew
-    &times;74.3. And 65&nbsp;% of the command's main-thread samples sit outside
+    Three findings carry into proposals. Reading the ledger index to append one
+    row is the whole of the promotion's growth, and at 7&nbsp;787 rows it is
+    half the promotion. The plan-body parse is a constant that dominates a small
+    ledger and would dominate nothing once the index read is bounded. And
+    40.5&nbsp;% of the command's main-thread samples sit outside
     <code>_complete_locked</code>, in interpreter start-up and module import
-    &mdash; the fixed cost that a profiler attached late cannot see, and the
-    reason the plan's three late samples each caught a different stage.
-    Filesystem calls total 28&nbsp;832 (<code>openat</code> 12&nbsp;207,
-    <code>newfstatat</code> 10&nbsp;164, <code>execve</code> 1&nbsp;191 carrying
-    29&nbsp;% of the straced time).
+    &mdash; the fixed cost a profiler attached late cannot see, and why the
+    plan's three late samples each caught a different stage. Five proposed
+    sections, each with write paths and a done-when, are in the run note.
   </p>
 </article>
