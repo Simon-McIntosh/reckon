@@ -25,6 +25,7 @@ import socket
 import sqlite3
 import subprocess
 import sys
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Self
@@ -440,8 +441,13 @@ def _probe(root):
         producer.tick(now=now)
         assert authors[-1]["fixture-plan"]["run_id"] == "r-recent"
         _write_row(_row("r-newest"))
+        control = root / "instrument-control"
+        control.write_bytes(b"c" * 4096)
         (root / "measured-tick-start").touch()
+        started, cpu = time.monotonic(), time.process_time()
         producer.tick(now=now)
+        elapsed, cpu_used = time.monotonic() - started, time.process_time() - cpu
+        assert control.read_bytes() == b"c" * 4096
         (root / "measured-tick-end").touch()
         assert authors[-1]["fixture-plan"]["run_id"] == "r-newest"
         verdicts = store.classify_tick(now_seconds=MOMENT)
@@ -459,6 +465,8 @@ def _probe(root):
                 "dominant_bytes": sum(p.stat().st_size for p in paths),
                 "live_runs": len(records),
                 "verdicts_equal": verdicts == fresh,
+                "second_tick_seconds": elapsed,
+                "second_tick_cpu_seconds": cpu_used,
             }
         )
     )
@@ -500,16 +508,25 @@ def test_a_moved_ledger_reads_only_recent_rows(tmp_path):
     assert census["live_runs"] >= 5 and census["verdicts_equal"]
     reading = False
     total = 0
+    control_reads = 0
+    started = finished = False
     for line in trace.read_text().splitlines():
         if "measured-tick-start" in line:
-            reading = True
+            reading = started = True
         elif "measured-tick-end" in line:
+            finished = True
             reading = False
         elif reading:
             match = re.search(r"(?:read|pread64)\(\d+<([^>]+)>.*\)\s+= (\d+)", line)
+            if match and match[1] == str(tmp_path / "instrument-control"):
+                control_reads += int(match[2])
             if match and ("/state/" in match[1] or "ledger-" in match[1]):
                 total += int(match[2])
+    assert started and finished, "the syscall trace missed the measurement markers"
+    assert control_reads == 4096, "the syscall trace missed a known file read"
     print(
+        f"second_tick_seconds={census['second_tick_seconds']:.6f} "
+        f"second_tick_cpu_seconds={census['second_tick_cpu_seconds']:.6f} "
         f"second_tick_ledger_bytes={total} dominant_input_bytes={census['dominant_bytes']}"
     )
     assert total < 1_000_000, f"second tick read {total} ledger bytes"
