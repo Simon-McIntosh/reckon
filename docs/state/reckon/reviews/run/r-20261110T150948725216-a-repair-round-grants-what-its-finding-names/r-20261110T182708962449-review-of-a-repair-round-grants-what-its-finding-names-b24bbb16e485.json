@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T18:49:29.725Z",
+  "dispatched_at": "2026-11-10T18:35:53Z",
+  "findings": [
+    {
+      "file": "tests/test_a_repair_round_grants_a_missing_test.py",
+      "line": "203",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added negative case \"the uncommitted rename breaks the suite\" carries no \"test\" token, so it answers False under both the reverted loose pattern and the narrowed one; it adds no guard, and only lines 204 and 205 discriminate the fix."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150948725216-a-repair-round-grants-what-its-finding-names/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite names the 19 importing modules at b593080a11 while after_suite names the two-file fence suite at b24bbb16e4, so the added-failure delta is derived across mismatched populations; both arms report zero failures and the same-command pair logs/importers-base.log to logs/importers-head-round2.log is also zero, so the conclusion holds but the pair does not itself evidence it."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"A repair round grants what its finding names\"; the commits gained since the prior review (f61cb085e0, b24bbb16e4) tighten the ask predicate at reckon/crew/recovery_repair_dispatch.py:612-620 and make the grant reason falsifiable in tests/test_a_repair_round_grants_a_missing_test.py:132-141, leaving the grant mechanism itself untouched.\nVERDICT done_when: the done_when names tests/test_a_repair_round_grants_a_missing_test.py with five cases over a temporary crew home; the delivered head b24bbb16e4 records 56 passed in logs/gate-fence-suite-round2.log, the five-case gate is 5 passed in logs/gate-head-round2.log, and the three named phrasings still answer true under the narrowed pattern.\nVERDICT write_paths: the reviewed prompt declares reckon/crew/recovery_repair_dispatch.py, tests/test_a_repair_round_grants_a_missing_test.py and the node's evidence fragment; git diff --stat 8dfc676e45..b24bbb16e4 touches exactly those three, 24 insertions and 10 deletions.\nVERDICT manifest: read; it records status complete, four commits, the fence suite 56 passed at b24bbb16e4, importing modules 164 at head against 159 at base, four negative controls each red into its own log, and a rubric line for all six dimensions.\nVERDICT diff: read commit by commit; f61cb085e0 narrows the third asking pattern to test qualifiers and adds a citing decoy finding plus three negative texts, b24bbb16e4 restates those two fixes in the evidence fragment; no other path changes.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:1186 dispatch_repair_for_run (calls _grant_round_scope at :1712), reckon/crew/recovery_review_acceptance.py:799 (calls dispatch_repair_for_run)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:612-620 narrows the adjective-before-noun clause and tests/test_a_repair_round_grants_a_missing_test.py:132-141 makes the reason independent, both serving the goal without altering the grant path.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/gate-fence-suite-round2.log ends 56 passed / EXIT=0 at b24bbb16e4 and logs/importers-base.log against logs/importers-head-round2.log read 159 and 164 passed, though the manifest's baseline_suite and after_suite name different commands.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 8dfc676e45..b24bbb16e4 lists only the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: logs/negative-control-3-round2-reason-from-grant-reason.log reddens test_a_missing_test_finding_grants_the_node_test_and_its_file and logs/negative-control-4-round2-loose-pattern.log reddens the predicate case, so both fixes fail when reverted; the added negative text at tests/test_a_repair_round_grants_a_missing_test.py:203 cannot fail under the reverted pattern.\nSCORE fit: 19\nJUSTIFICATION fit: _TEST_QUALIFIERS sits beside the existing _TEST_PATH_PATTERN and _TEST_ASKING_PATTERNS at reckon/crew/recovery_repair_dispatch.py:604-620 and the comments state the mechanism with no plan, ticket or author reference.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing _TEST_ASKING_PATTERNS tuple and the existing widen_claim grant path at reckon/crew/recovery_repair_dispatch.py:1712 rather than adding a second ask or grant mechanism.\nFINDING tests/test_a_repair_round_grants_a_missing_test.py:203 non-blocking: the added negative case \"the uncommitted rename breaks the suite\" carries no \"test\" token, so it answers False under both the reverted loose pattern and the narrowed one; it adds no guard, and only lines 204 and 205 discriminate the fix.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150948725216-a-repair-round-grants-what-its-finding-names/manifest.md:15 non-blocking: baseline_suite names the 19 importing modules at b593080a11 while after_suite names the two-file fence suite at b24bbb16e4, so the added-failure delta is derived across mismatched populations; both arms report zero failures and the same-command pair logs/importers-base.log to logs/importers-head-round2.log is also zero, so the conclusion holds but the pair does not itself evidence it.",
+  "review_run_id": "r-20261110T182708962449-review-of-a-repair-round-grants-what-its-finding-names-b24bbb16e485",
+  "reviewed_base_sha": "8dfc676e45acdecfdf9ad3027a363b8f1804a29b",
+  "reviewed_head_sha": "b24bbb16e485e6118d69f248fcd7c97235d9c0ca",
+  "reviewed_run_id": "r-20261110T150948725216-a-repair-round-grants-what-its-finding-names",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:29:07.666804+00:00",
+  "total": 114
+}
