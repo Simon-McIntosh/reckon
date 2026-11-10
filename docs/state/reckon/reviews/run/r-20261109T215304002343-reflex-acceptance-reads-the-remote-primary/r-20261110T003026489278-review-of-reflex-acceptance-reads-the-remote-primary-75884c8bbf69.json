@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: logs/baseline_suite.log at 1219837c0f reports 4 failed 14 passed EXIT=1 and logs/after_suite.log at 75884c8bbf reports 18 passed EXIT=0 over the same command, so the head arm carries no failure the base arm did not, and the four base ids are cleared.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-10T00:46:11.573Z",
+  "dispatched_at": "2026-11-10T00:33:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: the fragment prose about a no-remote checkout contradicts the code; the coordinator corrects the landed evidence record after merge",
+      "recorded_at": "2026-11-10T00:55:56.259595+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking: the test asserts no promotion, an unchanged pointer and an empty ledger; asserting the finding-guard reason is a strengthening the section's done-when does not require, and the coordinator importer arms are green at head (147 passed)",
+      "recorded_at": "2026-11-10T00:56:09.058350+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/reflex-acceptance-reads-the-remote-primary.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment's plan-summary meta says \"a repository with no remote configured still judges its own branch\", and its paragraph at lines 36-38 says the local probe survives as `_commits_missing_from_local_head` and is reached when the checkout configures no remote. Both contradict the body at lines 62-63 (a checkout configuring no remote declines with remote_cause no-remote), the code at reckon/crew/recovery_review_acceptance.py:340, and the fact that `_commits_missing_from_local_head` no longer exists at this revision. The delta commit edited this file's Measure section and left the two stale statements standing, so the page a reader opens after the repair still describes the behaviour the repair removed."
+    },
+    {
+      "file": "tests/test_review_acceptance_promotes.py",
+      "line": "267",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair makes test_a_review_with_one_finding_does_not_promote reach the finding guard for the first time (at the base it passed only because every run was declined no-remote), but its assertions \u2014 accepted == [], the pointer still present, and an empty ledger \u2014 also hold for a gate refusal or any other decline. A regression that refuses every reviewed run leaves this test green, so it does not show that the one-finding guard is what refused."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read 75884c8bbf against 1219837c0f \u2014 one commit, two files, 31 insertions and 0 lines of production code; the test hunk swaps in the shared landing helper and pushes each commit, the fragment hunk records the repair.",
+    "done_when": "the \u00a77 done_when names the remote test plus \"importer arms add no failure\"; logs/after_suite.log records 18 passed EXIT=0 at 75884c8bbf over the two files and logs/baseline_suite.log records 4 failed 14 passed EXIT=1 at 1219837c0f, leaving the other three importer files inferred from logs/importer_arm.log rather than re-measured at the head.",
+    "goal": "the source goal is that the reflex acceptance tests a run's commits against the remote primary branch, and this delta repairs the importer fixture that read reddens; tests/test_review_acceptance_promotes.py:72 builds the checkout through the shared helper and :79/:109 push each commit, so the four cases reach the behaviour each measures.",
+    "manifest": "read; it states status complete, the resolved two-file command, after 18 passed EXIT=0, baseline 4 failed EXIT=1 at 1219837c0f and negative_control_log at logs/baseline_suite.log, and the logs bear those figures out.",
+    "write_paths": "the two paths in the diff are the declared fragment and tests/test_review_acceptance_promotes.py, which the source manifest's orientation_write_paths records as added by the repair-round scope extension."
+  },
+  "justifications": {
+    "durability": "the four ids in baseline_suite.failure_ids, such as tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted, redden at 1219837c0f and pass at 75884c8bbf, so removing the push at :79 or :109 reinstates the no-remote decline and reddens them.",
+    "evidence": "logs/after_suite.log records 18 passed EXIT=0 at 75884c8bbf and logs/baseline_suite.log records 4 failed 14 passed EXIT=1 at 1219837c0f under the command the manifest names, but neither covers the other three importer files the done_when's importer-arms clause names.",
+    "fit": "tests/test_review_acceptance_promotes.py:36-40 imports _write_origin_and_checkout the same way tests/test_queue_landing.py:26 does, and ruff check and ruff format --check pass on the head file extracted at 75884c8bbf.",
+    "goal_fidelity": "tests/test_review_acceptance_promotes.py:72 replaces the hand-built repository with tests/helpers/landing_repository._write_origin_and_checkout and :109 pushes every landed commit, which is exactly the fixture change the four no-remote refusals in logs/baseline_suite.log required.",
+    "reuse": "the hunk deletes the duplicated _write_resource and the hand-rolled git init and adopts tests/helpers/landing_repository.py:24, the owner twelve test modules already share, so no capability is forked.",
+    "scope_discipline": "the commit touches only tests/test_review_acceptance_promotes.py and docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/reflex-acceptance-reads-the-remote-primary.html, both inside the recorded write paths, and adds no production change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that the reflex acceptance tests a run's commits against the remote primary branch, and this delta exists to repair the importer cases that read reddens; tests/test_review_acceptance_promotes.py:72 now builds its checkout through the shared landing helper and :79 and :109 push each commit, so the four cases reach the behaviour each measures instead of meeting the no-remote decline.\nVERDICT done_when: the plan's \u00a77 done_when names the new remote test plus \"importer arms add no failure\"; logs/after_suite.log records 18 passed EXIT=0 at 75884c8bbf over the two files and logs/baseline_suite.log records 4 failed 14 passed EXIT=1 at 1219837c0f, so the repaired importer file is measured, while the three other importer files (green at the base in logs/importer_arm.log) are inferred rather than re-measured at the head.\nVERDICT write_paths: the source node declared reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py and the evidence fragment; commit 75884c8bbf touches only the fragment (declared) and tests/test_review_acceptance_promotes.py, the latter added by the repair-round scope extension the source manifest records in orientation_write_paths.\nVERDICT manifest: read; it states status complete, the resolved two-file command, after 18 passed EXIT=0, baseline 4 failed EXIT=1 at 1219837c0f, and negative_control_log at logs/baseline_suite.log, and both logs' headers and EXIT lines bear those figures out.\nVERDICT diff: read 75884c8bbf against 1219837c0f commit by commit \u2014 one commit, two files, 31 insertions and 45 deletions; the test hunk deletes _write_resource and the hand-rolled git init in favour of tests/helpers/landing_repository._write_origin_and_checkout and adds a push after the seed and after each landed commit, and the fragment hunk replaces the open-consequence paragraph with the resolved account.\n",
+  "review_run_id": "r-20261110T003026489278-review-of-reflex-acceptance-reads-the-remote-primary-75884c8bbf69",
+  "reviewed_base_sha": "1219837c0f8024883a2e65c937b09c8a72020c21",
+  "reviewed_head_sha": "75884c8bbf6991f306c8eadbe4d125db00a8f43b",
+  "reviewed_run_id": "r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:41:29+00:00",
+  "total": 112
+}
