@@ -2983,18 +2983,19 @@ def _run_review(
                 and answer in plan_review.finding_ids(design)
             ):
                 record = design
-            # Every stored content review of the plan that raises this finding
-            # is a covering review, and the plan's design review joins them.
-            # Finding ids are reused between rounds, so the review a caller
-            # means is the newest one that raised the id — never whichever
-            # review a coverage read happened to hand back first.
+            # Every stored review of the plan that raises this finding is a
+            # covering review — content and design alike, whichever round
+            # delivered it — and the newest design review joins them for the
+            # case where it covers without raising the id. Finding ids are
+            # reused between rounds, so the review a caller means is the newest
+            # one that raised the id, never whichever review a coverage read
+            # happened to hand back first.
             covering = []
             seen_identities = set()
             stored_raisers = [
                 stored
                 for stored in plan_review.list_plan_reviews(project, plan_slug)
-                if not plan_review.is_design_review(stored)
-                and answer in plan_review.finding_ids(stored)
+                if answer in plan_review.finding_ids(stored)
             ]
             if design is not None:
                 stored_raisers.append(design)

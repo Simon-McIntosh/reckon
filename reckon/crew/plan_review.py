@@ -1101,14 +1101,17 @@ def newest_covering_review(
 ) -> Mapping[str, Any] | None:
     """The newest of the covering reviews, or ``None`` when none is newest.
 
-    A review is placed by the plan commit it read, or by the moment the store
-    wrote it. An answer naming only a finding lands on the newest review that
-    raised it, so a set holding a record with neither is answered with ``None``
-    rather than ordered by whatever a read happened to reach first: only a
-    hand-written record carries no timestamp, because the store stamps every
-    record it writes.
+    A lone covering review is the answer whatever it carries: there is no
+    second record to place it against, so an ambiguous answer needs two. Of
+    several, a review is placed by the plan commit it read, or by the moment
+    the store wrote it; a set holding a record with neither names no newest and
+    is answered with ``None`` rather than ordered by whatever a read happened to
+    reach first, because only a hand-written record carries no timestamp — the
+    store stamps every record it writes.
     """
     pool = list(records)
+    if len(pool) <= 1:
+        return pool[0] if pool else None
     repo = _project_repo_root(project)
     for record in pool:
         if str(record.get("timestamp") or "").strip():

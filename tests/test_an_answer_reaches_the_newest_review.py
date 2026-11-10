@@ -23,6 +23,8 @@ from tests.test_review_plan_command import project as project  # noqa: PLC0414
 FINDING = "wiring-1"
 OLDER = "r-20261105T210526990727"
 NEWER = "r-20261106T062807421758"
+OLDER_DESIGN = "r-20261104T090154319426"
+NEWER_DESIGN = "r-20261106T112233445566"
 OLDER_AT = "2026-11-05T21:05:26.990727+00:00"
 NEWER_AT = "2026-11-06T06:28:07.421758+00:00"
 
@@ -34,15 +36,17 @@ def _review(
     timestamp: str | None,
     fingerprint: bool = True,
     digests: dict[str, str] | None = None,
+    rubric: str = "content",
+    plan_version: int = 3,
 ) -> dict:
-    """Store one content review of the fixture plan raising ``wiring-1``."""
+    """Store one review of the fixture plan raising ``wiring-1``."""
     record: dict = {
         "project": "sample",
         "plan_slug": "fixture",
-        "plan_version": 3,
+        "plan_version": plan_version,
         "reviewed_blob_sha": "a" * 40,
         "review_run_id": run_id,
-        "rubric": "content",
+        "rubric": rubric,
         "findings": [{"id": FINDING, "type": "wiring", "text": "Wire the section."}],
         "responses": {},
     }
@@ -193,3 +197,39 @@ def test_an_unorderable_covering_pair_is_refused_naming_both(project) -> None:
     assert not _answered(OLDER) and not _answered(NEWER), (
         "a refused answer still wrote a response"
     )
+
+
+def test_an_answer_naming_an_older_design_review_is_written_there(project) -> None:
+    """A design round that is no longer the newest is still a delivered review."""
+    _, _, path = project
+    _review(
+        path,
+        run_id=OLDER_DESIGN,
+        timestamp=OLDER_AT,
+        rubric="design",
+        plan_version=2,
+    )
+    _review(
+        path,
+        run_id=NEWER_DESIGN,
+        timestamp=NEWER_AT,
+        rubric="design",
+        plan_version=3,
+    )
+
+    code, output = _answer("--review-run", OLDER_DESIGN)
+
+    assert code == 0, output
+    assert _answered(OLDER_DESIGN), "the older design review was not answered"
+    assert not _answered(NEWER_DESIGN), "the answer landed on the newer design review"
+
+
+def test_a_lone_unstamped_covering_review_is_answered(project) -> None:
+    """One covering review is the answer whatever stamps it carries."""
+    _, _, path = project
+    _review(path, run_id=NEWER, timestamp=None)
+
+    code, output = _answer()
+
+    assert code == 0, output
+    assert _answered(NEWER), "the only covering review was not answered"
