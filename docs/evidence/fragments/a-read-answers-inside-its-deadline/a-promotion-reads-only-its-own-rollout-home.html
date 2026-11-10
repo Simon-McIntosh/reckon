@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s63">
+  <title>A promotion reads only its own run's rollout home | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-reads-only-its-own-rollout-home-landing" data-node="a-promotion-reads-only-its-own-rollout-home" data-reckon="landed" data-when="2026-11-10">
+  <h2>A promotion reads only its own run's rollout home</h2>
+  <p><code>_harvest_lane_receipt</code> in
+  <code>reckon/crew/promotion_release.py</code> now passes the promoting run's
+  own id to <code>rollout.read_rollout_receipt</code>, taking it from the live
+  pointer record the promotion already holds. That argument confines the lookup
+  in <code>run_home_rollout_paths</code> to one run's harness home instead of
+  iterating every run directory under the crew home to find the session the
+  promoting run already owns.</p>
+  <p>The measure counts the directories the receipt lookup stats over a
+  temporary crew home whose promoting run and its peers each carry a harness
+  sessions root. With 200 other runs and with 20 the count is the same, and the
+  receipt reports the promoting run's own context window rather than a peer's.
+  The negative control drops the <code>run_id</code> argument, and the same
+  measure then reads 43 stats with 20 peers against 403 with 200, so the counter
+  demonstrably sees the population rather than a constant. The base arm is the
+  set of test files importing <code>reckon.crew.promotion_release</code> or
+  <code>reckon.crew.rollout</code> at the base revision; the head arm adds this
+  node's test. The paid-lanes scan, which names no run, is unchanged.</p>
+</article>
+</body>
+</html>
