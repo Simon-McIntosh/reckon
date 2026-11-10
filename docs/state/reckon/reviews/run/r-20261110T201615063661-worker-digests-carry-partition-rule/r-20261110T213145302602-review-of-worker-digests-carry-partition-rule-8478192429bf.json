@@ -1,0 +1,140 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The canonical input lacks its independently known Git Safety block, detecting an empty or wrong input before an absence claim.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 18
+    },
+    {
+      "failure_condition": "Restore the retired fleet heading in the constant and mapping; the independent canonical blocks lack it and implement/test redden, as recorded in negative-control.log.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 25
+    },
+    {
+      "failure_condition": "Restore the retired committed compute digest; the literal new-heading assertion fails.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 34
+    },
+    {
+      "failure_condition": "Restore the retired committed compute digest or append its heading; the forbidden-heading assertion fails.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 36
+    },
+    {
+      "failure_condition": "Keep the new heading but drop a canonical paragraph from the committed digest; independent canonical block membership fails.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 38
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/worker_digest.py:main",
+    "reckon/crew/worker_digest.py:verify",
+    "reckon/crew/worker_digest.py:regenerate_all",
+    "reckon/crew/worker_digest.py:generate",
+    "reckon/crew/worker_digest.py:select_blocks"
+  ],
+  "completed_at": "2026-11-10T21:50:28Z",
+  "dispatched_at": "2026-11-10T21:36:08Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": "7",
+      "severity": "blocking",
+      "text": "blocking: Every added regression case obtains CANONICAL from the operator's ~/.agents/AGENTS.md and skips when it is absent; this violates the repository's test-isolation rule, makes committed-code outcomes depend on mutable home state, and removes all new regression coverage on a clean host; use an independently pinned repository fixture for these assertions and keep the live canonical check as an explicit operational gate, without deriving expected headings from SECTION_MAP."
+    }
+  ],
+  "importer_delta_evidence": {
+    "after": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/after-importers.log",
+      "revision": "5f235bf0c9ab0e90f7cde37544c1da0481e471c0",
+      "summary": "30 passed in 15.64s"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 7,
+      "failure_ids": [
+        "tests/test_nested_refusal_names_the_route.py::test_the_role_digests_name_both_routes_in_their_compute_section",
+        "tests/test_worker_digest.py::test_committed_digests_regenerate_byte_identically",
+        "tests/test_worker_digest.py::test_every_role_digest_carries_the_floor_and_its_blocks_from_the_canonical_file",
+        "tests/test_worker_digest.py::test_no_role_digest_from_the_canonical_file_carries_the_dropped_blocks",
+        "tests/test_worker_digest.py::test_every_role_digest_stays_under_the_bound_and_below_the_source",
+        "tests/test_worker_digest.py::test_regeneration_does_not_write_the_canonical_file",
+        "tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/baseline-importers.log",
+      "revision": "9b1ddb43c879ec639e813d93b59e7dfab41823bf",
+      "summary": "7 failed, 23 passed in 17.85s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 5f235bf0c9ab0e90f7cde37544c1da0481e471c0 and 8478192429bfb236c1732d8d5960a1255e4a5b3c against 9b1ddb43c879ec639e813d93b59e7dfab41823bf; the product commit updates one existing heading constant, two mappings, four generated files and regression coverage, and the second adds only landing evidence.",
+    "done_when": "prompt.txt:121 requires current canonical output, heading coverage and zero added failures; reproduction.log, digest-check.log, negative-control.log, both suite pairs and Ruff logs record those measures, subject to the test-isolation defect below.",
+    "goal": "prompt.txt:38 requires selecting the renamed fleet rule and regenerating digests; reckon/crew/worker_digest.py:122 and both committed compute digests implement that deliverable.",
+    "manifest": "manifest.md names both delivered commits and readable baseline_suite/after_suite receipts; their recorded 1 failed/58 passed and 65 passed reconcile with baseline-suite.log and after-suite.log.",
+    "write_paths": "prompt.txt:80 grants the generator, digests, two tests and landing fragment; all eight changed paths remain within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_digest_headings_exist.py:25 fails when the retired heading is restored and :34-38 fail on stale or truncated committed policy, but :15 and :28 skip all six cases on hosts without the external canonical file.",
+    "evidence": "baseline-suite.log and after-suite.log record completed 1 failed/58 passed and 65 passed runs, baseline-importers.log and after-importers.log record 7 failed/23 passed and 30 passed, and negative-control.log shows the retired-heading mutation failing both affected roles.",
+    "fit": "reckon/crew/worker_digest.py:122 extends the existing mapping idiom without forbidden identifiers, but tests/test_worker_digest_headings_exist.py:7-16 violates AGENTS.md's prohibition on tests reading state outside the repository.",
+    "goal_fidelity": "reckon/crew/worker_digest.py:122 selects the complete new canonical heading through the existing constant, and reckon/crew/digests/implement.md:415 and test.md:339 carry its partition policy.",
+    "reuse": "a capability search for canonical block parsing and digest generation identifies reckon/crew/worker_digest.py:block_map, select_blocks and generate as the existing owners, which this change reuses, while tests/test_worker_digest.py's synthetic-policy helper is a test fixture rather than a second production generator.",
+    "scope_discipline": "the eight paths changed by the two commits all fall under prompt.txt:80's explicit generator, digest, test and fragment grants."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires selecting the renamed fleet rule and regenerating digests; reckon/crew/worker_digest.py:122 and both committed compute digests implement that deliverable.\nVERDICT done_when: prompt.txt:121 requires current canonical output, heading coverage and zero added failures; reproduction.log, digest-check.log, negative-control.log, both suite pairs and Ruff logs record those measures, subject to the test-isolation defect below.\nVERDICT write_paths: prompt.txt:80 grants the generator, digests, two tests and landing fragment; all eight changed paths remain within those grants.\nVERDICT manifest: manifest.md names both delivered commits and readable baseline_suite/after_suite receipts; their recorded 1 failed/58 passed and 65 passed reconcile with baseline-suite.log and after-suite.log.\nVERDICT diff: read 5f235bf0c9ab0e90f7cde37544c1da0481e471c0 and 8478192429bfb236c1732d8d5960a1255e4a5b3c against 9b1ddb43c879ec639e813d93b59e7dfab41823bf; the product commit updates one existing heading constant, two mappings, four generated files and regression coverage, and the second adds only landing evidence.\nCALL_SITES: reckon/crew/worker_digest.py:main, reckon/crew/worker_digest.py:verify, reckon/crew/worker_digest.py:regenerate_all, reckon/crew/worker_digest.py:generate, reckon/crew/worker_digest.py:select_blocks\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/worker_digest.py:122 selects the complete new canonical heading through the existing constant, and reckon/crew/digests/implement.md:415 and test.md:339 carry its partition policy.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log record completed 1 failed/58 passed and 65 passed runs, baseline-importers.log and after-importers.log record 7 failed/23 passed and 30 passed, and negative-control.log shows the retired-heading mutation failing both affected roles.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the eight paths changed by the two commits all fall under prompt.txt:80's explicit generator, digest, test and fragment grants.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_worker_digest_headings_exist.py:25 fails when the retired heading is restored and :34-38 fail on stale or truncated committed policy, but :15 and :28 skip all six cases on hosts without the external canonical file.\nSCORE fit: 12\nJUSTIFICATION fit: reckon/crew/worker_digest.py:122 extends the existing mapping idiom without forbidden identifiers, but tests/test_worker_digest_headings_exist.py:7-16 violates AGENTS.md's prohibition on tests reading state outside the repository.\nSCORE reuse: 20\nJUSTIFICATION reuse: a capability search for canonical block parsing and digest generation identifies reckon/crew/worker_digest.py:block_map, select_blocks and generate as the existing owners, which this change reuses, while tests/test_worker_digest.py's synthetic-policy helper is a test fixture rather than a second production generator.\nFINDING tests/test_worker_digest_headings_exist.py:7 blocking: Every added regression case obtains CANONICAL from the operator's ~/.agents/AGENTS.md and skips when it is absent; this violates the repository's test-isolation rule, makes committed-code outcomes depend on mutable home state, and removes all new regression coverage on a clean host; use an independently pinned repository fixture for these assertions and keep the live canonical check as an explicit operational gate, without deriving expected headings from SECTION_MAP.\n",
+  "recommendation": "repair-before-promotion",
+  "review_limitations": "Static review plus recorded gate receipts; no suite rerun or implementation mutation. The passing source gate ran at the product commit; the reviewed final commit adds only its evidence fragment.",
+  "review_run_id": "r-20261110T213145302602-review-of-worker-digests-carry-partition-rule-8478192429bf",
+  "reviewed_base_sha": "9b1ddb43c879ec639e813d93b59e7dfab41823bf",
+  "reviewed_head_sha": "8478192429bfb236c1732d8d5960a1255e4a5b3c",
+  "reviewed_run_id": "r-20261110T201615063661-worker-digests-carry-partition-rule",
+  "scores": {
+    "durability": 13,
+    "evidence": 20,
+    "fit": 12,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [],
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/after-suite.log",
+      "revision": "5f235bf0c9ab0e90f7cde37544c1da0481e471c0",
+      "summary": "65 passed in 38.20s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 1,
+      "failure_ids": [
+        "tests/test_nested_refusal_names_the_route.py::test_the_role_digests_name_both_routes_in_their_compute_section"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/baseline-suite.log",
+      "revision": "9b1ddb43c879ec639e813d93b59e7dfab41823bf",
+      "summary": "1 failed, 58 passed in 32.21s"
+    },
+    "positive_control": "Parser found the recorded baseline FAILED id and reconciled it with the summary and EXIT=1."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:10:57.850871+00:00",
+  "total": 105
+}
