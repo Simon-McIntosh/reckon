@@ -2985,11 +2985,12 @@ def _run_review(
                 record = design
             # Every stored review of the plan that raises this finding is a
             # covering review — content and design alike, whichever round
-            # delivered it — and the newest design review joins them for the
-            # case where it covers without raising the id. Finding ids are
-            # reused between rounds, so the review a caller means is the newest
-            # one that raised the id, never whichever review a coverage read
-            # happened to hand back first.
+            # delivered it. The plan's newest design review is appended beside
+            # them, and the loop below keeps only a candidate that raises the
+            # id, so that append can only re-state a review the store already
+            # listed. Finding ids are reused between rounds, so the review a
+            # caller means is the newest one that raised the id, never
+            # whichever review a coverage read happened to hand back first.
             covering = []
             seen_identities = set()
             stored_raisers = [
