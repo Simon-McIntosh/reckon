@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="anchored-edit-tool">
+  <meta name="plan-title" content="The anchored edit tool ships with reckon">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s3">
+  <meta name="plan-recorded-at" content="2026-11-10">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,mcp,edit-tool,worker-tokens">
+  <title>The anchored edit tool ships with reckon &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The anchored edit tool ships with reckon</h1>
+
+    <section id="anchored-edit-tool-landing">
+      <h2>Landing</h2>
+      <p><code>reckon/anchored_edit.py</code> now serves two MCP tools over stdio,
+        <code>read_anchored</code> (lines as <code>N:HHH|text</code>, a default
+        limit of 400 lines with the remainder named) and
+        <code>edit_anchored</code> (replace, insert_before, insert_after and
+        delete, addressed by <code>N:HHH</code> or by a bare <code>HHH</code>
+        when exactly one line carries that hash). All anchors are verified and
+        all overlaps detected before a byte is written, so a refusal leaves the
+        file byte-identical and returns the current anchors for the region; the
+        file is published through the shared atomic writer, keeping its mode,
+        its line-ending convention and whether it ends in a newline. The console
+        script <code>reckon-anchored-edit</code> is declared in
+        <code>pyproject.toml</code>, taking repeated <code>--root</code>
+        arguments and refusing every path when it is given none. Confinement
+        resolves each path through its links and applies the fence's
+        <code>_within_any</code> to the result, so a symlink inside a root that
+        points outside it is refused with the target untouched.</p>
+
+      <h2>Measure</h2>
+      <p><code>tests/test_anchored_edit.py</code>: 23 passed, covering every
+        behaviour the section lists and including the console-script round trip
+        that starts the server over stdio and completes a read and an edit
+        through the MCP protocol. Ruff reports no findings on either staged
+        path, and <code>ruff format --check</code> finds them formatted.</p>
+
+      <h2>Defect found on review</h2>
+      <p>The first version of the build loop left each original line with
+        <code>continue</code> once it had emitted a replacement or dropped a
+        deleted line, so the <code>insert_after</code> handler for that anchor
+        never ran: a call that replaced line 2 and inserted after line 2 wrote
+        only the replacement and reported success. The edit was lost without a
+        refusal, which is the failure this tool exists to prevent. The three
+        cases now branch on their own so the after-insert always applies, and a
+        parametrised test covers the insert sharing an anchor with a replace
+        and with a delete; both cases fail against the previous loop.</p>
+
+      <h2>Negative controls</h2>
+      <p>With the root containment check removed (<code>_outside</code>
+        returning <code>False</code>), three confinement tests fail, the
+        symlink-escape one among them. With the line-hash verification removed
+        (<code>_hash_matches</code> returning <code>True</code>), the
+        stale-anchor test fails alone: the two-edit call is applied and the
+        stale anchor is accepted. A third run reverts the build loop to its
+        <code>continue</code> form and fails both insert-after cases. Each run
+        restored the module to its committed checksum.</p>
+
+      <h2>Suite</h2>
+      <p>Base arm <code>cb5dcf17a3</code> resolved to
+        <code>tests/test_staged_write_inventory.py</code> alone (the node's test
+        file does not exist there): 51 passed. After arm at the node's
+        final head: <code>tests/test_anchored_edit.py</code> and
+        <code>tests/test_staged_write_inventory.py</code>, 74 passed. The
+        inventory arm is unchanged because the module publishes through
+        <code>_store.write_atomically</code> rather than a private sibling
+        temporary and rename.</p>
+    </section>
+  </main>
+</body>
+</html>
