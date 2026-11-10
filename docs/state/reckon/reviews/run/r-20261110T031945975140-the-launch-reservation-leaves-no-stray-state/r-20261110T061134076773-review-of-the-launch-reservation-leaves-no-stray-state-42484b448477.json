@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "42484b4484777e6edadafac8d2e9ae8c87fd234e"
+  ],
+  "completed_at": "2026-11-10T06:22:45.373Z",
+  "dispatched_at": "2026-11-10T06:15:37Z",
+  "findings": [
+    {
+      "file": "tests/test_a_concurrent_launch_is_refused.py",
+      "line": 884,
+      "severity": "non-blocking",
+      "text": "tests/test_a_concurrent_launch_is_refused.py:884 asserts only the failing-rewrite outcome (pointer['reservation_supervisor_recorded'] is False); no case asserts that a rewrite which lands leaves the field off the pointer, so a mutation that publishes the field unconditionally in _record_supervisor_reporting (reckon/crew/dispatch_launch.py:2608-2614) keeps every recorded case green, including the two-file gate at the head."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 2611,
+      "severity": "non-blocking",
+      "text": "reckon/crew/dispatch_launch.py:2611 writes reservation_supervisor_recorded: false onto the run's pointer, but no production code reads that field (git grep over reckon/ finds only the two writers at dispatch.py:3569 and here) and nothing clears it when a later launch for the same run records its supervisor successfully, so a stale false outlives the condition it describes."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every launch door reserve exactly the attempt it launches from one on-disk key; this increment answers the prior review's two defects in reckon/crew/dispatch_launch.py \u2014 the duplicate record reader is deleted and the discarded supervisor-rewrite answer now reaches the pointer at :2608-2614.\nVERDICT done_when: the done_when asks for behaviour cases failing at the dispatch base and passing at head plus named mutation controls; the manifest records repair-baseline-suite.log (9 failed, 90 passed, 2 errors, EXIT=1 at 0f3cd96862) and head-arm-repair.log (101 passed, EXIT=0 at 42484b4484), and three negative-control logs each carry a named FAILED id and EXIT=1.\nVERDICT write_paths: the sourced node's declared write paths are reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, tests/test_a_concurrent_launch_is_refused.py and tests/test_a_worker_on_another_host_refuses_a_relaunch.py; the diff 9c36744263..42484b4484 touches reckon/crew/dispatch_launch.py and tests/test_a_concurrent_launch_is_refused.py, both inside them.\nVERDICT manifest: read; it records the base and after arms with their commands and log paths, the three controls, the four-file arms, the ruff delta, and its single new commit 42484b4484.\nVERDICT diff: read commit by commit against 9c36744263; one commit, two files, 85 insertions and 13 deletions \u2014 the duplicate _read_record deleted, launch_reservation_key's three reads routed through _read_reservation, _record_supervisor_reporting added and called at supervised_launch:3220 and _start_supervisor:3262,:3272, and one new test.\nCALL_SITES: reckon/crew/dispatch_launch.py:2541, reckon/crew/dispatch_launch.py:3220, reckon/crew/dispatch_launch.py:1642, reckon/crew/resumption.py:1509, reckon/crew/dispatch.py:3569\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2342 and :2351 read the canonical records and the marker through the one reservation reader, and :2608-2614 publishes the rewrite failure on the pointer for the three doors that return no launch result.\nSCORE evidence: 18\nJUSTIFICATION evidence: head-arm-repair.log records 101 passed with a bare EXIT=0 at revision 42484b4484 and repair-baseline-suite.log records 9 failed / 90 passed / 2 errors with EXIT=1 at 0f3cd96862, so the added-failure count of 0 is read from the two arms rather than claimed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 9c36744263..42484b4484 lists exactly reckon/crew/dispatch_launch.py and tests/test_a_concurrent_launch_is_refused.py, both inside the node's declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: negative-control-revert-answering-commit.log reddens tests/test_a_concurrent_launch_is_refused.py:884 with a KeyError when the source change is reverted, but no recorded case fails if the field is published on a rewrite that landed, so tests/test_a_concurrent_launch_is_refused.py:884 guards one half of the new branch only.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch_launch.py:2598 follows the module's private-helper and docstring idiom (beside record_reservation_supervisor at :2566) and every added name states a mechanism rather than a plan item.\nSCORE reuse: 20\nJUSTIFICATION reuse: the addition deletes the duplicated _read_record and composes the existing owners record_reservation_supervisor (reckon/crew/dispatch_launch.py:2566) and runs._mutate_pointer (reckon/crew/runs.py:486); the search over reckon/crew found no other owner of pointer-level launch-failure reporting.\nFINDING tests/test_a_concurrent_launch_is_refused.py:884 non-blocking: the added case asserts only the failed-rewrite outcome, so a mutation publishing reservation_supervisor_recorded unconditionally in _record_supervisor_reporting passes every recorded test.\nFINDING reckon/crew/dispatch_launch.py:2611 non-blocking: reservation_supervisor_recorded has no production reader and is never cleared by a later successful launch, so a stale false persists on the pointer.",
+  "review_run_id": "r-20261110T061134076773-review-of-the-launch-reservation-leaves-no-stray-state-42484b448477",
+  "reviewed_base_sha": "9c367442631956c3d1ca963c3db0363b340b9a91",
+  "reviewed_head_sha": "42484b4484777e6edadafac8d2e9ae8c87fd234e",
+  "reviewed_run_id": "r-20261110T031945975140-the-launch-reservation-leaves-no-stray-state",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T06:30:15.173636+00:00",
+  "total": 112
+}

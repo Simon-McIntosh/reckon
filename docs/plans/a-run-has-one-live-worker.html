@@ -26,7 +26,7 @@
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="163">
+<meta name="plan-version" content="164">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -347,6 +347,12 @@
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261109T164136876838-a-worker-on-another-host-refuses-a-relaunch" data-who="reckon-build" data-when="2026-11-09T18:32:06Z">
     <div class="r-comment-body"><p>§15 landed across ceea2ae24b with fc13619cea and 1ba776d856: an off-host unknown reading enters the launch guard's refusal branch instead of falling through to "no worker"; off-host only an exit receipt frees a launch, read by the exit-record owner _run_exit_record which now takes the receipt name (canonical exit.json and attempt-N-exit.json alike) and a strict reading requiring the receipt to name this run, so a truncated, unparseable, run-id-less or other-run receipt is absent and the guard's own parser is deleted; a retired worker receipt for a foreign run is never probed against this host; refusals name the recording launcher_host and pid plus "launch from that host, or stop the run there" — gate tests/test_a_worker_on_another_host_refuses_a_relaunch.py 13 passed EXIT=0 at head, 6 failed 7 passed EXIT=1 at the dispatch base 099653a40d, 4 failed 9 passed EXIT=1 at fc13619cea and 1 failed 12 passed EXIT=1 at 1ba776d856, each with the final test file.</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261110T052740472512-review-of-the-launch-reservation-leaves-no-stray-state-9c3674426319" data-who="reckon-build" data-when="2026-11-10T05:38:50.938Z">
+    <div class="r-comment-body"><p>independent review of run r-20261110T031945975140 (head 9c36744263, base 0f3cd96862) recorded parsed with scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 5 and added_failure_count 0; three non-blocking findings: the duplicated `_read_record` helper, an unreconcilable "66 passed" four-file figure in the manifest, and three supervised_launch call sites discarding the new bool.</p></div>
+</div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261110T061134076773-review-of-the-launch-reservation-leaves-no-stray-state-42484b448477" data-who="reckon-build" data-when="2026-11-10T06:22:45.373Z">
+    <div class="r-comment-body"><p>no landing record — this node writes review records only and promotes nothing</p></div>
+</div>
 <div class="r-comment" data-section="s17" data-id="c-run-r-20261110T005157441681-review-of-the-retired-attempt-claim-machinery-is-removed-69faf98b523a" data-who="reckon-build" data-when="2026-11-10T01:12:03.293Z">
     <div class="r-comment-body"><p>review of §17 at 69faf98b52: zero added failures, two non-blocking findings exempted</p></div>
 </div>
@@ -433,9 +439,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T234118260466-name-the-worker-a-launch-refusal-found" data-who="reckon-build" data-when="2026-11-08T13:57:22Z">
     <div class="r-comment-body"><p>The placed-with-unknown arm is deliberate and now carried everywhere it is read. The two cases that pinned the old fall-through assert unknown instead, the first renamed for what it measures; record_process_alive and placement_job_alive state that an unqueryable scheduler on a placed record is never a licence to probe the client's pid; placement_job_alive takes its placement test from _record_is_placed so one helper owns it. Armed suite at the base revision 2c0dcf9b: 4 failed, 31 passed, the four failures being the launch-refusal cases this run introduces. At head 70cde9ed: 35 passed. Every other suite that imports process_liveness was run and adds no failure.</p></div>
-</div>
-<div class="r-comment" data-section="s16" data-id="c-run-r-20261110T052740472512-review-of-the-launch-reservation-leaves-no-stray-state-9c3674426319" data-who="reckon-build" data-when="2026-11-10T05:38:50.938Z">
-    <div class="r-comment-body"><p>independent review of run r-20261110T031945975140 (head 9c36744263, base 0f3cd96862) recorded parsed with scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 5 and added_failure_count 0; three non-blocking findings: the duplicated `_read_record` helper, an unreconcilable &quot;66 passed&quot; four-file figure in the manifest, and three supervised_launch call sites discarding the new bool.</p></div>
 </div>
 </section>
 </main>
