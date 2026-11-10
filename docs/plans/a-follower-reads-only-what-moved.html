@@ -24,7 +24,7 @@
   <title>A Follower Reads Only What Moved | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -37,75 +37,23 @@
       10 s <code>/proc/&lt;pid&gt;/io</code> delta put each reckon follower at about 14 MB/s read. The station side is
       the subject of <code>the-monitor-reads-each-fact-once</code>, whose §12 also moves followers onto the station.
       This plan takes two follower-side costs that need no station and can land first.</p>
-    <p>A 15 s <code>strace -f</code> of follower <code>3597827</code> recorded 8,556 path syscalls. Six of its seven pids
-      were short-lived <code>git</code> children, and each child stat'ed about 34 files under
-      <code>.git/objects/pack</code> (the checkout holds 34 packs) as well as <code>.git/config</code>,
-      <code>packed-refs</code> and both gitconfig files. The follower itself opened the reload tree's
-      <code>docs/state/reckon/model-catalogue.yaml</code> 86 times.</p>
+    <p>A 20 s <code>strace -f -e trace=execve</code> of reckon follower <code>3597827</code> on 2026-11-10 recorded 9 git spawns, every one <code>git rev-parse --verify --quiet --end-of-options &lt;sha&gt;^{commit}</code> for a short sha cited in a live run's manifest (<code>ce7a27b113</code>, <code>819ab4e826</code>, <code>437505e5ea</code> and six more), each sha twice in the window. Each spawn first walked about 20 <code>PATH</code> directories on GPFS (<code>/work/projects/imas_gpu/agents</code>, <code>~/.npm/packages/bin</code>, the EasyBuild trees), which is 171 failed <code>execve</code> calls in 20 s. Each git process then opened <code>.git/config</code>, <code>packed-refs</code> and the index of all 34 packs. An earlier 15 s <code>openat</code> trace of the same follower also opened the model catalogue 86 times. The code identity is not a cost here: <code>checkout_trust._identity_hold</code> already re-derives it only when HEAD moves.</p>
 
     <h2 id="s1">§1 — A short commit citation is resolved once per process</h2>
 <section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Why.</strong> <code>_FollowerReloader</code> in <code>reckon/crew/follower_reload.py</code> checks for a code
-      move every <code>FOLLOWER_FRESHNESS_SECONDS</code>, which is 1.0 s (<code>reckon/crew/follower_registration.py</code>
-      near line 554). Each check calls <code>runs.follower_code_stamp()</code>, which reaches
-      <code>checkout_trust.source_code_identity</code>. For a git checkout that is <code>_committed_reload_tree</code>
-      in <code>reckon/checkout_trust.py</code>: <code>git ls-tree HEAD reckon skills</code>, a second
-      <code>ls-tree</code> for the catalogue blob, and one or two <code>git mktree</code> calls. So every follower starts
-      several git processes a second. Each of them opens the repository's config and every pack index on GPFS, and
-      the answer changes only when HEAD's commit changes.</p>
-    <p><strong>What changes.</strong> The follower keys its identity on a cheap reading of where HEAD points: the
-      <code>stat</code> of <code>.git/HEAD</code>, of the ref it names, and of <code>packed-refs</code>, all resolved
-      without starting git. It re-derives the identity, with the same git calls as today, only when that key changes.
-      Otherwise it returns the identity it holds. The key is read through the same <code>.git</code> resolution git
-      uses, so a worktree checkout and a main checkout both read correctly. A checkout outside git keeps its content
-      stamp path unchanged. A read that fails yields <code>IDENTITY_UNKNOWN</code> exactly as today, so a partial read
-      never stands for an unmoved HEAD.</p>
-    <p><strong>Done when.</strong> A new <code>tests/test_a_follower_reads_its_identity_only_when_head_moves.py</code>,
-      working in a temporary git repository, shows four things. With <code>subprocess.run</code> counted, 20 identity
-      reads against an unmoved HEAD start git only on the first read. A new commit touching <code>reckon/</code> moves
-      the key, and the next read re-derives and returns the new identity. A commit touching only a file outside
-      <code>reckon/</code>, <code>skills/</code> and the catalogue moves the key but leaves the identity equal. A
-      key-read failure yields <code>IDENTITY_UNKNOWN</code>. Negative control: drop the key comparison so every read
-      re-derives, and the first case fails while the others pass. The test files importing
-      <code>reckon.checkout_trust</code>, <code>reckon.crew.follower_reload</code> or
-      <code>reckon.crew.follower_registration</code> add no failure against the base revision, run in place on the
-      fleet node with <code>-n 6 --timeout 120</code>, one arm at a time. After landing, once followers have reloaded,
-      a 15 s <code>strace -f -e trace=execve</code> of one reckon follower records no <code>git</code> execve while HEAD
-      does not move. The before and after counts are logged.</p>
-    <p><strong>Write paths:</strong> <code>reckon/checkout_trust.py</code>, <code>reckon/crew/follower_reload.py</code>,
-      <code>reckon/crew/follower_registration.py</code>,
-      <code>tests/test_a_follower_reads_its_identity_only_when_head_moves.py</code>. Every log under the run directory
-      starts with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff
-      format --check are clean on those paths by delta.</p>
+        <p><strong>Why.</strong> <code>_resolve_commit</code> in <code>reckon/crew/recovery_review_subject.py</code> (near line 240) remembers an answer only when the candidate is a full revision (<code>_FULL_REVISION</code>, near line 203). <code>_stored_commit_answer</code> (near line 214) returns empty for anything shorter. Manifests cite short shas, so the derivation that opts into <code>cached=True</code> (near line 347) starts git again for every citation on every follower pass. A commit object that resolved once stays resolved, so the repeated query buys nothing.</p>
+    <p><strong>What changes.</strong> A citation that resolves is remembered under its tree and the candidate as written, whatever its length, in the bounded <code>_RESOLVE_COMMIT_CACHE</code> and the store behind <code>recovery_watch._stored_commit_answer</code> that the full revision already uses. A citation that does not resolve is remembered only against the reading of <code>git_head._head_identity</code> for that tree, so a commit that arrives later is asked about again once HEAD or its ref moves. <code>strict</code> callers keep asking git every time, as today. No second cache is added. This extends the one <code>_resolve_commit</code> already keeps.</p>
+    <p><strong>Done when.</strong> A new <code>tests/test_a_short_commit_citation_is_resolved_once.py</code>, in a temporary git repository with <code>subprocess.run</code> counted, shows four things. Twenty <code>cached=True</code> resolutions of one short sha start git once. Twenty resolutions of a short sha naming no commit start git once while HEAD is unmoved. After a new commit moves HEAD, the next resolution asks git again. A <code>strict</code> resolution starts git on every call. Negative control: restore the full-revision-only guard in <code>_stored_commit_answer</code>, and the first case fails while the strict case passes. The test files importing <code>reckon.crew.recovery_review_subject</code> or <code>reckon.crew.recovery_watch</code> add no failure against the base revision, run in place on the fleet node with <code>-n 6 --timeout 120</code>, one arm at a time. After landing, once followers have reloaded, a 20 s <code>strace -f -e trace=execve</code> of one reckon follower records no <code>git rev-parse</code> for a citation it has already resolved. The before and after counts are logged.</p>
+    <p><strong>Write paths:</strong> <code>reckon/crew/recovery_review_subject.py</code>, <code>reckon/crew/recovery_watch.py</code>, <code>tests/test_a_short_commit_citation_is_resolved_once.py</code>. Every log under the run directory starts with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff format --check are clean on those paths by delta.</p>
 
     <h2 id="s2">§2 — The model catalogue has one memo, and it hands out copies</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Why.</strong> The same follower opened and parsed <code>docs/state/reckon/model-catalogue.yaml</code> 86
-      times in 15 s, about six a second. The catalogue changes only when a commit changes it. It is read through
-      <code>flight.read_layer_file</code> (<code>reckon/flight.py</code> near line 624) from at least
-      <code>ledger.resolve_name</code> and <code>ledger.lanes_declaring_model</code> (<code>reckon/ledger.py</code>
-      near lines 255 and 297), and the YAML parse costs CPU on every call. The reload tree's copy sits on node-local
-      <code>/tmp</code>, but a checkout's copy is on GPFS.</p>
-    <p><strong>What changes.</strong> The catalogue's parsed content is held in memory, keyed on the file's path,
-      <code>st_mtime_ns</code> and <code>st_size</code>, and re-parsed only when that key changes. Callers receive a
-      value they cannot mutate into the cache: either an immutable view, or a copy. The memo lives at the one read
-      boundary every catalogue reader already passes through, not beside each caller. A missing file still reads as
-      it does today.</p>
-    <p><strong>Done when.</strong> A new <code>tests/test_the_model_catalogue_is_parsed_once_per_stamp.py</code> shows
-      that 50 reads of an unchanged catalogue parse it once. Rewriting the file with a different size or mtime makes
-      the next read return the new content. A caller mutating the returned value does not change what the next read
-      returns. A deleted catalogue reads as it does today. Negative control: drop the stamp comparison, and the parse
-      count case fails. The test files importing <code>reckon.flight</code> or <code>reckon.ledger</code> add no failure
-      against the base revision, run in place on the fleet node with <code>-n 6 --timeout 120</code>, one arm at a
-      time. After landing and a reload, a 15 s <code>strace -e trace=openat</code> of one reckon follower opens the
-      catalogue at most once while it is unchanged. The before and after counts are logged.</p>
-    <p><strong>Write paths:</strong> <code>reckon/flight.py</code>, <code>reckon/ledger.py</code>,
-      <code>tests/test_the_model_catalogue_is_parsed_once_per_stamp.py</code>. Every log under the run directory starts
-      with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff format
-      --check are clean on those paths by delta.</p>
+        <p><strong>Why.</strong> <code>ledger._identity_catalogue</code> (<code>reckon/ledger.py</code> near line 248) caches the catalogue with <code>lru_cache</code> on <code>ledger._file_identity</code>, and hands every caller the same mapping. The design review confirmed on this checkout that a key written into one result shows up in the next. <code>ledger.lanes_declaring_model</code> (near line 297) bypasses that cache and calls <code>flight.read_layer_file</code> directly, which is where the follower's repeated catalogue opens come from. <code>reckon/file_memo.py</code> already owns stat-keyed memoisation: <code>memoized</code> (near line 358) keys on <code>signature_from_stat</code> and deep-copies on hand-out.</p>
+    <p><strong>What changes.</strong> Every catalogue read in <code>reckon/ledger.py</code> goes through one <code>file_memo.memoized</code> read of the catalogue. <code>_identity_catalogue</code> and the catalogue's use of <code>ledger._file_identity</code> are deleted, and <code>lanes_declaring_model</code> reads through the same memo. A missing catalogue reads as it does today. Nothing is added to <code>reckon/flight.py</code>.</p>
+    <p><strong>Done when.</strong> <code>git grep -n "_identity_catalogue"</code> over <code>reckon</code> returns nothing. A new <code>tests/test_the_model_catalogue_has_one_memo.py</code> shows four things. Fifty calls mixing <code>resolve_name</code> and <code>lanes_declaring_model</code> on an unchanged catalogue parse it once. Rewriting the file makes the next call read the new content. A caller mutating a returned value does not change the next call's answer. A deleted catalogue reads as it does today. Negative control: return the memo's stored object without the copy, and the mutation case fails. The test files importing <code>reckon.ledger</code> or <code>reckon.file_memo</code> add no failure against the base revision, run in place on the fleet node with <code>-n 6 --timeout 120</code>, one arm at a time.</p>
+    <p><strong>Write paths:</strong> <code>reckon/ledger.py</code>, <code>tests/test_the_model_catalogue_has_one_memo.py</code>. Every log under the run directory starts with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff format --check are clean on those paths by delta.</p>
 
-    
-  <section data-reckon="followups" id="followups" class="r-followups">
+    <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-afrowm-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-10" data-recommends-skill="/reckon-build a-follower-reads-only-what-moved §1" data-resolved-at="" data-resolved-by="">
     <h4 class="r-fu-title">Build §1</h4>
