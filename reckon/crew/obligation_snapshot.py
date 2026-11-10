@@ -864,13 +864,17 @@ def reload_in_progress(
 ) -> bool:
     """Whether a producer reload reads as in progress rather than an absence.
 
-    Any of three signals means a reload: the seat recorded a reload intent
-    within the window; the snapshot's producer is alive and its code stamp is
-    older than the source, so it has not caught up yet; or its last
-    publication is within the window although no producer is live, which is
-    the gap between the old image exiting and the replacement publishing.
-    Outside every signal, a caller answers with its not-fresh line, and the
-    remedy that line carries is right because nothing is coming.
+    Any of three signals means a reload: the snapshot's producer is alive,
+    its code stamp is older than the source, and its last publication is within
+    the window, so it has not caught up yet; the seat recorded a reload intent
+    within the window; or its last publication is within the window although no
+    producer is live, which is the gap between the old image exiting and the
+    replacement publishing. The code-stamp arm carries the publication bound
+    for the same reason the other two do: a producer that stays on older code
+    without reloading is one whose replacement is not on its way, so reading it
+    as a reload forever would deny it the remedy its not-fresh line carries.
+    Outside every signal, a caller answers with that line, and the remedy it
+    carries is right because nothing is coming.
     """
     instant = _utc_now() if now is None else now
     window = producer_reload_window_seconds()
@@ -878,9 +882,7 @@ def reload_in_progress(
     intent_age = None if intent is None else (instant - intent).total_seconds()
     if intent_age is not None and intent_age <= window:
         return True
-    if state == STALE_CODE:
-        return True
-    if state != NO_PRODUCER:
+    if state not in (STALE_CODE, NO_PRODUCER):
         return False
     age = snapshot_age_seconds(document, now=instant)
     return age is not None and age <= window

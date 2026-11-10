@@ -1,0 +1,71 @@
+<section id="a-stale-code-producer-is-not-reloading-forever-landing">
+  <h2>A producer stuck on old code is no longer reported as reloading</h2>
+
+  <p><strong>What changed.</strong> <code>reload_in_progress</code> in
+  <code>reckon/crew/obligation_snapshot.py</code> answered true for every
+  snapshot in the <code>producer-stale-code</code> state, whatever its age, so a
+  producer left on older code that never reloaded was reported as
+  <q>producer reloading</q> forever and its reader was never given the remedy the
+  not-fresh line carries. The code-stamp arm now counts as a reload only while
+  the snapshot is inside the shared producer reload window
+  (<code>PRODUCER_RELOAD_WINDOW_SECONDS</code>, 65 s), the same bound the seat's
+  recorded reload intent and the silent-producer arm already carried. Past the
+  window the caller falls through to <code>not_fresh_line</code>, which prints
+  <q>the producer is running older code than the checkout</q> and the
+  <code>reckon crew watch --ensure</code> remedy.</p>
+
+  <p><strong>The bound changed one existing expectation.</strong>
+  <code>tests/test_a_quiet_foreign_producer_reads_live.py::test_snapshot_from_predecessor_uses_seated_producers_stamp[False]</code>
+  asserted <q>producer reloading</q> for a stale-code snapshot 20 hours old; it
+  now asserts the stale-code not-fresh line and the absence of the reload
+  wording. Every other case in that file is unchanged.</p>
+
+  <h3 id="a-stale-code-producer-is-not-reloading-forever-measured">Measured</h3>
+
+  <p>The new test file carries three cases: the inside-window stale-code
+  snapshot reads as a reload, the past-window one does not, and the hook prints
+  the not-fresh line rather than <q>producer reloading</q> for a twenty-hour-old
+  stale-code snapshot. At the base revision the same three cases give the
+  opposite answer for the past-window arm and the hook arm, which is the
+  negative control below.</p>
+
+  <table id="a-stale-code-producer-is-not-reloading-forever-arms">
+    <caption>Every arm is a log whose first line names its revision and tree and
+    whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>node tests (base tree; the new test file is absent)</td>
+        <td><code>523a1c9e77</code></td>
+        <td>2 errors in <code>tests/test_staged_write_inventory.py</code>, which
+        needs a git worktree and the extraction has none; 54 passed</td>
+      </tr>
+      <tr>
+        <td>node tests (head tree)</td>
+        <td><code>2550638a49</code></td>
+        <td>59 passed</td>
+      </tr>
+      <tr>
+        <td>the six files the head import-set arm failed, base tree</td>
+        <td><code>523a1c9e77</code></td>
+        <td>15 failed, 80 passed &mdash; the same fifteen ids</td>
+      </tr>
+      <tr>
+        <td>import set, head tree</td>
+        <td><code>2550638a49</code></td>
+        <td>15 failed, 369 passed</td>
+      </tr>
+      <tr>
+        <td>negative control: age bound removed</td>
+        <td><code>2550638a49</code> + mutation</td>
+        <td>2 failed, 1 passed; the hook arm prints
+        <q>producer reloading, last snapshot 20h0m old</q></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> Restoring the unconditional
+  <code>if state == STALE_CODE: return True</code> arm makes the past-window case
+  return true again and the hook test print the reload wording, so the new
+  checks fail for exactly the defect they describe.</p>
+</section>
