@@ -24,14 +24,30 @@
   shows the flagged request queued as its one ref lands with no pass widening
   it, the same dispatch unflagged waiting on all four refs, a sibling naming no
   <code>--after</code> never taking another's, the gate ref suppressed, and the
-  flag-without-ref refusal on both the command line and the contract. Five
-  cases pass at the head (five passed) and four fail at the dispatch base with
-  the same test copied in, the "waits on all four" case being the one that
-  already held there. Two negative controls fail exactly the case they name:
-  ignoring the flag fails the flagged-waits and gate cases, and keying the
-  cache without <code>node.after</code> fails the sibling case. The armed
-  suite arm passes 56 tests at the head against 51 at the base revision, both
-  with the armed command recorded verbatim.
+  flag-without-ref refusal on both the command line and the contract. Six cases
+  pass at the head and four of the five earlier ones fail at the dispatch base
+  with the same test copied in, the "waits on all four" case being the one that
+  already held there. Three negative controls fail exactly the case they name:
+  ignoring the flag fails the flagged-waits and gate cases, keying the cache
+  without <code>node.after</code> fails the sibling case, and dropping the flag
+  from the batch entry field set fails the batch case. The armed suite arm
+  passes 57 tests at the head (six of this file plus the 51-test census) against
+  51 at the base revision, both with the armed command recorded verbatim.
+
+  <p><strong>The batch path.</strong> A coordinator usually reaches a request
+  through <code>crew dispatch --batch</code>, which rebuilds each node from a
+  declared entry field set, so the flag can be lost between the entry file and
+  the stored request with no single-dispatch case noticing. A sixth case drives
+  <code>queue_batch</code> end to end under a section with unlanded waits: the
+  entry carrying <code>waits_only_after: true</code> and one <code>after</code>
+  ref is stored <code>awaiting-upstream</code>, its waits are that ref alone,
+  the flag is on the stored node, no admission pass widens it, and it launches
+  when that one ref lands. The case asserts the entry-to-node conversion
+  directly as well, so a converter that dropped the field fails here. A third
+  control removes <code>waits_only_after</code> from
+  <code>BATCH_ENTRY_FIELDS</code> and the case fails with
+  <code>entry 1 carries unknown field(s): waits_only_after</code>, logged in
+  <code>negative-control-batch-entry-field.log</code>.
 
   <p><strong>The importing population.</strong> The test files importing
   <code>reckon.crew_dispatch_commands</code> or
