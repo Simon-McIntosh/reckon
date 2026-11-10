@@ -40,20 +40,73 @@ def _plan_priority_state(docs_dir: Path, slug: str, project: str) -> str | None:
     """The named plan's structured ranking inputs, without editorial stamps."""
     from reckon import _plan_html
     from reckon.crew.plan_review import _plan_inventory_item
+    from reckon.roadmap import _decision_rows
 
     item = _plan_inventory_item(project, docs_dir, slug)
     if item is None:
         return None
-    for field in ("title", "summary", "owner", "modified", "version"):
-        item.pop(field, None)
+    priority = {
+        field: item.get(field)
+        for field in (
+            "type",
+            "status",
+            "archived",
+            "sprint",
+            "roi",
+            "effort",
+            "effort_hours",
+            "wall_clock_hours",
+            "effort_calibrated",
+            "impl",
+            "depends_on",
+            "after",
+            "blocks",
+            "blockers",
+            "section_declarations",
+            "section_depends_on",
+            "decision_sections",
+        )
+    }
+    priority["followups"] = sorted(
+        (str(row.get("id") or ""), str(row.get("status") or "open"))
+        for row in item.get("followups") or []
+    )
+    priority["decisions"] = sorted(
+        (row["id"], row["status"], sorted(row.get("sections") or []))
+        for row in _decision_rows(item, item.get("decision_sections"))
+    )
+    # Gate text can declare section waits, so the ref reader's text inputs stay.
+    priority["gates"] = [
+        {
+            field: gate.get(field)
+            for field in (
+                "id",
+                "section",
+                "gated_sections",
+                "status",
+                "verdict",
+                "passed",
+                "transition",
+                "gating_plan",
+                "decision",
+                "measure",
+                "required_evidence",
+                "evidence",
+            )
+        }
+        for gate in item.get("gates") or []
+    ]
     state, text = _plan_html.read_state_and_text_file(
         docs_dir / "plans" / f"{slug}.html"
     )
-    item["sections"] = state.get("sections")
-    item["section_ids"] = [
+    priority["sections"] = [
+        {field: record.get(field) for field in ("id", "status", "effort_hours")}
+        for record in state.get("sections") or []
+    ]
+    priority["section_ids"] = [
         identity for identity, _heading in _plan_html.authored_section_headings(text)
     ]
-    return json.dumps(item, sort_keys=True, separators=(",", ":"))
+    return json.dumps(priority, sort_keys=True, separators=(",", ":"))
 
 
 def _roadmap_input_signature(

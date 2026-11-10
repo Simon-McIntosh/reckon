@@ -229,3 +229,62 @@ def test_queued_plan_removal_and_arrival_rebuild(
     absent.rename(path)
     assert _placements() == first
     assert len(builds) == 3
+
+
+@pytest.mark.parametrize(
+    "change", ["followup-title", "followup-body", "decision-rationale"]
+)
+def test_editorial_workflow_edit_keeps_the_build(
+    project: Path, monkeypatch: pytest.MonkeyPatch, change: str
+) -> None:
+    path = project / "docs" / "plans" / f"{fixtures.PLAN}.html"
+    text = path.read_text(encoding="utf-8") + (
+        '<section data-reckon="followups"><article class="r-fu" '
+        'data-id="next-work" data-status="open">'
+        '<h4 class="r-fu-title">Carry the work</h4>'
+        '<div class="r-fu-body"><p>Explain the work.</p></div>'
+        "</article></section>"
+        '<section data-reckon="decisions"><div class="r-dec" '
+        'data-key="approach" data-choice="chosen" data-sections="s1">'
+        '<p class="r-dec-q">Choose the approach</p>'
+        '<p class="r-dec-rat">Reason for the choice.</p>'
+        "</div></section>"
+    )
+    path.write_text(text, encoding="utf-8")
+    builds = _count_builds(monkeypatch)
+    first = _placements()
+    before, after = {
+        "followup-title": ("Carry the work", "Continue the work"),
+        "followup-body": ("Explain the work.", "Explain the same work more clearly."),
+        "decision-rationale": (
+            "Reason for the choice.",
+            "A clearer reason for the same choice.",
+        ),
+    }[change]
+    assert before in text
+    path.write_text(text.replace(before, after), encoding="utf-8")
+    assert _placements() == first
+    assert builds == [fixtures.PROJECT]
+
+
+def test_decision_state_change_rebuilds(
+    project: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = project / "docs" / "plans" / f"{fixtures.PLAN}.html"
+    text = path.read_text(encoding="utf-8") + (
+        '<section data-reckon="decisions"><div class="r-dec" '
+        'data-key="approach" data-choice="chosen" data-sections="s1">'
+        '<p class="r-dec-q">Choose the approach</p>'
+        "</div></section>"
+    )
+    path.write_text(text, encoding="utf-8")
+    builds = _count_builds(monkeypatch)
+    first = _placements()
+    path.write_text(
+        text.replace('data-choice="chosen"', 'data-choice=""'), encoding="utf-8"
+    )
+    changed = _placements(ranked=False)
+    assert len(builds) == 2
+    assert changed != first
+    queue_order._PRIORITY_KEYS.clear()
+    assert _placements(ranked=False) == changed
