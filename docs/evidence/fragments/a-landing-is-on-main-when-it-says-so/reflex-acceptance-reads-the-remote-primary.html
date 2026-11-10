@@ -77,15 +77,18 @@
         unreachable-remote and missing-branch arms fail too, since neither cause
         is represented in the base code. That run reports 3 failed, 5 passed,
         <code>EXIT=1</code>.</p>
-      <p>Open consequence, outside this node's write scope:
-        <code>tests/test_review_acceptance_promotes.py</code> builds its repository
-        with no remote, so four of its cases now meet the
-        <code>no-remote</code> decline before reaching the behaviour each measures
-        (4 failed, 26 passed alongside the four other importer files). Its fixture
-        needs a bare <code>origin</code> with each landed commit pushed, which is
-        the shape <code>tests/helpers/landing_repository._write_origin_and_checkout</code>
-        already provides. Ruff check and <code>ruff format --check</code> are clean
-        on both staged paths.</p>
+      <p>The importer file <code>tests/test_review_acceptance_promotes.py</code>
+        built its repository with no remote, so the <code>no-remote</code> decline
+        returned four of its cases before reaching the behaviour each measures.
+        Its fixture now builds the checkout through
+        <code>tests/helpers/landing_repository._write_origin_and_checkout</code>,
+        the helper every landing test already shares, and pushes each landed
+        commit, so the shared setup is used rather than re-derived and the
+        remote-less state no longer exists in the suite. With it the two files
+        report 18 passed, <code>EXIT=0</code>; the same command over the repair's
+        base <code>1219837c0f</code> reports 4 failed, 14 passed, <code>EXIT=1</code>,
+        every refusal naming <code>remote_cause: no-remote</code>. Ruff check and
+        <code>ruff format --check</code> are clean on the three staged paths.</p>
     </section>
   </main>
 </body>
