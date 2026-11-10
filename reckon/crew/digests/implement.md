@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 385b58d2c16dfbddae7abd2be59b1c0ddb07394cafe70252565aa0e9b8ff0253,
-# 111393 bytes, ~27849 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 2bd5e415bb3a648e03166ee2eccb95f633e26d1ffd5b6501253a3eaddd0b312f,
+# 113613 bytes, ~28404 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -22,7 +22,7 @@
 #   ## Bug and Failure Ownership
 #   ## Runtime Model Routing
 #   ## Compute Infrastructure (SDCC) — never heavy work on the login node (binding)
-#   ### On the fleet allocation, run heavy work in place
+#   ### The fleet node is for coordination; heavy work goes to a partition (binding, lead directive 2026-11-10)
 #   ## IMAS Data Access
 #   ## A Worker's Process Ends With Its Turn
 #   ## Test Visibility
@@ -412,16 +412,49 @@ accepting the evidence. Partition reference, the H200 reservation and launch
 recipes: `~/.agents/references/sdcc.md` and the `compile-on-sdcc` /
 `run-on-sdcc` skills. `module load` mutates one process, so all
 module-dependent work runs in ONE persistent shell.
-### On the fleet allocation, run heavy work in place
+### The fleet node is for coordination; heavy work goes to a partition (binding, lead directive 2026-11-10)
 
-**A session whose shell has `SLURM_JOB_ID` set is already on compute. It runs
-its heavy gates directly and never submits them to a `*_debug` partition.** The
-fleet allocation (`~/.local/state/fleet/record.json`) holds one node for every
-orchestrator and its workers. The debug-partition recipe above is for the login
-node only. From the fleet node it queues work behind other users for no gain. The
-allocation is **28 CPUs and 120 GB**, not the whole cluster, and every
-orchestrator and worker shares it. Size parallel work to leave room for them:
-about 8 to 12 pytest processes, not one per core.
+**The fleet allocation (`~/.local/state/fleet/record.json`) is one node, 28 CPUs
+and 120 GB, shared by every orchestrator session, every worker, and reckon's
+station, producers and followers. It runs coordination, not compute.** Its job is
+to keep orchestrators responsive. A heavy gate run in place takes cores and GPFS
+bandwidth from every coordinator on the node, and once the monitor processes are
+starved every session stalls together.
+
+Measured 2026-11-10 on 98dci4-clu-2023: load average 139 at 87% user CPU. About
+ten cores were one project's equilibrium suite, run by reckon's lander inside the
+fleet job (`srun --overlap`). The rest was the monitor's own re-reads of GPFS. In
+that state a crew dispatch took six minutes and several landings were killed
+mid-step.
+
+- **Only light work runs on the fleet node:** editing, git, reckon commands, and
+  a focused test file or two (`-n 4` at most, done in about a minute). That's the
+  whole list.
+- **Everything else goes to a partition, from the fleet node as from a login
+  node:** suite arms, importer populations, solver or physics runs, census and
+  corpus passes, builds and figure batches. CPU work goes to `all_debug` (one
+  hour; split longer work into one-hour slices) or `rigel` (no time limit, and
+  usually idle). GPU work goes to `betelgeuse` under its reservation rules. Use
+  `srun --partition=<p> --time=<t>` as a job of its own, or `sbatch` with
+  `--output` to a GPFS log. Never use `srun --overlap` in the fleet job for
+  heavy work: overlap is how work lands on the coordinators' cores.
+- **A job on another node cannot see the fleet node's `/tmp`.** Build the tree
+  inside the job (`git worktree add` or `git archive` from the revision into that
+  node's `/tmp`), write logs and evidence to GPFS, and remove the tree on exit.
+- **Coordinators name the partition in every heavy done-when**, and reckon's
+  dispatch and landing paths submit there; landing measures do so through a
+  project's declared measurement partition. A worker that finds a heavy gate
+  with no partition named submits it to `all_debug` anyway and says so in its
+  manifest.
+- **A heavy gate that ran on the fleet node is a scope defect.** The coordinator
+  stops it, or reruns its evidence on a partition, before accepting it.
+- **Keep repositories packed.** Every git call stats every pack file on GPFS, so
+  a checkout with dozens of packs taxes every worktree and follower. Repack with
+  `git repack -a -d --keep-unreachable` (the flag keeps objects that in-flight
+  work still needs) from an `all_debug` job when packs exceed about ten, then
+  `git fsck --connectivity-only`. Re-check any missing object it names with
+  `git cat-file -t`, because a peer writing during the scan shows up as a
+  transient miss.
 
 - **Temporary files go on node-local `/tmp`, never on GPFS scratch.** `/tmp` on a
   compute node is a local disk (232 GB on clu-2058). It suits the small-file
