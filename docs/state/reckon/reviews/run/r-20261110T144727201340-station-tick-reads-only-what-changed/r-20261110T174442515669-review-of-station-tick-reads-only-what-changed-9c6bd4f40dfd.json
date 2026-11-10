@@ -79,6 +79,11 @@
       "kind": "exempted",
       "reason": "Answered with the census the review asked for: strace -f of read and pread64 on the live station (pid 3622219) over 62 s, 598 MiB in all, by path in logs/station-byte-census-60s.txt. ~/.config/reckon/crew/run_store.db is 81.7% (489 MiB) and a metadata-index JSON is 11.6%, together 93.3%, above the 90% the done-when asks for. The run store is what ledger.load queries, and this node adds activity_since filters to those queries, so the fix targets the dominant path. The post-landing live window is the coordinator's.",
       "recorded_at": "2026-11-10T18:34:11.923386+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Answered before the review: the coordinator ran all 292 test files importing reckon.ledger at base e7d60f9d56 and the final head 9c6bd4f40d, which includes 93fd51108b, with -n 8 and a 60 s per-test timeout. No failure or error id appears only at head (logs/pop/summary.txt).",
+      "recorded_at": "2026-11-10T18:34:40.854512+00:00"
     }
   },
   "findings": [
