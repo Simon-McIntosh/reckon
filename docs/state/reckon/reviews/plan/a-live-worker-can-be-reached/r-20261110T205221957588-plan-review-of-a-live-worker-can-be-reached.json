@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T21:09:14.859Z",
+  "dispatched_at": "2026-11-10T20:56:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "done_when-1",
+      "reason": "this exact defect was already repaired in \u00a78 and reappears in \u00a79 only because \u00a79 has just been declared implementable, which is the moment it becomes dispatchable.",
+      "text": "\u00a79's done-when requires \"one real codex investigate node told a codeword through `crew tell` after it starts\" plus \"the same live check with the trust record omitted\", both of which need a dispatched codex-style worker; the implementing node cannot dispatch one, and unlike \u00a78 (\"Live check, dispatched by the coordinator after the node lands\") \u00a79 names no dispatcher, so the node either blocks or claims a check it did not run",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "done_when-2",
+      "reason": "without a named way to construct the control arm the negative control cannot be run, and an unrun control leaves the section's only proof that the trust record made the delivery possible unproduced.",
+      "text": "\u00a79's negative control needs a live codex run whose run home carries the hook but not its trust record, yet the same section has the fence seed both at launch for every codex run and names no supported way to produce an untrusted arm (no flag, no fixture, no hand-built `CODEX_HOME`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "reasoning-1",
+      "reason": "naming the file that must carry both the hook and its trust record (the run home's `config.toml`, which the fence already seeds) prevents a node from implementing a registration that silently delivers nothing and discovering it only at the live check.",
+      "text": "\u00a79 says codex \"uses the same schema as Claude Code (`hooks.json`, ...)\" and then seeds the hook into `<run dir>/codex-home`, but the cited prototype only ever declared it in the project's `.codex/hooks.json` and inline through `-c hooks.PostToolUse=\u2026`, never in `CODEX_HOME`; the section also records trust in \"config\" (`hooks.state.<key>.trusted_hash`) while leaving the hook's own file unnamed, so an implementer may write a `hooks.json` that codex never reads",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "67c9e36671107c5c73905e9fcb58088927395294",
+  "plan_fingerprint": "257026fabaa6c485c2ed559445fdeffafde927c8d4e9e48a0edf4bac82016eef",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T205221957588-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "1bf74bdff49ac63e3d1a98120460a5af08582a9d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_harness_entry` (`reckon/_worker_fence.py:425`), the seeding loop (`:249`), `_seed_worker_mcp_settings` (`:317`), `install_hook_settings`/`configure_crew_guards` (`reckon/hooks/install.py:229,276`), `worker_git_guard`'s `additionalContext` emit (`reckon/hooks/worker_git_guard.py:588`) and the cited prototype research doc all resolve; no `PostToolUse` registration exists anywhere under `reckon/` (0 matches), and the extensionless research hrefs resolve once `.html` is appended.",
+    "done_when": "a finding \u2014 \u00a79's done-when requires two live codex dispatches (the positive check and its negative control) that the implementing node cannot make, and unlike \u00a78 it does not name the coordinator as the dispatcher; its control arm also needs a codex run home without the trust record, which the same section's launch-time seeding makes unproducible through a supported launch.",
+    "evidence_paths": "pass \u2014 the gates are repository tests plus live run records, and no gate is placed on a session scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 `reckon/hooks/worker_inbox.py`, `crew tell` and `queued_for_next_tool_call` are named by what they do; no plan labels, stage names, ticket numbers or changelog prose reach a symbol or a comment.",
+    "reasoning": "a finding \u2014 \u00a79 places the hook definition in the run's `CODEX_HOME` on the strength of a prototype that never put it there, leaving the mechanism anchored to a location the cited evidence does not establish.",
+    "single_goal": "pass \u2014 \u00a78's four bullets are one capability (a message reaching a live worker at its next tool call), and \u00a79 carries only the codex half of the same delivery.",
+    "wiring": "pass \u2014 s9 declares `plan-section-depends-on` of `a-live-worker-can-be-reached#s8` and its status moved from `deferred` to `implementable`, so the queue holds it until the hook lands; `plan-blocks` (`an-orchestrator-is-bound-by-its-inbox#s5`) resolves to a real section, and \u00a77 remains `descoped` with a stated reason."
+  },
+  "section_digests": {
+    "_document": "81eb80e073381f3b1366ce6545c0ae40e6e5ba15ccbd0cf16f9a6483d2e5c8ab",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "370dc84ad6d12da660f0a9c95ec0239ccceac16de70baee83c48a62778a2b195",
+    "s9": "04a3a9c3465211256706e7581c8950fb2451ef6ac7b7f0876744ed336fa7e3bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:27:33.357073+00:00",
+  "total": null
+}
