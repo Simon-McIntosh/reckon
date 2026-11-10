@@ -828,15 +828,15 @@ def test_the_resume_compatibility_path_launches_the_pointer_attempt(
     assert (home / "attempt-3.reservation").exists(), "the launch took no reservation"
 
 
-def test_a_failed_supervisor_rewrite_on_a_supervised_launch_is_published(
-    home: Path, monkeypatch: pytest.MonkeyPatch
+def test_a_failed_supervisor_rewrite_on_a_supervised_launch_is_reported(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
 ) -> None:
-    """A door with no launch result publishes the failed rewrite on the pointer.
+    """A rewrite that does not land is reported on stderr and stored nowhere.
 
-    The dispatch door reports the failure in the result it returns; a resume,
-    review dispatch or compatibility launch has no such result. A rewrite that
-    does not land leaves the hold naming the reserving process, so the same
-    field is written to the run's pointer rather than dropped.
+    A door with no launch result — a resume, a review dispatch, the
+    compatibility seam — has no result dict to return the failure in, so it
+    warns. The failure is never written to the run's pointer: a pointer field
+    outlives the failure it describes, because no later launch clears it.
     """
     from reckon import _backends
 
@@ -880,12 +880,73 @@ def test_a_failed_supervisor_rewrite_on_a_supervised_launch_is_published(
     finally:
         _stop(supervisor)
 
+    reported = capsys.readouterr().err
+    assert dispatch_launch_module.SUPERVISOR_UNRECORDED_WARNING in reported, (
+        "the failed rewrite was dropped instead of reported"
+    )
+    assert str(RUN_ID) in reported, "the warning names no run"
     pointer = json.loads(runs_module.pointer_path(RUN_ID).read_text(encoding="utf-8"))
-    assert pointer["reservation_supervisor_recorded"] is False, (
-        "the failed rewrite was dropped instead of published"
+    assert "reservation_supervisor_recorded" not in pointer, (
+        "the failure was stored on the pointer, where no later launch clears it"
     )
     assert (home / "attempt-3.reservation").exists(), (
         "the failed rewrite removed the hold"
+    )
+
+
+def test_a_landed_supervisor_rewrite_reports_no_failure(
+    home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """A rewrite that lands leaves no failure report anywhere.
+
+    The warning exists to make a dropped rewrite visible, so it must not fire
+    when the rewrite landed. A report that is emitted unconditionally would
+    pass every test that only ever fails the write, and would leave a reader
+    unable to tell a succeeded rewrite from a failed one.
+    """
+    from reckon import _backends
+
+    runs_module._write_json(runs_module.pointer_path(RUN_ID), _pointer(attempt=3))
+    supervisor = _live_child()
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_start_supervisor",
+        lambda spec_path, run_directory, run_id: supervisor.pid,
+    )
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_confirm_supervisor_survived",
+        lambda pid, run_directory, run_id: None,
+    )
+    plan = _backends.LaunchPlan(
+        backend="probe",
+        dialect="claude",
+        argv=[sys.executable, "-c", "pass"],
+        cwd=str(home),
+        stdin_text="",
+        environment={},
+        final_message_path=None,
+        resumed_session=None,
+    )
+    try:
+        dispatch_launch_module._spawn(
+            plan,
+            log_path=home / "resume-1.jsonl",
+            stderr_path=home / "resume-1.stderr.log",
+            prompt_path=home / "prompt.txt",
+        )
+    finally:
+        _stop(supervisor)
+
+    reported = capsys.readouterr().err
+    assert dispatch_launch_module.SUPERVISOR_UNRECORDED_WARNING not in reported, (
+        "a rewrite that landed still reported a failure"
+    )
+    pointer = json.loads(runs_module.pointer_path(RUN_ID).read_text(encoding="utf-8"))
+    assert "reservation_supervisor_recorded" not in pointer
+    held = json.loads((home / "attempt-3.reservation").read_text(encoding="utf-8"))
+    assert held["supervisor_pid"] == supervisor.pid, (
+        "the landed rewrite did not name the supervisor"
     )
 
 
@@ -1066,13 +1127,14 @@ def test_a_failed_supervisor_rewrite_is_reported_and_still_holds(
     repo_context: tuple[Path, Path],
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
 ) -> None:
     """A reservation that cannot name its supervisor keeps refusing.
 
     The rewrite lands after the supervisor is spawned, so releasing the hold
     when it fails would invite a relaunch over a live worker. The failure is
-    reported in the launch result instead, and the attempt's own exit receipt
-    is what frees the hold in its own time.
+    reported on stderr instead, and the attempt's own exit receipt is what
+    frees the hold in its own time.
     """
     _config_home, repo = repo_context
     tree, _head, _note = _stand_in_tree(repo)
@@ -1103,8 +1165,11 @@ def test_a_failed_supervisor_rewrite_is_reported_and_still_holds(
     finally:
         _stop(supervisor)
 
-    assert record["reservation_supervisor_recorded"] is False, (
-        "the failed rewrite was not reported in the launch result"
+    assert (
+        dispatch_launch_module.SUPERVISOR_UNRECORDED_WARNING in capsys.readouterr().err
+    ), "the failed rewrite was not reported"
+    assert "reservation_supervisor_recorded" not in record, (
+        "the failure was stored on the launch record, which is merged onto the pointer"
     )
     refused = _refused(
         lambda: dispatch_launch_module.reserve_launch_attempt(

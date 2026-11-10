@@ -2861,7 +2861,7 @@ def dispatch(
         # An in-harness relaunch takes none and is refused while a CLI launch
         # of the run holds one, because nothing on disk records its own end.
         from reckon.crew.dispatch_launch import (
-            record_reservation_supervisor as _record_reservation_supervisor,
+            record_supervisor as _record_supervisor,
             refuse_held_launch,
             release_launch_reservation as _release_launch_reservation,
             reserve_launch_attempt,
@@ -3564,11 +3564,9 @@ def dispatch(
                         # this dispatching process, which returns while the
                         # worker it started runs on. A rewrite that does not
                         # land leaves the hold naming this process, so it is
-                        # reported rather than suppressed; the attempt's own
-                        # exit receipt frees it in its own time.
-                        record["reservation_supervisor_recorded"] = bool(
-                            _record_reservation_supervisor(reservation, spawned_pid)
-                        )
+                        # reported on stderr rather than suppressed; the
+                        # attempt's own exit receipt frees it in its own time.
+                        _record_supervisor(reservation, spawned_pid)
                     advance_launch_step(run_id, LAUNCH_WORKER_STEP)
                 else:
                     _require_fleet_gate_open()

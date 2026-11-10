@@ -2587,23 +2587,29 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> b
     return True
 
 
-def _record_supervisor_reporting(reservation: LaunchReservation, pid: int) -> None:
-    """Record the supervisor, publishing a failed rewrite on the run's pointer.
+SUPERVISOR_UNRECORDED_WARNING = (
+    "the launch reservation could not be rewritten to name its supervisor"
+)
 
-    The dispatch door reports this failure in its launch result, which is merged
-    onto the run's pointer. A door with no result dict — a resume, a review
-    dispatch, the compatibility seam — publishes the same field on the pointer
-    directly, so a reservation left naming the reserving process is visible
-    rather than silent. The launch itself has already succeeded: the attempt's
-    own exit receipt is what frees the hold in its own time.
+
+def record_supervisor(reservation: LaunchReservation, pid: int) -> None:
+    """Record the supervisor on the reservation, warning when the write fails.
+
+    A rewrite that does not land leaves the hold naming the process that
+    reserved it rather than the supervisor, so the failure is reported where a
+    caller reads it — this process's stderr — and never stored on the run's
+    pointer: a pointer field outlives the failure it describes, because no
+    later launch clears it. The launch itself has already succeeded; the
+    reserved attempt's own exit receipt is what frees the hold in its own time.
     """
     if record_reservation_supervisor(reservation, pid):
         return
-    with contextlib.suppress(CrewError):
-        _mutate_pointer(
-            reservation.run_id,
-            lambda pointer: {**pointer, "reservation_supervisor_recorded": False},
-        )
+    print(
+        f"reckon: run {reservation.run_id!r} attempt {reservation.attempt}: "
+        f"{SUPERVISOR_UNRECORDED_WARNING}; pid {pid} is not named on it, and the "
+        "attempt's exit receipt frees it",
+        file=sys.stderr,
+    )
 
 
 def refuse_held_launch(run_id: str, run_directory: Path) -> None:
@@ -3209,7 +3215,7 @@ def supervised_launch(
     )
     pid = _start_supervisor(spec_path, run_directory, run_directory.name)
     if reservation is not None:
-        _record_supervisor_reporting(reservation, pid)
+        record_supervisor(reservation, pid)
     return pid
 
 
@@ -3251,7 +3257,7 @@ def _start_supervisor(
                 release_launch_reservation(reservation, only_when_unspawned=True)
                 raise
             if reservation is not None:
-                _record_supervisor_reporting(reservation, pid)
+                record_supervisor(reservation, pid)
             _confirm_supervisor_survived(pid, run_directory, run_id)
             return pid
     argv = _supervisor_argv(spec_path=spec_path)
@@ -3261,7 +3267,7 @@ def _start_supervisor(
         release_launch_reservation(reservation, only_when_unspawned=True)
         raise
     if reservation is not None:
-        _record_supervisor_reporting(reservation, pid)
+        record_supervisor(reservation, pid)
     _confirm_supervisor_survived(pid, run_directory, run_id)
     return pid
 
