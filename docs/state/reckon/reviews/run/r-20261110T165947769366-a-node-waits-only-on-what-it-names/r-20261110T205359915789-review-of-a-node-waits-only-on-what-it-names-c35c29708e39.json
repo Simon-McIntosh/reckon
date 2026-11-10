@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T21:24:53.623Z",
+  "dispatched_at": "2026-11-10T21:05:36Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "id": "f039b9b7146",
+      "line": 38,
+      "severity": "non-blocking",
+      "summary": "The batch entry field waits_only_after (BATCH_ENTRY_FIELDS line 38 and _entry_node line 524) is exercised by no test: the new suite builds TaskNode objects and calls queue_requests directly, so a regression that dropped the key from the accepted field set or from _entry_node would leave every gate green while a batch file carrying the flag silently queued a request with all of its section's inherited waits."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: eec4eb8aa adds the flag through node.py, dispatch_batch.py, crew_dispatch_commands.py and queue_admission.py plus the test; 19dc4744d7, a09488d9c4 and c35c29708 are evidence-document updates to the declared fragment only.",
+    "done_when": "The done-when names tests/test_a_node_waits_only_on_what_it_names.py covering every case section 31 lists; the file exists at the head with five cases and the manifest records its run (after-suite-head.log, 56 passed, EXIT=0), re-run here at the same head with 5 passed.",
+    "goal": "The goal is that a request's waits are exactly what its own dispatch and section declare, with --waits-only-after limiting them to its --after refs; reckon/crew/queue_admission.py:2712 returns only the explicit refs when the flag is set, which is that goal implemented.",
+    "manifest": "Read: it records four commits, the five gate cases, two negative controls, the armed suite pair (56 head vs 51 base), and states honestly that two of four importer chunks are outstanding rather than passed.",
+    "write_paths": "The declared write paths are the four dispatch modules, the new test and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html; git diff --stat over 434ec98ac..c35c29708 shows exactly those six files and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a request's waits are exactly what its own dispatch and section declare, with --waits-only-after limiting them to its --after refs; reckon/crew/queue_admission.py:2712 returns only the explicit refs when the flag is set, which is that goal implemented.\nVERDICT done_when: the done-when names tests/test_a_node_waits_only_on_what_it_names.py covering every case section 31 lists; the file exists at the head with five cases and the manifest records its run (after-suite-head.log, 56 passed, EXIT=0), re-run here at the same head with 5 passed.\nVERDICT write_paths: the declared write paths are the four dispatch modules, the new test and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html; git diff --stat over 434ec98ac..c35c29708 shows exactly those six files and nothing else.\nVERDICT manifest: read; it records four commits, the five gate cases, two negative controls, the armed suite pair (56 head vs 51 base), and states honestly that two of four importer chunks are outstanding rather than passed.\nVERDICT diff: read commit by commit; eec4eb8aa adds the flag through reckon/crew/node.py:789, reckon/crew/queue_admission.py:2712 and its two gate guards, reckon/crew_dispatch_commands.py:1197 and reckon/crew/dispatch_batch.py:38, plus the test; the other three commits touch only the declared evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:353 (_validated_batch_waits), reckon/crew/dispatch.py:2260 (dispatch_waits), reckon/crew_dispatch_commands.py:1565 (crew_dispatch CLI), reckon/crew/queue_admission.py:4148 (_advance_waiting_requests -> _rederive_waits)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2712 returns only the request's own refs under the flag, and the two inherited-wait sources it has to suppress are both guarded (reckon/crew/queue_admission.py:2858 and 3603).\nSCORE evidence: 15\nJUSTIFICATION evidence: after-suite-head.log records 56 passed at a09488d9c and baseline-suite-base.log 51 passed at 434ec98ac, both ending EXIT=0, but the plan's importer population is only half measured (chunks 00 and 01 of four) and no ruff log is recorded for the staged paths.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 434ec98ac..c35c29708 lies inside the six declared write paths, and no file outside them is touched.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control-ignore-flag.log fails test_the_flag_waits_on_its_own_ref_alone_and_no_pass_adds_the_sections_back and test_the_flag_suppresses_the_sections_gate_ref, and negative-control-cache-key.log fails test_a_request_naming_no_after_never_takes_a_siblings, so each guard reddens on the regression it names.\nSCORE fit: 18\nJUSTIFICATION fit: the flag is a TaskNode field documented in place at reckon/crew/node.py:789 and refused through validate_node's property vocabulary beside the other node properties, matching the module's existing idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends reckon/crew/queue_admission.py:2712 derive_wait_refs, the existing sole owner of wait derivation (grep for section_wait_refs finds no second derivation site), rather than adding a parallel one.\nFINDING reckon/crew/dispatch_batch.py:38 non-blocking: the batch entry field waits_only_after and its _entry_node wiring are exercised by no test, so a regression dropping the key would silently queue a batch request with all its section's inherited waits.\n",
+  "review_run_id": "r-20261110T205359915789-review-of-a-node-waits-only-on-what-it-names-c35c29708e39",
+  "reviewed_base_sha": "434ec98ace1c5c575dd0dcc1bff4609f308ed8b1",
+  "reviewed_head_sha": "c35c29708e395b43449494bbbd100133fcaf335b",
+  "reviewed_run_id": "r-20261110T165947769366-a-node-waits-only-on-what-it-names",
+  "rubric": "default",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:42:00+00:00",
+  "total": 109
+}

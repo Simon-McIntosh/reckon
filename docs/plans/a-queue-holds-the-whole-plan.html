@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="321">
+<meta name="plan-version" content="322">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -685,7 +685,10 @@
     <div class="r-comment-body"><p>Two mechanisms from the third review of this section, which its node must cover. First, gate holds do not arrive through <code>derive_wait_refs</code>: <code>_validated_batch_waits</code> appends a <code>readiness:&lt;project&gt;:&lt;slug&gt;#&lt;section&gt;</code> ref whenever the section's own verdict carries a gate. <code>--waits-only-after</code> must suppress that ref too, or the flag leaves gates in place. Second, the sibling leak is the re-derivation cache in <code>reckon/crew/queue_admission.py</code>. It is keyed on <code>(repo_root, node.plan, node.section)</code> without <code>node.after</code>, so the first request of a section re-derived in a pass hands its waits to every sibling re-derived after it. The sibling arm must re-derive two requests of one section in one pass, the first with <code>--after</code> X and the second without, and the second must not wait on X. A test of one request alone passes on the defective code.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261110T181856296912-review-of-a-node-waits-only-on-what-it-names-a09488d9c451" data-who="reckon-build" data-when="2026-11-10T18:43:01.326Z">
-    <div class="r-comment-body"><p>independent review of r-20261110T165947769366-a-node-waits-only-on-what-it-names at base 434ec98ace1c5c575dd0dcc1bff4609f308ed8b1 and head a09488d9c451f3795934d71a8a074503958d600d stores parsed, scoring goal_fidelity 20, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20, with zero added failures and two non-blocking findings (a serialization round-trip assertion, and the done_when&#x27;s importer clause measured on one chunk plus six modules)</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261110T165947769366-a-node-waits-only-on-what-it-names at base 434ec98ace1c5c575dd0dcc1bff4609f308ed8b1 and head a09488d9c451f3795934d71a8a074503958d600d stores parsed, scoring goal_fidelity 20, evidence 15, scope_discipline 20, durability 18, fit 19, reuse 20, with zero added failures and two non-blocking findings (a serialization round-trip assertion, and the done_when's importer clause measured on one chunk plus six modules)</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261110T205359915789-review-of-a-node-waits-only-on-what-it-names-c35c29708e39" data-who="reckon-build" data-when="2026-11-10T21:24:53.623Z">
+    <div class="r-comment-body"><p>review of run r-20261110T165947769366-a-node-waits-only-on-what-it-names at head c35c29708e395b43449494bbbd100133fcaf335b, base 434ec98ace1c5c575dd0dcc1bff4609f308ed8b1; the six dimensions score goal_fidelity 19, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 20, with one non-blocking finding on the untested batch entry field; added_failure_count 0 against the reviewed run&#x27;s own baseline/after suite pair</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261028T172037278571-review-of-a-request-that-cannot-launch-costs-nothing-509b754be256" data-who="reckon-build" data-when="2026-10-28T17:34:26.104Z">
     <div class="r-comment-body"><p>review of r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing at base 1211c30e8ba43ec26c5e38a185cd0c30fb9ab4e2 and head 509b754be2561eb15557ff4445f9d8625d97a1e9 stored parsed, scoring goal_fidelity 14, evidence 11, scope_discipline 19, durability 15, fit 17, reuse 5, with one added failure and two blocking findings</p></div>
