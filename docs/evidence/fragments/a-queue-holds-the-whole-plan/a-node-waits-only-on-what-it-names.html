@@ -1,0 +1,36 @@
+<article class="r-evidence" data-node="a-node-waits-only-on-what-it-names">
+  <h3 id="a-node-waits-only-on-what-it-names-title">A node waits only on what it names</h3>
+
+  <p><strong>What changed.</strong> <code>crew dispatch</code> gains
+  <code>--waits-only-after</code>. With it a request's waits are exactly the
+  requests its <code>--after</code> refs name: the section's
+  <code>plan-section-depends-on</code> refs, the plan's <code>depends_on</code>
+  and the <code>readiness:</code> ref <code>_validated_batch_waits</code>
+  appends for a gate on the section are none of them. The flag rides the stored
+  node, so <code>_rederive_waits</code> honours it on every later admission
+  pass and cannot add the inherited waits back. It is refused without at least
+  one <code>--after</code>, at the command line and in the node contract the
+  batch path shares, so it can never leave a request waiting on nothing. The
+  request still records its section, for routing, landing and the review gate.
+
+  <p><strong>The sibling leak.</strong> The pass's re-derivation cache was keyed on
+  <code>(repo_root, plan, section)</code>, so the first request of a section
+  re-derived in a pass handed its derived waits to every sibling re-derived
+  after it; a request naming no <code>--after</code> waited on a sibling's run.
+  The key now carries the request's own <code>--after</code> refs and the flag,
+  so two requests of one section derive their own waits.
+
+  <p><strong>The measure.</strong> <code>tests/test_a_node_waits_only_on_what_it_names.py</code>
+  shows the flagged request queued as its one ref lands with no pass widening
+  it, the same dispatch unflagged waiting on all four refs, a sibling naming no
+  <code>--after</code> never taking another's, the gate ref suppressed, and the
+  flag-without-ref refusal on both the command line and the contract. Five
+  cases pass at the head (five passed) and four fail at the dispatch base with
+  the same test copied in, the "waits on all four" case being the one that
+  already held there. Two negative controls fail exactly the case they name:
+  ignoring the flag fails the flagged-waits and gate cases, and keying the
+  cache without <code>node.after</code> fails the sibling case. The armed
+  suite arm passes 56 tests at the head against 51 at the base revision, and
+  the importing test files add no failure: the 22 failures seen at the head are
+  the same 22 ids at the base revision.
+</article>
