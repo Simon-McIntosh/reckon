@@ -1,0 +1,36 @@
+<section id="partition-sbatch-passes-the-fence">
+  <h2>An explicit partition submission passes the scheduler shim</h2>
+  <p><code>reckon/nested_launch.py</code> permits <code>sbatch</code> with a
+  nonempty <code>--partition</code> or <code>-p</code> option, including attached
+  values, and forwards the original arguments to the resolved scheduler binary.
+  The refusal names <code>sbatch --partition=&lt;partition&gt;</code> and
+  <code>sbatch -p &lt;partition&gt;</code>. The deliberate-nesting override and
+  explicit single-step exemptions retain their existing behaviour.</p>
+  <p>The new recording-stub cases in
+  <code>tests/test_an_explicit_partition_sbatch_passes_the_fence.py</code> set
+  <code>SLURM_JOB_ID</code> and inject allocation facts through the existing shim
+  fixture. Four partition spellings reach the stub with unchanged arguments.
+  Nine refused cases return 97 without reaching a stub: absent, empty or
+  incomplete partition options, a partition after <code>--</code>, plain or
+  partition-naming <code>srun</code>, and partition-naming <code>salloc</code>.
+  Every refusal names <code>sbatch --partition</code>.</p>
+  <p>Before repair, the four forwarding cases returned 97 with
+  <q>refusing an implicit nested sbatch</q>; all thirteen new cases failed against
+  base source <code>9f5c5bd09e57dfee5196e642efac79c1f36ef670</code>, including
+  nine failures on the missing route text. The negative-control log ends
+  <code>13 failed in 103.01s (0:01:43)</code>, <code>EXIT=1</code>.</p>
+  <p>The armed base gate reports <strong>51 passed</strong>, exit 0; the head
+  gate reports <strong>64 passed</strong>, exit 0. The eight existing test files
+  importing the module report <strong>1 failed, 54 passed</strong> in each arm,
+  with identical failure ids and zero added failures. The unchanged failure is
+  the role-digest canonical-source case raising <code>UnknownBlockError</code>.
+  The broader comparison and head gate ran as separate <code>all_debug</code>
+  jobs, 1309903 and 1309906. Ruff check and format check report zero added
+  findings on both changed Python paths.</p>
+  <p>Test commit: <code>e5e4df2ee7df6ccd4ff92993ddd5d1d01ecee6d9</code>.
+  Source commit: <code>1d8969a052c8a7d77b9de9abf054d94895d3b158</code>.
+  Logs: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/</code>
+  (<code>baseline-suite.log</code>, <code>after-suite.log</code>,
+  <code>baseline-importers.log</code>, <code>after-importers.log</code>,
+  <code>negative-control.log</code>, <code>lint.log</code>).</p>
+</section>
