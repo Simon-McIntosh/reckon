@@ -43,7 +43,14 @@ def project(tmp_path, monkeypatch):
 
 
 def _measure(
-    project, monkeypatch, tmp_path, *, partition="all_debug", timeout=600, receipt=True
+    project,
+    monkeypatch,
+    tmp_path,
+    *,
+    partition="all_debug",
+    timeout=600,
+    receipt=True,
+    scheduler_status=None,
 ):
     repo, base, head = project
     config = {"landing": {"measure_partition": partition}} if partition else {}
@@ -66,7 +73,12 @@ def _measure(
         else:
             is_head = Path(options["cwd"]) == repo
             output = f"FAILED {FAILURE}\n1 failed\n" if is_head else "1 passed\n"
-        return subprocess.CompletedProcess(argv, int(is_head), output, "")
+        return subprocess.CompletedProcess(
+            argv,
+            int(is_head) if scheduler_status is None else scheduler_status,
+            output,
+            "",
+        )
 
     with landing_measure.base_checkout(repo, base) as base_tree:
         result = landing_measure.measure_run(
@@ -96,7 +108,7 @@ def test_every_arm_uses_a_separate_bounded_partition_job(
         assert "--partition=all_debug" in argv
         assert "--time=00:10:00" in argv
         script = argv[argv.index("--wrap") + 1]
-        assert "srun" in script
+        assert shlex.split(script)[0] == "srun"
         assert "--partition=all_debug" in script
         assert "--overlap" not in script
         assert str(tmp_path / "run/landing-measure") in script
@@ -165,7 +177,7 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
     shim = tmp_path / "bin"
     shim.mkdir()
     (shim / "srun").write_text(
-        '#!/bin/sh\nwhile [ "${1#--}" != "$1" ]; do shift; done\nexec "$@"\n'
+        '#!/bin/sh\nprintf "%s\\n" "$@" >> "$SRUN_ARGV_LOG"\nwhile [ "${1#--}" != "$1" ]; do shift; done\nexec "$@"\n'
     )
     (shim / "srun").chmod(0o755)
 
@@ -177,6 +189,7 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
             **options["env"],
             "PATH": str(shim) + ":" + options["env"]["PATH"],
             "TMPDIR": str(node_tmp),
+            "SRUN_ARGV_LOG": str(tmp_path / "srun-argv.log"),
         }
         return subprocess.run(
             ["bash", "-c", script], env=env, capture_output=True, text=True, check=False
@@ -203,6 +216,9 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
     assert "VALUE = 'base'" in (log_dir / "suite-base.log").read_text()
     assert "VALUE = 'head'" in (log_dir / "suite-head.log").read_text()
     assert not list(node_tmp.iterdir())
+    recorded = (tmp_path / "srun-argv.log").read_text()
+    assert recorded.count("--partition=all_debug\n--time=00:10:00\n--ntasks=1\n") == 2
+    assert "--overlap" not in recorded
     assert all(base in script or head in script for script in scripts)
     assert json.loads(json.dumps(measured.as_dict()))["execution"] == "slurm"
 
@@ -247,3 +263,11 @@ def test_a_timed_out_batch_job_is_cancelled_by_its_reported_id(
     assert calls.count(["scancel", "12345"]) == 2
     assert measured.suite["base"]["timed_out"]
     assert "exceeded" in measured.unreadable
+
+
+def test_a_failed_scheduler_cannot_accept_an_earlier_success_receipt(
+    project, monkeypatch, tmp_path
+):
+    result, _ = _measure(project, monkeypatch, tmp_path, scheduler_status=1)
+    assert result.unreadable == "the base arm did not run"
+    assert result.suite["base"]["exit_status"] == 3

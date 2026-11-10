@@ -595,7 +595,7 @@ def _partition_runner(
         )
         script = f"""set -euo pipefail
 scratch=$(mktemp -d "${{TMPDIR:-/tmp}}/landing-arm-XXXXXX")
-trap 'rm -rvf "$scratch"' EXIT
+trap 'status=$?; rm -rvf "$scratch"; printf "EXIT=%s\n" "$status"' EXIT
 mkdir "$scratch/tree"
 {git} archive {quote(revision)} | tar -x -C "$scratch/tree"
 git init -q "$scratch/tree"
@@ -610,7 +610,6 @@ printf '# command: %s\n' {quote(invocation)}
 set +e
 {invocation}
 status=$?
-printf 'EXIT=%s\n' "$status"
 exit "$status"
 """
         # The batch job owns the step: srun from the fleet itself would stay
@@ -690,8 +689,10 @@ exit "$status"
         output = log.read_text() if log.exists() else ""
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
-        receipt = re.search(r"^EXIT=(\d+)$", output, re.MULTILINE)
+        receipt = re.search(r"^EXIT=(\d+)\n?\Z", output, re.MULTILINE)
         status = int(receipt.group(1)) if receipt else 3
+        if status != finished.returncode:
+            status = 3
         return subprocess.CompletedProcess(
             command,
             status,
