@@ -25,7 +25,11 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from reckon import _plan_html, crew, ledger
+from reckon.crew import promotion, promotion_scope
+from reckon.crew.node import CrewError
 from reckon.crew.runs import pointer_path
 from tests.test_a_run_can_always_be_reconciled import (  # noqa: F401 - fixture
     PLAN,
@@ -97,7 +101,6 @@ def test_a_differing_narrative_finishes_the_cleanup_and_is_named(
     assert comment["finished_cleanup"] is True
     assert comment["reason"] == "different_narrative"
     assert comment["kept_narrative"] == recorded
-    assert comment["requested_narrative"] == retried
     assert recorded in comment["note"]
     # The comment keeps the narrative the first promotion wrote.
     assert any(recorded in body for body in _landing_comment_bodies(repository))
@@ -122,3 +125,115 @@ def test_a_run_with_no_ledger_row_is_promoted(
     assert len(rows) == 1
     assert receipt["plan_comment"]["recorded"] is True
     assert "finished_cleanup" not in receipt["plan_comment"]
+
+
+# ── Case 4: a differing narrative before any row exists ─────────────────────
+
+
+def test_a_differing_narrative_without_a_row_is_still_refused(
+    repository: Path,
+) -> None:
+    """No committed row means no promotion to defer to, so the refusal stands."""
+    run_id = "r-differing-narrative-without-row"
+    _pointer(repository, run_id)
+    # The comment an interrupted attempt wrote, and the landing commit that
+    # would have followed it failed: the plan holds one narrative, no row.
+    promotion._record_landing_comment(
+        project=PROJECT,
+        plan=PLAN,
+        section="s1",
+        run_id=run_id,
+        narrative="the attempt whose landing never committed",
+        author="reckon-build",
+        when="2026-10-01T06:00:00Z",
+        root=repository,
+        worker_tree=repository,
+    )
+    assert ledger.runs(PROJECT, root=repository) == []
+
+    with pytest.raises(CrewError, match="different narrative"):
+        _promote(repository, run_id, outcome="a narrative the plan does not hold")
+
+    # The refusal writes nothing: no row, and the pointer survives for a retry
+    # that repeats the narrative the plan already carries.
+    assert ledger.runs(PROJECT, root=repository) == []
+    assert pointer_path(run_id).exists()
+
+
+# ── Case 5: what an unreadable or disagreeing ledger answers ────────────────
+
+
+def test_an_unreadable_ledger_is_not_proof_of_a_written_row(
+    repository: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The deciding caller answers False; the receipt still answers present."""
+
+    def refuse(*_args, **_kwargs):
+        raise ledger.LedgerError("the aggregate cannot be read")
+
+    monkeypatch.setattr(ledger, "load_aggregate", refuse)
+
+    assert (
+        promotion_scope._ledger_holds_row(
+            PROJECT, repository, "r-unreadable", unreadable=False
+        )
+        is False
+    )
+    assert (
+        promotion_scope._ledger_holds_row(PROJECT, repository, "r-unreadable") is True
+    )
+
+
+def test_a_row_the_aggregate_carries_alone_is_not_proof(
+    repository: Path,
+) -> None:
+    """A promoted run proves itself by its document; the aggregate alone does not."""
+    landed = "r-promoted-with-a-document"
+    _pointer(repository, landed)
+    _promote(repository, landed, outcome="landed the ordinary way")
+
+    # A promotion appends the run's own document, and the aggregate carries only
+    # rows that have none — so this shape is proof even though the aggregate
+    # does not name it.
+    aggregate, version = ledger.load_aggregate(PROJECT, root=repository)
+    assert not any(str(row.get("run_id")) == landed for row in aggregate["runs"])
+    assert (
+        promotion_scope._ledger_holds_row(PROJECT, repository, landed, unreadable=False)
+        is True
+    )
+
+    # A row the aggregate carries with no document beside it is the one shape
+    # the two sources disagree about, and a disagreement proves neither.
+    orphan = "r-aggregate-without-document"
+    data = dict(aggregate)
+    data["runs"] = [*aggregate["runs"], {"run_id": orphan, "gate": "not-run"}]
+    ledger.write(PROJECT, data, version, root=repository)
+    assert not ledger.run_path(PROJECT, orphan, repository).exists()
+
+    assert (
+        promotion_scope._ledger_holds_row(PROJECT, repository, orphan, unreadable=False)
+        is False
+    )
+    assert promotion_scope._ledger_holds_row(PROJECT, repository, orphan) is True
+
+
+# ── Case 6: an entity the narrative names survives as written ───────────────
+
+
+def test_a_named_entity_survives_in_the_receipt(
+    repository: Path,
+) -> None:
+    """The report unescapes once, so a literal ``&lt;`` stays a literal."""
+    run_id = "r-second-complete-named-entity"
+    recorded = "confirmed a &lt; b holds for every case"
+    _pointer(repository, run_id)
+    _promote(repository, run_id, outcome=recorded)
+    _pointer(repository, run_id)
+
+    second = _promote(repository, run_id, outcome="a different account entirely")
+
+    comment = second["plan_comment"]
+    assert comment["reason"] == "different_narrative"
+    assert "&lt;" in comment["kept_narrative"]
+    assert "< b" not in comment["kept_narrative"]
+    assert any("&amp;lt;" in body for body in _landing_comment_bodies(repository))

@@ -1448,26 +1448,31 @@ def _record_landing_comment(
                 # would leave the live pointer and the worktree for a reader to
                 # clear by hand. Before the row exists there is no promotion to
                 # defer to, so a differing narrative stays a refusal.
-                if not _ledger_row_is_written(project, root, run_id):
+                if not _ledger_holds_row(project, root, run_id, unreadable=False):
                     raise CrewError(
                         f"landing comment {comment_id!r} for plan {plan!r} already "
                         "contains a different narrative; refusing to report the "
                         "corrected outcome as recorded"
                     )
+                # Both sides go to the stripper as they were written: it
+                # unescapes once, so a narrative that names an entity in its
+                # own text keeps it. Feeding it the already-unescaped forms
+                # above would decode such a narrative twice.
+                kept_narrative = _strip_tags(str(existing.get("body") or ""))
+                requested_narrative = _strip_tags(desired_body)
                 return {
                     "recorded": False,
                     "comment_id": comment_id,
                     "section": anchor,
                     "reason": "different_narrative",
                     "finished_cleanup": True,
-                    "kept_narrative": _strip_tags(existing_body),
-                    "requested_narrative": _strip_tags(requested_body),
+                    "kept_narrative": kept_narrative,
+                    "requested_narrative": requested_narrative,
                     "note": (
                         "finished an earlier promotion's cleanup: the landing "
                         "comment keeps the narrative that promotion recorded "
-                        f"({_strip_tags(existing_body)!r}), which differs "
-                        "from the one requested "
-                        f"({_strip_tags(requested_body)!r})"
+                        f"({kept_narrative!r}), which differs from the one "
+                        f"requested ({requested_narrative!r})"
                     ),
                 }
             return {
@@ -1480,7 +1485,7 @@ def _record_landing_comment(
                         "finished_cleanup": True,
                         "note": "finished an earlier promotion's cleanup",
                     }
-                    if _ledger_row_is_written(project, root, run_id)
+                    if _ledger_holds_row(project, root, run_id)
                     else {}
                 ),
             }
@@ -2290,53 +2295,40 @@ def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
     return error
 
 
-def _ledger_row_state(
-    project: str, root: str | Path | None, run_id: str
-) -> bool | None:
-    """Whether the ledger holds this run's row: True, False, or None unknown.
+def _ledger_holds_row(
+    project: str,
+    root: str | Path | None,
+    run_id: str,
+    *,
+    unreadable: bool = True,
+) -> bool:
+    """Whether the ledger holds this run's row, read without other runs.
 
-    One read serves the two callers below, which differ only in what they do
-    with an unreadable ledger. The aggregate and the run's own file are both
-    consulted, without reading other runs: a union read can fail on an
-    unrelated damaged run document, and one damaged file must not decide this
-    run's state. ``None`` says the state could not be established, so a caller
-    that must not claim an absence can read it as present and a caller that
-    must not claim a promotion can read it as absent.
+    The two sources are not mirrors. A promotion appends the run's own document,
+    which is where the row lives, and the aggregate carries only the rows that
+    have none — so a document with no aggregate row is the ordinary shape of a
+    document, not a disagreement. The source that proves the row is therefore
+    the document alone; a row the aggregate carries with no document beside it
+    is a state the two disagree about, and a read that failed agrees in proving
+    nothing. Both of those answer ``unreadable``.
+
+    The default suits a receipt, which must not claim a rollback it cannot show
+    and so treats an unprovable row as present; a caller deciding whether a
+    promotion already landed passes False, because an unproven row must not
+    stand in for one.
     """
     try:
         data, _version = ledger.load_aggregate(project, root=root)
     except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
-        return None
-    if any(str(item.get("run_id") or "") == run_id for item in data["runs"]):
-        return True
+        return unreadable
+    in_aggregate = any(str(item.get("run_id") or "") == run_id for item in data["runs"])
     try:
         ledger.run_path(project, run_id, root).stat()
     except FileNotFoundError:
-        return False
+        return unreadable if in_aggregate else False
     except OSError:
-        return None
+        return unreadable
     return True
-
-
-def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
-    """Present unless the ledger provably lacks the row.
-
-    The receipt only claims a rollback it can show, so an unreadable ledger
-    answers present rather than forbidding the re-promotion that recovers a
-    file the rollback removed.
-    """
-    return _ledger_row_state(project, root, run_id) is not False
-
-
-def _ledger_row_is_written(project: str, root: str | Path | None, run_id: str) -> bool:
-    """True only when the ledger provably holds a row for this run.
-
-    Used where the answer decides whether a promotion already landed: an
-    unreadable ledger proves nothing and must not be read as a committed row,
-    which would let a narrative that differs from an interrupted attempt's own
-    through as if a promotion stood behind it.
-    """
-    return _ledger_row_state(project, root, run_id) is True
 
 
 def _discard_run_store_row(run_id: str) -> bool:
