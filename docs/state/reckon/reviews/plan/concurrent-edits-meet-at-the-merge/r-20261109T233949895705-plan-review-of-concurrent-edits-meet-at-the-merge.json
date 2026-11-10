@@ -1,0 +1,53 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-09T23:58:45.856Z",
+  "dispatched_at": "2026-11-09T23:44:58Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:150",
+      "id": "done_when-1",
+      "reason": "the arm as written can never pass on its own cited evidence, so the section needs a source in which reckon-project shared-root file claims are actually evaluated, or a different definition of both the numerator and the floor.",
+      "text": "the zero-with-floor clause cannot be satisfied by the three copies \u00a74 names: across all three the only claimed file path is `scripts/iter/integrated_simulation.py`, held 401, 396 and 699 times by the stale run `r-20261108T065757180968-unverified-switching-windows-s2` (\"records no worker process yet\"), and that path belongs to power_convertor, which ships no `shared-write-paths.json` at all \u2014 read by path prefix this is 699 held-on-claim verdicts on a shared-root file path rather than zero, and read against the run's own project declaration it is zero evaluations of a file claim under a shared root, below the 20 the clause now demands, so the arm reports either a failure or \"unmeasured\" no matter how \u00a72 behaves",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:150",
+      "id": "reasoning-1",
+      "reason": "without naming a join to the run ledger (`docs/state/reckon/runs/`) as the denominator's source, the measuring node has no way to compute the floor and will report a pass or a failure it cannot evidence.",
+      "text": "\"at least 20 admission evaluations of a file claim under a shared root\" has no instrument in the named source: the verdict log records a claimed path only inside a held-on-claim refusal's detail string (the `ScopeConflict` text raised at `reckon/crew/queue_admission.py:5733`), while a request whose shared-root claim was admitted appears as a `launched` row with no detail and no path (the third copy's two launched pointers carry `run_id`, `session` and `verdict` only), so admitted evaluations \u2014 the ones the floor needs while the numerator must be zero \u2014 are uncountable from the copies",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "bfa4a0967ee87ec076130da37d65c1e339569744",
+  "plan_fingerprint": "30b996b58a4c941ddfddfe2f7082182d94f15581ef6254073c0469e794911f53",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 17,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261109T233949895705-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "d52db4b7a5d9e86263ed1a47949a267725df31a9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/queue_admission.py:2453\u20132454` is the `trim_service_log(limit=\u2026, keep=\u2026)` call and `:103` is `ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576`, both as cited, and every cited path resolves; the tail figure is close but slightly stale \u2014 the third copy holds 785 rows from 20:47:17Z to 22:10:28Z where the section says 790 rows to 22:06Z, which is about 80 minutes either way.",
+    "done_when": "a finding \u2014 \u00a74's after-window arm requires `held-on-claim` verdicts on shared-root file paths at zero across at least 20 evaluations, but the three retained copies it names contain exactly one claimed path and it is not a shared-root file claim for the run's project, so the arm cannot pass.",
+    "evidence_paths": "pass \u2014 the three retained copies resolve under `~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/` (all three files present, 404/399/785 rows), the before snapshot resolves at `~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl`, and the fragment target sits under `docs/evidence/fragments/`; none of these is a scratchpad or node-local path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags appear in the symbols or paths \u00a74 introduces.",
+    "reasoning": "a finding \u2014 the newly added 20-evaluation floor rests on a count the verdict log cannot supply, because a claim path is recorded only inside a held-on-claim refusal and never on an admitted request, so the section's mechanism cannot produce the denominator its done-when asserts.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, the fleet measurement of parallel same-module landings, and its done-when closes on that one measure.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s4` waiting on `s2` and `s3`, and both sections exist and are marked done, so the measurement waits on exactly the work it measures (snapshot line 22)."
+  },
+  "section_digests": {
+    "_document": "040335a70dff03152d2485f289c86f33d81d7076aea0b303198a1ad1a58281f3",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "64d69cfb32f9b5562888e46773b45d12a0e550169a1ce46f54c2994f92cc1e8e",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:14:24.012317+00:00",
+  "total": null
+}
