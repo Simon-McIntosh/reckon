@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="landing-measure-runs-on-its-partition">
+  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
+  <title>Landing measure arms use the declared compute partition</title>
+</head>
+<body>
+<main class="plan-doc">
+  <section id="landing-measure-runs-on-its-partition-outcome">
+    <h2>Landing measure arms use the declared compute partition</h2>
+    <p>A project declaring <code>landing.measure_partition</code> submits each
+      suite, importer-population and isolated-repeat arm through
+      <code>sbatch --wait</code> as a separate job. Its <code>srun</code> step
+      names the partition and time bound and carries no <code>--overlap</code>.
+      Bounds over one hour select <code>landing.measure_long_partition</code>,
+      defaulting to <code>rigel</code>. Projects without a partition declaration
+      retain in-place execution, recorded as <code>execution: in-place</code>;
+      scheduled measurements record <code>execution: slurm</code>.</p>
+    <p>Each job archives its named revision from the shared Git object store
+      into its own node-local temporary tree, creates local Git metadata pinned
+      to that revision, links the common environment and carries any newly added
+      test files needed by the base arm. The job writes its revision, hostname,
+      tree, command and terminal receipt to the run directory on shared storage,
+      and removes its temporary tree on exit. A missing receipt or one disagreeing
+      with the scheduler result makes the arm unreadable. Timed-out submissions
+      cancel only their reported job ID.</p>
+    <p>The service-owned flight validator accepts the partition names and a
+      positive finite <code>landing.measure_timeout_seconds</code>, and rejects
+      malformed settings. The generated provider-neutral schemas are unchanged.</p>
+  </section>
+  <section id="landing-measure-runs-on-its-partition-measure">
+    <h3>Controls and armed suite</h3>
+    <table>
+      <thead><tr><th>Reading</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Declared-partition control at base
+          <code>4a4188d18d6bb0d9bfff213f54d392e30451ab32</code></td>
+          <td>1 failed: the ten recorded arms ran in place instead of through batch jobs.</td></tr>
+        <tr><td>Scheduler-result control at the initial implementation</td>
+          <td>1 failed: a failed scheduler was accepted against a success-shaped receipt.
+            The repaired reader refuses that arm.</td></tr>
+        <tr><td>Armed base suite</td><td>51 passed; EXIT=0.</td></tr>
+        <tr><td>Armed head suite at
+          <code>3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2</code></td>
+          <td>59 passed; EXIT=0, including all eight new controls.</td></tr>
+      </tbody>
+    </table>
+    <p>The importer population at base reports 8 failed, 162 passed; at
+      <code>3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2</code> it reports
+      8 failed, 170 passed. The eight failing IDs are identical, so the
+      change adds zero failures. Arms ran sequentially with at most four
+      pytest workers and a 60-second per-test bound.</p>
+    <p>The controls record all ten scheduler launches, the actual srun argument
+      vector, normal and over-hour partitions, revision contents and scratch
+      cleanup, in-place compatibility, flight validation, missing or mismatched
+      receipts and cancellation by reported job ID. All changed Python paths
+      pass Ruff check and Ruff format --check with no findings.</p>
+  </section>
+</main>
+</body>
+</html>
