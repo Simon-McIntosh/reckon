@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T23:09:36.105Z",
+  "dispatched_at": "2026-11-10T22:54:53Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:84",
+      "id": "reasoning-1",
+      "reason": "\u00a78's codex measurement reads this one field, so a field that cannot read true on the codex arm leaves the treatment arm empty and the verdict unmeasurable.",
+      "text": "s5 states \"the run record's anchored_edit is then true exactly when the key is\", but \u00a74 (line 79) defines that field as true only when \"the server was registered and Edit and MultiEdit were disallowed in this launch, otherwise false with the reason (unfenced, resumed, operator-settings, no-flight-config)\"; on codex neither tool exists to disallow \u2014 \u00a78 and s5 both say `apply_patch` cannot be withdrawn \u2014 so under \u00a74's predicate the codex arm records false, and \u00a78 splits the population on that recorded fact (line 109), folding every codex anchored run into the baseline arm. The unfenced clause fails the same way: the `-c` overrides do not depend on a fence, so a key-true unfenced codex run registers the server and would record true, which \u00a74 lists as a false reason.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:84",
+      "id": "wiring-1",
+      "reason": "an undeclared dependency lets the coordinator queue s5 beside s4, and the node then fails or fabricates the flag it was told to test.",
+      "text": "s5's done-when ends \"and the flag on the run record\", and that record field's writer is named in \u00a74 (line 79) beside `fenced` on the launched-worker record (`reckon/crew/dispatch_launch.py:2938`, where `\"fenced\": fenced` is read in the same spec dict), but `plan-section-depends-on` (line 22) declares `\"s5\":[\"#s3\"]` only, so s5 can be dispatched concurrently with s4 and its own gate then measures a field no landed change writes.",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:84",
+      "id": "reasoning-2",
+      "reason": "without a named site and its \u00a78 consumer, the codex anchored arm reports zero edits routed through the tool \u2014 the same \"zero that is an unread field\" \u00a71 records as not believable \u2014 and \u00a78 cannot tell that zero from a real one.",
+      "text": "s5 says \"the codex stream parser counts edits made through the tool separately from `file_change` items\", naming no site, and no parser in the repository reads `mcp_tool_call` at all: the run-record fold in `_CodexDialect.observe` (`reckon/_backends.py:1454-1479`) reads only `thread.started`, `item.completed`/`agent_message`, `rate_limit_event` and `turn.completed`; the shared reads scanner (`reckon/shadow_reads.py:66-122`) reads only `command_execution` and message tool blocks; the edit census that produced \u00a71's codex counts (`docs/research/data/crew-pattern-review/worker-anatomy/anatomy_census.py:307-361`) counts `command_execution` and `file_change` only, so an edit routed through `anchored` contributes to neither metric.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "reasoning-3",
+      "reason": "substituting pytest's own collectable names (or the project's `python_files`) for the any-language pattern is a one-line change to the deliverable and closes the same defect the section fixes for fixtures; latent today, since no `*.test.py`/`*.spec.py` exists in the tree.",
+      "text": "s9 narrows the suite command to \"files whose name matches the dispatcher's test-file pattern (`_TEST_FILE_RE`) with a `.py` suffix\", but that pattern (`reckon/crew/node.py:1013`) admits `*.test.py` and `*.spec.py`, which pytest's collector does not \u2014 `pyproject.toml:59` declares no `python_files`, so the default `test_*.py`/`*_test.py` applies \u2014 and a scope holding `tests/x.test.py` therefore still hands pytest a file it cannot collect, exits 5, and is refused as `collected_no_test`, the exact failure \u00a79 exists to remove. The rule's stated property (\"only the paths pytest collects as tests\") is not what the named pattern measures.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2f35e6534fb07d87498498258b0cee77acf7801d",
+  "plan_fingerprint": "0a15d54e5d37309369c32afe9cf00e9668ea470b3fc11460b81156b06520509d",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 12,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T225012172458-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "34f6b9ee24de9f7809b63ac355688bf1d1c3eeba",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `prompts.py:610`, `dispatch.py:2942`, `_worker_fence.py:425`/`:983`, `dispatch_launch.py:2938`, `promotion_records.py:521`, `node.py:1013`/`:1018` and the fixture all resolve; extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 s5 names a measurable gate with a declared negative control (the parser test must fail if anchored-tool calls are counted as `file_change`), and s9's gate names the mixed scope, the fixture-only scope and the is_test_path preservation, with the narrowing removal as its negative control.",
+    "evidence_paths": "pass \u2014 s5's fixture is committed at `docs/research/fixtures/codex-anchored-edit-stream.jsonl` (7930 bytes, 18 records), a durable path a later reader can open, and s9's gate is the repository's own test tree.",
+    "naming": "pass \u2014 neither unit carries a plan label, ticket number, version tag or changelog prose; \"the omp dialect node found it while landing\" names a run, not a stage label.",
+    "reasoning": "a finding \u2014 s5's new run-record sentence contradicts \u00a74's definition of the same field, and s5's \"codex stream parser\" names no site while no existing codex reader ever sees an `mcp_tool_call` record.",
+    "single_goal": "pass \u2014 s5 carries one treatment arm (the codex dialect honouring one key) and s9 one rule (which paths reach the suite command).",
+    "wiring": "a finding \u2014 s5 declares `depends-on` s3 only, yet its done-when reads the run-record `anchored_edit` field whose writer is a \u00a74 deliverable, so s5 can be dispatched beside \u00a74 and then cannot satisfy its own gate."
+  },
+  "section_digests": {
+    "_document": "a9d507204defbfdeb314ce16077e5af01fcf91de1d69a8dc1e4462da50d23675",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "3e402605ed95b3481f7da760d111f4f31e75d9a64d71e176d2258f54c0e474dd",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "1c446ae4a199a19c6e7de97686d696708fd9dcc65c5e1093c5efc17872c3d288",
+    "s9": "6d33835e18c6ed31dab9d3e2bbe274f4327820e6218481fceca174962362d21a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T23:27:33.511497+00:00",
+  "total": null
+}
