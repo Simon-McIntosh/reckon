@@ -2141,18 +2141,10 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     from reckon.crew.recovery_wait import _run_directory
 
     directory = _run_directory(record)
-    try:
-        names = [path.name for path in directory.iterdir()]
-    except OSError:
-        return None
-    numbers = [
-        int(match.group(1))
-        for name in names
-        if (match := _ATTEMPT_RECEIPT_PATTERN.match(name))
-    ]
+    numbers = attempt_receipt_numbers(directory)
     if not numbers:
         return None
-    attempt = max(numbers)
+    attempt = numbers[-1]
     # The receipt must name this run: a foreign launch is freed only by the
     # attempt's own account of its end, never by a file standing where one goes.
     receipt = _run_exit_record(
