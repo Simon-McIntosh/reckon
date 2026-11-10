@@ -1,0 +1,337 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "len(calls) == 10",
+      "fails_if": "Skip suite/population/repeat launches or change the declared three repeat pairs.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 104
+    },
+    {
+      "assertion": "all((Path(argv[0]).name == 'sbatch' for argv, _ in calls))",
+      "fails_if": "Reinstate the base implementation that directly runs each arm in place (recorded negative control).",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 105
+    },
+    {
+      "assertion": "'--wait' in argv",
+      "fails_if": "Remove synchronous wait from batch submission.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 107
+    },
+    {
+      "assertion": "'--partition=all_debug' in argv",
+      "fails_if": "Omit or misroute the configured normal partition.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 108
+    },
+    {
+      "assertion": "'--time=00:10:00' in argv",
+      "fails_if": "Omit or incorrectly format the 600-second batch bound.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 109
+    },
+    {
+      "assertion": "shlex.split(script)[0] == 'srun'",
+      "fails_if": "Replace or remove the batch-owned srun step.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 111
+    },
+    {
+      "assertion": "'--partition=all_debug' in script",
+      "fails_if": "Omit the configured partition from the inner step.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 112
+    },
+    {
+      "assertion": "'--overlap' not in script",
+      "fails_if": "Reintroduce fleet overlap in the submitted step.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 113
+    },
+    {
+      "assertion": "str(tmp_path / 'run/landing-measure') in script",
+      "fails_if": "Redirect remote output outside the run log directory.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 114
+    },
+    {
+      "assertion": "options['env']['RECKON_ALLOW_NESTED_LAUNCH'] == '1'",
+      "fails_if": "Remove explicit nested-launch opt-in.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 115
+    },
+    {
+      "assertion": "result.real == (FAILURE,)",
+      "fails_if": "Lose or reverse the head-only failing ID across suite/population/repeat readings.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 116
+    },
+    {
+      "assertion": "result.as_dict()['execution'] == 'slurm'",
+      "fails_if": "Fail to label configured partition execution in the measurement.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 117
+    },
+    {
+      "assertion": "landing_measure.Measurement.from_dict(result.as_dict()).as_dict() == result.as_dict()",
+      "fails_if": "Drop or alter a serialized field on Measurement.from_dict; this is a roundtrip contract, not evidence of actual scheduler execution.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 118
+    },
+    {
+      "assertion": "calls",
+      "fails_if": "Suppress all arm invocations.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 126
+    },
+    {
+      "assertion": "all(('--partition=rigel' in argv for argv, _ in calls))",
+      "fails_if": "Continue to use the normal partition for a bound over one hour.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 127
+    },
+    {
+      "assertion": "all(('--time=01:00:01' in argv for argv, _ in calls))",
+      "fails_if": "Truncate or misformat an over-hour arm bound.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 128
+    },
+    {
+      "assertion": "calls",
+      "fails_if": "Suppress all arm invocations.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 135
+    },
+    {
+      "assertion": "all((Path(argv[0]).name != 'sbatch' for argv, _ in calls))",
+      "fails_if": "Schedule an undeclared project instead of preserving in-place execution.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 136
+    },
+    {
+      "assertion": "result.as_dict()['execution'] == 'in-place'",
+      "fails_if": "Mislabel undeclared execution.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 137
+    },
+    {
+      "assertion": "flight.validate_layer({'landing': {'measure_partition': 'all_debug', 'measure_long_partition': 'rigel', 'measure_timeout_seconds': 600}}, source, strict=True) == []",
+      "fails_if": "Reject valid landing configuration or emit warnings for valid declared keys.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 142
+    },
+    {
+      "assertion": "Path(argv[0]).name == 'sbatch'",
+      "fails_if": "Bypass batch submission in the execution control.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 185
+    },
+    {
+      "assertion": "not measured.unreadable",
+      "fails_if": "Make the real generated shell command fail setup, execution or receipt checks.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 215
+    },
+    {
+      "assertion": "\"VALUE = 'base'\" in (log_dir / 'suite-base.log').read_text()",
+      "fails_if": "Archive head for the base arm or lose its actual output; expected contents are independently fixed by the committed fixture.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 216
+    },
+    {
+      "assertion": "\"VALUE = 'head'\" in (log_dir / 'suite-head.log').read_text()",
+      "fails_if": "Archive base for the head arm or lose its actual output; expected contents are independently fixed by the committed fixture.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 217
+    },
+    {
+      "assertion": "not list(node_tmp.iterdir())",
+      "fails_if": "Remove or break normal-exit scratch cleanup.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 218
+    },
+    {
+      "assertion": "recorded.count('--partition=all_debug\\n--time=00:10:00\\n--ntasks=1\\n') == 2",
+      "fails_if": "Omit or alter either real shell invocation recorded by the srun shim.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 220
+    },
+    {
+      "assertion": "'--overlap' not in recorded",
+      "fails_if": "Reintroduce overlap in the actual recorded inner invocation.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 221
+    },
+    {
+      "assertion": "all((base in script or head in script for script in scripts))",
+      "fails_if": "Remove both supplied SHAs from a script; archiving head for every arm does NOT fail this assertion because the carried-test script includes head (non-blocking finding).",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 222
+    },
+    {
+      "assertion": "json.loads(json.dumps(measured.as_dict()))['execution'] == 'slurm'",
+      "fails_if": "Drop the slurm execution marker from JSON-safe measurement output.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 223
+    },
+    {
+      "assertion": "calls",
+      "fails_if": "Suppress all arm invocations.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 230
+    },
+    {
+      "assertion": "result.unreadable == 'the base arm did not run'",
+      "fails_if": "Treat missing or scheduler-mismatched receipts as a readable base arm.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 231
+    },
+    {
+      "assertion": "result.suite['base']['exit_status'] == 3",
+      "fails_if": "Accept missing or inconsistent receipts as a success/test failure instead of infrastructure refusal.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 232
+    },
+    {
+      "assertion": "calls.count(['scancel', '12345']) == 2",
+      "fails_if": "Omit exact-ID cancellation on either timed-out suite arm or cancel another set.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 263
+    },
+    {
+      "assertion": "measured.suite['base']['timed_out']",
+      "fails_if": "Lose timeout classification after an expired batch wait.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 264
+    },
+    {
+      "assertion": "'exceeded' in measured.unreadable",
+      "fails_if": "Treat timed-out measurement as readable rather than refused.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 265
+    },
+    {
+      "assertion": "result.unreadable == 'the base arm did not run'",
+      "fails_if": "Treat missing or scheduler-mismatched receipts as a readable base arm.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 272
+    },
+    {
+      "assertion": "result.suite['base']['exit_status'] == 3",
+      "fails_if": "Accept missing or inconsistent receipts as a success/test failure instead of infrastructure refusal.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 273
+    }
+  ],
+  "assertion_review_method": "Static reading only, no mutation or suite rerun; every added assert is listed below with the reinstated regression or other condition that makes it fail.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:_measure_delivery",
+    "reckon/crew/queue_landing.py:_measure_timeout",
+    "reckon/flight.py:validate_layer"
+  ],
+  "completed_at": "2026-11-10T20:14:01Z",
+  "dispatched_at": "2026-11-10T19:59:54Z",
+  "exception_assertion_analysis": {
+    "fails_if": "Remove validation of a non-string partition or report an unrelated error.",
+    "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+    "guard": "pytest.raises(FlightConfigError, match=\"measure_partition\")",
+    "line": 151
+  },
+  "failure_parser_positive_control": {
+    "failure_id": "tests/test_a_landing_measure_runs_on_its_partition.py::test_every_arm_uses_a_separate_bounded_partition_job",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/negative-control.log",
+    "observed_failure_count": 1,
+    "reproduction": "assert all(Path(argv[0]).name == \"sbatch\" for argv, _ in calls) -> assert False; 1 failed in 12.19s; EXIT=1"
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": "597",
+      "severity": "blocking",
+      "text": "blocking: The batch environment at lines 649-653 preserves the submitter's TMPDIR, and the remote script uses it before creating any parent or establishing node-local storage; an inherited fleet-local scratch directory is absent on another node and makes mktemp fail before the receipt trap is installed, while a GPFS TMPDIR puts the checkout on shared storage, so explicitly establish the destination-node temporary root and cover both inherited-path cases."
+    },
+    {
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": "222",
+      "severity": "non-blocking",
+      "text": "non-blocking: The assertion that every script contains either supplied SHA also passes if all arms archive head, because the carried-test archive embeds head in every script; it cannot independently guard revision selection, although the separate base/head content assertions at lines 215-216 do, so exempt this redundant assertion from the claimed revision coverage."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_landing_measure_runs_on_its_partition.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/head-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "59 passed in 37.22s",
+      "revision": "3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/base-suite-fixed.log",
+      "observed_failure_ids": [],
+      "observed_summary": "51 passed in 14.66s",
+      "revision": "4a4188d18d6bb0d9bfff213f54d392e30451ab32"
+    }
+  },
+  "head_gate_revision_note": "The after suite ran at 3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2; the only later reviewed commit changes the evidence HTML.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all three commits from 4a4188d18d6bb0d9bfff213f54d392e30451ab32 through a62c222d2e4d59e3cc32c8daca8916d43cf9cad4: scheduler implementation, terminal receipt repair, then evidence-only HTML, totalling five files with 568 insertions and eight deletions.",
+    "done_when": "The source prompt.txt:123 and tests/test_a_landing_measure_runs_on_its_partition.py are matched by recorded 59-pass head and 51-pass base gates plus zero added importer failures; remote-node temporary-directory portability is not exercised.",
+    "goal": "The source prompt.txt:38 requires separate partition jobs; reckon/crew/landing_measure.py:549-703 implements them, but inherited TMPDIR can defeat the required node-local tree.",
+    "manifest": "Source manifest.md records three commits and readable baseline_suite/after_suite logs with EXIT=0; its outstanding operational nova/configuration work is explicitly outside_scope.",
+    "write_paths": "Source prompt.txt:80-88 declares eight scopes and all five changed files are inside them; no project flight configuration was changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_measure_runs_on_its_partition.py:105 fails on reinstated in-place routing and lines 215-217 independently check actual revision contents, but line 222 is only an input-SHA presence check and no assertion guards inherited TMPDIR portability.",
+    "evidence": "Source base-suite-fixed.log records 51 passed and head-suite.log records 59 passed with EXIT=0, while tests/test_a_landing_measure_runs_on_its_partition.py:191 substitutes an existing TMPDIR and leaves portability unmeasured.",
+    "fit": "reckon/flight.py:1399 extends the existing service-owned validator pattern and landing_measure.py:549 extends the measurement owner with mechanism-based names, although its temporary storage assumption differs from fleet_node.py:202.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:634 submits independent bounded jobs for every arm, but line 597 trusts an inherited directory instead of establishing storage on the destination node.",
+    "reuse": "Capability searches for batch submission, revision trees, receipts and partition routing found fleet_node.py:236 submitting fleet allocations and nested_launch.py forwarding launches; neither owns bounded revision measurement, which _partition_runner extends in landing_measure.py:549, while _measure_config and _validate_landing extend their existing owners.",
+    "scope_discipline": "All five paths in the base-to-head diff match source prompt.txt:80-88 and implement scheduler routing, configuration validation, controls or their evidence fragment."
+  },
+  "outside_scope": "Live section also requires project flight declarations and a real nova landing on another node; source dispatch done_when scopes this implementation gate to patched scheduler controls, so configuration and operational confirmation remain coordinator work.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires separate partition jobs; reckon/crew/landing_measure.py:549-703 implements them, but inherited TMPDIR can defeat the required node-local tree.\nVERDICT done_when: The source prompt.txt:123 and tests/test_a_landing_measure_runs_on_its_partition.py are matched by recorded 59-pass head and 51-pass base gates plus zero added importer failures; remote-node temporary-directory portability is not exercised.\nVERDICT write_paths: Source prompt.txt:80-88 declares eight scopes and all five changed files are inside them; no project flight configuration was changed.\nVERDICT manifest: Source manifest.md records three commits and readable baseline_suite/after_suite logs with EXIT=0; its outstanding operational nova/configuration work is explicitly outside_scope.\nVERDICT diff: Read all three commits from 4a4188d18d6bb0d9bfff213f54d392e30451ab32 through a62c222d2e4d59e3cc32c8daca8916d43cf9cad4: scheduler implementation, terminal receipt repair, then evidence-only HTML, totalling five files with 568 insertions and eight deletions.\nCALL_SITES: reckon/crew/queue_landing.py:_measure_delivery, reckon/crew/queue_landing.py:_measure_timeout, reckon/flight.py:validate_layer\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:634 submits independent bounded jobs for every arm, but line 597 trusts an inherited directory instead of establishing storage on the destination node.\nSCORE evidence: 17\nJUSTIFICATION evidence: Source base-suite-fixed.log records 51 passed and head-suite.log records 59 passed with EXIT=0, while tests/test_a_landing_measure_runs_on_its_partition.py:191 substitutes an existing TMPDIR and leaves portability unmeasured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All five paths in the base-to-head diff match source prompt.txt:80-88 and implement scheduler routing, configuration validation, controls or their evidence fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_measure_runs_on_its_partition.py:105 fails on reinstated in-place routing and lines 215-217 independently check actual revision contents, but line 222 is only an input-SHA presence check and no assertion guards inherited TMPDIR portability.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/flight.py:1399 extends the existing service-owned validator pattern and landing_measure.py:549 extends the measurement owner with mechanism-based names, although its temporary storage assumption differs from fleet_node.py:202.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for batch submission, revision trees, receipts and partition routing found fleet_node.py:236 submitting fleet allocations and nested_launch.py forwarding launches; neither owns bounded revision measurement, which _partition_runner extends in landing_measure.py:549, while _measure_config and _validate_landing extend their existing owners.\nFINDING reckon/crew/landing_measure.py:597 blocking: The batch environment at lines 649-653 preserves the submitter's TMPDIR, and the remote script uses it before creating any parent or establishing node-local storage; an inherited fleet-local scratch directory is absent on another node and makes mktemp fail before the receipt trap is installed, while a GPFS TMPDIR puts the checkout on shared storage, so explicitly establish the destination-node temporary root and cover both inherited-path cases.\nFINDING tests/test_a_landing_measure_runs_on_its_partition.py:222 non-blocking: The assertion that every script contains either supplied SHA also passes if all arms archive head, because the carried-test archive embeds head in every script; it cannot independently guard revision selection, although the separate base/head content assertions at lines 215-216 do, so exempt this redundant assertion from the claimed revision coverage.\n",
+  "review_run_id": "r-20261110T195535805266-review-of-landing-measure-runs-on-its-partition-a62c222d2e4d",
+  "reviewed_base_sha": "4a4188d18d6bb0d9bfff213f54d392e30451ab32",
+  "reviewed_commits": [
+    "a1f14445343fe52e6b3eb7c94f04c4169836e760",
+    "3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2",
+    "a62c222d2e4d59e3cc32c8daca8916d43cf9cad4"
+  ],
+  "reviewed_head_sha": "a62c222d2e4d59e3cc32c8daca8916d43cf9cad4",
+  "reviewed_run_id": "r-20261110T181932611430-landing-measure-runs-on-its-partition",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suggested_non_blocking_disposition": {
+    "disposition": "exempted",
+    "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+    "line": 222,
+    "reason": "Independent actual file-content assertions already cover revision selection; do not count the redundant string assertion as that coverage."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:51:51.993472+00:00",
+  "total": 109
+}

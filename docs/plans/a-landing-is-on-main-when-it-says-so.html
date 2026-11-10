@@ -24,7 +24,7 @@
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="51">
+<meta name="plan-version" content="52">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
@@ -178,6 +178,9 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted" data-who="reckon-build" data-when="2026-11-10T00:54:10Z">
     <div class="r-comment-body"><p>A resume now holds the run against promotion, without waiting, before it writes the pointer or marks the launch, and refuses with `PromotionInProgressError` while a promotion holds the run. The refusal itself takes no pointer lock (the mark is dropped only if the pointer is free), so it answers at once against a promotion holding both locks; `_pointer_lock` in `reckon/crew/runs.py` gained the non-blocking mode, `hold_against_promotion` in `reckon/crew/resumption.py` is re-entrant and imports the lock name from promotion, and `resume_plan` in `reckon/crew/dispatch_sessions.py` takes that hold around both the pointer write and the launch mark. Measure: `tests/test_a_resume_waits_out_a_promotion.py` reports 5 passed at the head, green in 20 consecutive runs of the file, against 2 failed / 3 passed at the base revision; a one-line mutation of the refusal path reddens the both-locks case; and the six-file importer census reports 11 failed / 205 passed at both revisions with identical ids.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261110T195535805266-review-of-landing-measure-runs-on-its-partition-a62c222d2e4d" data-who="reckon-build" data-when="2026-11-10T20:14:01Z">
+    <div class="r-comment-body"><p>Independent review stored for base 4a4188d18d6bb0d9bfff213f54d392e30451ab32 and head a62c222d2e4d59e3cc32c8daca8916d43cf9cad4; one blocking TMPDIR portability finding and one non-blocking redundant assertion; added suite failures=0.</p></div>
 </div>
 </section>
 </main>
