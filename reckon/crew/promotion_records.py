@@ -532,6 +532,48 @@ def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     return sorted(files)
 
 
+def _census_tests(record: Mapping[str, Any]) -> list[str]:
+    """The census tests the project declares for this run, in declared order.
+
+    A census checks the whole tree rather than one node's code, so its file is
+    reachable from no node's own write scope. The project names its census tests
+    in its flight file and the run carries that list, so reckon hardcodes no
+    test path of its own. A record carrying none declares no census, which
+    resolves exactly as the scoped command did before census tests existed.
+    """
+    declared = record.get("census_tests")
+    if isinstance(declared, (str, bytes)) or not isinstance(declared, Sequence):
+        return []
+    return [str(entry).strip() for entry in declared if str(entry or "").strip()]
+
+
+def _writes_product_source(record: Mapping[str, Any]) -> bool:
+    """Whether any fenced write path names source outside the docs tree.
+
+    A census is worth running exactly when the node can change the tree a census
+    reads. A node writing only documents and plans cannot add a staged writer or
+    any other runtime source the census inventories, so running the whole-tree
+    census for it would spend its gate budget measuring work it did not touch.
+    """
+    node = record.get("node")
+    write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
+    if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
+        return False
+    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
+    repo = Path(repo_text).expanduser() if repo_text else None
+    for entry in write_paths:
+        text = str(entry or "").strip()
+        if not text:
+            continue
+        relative = _repository_relative_scope(text, repo)
+        if relative is None:
+            continue
+        if Path(relative).parts[:1] == ("docs",):
+            continue
+        return True
+    return False
+
+
 def _scoped_suite_command(
     record: Mapping[str, Any], *, revision: str | None = None
 ) -> str:
@@ -542,6 +584,11 @@ def _scoped_suite_command(
     test files, so one declaration scopes every node to the tests its change
     can affect. A declaration with no placeholder is returned as written.
 
+    A node writing product source also measures the project's declared census
+    tests, because a census is drawn from the whole tree rather than from one
+    node's scope, and a node that adds a staged writer would otherwise never run
+    it. A node writing only documents and plans measures none of them.
+
     ``revision`` names the tree the command will run against, and the files are
     then only those that tree holds: a write path is not a file that exists, so
     a test the node deletes leaves the head arm and one it creates leaves the
@@ -550,9 +597,9 @@ def _scoped_suite_command(
     and what every run recorded before the per-tree rule carried.
 
     An empty result means the run has nothing to measure with: no declaration
-    at all, or a scoped one over a scope — or a tree — holding no test file.
-    Promotion then records no suite observation for the pair, which is the same
-    state an unarmed project is in.
+    at all, or a scoped one over a scope — or a tree — holding no test file and
+    no census the project declares. Promotion then records no suite observation
+    for the pair, which is the same state an unarmed project is in.
     """
     declared = " ".join(str(record.get("suite_command") or "").split())
     if not declared:
@@ -560,13 +607,22 @@ def _scoped_suite_command(
     if SCOPED_SUITE_PLACEHOLDER not in declared:
         return declared
     files = _node_test_files(record)
+    census = (
+        [name for name in _census_tests(record) if name not in files]
+        if _writes_product_source(record)
+        else []
+    )
     if revision is not None:
-        present = _paths_present_in_tree(_scope_tree(record), revision, files)
+        present = _paths_present_in_tree(_scope_tree(record), revision, files + census)
         if present is not None:
             files = [name for name in files if name in present]
-    if not files:
+            census = [name for name in census if name in present]
+    measured = files + census
+    if not measured:
         return ""
-    return " ".join(declared.replace(SCOPED_SUITE_PLACEHOLDER, " ".join(files)).split())
+    return " ".join(
+        declared.replace(SCOPED_SUITE_PLACEHOLDER, " ".join(measured)).split()
+    )
 
 
 #: Exits that mean pytest ran no test at all: a usage error over a path it

@@ -1,0 +1,25 @@
+<section id="a-census-test-runs-in-every-product-gate" data-reckon="fragment">
+  <h2 id="a-census-test-runs-in-every-product-gate-heading">A census test runs in every product node's gate</h2>
+  <p id="a-census-test-runs-in-every-product-gate-why">A scoped suite command is drawn from a node's own fenced test paths, so no node's scope reaches a check over the whole tree. A node that adds a staged writer ran only the tests its own paths covered, and the staged-write inventory turned red at the next node that happened to run it. The project now declares its census tests in its own flight file, and a node whose write paths include product source measures them beside its own tests at both arms.</p>
+  <table id="a-census-test-runs-in-every-product-gate-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>reckon/schema/flight.yaml</code></td><td><code>GateConfig</code> gains <code>census_tests</code>, a declared list of whole-tree checks; no test path is hardcoded in reckon.</td></tr>
+      <tr><td><code>reckon/_flight_schema.py</code>, <code>docs/_shared/flight.schema.json</code></td><td>Regenerated from the LinkML source through <code>scripts/regen_flight_schema.py</code>; the field resolves as a list of strings.</td></tr>
+      <tr><td><code>reckon/crew/promotion_records.py</code></td><td><code>_scoped_suite_command</code> appends the declared census tests when the node's write paths reach outside <code>docs/</code>, filtered per arm tree like the node's own files.</td></tr>
+      <tr><td><code>reckon/crew/dispatch.py</code></td><td>The census list is read from the flight file, resolved into the gate command the worker is told, and carried on the run record.</td></tr>
+      <tr><td><code>docs/state/reckon/flight.yaml</code></td><td>reckon declares <code>tests/test_staged_write_inventory.py</code> as its census test.</td></tr>
+      <tr><td><code>tests/test_a_census_test_runs_in_every_product_gate.py</code></td><td>Five tests over cases (a)-(d): product node includes the census at base and head, a docs-only node does not, an undeclared project resolves as before, and the suite delta refuses a head that adds an unlisted staged writer while a base already red at the same id adds no failure.</td></tr>
+    </tbody>
+  </table>
+  <h3 id="a-census-test-runs-in-every-product-gate-measure">Measure</h3>
+  <ul>
+    <li id="a-census-test-runs-in-every-product-gate-head-arm">Head arm: 5 passed, <code>EXIT=0</code>.</li>
+    <li id="a-census-test-runs-in-every-product-gate-base-arm">Base arm, the test copied into the dispatch base tree: case (a) fails, since the base resolution returns no command for a product-only scope.</li>
+    <li id="a-census-test-runs-in-every-product-gate-negative-control">Negative control, dropping the census list from the resolution: case (a) fails naming the census-bearing resolution.</li>
+    <li id="a-census-test-runs-in-every-product-gate-importers">Importers of <code>reckon.crew.promotion_records</code> and <code>reckon._flight_schema</code> add no failure at head against base, one arm at a time with <code>-n 6</code>.</li>
+  </ul>
+  <p id="a-census-test-runs-in-every-product-gate-recurrence">The recurrence the census describes closes here: a node that adds a staged writer without listing it now turns the inventory red at its own head, and its suite delta refuses the landing, rather than the tree turning red at the next unrelated node.</p>
+</section>

@@ -1317,6 +1317,16 @@
             "additionalProperties": false,
             "description": "How evidence gates are enforced.",
             "properties": {
+                "census_tests": {
+                    "description": "Test files that census the whole tree rather than one node's code, such as the staged-write inventory. A scoped suite command is drawn from a node's own fenced write paths, which cannot reach a check over the whole tree, so a node that adds a staged writer never runs it and the tree turns red at the next node that does. Each project names its own census tests here, so reckon hardcodes no test path; a scoped command runs them beside the node's own tests whenever the node's write paths include product source. Absent means the project declares none and the scoped command resolves exactly as it did before.",
+                    "items": {
+                        "type": "string"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "dimension_floors": {
                     "additionalProperties": {
                         "anyOf": [

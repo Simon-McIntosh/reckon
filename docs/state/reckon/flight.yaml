@@ -123,3 +123,9 @@ review:
 # under test rather than whichever tree last synced it.
 gates:
   suite_command: "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q {node_test_files}"
+  # A census checks the whole tree rather than one node's code, so no node's own
+  # fenced scope can reach it. Declared here, it runs beside a product node's own
+  # tests, and a node that adds a staged writer without listing it turns the
+  # inventory red at its own head rather than at the next node that runs it.
+  census_tests:
+    - tests/test_staged_write_inventory.py
