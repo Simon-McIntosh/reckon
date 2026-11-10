@@ -1,0 +1,94 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T01:13:16.933Z",
+  "dispatched_at": "2026-11-10T01:03:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "reasoning-1",
+      "reason": "the fix is aimed at a mechanism the code does not run, so a node could land the enumeration and leave the 22% exactly where it is, which is the third consecutive time this plan's live check has not moved.",
+      "text": "\u00a722 says the change token's `_misfiled_review_candidates` (22%) \"enumerates the review store's index for each run\", but `_misfiled_review_candidates` (`reckon/crew/recovery_memo.py:370\u2013385`) only calls `review_module._store_index(directory)`, and `_store_index`/`_store_indexes` (`reckon/crew/review_records.py:1477\u20131509`, `:1572\u20131583`) hold a per-process cache keyed on the store directory's stat identity, re-listing only when that identity moves; per run it is one `stat` and a dict lookup, so the per-run enumeration the section blames does not exist",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "reasoning-2",
+      "reason": "the section must either state that the annotation inputs join the cache key or scope the cache to the parse and keep annotation per tick; without that, a node can satisfy the done-when and still either not move the measure or make promotion read a stale added-failure count.",
+      "text": "the deliverable keeps \"each record's per-file identity\" and answers `_stored_review`/`select_review_for_head` from the tick's enumeration, but the value `read_review` returns is not a function of the review-store file alone: `read_review` (`reckon/crew/review.py:3759`) ends in `annotate_review_of_run`, which reads the reviewed run's `manifest.md` and the two gate logs it names on every call and stamps `added_failure_count`; a cache keyed only on review-store identities therefore either still pays those two or three per-run reads every tick (no busy-share improvement) or serves a stale `added_failure_count` when a gate log gains a failure",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "done_when-1",
+      "reason": "as written the test's enumeration assertion passes on the unfixed code, so the only falsifiable half is the `read_review` count and the section's stated mechanism goes unmeasured.",
+      "text": "the head assertion's first clause requires that a tick \"enumerates the store directory once\", which is already true at base for the only path the section names, since `_store_indexes` lists a store directory once per stat-identity change and not per run; the clause therefore cannot distinguish head from base and measures none of the deliverable's first half",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:562",
+      "id": "evidence_paths-1",
+      "reason": "a later reader, or the node that has to decide whether the landed change moved the cost, cannot open or re-derive the profile, so the section's evidence is a number with no artifact behind it.",
+      "text": "every percentage \u00a722's argument rests on (51% in the publish, 82% within it, 36% in the change token, 22% `_misfiled_review_candidates`, 51% `stat`, 13% `scandir`) comes from a \"75 s py-spy profile\" that names no path, while the busy-share log beside it is named in full",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:604",
+      "id": "wiring-1",
+      "reason": "a coordinator acting on the plan's followups would re-dispatch completed sections, and the next section's entry point (`f-tmref-008`) is the one that should stand alone.",
+      "text": "`_document` declares `s20` and `s21` `done` but leaves `f-tmref-006` (`:594`, prompt `/reckon-build the-monitor-reads-each-fact-once \u00a720`) and `f-tmref-007` (`:599`, prompt `\u2026 \u00a721`, body \"\u00a721 is running as r-20261109T220405605375\") open, and both sections now carry landing comments (`c-close-s20`, `c-close-s21`), so the plan's own invocation chain still offers two dispatches for work already landed",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "6985fb8183130dc61d7b6b87e1fea86370075893",
+  "plan_fingerprint": "2a862592b1b056e4681746ca90c00cd9b55c8476044a40695eb4537ac543f82f",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 142,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T010032797904-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "26edbf5fa7f6ed64733f7ca5dad96c97d45e4690",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_misfiled_review_candidates` (`reckon/crew/recovery_memo.py:370`), `_review_input_identities` (`:388`), `_stored_review` (`reckon/crew/recovery_review_subject.py:1260`), `select_review_for_head` (`:113`) and `read_review` (`reckon/crew/review.py:3759`) all resolve, and the cited busy-share log exists with `busy=54` in it.",
+    "done_when": "a finding \u2014 \u00a722's head assertion \"one producer tick enumerates the store directory once\" already holds at base, because `_store_indexes` caches per process keyed on the store directory's stat identity; only the `read_review` clause can fail.",
+    "evidence_paths": "a finding \u2014 the 75 s py-spy profile that supplies every percentage \u00a722's Why rests on (51/82/36/22/51/13) is cited with no durable path, while the busy-share log beside it is named.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach \u00a722's text or its named symbols.",
+    "reasoning": "a finding \u2014 \u00a722's stated root cause for the 36% change-token limb does not match the code (`_misfiled_review_candidates` reads a cached index, not a per-run enumeration), and the deliverable's cache key omits the inputs `read_review` actually re-reads per run.",
+    "single_goal": "pass \u2014 \u00a722 carries one deliverable, the tick answering every run from one review-store enumeration, with one test file and one negative control.",
+    "wiring": "a finding \u2014 `_document` flips `s20`/`s21` to `done` but leaves `f-tmref-006` and `f-tmref-007` open with prompts that dispatch those completed sections."
+  },
+  "section_digests": {
+    "_document": "cd634bdc4957f910833806e9c913e3dedd24bed89241ecca72753a8915ce540f",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "6c27feb8b7205c149115c0a387fc621f9f7b1307c8f011b6842e114ea1fa8e3e",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T14:39:09.426540+00:00",
+  "total": null
+}
