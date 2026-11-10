@@ -21,6 +21,21 @@ _PRIORITY_KEYS: dict[
 _DIRECTORY_FILES: dict[Path, tuple[Any, tuple[Path, ...]]] = {}
 
 
+def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
+    """The named plans' file identities, including absent files."""
+    from reckon import file_memo
+
+    signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
+    for slug in sorted(slugs):
+        try:
+            stat = (docs_dir / "plans" / f"{slug}.html").stat()
+            identity = file_memo.signature_from_stat(stat)
+        except OSError:
+            identity = None
+        signature.append((slug, identity))
+    return tuple(signature)
+
+
 def _roadmap_input_signature(
     docs_dir: Path, slugs: set[str], project: str
 ) -> tuple[Any, ...]:
@@ -34,13 +49,10 @@ def _roadmap_input_signature(
     from reckon._store import state_path
 
     signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
-    paths = {docs_dir / "plans" / f"{slug}.html" for slug in slugs}
-    paths.update(
-        (
-            state_path(project, "index"),
-            state_path(project, "index", root=docs_dir.parent),
-        )
-    )
+    paths = {
+        state_path(project, "index"),
+        state_path(project, "index", root=docs_dir.parent),
+    }
     for directory in (docs_dir / "plans", docs_dir / "sprints"):
         try:
             identity = file_memo.file_signature(directory)
@@ -52,13 +64,14 @@ def _roadmap_input_signature(
             cached = (identity, tuple(directory.glob("*.html")))
             _DIRECTORY_FILES[directory] = cached
         paths.update(cached[1])
+    paths.difference_update(docs_dir / "plans" / f"{slug}.html" for slug in slugs)
     for path in sorted(paths):
         try:
             identity = file_memo.file_signature(path)
         except OSError:
             identity = None
         signature.append((str(path), identity))
-    return tuple(sorted(slugs)), tuple(signature)
+    return _named_plan_signature(docs_dir, slugs), tuple(signature)
 
 
 def _roadmap_priority_keys(
