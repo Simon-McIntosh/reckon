@@ -1760,9 +1760,9 @@ _SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
 def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
     """The section units a ``--section`` spelling names, in the order given.
 
-    Every spelling the parser derives an identity for is accepted — ``s5``,
-    ``§5`` and a bare ``5`` name one section — and a repeated name is dropped
-    rather than read twice. A token naming no section is refused here, because
+    Every spelling the parser derives an identity for is accepted — the ``s``
+    prefix, the section symbol, and a bare number all name one section — and a
+    repeated name is dropped rather than read twice. A token naming no section is refused here, because
     a scope that silently names nothing composes a review of the whole plan
     while reporting itself as narrow.
     """
