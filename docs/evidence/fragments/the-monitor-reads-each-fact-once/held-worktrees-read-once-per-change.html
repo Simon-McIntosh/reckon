@@ -1,0 +1,33 @@
+<section id="held-worktrees-read-once-per-change">
+  <h2>Held worktree discovery follows source changes</h2>
+  <p>Commit <code>adb858c38821b14348fed0e1e350733a7b0cc75a</code> reuses directory listings
+  and held records through the existing read-only file memo. Its identities include the
+  aggregate and per-run records, live pointers, the common Git worktree registry and
+  registered paths’ parent directories. Input stamps are still checked: the measure
+  below concerns repeated discovery, rather than all filesystem metadata calls.</p>
+  <table>
+    <caption>Unchanged second refresh over 20 registered worktrees and 30 live pointers</caption>
+    <thead><tr><th>Discovery work</th><th>Base</th><th>Changed source</th></tr></thead>
+    <tbody>
+      <tr><td>Held-record derivations</td><td>1</td><td>0</td></tr>
+      <tr><td>Registry listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Underlying stats, including held-path checks</td><td>75</td><td>0</td></tr>
+      <tr><td>Live-pointer listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Directory scans</td><td>3</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The base negative control records <code>1 failed, 2 passed in 19.56s</code>;
+  the focused head probe records <code>54 passed in 43.77s</code>. The regressions
+  cover an added worktree, a pointer’s claim moving, an in-place release-record edit
+  and a vanished directory. Both discovery aliases are patched, alongside the
+  physical stat and directory-scan functions, and the first refresh proves that
+  the instrument observes real work.</p>
+  <p>This is a partial delivery: importer acceptance remains blocked, with the
+  comparison, remaining work and required scope decision recorded in this worker’s
+  durable manifest. The coordinator’s post-landing station read-rate and CPU
+  measurement has not run. This fragment does not close the section.</p>
+  <p>Receipts in the assigned run directory: <code>negative-control.log</code>,
+  <code>focused-head.log</code>, <code>importers-base.log</code>,
+  <code>importers-head.log</code>, <code>lint.log</code> and
+  <code>source-marker.log</code>.</p>
+</section>
