@@ -56,19 +56,31 @@
       <h2>Measure</h2>
       <p>Gate: <code>tests/test_a_resume_waits_out_a_promotion.py</code> over a
         temporary crew home and a run whose pointer and worktree are under it.
-        At the head revision it reports 4 passed, <code>EXIT=0</code>. The
-        cases are: a resume attempted while the promotion lock is held refuses
-        naming the promotion, with the pointer byte-for-byte unchanged and the
-        launch seam never called; a real promotion holding its lock and the
-        run's pointer lock together, with the refusal required inside two
-        seconds, which fails if the refusal queues behind the pointer lock; a
-        resume with no promotion in progress proceeding and leaving no
-        in-flight marker; and a promotion-shaped critical section and a resume
-        started together finishing inside a five-second bound in all 25 rounds,
-        in whichever order they arrive.</p>
+        At the head revision it reports 5 passed, <code>EXIT=0</code>, and 20
+        consecutive runs of the file are green, with no failing run and
+        <code>EXIT=0</code>. The cases are: a resume attempted while the
+        promotion lock is held refuses naming the promotion, with the pointer
+        byte-for-byte unchanged and the launch seam never called; a real
+        promotion holding its lock and the run's pointer lock together, with
+        the refusal required inside two seconds, which fails if the refusal
+        queues behind the pointer lock; a resume with no promotion in progress
+        proceeding and leaving no in-flight marker; a promotion-shaped critical
+        section and a resume started together finishing inside a five-second
+        bound in all 25 rounds; and a promotion run to completion before the
+        resume starts, where the resume must proceed.</p>
+      <p>The concurrent case asserts what holds whichever side reaches the locks
+        first: both threads finish inside the per-round bound, the promotion
+        completes, and the resume either proceeds or refuses with
+        <code>PromotionInProgressError</code> — never blocking, never raising
+        anything else. Which of those two occurs is the scheduler's to decide,
+        so the outcome in which a resume proceeds is asserted where it is
+        determined, in the case that starts the resume after the promotion has
+        finished. A first draft required both a resume and a promotion to
+        succeed across the rounds, which failed on a run that refused every
+        round although the guard had behaved exactly as designed.</p>
       <p>Negative control: at the base revision
         <code>f6a07c1c23</code>, over a tree extracted from that revision with
-        the node's test copied in, 2 of the 4 cases fail and 2 pass so a guard
+        the node's test copied in, 2 of the 5 cases fail and 3 pass so a guard
         that refuses everything could not pass either. The refusal case fails
         with <code>DID NOT RAISE CrewError</code> — the resume proceeds while
         the promotion lock is held — and the both-locks case fails with
