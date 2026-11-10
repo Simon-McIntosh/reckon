@@ -65,6 +65,11 @@
     <p>Landed from r-20261109T220405605375 (head d5d44a52d2, on main at 8ddc359bf1). One producer tick computes each run's classification inputs once and shares them with the change token, the publish's reuse key and <code>classify_pointer</code> through a per-tick memo; a review record rewritten in place still moves the next tick's key. Node test: 2 passed at head, 2 failed with the file on base. The four head-only importer ids the worker reported fail at base on this node too (base 3, 5 and 5 of 5 on reruns; head 4, 5 and 5 of 5). The post-landing busy-share sample waits for §20 to land, so both are measured against the 54 of 57 recorded after §19.</p>
   </section>
 
+  <section id="delivered-review-stop-reads-the-tick-pointers" data-evidence-origin="append">
+    <h2>The delivered-review stop reads the tick&#x27;s pointers</h2>
+    <p>Landed from r-20261109T220051547043 (head 8e44515bbd, on main at f5d3854194). The delivered-review stop now takes the tick's pointer set, so <code>_resolved_reviewed_run_id</code> makes no second <code>list_live</code> call inside a tick. Its review found nothing. <strong>The live check does not improve:</strong> with §20 and §21 both landed, the producer's main thread (pid 3781488, code stamp 99bcb49e9a) was busy in 54 of 56 samples, with one run of 31 consecutive busy samples (<code>~/.config/reckon/crew/runs/r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers/logs/post-landing-busy-share.log</code>), against 54 of 57 after §19. A new 75 s profile places the remaining time in reading the review store once per run; that is §22.</p>
+  </section>
+
 </main>
 </body>
 </html>
