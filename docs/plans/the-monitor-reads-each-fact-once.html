@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="155">
+<meta name="plan-version" content="156">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -847,6 +847,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261110T202504427879-review-of-queue-order-rebuilds-roadmap-on-change-6b86e20289e8" data-who="reckon-build" data-when="2026-11-10T20:51:37Z">
+    <div class="r-comment-body"><p>Independent review of source base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd to head 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 stores all six scores, zero added failures and one non-blocking reuse finding; no blocking finding.</p></div>
 </div>
 </section>
 </main>

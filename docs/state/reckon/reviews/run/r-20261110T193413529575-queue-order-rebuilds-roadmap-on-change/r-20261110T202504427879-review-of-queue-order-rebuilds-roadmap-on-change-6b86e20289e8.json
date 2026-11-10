@@ -1,0 +1,151 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "A missing placement, a position other than 1 or a fallback reason fails; this ensures counters did not silently exercise an unavailable roadmap.",
+      "lines": "63-64"
+    },
+    {
+      "failure_condition": "A missing first build or a second unchanged build changes the independently observed builder-call list; disabling cache reuse reddens line 80.",
+      "lines": "78,80"
+    },
+    {
+      "failure_condition": "Placement output changes across an unchanged call or mtime-only touch; the earlier output is an invariance reference, not an input supplied to the code.",
+      "lines": "79,82"
+    },
+    {
+      "failure_condition": "Omitting named-plan identity from invalidation prevents the second builder entry; always rebuilding causes a third entry.",
+      "lines": "83,85"
+    },
+    {
+      "failure_condition": "A missing initial build, changed placement, failure to invalidate either index or failure to cache the rebuilt result fails the corresponding assertion; reverting index tracking reddens line 102 (line 101 in the earlier recorded base test).",
+      "lines": "99,101,102,104"
+    },
+    {
+      "failure_condition": "Failure to observe a nonqueued-plan touch leaves only one builder entry; reverting additional plan identities reddens line 117 (the same assertion appears at line 116 in the earlier negative-control test revision).",
+      "lines": "114,117"
+    },
+    {
+      "failure_condition": "Failure to observe plan arrival leaves one build, or failure to observe removal leaves two; reverting directory membership tracking reddens line 128.",
+      "lines": "128,131"
+    },
+    {
+      "failure_condition": "A figure write changes the placements or triggers a second build; broadening signature invalidation to unrelated directories fails this case.",
+      "lines": "142-143"
+    },
+    {
+      "failure_condition": "The counter must first observe the known plan directory; always listing unchanged plan or sprint directories then makes the nonempty second listing fail line 162.",
+      "lines": "159,162"
+    }
+  ],
+  "assertion_input_tethers": "None: call-count expectations are independent observations, and output-to-prior-output checks assert invariance rather than echoing an input passed to production.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:queued_placements:5138",
+    "reckon/crew/queue_admission.py:fair_share_admission_order:5079",
+    "reckon/crew/station_subscriber.py:live_work_populations:233",
+    "reckon/crew/station.py:tick:524"
+  ],
+  "completed_at": "2026-11-10T20:51:37Z",
+  "dispatched_at": "2026-11-10T20:29:07Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: e66fe5ad5ae8639b72ad0f42914d6178bc70fd20; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/after-suite-final.log"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/baseline-suite.log"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": "62",
+      "severity": "non-blocking",
+      "text": "non-blocking: The new _DIRECTORY_FILES lookup and replacement duplicate the stat-keyed memoization capability in reckon/file_memo.py:memoized; using that owner for the directory listing would share its locking, bounded retention and cache clearing instead of maintaining another independent cache."
+    }
+  ],
+  "importer_delta_evidence": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: e66fe5ad5ae8639b72ad0f42914d6178bc70fd20; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/after-importers-final.log"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/baseline-importers.log"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read 7f121aab0521c3f2fcbc99a43ad965258e9d1bfd, e66fe5ad5ae8639b72ad0f42914d6178bc70fd20 and 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 against base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; the commits add invalidation tests, expand the signature, restore its named-plan helper and record evidence without changing admission policy.",
+    "done_when": "Read prompt.txt:121-122; tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:29-43 patches every loaded builder binding and :73-103 checks unchanged calls and touches, while after-suite-final.log records 58 passes and importer arms record identical six-failure sets.",
+    "goal": "Read prompt.txt:38 and live plan section s24; queue_order.py:39-74 extends the existing priority cache to invalidate on plan, sprint-resource and index changes while preserving unchanged builds.",
+    "manifest": "Read manifest.md and its baseline-suite.log, after-suite-final.log, negative-control-base.log, importer arms and lint-final.log; the receipts support its counts and its explicit statement that the original repeated-build diagnosis already failed to reproduce at base.",
+    "write_paths": "Read prompt.txt:80-85; all three changed paths (queue_order.py, the declared new test and the declared evidence fragment) are inside the exclusive scope."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:78-162 fails if unchanged requests rebuild, touches fail to invalidate, arrivals or removals are ignored, unrelated writes invalidate, or unchanged directories are listed again, although sprint HTML edits have no dedicated case.",
+    "evidence": "tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:73-103 counts real builder entries and negative-control-base.log records four failures, while the armed and importer logs substantiate zero added failures and lint-final.log records clean lint and formatting.",
+    "fit": "reckon/crew/queue_order.py:39-74 follows its existing lazy-import and shared file-signature idioms and the new source and test names describe mechanisms without prohibited labels.",
+    "goal_fidelity": "reckon/crew/queue_order.py:39-74 tracks the plan and sprint inputs and :100-105 reuses priorities when their signature is unchanged, satisfying the declared caching behavior.",
+    "reuse": "reckon/crew/queue_order.py:62-65 duplicates stat-keyed compute-and-cache behavior already owned by reckon/file_memo.py:memoized instead of wrapping that owner, although the surrounding signature extends the queue owner and uses the shared identity functions.",
+    "scope_discipline": "The three paths shown by the 5b9e3c0e..6b86e202 diff all match prompt.txt:80-85 and the evidence fragment explicitly reserves the live station measurement for integration."
+  },
+  "limitations": "No suite rerun or code mutation; review reads recorded source arms. Final commit only adds evidence HTML. Live station I/O/CPU measurement remains the coordinator integration gate.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live plan section s24; queue_order.py:39-74 extends the existing priority cache to invalidate on plan, sprint-resource and index changes while preserving unchanged builds.\nVERDICT done_when: Read prompt.txt:121-122; tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:29-43 patches every loaded builder binding and :73-103 checks unchanged calls and touches, while after-suite-final.log records 58 passes and importer arms record identical six-failure sets.\nVERDICT write_paths: Read prompt.txt:80-85; all three changed paths (queue_order.py, the declared new test and the declared evidence fragment) are inside the exclusive scope.\nVERDICT manifest: Read manifest.md and its baseline-suite.log, after-suite-final.log, negative-control-base.log, importer arms and lint-final.log; the receipts support its counts and its explicit statement that the original repeated-build diagnosis already failed to reproduce at base.\nVERDICT diff: Read 7f121aab0521c3f2fcbc99a43ad965258e9d1bfd, e66fe5ad5ae8639b72ad0f42914d6178bc70fd20 and 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 against base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; the commits add invalidation tests, expand the signature, restore its named-plan helper and record evidence without changing admission policy.\nCALL_SITES: reckon/crew/queue_admission.py:queued_placements:5138, reckon/crew/queue_admission.py:fair_share_admission_order:5079, reckon/crew/station_subscriber.py:live_work_populations:233, reckon/crew/station.py:tick:524\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:39-74 tracks the plan and sprint inputs and :100-105 reuses priorities when their signature is unchanged, satisfying the declared caching behavior.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:73-103 counts real builder entries and negative-control-base.log records four failures, while the armed and importer logs substantiate zero added failures and lint-final.log records clean lint and formatting.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths shown by the 5b9e3c0e..6b86e202 diff all match prompt.txt:80-85 and the evidence fragment explicitly reserves the live station measurement for integration.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:78-162 fails if unchanged requests rebuild, touches fail to invalidate, arrivals or removals are ignored, unrelated writes invalidate, or unchanged directories are listed again, although sprint HTML edits have no dedicated case.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_order.py:39-74 follows its existing lazy-import and shared file-signature idioms and the new source and test names describe mechanisms without prohibited labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_order.py:62-65 duplicates stat-keyed compute-and-cache behavior already owned by reckon/file_memo.py:memoized instead of wrapping that owner, although the surrounding signature extends the queue owner and uses the shared identity functions.\nFINDING reckon/crew/queue_order.py:62 non-blocking: The new _DIRECTORY_FILES lookup and replacement duplicate the stat-keyed memoization capability in reckon/file_memo.py:memoized; using that owner for the directory listing would share its locking, bounded retention and cache clearing instead of maintaining another independent cache.\n",
+  "reuse_search": "Searched stat-keyed memoization, directory listings, directory signatures and roadmap priority caches at the reviewed head; opened reckon/file_memo.py:memoized and signature functions, reckon/resources.py:_identity_listing, and reckon/crew/findings.py directory memoization. New production definition _roadmap_input_signature extends queue_order, but its inner listing cache duplicates file_memo.memoized. New test helpers reuse the existing chain_repo fixture; their counter and filesystem-touch helpers provide test-specific instrumentation.",
+  "review_run_id": "r-20261110T202504427879-review-of-queue-order-rebuilds-roadmap-on-change-6b86e20289e8",
+  "reviewed_base_sha": "5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd",
+  "reviewed_commits": [
+    "7f121aab0521c3f2fcbc99a43ad965258e9d1bfd",
+    "e66fe5ad5ae8639b72ad0f42914d6178bc70fd20",
+    "6b86e20289e8f09b71bac4dc2589f22b1d8f8084"
+  ],
+  "reviewed_head_sha": "6b86e20289e8f09b71bac4dc2589f22b1d8f8084",
+  "reviewed_run_id": "r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:24:09.095631+00:00",
+  "total": 102
+}
