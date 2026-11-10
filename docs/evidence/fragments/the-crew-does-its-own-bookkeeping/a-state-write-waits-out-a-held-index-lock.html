@@ -1,0 +1,35 @@
+<section id="a-state-write-waits-out-a-held-index-lock" class="evidence-fragment">
+  <h2>§29 — A state write's commit waits out a held index lock</h2>
+  <p>
+    The defect reproduced at the base revision. With <code>.git/index.lock</code>
+    created before the call, a state write raised
+    <code>could not stage state write docs/state/proj/crew.json: fatal: Unable to
+    create '…/.git/index.lock': File exists</code> and left the commit count at
+    1, so the write did not land.
+  </p>
+  <p>
+    <code>ledger._commit_state_write</code> now runs both its <code>git add</code>
+    and its <code>git commit</code> through
+    <code>merge._run_waiting_out_a_held_index_lock</code>, so a transient hold is
+    waited out on that helper's cadence and bound. The lock is read from the
+    checkout's own <code>index.lock</code>, not from the failing command's text.
+    A failure that leaves no lock behind raises at once as before; a lock that
+    outlasts the wait raises naming <code>index.lock</code> and the attempt
+    bound. The call returns the retries it made, so a caller can record that its
+    write waited.
+  </p>
+  <p id="a-state-write-waits-out-a-held-index-lock-measure">
+    Measure: the focused gate
+    <code>python -m pytest -q tests/test_a_state_write_waits_out_a_held_index_lock.py</code>
+    reports <strong>3 passed</strong> at the head revision: a lock released
+    between attempts lets the write commit with <strong>1 retry counted</strong>;
+    a lock held past the bound raises naming <code>index.lock</code> after
+    <strong>7</strong> waits (the helper's 8 attempts less the first); and a
+    failing pre-commit hook with no lock raises at once with
+    <strong>0</strong> waits. The negative control replaces the add's lock wait
+    with a single direct attempt and the first case fails
+    (<strong>2 failed, 1 passed</strong>). Over the 52 test files of the
+    ledger-importing population that completed, the head arm's 16 failures are
+    the same 16 the base revision fails, so the change adds none.
+  </p>
+</section>
