@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:2848 _session_host_run returns session_host_module.run(...) as the host process exit status; it is the sole production entry point",
+    "reckon/crew/session_host.py:1180 run() calls host.supervise(...), so the lock taken at run() covers the only production read loop"
+  ],
+  "completed_at": "2026-11-10T16:57:13.061Z",
+  "dispatched_at": "2026-11-10T16:45:07Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T160357323816-a-session-host-never-blocks-in-its-read/manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the after arm's command runs tests/test_staged_write_inventory.py and repeats tests/test_a_session_host_never_blocks_in_its_read.py, neither of which the base arm runs, so the two population arms do not measure an identical population: the added-failure conclusion still holds because the 16 failing ids are identical file for file, but `262 passed` against `207 passed` is not a comparable pair and most of the extra passes come from a file outside the importing set the done_when names"
+    },
+    {
+      "file": "reckon/crew/session_host.py",
+      "line": 135,
+      "severity": "non-blocking",
+      "text": "non-blocking: `_fifo_identity` re-derives the device-and-inode identity that reckon/crew/follow_checkpoint.py:86 `stream_identity` already computes for a path; no module owns that capability (host_lease.py:86, fleet_supervisor.py:810 and follow_checkpoint.py both inline their own), so this follows the established idiom rather than forking an owner, but a shared path-identity helper is where the next caller should go"
+    }
+  ],
+  "justifications": {
+    "durability": "negative_control.log reddens cases (a), (b) and (d) under the declared mutation (3 failed, 1 passed), so each of those assertions fails on the regression it guards; the timing assertions at tests/test_a_session_host_never_blocks_in_its_read.py:175 and :228 bound elapsed time by 2*POLL_SECONDS, a constant the test itself hands the code, and it is the independent 8 s pytest-timeout that actually reddens under the mutation.",
+    "evidence": "gate.log records the literal command and `4 passed`/EXIT=0, and baseline.log/after.log record both arms at 16 failures with identical ids; the after arm's file list is not identical to the base arm's (manifest.md:20 adds tests/test_staged_write_inventory.py), so the pass counts are not comparable even though the failure delta is sound.",
+    "fit": "The added names (OWNER_LOCK_SUFFIX, ALREADY_RUNNING_EXIT_CODE, _fifo_identity, acquire_owner_lock) follow the module's existing public-constant and private-helper idiom beside SETTLED_EXIT_CODE at reckon/crew/session_host.py:101, and carry no plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/crew/session_host.py:1109-1114 turns a read that finds nothing into an empty pass instead of a wait, and the single production entry point reckon/crew_follow_commands.py:2848 reaches it through run().",
+    "reuse": "No module owns an exclusive process-lifetime lock: reckon/crew has roughly two dozen inline fcntl.flock sites (model_catalogue.py:292, follower_registration.py:392, fleet_supervisor.py:789) and HostLease at reckon/crew/host_lease.py is a mtime-based cross-node lease, a different capability; _fifo_identity at session_host.py:135 is adjacent to follow_checkpoint.stream_identity at reckon/crew/follow_checkpoint.py:86 but that helper is scoped to stream files and returns a four-key mapping, so this extends the repo's per-module identity idiom rather than duplicating an owner.",
+    "scope_discipline": "The diff's three paths are all inside the four granted at prompt.txt:81-84, and nothing else in the tree changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a session host never waits in a read it cannot leave; reckon/crew/session_host.py:1089 sets the descriptor non-blocking and :1109 treats BlockingIOError as an empty pass.\nVERDICT done_when: the done_when names four cases in tests/test_a_session_host_never_blocks_in_its_read.py and gate.log records that file at `4 passed`, EXIT=0.\nVERDICT write_paths: prompt.txt:81-84 grants four paths and the diff touches three of them, all granted.\nVERDICT manifest: read in full; it records commits, both arms with logs, the negative control, and honestly notes that case (c) survives the mutation.\nVERDICT diff: read commit by commit; one commit, 465e0b7442, 453 insertions, implements exactly the three deliverables the plan states.\nCALL_SITES: reckon/crew_follow_commands.py:2848 _session_host_run, reckon/crew/session_host.py:1180 run\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/session_host.py:1109-1114 turns a read that finds nothing into an empty pass instead of a wait.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate.log records `4 passed`/EXIT=0 and both arms record 16 identical failure ids, but manifest.md:20 runs a file the base arm does not, so the pass counts are not comparable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff is inside the four granted at prompt.txt:81-84 and nothing else changed.\nSCORE durability: 18\nJUSTIFICATION durability: negative_control.log reddens (a), (b) and (d); the timing bounds at tests/test_a_session_host_never_blocks_in_its_read.py:175,:228 share POLL_SECONDS with the code, so the independent 8 s timeout is what reddens under the mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the added names follow the module's public-constant idiom beside SETTLED_EXIT_CODE at reckon/crew/session_host.py:101 and carry no plan or ticket identifier.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew has two dozen inline fcntl.flock sites and no lock owner, and _fifo_identity at session_host.py:135 is adjacent to follow_checkpoint.stream_identity at reckon/crew/follow_checkpoint.py:86 rather than a duplicate of an owner.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T160357323816-a-session-host-never-blocks-in-its-read/manifest.md:20 non-blocking: the after arm runs a file the base arm does not, so the pass counts are not comparable.\nFINDING reckon/crew/session_host.py:135 non-blocking: _fifo_identity re-derives the inode identity follow_checkpoint.stream_identity already computes, though no module owns it.\n",
+  "review_run_id": "r-20261110T164240550402-review-of-a-session-host-never-blocks-in-its-read-465e0b7442a5",
+  "reviewed_base_sha": "523a1c9e772f33cafd89352853fa547e7bd94fdf",
+  "reviewed_head_sha": "465e0b7442a52892979bf2ef6d17660fe2019294",
+  "reviewed_run_id": "r-20261110T160357323816-a-session-host-never-blocks-in-its-read",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:14:04.612902+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "Read commit by commit against base 523a1c9e77: one commit, 465e0b7442, 453 insertions across the three files; it adds fcntl import, _fifo_identity, acquire/release_owner_lock and the non-blocking read, and changes _remove_fifo to compare identity rather than path.",
+    "done_when": "The done_when names four cases in tests/test_a_session_host_never_blocks_in_its_read.py and the gate ran exactly that file to `4 passed` in 4.31s, EXIT=0, recorded at gate.log; each case is a distinct test asserting the two-poll-interval bound, the already-running exit and reason, or the surviving replacement FIFO.",
+    "goal": "The goal is that a session host never waits in a read it cannot leave; reckon/crew/session_host.py:1089 sets the request descriptor non-blocking before supervise's loop and :1109-1114 treats BlockingIOError as an empty pass that falls through to the owner check and the tick, which is the stated defect repaired.",
+    "manifest": "Read in full: it records commits, changed paths, the gate command, both population arms with their logs, the negative-control log, and an honest note that case (c) still passes under the declared mutation because it exercises neither mutated path; its status vocabulary value is `complete`.",
+    "write_paths": "The node's fence granted four paths (prompt.txt:81-84) and the diff touches three of them: reckon/crew/session_host.py, tests/test_a_session_host_never_blocks_in_its_read.py and docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-session-host-never-blocks-in-its-read.html; the granted figure directory was not used."
+  }
+}
