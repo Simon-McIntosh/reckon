@@ -1,0 +1,681 @@
+{
+  "agent": {
+    "alias": "dsv4.1-flash",
+    "backend": "clive",
+    "effective_input_window": 230144,
+    "effort": "high",
+    "launch": "cli",
+    "model": "deepseek-v4.1-flash",
+    "sandbox": "worktree-full",
+    "usable_input_window": 230144
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "clive",
+  "base_sha": "cb5dcf17a3be6c8a022f5c9391ec843c67adb509",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "cost_usd_cumulative": null,
+    "cost_usd_imputed": true,
+    "detail": "no rate-limit event in the stream yet",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_creation_input_tokens": 0,
+      "cache_creation_input_tokens_cumulative": 0,
+      "cache_read_input_tokens": 0,
+      "cache_read_input_tokens_cumulative": 0,
+      "fallback_credit": null,
+      "inference_geo": "",
+      "input_tokens": 4938868,
+      "input_tokens_cumulative": 4938868,
+      "output_tokens": 9177,
+      "output_tokens_cumulative": 9177,
+      "service_tier": "standard",
+      "speed": "standard"
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 19,
+    "files": 1,
+    "removed": 7
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 273,
+        "name": "edit",
+        "path": "reckon/anchored_edit.py"
+      },
+      "run_function": {
+        "line": 240,
+        "name": "read",
+        "path": "reckon/anchored_edit.py"
+      },
+      "window_line": 242
+    },
+    {
+      "existing_function": {
+        "line": 240,
+        "name": "read",
+        "path": "reckon/anchored_edit.py"
+      },
+      "run_function": {
+        "line": 273,
+        "name": "edit",
+        "path": "reckon/anchored_edit.py"
+      },
+      "window_line": 275
+    },
+    {
+      "existing_function": {
+        "line": 217,
+        "name": "test_crlf_file_keeps_its_endings_outside_the_edit",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "test_replace_by_anchor",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 81
+    },
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "test_file_without_a_final_newline_keeps_that_property",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 80,
+        "name": "test_replace_by_anchor",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 81
+    },
+    {
+      "existing_function": {
+        "line": 80,
+        "name": "test_replace_by_anchor",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 217,
+        "name": "test_crlf_file_keeps_its_endings_outside_the_edit",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 218
+    },
+    {
+      "existing_function": {
+        "line": 230,
+        "name": "test_file_without_a_final_newline_keeps_that_property",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 217,
+        "name": "test_crlf_file_keeps_its_endings_outside_the_edit",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 218
+    },
+    {
+      "existing_function": {
+        "line": 80,
+        "name": "test_replace_by_anchor",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 230,
+        "name": "test_file_without_a_final_newline_keeps_that_property",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 231
+    },
+    {
+      "existing_function": {
+        "line": 217,
+        "name": "test_crlf_file_keeps_its_endings_outside_the_edit",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "run_function": {
+        "line": 230,
+        "name": "test_file_without_a_final_newline_keeps_that_property",
+        "path": "tests/test_anchored_edit.py"
+      },
+      "window_line": 231
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "27ed13983a3d19b3a69b18e35b56b33e9f52b354"
+  ],
+  "completed_at": "2026-11-10T20:29:12Z",
+  "completed_at_source": "terminal_event",
+  "dispatched_at": "2026-11-10T19:29:30Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": null,
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_anchored_edit.py tests/test_staged_write_inventory.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/suite-after.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.08333333333333333,
+    "plan": "workers-spend-fewer-tokens-per-landed-node",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "clive",
+  "lane_advisory": {
+    "backend": "clive",
+    "burn_multiple": null,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'clive' is unmetered, so it has no window to exhaust; the local lane's scarcity is throughput, which it does not publish",
+    "horizon_ends_at": "2026-11-10T20:24:34.177773+00:00",
+    "horizon_seconds": 3600,
+    "metered": false,
+    "observed_at": null,
+    "precedes_horizon": null,
+    "projected_exhaustion_at": null,
+    "resets_at": null,
+    "seconds_until_reset": null,
+    "state": "quiet",
+    "utilisation_pct": null
+  },
+  "lane_declaration": {
+    "backend": "clive",
+    "headroom": null,
+    "metered": false,
+    "observed_at": null,
+    "read_at": "2026-11-10T19:24:34Z",
+    "resolved_backend": "clive",
+    "utilisation_pct": null
+  },
+  "lane_reading": {
+    "age_seconds": 20,
+    "binding_observed": "unknown",
+    "detail": "",
+    "generating": 3,
+    "headroom": 9,
+    "mean_context": 120000,
+    "observed_at": "2026-11-10T19:24:16Z",
+    "state": "fresh",
+    "suggested_shelf_life_seconds": 45,
+    "throughput": {
+      "age_seconds": 20,
+      "aggregate_tokens_per_second": 150.097,
+      "detail": "",
+      "mean_tokens_per_second": 83.387,
+      "observed_at": "2026-11-10T19:24:16Z",
+      "runs": 1.8,
+      "state": "measured"
+    },
+    "waiting": 0
+  },
+  "lane_receipt": {
+    "effective_context_window": "unmeasured",
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-10T20:29:12Z",
+    "quota_state": "unmeasured",
+    "quota_windows": [],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "effective_context_window": "missing_rollout",
+      "notional_cost_usd": "missing_rollout",
+      "quota_windows": "unmetered",
+      "rate_basis": "missing_rollout"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/manifest.md",
+  "member": "disposable-r-20261110T192355232896-anchored-edit-tool",
+  "model_key": "flash",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_anchored_edit.py::test_no_root_refuses_every_path",
+      "tests/test_anchored_edit.py::test_path_outside_every_root_is_refused",
+      "tests/test_anchored_edit.py::test_symlink_escape_is_refused_and_the_target_untouched"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_anchored_edit.py::test_no_root_refuses_every_path",
+      "tests/test_anchored_edit.py::test_path_outside_every_root_is_refused",
+      "tests/test_anchored_edit.py::test_symlink_escape_is_refused_and_the_target_untouched"
+    ],
+    "control_run_failed": true,
+    "declaration": "remove the root containment check: the symlink-escape test must fail; remove the line-hash verification: the stale-anchor test must fail",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/negative-control-containment.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/negative-control-containment.log",
+    "test_paths": [
+      "tests/test_anchored_edit.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "anchored-edit-tool",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "deep",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 4529,
+          "cached_input_tokens": 393400,
+          "input_tokens": 397931,
+          "output_tokens": 828,
+          "reasoning_output_tokens": 444,
+          "total_tokens": 398759,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+      "session_id": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf"
+    },
+    "done_when": "tests/test_anchored_edit.py passes covering the section's listed cases including the stdio console-script round trip, with the confinement and hash-verification negative controls failing when their guards are removed, and ruff check plus ruff format --check add no findings on the staged paths",
+    "estimated_hours": null,
+    "goal": "Ship reckon/anchored_edit.py, a confined line-anchored MCP edit server with its console script and tests",
+    "id": "anchored-edit-tool",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "clive",
+      "headroom": null,
+      "metered": false,
+      "observed_at": null,
+      "read_at": "2026-11-10T19:24:34Z",
+      "resolved_backend": "clive",
+      "utilisation_pct": null
+    },
+    "lane_reading": {
+      "age_seconds": 20,
+      "binding_observed": "unknown",
+      "detail": "",
+      "generating": 3,
+      "headroom": 9,
+      "mean_context": 120000,
+      "observed_at": "2026-11-10T19:24:16Z",
+      "state": "fresh",
+      "suggested_shelf_life_seconds": 45,
+      "throughput": {
+        "age_seconds": 20,
+        "aggregate_tokens_per_second": 150.097,
+        "detail": "",
+        "mean_tokens_per_second": 83.387,
+        "observed_at": "2026-11-10T19:24:16Z",
+        "runs": 1.8,
+        "state": "measured"
+      },
+      "waiting": 0
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/manifest.md",
+    "negative_control": "remove the root containment check: the symlink-escape test must fail; remove the line-hash verification: the stale-anchor test must fail",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-batch-entry-is-refused-at-queue-time-for-the-node-contract": [
+        "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html",
+        "docs/figures/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_admission.py",
+        "reckon/crew/dispatch_batch.py",
+        "reckon/crew/dispatch_plan.py",
+        "tests/test_a_batch_entry_is_checked_when_queued.py"
+      ],
+      "a-concurrent-launch-is-refused": [
+        "docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html",
+        "docs/figures/a-run-has-one-live-worker/a-concurrent-launch-is-refused",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/dispatch_sessions.py",
+        "reckon/crew/resumption.py",
+        "tests/test_a_concurrent_launch_is_refused.py",
+        "tests/test_a_resume_never_launches_beside_another_node.py"
+      ],
+      "a-ctest-receipt-counts-its-own-failures": [
+        "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html",
+        "docs/figures/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures",
+        "reckon/crew/promotion_evidence.py",
+        "tests/test_a_ctest_receipt_counts_its_own_failures.py",
+        "tests/test_a_receipt_agrees_with_its_log.py"
+      ],
+      "a-descope-with-its-reason-is-written-on-any-plan": [
+        "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html",
+        "docs/figures/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan",
+        "reckon/_plan_html.py",
+        "reckon/_store.py",
+        "reckon/_store_section_ops.py",
+        "tests/test_a_descope_is_written_on_any_plan.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-node-waits-only-on-what-it-names": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html",
+        "docs/figures/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names",
+        "reckon/crew/dispatch_batch.py",
+        "reckon/crew/node.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew_dispatch_commands.py",
+        "tests/test_a_node_waits_only_on_what_it_names.py"
+      ],
+      "a-promotion-reads-only-its-own-rollout-home": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-reads-only-its-own-rollout-home.html",
+        "docs/figures/a-read-answers-inside-its-deadline/a-promotion-reads-only-its-own-rollout-home",
+        "reckon/crew/promotion_release.py",
+        "tests/test_a_promotion_reads_only_its_own_rollout_home.py"
+      ],
+      "a-repair-round-grants-what-its-finding-names": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-repair-round-grants-what-its-finding-names.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/a-repair-round-grants-what-its-finding-names",
+        "reckon/crew/recovery_repair_dispatch.py",
+        "tests/test_a_repair_round_grants_a_missing_test.py"
+      ],
+      "a-run-owing-its-coordinator-keeps-the-pane": [
+        "reckon/crew/station_subscriber.py",
+        "tests/test_a_run_owing_its_coordinator_keeps_the_pane.py"
+      ],
+      "a-second-complete-finishes-an-earlier-promotion-s-cleanup": [
+        "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup.html",
+        "docs/figures/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup",
+        "reckon/crew/promotion_scope.py",
+        "tests/test_a_second_complete_finishes_cleanup.py"
+      ],
+      "a-slow-read-names-what-it-measured": [
+        "docs/evidence/fragments/an-mcp-failure-names-its-cause/a-slow-read-names-what-it-measured.html",
+        "docs/figures/an-mcp-failure-names-its-cause/a-slow-read-names-what-it-measured",
+        "reckon/_mcp_tools.py",
+        "reckon/mcp_census.py",
+        "reckon/mcp_deadlines.py",
+        "reckon/project_maintenance_commands.py",
+        "tests/test_a_slow_read_names_what_it_measured.py",
+        "tests/test_mcp_deadline_names_its_cause.py"
+      ],
+      "an-answer-reaches-the-newest-review-that-raised-the-finding": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/an-answer-reaches-the-newest-review-that-raised-the-finding.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/an-answer-reaches-the-newest-review-that-raised-the-finding",
+        "reckon/crew/plan_review.py",
+        "reckon/crew_dispatch_commands.py",
+        "reckon/mcp.py",
+        "reckon/mcp_crew_actions.py",
+        "tests/test_an_answer_reaches_the_newest_review.py"
+      ],
+      "keep-only-named-run-waits": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html",
+        "docs/figures/a-queue-holds-the-whole-plan/keep-only-named-run-waits",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_dropped_request_strands_no_waiter.py"
+      ],
+      "landing-measure-runs-on-its-partition": [
+        "docs/_shared/flight.schema.json",
+        "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html",
+        "docs/figures/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition",
+        "reckon/_flight_schema.py",
+        "reckon/crew/landing_measure.py",
+        "reckon/crew/queue_landing.py",
+        "reckon/flight.py",
+        "tests/test_a_landing_measure_runs_on_its_partition.py"
+      ],
+      "parallel-nodes-on-one-module": [
+        "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html",
+        "docs/figures/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ]
+    },
+    "plan": "workers-spend-fewer-tokens-per-landed-node",
+    "regenerate_paths": [],
+    "requested_backend": "clive",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§3",
+    "spec_level": "guided",
+    "time_budget": "60m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/anchored_edit.py",
+      "tests/test_anchored_edit.py",
+      "pyproject.toml",
+      "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-tool.html",
+      "docs/figures/workers-spend-fewer-tokens-per-landed-node/anchored-edit-tool"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": 910831.0,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": null,
+    "bar": null,
+    "clocks": {
+      "five_hour": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "five_hour",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "unknown",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": null,
+    "hold": null,
+    "lane": "clive",
+    "lift_id": null,
+    "member": null,
+    "node": "anchored-edit-tool",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": "the lane declares no budget group, so no wallet paced it",
+    "recorded_at": "2026-11-10T19:27:20.086937+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": null,
+    "state": "unknown"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5006.222,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 4828.545,
+      "context-estimate": 28.579,
+      "records": 3371.84,
+      "verdict-inputs": 6195.908
+    }
+  },
+  "plan": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_impl_at_dispatch": 0.08333333333333333,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "27ed13983a3d19b3a69b18e35b56b33e9f52b354",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "cb5dcf17a3be6c8a022f5c9391ec843c67adb509",
+    "reviewed_head_sha": "27ed13983a3d19b3a69b18e35b56b33e9f52b354",
+    "scores": {
+      "durability": 18,
+      "evidence": 17,
+      "fit": 18,
+      "goal_fidelity": 19,
+      "reuse": 19,
+      "scope_discipline": 19
+    },
+    "status": "parsed",
+    "total": 110
+  },
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "shadow",
+  "run_id": "r-20261110T192355232896-anchored-edit-tool",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§3",
+  "session": "829e5a4a-6870-4aec-876d-ba2efb1b5ecf",
+  "session_harness": "claude",
+  "session_id": "a39e7433-09e2-490c-bb89-81e867e98fda",
+  "session_model": "deepseek-v4.1-flash",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_anchored_edit.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/armed-suite/after.log",
+      "revision": "27ed13983a3d19b3a69b18e35b56b33e9f52b354"
+    },
+    "baseline_measured_nothing": false,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/armed-suite/baseline.log",
+      "revision": "cb5dcf17a3be6c8a022f5c9391ec843c67adb509"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_anchored_edit.py tests/test_staged_write_inventory.py",
+    "waiver_reason": null
+  },
+  "tests_added": 23,
+  "throughput": {
+    "cumulative_cached_input_tokens": 0,
+    "cumulative_input_tokens": 13189609,
+    "detail": "generation and wall clock reported separately by the backend; utilisation divided by the configured lane window 230144",
+    "elapsed_seconds": 497.446,
+    "generated_tokens": 55862,
+    "generation_seconds": 182.618,
+    "input_budget_tokens": 230144,
+    "input_utilisation_pct": 77.0,
+    "machine_seconds": 314.828,
+    "peak_input_tokens": 177109,
+    "tokens_per_second": 305.9,
+    "wall_tokens_per_second": 112.3
+  },
+  "time_budget": "60m",
+  "tool_steps": 93.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 3582,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-10T20:29:33Z",
+    "last_record_type": "result",
+    "launched_at": "2026-11-10T20:20:43Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [],
+    "run_id": "r-20261110T192355232896-anchored-edit-tool",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 8237,
+    "worker_pid": 1227933
+  },
+  "worker_seconds": 2569,
+  "worker_seconds_source": "stream_events",
+  "worktree_retention": null
+}
