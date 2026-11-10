@@ -19,7 +19,7 @@ import pytest
 from click.testing import CliRunner
 
 from reckon import cli, ledger
-from reckon.crew import queue_admission, runs
+from reckon.crew import dispatch_batch, queue_admission, runs
 from reckon.crew.node import TaskNode, validate_node
 from tests import test_a_queued_request_waits_on_its_dependencies as waits_tests
 
@@ -271,6 +271,64 @@ def test_the_flag_suppresses_the_sections_gate_ref(chain_repo: Path) -> None:
     )
     assert readiness in plain_refs, "the same section, unflagged, keeps its gate"
     assert f"run:{UPSTREAM}" in plain_refs
+
+
+def test_a_batch_entry_keeps_the_flag_and_waits_on_its_own_ref(
+    chain_repo: Path,
+) -> None:
+    """The batch path stores the flag and waits on the entry's ref alone."""
+    _declare_section_waits(chain_repo)
+    _declare_plan_dependency(chain_repo)
+    _queue_upstream(chain_repo)
+    entry = {
+        "project": PROJECT,
+        "plan": PLAN,
+        "section": "s2",
+        "node": "n-batch",
+        "goal": "read the pinned configuration",
+        "after": [UPSTREAM],
+        "waits_only_after": True,
+        "done_when": (
+            "the command `cat notes/read.log` prints the 2 configuration keys it "
+            "read and exits 0"
+        ),
+        "spec_level": "guided",
+        "write_paths": [f"docs/plans/{PLAN}.html"],
+        "time_budget": "20m",
+    }
+
+    # The flag has to survive the entry-to-node conversion, which reads every
+    # declared field: a field the batch does not know is refused by name, so a
+    # converter that dropped it would store a request that waits on everything.
+    prepared = dispatch_batch._Plans(chain_repo)
+    _project, prepared_node, _derived = dispatch_batch._entry_node(
+        0, entry, plans=prepared
+    )
+    assert prepared_node.waits_only_after is True, "the flag survives _entry_node"
+    assert prepared_node.after == [UPSTREAM]
+
+    result = dispatch_batch.queue_batch(
+        [entry],
+        session=SESSION,
+        config_for=lambda _project: json.loads(json.dumps(CONFIG)),
+        repo_root=chain_repo,
+    )
+    row = result["results"][0]
+    assert result["queued"] == 1, json.dumps(row)
+    assert row["status"] == queue_admission.AWAITING_UPSTREAM_PHASE, row
+    assert row["waits"] == [f"run:{UPSTREAM}"], "the section's waits are not inherited"
+
+    pointer = runs.read_pointer(row["run_id"])
+    assert pointer["node"]["waits_only_after"] is True, "the flag is stored"
+    assert pointer["node"]["section"] == "s2", "the section is still recorded"
+    assert queue_admission.section_waits_for(pointer) == [f"run:{UPSTREAM}"]
+
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert _waits(row["run_id"]) == [f"run:{UPSTREAM}"], "no pass widens it"
+
+    _land(chain_repo, UPSTREAM)
+    queue_admission.advance_waiting_requests(runs.list_live())
+    assert runs.read_pointer(row["run_id"])["phase"] == queue_admission.QUEUED_PHASE
 
 
 def test_the_flag_without_an_after_ref_is_refused() -> None:
