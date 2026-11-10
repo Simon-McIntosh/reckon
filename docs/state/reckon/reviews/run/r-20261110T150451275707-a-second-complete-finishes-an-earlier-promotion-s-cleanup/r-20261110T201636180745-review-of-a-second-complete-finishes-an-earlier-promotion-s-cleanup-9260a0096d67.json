@@ -1,0 +1,56 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Both arms of the review-round gate ran the same two files. round3-base-suite.log reads '54 passed in 31.89s' EXIT=0 at revision e595f9f236, and round3-head-suite.log reads '58 passed in 49.65s' EXIT=0 at revision 274c671e4f, so the round adds four cases and no failure; both logs name their revision, tree, resolved module and command on their header lines and end with a bare EXIT= line. The three round3 negative-control logs each record a non-zero exit and a failing test id: refusal '2 failed, 5 passed', double-unescape '1 failed, 6 passed', aggregate-alone '1 failed, 6 passed'.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1254",
+    "reckon/crew/promotion.py:1862",
+    "reckon/crew/promotion_scope.py:1451",
+    "reckon/crew/promotion_scope.py:1488"
+  ],
+  "completed_at": "2026-11-10T20:41:15.137Z",
+  "dispatched_at": "2026-11-10T20:30:02Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1451,
+      "severity": "non-blocking",
+      "text": "The fail-closed answer now also covers a row the aggregate carries with no document beside it, so a differing narrative on that shape raises the refusal again. That shape is not merely a disagreement: reckon/crew/promotion.py:1246-1249 reaches the aggregate ledger file as the run's record precisely because no run document exists, and reckon/ledger.py:1772 load() returns such a row as this run's history, so the same promotion path now reports the row as present to the refusal reporter at promotion.py:1254 and as not proven to the narrative branch. The base revision answered True for this shape, so a project whose runs were never split out by _split_project_runs regains the double refusal this node exists to remove. No case drives crew.complete for an aggregate-only row, so the narrowed answer on that shape is untested."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against e595f9f236: 274c671e4f rewrites the two ledger-row readers into one _ledger_holds_row parameterised on what an unprovable row answers and moves both receipt stripper calls onto the raw bodies (+82/-46 in reckon/crew/promotion_scope.py, +117 in the test file); 9260a0096d adds 56 lines of evidence to the fragment.",
+    "done_when": "The done_when asks tests/test_a_second_complete_finishes_cleanup.py for three cases plus a restored-refusal negative control, no added failures and no new ruff findings; round3-head-suite.log records '58 passed' EXIT=0 against round3-base-suite.log '54 passed' EXIT=0, and each round3 negative-control log names the test id it reddens.",
+    "goal": "The node's goal is 'A second complete finishes an earlier promotion's cleanup'; the delta keeps reckon/crew/promotion_scope.py:1451-1478 returning a finished_cleanup receipt for a differing narrative once the run's document proves the row, and narrows which shapes prove it.",
+    "manifest": "Read in full; it records status complete, commits 274c671e4f and 9260a0096d for this round, both suite arms with revisions and log paths, the negative_control_log path, and one disposition line per review finding.",
+    "write_paths": "The node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three paths the delta touches sit inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_a_second_complete_finishes_cleanup.py:130-157, 160-182, 185-217 and 220-234 each redden under the mutation the fragment records, but no case drives crew.complete for an aggregate-only row, so the narrowed answer at reckon/crew/promotion_scope.py:1451 on that shape is unmeasured.",
+    "evidence": "round3-head-suite.log and round3-base-suite.log each name their revision, tree, resolved module and command and end with a bare EXIT= line, and the three round3 negative controls redden a named test id, but the manifest's ruff cleanliness claim at the artifacts line still cites no log.",
+    "fit": "The single helper at reckon/crew/promotion_scope.py:2298 keeps the module's docstring voice and keyword-only parameter idiom, and neither new name carries a plan label or ticket reference.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1451-1478 still answers a differing narrative with a finished_cleanup receipt when the run's own document exists, which is the ordinary promoted shape, so the goal path survives the repair.",
+    "reuse": "The commit removes the fork the previous review recorded: reckon/crew/promotion_scope.py:2298 unifies the two ledger readers, and both receipt call sites reclaim _strip_tags from reckon/_plan_html.py:2386 instead of decoding locally.",
+    "scope_discipline": "The delta touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and the granted evidence fragment, and every deletion it makes is a helper the same commit replaces."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'A second complete finishes an earlier promotion's cleanup'; the delta keeps reckon/crew/promotion_scope.py:1451-1478 returning a finished_cleanup receipt for a differing narrative once the run's document proves the row, and narrows which shapes prove it.\nVERDICT done_when: the done_when asks tests/test_a_second_complete_finishes_cleanup.py for three cases plus a restored-refusal negative control, no added failures and no new ruff findings; round3-head-suite.log records '58 passed' EXIT=0 against round3-base-suite.log '54 passed' EXIT=0, and each round3 negative-control log names the test id it reddens.\nVERDICT write_paths: the node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three paths the delta touches sit inside that set.\nVERDICT manifest: read in full; it records status complete, commits 274c671e4f and 9260a0096d for this round, both suite arms with revisions and log paths, the negative_control_log path, and one disposition line per review finding.\nVERDICT diff: read both commits against e595f9f236 \u2014 274c671e4f rewrites the two ledger-row readers into one _ledger_holds_row parameterised on what an unprovable row answers and moves both receipt stripper calls onto the raw bodies (+82/-46 in reckon/crew/promotion_scope.py, +117 in the test file); 9260a0096d adds 56 lines of evidence to the fragment.\nCALL_SITES: reckon/crew/promotion.py:1254, reckon/crew/promotion.py:1862, reckon/crew/promotion_scope.py:1451, reckon/crew/promotion_scope.py:1488\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1451-1478 still answers a differing narrative with a finished_cleanup receipt when the run's own document exists, which is the ordinary promoted shape, so the goal path survives the repair.\nSCORE evidence: 17\nJUSTIFICATION evidence: round3-head-suite.log and round3-base-suite.log each name their revision, tree, resolved module and command and end with a bare EXIT= line, and the three round3 negative controls redden a named test id, but the manifest's ruff cleanliness claim at the artifacts line still cites no log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the delta touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and the granted evidence fragment, and every deletion it makes is a helper the same commit replaces.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_second_complete_finishes_cleanup.py:130-157, 160-182, 185-217 and 220-234 each redden under the mutation the fragment records, but no case drives crew.complete for an aggregate-only row, so the narrowed answer at reckon/crew/promotion_scope.py:1451 on that shape is unmeasured.\nSCORE fit: 19\nJUSTIFICATION fit: the single helper at reckon/crew/promotion_scope.py:2298 keeps the module's docstring voice and keyword-only parameter idiom, and neither new name carries a plan label or ticket reference.\nSCORE reuse: 19\nJUSTIFICATION reuse: the commit removes the fork the previous review recorded \u2014 reckon/crew/promotion_scope.py:2298 unifies the two ledger readers, and both receipt call sites reclaim _strip_tags from reckon/_plan_html.py:2386 instead of decoding locally.\nFINDING reckon/crew/promotion_scope.py:1451 non-blocking: the fail-closed answer now also covers a row the aggregate carries with no document beside it, so a differing narrative on that shape raises the refusal again. That shape is not merely a disagreement: reckon/crew/promotion.py:1246-1249 reaches the aggregate ledger file as the run's record precisely because no run document exists, and reckon/ledger.py:1772 load() returns such a row as this run's history, so the same promotion path reports the row as present to the refusal reporter at promotion.py:1254 and as not proven to the narrative branch. The base revision answered True for this shape, so a project whose runs were never split out by _split_project_runs regains the double refusal this node exists to remove. No case drives crew.complete for an aggregate-only row, so the narrowed answer on that shape is untested.",
+  "review_run_id": "r-20261110T201636180745-review-of-a-second-complete-finishes-an-earlier-promotion-s-cleanup-9260a0096d67",
+  "reviewed_base_sha": "e595f9f2361c633b32375803cf1eb5477413c22d",
+  "reviewed_head_sha": "9260a0096d672ae560f07a6b26d50a2cb3c16870",
+  "reviewed_run_id": "r-20261110T150451275707-a-second-complete-finishes-an-earlier-promotion-s-cleanup",
+  "rubric.durability": "answered",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:00:08.717288+00:00",
+  "total": 111
+}
