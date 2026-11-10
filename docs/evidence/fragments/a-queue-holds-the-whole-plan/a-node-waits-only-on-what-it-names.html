@@ -60,5 +60,11 @@
   same 36 at the head. Chunk 03 completed at the base (50 failed, 326 passed,
   1 skipped) and its head arm was cut off by the run's command budget under
   storage contention, so no comparison exists for it; chunk 02 did not complete
-  at the base. Those two chunks are outstanding, not passed.
+  at the base. Those two chunks are outstanding as whole chunks. A later attempt
+  split chunk 02: its 20-file slice reached 55 percent before the command
+  budget expired, and the first 10-file slice completed in both arms — 6
+  failed and 282 passed at the base, the same 6 failed and 282 passed at the
+  head, so that slice adds no failure id. The remaining 30 files of chunk 02
+  and chunk 03's head arm are still outstanding, with no failure id claimed
+  for them in either direction.
 </article>
