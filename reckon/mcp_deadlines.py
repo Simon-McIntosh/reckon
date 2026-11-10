@@ -114,12 +114,13 @@ def _landing_grace_seconds() -> float:
 # burned thread CPU time, or sat runnable on the runqueue while an oversubscribed
 # node ran other work first. A body waiting on storage does neither — it is
 # blocked, so it burns no CPU and spends no time runnable. These two together
-# are the computing measure, compared against the wall time the body held. The
-# fraction separates the two for a wait long enough to time, and the floor keeps
-# counter granularity from reading a very short wait as computing. They decide
-# only the reported cause; the ``error`` value stays ``storage-slow`` so no
-# existing caller's branch changes.
-_COMPUTING_WORK_FRACTION = 0.5
+# are the computing measure, compared against the wall time the body held. A
+# third of the wall is the line: a read that held 14.5 s of CPU and runnable
+# time out of 30 s was computing, and the half-wall line called it blocked. The
+# floor keeps counter granularity from reading a very short wait as computing.
+# The cause decides the ``error`` value a result carries, so the measurement and
+# the label a caller branches on cannot disagree.
+_COMPUTING_WORK_FRACTION = 1.0 / 3.0
 _COMPUTING_WORK_FLOOR_SECONDS = 0.02
 
 

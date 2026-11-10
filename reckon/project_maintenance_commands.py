@@ -1072,8 +1072,12 @@ def _echo_mcp_census(report: dict) -> None:
                 click.echo(f"       {cause['first_line'][:120]}")
     storage = report.get("storage_slow") or {}
     # The rule is printed beside the count so a reader knows what was counted:
-    # a tool result whose payload names the storage-slow error, not a
-    # transcript that merely mentions the phrase.
+    # a tool result whose payload names one of the slow errors, not a
+    # transcript that merely mentions the phrase. A computing body's
+    # ``read-slow`` and a blocked body's ``storage-slow`` are counted in the
+    # same total under the same rule, because both say the call missed its
+    # deadline; which one a result carries says what the deadline measured,
+    # and a reader who wants that reads the result.
     rule = "a tool result whose payload names the error"
     if storage:
         summary = ", ".join(
