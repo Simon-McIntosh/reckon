@@ -25,7 +25,7 @@
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="134">
+<meta name="plan-version" content="135">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
@@ -398,6 +398,9 @@
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261110T180105655674-review-of-a-slow-read-names-what-it-measured-3f0d3ca6de21" data-who="reckon-build" data-when="2026-11-10T18:34:00.009Z">
     <div class="r-comment-body"><p>Reviewer verdict: parsed review of run r-20261110T150723407751-a-slow-read-names-what-it-measured at base 84570bc80443 / head 3f0d3ca6de21 scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 17 with 2 non-blocking findings and 0 added failures; the change lands.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261110T150723407751-a-slow-read-names-what-it-measured" data-who="reckon-build" data-when="2026-11-10T17:52:11Z">
+    <div class="r-comment-body"><p>§19 landed at fa1221919a with 1c40801ce9: a timed-out read now reports the CPU seconds, runnable seconds and wall seconds it measured, with the computing line moved from half the wall to a third so a body at 13.1 s CPU and 1.4 s runnable of 30 s reports error read-slow (blocked bodies keep storage-slow), and both surfaces that read the error value (the transcript census pattern and the doctor printer) count the two values in one total; gate 5 passed EXIT=0 with stubbed thread counters, the existing cause test updated to the new label, both importer arms carry the same failures (head adds none), negative control restores the half-wall threshold and the fixed label and the computing case fails EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-s2-landed" data-who="reckon-build" data-when="2026-10-08T16:20:00Z">
     <div class="r-comment-body"><p>gate passed (6 passed EXIT=0; 20 importer modules, 348 passed at the merged head; review 115/120, zero added); section 2 closed. Follow-ons folded into §13.</p></div>
