@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
   <meta name="plan-title" content="A landing is on main when it says so">
-  <meta name="plan-summary" content="The reflex acceptance now asks whether a run's commits are on the remote primary branch, through the same merge.head_on_remote_branch the landing uses, instead of the checkout's local HEAD. A run whose commits sit only on a local main whose push failed is not promoted; an unreachable remote or a remote carrying no primary ref declines naming the cause; a repository with no remote configured still judges its own branch.">
+  <meta name="plan-summary" content="The reflex acceptance now asks whether a run's commits are on the remote primary branch, through the same merge.head_on_remote_branch the landing uses, instead of the checkout's local HEAD. A run whose commits sit only on a local main whose push failed is not promoted; an unreachable remote or a remote carrying no primary ref declines naming the cause; a checkout with no remote configured declines too, naming no-remote.">
   <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
   <meta name="plan-recorded-at" content="2026-11-09">
   <meta name="plan-verdict" content="passed">
@@ -32,10 +32,9 @@
         <code>merge.head_on_remote_branch</code> — the function the plain-complete
         path already uses, which reads <code>ls-remote</code> over the port-22 to
         443 retry, fetches a remote head it does not hold, and answers through
-        the same <code>_is_ancestor</code> the landing lands by. The local probe
-        survives as <code>_commits_missing_from_local_head</code> and is reached
-        when the checkout configures no remote, which is the one case where
-        there is no remote branch to be off.</p>
+        the same <code>_is_ancestor</code> the landing lands by. No local-HEAD probe
+        remains: a checkout configuring no remote declines, as the next paragraph
+        records.</p>
       <p>An unreachable remote and a reachable remote carrying no primary ref are
         distinct answers and each declines the promotion, recording
         <code>remote_cause</code> and a reason naming the remote, the branch and
