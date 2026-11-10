@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:340 queue_requests calls validate_node per entry before any pointer is written",
+    "reckon/crew/dispatch_plan.py:841 plan_dispatch calls validate_node for the single path",
+    "reckon/crew/queue_edit.py:195 the queue-edit path calls validate_node on the edited node"
+  ],
+  "completed_at": "2026-11-10T15:55:37.169Z",
+  "dispatched_at": "2026-11-10T15:41:31Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_entry_is_checked_when_queued.py",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: CONFIG, _plan_document, _git, crew_home, repository, _entry, _queue, _pointers and _dry_run/_dry_run_details (lines 36-188 and 243-288) reproduce tests/test_every_path_meets_the_node_contract.py:34-193 and :195-238 almost verbatim (168 differing lines across the first 240), so the contract-driving fixture now exists twice and a change to it must be made in both."
+    },
+    {
+      "file": "tests/test_a_batch_entry_is_checked_when_queued.py",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring narrates the past (\"A batch used to store an entry...\", \"is now judged\"), which is changelog prose inside source and rots once the incident is forgotten; state the mechanism the file pins instead."
+    },
+    {
+      "file": "tests/test_a_batch_entry_is_checked_when_queued.py",
+      "line": "190",
+      "severity": "non-blocking",
+      "text": "non-blocking: this mixed-batch case and _invalid_entry re-assert what tests/test_every_path_meets_the_node_contract.py:263 already guards at base, an entry declaring a test write path with no negative_control being refused with no pointer, and that existing case also reddens under the same mutation, so the only new protection the file adds is the two-valid-entry case at :211."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base arm runs only tests/test_staged_write_inventory.py, which imports reckon.interface_counts and none of reckon.crew.dispatch, dispatch_plan or dispatch_admission, so the done_when clause that the test files importing those modules add no failure against the base revision is not measured by the arm cited for it."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read each commit from base 45a800ebe5 to head c8e0018c20; 1567cbfe11 adds the 288-line test, 00bea984ea ends its last expression with a newline, and c8e0018c20 adds the 18-line evidence fragment, so no product source changed.",
+    "done_when": "The done_when names three facts in tests/test_a_batch_entry_is_checked_when_queued.py; all three are asserted at lines 190, 211 and 232, the head arm records 3 passed EXIT=0 in logs/gate-head.log and 54 passed EXIT=0 in logs/after-suite.log, and the base arm records 51 passed EXIT=0 in logs/base-suite.log.",
+    "goal": "The node goal states a batch entry is refused at queue time for the node contract a launch would refuse; reckon/crew/dispatch.py:340 calls validate_node per entry inside queue_requests before any pointer is written, and tests/test_a_batch_entry_is_checked_when_queued.py:190 pins it, but the same call is already present at base 45a800ebe5:340, so the landed change asserts existing behaviour rather than adding it.",
+    "manifest": "Read the source manifest; status complete, commits 1567cbfe11, 00bea984ea and c8e0018c20, baseline_suite and after_suite JSON with exit_status values, and negative_control_log all present, and every log it names ends in a bare EXIT= line.",
+    "write_paths": "The source prompt's fence at prompt.txt:80-87 grants reckon/crew/dispatch_admission.py, dispatch_plan.py, dispatch.py, dispatch_batch.py, the new test and the evidence fragment; git diff 45a800ebe5..c8e0018c20 touches only the new test and the fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_is_checked_when_queued.py:190 does redden under the recorded mutation, but tests/test_every_path_meets_the_node_contract.py:263 already fails under the same mutation at base, so the file adds a guard that existed rather than a new one.",
+    "evidence": "logs/gate-head.log, logs/after-suite.log and logs/base-suite.log each open with revision, tree and command and close with EXIT=0, and logs/negative-control.log closes EXIT=1 with test_a_batch_stores_the_valid_entry_and_refuses_the_invalid_one named as the sole failure.",
+    "fit": "tests/test_a_batch_entry_is_checked_when_queued.py follows the surrounding pytest fixture idiom, but its docstring at line 3 narrates past behaviour (\"A batch used to store an entry\") instead of stating the mechanism.",
+    "goal_fidelity": "reckon/crew/dispatch.py:340 refuses the invalid entry in its own batch row and writes no pointer, which is the goal's statement, but that code predates this node and the diff at tests/test_a_batch_entry_is_checked_when_queued.py:190 only asserts it.",
+    "reuse": "the capability search over tests/ found tests/test_every_path_meets_the_node_contract.py:34-238 already owning the contract-driving fixture set, and the new file copies it rather than extending it.",
+    "scope_discipline": "git diff 45a800ebe5..c8e0018c20 changes only tests/test_a_batch_entry_is_checked_when_queued.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html, both inside the source fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal states a batch entry is refused at queue time for the node contract a launch would refuse; reckon/crew/dispatch.py:340 calls validate_node per entry inside queue_requests before any pointer is written and tests/test_a_batch_entry_is_checked_when_queued.py:190 pins it, but the same call is already present at base 45a800ebe5:340, so the landed change asserts existing behaviour rather than adding it.\nVERDICT done_when: the done_when names three facts in tests/test_a_batch_entry_is_checked_when_queued.py; all three are asserted at lines 190, 211 and 232, the head arm records 3 passed EXIT=0 in logs/gate-head.log and 54 passed EXIT=0 in logs/after-suite.log, and the base arm records 51 passed EXIT=0 in logs/base-suite.log.\nVERDICT write_paths: the source prompt's fence at prompt.txt:80-87 grants five product and test paths plus the evidence fragment; git diff 45a800ebe5..c8e0018c20 touches only tests/test_a_batch_entry_is_checked_when_queued.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html, both inside it.\nVERDICT manifest: read the source manifest; status complete, commits 1567cbfe11, 00bea984ea and c8e0018c20, baseline_suite and after_suite JSON with exit_status values, and negative_control_log all present, and every log it names ends in a bare EXIT= line.\nVERDICT diff: read each commit from base 45a800ebe5 to head c8e0018c20; 1567cbfe11 adds the 288-line test, 00bea984ea ends its last expression with a newline, and c8e0018c20 adds the 18-line evidence fragment, so no product source changed.\nCALL_SITES: reckon/crew/dispatch.py:340 queue_requests calls validate_node per entry before any pointer is written, reckon/crew/dispatch_plan.py:841 plan_dispatch calls validate_node for the single path, reckon/crew/queue_edit.py:195 the queue-edit path calls validate_node on the edited node\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:340 refuses the invalid entry in its own batch row and writes no pointer, which is the goal's statement, but that code predates this node and tests/test_a_batch_entry_is_checked_when_queued.py:190 only asserts it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-head.log, logs/after-suite.log and logs/base-suite.log each open with revision, tree and command and close with EXIT=0, and logs/negative-control.log closes EXIT=1 with test_a_batch_stores_the_valid_entry_and_refuses_the_invalid_one as the sole failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 45a800ebe5..c8e0018c20 changes only tests/test_a_batch_entry_is_checked_when_queued.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html, both inside the source fence.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_a_batch_entry_is_checked_when_queued.py:190 does redden under the recorded mutation, but tests/test_every_path_meets_the_node_contract.py:263 already fails under the same mutation at base, so the file adds a guard that existed rather than a new one.\nSCORE fit: 14\nJUSTIFICATION fit: tests/test_a_batch_entry_is_checked_when_queued.py follows the surrounding pytest fixture idiom, but its docstring at line 3 narrates past behaviour instead of stating the mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: the capability search over tests/ found tests/test_every_path_meets_the_node_contract.py:34-238 already owning the contract-driving fixture set, and the new file copies it rather than extending it.\nFINDING tests/test_a_batch_entry_is_checked_when_queued.py:36 non-blocking: CONFIG, _plan_document, _git, crew_home, repository, _entry, _queue, _pointers and _dry_run/_dry_run_details (lines 36-188 and 243-288) reproduce tests/test_every_path_meets_the_node_contract.py:34-193 and :195-238 almost verbatim (168 differing lines across the first 240), so the contract-driving fixture now exists twice and a change to it must be made in both.\nFINDING tests/test_a_batch_entry_is_checked_when_queued.py:3 non-blocking: the module docstring narrates the past (\"A batch used to store an entry...\", \"is now judged\"), which is changelog prose inside source and rots once the incident is forgotten; state the mechanism the file pins instead.\nFINDING tests/test_a_batch_entry_is_checked_when_queued.py:190 non-blocking: this mixed-batch case and _invalid_entry re-assert what tests/test_every_path_meets_the_node_contract.py:263 already guards at base, an entry declaring a test write path with no negative_control being refused with no pointer, and that existing case also reddens under the same mutation, so the only new protection the file adds is the two-valid-entry case at :211.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-is-refused-at-queue-time-for-the-node-contract.html:5 non-blocking: the base arm runs only tests/test_staged_write_inventory.py, which imports reckon.interface_counts and none of reckon.crew.dispatch, dispatch_plan or dispatch_admission, so the done_when clause that the test files importing those modules add no failure against the base revision is not measured by the arm cited for it.\n",
+  "review_run_id": "r-20261110T153757099316-review-of-a-batch-entry-is-refused-at-queue-time-for-the-node-contract-c8e0018c20fa",
+  "reviewed_base_sha": "45a800ebe54f026ba1ad26dfb46fc71b49adbd7b",
+  "reviewed_head_sha": "c8e0018c20faa85a447664fa2660e07ae6afabfd",
+  "reviewed_run_id": "r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract",
+  "scores": {
+    "durability": 12,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:52:00+00:00",
+  "total": 80
+}
