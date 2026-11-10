@@ -1163,7 +1163,15 @@ def review_coverage(
         if not _review_is_incomplete(record)
     ]
     forms = _fingerprint_forms(content)
-    whole = [record for record in records if record.get("plan_fingerprint") in forms]
+    # A scoped review read the whole document but traced only the units it was
+    # asked about, so it names the whole plan's fingerprint while covering none
+    # of the sections it merely read for consistency. It is therefore never a
+    # whole-plan cover; the per-unit loop below reads its scope.
+    whole = [
+        record
+        for record in records
+        if record.get("plan_fingerprint") in forms and not _traced_units(record)
+    ]
     outstanding = {
         _plan_html.section_record_id(section)
         for section in implementable_sections(
@@ -1252,11 +1260,17 @@ def review_coverage(
             }
         )
         matched = False
+        # A scoped review covers exactly the units it traced. Every other unit
+        # was read for consistency with them, which is not a review of its own,
+        # so an acceptance recorded on it cannot cover one either.
+        traced = _traced_units(record)
         # An acceptance recorded on this review stands in for an edit that only
         # answers it. Each entry names the units it covers and the digest each
         # held when it was accepted, so a unit whose content has moved since is
         # not covered by it and the review is owed again for that unit alone.
         for identity in _accepted_edit_units(record, digests) & outstanding:
+            if traced and identity not in traced:
+                continue
             covered.add(identity)
             matched = True
         # Resolved on the first unit of this review that lands under the
@@ -1266,6 +1280,10 @@ def review_coverage(
         acted_units: set[str] | None = None
         for identity in outstanding:
             if identity not in digests:
+                continue
+            if traced and identity not in traced:
+                # The review read this unit for consistency only. Its digest
+                # matching says the text was there, not that anyone reviewed it.
                 continue
             if identity == DOCUMENT_UNIT:
                 # The document unit carries decisions, gates and the summary in
@@ -1718,6 +1736,117 @@ SCOPE_FINDING_CHARS = 280
 SCOPE_DIFF_CHARS = 12000
 SCOPE_UNIT_CHARS = 8000
 
+# The record key naming the units a review traced against the code. A review
+# composed with a section scope reads the whole plan but traces only the units
+# it was asked about, so the coverage predicate counts it as covering those
+# units and no others: a section read for consistency has had no read of its
+# own. A record without the key is a whole-plan review and covers what its
+# digests match, which is what every review composed before the scope existed is.
+TRACED_UNITS_KEY = "traced_units"
+
+# The section scope a review is being composed under. The composer reads the
+# plan and writes the brief, and the section scope is named on the command that
+# started it rather than on the plan record the composer is handed, so it rides
+# a context variable the way the answer override does. It is set only by a
+# composition, never by a read, so a caller that composes nothing sees the
+# stored behaviour.
+_REVIEW_SECTIONS: ContextVar[tuple[str, ...] | None] = ContextVar(
+    "plan_review_sections", default=None
+)
+
+# What the composition in progress decided to trace, which is the asked-for
+# scope only where there is a history to narrow against. A first review widens
+# to every unit because no section can be known settled, and the record must
+# keep what the round traced rather than what it was asked about: a record
+# narrowed to the asking would report the sections the brief widened past as
+# uncovered, and the round that read them would cover nothing it read. The
+# holder is made and discarded by the composing block, so the decision lives no
+# longer than the composition that made it.
+_COMPOSED_UNITS: ContextVar[dict[str, tuple[str, ...]] | None] = ContextVar(
+    "plan_review_composed_units", default=None
+)
+
+
+def _decided_units() -> tuple[str, ...]:
+    """The units the composition in progress decided to trace, or ``()``."""
+    holder = _COMPOSED_UNITS.get()
+    if not holder:
+        return ()
+    return tuple(holder.get("units") or ())
+
+
+def _record_decided_units(units: Iterable[str]) -> None:
+    """Note the units this composition traces, for the sidecar to keep."""
+    holder = _COMPOSED_UNITS.get()
+    if holder is not None:
+        holder["units"] = tuple(sorted(units))
+
+
+_SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
+
+
+def _normalise_sections(sections: Iterable[Any] | None) -> tuple[str, ...]:
+    """The section units a ``--section`` spelling names, in the order given.
+
+    Every spelling the parser derives an identity for is accepted — the ``s``
+    prefix, the section symbol, and a bare number all name one section — and a
+    repeated name is dropped rather than read twice. A token naming no section is refused here, because
+    a scope that silently names nothing composes a review of the whole plan
+    while reporting itself as narrow.
+    """
+    units: list[str] = []
+    for raw in sections or ():
+        token = str(raw or "").strip()
+        if not token:
+            continue
+        if _SECTION_TOKEN.match(token):
+            token = "§" + token[1:]
+        unit = _plan_html.section_record_id(token)
+        if not unit:
+            raise ValueError(f"{raw!r} does not name a plan section")
+        if unit not in units:
+            units.append(unit)
+    return tuple(units)
+
+
+@contextmanager
+def reviewing_sections(sections: Iterable[Any] | None) -> Iterator[None]:
+    """Compose the review inside this block as scoped to the sections named.
+
+    The scope is read by :func:`review_scope` and by :func:`write_review_sidecar`
+    while the block runs, so the brief the reviewer reads and the record the
+    store keeps are narrowed by one declaration rather than by threading a
+    parameter through every composer between the command and the writer.
+    """
+    token = _REVIEW_SECTIONS.set(_normalise_sections(sections) or None)
+    composed = _COMPOSED_UNITS.set({})
+    try:
+        yield
+    finally:
+        _COMPOSED_UNITS.reset(composed)
+        _REVIEW_SECTIONS.reset(token)
+
+
+def _traced_units(record: Mapping[str, Any]) -> tuple[str, ...]:
+    """The units a stored review traced against the code, or ``()``.
+
+    An empty tuple means the review read the whole plan, which is every record
+    stored before a review could be scoped.
+    """
+    named = record.get(TRACED_UNITS_KEY)
+    if not isinstance(named, (list, tuple)):
+        return ()
+    return tuple(str(unit).strip() for unit in named if str(unit).strip())
+
+
+def _plan_section_units(plan: Mapping[str, Any] | str | Path) -> set[str]:
+    """Every section identity the plan itself carries, the document excluded."""
+    units = {identity for identity in _prose_texts(plan) if identity != DOCUMENT_UNIT}
+    declarations = _as_state(plan).get("section_declarations")
+    if isinstance(declarations, Mapping):
+        units |= {str(name) for name in declarations}
+    return units
+
 
 def _plan_document_path(project: str, plan_slug: str) -> Path | None:
     """The plan file a project's slug resolves to, or ``None`` when it does not."""
@@ -2018,6 +2147,88 @@ def _changed_material(
     return "\n".join(lines) + ("\n" if lines else "")
 
 
+def _whole_plan_block(plan: Mapping[str, Any] | str | Path) -> list[str]:
+    """The plan's own text, so a review reads the whole document each round.
+
+    A review is composed against a snapshot it is told to open, and a scoped
+    one names only the units it traces beside it, so the plan's text is carried
+    in the brief as well: a reviewer reading the brief alone still holds every
+    section it must read for consistency with the ones in scope. A parsed-state
+    input carries no document text, so it contributes no block rather than an
+    invented one.
+    """
+    document = _as_document(plan)
+    if not document:
+        return []
+    return [
+        "The whole plan this review reads, which is the snapshot named above:",
+        "```html",
+        document.rstrip(),
+        "```",
+    ]
+
+
+def _scope_plan_path(plan: Mapping[str, Any] | str | Path) -> Path | None:
+    """The plan file a scope resolves anchors against, when it was given one.
+
+    A string plan is the document's own text rather than a location, so it
+    names no path a reviewed snapshot is found beside.
+    """
+    return plan if isinstance(plan, Path) else None
+
+
+def _scoped_history(
+    prior: Iterable[Mapping[str, Any]],
+    units: set[str],
+    *,
+    plan_path: str | Path | None = None,
+) -> list[str]:
+    """Every prior finding on the units in scope, in full, with its answer.
+
+    A finding is carried whole — its id, its anchor, its text and the account
+    of its answer — because a reviewer that has to re-derive a settled fix
+    reads the code a second time and cannot tell a defect its own round
+    introduced from one the previous round missed. Nothing is capped: a plan
+    with thirty findings on one section shows all thirty. A finding is in
+    scope when any unit it blocks is one of the units this review traces, and a
+    finding on the document unit is in scope for every review, because the
+    document unit blocks every section.
+    """
+    wanted = set(units) | {DOCUMENT_UNIT}
+    lines: list[str] = []
+    for record in sorted(
+        prior, key=lambda item: int(item.get("plan_version") or 0), reverse=True
+    ):
+        read = _memoised_reviewed_text(record, None, plan_path)
+        for finding in record.get("findings") or ():
+            if not isinstance(finding, Mapping):
+                continue
+            blocked = _finding_units(record, finding, reviewed_text=read)
+            if not wanted.intersection(blocked):
+                continue
+            response = _stored_response(record, finding)
+            text = " ".join(str(finding.get("text") or "").split())
+            if response is None:
+                lines.append(
+                    f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
+                    f"{text} -> (unanswered)"
+                )
+                continue
+            account = " ".join(
+                part
+                for part in (
+                    str(response.get("reason") or "").strip(),
+                    str(response.get("note") or "").strip(),
+                )
+                if part
+            )
+            lines.append(
+                f"- {finding.get('id')} [{finding.get('anchor') or 'plan'}] "
+                f"{text} -> {response.get('action')}{': ' + account if account else ''}"
+            )
+    return lines
+
+
 def review_scope(
     project: str,
     plan_slug: str,
@@ -2025,6 +2236,7 @@ def review_scope(
     plan: Mapping[str, Any] | str | Path,
     rubric: str,
     base_dir: str | Path | None = None,
+    sections: Iterable[Any] | None = None,
 ) -> str:
     """The scope a review of a plan is given, as a paragraph of its brief.
 
@@ -2035,6 +2247,13 @@ def review_scope(
     neither re-reads settled content nor raises a finding a second time. A
     review composed when nothing is uncovered also reads the whole plan, since
     its author asked for one.
+
+    ``sections`` scopes the review to the units it names: the review reads the
+    whole plan, traces the backing code only for those units, and is shown
+    every prior finding on them in full. A plan with no stored review under the
+    rubric widens the scope to every unit and says so, because a first review
+    cannot know which sections are settled. A scope that names a section the
+    plan does not carry is refused rather than narrowed to nothing.
     """
     design = rubric == DESIGN_RUBRIC
     prior = [
@@ -2042,6 +2261,62 @@ def review_scope(
         for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
         if is_design_review(record) == design
     ]
+    named = (
+        _normalise_sections(sections)
+        if sections is not None
+        else (_REVIEW_SECTIONS.get() or ())
+    )
+    if named:
+        unknown = sorted(set(named) - _plan_section_units(plan) - {DOCUMENT_UNIT})
+        if unknown:
+            raise ValueError(
+                f"plan {plan_slug!r} carries no section "
+                f"{', '.join(unknown)}; it names "
+                f"{', '.join(sorted(_plan_section_units(plan)))}"
+            )
+    if named:
+        units = set(named)
+        if not prior:
+            units = _plan_section_units(plan)
+            _record_decided_units(units | {DOCUMENT_UNIT})
+            lines = [
+                (
+                    f"Scope: this plan has no stored {rubric} review yet, so this "
+                    "review reads the whole plan and traces every unit of it "
+                    f"against the code: {', '.join(sorted(units))}. The narrow "
+                    "scope asked for widens to the whole plan, because nothing "
+                    "has been reviewed and no section can be known settled."
+                ),
+                (
+                    "Read the whole plan, trace the backing code for every unit "
+                    "above, and raise a finding wherever it would change the plan."
+                ),
+            ]
+            return "\n".join([*lines, *_whole_plan_block(plan)]) + "\n"
+        _record_decided_units(units)
+        lines = [
+            (
+                f"Scope: this {rubric} review is scoped to "
+                f"{', '.join(sorted(units))}. Read the whole plan, which follows: "
+                "trace the backing code only for the units named below, and read "
+                "every other section for consistency with them. Raise a finding "
+                "outside those units only when it would change the plan."
+            ),
+            (
+                "The units whose code this review traces, and the only ones: "
+                f"{', '.join(sorted(units))}."
+            ),
+            *_whole_plan_block(plan),
+        ]
+        history = _scoped_history(prior, units, plan_path=_scope_plan_path(plan))
+        if history:
+            lines.append(
+                "Findings earlier reviews raised about the units this review "
+                "traces, each in full with the answer it was given; do not raise "
+                "one again unless the plan has since changed what it describes:"
+            )
+            lines.extend(history)
+        return "\n".join(lines) + "\n"
     if not prior:
         return ""
     _records, uncovered, changes = review_coverage(
@@ -3215,9 +3490,17 @@ def reviews_for_unit_burst(
         if not counts_for_rubric(record, rubric):
             continue
         if record.get("plan_fingerprint") in whole:
-            hits.append(record)
-            continue
+            # A whole-plan cover reads every unit. A scoped one read the whole
+            # document but traced only the units it names, so it counts for
+            # this unit only when this unit is one of them.
+            traced = _traced_units(record)
+            if not traced or unit in traced:
+                hits.append(record)
+                continue
         per_unit = record.get("section_digests")
+        traced = _traced_units(record)
+        if traced and unit not in traced:
+            continue
         if isinstance(per_unit, Mapping) and per_unit.get(unit) in wanted:
             hits.append(record)
     # Order by the stamp the store writes. ``store_plan_review`` stamps
@@ -4455,6 +4738,7 @@ def write_review_sidecar(
     plan_path: str | Path | None = None,
     store_error: str | None = None,
     name: str = _REVIEW_SIDECAR_NAME,
+    traced_units: Iterable[str] | None = None,
 ) -> Path:
     """Write the sidecar that joins a report to the plan content it read.
 
@@ -4472,6 +4756,12 @@ def write_review_sidecar(
 
     ``name`` is the sidecar's file name, so a code delivery's sidecar is written
     by this one writer under the name its own report kind is read by.
+
+    ``traced_units`` records the units the review traced against the code. It
+    defaults to what the completed :func:`review_scope` decided for this
+    composition, falling back to the scope the composing block declared, so a
+    first review that widened past the sections asked for records every unit it
+    widened to; a whole-plan review carries no key.
     """
     directory = Path(directory)
     if payload is None:
@@ -4485,6 +4775,13 @@ def write_review_sidecar(
             "rubric": str(rubric),
             "report_path": str(Path(report_path)),
         }
+        traced = (
+            _normalise_sections(traced_units)
+            if traced_units is not None
+            else (_decided_units() or _REVIEW_SECTIONS.get() or ())
+        )
+        if traced:
+            payload[TRACED_UNITS_KEY] = list(traced)
         commit = plan_commit_for(
             str(project),
             str(plan_slug),
@@ -4681,7 +4978,7 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
             f"delivered review report {report_path} carries no RUBRIC or "
             "FINDING line of the plan grammar, so it is not a review"
         )
-    return {
+    record = {
         "project": str(sidecar.get("project") or "").strip(),
         "plan_slug": str(sidecar.get("plan_slug") or "").strip(),
         "plan_version": int(plan_version),
@@ -4697,6 +4994,10 @@ def delivered_report_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
         "absent_items": parsed["absent_items"],
         "plan_commit": str(sidecar.get("plan_commit") or ""),
     }
+    traced = _traced_units(sidecar)
+    if traced:
+        record[TRACED_UNITS_KEY] = list(traced)
+    return record
 
 
 def _code_review_record(sidecar: Mapping[str, Any]) -> dict[str, Any]:
