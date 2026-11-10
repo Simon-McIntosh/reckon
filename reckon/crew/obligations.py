@@ -2184,7 +2184,7 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     read for themselves, so a reader that cannot be reached costs a read rather
     than a duty.
     Source identities key the answer across calls, including per-run files,
-    live pointers, the common Git registry and the registered paths' parents.
+    semantic live claims, the common Git registry and registered-tree presence.
     An unchanged call reuses the answer without listing or checking held paths.
     The whole call runs inside :func:`reckon.file_memo.read_only_region`, so a
     fresh derivation shares each document as a read-only view.
@@ -2203,9 +2203,10 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
         key = (project, str(repository), _held_records_signature(project, repository))
         if key[2] is None:
             return _held_worktree_records_read(project, repository)
+        # Source identity is stable when unrelated checkout files are created.
         return file_memo.memoized(
             "obligation_held_records",
-            repository,
+            Path(__file__),
             lambda: _held_records_read_uncached(project, repository),
             variant=key,
         )
@@ -2241,18 +2242,71 @@ def _held_directory_signature(directory: Path) -> tuple[Any, ...]:
     )
     return (
         str(directory),
-        stamp,
         tuple((str(path), _held_input_signature(path)) for path in paths),
     )
+
+
+def _held_live_worktrees(project: str) -> tuple[Path, ...]:
+    """Resolve live claims only when their pointer inputs change.
+
+    File identities validate the pointer snapshot; its semantic value is the
+    set of claimed paths. Unrelated pointer fields and pointers without a
+    worktree therefore cannot invalidate the held-record answer.
+    """
+    held = _VIEW_LIVE_POINTERS.get()
+    snapshot = held.get(project) if held is not None else None
+    inputs = (
+        tuple(sorted({str(row.get("worktree") or "") for row in snapshot}))
+        if snapshot is not None
+        else _held_directory_signature(runs.live_dir())
+    )
+    return file_memo.memoized(
+        "obligation_held_live_worktrees",
+        Path(__file__),
+        lambda: tuple(sorted(_live_worktrees(project))),
+        variant=(project, inputs),
+    )
+
+
+def _held_present_worktrees(registered: Sequence[Path]) -> tuple[Path, ...]:
+    """Validate tree presence through parent listings shared by unchanged calls."""
+    grouped: dict[Path, set[str]] = {}
+    for tree in registered:
+        grouped.setdefault(tree.parent, set()).add(tree.name)
+    present: list[Path] = []
+    for parent, names in sorted(grouped.items()):
+        if _held_input_signature(parent) is None:
+            continue
+
+        def read(parent: Path = parent, names: set[str] = names) -> tuple[Path, ...]:
+            with os.scandir(parent) as entries:
+                return tuple(
+                    sorted(
+                        parent / entry.name
+                        for entry in entries
+                        if entry.name in names and entry.is_dir()
+                    )
+                )
+
+        present.extend(
+            file_memo.memoized(
+                "obligation_held_present",
+                parent,
+                read,
+                variant=tuple(sorted(names)),
+            )
+        )
+    return tuple(sorted(present))
 
 
 def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] | None:
     """The ledger, registered paths and live claims that determine held trees.
 
-    Only source identities are checked on a warm call. Directory listings are
-    reused while their stamps stand; per-file identities still detect an
-    in-place record or pointer write. Parent stamps detect a vanished worktree
-    without restating every held directory. Unreadable inputs forfeit reuse.
+    Source identities validate cached listings and live claims. Per-file
+    identities detect in-place record or pointer writes, while parent listings
+    detect vanished trees. The answer key uses tree presence and occupied
+    registered paths, so unrelated directory or pointer churn costs validation
+    rather than a new ledger derivation. Unreadable inputs forfeit reuse.
     """
     root = _ledger_read_root(project, repository)
     aggregate = ledger.ledger_path(project, root)
@@ -2261,31 +2315,15 @@ def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] |
         registered = _held_registered_worktrees(
             repository, signature=registry_signature
         )
-        parents = tuple(
-            (str(path), _held_input_signature(path))
-            for path in sorted({tree.parent for tree in registered})
-        )
-        held = _VIEW_LIVE_POINTERS.get()
-        snapshot = held.get(project) if held is not None else None
-        live_signature = (
-            tuple(
-                sorted(
-                    (
-                        str(pointer.get("run_id") or ""),
-                        str(pointer.get("worktree") or ""),
-                    )
-                    for pointer in snapshot
-                )
-            )
-            if snapshot is not None
-            else _held_directory_signature(runs.live_dir())
-        )
+        present = _held_present_worktrees(registered)
+        occupied = set(_held_live_worktrees(project))
+        live_signature = tuple(tree for tree in present if tree in occupied)
         return (
             str(aggregate),
             _held_input_signature(aggregate),
             _held_directory_signature(aggregate.parent / "runs"),
             registry_signature,
-            parents,
+            present,
             live_signature,
         )
     except OSError:
@@ -2326,9 +2364,9 @@ def _held_registered_worktrees(
             return _registered_worktrees(repository)
     return file_memo.memoized(
         "obligation_held_registered",
-        repository,
+        Path(__file__),
         lambda: _registered_worktrees(repository),
-        variant=signature,
+        variant=(str(repository), signature),
     )
 
 

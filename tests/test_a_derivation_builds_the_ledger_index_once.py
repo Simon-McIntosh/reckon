@@ -198,8 +198,9 @@ def test_the_shared_index_answers_as_the_explicit_root(
     # row set the held screen read, and it must be the same for both routes.
     assert shared.held_worktrees, "no held tree was reported, so nothing was compared"
     assert explicit.held_worktrees == shared.held_worktrees
-    # The explicit-root route is the one that needs a second build, so a count
-    # of one above cannot be the instrument reporting the old behaviour.
+    # A fresh held-record derivation exposes the explicit-root route's second
+    # index build independently of reuse of an unchanged held-record answer.
+    obligations_module._clear_cached_obligation_inputs()
     with _CallCounter(ledger_module, "_index_payload") as index:
         _derive()
     assert index.calls == 2, (

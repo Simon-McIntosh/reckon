@@ -214,3 +214,33 @@ def test_a_vanished_directory_invalidates_the_answer(fleet):
     tree = fleet.trees[0]
     tree.rename(tree.with_name("displaced"))
     assert fleet.refresh() == expected - {"held-run-0"}
+
+
+def test_churn_without_a_registered_claim_reuses_held_records(fleet, monkeypatch):
+    counts = Counts(monkeypatch, fleet.trees)
+    expected = fleet.refresh()
+    assert len(expected) == 20
+    counts.work.clear()
+
+    unrelated = runs.pointer_path("unrelated-pointer")
+    unrelated.write_text(
+        json.dumps({"project": PROJECT, "run_id": "unrelated-pointer"})
+    )
+    assert fleet.refresh() == expected
+    assert counts.work["derive"] == 0, counts.work
+
+    pointer = runs.pointer_path("live-run-0")
+    row = json.loads(pointer.read_text())
+    row["phase"] = "working"
+    pointer.write_text(json.dumps(row))
+    assert fleet.refresh() == expected
+    assert counts.work["derive"] == 0, counts.work
+
+    row["worktree"] = str(fleet.repo.parent / "unregistered")
+    pointer.write_text(json.dumps(row))
+    assert fleet.refresh() == expected
+    assert counts.work["derive"] == 0, counts.work
+
+    (fleet.trees[0].parent / "unrelated-note").write_text("not a registered tree")
+    assert fleet.refresh() == expected
+    assert counts.work["derive"] == 0, counts.work
