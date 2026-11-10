@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:707",
+    "reckon/crew/dispatch.py:1465",
+    "reckon/crew/recovery_repair_dispatch.py:1085",
+    "reckon/crew/queue_landing.py:996"
+  ],
+  "completed_at": "2026-11-10T04:52:50.446Z",
+  "dispatched_at": "2026-11-10T04:45:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 520,
+      "severity": "non-blocking",
+      "text": "_repository_write_paths drops a write path that resolves outside the run's tree, and no case in tests/test_a_census_test_runs_in_every_product_gate.py exercises that branch; a regression there would classify a run-directory role path as product source and arm the census for a node that touches no product code.",
+      "what": "The out-of-tree drop is newly central to both classifications and untested."
+    },
+    {
+      "file": "tests/test_a_census_test_runs_in_every_product_gate.py",
+      "line": 330,
+      "severity": "non-blocking",
+      "text": "The assertion compares the delta's added_failure_ids against STAGED_WRITER_FAILURE while the base arm is empty and the same id is what the test fed into the later observation at line 321, so an evaluator that returned the after arm verbatim would still pass this line; the sibling at line 353, whose base is already carrying that id, is what distinguishes a computed difference from an echo.",
+      "what": "Single-direction assertion over inputs the test supplies."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read d4c326e9b0 and 05a3dee21c against 8381066b: promotion_records.py extracts _repository_write_paths so _node_test_files and _writes_product_source share one traversal, the test file replaces the echo-shaped case (d) observations with a real census run over a scratch repository built from the census's own expected inventory, and the fragment restates that measure; 216 insertions and 53 deletions across three files.",
+    "done_when": "The done_when names tests/test_a_census_test_runs_in_every_product_gate.py covering cases (a)-(d), case (a) red at the dispatch base and green at head, the negative control dropping the census list, zero added importer failures, and ruff clean by delta; gate-base.log, gate-head.log, negative-control-repair.log and the two importer arm logs record each named measure, and the ruff result is recorded only in the manifest.",
+    "goal": "The node's goal is that every node writing product source runs its project's declared census tests in its scoped gate; reckon/crew/promotion_records.py:600 appends them behind _writes_product_source and tests/test_a_census_test_runs_in_every_product_gate.py:87 asserts the resolved command at both arms.",
+    "manifest": "Read the delivered manifest; it records status complete, commits 8381066b and d4c326e9b0, the literal gate command, baseline_suite 3 failed at 6b6c15a8 and after_suite 0 failed at d4c326e9b0, the negative control reddening cases (a) and (d), and importer arms 5/125 and 8/440 at each revision.",
+    "write_paths": "Read the reviewed node's declared write paths against the three-file delta: reckon/crew/promotion_records.py, tests/test_a_census_test_runs_in_every_product_gate.py and docs/evidence/fragments/the-suite-is-green-at-head/a-census-test-runs-in-every-product-gate.html are all inside them, and the reviewed worktree is clean."
+  },
+  "justifications": {
+    "durability": "The case (d) pair now measures the real census: lines 313-315 assert the census is green at the fixture's base and red at its head, and line 353 asserts an empty delta where the after arm carries the failing id, which a delta evaluator that echoed its input would fail; the earlier echo defect is materially repaired, with only line 330 remaining single-direction.",
+    "evidence": "gate-base.log records 3 failed with EXIT=1 at 6b6c15a8 (case (a) among them), gate-head.log records 5 passed with EXIT=0 at d4c326e9b0, negative-control-repair.log records 3 failed with EXIT=1 over case (a) and both case (d) tests after the census list is dropped, and the two importer arms record identical failure-id sets (5/125 and 8/440); I re-ran the single gate at head (reviewer-gate.log, 5 passed, EXIT=0), though the fragment's '50 passed at its base' census figure appears in no durable log and is only reproducible by re-running the fixture.",
+    "fit": "The extraction at reckon/crew/promotion_records.py:500 keeps the surrounding docstring-and-dataclass idiom, the new test helpers (a frozen dataclass fixture and two small path readers) match tests/ styles, and no added name carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:600 appends the project's declared census tests only for a node whose write paths leave docs/, and tests/test_a_census_test_runs_in_every_product_gate.py:87 asserts the resolved command carries the census at both the base and the head revision, so the delta leaves the goal satisfied and strengthens the check behind it.",
+    "reuse": "The delta removes duplication rather than adding it: _repository_write_paths at reckon/crew/promotion_records.py:500 becomes the one traversal both _node_test_files and _writes_product_source consume; a search of reckon/crew found no other owner of 'record write_paths resolved repository-relative with out-of-tree paths dropped' \u2014 resumption.py:_claimed_write_paths compares live claims and dispatch_admission.py:_resolved_write_paths resolves role defaults against a run directory, neither of which is this capability.",
+    "scope_discipline": "Every path in the delta is one of the reviewed node's declared write paths: reckon/crew/promotion_records.py and tests/test_a_census_test_runs_in_every_product_gate.py in d4c326e9b0, docs/evidence/fragments/the-suite-is-green-at-head/a-census-test-runs-in-every-product-gate.html in 05a3dee21c, and nothing else."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every node writing product source runs its project's declared census tests in its scoped gate; reckon/crew/promotion_records.py:600 appends them behind _writes_product_source and tests/test_a_census_test_runs_in_every_product_gate.py:87 asserts the resolved command at both the base and the head revision.\nVERDICT done_when: the done_when names tests/test_a_census_test_runs_in_every_product_gate.py covering cases (a)-(d) with case (a) red at the dispatch base and green at head, the negative control dropping the census list, zero added importer failures and ruff clean by delta; gate-base.log (3 failed, EXIT=1, case (a) among them), gate-head.log (5 passed, EXIT=0 at d4c326e9b0), negative-control-repair.log (3 failed, EXIT=1 over cases (a) and (d)) and the two importer arm logs record each named measure, and the ruff result is recorded only in the manifest.\nVERDICT write_paths: the delta touches three files, reckon/crew/promotion_records.py, tests/test_a_census_test_runs_in_every_product_gate.py and docs/evidence/fragments/the-suite-is-green-at-head/a-census-test-runs-in-every-product-gate.html, each inside the reviewed node's declared write paths, and the reviewed worktree is clean.\nVERDICT manifest: read; it records status complete, commits 8381066b and d4c326e9b0, the literal gate command, baseline_suite 3 failed at 6b6c15a8 and after_suite 0 failed at d4c326e9b0, the negative control reddening cases (a) and (d), and importer arms 5/125 and 8/440 at each revision.\nVERDICT diff: read d4c326e9b0 and 05a3dee21c against 8381066b; promotion_records.py extracts _repository_write_paths so both classifications share one traversal, the test file replaces the echo-shaped case (d) observations with a real census run over a scratch repository, and the fragment restates the measure.\nCALL_SITES: reckon/crew/promotion.py:707, reckon/crew/dispatch.py:1465, reckon/crew/recovery_repair_dispatch.py:1085, reckon/crew/queue_landing.py:996\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:600 appends the declared census only for a product-writing node and tests/test_a_census_test_runs_in_every_product_gate.py:87 asserts it at both arms.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-base.log and gate-head.log record both arms and negative-control-repair.log records the mutation red, though the fragment's '50 passed at its base' figure appears in no durable log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in d4c326e9b0 and 05a3dee21c is a declared write path of the reviewed node and nothing else changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_census_test_runs_in_every_product_gate.py:353 fails for a delta evaluator that echoes its input, and lines 313-315 fail if the census stops detecting an unlisted writer.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_records.py:500 follows the module's docstring idiom and no added symbol carries a plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:500 becomes the single traversal both _node_test_files and _writes_product_source use, and no other owner of that capability exists in reckon/crew.\nFINDING reckon/crew/promotion_records.py:520 non-blocking: the out-of-tree path drop is newly central to both classifications and no test exercises it.\nFINDING tests/test_a_census_test_runs_in_every_product_gate.py:330 non-blocking: the assertion is single-direction because the base arm is empty, so a delta evaluator returning the after arm verbatim would pass it; the sibling at line 353 carries the guard.",
+  "review_run_id": "r-20261110T044100347820-review-of-a-census-test-runs-in-every-product-gate-05a3dee21c56",
+  "reviewed_base_sha": "8381066b298649217555fe34d187fe5f453fdaab",
+  "reviewed_head_sha": "05a3dee21c563ad96fc7d16a70aa1ab55b52bb91",
+  "reviewed_run_id": "r-20261110T020321759177-a-census-test-runs-in-every-product-gate",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T04:58:19.878893+00:00",
+  "total": 113
+}
