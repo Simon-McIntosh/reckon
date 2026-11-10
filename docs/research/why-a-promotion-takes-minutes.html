@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="why-a-promotion-takes-minutes">
+  <meta name="plan-title" content="Why a Promotion Takes Minutes">
+  <meta name="plan-summary" content="Root cause of 5–15 minute crew promotions on 2026-11-10: whole-population GPFS walks inside crew complete, serialised onto every review round.">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-status" content="active">
+  <meta name="plan-tags" content="reckon-tooling,crew">
+  <meta name="plan-informs" content="a-read-answers-inside-its-deadline,a-plan-is-reviewed-before-it-is-built,the-crew-does-its-own-bookkeeping,the-crew-home-has-a-bound,a-promotion-reads-the-evidence-it-is-given,work-is-never-stuck-behind-the-admission-loop">
+  <title>Why a Promotion Takes Minutes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Summary</h2>
+    <p>On 2026-11-10, every <code>crew complete</code> on the fleet node took between 4.6 and 15 minutes.
+    That included promotions of plan-review runs, which write no code and run no gate. One promotion was
+    killed by its 900 s timeout. It left its run live and its lock held, and that shut the plan's review
+    gate until the promotion was run again by hand. Promotion sits between every review round and the next
+    one, so its cost is paid once per round. Across two power_convertor plans that day that came to roughly
+    25 review rounds. The slow promotion was the main reason the crew panel showed no work in flight that
+    evening while both coordinators were busy.</p>
+    <p><strong>No single bug is the cause.</strong> The promotion path reads whole populations from GPFS
+    when it needs one run's data, and it does this in more than one place:</p>
+    <ul>
+      <li>the harness home of every run directory in the crew home (22,350 of them);</li>
+      <li>every per-run ledger file of the project (2,332 for power_convertor, 7,752 for reckon).</li>
+    </ul>
+    <p>Each walk costs a few minutes when GPFS is contended. On this node it was contended, with load
+    averages of 131–139 and about 20 tasks in <code>cxiWaitEventWait</code>. These walks have been found one
+    at a time: each was found with py-spy after a coordinator noticed a slow promotion. Two were fixed
+    last night (§61 and §62 of
+    <a href="/reckon/plans/a-read-answers-inside-its-deadline#s61">a-read-answers-inside-its-deadline</a>).
+    A third (§63) is landing as this is written. A fourth, the ledger snapshot, was seen in a py-spy dump
+    of §63's own landing and has not been filed yet.</p>
+    <p><strong>Fixing §63 alone will not make promotions fast.</strong> What makes them stay fast is a
+    guard on the whole <code>crew complete</code> path that fails when its filesystem calls grow with the
+    run population (§5, R3). The guard should come with a smaller population (R4) and with promotion taken
+    off the review critical path (R5).</p>
+
+    <h2 id="s2">§2 — What was measured</h2>
+    <p>The power_convertor coordinator of <code>ripple-inception-risk</code> (session c71ae21b) timed
+    every promotion it ran. Each promotion was <code>crew complete --gate not-run --no-commit</code> on a
+    plan-review run. The table runs from the start of the command to its promote commit, in CET. The logs
+    are under <code>~/.cache/power_convertor-filter-review/rir-promote-*.log</code>.</p>
+    <table>
+      <thead><tr><th>Review run</th><th>Round</th><th>Start</th><th>Promote commit</th><th>Duration</th></tr></thead>
+      <tbody>
+        <tr><td><code>r-20261110T173021797866</code></td><td>content 4</td><td>19:03:45</td><td>none: killed at 900 s</td><td>15 min, then lost</td></tr>
+        <tr><td><code>r-20261110T173021797866</code></td><td>content 4, rerun</td><td>19:20:03</td><td>19:24, <code>dfc0a9740</code></td><td>4.7 min</td></tr>
+        <tr><td><code>r-20261110T182506807890</code></td><td>content 5</td><td>19:45:09</td><td>19:52, <code>d695878de</code></td><td>about 8 min</td></tr>
+        <tr><td><code>r-20261110T185454905833</code></td><td>content 6</td><td>20:12:45</td><td>20:16, <code>dd6edad30</code></td><td>4.6 min</td></tr>
+        <tr><td><code>r-20261110T192022309213</code></td><td>content 7</td><td>20:30:43</td><td>20:36, <code>ba081065b</code></td><td>6.4 min</td></tr>
+        <tr><td><code>r-20261110T193927511331</code></td><td>content 8</td><td>21:09:52</td><td>21:14, <code>0be210f76</code></td><td>5.0 min</td></tr>
+        <tr><td><code>r-20261110T201609706147</code></td><td>design</td><td>about 21:35</td><td>21:42, <code>5abb86c35</code></td><td>about 8 min</td></tr>
+      </tbody>
+    </table>
+    <p>During the killed attempt, the process used 9 s of CPU in 7.5 minutes, in D state with
+    <code>promotion-&lt;run&gt;.lock</code> held. It left a 0-byte log. Node load was 131, with 20 tasks in
+    <code>cxiWaitEventWait</code>. The S5 coordinator (session c76cf9d1) saw the same pattern:</p>
+    <ul>
+      <li><code>crew complete</code> on review runs was terminated (exit 143) at 200 s and 300 s
+      timeouts;</li>
+      <li>a <code>crew dispatch --batch</code> was killed at 120 s and never launched;</li>
+      <li>landings with <code>--land</code> took 2–6 minutes.</li>
+    </ul>
+    <p>Both coordinators then ran every promotion in the background with an 1800 s ceiling.</p>
+
+    <p>reckon-c0 took two stack samples, both in D state on <code>cxiWaitEventWait</code>:</p>
+    <table>
+      <thead><tr><th>Sample</th><th>Stack (innermost last)</th><th>What it walks</th></tr></thead>
+      <tbody>
+        <tr><td>pid 537299, 12 min in, 45 s CPU. Kept at
+        <code>~/.cache/reckon-promotion-rollout/pyspy-537299-20261110.txt</code></td>
+        <td><code>_complete_locked</code> (promotion.py:1391) → <code>_harvest_lane_receipt</code>
+        (promotion_release.py:915) → <code>read_rollout_receipt</code> → <code>_locate_rollout</code> →
+        <code>run_home_rollout_paths</code> (rollout.py:207) → <code>isdir</code></td>
+        <td>Every run directory under <code>~/.config/reckon/crew/runs</code>: an <code>iterdir</code>,
+        then two <code>is_dir</code> calls and a glob per child. 22,304 directories at 19:48 CET and
+        22,350 at 21:55 CET.</td></tr>
+        <tr><td>pid 1391546, the §63 landing itself, 3.5 min in</td>
+        <td><code>_complete_locked</code> (promotion.py:1233) → <code>ledger.load</code> (ledger.py:1893) →
+        <code>_indexed_data</code> (:1634) → <code>_run_snapshot</code> (:1184) → thread pool →
+        <code>pathlib</code> stat</td>
+        <td>Every per-run ledger file <code>docs/state/&lt;project&gt;/runs/*.json</code>, statted with 8
+        threads to build the index cache key: 2,332 files for power_convertor and 7,752 for reckon.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s3">§3 — Root causes</h2>
+    <p><strong>RC1: whole-population reads in a per-run operation.</strong> A promotion acts on one run,
+    yet two stages of <code>_complete_locked</code> read every run.</p>
+    <ul>
+      <li><code>_harvest_lane_receipt</code> calls <code>read_rollout_receipt</code> without the
+      <code>run_id</code> the function already accepts, so <code>_locate_rollout</code> searches every
+      run's harness home for the one session the promoting run owns. The fix is four lines:
+      <code>ad1e6697d0</code>, landing as §63.</li>
+      <li><code>ledger.load</code> rebuilds its cache key by statting every per-run ledger file. The
+      comment at ledger.py:1180 gives the reason: "directory mtime cannot detect an in-place edit". The key
+      is correct, but its cost grows with the project's whole history and is paid on every load.</li>
+    </ul>
+    <p>The two walks have the same shape as the held-worktree fallback scan fixed last night in §61 and
+    §62.</p>
+
+    <p><strong>RC2: the populations have no bound.</strong>
+    <a href="/reckon/plans/the-crew-home-has-a-bound#s5">the-crew-home-has-a-bound §5</a> (the existing
+    backlog is reclaimed) is <em>deferred</em>, so the crew home holds 22,350 run directories. One-file-per-run
+    ledgers grow by every run a project has ever made. Any O(N) walk therefore gets slower every day,
+    including walks not found yet.</p>
+
+    <p><strong>RC3: contended GPFS multiplies the cost.</strong> A stat that costs about 250 µs on a quiet
+    filesystem costs milliseconds to tens of milliseconds behind 20 blocked tasks. On 2026-11-10 the fleet
+    node ran at load 131–139: heavy suites ran inside the fleet job, and the monitor read GPFS. The lead's
+    directive the same day moved heavy work to partitions, which lowers the multiplier but leaves the
+    walks in place. Every walk in RC1 is a small cost multiplied by N and by this factor.</p>
+
+    <p><strong>RC4: promotion is on the critical path of every review round.</strong>
+    <code>_standing_plan_review</code> refuses a new compose while any review pointer of the plan is live,
+    including one whose report is already stored. So each round costs reviewer time plus promotion time.
+    A design review and a content review also exclude each other. The numbers on 2026-11-10:</p>
+    <ul>
+      <li><code>ripple-inception-risk</code> ran 9 content rounds and 1 design round, at 25–35 minutes
+      per round, of which 5–8 minutes was promotion;</li>
+      <li><code>iter-supply-test-integrity</code> ran 16 content rounds.</li>
+    </ul>
+    <p>Answering findings already works before promotion: c71ae21b answered all three round-8 findings
+    while that run's <code>crew complete</code> was still running. The gate is the only thing that
+    waits.</p>
+
+    <p><strong>RC5: a slow promotion is easily killed and leaves state behind when it is.</strong>
+    Coordinators call <code>crew complete</code> with shell or MCP timeouts sized for a fast verb. A kill
+    mid-promotion leaves the run live and the promotion lock in <code>~/.config/reckon/crew/locks/</code>,
+    so the compose refuses with "a plan review is already in flight as a live run". Separately,
+    <code>ledger._commit_state_write</code> commits once and raises when a peer holds
+    <code>.git/index.lock</code>. That is
+    <a href="/reckon/plans/the-crew-does-its-own-bookkeeping#s29">the-crew-does-its-own-bookkeeping §29</a>,
+    and it is what left §63's own plan declaration uncommitted in the reckon checkout at 21:50.</p>
+
+    <h2 id="s4">§4 — Why these walks were found one at a time</h2>
+    <p>Each walk is invisible in tests because test crew homes hold a handful of runs, and invisible on a
+    quiet filesystem because N × 250 µs is still under a second. A walk shows up only when N is large and
+    the filesystem is contended at the same time. A coordinator then notices it as a slow verb, and someone
+    has to py-spy it. §63's test proves that one function does not scale with the population. Nothing tests
+    that <code>crew complete</code> as a whole does not, so the ledger snapshot walk passed every check
+    and showed up only in a profile of the fix for the previous walk.</p>
+
+    <h2 id="s5">§5 — What makes promotions fast, and keeps them fast</h2>
+    <table>
+      <thead><tr><th></th><th>Action</th><th>Owner</th><th>State at 21:55 CET</th></tr></thead>
+      <tbody>
+        <tr><td>R1</td><td>Land the rollout fix. Then measure one no-code review promotion on the fleet node
+        and record its wall clock beside the node's load. Expected: the 12-minute rollout stage disappears,
+        and the ledger stage (R2) remains.</td>
+        <td><a href="/reckon/plans/a-read-answers-inside-its-deadline#s63">a-read-answers-inside-its-deadline §63</a></td>
+        <td>Landing (pid 1391546). Base 51 passed, head 53 passed, no blocking finding.</td></tr>
+        <tr><td>R2</td><td>Make <code>ledger.load</code>'s cache key O(1). Every ledger write already goes
+        through reckon, so a per-project write-generation file bumped on each write detects an in-place edit
+        without statting every run file.</td>
+        <td>a-read-answers-inside-its-deadline (new section)</td>
+        <td>Not filed. reckon-c0 will file it after §63 lands, so it can be measured on the post-§63 path.</td></tr>
+        <tr><td>R3</td><td><strong>Add a population-independence guard for the whole verb.</strong> Run
+        <code>crew complete</code> of a review run against a temporary crew home and ledger with 20 and with
+        200 other runs. Count the filesystem calls (stat, scandir, listdir, glob) and assert the counts are
+        equal. The negative control reintroduces the no-<code>run_id</code> rollout call, and the count
+        grows. Apply the same guard to <code>crew review</code> compose and <code>--land</code>. This is the
+        item that stops the next walk from reaching production.</td>
+        <td>a-read-answers-inside-its-deadline (new section)</td><td>Proposed here.</td></tr>
+        <tr><td>R4</td><td>Reclaim the backlog. Bring the crew home from 22,350 run directories down to the
+        runs a reader can still need. This lowers the cost of every walk not yet found.</td>
+        <td><a href="/reckon/plans/the-crew-home-has-a-bound#s5">the-crew-home-has-a-bound §5</a></td>
+        <td>Deferred. Proposed for un-deferral.</td></tr>
+        <tr><td>R5</td><td>Take promotion off the round's critical path:
+          <ul>
+            <li>a delivered review whose record is stored stops holding the compose gate (§47);</li>
+            <li>a design review and a content review can be in flight together (§48);</li>
+            <li>a re-review gates only on the units it covers (§49).</li>
+          </ul></td>
+        <td><a href="/reckon/plans/a-plan-is-reviewed-before-it-is-built#s47">a-plan-is-reviewed-before-it-is-built §47–§49</a></td>
+        <td>Filed (<code>234fd09d34</code>). Revision after first review being committed; not dispatched.</td></tr>
+        <tr><td>R6</td><td>Make a killed or interrupted promotion leave no state that shuts a gate. A state
+        write waits out a held <code>index.lock</code> (§29), and an abandoned promotion lock expires with
+        its lease. While R1–R3 are open, the coordinator contract should give <code>crew complete</code>
+        an 1800 s budget, so that no session kills a promotion at 120–300 s.</td>
+        <td><a href="/reckon/plans/the-crew-does-its-own-bookkeeping#s29">the-crew-does-its-own-bookkeeping §29</a></td>
+        <td>Filed 21:05. Content review answered; re-review next.</td></tr>
+      </tbody>
+    </table>
+    <p>Acceptance for "promotions are fixed": a no-code review promotion on the fleet node completes in
+    under 60 s at the load of an ordinary working evening, and the R3 guard is in the suite. R1 alone
+    should not be reported as the fix: the §63 landing itself spent minutes in the ledger stage.</p>
+
+    <h2 id="s6">§6 — Other defects the power_convertor coordinators hit on 2026-11-08 to 11-10</h2>
+    <p>These were reported by sessions c76cf9d1 (S5, <code>iter-unverified-switching-windows</code> and
+    <code>iter-supply-test-integrity</code>) and c71ae21b (S4, <code>ripple-inception-risk</code>). An owner
+    marked "probable" is the reporter's best guess and has not been confirmed against a reckon plan.</p>
+    <table>
+      <thead><tr><th>Defect</th><th>Evidence</th><th>Cost</th><th>Owner</th></tr></thead>
+      <tbody>
+        <tr><td>Workers' suite receipts drift from the armed command: an absolute interpreter, a
+        <code>cd</code>/<code>env -C</code> prefix, a scratch <code>PYTHONPATH</code> or a short sha.
+        Landing then refuses with <code>command_matches_suite_command</code>.</td>
+        <td>13 test-integrity sections (s11 to s25). Switching-windows s3, s7-filter and s7-pulse. s4
+        recorded no arms.</td>
+        <td>One resume round each, 5–20 min</td><td>Dispatch prompt and manifest contract (probable)</td></tr>
+        <tr><td>An unchanged helper with no tests among the write paths counts as a test file, so the base
+        arm collects nothing (exit 5). Promotion refuses with "missing
+        baseline_suite.collected_no_test", and <code>--waive-suite-delta</code> does not bypass it.</td>
+        <td><code>r-20261107T223257043861</code>: blocked 11-08 to 11-10, landed only after re-scoping as a
+        new node</td>
+        <td>Two days for one section</td><td><code>_arm_collected_nothing</code> /
+        <code>_arm_measured_nothing</code> (probable)</td></tr>
+        <tr><td>A red base contradicts the gate assertion: "asserts gate 'passed' with exit status 0 but
+        its cited log records EXIT=1". The base had 3 failures and the head 2, with zero added.</td>
+        <td>switching-windows s7-pulse; test-integrity s23</td><td>Hand-built land calls</td>
+        <td><a href="/reckon/plans/a-promotion-reads-the-evidence-it-is-given">a-promotion-reads-the-evidence-it-is-given</a> (probable)</td></tr>
+        <tr><td>A section is released to its waiting nodes only when declared done, not when it lands.</td>
+        <td>test-integrity s15 and s23 held about 45 min after s14 and s18 landed; switching-windows s8
+        after s7</td>
+        <td>About 45 min of idle lane per hop</td>
+        <td><a href="/reckon/plans/work-is-never-stuck-behind-the-admission-loop">work-is-never-stuck-behind-the-admission-loop</a> (probable)</td></tr>
+        <tr><td>The review reflex is late or silent ("review overdue by Nm"). Reviews were also composed at a
+        pre-resume head while a repair was running.</td>
+        <td>8 runs composed by hand; test-integrity s25 and switching-windows s7-pulse reviewed twice</td>
+        <td>A second review each</td><td>Review reflex (probable)</td></tr>
+        <tr><td>An uncommitted plan edit refuses admission with <code>PlanVisibilityError</code> and the
+        request queues as awaiting-session.</td><td>test-integrity s14 and s23</td><td>One obligation cycle each</td>
+        <td>Admission (probable)</td></tr>
+        <tr><td>A plan edit is swept into a promotion commit.</td>
+        <td><code>900d773ce</code> carries the switching-windows §9 insert</td><td>A git note</td>
+        <td>§29's commit path (probable)</td></tr>
+        <tr><td><code>git status -uno</code> in a worktree takes more than 90 s, so
+        <code>crew stop</code> cannot read the tree.</td><td>switching-windows s7-pulse, 18:08Z</td>
+        <td>Manual stop</td><td>RC3 (GPFS contention)</td></tr>
+        <tr><td>The batch dispatch contract has gaps: it does not read "Write paths." prose, rejects
+        <code>1h30m</code>, requires <code>negative_control</code> for any test path, refuses an investigate
+        role that must write its verdicts file, and reaches context-window-exceeded at 251k against 230k.</td>
+        <td>Several S5 dispatches</td><td>A retry each</td><td>Dispatch (probable)</td></tr>
+        <tr><td>A resume launched with a minimal <code>PATH</code> exits 127, while the pointer keeps
+        reading "working".</td><td>test-integrity s17 and s22, attempt 2</td><td>A resume each</td>
+        <td>Launcher: resolve the backend absolutely (probable)</td></tr>
+        <tr><td>The follower settles two minutes after a plan review delivers, and no delivered row reaches
+        the pane.</td><td>15:53Z and about 17:39Z; 58 min idle</td><td>58 min</td>
+        <td><a href="/reckon/plans/the-monitor-shows-the-work-it-watches">the-monitor-shows-the-work-it-watches</a> §122 and §123</td></tr>
+        <tr><td>The station tick runs 2–7 min in its per-project-refresh stage, and obligations up to 13 min
+        old are shown as current.</td><td>Hook output in both sessions</td><td>Stale obligations</td>
+        <td>Not profiled; likely RC1 and RC3 again</td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>
