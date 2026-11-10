@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's armed pair is green on both sides (base-arm-1feaad843c.log 61 passed, after-arm-c620b273ff.log 65 passed), so the count taken from baseline_suite and after_suite is 0; the importer population that was 1 failed at the previous review is now 49 passed on both arms at c620b273ff, so it adds no failure either, and I re-ran the named file at the reviewed head (10 passed, EXIT=0).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_receipt_mismatches",
+    "reckon/crew/promotion_evidence.py:_require_gate_log_agrees",
+    "reckon/crew/promotion.py:654",
+    "reckon/crew/promotion.py:2576"
+  ],
+  "completed_at": "2026-11-10T20:01:09.955Z",
+  "dispatched_at": "2026-11-10T19:31:11Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The rename's case also guards a wrong non-None count; the new-format cases in the run's own test carry the regression.",
+      "recorded_at": "2026-11-10T21:11:19.221131+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The negative-control caption names the wrong case; the mutation's effect is recorded in the log itself.",
+      "recorded_at": "2026-11-10T21:12:03.548141+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_receipt_agrees_with_its_log.py",
+      "line": "197",
+      "severity": "non-blocking",
+      "text": "the case renamed for the count being read from the FAILED block records failure_count 1 beside a one-entry block, so it passes under both the new reader and the pre-change reader that leaves a ctest count unmeasured; it reddens on a wrong non-None count (0, or 2 on the same log) but not on the regression its name claims to guard, and that discrimination lives in tests/test_a_ctest_receipt_counts_its_own_failures.py:126, where a receipt of 21 against the 22-entry block must name both figures."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "the negative-control sentence says the first case reports the 0-versus-22 mismatch but quotes the failure text of the second case ('its failure_count records 21 and the log's last run names 0 failed'), which is what the same mutation produces at tests/test_a_ctest_receipt_counts_its_own_failures.py:129; the negative-control log's first-case text is 'its failure_count records 22 and the log's last run names 0 failed or errored test(s)', so the quoted figure names the wrong case and the wrong number; the paragraph predates the two commits this review covers and neither commit touches it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "four production call sites verified at the reviewed head: _receipt_mismatches at reckon/crew/promotion_evidence.py:1210, its only caller _require_gate_log_agrees at :1267 calling it at :1381, that function's use at reckon/crew/promotion.py:654 and its import into the promotion check registry at reckon/crew/promotion.py:2576.",
+    "diff": "read both gained commits commit by commit from 68187715 to 1b8735d2: c620b273ff changes four lines in tests/test_a_receipt_agrees_with_its_log.py (the ctest arm's failure_count 5 to 1, the test renamed to test_a_ctest_logs_count_is_read_from_its_failed_block, and its module docstring line), and 1b8735d2 refreshes the fragment's armed-suite figures to 61 passed at base and 65 passed at c620b273ff and its importer figures to 49 passed on both arms.",
+    "done_when": "the done-when's importer clause that the previous review found unmet is now met: importers-head-c620b273ff.log is 49 passed EXIT=0 against importers-base-1feaad843c.log 49 passed EXIT=0, the armed pair is after-arm-c620b273ff.log 65 passed EXIT=0 against base-arm-1feaad843c.log 61 passed EXIT=0, negative-control.log is 2 failed EXIT=1, and I re-ran tests/test_a_receipt_agrees_with_its_log.py at 1b8735d2 (10 passed, EXIT=0, logs/importer-test-at-head.log).",
+    "goal": "the node goal is that a ctest receipt is counted in its own format; the gained commits close the last gap the previous review named, so at head 1b8735d2 tests/test_a_receipt_agrees_with_its_log.py:197 records failure_count 1 beside CTEST_LOG's one-entry FAILED block and the receipt guard agrees with the reader at reckon/crew/promotion_evidence.py:1185 instead of refusing it.",
+    "manifest": "read the reviewed run's manifest.md at the reviewed head: status complete, five commits listed, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed true, six test logs whose heads name their revision and tree and whose tails end in a bare EXIT= line, a negative_control_log path, and outside_scope none.",
+    "write_paths": "the dispatch fence named reckon/crew/promotion_evidence.py, tests/test_a_ctest_receipt_counts_its_own_failures.py and the evidence fragment plus a figures directory, and the reviewed run's resume-1-advice.txt records tests/test_a_receipt_agrees_with_its_log.py as granted; the two gained commits touch exactly that granted test file and the granted fragment, nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_ctest_receipt_counts_its_own_failures.py:126 asserts that a receipt of 21 against the 22-entry block names both figures, so restoring the pytest reader for every format reddens it, while the renamed case at tests/test_a_receipt_agrees_with_its_log.py:197 passes under both readers.",
+    "evidence": "importers-head-c620b273ff.log (49 passed, EXIT=0) and after-arm-c620b273ff.log (65 passed, EXIT=0) are recorded and I re-ran the named file green at head, but the fragment's negative-control sentence at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html:57 quotes the second case's figure as the first case's.",
+    "fit": "the renamed case and its updated module docstring at tests/test_a_receipt_agrees_with_its_log.py:197 follow the file's own naming idiom and carry no plan, ticket or version label.",
+    "goal_fidelity": "tests/test_a_receipt_agrees_with_its_log.py:197 now records failure_count 1 against CTEST_LOG's single FAILED entry, so a ctest receipt is accepted by the format-aware reader at reckon/crew/promotion_evidence.py:1185 rather than refused as 0.",
+    "reuse": "the gained commits add no function, class or module; the count reader they exercise, reckon/crew/promotion_evidence.py:1185 extends review_module._gate_log_format and gate_log_failure_ids in reckon/crew/review.py rather than adding a second format detector, and the modified test reuses the file's existing _arm_for and _guard helpers at :84.",
+    "scope_discipline": "the 68187715..1b8735d2 diff touches only tests/test_a_receipt_agrees_with_its_log.py and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html, both granted paths, with no change to reckon/ at all."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a ctest receipt is counted in its own format; the gained commits close the last gap the previous review named, so at head 1b8735d2 tests/test_a_receipt_agrees_with_its_log.py:197 records failure_count 1 beside CTEST_LOG's one-entry FAILED block and the receipt guard agrees with the reader at reckon/crew/promotion_evidence.py:1185 instead of refusing it.\nVERDICT done_when: the done-when's importer clause that the previous review found unmet is now met: importers-head-c620b273ff.log is 49 passed EXIT=0 against importers-base-1feaad843c.log 49 passed EXIT=0, the armed pair is after-arm-c620b273ff.log 65 passed EXIT=0 against base-arm-1feaad843c.log 61 passed EXIT=0, negative-control.log is 2 failed EXIT=1, and I re-ran tests/test_a_receipt_agrees_with_its_log.py at 1b8735d2 (10 passed, EXIT=0, logs/importer-test-at-head.log).\nVERDICT write_paths: the dispatch fence named reckon/crew/promotion_evidence.py, tests/test_a_ctest_receipt_counts_its_own_failures.py and the evidence fragment plus a figures directory, and the reviewed run's resume-1-advice.txt records tests/test_a_receipt_agrees_with_its_log.py as granted; the two gained commits touch exactly that granted test file and the granted fragment, nothing else.\nVERDICT manifest: read the reviewed run's manifest.md at the reviewed head: status complete, five commits listed, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed true, six test logs whose heads name their revision and tree and whose tails end in a bare EXIT= line, a negative_control_log path, and outside_scope none.\nVERDICT diff: read both gained commits commit by commit from 68187715 to 1b8735d2: c620b273ff changes four lines in tests/test_a_receipt_agrees_with_its_log.py (the ctest arm's failure_count 5 to 1, the test renamed to test_a_ctest_logs_count_is_read_from_its_failed_block, and its module docstring line), and 1b8735d2 refreshes the fragment's armed-suite figures to 61 passed at base and 65 passed at c620b273ff and its importer figures to 49 passed on both arms.\nCALL_SITES: reckon/crew/promotion_evidence.py:_receipt_mismatches, reckon/crew/promotion_evidence.py:_require_gate_log_agrees, reckon/crew/promotion.py:654, reckon/crew/promotion.py:2576\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_receipt_agrees_with_its_log.py:197 now records failure_count 1 against CTEST_LOG's single FAILED entry, so a ctest receipt is accepted by the format-aware reader at reckon/crew/promotion_evidence.py:1185 rather than refused as 0.\nSCORE evidence: 17\nJUSTIFICATION evidence: importers-head-c620b273ff.log (49 passed, EXIT=0) and after-arm-c620b273ff.log (65 passed, EXIT=0) are recorded and I re-ran the named file green at head, but the fragment's negative-control sentence at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html:57 quotes the second case's figure as the first case's.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 68187715..1b8735d2 diff touches only tests/test_a_receipt_agrees_with_its_log.py and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html, both granted paths, with no change to reckon/ at all.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_ctest_receipt_counts_its_own_failures.py:126 asserts that a receipt of 21 against the 22-entry block names both figures, so restoring the pytest reader for every format reddens it, while the renamed case at tests/test_a_receipt_agrees_with_its_log.py:197 passes under both readers.\nSCORE fit: 19\nJUSTIFICATION fit: the renamed case and its updated module docstring at tests/test_a_receipt_agrees_with_its_log.py:197 follow the file's own naming idiom and carry no plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the gained commits add no function, class or module; the count reader they exercise, reckon/crew/promotion_evidence.py:1185 extends review_module._gate_log_format and gate_log_failure_ids in reckon/crew/review.py rather than adding a second format detector, and the modified test reuses the file's existing _arm_for and _guard helpers at :84.\nFINDING tests/test_a_receipt_agrees_with_its_log.py:197 non-blocking: the case renamed for the count being read from the FAILED block records failure_count 1 beside a one-entry block, so it passes under both the new reader and the pre-change reader that leaves a ctest count unmeasured; it reddens on a wrong non-None count (0, or 2 on the same log) but not on the regression its name claims to guard, and that discrimination lives in tests/test_a_ctest_receipt_counts_its_own_failures.py:126, where a receipt of 21 against the 22-entry block must name both figures.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html:57 non-blocking: the negative-control sentence says the first case reports the 0-versus-22 mismatch but quotes the failure text of the second case ('its failure_count records 21 and the log's last run names 0 failed'), which is what the same mutation produces at tests/test_a_ctest_receipt_counts_its_own_failures.py:129; the negative-control log's first-case text is 'its failure_count records 22 and the log's last run names 0 failed or errored test(s)', so the quoted figure names the wrong case and the wrong number; the paragraph predates the two commits this review covers and neither commit touches it.",
+  "review_checks": [],
+  "review_run_id": "r-20261110T192831048950-review-of-a-ctest-receipt-counts-its-own-failures-1b8735d21e5b",
+  "reviewed_base_sha": "68187715b7e462fd81f036c1c8b29e373b2ed573",
+  "reviewed_head_sha": "1b8735d21e5be41964497db2337cf42353e17190",
+  "reviewed_run_id": "r-20261110T163750002165-a-ctest-receipt-counts-its-own-failures",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:35:32.720487+00:00",
+  "total": 110
+}
