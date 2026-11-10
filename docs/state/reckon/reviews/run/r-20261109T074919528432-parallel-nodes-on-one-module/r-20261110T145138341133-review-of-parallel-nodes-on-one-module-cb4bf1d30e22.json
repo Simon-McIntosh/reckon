@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "Unmeasured: source prompt.txt explicitly declares FENCE \u2014 SUITE unarmed and source manifest.md leaves baseline_suite and after_suite empty; there are no baseline/head suite logs from which to derive a failure delta, so zero would be invented.",
+  "after_suite": null,
+  "assertion_review": {
+    "incremental_diff_assertions": [],
+    "note": "No executable assertions added to the repository. Receipt-generator assertions in the source run command log compare fixed cohort counts and cannot fail when the earlier run is incorrectly counted as admitted against a later peer; reinstating the removed met conclusion is not guarded by a test."
+  },
+  "baseline_suite": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_body_bytes"
+  ],
+  "completed_at": "2026-11-10T15:01:33Z",
+  "dispatched_at": "2026-11-10T14:54:48Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html",
+      "line": "52",
+      "severity": "blocking",
+      "text": "blocking: The new denominator counts both runs of each in-window pair even when one peer did not yet exist at admission; the 12:06:58 admission precedes its peer at 13:38:54 and the 16:02:08 admission precedes its peer at 16:45:46, so these four reported pairs support only two admissions while another live run held the same file (three run/file exposures), not four (six); the recorded receipt generator in command-log.jsonl at 2026-11-10T00:42:52.438266+00:00 tests only window membership and must also test peer_dispatch <= admission < peer_terminal before publishing this quantitative measure, retaining the unmeasured conclusion."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read the sole new commit cb4bf1d30e229a6e66551b608180df726313e0f2 against previously reviewed e4d293d7c73e6831e2184309e3bbdabb28bf6494; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html gains count reconciliation, distinct-pair reporting, an exposure denominator and an eleven-run nonlanded inventory, with no executable definitions or tests.",
+    "done_when": "Read live plan version 19 s4 and source prompt.txt:110; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21 correctly reports 4 distinct pairs below 5, while line 52 reports 4 admissions instead of the 2 supported by its dispatch timestamps, both below 20.",
+    "goal": "Read source prompt.txt:38 and resume-3-advice.txt; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:3 now reports both arms as unmeasured, but the new admission denominator at line 52 counts future peers.",
+    "manifest": "Read source manifest.md and its held and ledger receipts; the counts and unmeasured conclusions are recorded, and baseline_suite and after_suite are empty because the source suite is explicitly unarmed.",
+    "write_paths": "Read source prompt.txt:80 and manifest.md:3; commit cb4bf1d30e229a6e66551b608180df726313e0f2 changes only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html."
+  },
+  "justifications": {
+    "durability": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:73 cites durable receipts and command history but the incremental diff adds no regression test or executable assertion, and the receipt generator's fixed-count asserts merely preserve the cohort cardinality without checking that the peer existed at admission.",
+    "evidence": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:17-18 reconciles the before receipt whose SHA-256 matches admission-window-current.log, but :52 counts the earlier run of each later pair although the peer was dispatched afterwards.",
+    "fit": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:5 and :55 present categorical counts and outcomes as fragment tables under the established node anchor without adding forbidden source names or a figure needing artifact review.",
+    "goal_fidelity": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:3 and :21 answer the repair instruction to report unmeasured arms, but :52 overcounts the admission exposure the live plan requests.",
+    "reuse": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html adds only prose and table rows consumed by reckon/evidence.py:compose_landed_record and defines no function, class or module that could duplicate a capability owner.",
+    "scope_discipline": "The sole incremental commit modifies only docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html, explicitly included in source prompt.txt:80 and manifest.md:3."
+  },
+  "previous_findings_answered": [
+    "four distinct run pairs are explicitly below the five-pair floor",
+    "zero holds explicitly unmeasured and log total no longer treated as denominator; new denominator timing defect recorded separately",
+    "before counts reconciled and retained source SHA-256 verified",
+    "eleven never-landed dispatches listed with overlap status; known landed overlaps provide positive presence control"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and resume-3-advice.txt; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:3 now reports both arms as unmeasured, but the new admission denominator at line 52 counts future peers.\nVERDICT done_when: Read live plan version 19 s4 and source prompt.txt:110; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21 correctly reports 4 distinct pairs below 5, while line 52 reports 4 admissions instead of the 2 supported by its dispatch timestamps, both below 20.\nVERDICT write_paths: Read source prompt.txt:80 and manifest.md:3; commit cb4bf1d30e229a6e66551b608180df726313e0f2 changes only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html.\nVERDICT manifest: Read source manifest.md and its held and ledger receipts; the counts and unmeasured conclusions are recorded, and baseline_suite and after_suite are empty because the source suite is explicitly unarmed.\nVERDICT diff: Read the sole new commit cb4bf1d30e229a6e66551b608180df726313e0f2 against previously reviewed e4d293d7c73e6831e2184309e3bbdabb28bf6494; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html gains count reconciliation, distinct-pair reporting, an exposure denominator and an eleven-run nonlanded inventory, with no executable definitions or tests.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/evidence.py:_fragment_body_bytes\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:3 and :21 answer the repair instruction to report unmeasured arms, but :52 overcounts the admission exposure the live plan requests.\nSCORE evidence: 14\nJUSTIFICATION evidence: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:17-18 reconciles the before receipt whose SHA-256 matches admission-window-current.log, but :52 counts the earlier run of each later pair although the peer was dispatched afterwards.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole incremental commit modifies only docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html, explicitly included in source prompt.txt:80 and manifest.md:3.\nSCORE durability: 4\nJUSTIFICATION durability: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:73 cites durable receipts and command history but the incremental diff adds no regression test or executable assertion, and the receipt generator's fixed-count asserts merely preserve the cohort cardinality without checking that the peer existed at admission.\nSCORE fit: 19\nJUSTIFICATION fit: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:5 and :55 present categorical counts and outcomes as fragment tables under the established node anchor without adding forbidden source names or a figure needing artifact review.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html adds only prose and table rows consumed by reckon/evidence.py:compose_landed_record and defines no function, class or module that could duplicate a capability owner.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:52 blocking: The new denominator counts both runs of each in-window pair even when one peer did not yet exist at admission; the 12:06:58 admission precedes its peer at 13:38:54 and the 16:02:08 admission precedes its peer at 16:45:46, so these four reported pairs support only two admissions while another live run held the same file (three run/file exposures), not four (six); the recorded receipt generator in command-log.jsonl at 2026-11-10T00:42:52.438266+00:00 tests only window membership and must also test peer_dispatch <= admission < peer_terminal before publishing this quantitative measure, retaining the unmeasured conclusion.\n",
+  "review_run_id": "r-20261110T145138341133-review-of-parallel-nodes-on-one-module-cb4bf1d30e22",
+  "reviewed_base_sha": "e4d293d7c73e6831e2184309e3bbdabb28bf6494",
+  "reviewed_head_sha": "cb4bf1d30e229a6e66551b608180df726313e0f2",
+  "reviewed_run_id": "r-20261109T074919528432-parallel-nodes-on-one-module",
+  "scores": {
+    "durability": 4,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:09:59.710700+00:00",
+  "total": 94
+}
