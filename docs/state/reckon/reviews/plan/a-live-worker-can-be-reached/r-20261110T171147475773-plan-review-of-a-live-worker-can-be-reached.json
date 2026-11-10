@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T17:23:35.496Z",
+  "dispatched_at": "2026-11-10T17:13:48Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:177",
+      "id": "reasoning-1",
+      "reason": "a node that follows the cited location literally ships a hook that silently never registers for a whole class of workers, and its gate cannot see it.",
+      "text": "\u00a78 places the merge \"after the copy\" in `_seed_harness_entry`, but that function opens with `if destination.exists(): return` (`reckon/_worker_fence.py:436`) and the seeding loop skips an entry whose operator source is absent (`_worker_fence.py:249-256`, skip at `:254`), so an operator with no `~/.claude/settings.json` \u2014 and any run home already seeded \u2014 gets no `settings.json` and therefore no `PostToolUse` entry, while the plan asserts every fenced worker \"carries it whatever the operator's settings hold\"; the step belongs in the caller `seed_harness_home` (`_worker_fence.py:186`, loop at `:249`), which must also create the file when the copy produced none",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:177",
+      "id": "done_when-1",
+      "reason": "without those items the node can pass its whole gate while two stated deliverables are unbuilt and the mechanism is dead in the cases that matter.",
+      "text": "the done-when's seeding test reads \"a seeded Claude-dialect run home carries the `PostToolUse` entry whether or not the operator's settings had hooks\", which exercises only the case where `settings.json` exists without a `hooks` key \u2014 exactly the case `_seed_harness_entry` already handles \u2014 so it cannot fail when the merge step is placed where it no-ops (operator has no settings file, or the home was already seeded); the test list also names no measure for the manifest-contract bullet (quote the message / say none received) or for the coordinator view showing written-but-undelivered messages, leaving two of the four deliverables unfalsifiable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:180",
+      "id": "wiring-1",
+      "reason": "the roadmap orders only declared relationships, so an undeclared wait dispatches \u00a79 against a tree with no hook \u2014 but the author may reasonably decline this while \u00a79 stays deferred.",
+      "text": "\u00a79 is `data-status=\"deferred\"` and its deliverable is to seed \"\u00a78's hook\" into each codex run home, so it cannot start before \u00a78 lands, yet its section element carries `data-links=\"\"` and the plan declares no section-level dependency, so a coordinator dispatching it from the roadmap sees an unblocked node whose input does not exist",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "420b1937991513f8cc9309cb335e719fd9b8b56d",
+  "plan_fingerprint": "ac1c03e9e97a9d5af05636ec5247b81b46c11905fdd7ba50b10591d014f8dc84",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T171147475773-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "264c6bb4714ad225933bd7e41f9fc390bd336c67",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every anchor resolves: `_seed_harness_entry` is defined at `reckon/_worker_fence.py:425` (cited \"near line 426\"), `install_hook_settings` at `reckon/hooks/install.py:229`, `reckon/hooks/worker_git_guard.py` emits `hookSpecificOutput.additionalContext`, `worker_message_guard.py:52` holds only `crew resume`, `HARNESS_HOME[\"codex\"]` is `codex-home`, and session `02f01c36-\u2026` plus its quoted output appear at `worker-steering-and-anchored-edit-prototypes.html:24`; `grep -rn PostToolUse reckon/` returns nothing, so the \"registers no `PostToolUse` hook anywhere\" claim holds.",
+    "done_when": "a finding \u2014 two of \u00a78's four deliverable bullets have no measure in the done-when: the manifest contract (\"a run that received a message quotes it, a run that received none says so\") and \"the coordinator's view of a run shows messages written but not yet delivered\" are stated as deliverables but no test in the list exercises either.",
+    "evidence_paths": "pass \u2014 the prototype evidence is the durable doc `docs/research/worker-steering-and-anchored-edit-prototypes.html`, and the product evidence (receipts, manifests) lands in the run directory, not a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach `reckon/hooks/worker_inbox.py`, `crew tell`, or the comments described, and the prose carries no changelog references.",
+    "reasoning": "a finding \u2014 the registration step is said to run \"after the copy\" in the function cited as where hooks are copied, but `_seed_harness_entry` early-returns whenever the run home's `settings.json` already exists (`reckon/_worker_fence.py:436`) and is never called at all when the operator has no `~/.claude/settings.json`, so the step as located no-ops in both of those cases.",
+    "single_goal": "pass \u2014 \u00a78 now carries one capability (a message reaches a live worker at its next tool call, provably), and the ledger-row deliverable that made it two goals has been removed.",
+    "wiring": "a finding \u2014 \u00a79 (`plan.html:180`) consumes \u00a78's hook (\"the fence seeds \u00a78's hook into each codex run's own `CODEX_HOME`\") but declares no relationship to it: every section element in this plan carries `data-links=\"\"`, while other plans in `docs/plans/` use that attribute to name the section an entry consumes."
+  },
+  "section_digests": {
+    "_document": "746b563f5126dc6e8ed4189cb7eaa14994d2d06e295e2880f4b7e5f7f3c47c73",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "de479653bbd65dbf53983881df00c9b97090e1a300c7aa947130b9df73c0a9cf",
+    "s9": "04a3a9c3465211256706e7581c8950fb2451ef6ac7b7f0876744ed336fa7e3bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:56:07.530442+00:00",
+  "total": null
+}
