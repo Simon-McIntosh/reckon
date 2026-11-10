@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s61">
+  <title>The held-tree fallback resolves each row once | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="held-worktree-fallback-resolves-each-row-once-landing" data-node="held-worktree-fallback-resolves-each-row-once" data-reckon="landed" data-when="2026-11-09">
+  <h2>A tree the index leaves unresolved costs a lookup, not a pass over every row</h2>
+  <p id="held-worktree-fallback-resolves-each-row-once-mechanism">The rows the naming screen could not read — a row carrying no run id has no namings entry — are the only rows that can name a tree the index leaves unresolved. <code>_held_worktree_records_read</code> now files those rows once into a second <code>WorktreeRecordIndex</code>, built from the same naming keys, and looks each unresolved tree up in it, in place of the nested pass that called <code>_names_worktree</code> for every recorded row against every unresolved tree.</p>
+  <p id="held-worktree-fallback-resolves-each-row-once-measure">On a fixture of 500 run records, 20 registered trees no record names, 20 trees named by a retained path and again by session and node id, and one tree named only by a row carrying no run id, one derivation resolves a retained path <strong>541</strong> times over 501 records, against a bound of twice the records (1002). With the per-tree scan restored the same case counts <strong>11,061</strong> resolutions and the bound fails.</p>
+  <p id="held-worktree-fallback-resolves-each-row-once-answer">The held map it answers equals the reference the test computes itself — <code>routing.record_names_worktree</code> applied to every row and tree in the reader's order, the last naming row holding the tree, released trees dropped — in the screened path and again with <code>_run_namings</code> returning <code>None</code>, where the tree named only by the run-less row is still held.</p>
+  <p id="held-worktree-fallback-resolves-each-row-once-gate">Gate, all four files at head: <code>tests/test_held_worktree_fallback_resolves_each_row_once.py tests/test_held_worktree_records_match_each_record_once.py tests/test_held_worktrees_read_run_files.py tests/test_the_held_worktree_read_is_bounded.py</code> — <strong>25 passed, 0 failed</strong> (<code>EXIT=0</code>) at <code>c6bbfcc737</code>. Base arm, the three pre-existing files resolved over the base tree, since the new file does not exist there — <strong>20 passed, 0 failed</strong> at <code>cb8059587d</code>. No added failure. Negative control, the declared mutation applied: <strong>1 failed, 4 passed</strong>, naming <code>test_the_fallback_resolves_each_row_a_bounded_number_of_times</code>, which the head arm passes.</p>
+  <p id="held-worktree-fallback-resolves-each-row-once-logs">Logs, in the run directory <code>~/.config/reckon/crew/runs/r-20261109T231953776182-held-worktree-fallback-resolves-each-row-once/logs/</code>: <code>baseline-suite.log</code> (base arm, <code>EXIT=0</code>), <code>after-suite.log</code> (head arm, <code>EXIT=0</code>), <code>negative-control.log</code> (<code>EXIT</code> reading <code>EXIT=1</code>), and <code>head-resolution-count.log</code> (541 over 501). Each names its revision, tree, resolved module path and literal command, and ends in an <code>EXIT=</code> line.</p>
+</article>
+</body>
+</html>
