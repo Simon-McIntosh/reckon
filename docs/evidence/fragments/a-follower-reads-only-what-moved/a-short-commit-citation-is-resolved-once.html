@@ -1,0 +1,18 @@
+<section id="a-short-commit-citation-is-resolved-once">
+  <h3>Commit abbreviations reuse the bounded resolver cache</h3>
+  <p><code>reckon/crew/recovery_review_subject.py</code> now remembers a hexadecimal candidate of at least seven characters only when the resolved commit starts with that candidate. Successful answers reuse the existing process cache and the answer store in <code>recovery_watch</code>. Misses stay only in the process cache, against <code>git_head._head_identity</code>; a moved HEAD causes another query. Strict callers continue querying git on every call, and ref names and nonmatching hex refs are not retained.</p>
+  <p>The implementation is committed at <code>c012ec2bd8b1c9f6615b803ab97bbe6710580124</code>. The eight tests in <code>tests/test_a_short_commit_citation_is_resolved_once.py</code> use temporary git repositories and count resolver subprocess calls.</p>
+  <table>
+    <thead><tr><th>Case</th><th>Measured git calls</th></tr></thead>
+    <tbody>
+      <tr><td>Twenty cached resolutions of one short commit citation</td><td>1</td></tr>
+      <tr><td>Twenty cached misses while HEAD is unchanged</td><td>1</td></tr>
+      <tr><td>One miss, a new commit, then the same miss</td><td>2</td></tr>
+      <tr><td>Twenty strict calls with a populated cache</td><td>20</td></tr>
+      <tr><td>Twenty calls naming a branch</td><td>20</td></tr>
+    </tbody>
+  </table>
+  <p>Reproduction at the dispatch base recorded twenty git calls instead of one. Copying the identical new test file onto that base produced three failing cases and five passes. Restoring the full-revision-only guard in an isolated extraction of the implementation produced <strong>one failure and one pass</strong>: the twenty-resolution case failed while the strict case passed. The exact mutation diff and its failing log are retained in the run directory.</p>
+  <p>The revision-resolved armed suite passed <strong>51 tests at the base and 59 at the implementation</strong>. Thirteen paired compatibility chunks covering 82 existing test files recorded <strong>638 passes on each revision and zero added failures</strong>; the exact pre-existing failures are recorded under <code>outside_scope</code> in the manifest. Ruff check and format check were clean on both revisions for the Python deliverables.</p>
+  <p>Run receipts, literal commands, module identities and the negative control are retained beside <code>manifest.md</code> in run <code>r-20261110T204950334380-a-short-commit-citation-is-resolved-once</code>. A miss is deliberately not invalidated by fetching an object without moving HEAD; process restart retries it. Promotion and the observation of a reloaded follower remain coordinator work.</p>
+</section>
