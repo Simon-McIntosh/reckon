@@ -1159,7 +1159,7 @@ def run_ids(project: str, root: str | Path | None = None) -> set[str]:
 
 # The index stores file-derived values only. Every access checks file metadata,
 # including ctime, so edits with a preserved mtime still invalidate the row.
-_RUN_INDEX_VERSION = 4
+_RUN_INDEX_VERSION = 5
 
 # The metadata key an index uses to carry the resolved ledger path it indexes.
 # It is written when the index is built, so a sweep can identify an index whose
@@ -1417,12 +1417,37 @@ def _read_run(source: Path) -> dict[str, Any]:
     return normalize_outside_scope_paths(record)
 
 
+def run_activity_seconds(record: Mapping[str, Any]) -> float | None:
+    """The newest usable dispatch, launch or completion instant on a row."""
+    stamps = []
+    for key in ("launched_at", "created_at", "dispatched_at", "completed_at"):
+        value = record.get(key)
+        if isinstance(value, datetime):
+            parsed = value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+        else:
+            parsed = parse_utc(value)
+        if parsed is not None:
+            stamps.append(parsed.timestamp())
+    return max(stamps) if stamps else None
+
+
+def _active_records(records: Iterable[Any], boundary: float) -> list[dict[str, Any]]:
+    return [
+        record
+        for record in records
+        if isinstance(record, Mapping)
+        and (moment := run_activity_seconds(record)) is not None
+        and moment >= boundary
+    ]
+
+
 def _index_payload(
     connection: sqlite3.Connection,
     meta: Mapping[str, str],
     *,
     headers_only: bool,
     picker_only: bool,
+    activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Decode one index's stored payloads into the union :func:`load` returns.
 
@@ -1435,26 +1460,35 @@ def _index_payload(
     ):
         raise ValueError("invalid index header")
     version = int(meta["version"])
-    if headers_only:
+    if headers_only and activity_since is None:
         data["runs"] = [{"run_id": run_id} for run_id in _index_membership(connection)]
         return data, version
     column = "picker" if picker_only else "payload"
+    # Select by an indexed scalar before fetching payload overflow pages.
+    parameters = () if activity_since is None else (activity_since,)
+    aggregate_filter = "" if activity_since is None else " WHERE activity >= ?"
+    document_filter = "" if activity_since is None else " AND activity >= ?"
     data["runs"] = [
         normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
-            f"SELECT {column} FROM aggregate_rows ORDER BY ordinal"  # noqa: S608 - fixed column names
+            f"SELECT {column} FROM aggregate_rows{aggregate_filter} ORDER BY ordinal",  # noqa: S608 - fixed fragments
+            parameters,
         )
     ]
     extra = [
         normalize_outside_scope_paths(json.loads(row[0]))
         for row in connection.execute(
             f"SELECT {column} FROM records WHERE payload IS NOT NULL AND name NOT IN "  # noqa: S608 - fixed column names
-            "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) ORDER BY name"
+            "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL)"
+            f"{document_filter} ORDER BY name",
+            parameters,
         )
     ]
     if extra:
         data["runs"].extend(extra)
         data["runs"].sort(key=promotion_order_key)
+    if headers_only:
+        data["runs"] = [{"run_id": row["run_id"]} for row in data["runs"]]
     return data, version
 
 
@@ -1476,6 +1510,7 @@ def _last_good_index_data(
     *,
     headers_only: bool,
     picker_only: bool,
+    activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int, float] | None:
     """Read the last published index without refreshing it, and its age.
 
@@ -1509,6 +1544,11 @@ def _last_good_index_data(
                 meta,
                 headers_only=headers_only,
                 picker_only=picker_only,
+                **(
+                    {"activity_since": activity_since}
+                    if activity_since is not None
+                    else {}
+                ),
             )
             damaged = _indexed_damaged_paths(connection, project, root)
     except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
@@ -1524,7 +1564,7 @@ def _last_good_index_data(
 # Outside a region each read keeps the behaviour it has now.
 _INDEX_REGION: ContextVar[
     dict[
-        tuple[str, str, bool, bool],
+        tuple[str, str, bool, bool, float | None],
         tuple[dict[str, Any], int, tuple[Path, ...]],
     ]
     | None
@@ -1533,7 +1573,10 @@ _INDEX_REGION: ContextVar[
 
 @contextlib.contextmanager
 def index_reuse() -> Iterable[
-    dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int, tuple[Path, ...]]]
+    dict[
+        tuple[str, str, bool, bool, float | None],
+        tuple[dict[str, Any], int, tuple[Path, ...]],
+    ]
 ]:
     """Build the run index once for every reader inside this region.
 
@@ -1545,7 +1588,9 @@ def index_reuse() -> Iterable[
     if active is not None:
         yield active
         return
-    cache: dict[tuple[str, str, bool, bool], tuple[dict[str, Any], int]] = {}
+    cache: dict[
+        tuple[str, str, bool, bool, float | None], tuple[dict[str, Any], int]
+    ] = {}
     token = _INDEX_REGION.set(cache)
     try:
         yield cache
@@ -1559,6 +1604,7 @@ def _indexed_data(
     *,
     headers_only: bool = False,
     picker_only: bool = False,
+    activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
     reuse = _INDEX_REGION.get()
     index_key = (
@@ -1566,6 +1612,7 @@ def _indexed_data(
         str(root) if root is not None else "",
         headers_only,
         picker_only,
+        activity_since,
     )
     if reuse is not None and index_key in reuse:
         data, version, damaged = reuse[index_key]
@@ -1592,11 +1639,11 @@ def _indexed_data(
                 connection.execute(f"PRAGMA user_version={_RUN_INDEX_VERSION}")
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS records "
-                "(name TEXT PRIMARY KEY, stamp TEXT, payload TEXT, picker TEXT)"
+                "(name TEXT PRIMARY KEY, stamp TEXT, activity REAL, payload TEXT, picker TEXT)"
             )
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS aggregate_rows "
-                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, payload TEXT, picker TEXT)"
+                "(ordinal INTEGER PRIMARY KEY, run_id TEXT, activity REAL, payload TEXT, picker TEXT)"
             )
             connection.execute(
                 "CREATE INDEX IF NOT EXISTS aggregate_identity ON aggregate_rows(run_id)"
@@ -1604,6 +1651,12 @@ def _indexed_data(
             connection.execute(
                 "CREATE TABLE IF NOT EXISTS metadata "
                 "(name TEXT PRIMARY KEY, payload TEXT)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS record_activity ON records(activity)"
+            )
+            connection.execute(
+                "CREATE INDEX IF NOT EXISTS aggregate_activity ON aggregate_rows(activity)"
             )
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
             # The index records the ledger path it indexes, so a sweep can tell
@@ -1621,12 +1674,15 @@ def _indexed_data(
                 data, version = _load_aggregate(project, root)
                 connection.execute("DELETE FROM aggregate_rows")
                 connection.executemany(
-                    "INSERT INTO aggregate_rows VALUES (?, ?, ?, ?)",
+                    "INSERT INTO aggregate_rows VALUES (?, ?, ?, ?, ?)",
                     [
                         (
                             i,
                             str(row["run_id"])
                             if isinstance(row, Mapping) and row.get("run_id")
+                            else None,
+                            run_activity_seconds(row)
+                            if isinstance(row, Mapping)
                             else None,
                             json.dumps(row, sort_keys=True, separators=(",", ":")),
                             json.dumps(
@@ -1664,7 +1720,7 @@ def _indexed_data(
                                 f"run changed during index read: {source}"
                             ) from exc
                         connection.execute(
-                            "INSERT OR REPLACE INTO records VALUES (?, ?, NULL, NULL)",
+                            "INSERT OR REPLACE INTO records VALUES (?, ?, NULL, NULL, NULL)",
                             (source.stem, encoded),
                         )
                         continue
@@ -1673,10 +1729,11 @@ def _indexed_data(
                         # The caller's uncached path still supplies the current read.
                         raise OSError(f"run changed during index read: {source}")
                     connection.execute(
-                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?)",
+                        "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
                         (
                             source.stem,
                             encoded,
+                            run_activity_seconds(record),
                             json.dumps(record, sort_keys=True, separators=(",", ":")),
                             json.dumps(picker_record(record), separators=(",", ":")),
                         ),
@@ -1717,6 +1774,11 @@ def _indexed_data(
                 meta,
                 headers_only=headers_only,
                 picker_only=picker_only,
+                **(
+                    {"activity_since": activity_since}
+                    if activity_since is not None
+                    else {}
+                ),
             )
             _report_damaged_run_records(
                 project, _indexed_damaged_paths(connection, project, root)
@@ -1776,6 +1838,7 @@ def load(
     *,
     use_index: bool = True,
     headers_only: bool = False,
+    activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
     """Read the union of aggregate and per-run records, refusing disagreements.
 
@@ -1805,6 +1868,10 @@ def load(
     name any reader ever asks about. The uncached path costs no more here:
     there is no aggregate to parse and no document to merge.
 
+    ``activity_since`` bounds the newest usable creation, dispatch, launch or
+    completion stamp inclusively in epoch seconds. A warm index fetches only
+    matching payloads; a cold index still reads every source to build it.
+
     Per-run documents alone are content, so a project holding them and no
     aggregate keeps its index; that shape is a ledger whose runs are split out
     by their own files.
@@ -1813,7 +1880,15 @@ def load(
     if use_index and _ledger_holds_content(project, root):
         try:
             return _indexed_data(
-                project, root, headers_only=headers_only, picker_only=picker_only
+                project,
+                root,
+                headers_only=headers_only,
+                picker_only=picker_only,
+                **(
+                    {"activity_since": activity_since}
+                    if activity_since is not None
+                    else {}
+                ),
             )
         except (OSError, sqlite3.Error):
             # A disposable cache cannot make an otherwise readable ledger fail.
@@ -1822,6 +1897,11 @@ def load(
                 root,
                 headers_only=headers_only,
                 picker_only=picker_only,
+                **(
+                    {"activity_since": activity_since}
+                    if activity_since is not None
+                    else {}
+                ),
             )
             if stale is not None:
                 data, version, age = stale
@@ -1829,6 +1909,8 @@ def load(
                 return data, version
     data, version = _load_aggregate(project, root)
     _merge_run_documents(project, root, data, refuse=True)
+    if activity_since is not None:
+        data["runs"] = _active_records(data["runs"], activity_since)
     if picker_only:
         data["runs"] = [
             picker_record(row) if isinstance(row, Mapping) else row
@@ -3249,6 +3331,7 @@ def read_records(
     since: str | None = None,
     limit: int | None = None,
     with_figures: bool = True,
+    activity_since: float | None = None,
 ) -> tuple[list[dict[str, Any]], int]:
     """Read selected completed runs and their ledger version once.
 
@@ -3266,14 +3349,27 @@ def read_records(
 
     Disabling figures preserves stored measurements in promotion order.
     Both paths add catalogue identity fields without rewriting committed rows.
+    ``activity_since`` has :func:`load`'s epoch-seconds meaning. Without figures
+    it is applied before decoding index payloads; figures require all history
+    to compute width before filtering the returned rows.
     """
-    data, version = load(project, root)
+    data, version = load(
+        project,
+        root,
+        **(
+            {"activity_since": activity_since}
+            if activity_since is not None and not with_figures
+            else {}
+        ),
+    )
     if with_figures:
         from reckon.crew import summary
 
         records = summary.run_rows(project, root=root)
     else:
         records = list(data["runs"])
+    if activity_since is not None and with_figures:
+        records = _active_records(records, activity_since)
     selected_plan = str(plan or "").strip()
     if selected_plan:
         records = [

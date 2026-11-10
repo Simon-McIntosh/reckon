@@ -3759,12 +3759,9 @@ def _run_moment(record: Mapping[str, Any]) -> float | None:
     newest stamp it has is the closest answer to "when did this run happen",
     and a row carrying none has no age a reader can weigh.
     """
-    stamps = [
-        moment.timestamp()
-        for key in ("launched_at", "created_at", "dispatched_at", "completed_at")
-        if (moment := _instant(record.get(key))) is not None
-    ]
-    return max(stamps) if stamps else None
+    from reckon import ledger
+
+    return ledger.run_activity_seconds(record)
 
 
 def plan_authoring_runs(
@@ -3797,7 +3794,11 @@ def plan_authoring_runs(
     live = runs.list_live(project=project) if pointers is None else pointers
     candidates: list[dict[str, Any]] = [dict(pointer) for pointer in live]
     try:
-        rows, _version = ledger.read_records(project, with_figures=False)
+        rows, _version = ledger.read_records(
+            project,
+            with_figures=False,
+            activity_since=moment - PLAN_REVIEW_BURST_SECONDS,
+        )
     except Exception:  # noqa: BLE001 — an unreadable ledger names no run
         rows = []
     candidates.extend(rows)

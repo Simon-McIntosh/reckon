@@ -18,14 +18,29 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
+import re
+import shutil
+import socket
+import sqlite3
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Self
+from unittest.mock import patch
 
 import pytest
 
-from reckon.crew import obligation_snapshot, runs
+from reckon import ledger
+from reckon.crew import (
+    obligation_snapshot,
+    plan_review,
+    recovery_watch,
+    runs,
+    station,
+    station_store,
+)
 from reckon.crew import review as review_module
 from tests.helpers.git import git as _git
 
@@ -342,3 +357,271 @@ def test_a_cleared_memo_yields_the_same_payload(fleet: dict[str, Any]) -> None:
         obligation_snapshot.payload_for(fresh_state, SESSION)
     )
     assert fresh_state.rows and cached_state.rows
+
+
+LEDGER_PROJECT = "fixture"
+MOMENT = datetime(2026, 10, 24, 12, tzinfo=UTC).timestamp()
+
+
+def _stamp(seconds):
+    return datetime.fromtimestamp(seconds, UTC).isoformat()
+
+
+def _row(run_id, *, at=MOMENT, **fields):
+    return {
+        "run_id": run_id,
+        "plan": "fixture-plan",
+        "session": "fixture-session",
+        "completed_at": _stamp(at),
+        **fields,
+    }
+
+
+def _write_row(row):
+    path = ledger.run_path(LEDGER_PROJECT, row["run_id"])
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(row))
+    return path
+
+
+def _probe(root):
+    """Exercise complete station ticks with an inline, non-launching sweep."""
+    home = root / "config"
+    os.environ["RECKON_HOME"] = str(home)
+    os.environ["XDG_CACHE_HOME"] = str(root / "cache")
+    os.environ.pop("RECKON_STATE_ROOT", None)
+    os.environ.pop("RECKON_MOUNTS_PATH", None)
+    from reckon.crew.run_paths import crew_home
+
+    fleet = crew_home()
+    live = fleet / "live"
+    live.mkdir(parents=True)
+    paths = []
+    for number in range(5):
+        run_id = f"r-fixture-{number}"
+        paths.append(
+            _write_row(
+                _row(
+                    run_id,
+                    at=MOMENT - 2 * plan_review.PLAN_REVIEW_BURST_SECONDS,
+                    retained_text="x" * 2_200_000,
+                )
+            )
+        )
+        (live / f"{run_id}.json").write_text(
+            json.dumps(
+                {
+                    "run_id": run_id,
+                    "project": LEDGER_PROJECT,
+                    "session": "fixture-session",
+                    "launcher_host": socket.gethostname(),
+                    "phase": "working",
+                    "node": {},
+                }
+            )
+        )
+    _write_row(_row("r-recent", at=MOMENT - 5))
+    authors = []
+
+    def sweep(*args, **kwargs):
+        authors.append(
+            plan_review.plan_authoring_runs(LEDGER_PROJECT, now_seconds=MOMENT)
+        )
+
+    sweeps = station.SweepBeat(
+        sweep=sweep, start=lambda action: action(), beat_seconds=0
+    )
+    with (
+        station_store.StationStore(root / "station") as store,
+        patch.object(station.station_obligations, "publish"),
+    ):
+        producer = station.Station(store, home=fleet, projects=dict, sweeps=sweeps)
+        now = datetime.fromtimestamp(MOMENT, UTC)
+        producer.tick(now=now)
+        assert authors[-1]["fixture-plan"]["run_id"] == "r-recent"
+        _write_row(_row("r-newest"))
+        (root / "measured-tick-start").touch()
+        producer.tick(now=now)
+        (root / "measured-tick-end").touch()
+        assert authors[-1]["fixture-plan"]["run_id"] == "r-newest"
+        verdicts = store.classify_tick(now_seconds=MOMENT)
+        records = [json.loads(row["fields"]) for row in store.pointer_rows()]
+        fresh = {
+            record["run_id"]: recovery_watch._watch_snapshot(
+                record, moment=MOMENT, stall_seconds=900, cache={}, pointers=records
+            )
+            for record in records
+        }
+        assert verdicts == fresh
+    print(
+        json.dumps(
+            {
+                "dominant_bytes": sum(p.stat().st_size for p in paths),
+                "live_runs": len(records),
+                "verdicts_equal": verdicts == fresh,
+            }
+        )
+    )
+
+
+def test_a_moved_ledger_reads_only_recent_rows(tmp_path):
+    """Count kernel reads, including SQLite's C-level reads, on the second tick."""
+    tracer = shutil.which("strace")
+    if tracer is None:
+        pytest.skip("per-path kernel read accounting requires strace")
+    trace = tmp_path / "reads.strace"
+    probe = "import runpy,sys; from pathlib import Path; runpy.run_path(sys.argv[1])['_probe'](Path(sys.argv[2]))"
+    result = subprocess.run(
+        [
+            tracer,
+            "-f",
+            "-qq",
+            "-yy",
+            "-s",
+            "40",
+            "-e",
+            "trace=read,pread64,openat",
+            "-o",
+            str(trace),
+            sys.executable,
+            "-c",
+            probe,
+            str(Path(__file__).resolve()),
+            str(tmp_path),
+        ],
+        capture_output=True,
+        text=True,
+        timeout=50,
+        check=False,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr
+    census = json.loads(result.stdout.splitlines()[-1])
+    assert census["dominant_bytes"] >= 10_000_000
+    assert census["live_runs"] >= 5 and census["verdicts_equal"]
+    reading = False
+    total = 0
+    for line in trace.read_text().splitlines():
+        if "measured-tick-start" in line:
+            reading = True
+        elif "measured-tick-end" in line:
+            reading = False
+        elif reading:
+            match = re.search(r"(?:read|pread64)\(\d+<([^>]+)>.*\)\s+= (\d+)", line)
+            if match and ("/state/" in match[1] or "ledger-" in match[1]):
+                total += int(match[2])
+    print(
+        f"second_tick_ledger_bytes={total} dominant_input_bytes={census['dominant_bytes']}"
+    )
+    assert total < 1_000_000, f"second tick read {total} ledger bytes"
+
+
+@pytest.mark.parametrize("placement", ["aggregate", "documents"])
+def test_recent_authoring_selection_preserves_timestamp_semantics(home, placement):
+    boundary = MOMENT - plan_review.PLAN_REVIEW_BURST_SECONDS
+    rows = [
+        _row("r-expired", at=boundary - 1, plan="expired"),
+        _row("r-boundary", at=boundary, plan="boundary"),
+        _row(
+            "r-completed",
+            at=MOMENT,
+            dispatched_at=_stamp(boundary - 100),
+            plan="completed",
+        ),
+        _row(
+            "r-launched", at=boundary - 1, launched_at=_stamp(MOMENT), plan="launched"
+        ),
+        _row(
+            "r-invalid",
+            completed_at="invalid",
+            created_at=_stamp(MOMENT),
+            plan="created",
+        ),
+        _row("r-unknown", completed_at="invalid", plan="unknown"),
+    ]
+    if placement == "aggregate":
+        path = ledger.ledger_path(LEDGER_PROJECT)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(
+            json.dumps(
+                {"data": {"_version": 3, "members": [], "runs": rows, "holds": []}}
+            )
+        )
+    else:
+        for row in rows:
+            _write_row(row)
+    expected = {row["plan"] for row in rows} - {"expired", "unknown"}
+    assert (
+        set(
+            plan_review.plan_authoring_runs(
+                LEDGER_PROJECT, now_seconds=MOMENT, pointers=[]
+            )
+        )
+        == expected
+    )
+    # A replacement of an expired document must be visible without a restart.
+    if placement == "documents":
+        _write_row(_row("r-expired", plan="returned"))
+        assert "returned" in plan_review.plan_authoring_runs(
+            LEDGER_PROJECT, now_seconds=MOMENT, pointers=[]
+        )
+
+
+def test_activity_bound_is_distinct_in_a_shared_index_region(home):
+    _write_row(_row("r-earlier", at=MOMENT - 1))
+    _write_row(_row("r-later"))
+    with ledger.index_reuse():
+        early, _ = ledger.read_records(
+            LEDGER_PROJECT, with_figures=False, activity_since=MOMENT - 1
+        )
+        late, _ = ledger.read_records(
+            LEDGER_PROJECT, with_figures=False, activity_since=MOMENT
+        )
+        whole, _ = ledger.read_records(LEDGER_PROJECT, with_figures=False)
+    assert [row["run_id"] for row in early] == ["r-earlier", "r-later"]
+    assert [row["run_id"] for row in late] == ["r-later"]
+    assert whole == early
+
+
+def test_activity_bound_survives_cache_fallbacks(home, monkeypatch):
+    _write_row(_row("r-earlier", at=MOMENT - 1))
+    _write_row(_row("r-later"))
+    expected, _ = ledger.read_records(
+        LEDGER_PROJECT, with_figures=False, activity_since=MOMENT
+    )
+
+    def unavailable(*args, **kwargs):
+        raise sqlite3.OperationalError("database is locked")
+
+    monkeypatch.setattr(ledger, "_indexed_data", unavailable)
+    stale, _ = ledger.read_records(
+        LEDGER_PROJECT, with_figures=False, activity_since=MOMENT
+    )
+    uncached, _ = ledger.load(LEDGER_PROJECT, use_index=False, activity_since=MOMENT)
+    assert [row["run_id"] for row in expected] == ["r-later"]
+    assert stale == expected
+    assert uncached["runs"] == expected
+
+
+def test_an_expired_conflicting_copy_still_refuses_the_read(home):
+    row = _row("r-conflict", at=MOMENT - 2 * plan_review.PLAN_REVIEW_BURST_SECONDS)
+    path = ledger.ledger_path(LEDGER_PROJECT)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"data": {"_version": 1, "members": [], "runs": [row], "holds": []}})
+    )
+    _write_row({**row, "session": "another-session"})
+    with pytest.raises(ledger.LedgerError, match="conflicting history"):
+        ledger.load(LEDGER_PROJECT, activity_since=MOMENT)
+
+
+def test_live_datetime_stamps_keep_their_authoring_semantics():
+    assert (
+        ledger.run_activity_seconds({"created_at": datetime.fromtimestamp(MOMENT, UTC)})
+        == MOMENT
+    )
+    assert (
+        ledger.run_activity_seconds(
+            {"created_at": datetime.fromtimestamp(MOMENT, UTC).replace(tzinfo=None)}
+        )
+        == MOMENT
+    )
