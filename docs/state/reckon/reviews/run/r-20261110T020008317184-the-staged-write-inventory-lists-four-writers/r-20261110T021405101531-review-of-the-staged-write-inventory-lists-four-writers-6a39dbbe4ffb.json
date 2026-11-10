@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-10T02:25:55.160Z",
+  "dispatched_at": "2026-11-10T02:18:43Z",
+  "findings": [
+    {
+      "file": "logs/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative control ran against the reviewed head's content held as uncommitted working-tree edits while HEAD was still the base, and the header records `# revision: ee49a3545a...` \u2014 the base revision \u2014 so a reader keying on that line attributes the run to base content, though the log's own assertion body visibly carries the other three added entries. Annotating the header with the head whose content the mutation edited would make the record self-consistent."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit 6a39dbbe4f against base ee49a3545a: 16 lines added to tests/test_staged_write_inventory.py (four expected-set entries, each with a comment naming its staging mechanism, nothing else changed in the file) and a new 70-line landing fragment under docs/evidence/fragments/; no deletions, no product source.",
+    "done_when": "the done_when asks for the census id green at head with every other test unchanged, a red base arm on that id, and a red negative control naming the dropped writer; logs/base-arm.log records 1 failed / 50 passed with FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and EXIT=1, logs/head-arm.log records 51 passed and EXIT=0, logs/negative-control.log records the extra item ('reckon/crew/dispatch_claims.py', '_publish_exec_identity') and EXIT=1.",
+    "goal": "the node goal is to list the four staged writers added since 3 November in the staged-write inventory's expected set; tests/test_staged_write_inventory.py:58-73 adds exactly those four entries (recovery_watch::_update_git_answer_store, dispatch_claims::_publish_exec_identity, gc::_write_retention_cursor, obligations::_record_index_lag).",
+    "manifest": "read manifest.md; status complete at 6a39dbbe4f, base arm 1 failed / 50 passed EXIT=1, head arm 51 passed EXIT=0, negative control 1 failed EXIT=1, no retry failures, no outside-scope work.",
+    "write_paths": "read the dispatch fence (tests/test_staged_write_inventory.py plus the landing fragment and its figure directory); the diff touches only tests/test_staged_write_inventory.py and docs/evidence/fragments/the-suite-is-green-at-head/the-staged-write-inventory-lists-four-writers.html, both inside it."
+  },
+  "justifications": {
+    "durability": "the expected-set literal at tests/test_staged_write_inventory.py:42 is compared against observed excursions of the census, so dropping any one of the four entries reddens the test \u2014 demonstrated by the recorded negative control \u2014 and no added assertion compares a value against the same variable the test passed in.",
+    "evidence": "logs/base-arm.log ends `1 failed, 50 passed` with the census id FAILED and EXIT=1, logs/head-arm.log ends `51 passed` with EXIT=0, and logs/negative-control.log fails naming dispatch_claims::_publish_exec_identity with EXIT=1; the only imprecision is the negative control's header revision (see FINDING).",
+    "fit": "the four entries follow the set's existing ordering and comment convention (each comment names the staging mechanism, not the node or date) and introduce no name the repository naming rules forbid.",
+    "goal_fidelity": "tests/test_staged_write_inventory.py:61-73 adds the four expected-set entries the section names, and each was confirmed in the code at reckon/crew/recovery_watch.py:232-234, reckon/crew/dispatch_claims.py:609-613, reckon/crew/gc.py:1516-1518 and reckon/crew/obligations.py:2666-2670 (each a .tmp sibling plus os.replace).",
+    "reuse": "the commit adds no function, class or module; it extends the existing expected set and the existing census observer reckon/interface_counts.py:_staged_writes, so no capability is forked.",
+    "scope_discipline": "every path in 6a39dbbe4f (tests/test_staged_write_inventory.py and the node's own landing fragment) is inside the dispatch fence at prompt.txt:80-83, and no product source or concurrent node's path is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to list the four staged writers added since 3 November in the staged-write inventory's expected set; tests/test_staged_write_inventory.py:58-73 adds exactly those four entries (recovery_watch::_update_git_answer_store, dispatch_claims::_publish_exec_identity, gc::_write_retention_cursor, obligations::_record_index_lag).\nVERDICT done_when: the done_when asks for the census id green at head with every other test unchanged, a red base arm on that id, and a red negative control naming the dropped writer; logs/base-arm.log records 1 failed / 50 passed with FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and EXIT=1, logs/head-arm.log records 51 passed and EXIT=0, logs/negative-control.log records the extra item ('reckon/crew/dispatch_claims.py', '_publish_exec_identity') and EXIT=1.\nVERDICT write_paths: read the dispatch fence (tests/test_staged_write_inventory.py plus the landing fragment and its figure directory); the diff touches only tests/test_staged_write_inventory.py and docs/evidence/fragments/the-suite-is-green-at-head/the-staged-write-inventory-lists-four-writers.html, both inside it.\nVERDICT manifest: read manifest.md; status complete at 6a39dbbe4f, base arm 1 failed / 50 passed EXIT=1, head arm 51 passed EXIT=0, negative control 1 failed EXIT=1, no retry failures, no outside-scope work.\nVERDICT diff: read commit 6a39dbbe4f against base ee49a3545a: 16 lines added to tests/test_staged_write_inventory.py (four expected-set entries, each with a comment naming its staging mechanism, nothing else changed in the file) and a new 70-line landing fragment under docs/evidence/fragments/; no deletions, no product source.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_staged_write_inventory.py:61-73 adds the four expected-set entries the section names, and each was confirmed in the code at reckon/crew/recovery_watch.py:232-234, reckon/crew/dispatch_claims.py:609-613, reckon/crew/gc.py:1516-1518 and reckon/crew/obligations.py:2666-2670 (each a .tmp sibling plus os.replace).\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-arm.log ends `1 failed, 50 passed` with the census id FAILED and EXIT=1, logs/head-arm.log ends `51 passed` with EXIT=0, and logs/negative-control.log fails naming dispatch_claims::_publish_exec_identity with EXIT=1; the only imprecision is the negative control's header revision (see FINDING).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in 6a39dbbe4f (tests/test_staged_write_inventory.py and the node's own landing fragment) is inside the dispatch fence at prompt.txt:80-83, and no product source or concurrent node's path is touched.\nSCORE durability: 19\nJUSTIFICATION durability: the expected-set literal at tests/test_staged_write_inventory.py:42 is compared against observed excursions of the census, so dropping any one of the four entries reddens the test \u2014 demonstrated by the recorded negative control \u2014 and no added assertion compares a value against the same variable the test passed in.\nSCORE fit: 20\nJUSTIFICATION fit: the four entries follow the set's existing ordering and comment convention (each comment names the staging mechanism, not the node or date) and introduce no name the repository naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no function, class or module; it extends the existing expected set and the existing census observer reckon/interface_counts.py:_staged_writes, so no capability is forked.\nFINDING logs/negative-control.log:1 non-blocking: the negative control ran against the reviewed head's content held as uncommitted working-tree edits while HEAD was still the base, and the header records `# revision: ee49a3545a...` \u2014 the base revision \u2014 so a reader keying on that line attributes the run to base content, though the log's own assertion body visibly carries the other three added entries.\n",
+  "review_run_id": "r-20261110T021405101531-review-of-the-staged-write-inventory-lists-four-writers-6a39dbbe4ffb",
+  "reviewed_base_sha": "ee49a3545a6682932fd7194cb3c399daf6e3f26d",
+  "reviewed_head_sha": "6a39dbbe4ffbd954f47120f3eb42fd86bfc93ec6",
+  "reviewed_run_id": "r-20261110T020008317184-the-staged-write-inventory-lists-four-writers",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T02:34:23.777079+00:00",
+  "total": 118
+}
