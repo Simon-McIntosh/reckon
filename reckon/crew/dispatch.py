@@ -1443,6 +1443,7 @@ def _resolved_suite_gate(
     *,
     node: TaskNode,
     worktree: str,
+    census_tests: Sequence[str] = (),
 ) -> tuple[str, str]:
     """The armed suite command resolved for this node, and whether it is armed.
 
@@ -1450,8 +1451,8 @@ def _resolved_suite_gate(
     files, so a worker that is told a different command measures a different
     suite and its pair is refused. The resolution is therefore taken from
     promotion's own substitution rather than reimplemented here, over the same
-    two facts promotion reads: the declared template and the node's write
-    scope within the run's tree.
+    facts promotion reads: the declared template, the node's write scope within
+    the run's tree, and the census tests the project declares.
 
     A scope holding no test file resolves to nothing, and the gate is then
     reported ``unarmed`` rather than as an empty command, which reads as a
@@ -1466,6 +1467,7 @@ def _resolved_suite_gate(
     resolved = _scoped_suite_command(
         {
             "suite_command": suite_command,
+            "census_tests": list(census_tests),
             "worktree": worktree,
             "node": {"write_paths": list(node.write_paths)},
         }
@@ -2825,6 +2827,12 @@ def dispatch(
         )
         gates = config.get("gates") or {}
         suite_command = str(gates.get("suite_command") or "").strip() or None
+        declared_census = gates.get("census_tests") or ()
+        if isinstance(declared_census, (str, bytes)):
+            declared_census = [declared_census]
+        census_tests = [
+            str(entry).strip() for entry in declared_census if str(entry or "").strip()
+        ]
         wave_id = _resolved_wave_id(project, session, wave)
 
     worktree: dict[str, Any] | None = None
@@ -2913,7 +2921,10 @@ def dispatch(
         # tree the scoped paths are named within, which is why this waits for
         # it to exist.
         suite_command_resolved, suite_gate = _resolved_suite_gate(
-            suite_command, node=node, worktree=worktree["path"]
+            suite_command,
+            node=node,
+            worktree=worktree["path"],
+            census_tests=census_tests,
         )
         # One read of the clock is both the attempt's recorded launch instant
         # and the instant its fence states, so the prompt and the record cannot
@@ -3133,6 +3144,7 @@ def dispatch(
             # resolved field is absent rather than empty when it did.
             "suite_command": suite_command,
             "suite_command_resolved": suite_command_resolved or None,
+            "census_tests": list(census_tests),
             "suite_gate": suite_gate or "unarmed",
             "prompt_path": str(prompt_path),
             "log_path": str(log_path),
