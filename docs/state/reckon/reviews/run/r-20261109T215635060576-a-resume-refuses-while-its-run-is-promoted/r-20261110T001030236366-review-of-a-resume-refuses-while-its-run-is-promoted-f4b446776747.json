@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T00:23:36.308Z",
+  "dispatched_at": "2026-11-10T00:12:30Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: a lock-name rename is caught by the both-locks case, an assertion that degrades to the base refusal type, or a provenance header; the landing re-runs the node test at base and head",
+      "recorded_at": "2026-11-10T00:34:39.073890+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking: a lock-name rename is caught by the both-locks case, an assertion that degrades to the base refusal type, or a provenance header; the landing re-runs the node test at base and head",
+      "recorded_at": "2026-11-10T00:34:53.023692+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking: a lock-name rename is caught by the both-locks case, an assertion that degrades to the base refusal type, or a provenance header; the landing re-runs the node test at base and head",
+      "recorded_at": "2026-11-10T00:35:22.884594+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 246,
+      "severity": "non-blocking",
+      "summary": "promotion_lock_name imports _promotion_lease_name, which names the HostLease at promotion.py:259, not the flock _promotion_lock opens from the separate literal at promotion.py:162; a change to that literal alone leaves the guard watching a lock nobody takes, caught only because the both-locks case then blocks on the pointer lock"
+    },
+    {
+      "file": "tests/test_a_resume_waits_out_a_promotion.py",
+      "line": 179,
+      "severity": "non-blocking",
+      "summary": "the refusal type is read with getattr(..., CrewError), so the type assertion at line 180 degrades to the base class and cannot fail if PromotionInProgressError is removed or renamed, leaving the specific refusal unguarded"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted/negative-control-base-arm.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "summary": "the tree header says every other file is as committed at 1ed19917af while the extracted tree carries f6a07c1c23's code (it has no hold_against_promotion), and line 4's module header names the worktree paths rather than the scratch tree, so the log misreports the provenance of the run it records"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a resume refuses while its run's promotion lock is held; reckon/crew/resumption.py:252-273 adds hold_against_promotion, which takes the promotion lock non-blocking and raises PromotionInProgressError, and reckon/crew/dispatch_sessions.py:1439-1446 takes that hold around both the pointer write and the launch mark, so the guard now runs before the write it exists to prevent.\nVERDICT done_when: section 8's done-when names tests/test_a_resume_waits_out_a_promotion.py with a refusal that leaves the pointer unchanged, a resume with no promotion proceeding, and a promotion and resume never deadlocking inside five seconds; the file carries those three plus the both-locks refusal at line 148, and the manifest records 4 passed at the head against 2 failed / 2 passed at the base, which I re-ran from a tree extracted at f4b4467767 and reproduced as 4 passed, EXIT=0.\nVERDICT write_paths: the node's declared paths were reckon/crew/runs.py, reckon/crew/resumption.py and the test, with the evidence fragment later added, and the repair advice explicitly granted reckon/crew/dispatch_sessions.py; git diff --stat 051d449f41..f4b4467767 touches exactly the fragment, dispatch_sessions.py, resumption.py and the test.\nVERDICT manifest: read at its own path; it records status complete, all six rubric lines, head-suite.log at revision 1ed19917af as 4 passed with EXIT=0, negative-control-base-arm.log as 2 failed / 2 passed with EXIT=1, the mutation control at head as 1 failed, ruff clean on the staged paths, and eleven pre-existing importer failures under outside_scope.\nVERDICT diff: read commit by commit against 051d449f41; 1ed19917af moves the promotion check ahead of the pointer write, adds the non-blocking refusal cleanup, imports the lock name and adds the both-locks case, and f4b4467767 rewrites the evidence fragment to record that measure, all inside the granted paths.\nCALL_SITES: reckon/crew/resumption.py:_resume (1832-1833, 1872), reckon/crew_run_commands.py:2417 (print-only resume_plan), reckon/crew/promotion.py:_promotion_lock (161-163), reckon/crew/promotion.py:335 and reckon/crew/promotion.py:2072 (the two promotion lock sites)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_sessions.py:1439-1446 takes the hold before _mutate_pointer and again around mark_resume_launching, and reckon/crew/resumption.py:318-327 drops a refused launch's mark only under a non-blocking pointer lock, so the refusal answers instead of queueing.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate at tests/test_a_resume_waits_out_a_promotion.py reproduces 4 passed at the reviewed head and 2 failed / 2 passed at f6a07c1c23, and the importer arms show the same eleven failing ids at both revisions, but negative-control-base-arm.log:3-4 misreports the tree and module it ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 051d449f41..f4b4467767 shows four files, each inside the declared write paths or the repair advice's explicit grant of reckon/crew/dispatch_sessions.py.\nSCORE durability: 16\nJUSTIFICATION durability: the both-locks case at tests/test_a_resume_waits_out_a_promotion.py:177 reddens under the recorded mutation and at the base revision, but the type assertion at line 180 falls back to CrewError through getattr at line 179 and so cannot catch a removed refusal class.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/resumption.py:252-273 follows the module's contextmanager and CrewError idiom, the ContextVar re-entrancy matches the scope convention at reckon/resources.py:482, and no name carries a plan, stage or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: hold_against_promotion composes the non-blocking _pointer_lock from reckon/crew/runs.py:472-495 and the existing _drop_launch_mark_locked rather than forking a lock, though it takes its name from _promotion_lease_name at reckon/crew/promotion.py:198 rather than the flock definition at promotion.py:162.\nFINDING reckon/crew/resumption.py:246 non-blocking: promotion_lock_name returns _promotion_lease_name, the HostLease identity used at promotion.py:259, while the lock a promotion actually holds is the literal taken by _promotion_lock at promotion.py:162, so a change to that literal alone would leave the guard watching a lock nobody takes; the both-locks case catches the divergence only by then blocking on the pointer lock.\nFINDING tests/test_a_resume_waits_out_a_promotion.py:179 non-blocking: refusal_type is read with getattr(resumption, 'PromotionInProgressError', CrewError), so if the class is removed or renamed the assertion at line 180 still passes against the base class and does not guard the specific refusal the fragment claims.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted/negative-control-base-arm.log:3 non-blocking: the tree header says every other file is as committed at 1ed19917af, but the extracted tree actually carries f6a07c1c23's code (it has no hold_against_promotion), and line 4's module header names the worktree paths, so the repair advice's request that the headers name the tree and module that actually ran is still unmet even though the 2 failed / 2 passed result itself is sound.\n",
+  "review_run_id": "r-20261110T001030236366-review-of-a-resume-refuses-while-its-run-is-promoted-f4b446776747",
+  "reviewed_base_sha": "051d449f410d575177cf4ea994f8925ec6db5c2b",
+  "reviewed_head_sha": "f4b4467767478317233ba7c853d16192472c27b2",
+  "reviewed_run_id": "r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:57:52.435130+00:00",
+  "total": 103
+}
