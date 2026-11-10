@@ -4,8 +4,9 @@ The MCP read deadline abandons a tool body at 30 s and reports a typed
 ``storage-slow`` result. Before this, the label claimed the filesystem was slow
 with no evidence: a body that was busy computing read the same as one blocked
 on the mount. These cases pin the two apart by measuring the worker thread's
-CPU time and run-queue wait beside the wall time, while the ``error`` value
-stays ``storage-slow`` so no existing caller's branch changes.
+CPU time and run-queue wait beside the wall time, and the ``error`` value
+follows the cause: ``read-slow`` for a computing body, whose storage is not
+the suspect, and ``storage-slow`` for a blocked one.
 
 Two halves of "this body wanted the CPU" are measured, because either alone
 misreads a loaded node. A body doing work burns CPU; a body starved runnable on
@@ -50,8 +51,9 @@ def test_spinning_body_reports_computing_with_wall_and_cpu_seconds() -> None:
     result = _run(lambda: _spin_for(_BODY_SECONDS), label="roadmap")
 
     assert result["cause"] == "computing"
-    # The error value is unchanged so an existing caller's branch is unaffected.
-    assert result["error"] == "storage-slow"
+    # A computing body's storage is not the suspect, so the caller is not sent
+    # to look at it.
+    assert result["error"] == "read-slow"
     assert result["waited_seconds"] >= _DEADLINE_SECONDS
     assert result["cpu_seconds"] is not None
     assert result["cpu_seconds"] >= 0.05

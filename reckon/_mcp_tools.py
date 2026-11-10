@@ -7,6 +7,12 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field
 
 STORAGE_SLOW = "storage-slow"
+# The value a timed-out body carries when it was computing rather than blocked:
+# the storage is not the suspect, so the caller is not sent to look at it.
+READ_SLOW = "read-slow"
+# Both values mean the same thing to a caller that only branches on "this call
+# did not answer in time", so every counter and printer treats them alike.
+SLOW_ERRORS = (STORAGE_SLOW, READ_SLOW)
 
 # The hint a waiting body gets: the storage really is the suspect, so the
 # advice is to retry. A computing body gets its own hint, because the storage
@@ -169,14 +175,17 @@ class StorageSlowResult(BaseModel):
     body that wanted the CPU reads ``computing``: it either burned thread CPU
     time (``cpu_seconds``) or sat runnable on the runqueue while an
     oversubscribed node ran other work first (``run_seconds``). A body blocked
-    on storage reads ``waiting``, burning neither. The ``error`` value stays
-    ``storage-slow`` so no existing caller's branch changes, while the message
-    and hint name the cause and, for a computing body whose tool has one, the
-    CLI command that answers without a deadline.
+    on storage reads ``waiting``, burning neither. The ``error`` value follows
+    the cause, so the caller is told what the measurement found rather than a
+    label that always blames the mount: ``read-slow`` for a computing body,
+    since the storage is not the suspect, and ``storage-slow`` for a blocked
+    one. The message and hint repeat the cause beside the three figures, and,
+    for a computing body whose tool has one, the CLI command that answers
+    without a deadline.
     """
 
     ok: bool = False
-    error: Literal["storage-slow"] = STORAGE_SLOW
+    error: Literal["storage-slow", "read-slow"] = STORAGE_SLOW
     kind: Literal["read", "write"]
     label: str
     path: str | None = None
@@ -234,6 +243,7 @@ class StorageSlowResult(BaseModel):
             # yet reach its file, so the retry hint would invite a duplicate.
             hint = _INFLIGHT_WRITE_HINT
         return cls(
+            error=READ_SLOW if cause == "computing" else STORAGE_SLOW,
             kind=kind,
             label=label,
             path=path,

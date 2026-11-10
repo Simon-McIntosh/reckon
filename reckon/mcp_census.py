@@ -43,7 +43,7 @@ import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
-from reckon._mcp_tools import STORAGE_SLOW
+from reckon._mcp_tools import SLOW_ERRORS
 from reckon._timestamps import parse_utc
 from reckon.velocity import TRANSCRIPT_ROOT, transcript_index, transcript_tool_blocks
 
@@ -83,8 +83,13 @@ _CONNECTION_STAMP = re.compile(
 )
 _LABEL = re.compile(r'"label"\s*:\s*"([^"]+)"')
 # The sentinel as it appears in a tool result's payload, so a transcript that
-# merely mentions the phrase in prose is not counted as a storage-slow result.
-_SLOW_ERROR = re.compile(r'"error":\s*"?' + re.escape(STORAGE_SLOW) + r'"?')
+# merely mentions the phrase in prose is not counted as a slow result. Both
+# slow errors are counted, because they answer the same question: the call did
+# not answer within its deadline. Which one it carries says what the deadline
+# measured, not whether the call was slow.
+_SLOW_ERROR = re.compile(
+    r'"error":\s*"?(?:' + "|".join(re.escape(each) for each in SLOW_ERRORS) + r')"?'
+)
 _TOOL_PREFIX = re.compile(r"^mcp__[^_]+__")
 
 

@@ -1,0 +1,47 @@
+<!-- Fragment for plan section §19 of an-mcp-failure-names-its-cause. -->
+<h3 id="a-slow-read-names-what-it-measured">A slow read names what it measured</h3>
+
+<p>A timed-out MCP read carried one label, <code>storage-slow</code>, whatever
+the deadline had caught. The read reported on 5 November held 13.1 s of CPU and
+1.4 s runnable of its 30 s deadline: the node could not run it fast enough,
+while <code>stat</code> in home answered in 0.00 s and one task waited in
+<code>cxiWaitEventWait</code>. The label sent its reader to blame the mount.</p>
+
+<p id="a-slow-read-names-what-it-measured-line">The computing line moved from
+half the wall to a third, so 14.5 s of CPU and runnable time of 30 s reads as
+computing, and the <code>error</code> value follows the cause: a computing body
+reports <code>read-slow</code>, a blocked body keeps
+<code>storage-slow</code>. The three figures — CPU seconds, runnable seconds and
+wall seconds — were already measured and are carried beside the verdict.</p>
+
+<table>
+  <thead>
+    <tr><th>abandoned body</th><th>cause</th><th>error</th><th>figures carried</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>13.1 s CPU, 1.4 s runnable, 30 s wall</td><td>computing</td><td><code>read-slow</code></td><td>cpu 13.1, runnable 1.4, waited 30.0</td></tr>
+    <tr><td>no CPU, no run-queue time</td><td>waiting</td><td><code>storage-slow</code></td><td>cpu 0.0, runnable 0.0</td></tr>
+  </tbody>
+</table>
+
+<p id="a-slow-read-names-what-it-measured-callers">The two surfaces that read
+the error value count the two values in one total, because both say the call
+missed its deadline: the transcript census pattern in
+<code>reckon/mcp_census.py</code> matches either value, and the doctor printer
+in <code>reckon/project_maintenance_commands.py</code> reports the same count
+under the same rule.</p>
+
+<p id="a-slow-read-names-what-it-measured-gate">Gate:
+<code>tests/test_a_slow_read_names_what_it_measured.py</code> — 5 passed,
+<code>EXIT=0</code>, with the three figures stubbed from thread counters so the
+verdict cannot move with the machine's load. The negative control restores the
+half-wall threshold and the fixed label; the computing case then reports
+<code>storage-slow</code> and the run fails, <code>1 failed, 4 passed</code>,
+<code>EXIT=1</code>.</p>
+
+<p id="a-slow-read-names-what-it-measured-outside">One existing test encoded the
+superseded contract: <code>tests/test_mcp_deadline_names_its_cause.py:54</code>
+asserted a computing body keeps <code>error == "storage-slow"</code>. It sat
+outside this node's write fence at first, and the coordinator granted the file
+so the assertion and the module docstring now name <code>read-slow</code> for a
+computing body. The importer arms carry no failure the base revision does not.</p>
