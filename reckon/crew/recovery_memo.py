@@ -10,6 +10,7 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew import review as review_module
@@ -446,6 +447,34 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     return identities
 
 
+def _review_annotation_identities(record: Mapping[str, Any]) -> dict[str, str]:
+    """The manifest and gate logs used to annotate this run's stored review."""
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return {}
+    directory = runs.run_dir(run_id)
+    manifest = directory / review_module._MANIFEST_FILE_NAME
+    signature = _file_identity(manifest)
+    identities = {str(manifest): signature}
+    try:
+        text = file_memo.memoized_key(
+            "review_annotation_manifest",
+            (str(manifest), signature),
+            lambda: manifest.read_text(encoding="utf-8", errors="replace"),
+        )
+    except OSError:
+        return identities
+    for field in (review_module._BASE_LOG_FIELD, review_module._HEAD_LOG_FIELD):
+        named = review_module._gate_log_path(text, field)
+        if not named:
+            continue
+        path = Path(named)
+        if not path.is_absolute():
+            path = directory / path
+        identities[str(path)] = _file_identity(path)
+    return identities
+
+
 def _directory_identity(path: Path) -> str:
     """The stat identity of a directory, including when its entries last moved.
 
@@ -503,6 +532,7 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
         record_path = directory / name
         identities[str(record_path)] = _file_identity(record_path)
     identities.update(_review_input_identities(record))
+    identities.update(_review_annotation_identities(record))
     # A review is chosen against the revision the run's tree carries now, so the
     # head is part of the key even though no reader of the review calls it a
     # file: a tree that gained a commit between two classifications moves the

@@ -6,6 +6,7 @@ import json
 import os
 import sys
 from collections import Counter
+from contextlib import suppress
 from pathlib import Path
 
 import pytest
@@ -67,6 +68,23 @@ def reviewed_store(tick, project, monkeypatch):
             counts["enumerations"] += 1
         return original_scan(path)
 
+    original_stat = os.stat
+    original_path_stat = Path.stat
+
+    def count_stat(kind, path):
+        if not isinstance(path, int):
+            candidate = Path(os.fsdecode(path))
+            if candidate.parent == directory and candidate.suffix == ".json":
+                counts[f"stat:{kind}:{candidate.name}"] += 1
+
+    def counted_stat(path, *args, **kwargs):
+        count_stat("os", path)
+        return original_stat(path, *args, **kwargs)
+
+    def counted_path_stat(path, *args, **kwargs):
+        count_stat("path", path)
+        return original_path_stat(path, *args, **kwargs)
+
     original_read = review.read_review
     bindings = []
     observed = {}
@@ -87,9 +105,26 @@ def reviewed_store(tick, project, monkeypatch):
             if value is original_scan:
                 monkeypatch.setattr(module, name, counted_scan)
                 bindings.append(f"{module.__name__}.{name}")
+            elif value is original_stat:
+                monkeypatch.setattr(module, name, counted_stat)
+                bindings.append(f"{module.__name__}.{name}")
+            elif value is original_path_stat:
+                monkeypatch.setattr(module, name, counted_path_stat)
+                bindings.append(f"{module.__name__}.{name}")
             elif value is original_read:
                 monkeypatch.setattr(module, name, counted_read)
                 bindings.append(f"{module.__name__}.{name}")
+    monkeypatch.setattr(Path, "stat", counted_path_stat)
+    bindings.append("pathlib.Path.stat")
+    control = paths["r-author-00"]
+    control.stat()
+    os.stat(control)
+    assert counts[f"stat:path:{control.name}"] == 1
+    assert counts[f"stat:os:{control.name}"] == 2
+    print(json.dumps({"stat_positive_control": dict(counts)}))
+    counts.clear()
+    assert "os.stat" in bindings
+    assert "pathlib.Path.stat" in bindings
     assert "reckon.crew.review.read_review" in bindings
     assert "os.scandir" in bindings
     return paths, counts, bindings, observed
@@ -99,16 +134,17 @@ def _ticks(paths, counts, change=None):
     def after_tick(_interval):
         raise TickFinishedError
 
+    counts.clear()
     stream = recovery_watch.watch_ticker("sample", poll_interval=0, sleeper=after_tick)
     try:
         events = [next(stream) for _ in paths]
         assert {event["run_id"] for event in events} == set(paths)
         first = dict(counts)
-        counts.clear()
         if change:
             change()
-        with pytest.raises(TickFinishedError):
-            list(stream)
+        counts.clear()
+        with suppress(TickFinishedError):
+            next(stream)
         second = dict(counts)
     finally:
         stream.close()
@@ -128,6 +164,22 @@ def test_one_listing_answers_every_run_and_an_unchanged_tick_reads_no_review(
         **dict.fromkeys((f"read:{run_id}" for run_id in paths), 1),
     }, "the instrument must see every run's review exactly once on the first tick"
     assert second == {"enumerations": 1}
+
+
+def test_an_unchanged_tick_stats_no_review_file_per_run(reviewed_store):
+    paths, counts, bindings, _observed = reviewed_store
+    _first, second = _ticks(paths, counts)
+    per_run_stats = {
+        key: value for key, value in second.items() if key.startswith("stat:")
+    }
+    print(
+        json.dumps(
+            {"stat_bindings": bindings, "unchanged_per_run_stats": per_run_stats}
+        )
+    )
+    assert not per_run_stats, (
+        "the unchanged tick must use the store snapshot's stat readings"
+    )
 
 
 def test_an_in_place_rewrite_is_read_on_the_next_tick(reviewed_store):
@@ -168,3 +220,45 @@ def test_an_atomic_replacement_rereads_only_its_run(reviewed_store):
     assert first["enumerations"] == 1
     assert second == {"enumerations": 1, f"read:{run_id}": 1}
     assert observed[run_id]["scores"]["goal_fidelity"] == 6
+
+
+@pytest.mark.parametrize("changed_input", ["manifest", "gate_log"])
+def test_annotation_inputs_change_the_next_tick_answer(reviewed_store, changed_input):
+    paths, counts, _bindings, observed = reviewed_store
+    run_id = "r-author-00"
+    directory = runs.run_dir(run_id)
+    manifest = directory / "manifest.md"
+    base_log = directory / "base.log"
+    head_log = directory / "head.log"
+    failed_log = directory / "failed.log"
+    failure_id = "tests/test_gate.py::test_signal"
+    clean = "1 passed\n"
+    failed = f"FAILED {failure_id} - AssertionError\n1 failed\n"
+    base_log.write_text(clean)
+    head_log.write_text(clean)
+    failed_log.write_text(failed)
+
+    def manifest_text(head_name):
+        return (
+            "status: complete\ncommits: []\noutside_scope: none\n"
+            f"baseline_suite: {json.dumps({'log_path': base_log.name})}\n"
+            f"after_suite: {json.dumps({'log_path': head_name})}\n"
+        )
+
+    manifest.write_text(manifest_text(head_log.name))
+    record_identity = recovery_memo._file_identity(paths[run_id])
+
+    def rewrite():
+        assert observed[run_id]["added_failure_count"] == 0
+        assert observed[run_id]["total"] == 18 * len(review.REVIEW_DIMENSIONS)
+        if changed_input == "manifest":
+            manifest.write_text(manifest_text(failed_log.name))
+        else:
+            head_log.write_text(failed)
+        assert recovery_memo._file_identity(paths[run_id]) == record_identity
+
+    _first, second = _ticks(paths, counts, rewrite)
+    assert second == {"enumerations": 1, f"read:{run_id}": 1}
+    assert observed[run_id]["added_failure_count"] == 1
+    assert observed[run_id]["added_failure_ids"] == [failure_id]
+    assert observed[run_id]["total"] == review.ADDED_FAILURES_TOTAL_CAP
