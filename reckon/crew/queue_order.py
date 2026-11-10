@@ -18,21 +18,47 @@ _LOGGER = logging.getLogger(__name__)
 _PRIORITY_KEYS: dict[
     tuple[str, str], tuple[tuple[Any, ...], dict[str, tuple[Any, ...]]]
 ] = {}
+_DIRECTORY_FILES: dict[Path, tuple[Any, tuple[Path, ...]]] = {}
 
 
-def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
-    """The named plans' file identities, including absent files."""
+def _roadmap_input_signature(
+    docs_dir: Path, slugs: set[str], project: str
+) -> tuple[Any, ...]:
+    """Plan and sprint identities, including additions and in-place edits.
+
+    Directory stamps detect arrivals and removals; file stamps detect edits
+    that leave the containing directory unchanged. Directory contents are
+    listed only when that directory's own identity moves.
+    """
     from reckon import file_memo
+    from reckon._store import state_path
 
     signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
-    for slug in sorted(slugs):
+    paths = {docs_dir / "plans" / f"{slug}.html" for slug in slugs}
+    paths.update(
+        (
+            state_path(project, "index"),
+            state_path(project, "index", root=docs_dir.parent),
+        )
+    )
+    for directory in (docs_dir / "plans", docs_dir / "sprints"):
         try:
-            stat = (docs_dir / "plans" / f"{slug}.html").stat()
-            identity = file_memo.signature_from_stat(stat)
+            identity = file_memo.file_signature(directory)
         except OSError:
             identity = None
-        signature.append((slug, identity))
-    return tuple(signature)
+        signature.append((str(directory), identity))
+        cached = _DIRECTORY_FILES.get(directory)
+        if cached is None or cached[0] != identity:
+            cached = (identity, tuple(directory.glob("*.html")))
+            _DIRECTORY_FILES[directory] = cached
+        paths.update(cached[1])
+    for path in sorted(paths):
+        try:
+            identity = file_memo.file_signature(path)
+        except OSError:
+            identity = None
+        signature.append((str(path), identity))
+    return tuple(sorted(slugs)), tuple(signature)
 
 
 def _roadmap_priority_keys(
@@ -58,7 +84,9 @@ def _roadmap_priority_keys(
                 for pointer in queued_pointers
                 if str(pointer.get("project") or "") == project and pointer.get("plan")
             }
-            signature = _named_plan_signature(docs_dir, slugs) if docs_dir else ()
+            signature = (
+                _roadmap_input_signature(docs_dir, slugs, project) if docs_dir else ()
+            )
             cached = _PRIORITY_KEYS.get(cache_key) if cache_key else None
             if cached is not None and cached[0] == signature:
                 project_keys = cached[1]
