@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import hashlib
 import os
+import re
 import time
 from datetime import UTC, datetime
 from pathlib import Path
@@ -592,6 +593,61 @@ def _record_repair_dispatch(
     return written.get("attempt", 0)
 
 
+_TEST_PATH_PATTERN = re.compile(r"\btests/[A-Za-z0-9_./-]+\.py\b")
+
+# A finding asks for a test when it says one is absent or not committed. The
+# phrasings are the ones a review writes: "no committed ... test",
+# "test ... missing" and "test ... uncommitted". The gap between the two words
+# stops at a sentence or clause boundary, so an unrelated sentence mentioning a
+# test is not read as the ask. The adjective-before-noun form is held to the
+# words that qualify a test ("missing regression test", "uncommitted unit
+# test"), because a looser gap also read "the uncommitted rename breaks the
+# test suite" as an ask and granted the round a test path nobody requested.
+_TEST_QUALIFIERS = r"(?:regression|unit|integration|node|acceptance|end-to-end|e2e)"
+_TEST_ASKING_PATTERNS = (
+    re.compile(r"\bno committed\b[^.;]*\btests?\b", re.IGNORECASE),
+    re.compile(r"\btests?\b[^.;]*\b(?:missing|uncommitted)\b", re.IGNORECASE),
+    re.compile(
+        rf"\b(?:missing|uncommitted)\s+(?:{_TEST_QUALIFIERS}\s+)?tests?\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def _asks_for_a_test(finding: Mapping[str, Any]) -> bool:
+    """Whether a finding's text says a test is missing or not committed.
+
+    A review that finds a change untested is asking for the regression test it
+    cannot see. The finding's text is the only place that ask appears: its
+    ``file`` is the production file the change landed in, so a round that read
+    only the cited path could never grant a ``tests/`` path and the worker would
+    be refused the one file the ask needs.
+    """
+    text = str(finding.get("text") or "")
+    return any(pattern.search(text) for pattern in _TEST_ASKING_PATTERNS)
+
+
+def _missing_test_paths(finding: Mapping[str, Any], node_id: str) -> list[str]:
+    """The test paths an asking finding grants, in the order it names them.
+
+    A finding that names its test's home grants that module. A finding that
+    names none grants the module the reviewed run's node would have delivered in
+    had it written one: ``tests/test_<node>.py``, with the node id's hyphens as
+    underscores, which is the name a node's own test module already follows.
+    """
+    text = str(finding.get("text") or "")
+    named: list[str] = []
+    for match in _TEST_PATH_PATTERN.finditer(text):
+        path = match.group(0).rstrip(".,;)")
+        if path not in named:
+            named.append(path)
+    if named:
+        return named
+    if node_id:
+        return [f"tests/test_{node_id.replace('-', '_')}.py"]
+    return []
+
+
 def _grant_round_scope(
     run_id: str,
     scope: Sequence[str],
@@ -606,6 +662,13 @@ def _grant_round_scope(
     held while the round edits it. Each path is granted through the same
     mechanism a worker's own widening uses, with the source ``repair-round`` and
     the finding that named the path as its reason.
+
+    A blocking finding that says a test is missing or uncommitted also grants
+    the test module it names, or the node-named ``tests/test_<node>.py`` when it
+    names none, because the fix the finding asks for cannot be committed without
+    it. That path's reason is the asking finding's own id rather than
+    ``_grant_reason``'s, which matches on the finding's ``file`` and would name
+    the production file the test is about.
 
     Two kinds of refusal are told apart, because they mean different things to
     the worker reading the advice. A path a peer's binding claim already holds
@@ -624,17 +687,26 @@ def _grant_round_scope(
     from reckon.crew import claims as claims_module
 
     declared = set(claims_module.declared_claim_paths(run_id))
+    node = (read_pointer(run_id) or {}).get("node") or {}
+    node_id = str(node.get("id") or "") if isinstance(node, Mapping) else ""
+    asked: dict[str, str] = {}
+    for finding in findings:
+        if not _asks_for_a_test(finding):
+            continue
+        for path in _missing_test_paths(finding, node_id):
+            asked.setdefault(path, str(finding.get("id") or ""))
+    extended = [*scope, *(path for path in asked if path not in scope)]
     granted: list[str] = []
     conflicts: list[dict[str, str]] = []
     refused: set[str] = set()
-    for path in scope:
+    for path in extended:
         if path in declared or path in refused:
             continue
         try:
             _pointer, added = claims_module.widen_claim(
                 run_id,
                 [path],
-                reason=_grant_reason(path, findings),
+                reason=asked[path] if path in asked else _grant_reason(path, findings),
                 grant_source="repair-round",
             )
         except ScopeConflict as exc:
@@ -653,7 +725,7 @@ def _grant_round_scope(
             continue
         granted.extend(added)
         declared.update(added)
-    advised = [path for path in scope if path not in refused]
+    advised = [path for path in extended if path not in refused]
     return advised, granted, conflicts
 
 
