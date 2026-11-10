@@ -1,0 +1,233 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "not measured.unreadable",
+      "fails_if": "Restore inherited-TMPDIR mktemp: absent-on-destination fails to allocate and the arm reports unreadable, reproduced in tmpdir-runtime-before.log.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 229
+    },
+    {
+      "assertion": "base/head actual subject contents remain distinct (lines 230-231)",
+      "fails_if": "Archive head for both arms or archive base for both; actual file contents differ from the fixed independent fixture expectations.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 230
+    },
+    {
+      "assertion": "job_tmpdir.parent == node_tmp",
+      "fails_if": "Use the inherited directory or another root; node_tmp is a separately established simulated node filesystem, not the TMPDIR value handed to the production runner.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 248
+    },
+    {
+      "assertion": "job_tree.parent == job_tmpdir",
+      "fails_if": "Omit export TMPDIR=\"$scratch\" or export the root instead; tree and tmpdir are independently printed by the executed child.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 249
+    },
+    {
+      "assertion": "inherited path absent from actual output",
+      "fails_if": "Export or execute under the submitter path; child prints tmpdir and checkout location.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 250
+    },
+    {
+      "assertion": "not inherited.exists()",
+      "fails_if": "Recreate the absent inherited directory; supplemental side-effect check, not standalone evidence of correct allocation.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 251
+    },
+    {
+      "assertion": "node_tmp is empty after arm",
+      "fails_if": "Remove cleanup or make it target a different directory, leaving the executed checkout behind.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 252
+    },
+    {
+      "assertion": "recorded mktemp TMPDIR values equal literal /tmp",
+      "fails_if": "Omit or move the reset after mktemp; the shim logs the actual environment before invoking the real allocator.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 254
+    },
+    {
+      "assertion": "recorded mktemp arguments include -d twice",
+      "fails_if": "Use file allocation or omit one allocation; the recorder observes actual child argv.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 255
+    },
+    {
+      "assertion": "recorded templates have literal /tmp parent",
+      "fails_if": "Restore a TMPDIR-derived template; expected NODE_TEMP_ROOT is a test-owned literal, not imported from production.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 256
+    },
+    {
+      "assertion": "calls",
+      "fails_if": "Suppress all arm launches; prevents per-call assertions passing over an empty list.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 324
+    },
+    {
+      "assertion": "explicit export TMPDIR=/tmp exists",
+      "fails_if": "Restore the inherited path or remove the reset, as demonstrated by both red parameter cases.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 328
+    },
+    {
+      "assertion": "reset < mktemp < git",
+      "fails_if": "Move reset after allocation or checkout before allocation.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 332
+    },
+    {
+      "assertion": "trap precedes reset",
+      "fails_if": "Reinstall trap after mktemp; startup failure would lack a receipt and cleanup.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 333
+    },
+    {
+      "assertion": "private-directory export occurs between allocation and checkout",
+      "fails_if": "Omit the export or move it below git.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 334
+    },
+    {
+      "assertion": "explicit /tmp/$USER template",
+      "fails_if": "Restore inherited-TMPDIR template or allocate outside the node-local root.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 335
+    },
+    {
+      "assertion": "no TMPDIR fallback expression",
+      "fails_if": "Reintroduce the specific ${TMPDIR:-...} bootstrap that accepted submitter storage; supplemental syntax check.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 336
+    },
+    {
+      "assertion": "inherited path absent from script",
+      "fails_if": "Embed the submitter scratch path in the job; supplemental literal-path check.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 337
+    },
+    {
+      "assertion": "batch environment TMPDIR equals test literal /tmp",
+      "fails_if": "Remove the newly added env reset, retaining monkeypatched inherited TMPDIR; production and expected sides do not move together.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 338
+    },
+    {
+      "assertion": "inherited directory remains empty or absent (lines 340-342)",
+      "fails_if": "An implementation-side local write touches the submitter directory; the recording runner does not execute scripts, so these are fixture side-effect checks and receive no independent durability credit.",
+      "file": "tests/test_a_landing_measure_runs_on_its_partition.py",
+      "line": 340
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1094 -> landing_measure.measure_run",
+    "reckon/crew/landing_measure.py:785 -> _partition_runner",
+    "reckon/crew/landing_measure.py:799 -> partitioned runner via _arm"
+  ],
+  "completed_at": "2026-11-10T22:42:01Z",
+  "dispatched_at": "2026-11-10T22:21:33Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "landing-measure-runs-on-its-partition",
+      "recorded_at": "2026-11-10T23:20:45.200579+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html",
+      "line": 102,
+      "severity": "blocking",
+      "text": "The repair importer evidence was produced by direct subprocess.run calls inside fleet job 1291586 rather than a separate partition job: resume-1.jsonl records inline base/head pytest -n 4 commands, and tmpdir-base-importers.log and tmpdir-head-importers.log report 157.31 s and 287.19 s respectively. These are heavy gates under the workstation rule; rerun both importer arms through separate sbatch jobs on all_debug or rigel and update the evidence before accepting it."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_landing_measure_runs_on_its_partition.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/tmpdir-head-suite.log",
+      "revision": "9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/tmpdir-base-suite.log",
+      "revision": "4a4188d18d6bb0d9bfff213f54d392e30451ab32"
+    },
+    "head_note": "After-suite revision 9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d contains all repaired code; target dc8a413077e61f99908a5967ca80b68d45236160 appends evidence only.",
+    "importer_added_failure_ids": [],
+    "importer_baseline_failure_ids": [
+      "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run",
+      "tests/test_the_landing_measure_runs_the_armed_command.py::test_an_armed_command_runs_its_substituted_files_under_its_environment"
+    ],
+    "importer_head_failure_ids": [
+      "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run",
+      "tests/test_the_landing_measure_runs_the_armed_command.py::test_an_armed_command_runs_its_substituted_files_under_its_environment"
+    ],
+    "reader_positive_control": "Same FAILED/ERROR extractor recovered all eight importer failures including test_an_armed_command_runs_its_substituted_files_under_its_environment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_measure_runs_on_its_partition.py:229-260 checks actual shell outputs and mktemp arguments and :328-338 checks every arm, so restoring inherited TMPDIR, omitting private export, moving the trap late or dropping cleanup fails independent assertions.",
+    "evidence": "The new evidence fragment at :102 reports a real zero failure delta, but resume-1.jsonl and tmpdir-base-importers.log/tmpdir-head-importers.log establish that its 157.31/287.19-second gates ran inline on the fleet rather than a separate partition job.",
+    "fit": "reckon/crew/landing_measure.py:588 and :602-606 extend the existing runner with mechanism-based names, shell quoting and printed cleanup consistent with its existing structure.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:602-606 resets destination storage, installs cleanup before allocation and exports its private directory before the revision archive, preserving the configured partition mechanism.",
+    "reuse": "The delta adds no production callable and extends the measurement owner; capability searches opened crew/dispatch_launch.py:849 worker_scratch_root and crew/fleet_node.py:202 bootstrap, which own coordinator scratch and fleet startup rather than destination-arm lifetime.",
+    "scope_discipline": "The two-commit delta changes only reckon/crew/landing_measure.py, tests/test_a_landing_measure_runs_on_its_partition.py and the evidence fragment declared in prompt.txt:179, appending rather than replacing existing evidence."
+  },
+  "previous_findings": {
+    "TMPDIR portability": "repaired, with recorded pre-repair failure and independent script/runtime controls",
+    "redundant SHA-presence assertion": "removed"
+  },
+  "project": "reckon",
+  "removed_weak_assertion": "Prior test line 222 merely checked whether a supplied SHA appeared in the generated script; the delta removes it, retaining independently checked actual base/head contents.",
+  "review_run_id": "r-20261110T221549060738-review-of-landing-measure-runs-on-its-partition-dc8a413077e6",
+  "review_text": "VERDICT goal: Read prompt.txt:38 and resume-1-advice.txt; landing_measure.py:602-606 and :663 establish destination-local scratch before checkout, addressing the prior portability defect.\nVERDICT done_when: Read prompt.txt:122-124 and live plan s9; tmpdir-head-suite.log records 61 passed and importer logs retain identical eight failure IDs, but the new multi-minute importer gates ran inline in the fleet allocation instead of a separate partition job.\nVERDICT write_paths: Read prompt.txt:179 and manifest.md orientation_write_paths; the two new commits change only landing_measure.py, its declared test and the declared cumulative evidence fragment.\nVERDICT manifest: Read manifest.md, baseline_suite and after_suite and their actual logs; the 51/61 passing armed results and zero added importer failures reconcile, while the evidence requires a partition rerun.\nVERDICT diff: Read 9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d and dc8a413077e61f99908a5967ca80b68d45236160 individually against a62c222d2e4d59e3cc32c8daca8916d43cf9cad4; the code/test repair and additive evidence resolve the two previous findings without unrelated edits.\nCALL_SITES: reckon/crew/queue_landing.py:1094 -> landing_measure.measure_run, reckon/crew/landing_measure.py:785 -> _partition_runner, reckon/crew/landing_measure.py:799 -> partitioned runner via _arm\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:602-606 resets destination storage, installs cleanup before allocation and exports its private directory before the revision archive, preserving the configured partition mechanism.\nSCORE evidence: 12\nJUSTIFICATION evidence: The new evidence fragment at :102 reports a real zero failure delta, but resume-1.jsonl and tmpdir-base-importers.log/tmpdir-head-importers.log establish that its 157.31/287.19-second gates ran inline on the fleet rather than a separate partition job.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit delta changes only reckon/crew/landing_measure.py, tests/test_a_landing_measure_runs_on_its_partition.py and the evidence fragment declared in prompt.txt:179, appending rather than replacing existing evidence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_landing_measure_runs_on_its_partition.py:229-260 checks actual shell outputs and mktemp arguments and :328-338 checks every arm, so restoring inherited TMPDIR, omitting private export, moving the trap late or dropping cleanup fails independent assertions.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/landing_measure.py:588 and :602-606 extend the existing runner with mechanism-based names, shell quoting and printed cleanup consistent with its existing structure.\nSCORE reuse: 20\nJUSTIFICATION reuse: The delta adds no production callable and extends the measurement owner; capability searches opened crew/dispatch_launch.py:849 worker_scratch_root and crew/fleet_node.py:202 bootstrap, which own coordinator scratch and fleet startup rather than destination-arm lifetime.\nFINDING docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:102 blocking: The repair importer evidence was produced by direct subprocess.run calls inside fleet job 1291586 rather than a separate partition job: resume-1.jsonl records inline base/head pytest -n 4 commands, and tmpdir-base-importers.log and tmpdir-head-importers.log report 157.31 s and 287.19 s respectively. These are heavy gates under the workstation rule; rerun both importer arms through separate sbatch jobs on all_debug or rigel and update the evidence before accepting it.\n",
+  "reviewed_base_sha": "a62c222d2e4d59e3cc32c8daca8916d43cf9cad4",
+  "reviewed_commits": [
+    "9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d",
+    "dc8a413077e61f99908a5967ca80b68d45236160"
+  ],
+  "reviewed_head_sha": "dc8a413077e61f99908a5967ca80b68d45236160",
+  "reviewed_run_id": "r-20261110T181932611430-landing-measure-runs-on-its-partition",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T23:19:38.709781+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "Read 9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d and dc8a413077e61f99908a5967ca80b68d45236160 individually against a62c222d2e4d59e3cc32c8daca8916d43cf9cad4; the code/test repair and additive evidence resolve the two previous findings without unrelated edits.",
+    "done_when": "Read prompt.txt:122-124 and live plan s9; tmpdir-head-suite.log records 61 passed and importer logs retain identical eight failure IDs, but the new multi-minute importer gates ran inline in the fleet allocation instead of a separate partition job.",
+    "goal": "Read prompt.txt:38 and resume-1-advice.txt; landing_measure.py:602-606 and :663 establish destination-local scratch before checkout, addressing the prior portability defect.",
+    "manifest": "Read manifest.md, baseline_suite and after_suite and their actual logs; the 51/61 passing armed results and zero added importer failures reconcile, while the evidence requires a partition rerun.",
+    "write_paths": "Read prompt.txt:179 and manifest.md orientation_write_paths; the two new commits change only landing_measure.py, its declared test and the declared cumulative evidence fragment."
+  }
+}
