@@ -2710,12 +2710,20 @@ def _section_status(row: Mapping[str, Any], section: str) -> str:
 
 
 def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
-    """Read section, plan and explicit request waits from the authored node."""
+    """Read section, plan and explicit request waits from the authored node.
+
+    A node that waits only on its own ``--after`` refs derives those alone: the
+    section's declared waits, the plan's ``depends_on`` and the section's gates
+    are the section's own deliverable and are not inherited by this request.
+    """
+    explicit = [f"{REQUEST_REF_PREFIX}{run_id}" for run_id in node.after]
+    if node.waits_only_after:
+        return list(dict.fromkeys(explicit))
     refs = section_wait_refs(_plan_html(repo_root, node.plan), node.section)
     if node.plan:
         state = _plan_state_and_text(Path(str(repo_root)) / "docs", node.plan)[0]
         refs.extend(str(ref) for ref in state.get("depends_on") or ())
-    refs.extend(f"{REQUEST_REF_PREFIX}{run_id}" for run_id in node.after)
+    refs.extend(explicit)
     return list(dict.fromkeys(refs))
 
 
@@ -2841,7 +2849,15 @@ def _validated_batch_waits(
                 wait_projects[ref[len(REQUEST_REF_PREFIX) :]] = upstream_project
             elif not ref.startswith((GATE_REF_PREFIX, "readiness:")):
                 section_edges(child)
-        if read_own_verdict and _needs_own_section_verdict(node):
+        # A node waiting only on what it names reads no verdict on its own
+        # section, so a gate there appends no readiness ref. The flag would
+        # otherwise leave exactly the gate waits in place that it exists to
+        # drop.
+        if (
+            read_own_verdict
+            and not node.waits_only_after
+            and _needs_own_section_verdict(node)
+        ):
             rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
             verdicts = (rows.get(node.plan) or {}).get("sections", {})
             own = next(
@@ -3584,7 +3600,7 @@ def dispatch_waits(
     The caller uses the same run identity for validation and storage. No queued
     pointer exists when this raises for a missing target or a graph cycle.
     """
-    own_verdict = _needs_own_section_verdict(node)
+    own_verdict = _needs_own_section_verdict(node) and not node.waits_only_after
     refs = derive_wait_refs(node, repo_root=repo_root)
     if own_verdict:
         # A preflight reads the section's verdict eagerly only when the plan
@@ -4025,7 +4041,7 @@ def _release_tick(
 def _rederive_waits(
     pointer: dict[str, Any],
     *,
-    cache: dict[tuple[str, str, str], list[str]] | None = None,
+    cache: dict[tuple[str, str, str, tuple[str, ...], bool], list[str]] | None = None,
     live: Sequence[Mapping[str, Any]] | None = None,
     mount: object = _MOUNT_UNSET,
 ) -> bool:
@@ -4039,6 +4055,11 @@ def _rederive_waits(
     repository, or one whose plan cannot be read, keeps the waits it has: an
     unreadable authority is not evidence that the waits changed.
 
+    The pass's cache is keyed on the request's own ``--after`` refs and the
+    flag beside the plan and section, because two requests of one section
+    derive different waits: a sibling's refs handed to a request that names
+    none of its own is a wait on work it never asked for.
+
     The projects the rewritten ``run:`` refs land in are written in the same
     mutation, because a ref added here without one is a wait that names no
     project and no pass can resolve it.
@@ -4049,7 +4070,13 @@ def _rederive_waits(
         return False
     if not node.plan.strip() and not node.after:
         return False
-    key = (repo_root, node.plan, node.section)
+    key = (
+        repo_root,
+        node.plan,
+        node.section,
+        tuple(node.after),
+        node.waits_only_after,
+    )
     derived = None if cache is None else cache.get(key)
     if derived is None:
         derived = derive_wait_refs(node, repo_root=repo_root)
@@ -4121,7 +4148,7 @@ def _advance_waiting_requests(live: list[dict[str, Any]]) -> dict[str, Any]:
         return {"promoted": [], "blocked": [], "obligations": []}
     cache: dict[str, Any] = {}
     # One plan read per pass, shared by every request it derives for.
-    derived_cache: dict[tuple[str, str, str], list[str]] = {}
+    derived_cache: dict[tuple[str, str, str, tuple[str, ...], bool], list[str]] = {}
     # One mount-registry read per pass, shared by every ref it resolves.
     mount = _mount_view()
     for pointer in candidates:
