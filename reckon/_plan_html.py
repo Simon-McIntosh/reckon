@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 from bs4 import BeautifulSoup
 
@@ -1342,13 +1343,69 @@ def descope_reasons(html_text: str) -> dict[str, str]:
     no record still says why it was dropped. Empty when the plan carries no
     such meta.
     """
+    raw = _meta_content(html_text, DESCOPE_REASONS_META)
+    if raw is None:
+        return {}
+    reasons, _defect = _parse_descope_reasons(raw)
+    return dict(reasons or {})
+
+
+def _meta_content(html_text: str, meta_name: str) -> str | None:
+    """Return a head meta's content, or ``None`` when the document has none."""
     soup = BeautifulSoup(html_text or "", "html.parser")
     for meta in soup.find_all("meta"):
-        if (meta.get("name") or "").strip().lower() != DESCOPE_REASONS_META:
-            continue
-        reasons, _defect = _parse_descope_reasons(meta.get("content", ""))
-        return dict(reasons or {})
-    return {}
+        if (meta.get("name") or "").strip().lower() == meta_name:
+            return meta.get("content", "")
+    return None
+
+
+def _read_keyed_meta(html_text: str, meta_name: str) -> dict[str, Any]:
+    """Return a JSON-object head meta's content as a mapping.
+
+    An absent, malformed or non-object value reads as an empty mapping: this is
+    the meta the writer maintains, and a caller about to rewrite it has nothing
+    to preserve from a value it cannot use.
+    """
+    raw = _meta_content(html_text, meta_name)
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def edit_keyed_meta(
+    html_text: str,
+    meta_name: str,
+    edits: list[tuple[str, Any]],
+    *,
+    mapping: dict[str, Any] | None = None,
+) -> str:
+    """Apply keyed edits to a head meta whose content is a JSON object.
+
+    Each edit sets one key's value, or removes the key when the value is
+    ``None``. The mapping is read back from the document first, so an edit lands
+    on the entries already on the page rather than replacing its siblings; a
+    caller that has already judged the existing content passes the mapping it
+    read. An empty result removes the meta entirely, which a read parses as no
+    mapping at all.
+    """
+    if mapping is None:
+        mapping = _read_keyed_meta(html_text, meta_name)
+    for key, value in edits:
+        if value is None:
+            mapping.pop(key, None)
+        else:
+            mapping[key] = value
+    if not mapping:
+        return _remove_meta(html_text, meta_name)
+    return _set_meta(
+        html_text,
+        meta_name,
+        json.dumps(mapping, ensure_ascii=True, separators=(",", ":")),
+    )
 
 
 def read_state(html_text: str) -> dict:

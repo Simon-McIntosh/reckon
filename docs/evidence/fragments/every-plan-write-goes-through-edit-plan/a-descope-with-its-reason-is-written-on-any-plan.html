@@ -20,30 +20,36 @@
 
   <h3 id="a-descope-with-its-reason-is-written-on-any-plan-measured">Measured</h3>
 
-  <p>The new test is four cases on a temporary copy of a plan with no section
+  <p>The new test is seven cases on a temporary copy of a plan with no section
   records and bare headings: the dotted reasoned form stores the declaration
   <code>descoped</code> and the reason; the whole-map form with one reasoned
   value and plain strings beside it does the same; an unreasoned descope is
-  refused and the refusal names the reasoned dotted form; and a plan that does
-  carry records keeps the reason on the record, with no duplicate in the map.</p>
+  refused, the refusal names the reasoned dotted form, and that named form then
+  succeeds on the same plan; two sequential reasoned descopes leave both
+  reasons in the map; a declaration moving off <code>descoped</code> clears its
+  map entry; a plan that does carry records keeps the reason on the record with
+  no duplicate in the map, and the whole-map form reaches those records
+  too.</p>
 
   <table id="a-descope-with-its-reason-is-written-on-any-plan-arms">
     <caption>Every arm is a log whose first line names its revision, tree and
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>before the change</td><td>198c403ed9</td><td>the two reasoned
-      cases fail: the dotted form is refused with
+      <tr><td>before the change</td><td>198c403ed9</td><td>six of the seven
+      cases fail: every reasoned form is refused with
       <code>schema_validation</code> (<code>section_declarations.s1</code> is a
-      dict where a string is required) &mdash; 2 failed, 2 passed</td></tr>
+      dict where a string is required), and the record-carrying case passes as
+      it always did &mdash; 6 failed, 1 passed</td></tr>
       <tr><td>after the change</td><td>198c403ed9 + this node</td>
-      <td>55 passed across the new test and the staged-write inventory</td></tr>
+      <td>58 passed across the seven-case test and the staged-write
+      inventory</td></tr>
       <tr><td>negative control: map store removed</td><td>this node, mutated</td>
-      <td>the dotted and whole-map cases both fail &mdash; 2 failed, 2
-      passed</td></tr>
+      <td>the dotted, whole-map, accepted-form and sequential cases fail
+      &mdash; 4 failed, 3 passed</td></tr>
       <tr><td>negative control: whole-map normalisation removed</td>
-      <td>this node, mutated</td><td>the whole-map case fails &mdash; 1 failed,
-      3 passed</td></tr>
+      <td>this node, mutated</td><td>both whole-map cases fail &mdash; 2 failed,
+      5 passed</td></tr>
     </tbody>
   </table>
 

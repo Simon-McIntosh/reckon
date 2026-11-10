@@ -3051,18 +3051,13 @@ def _apply_descope_reason_edits(
 
     if not requests:
         return source_text
-    mapping = _plan_html.descope_reasons(source_text)
+    edits = []
     for request in requests:
-        section = str(request["section"])
         reason = str(request.get("reason") or "").strip()
-        if reason:
-            mapping[section] = reason
-        else:
-            mapping.pop(section, None)
-    if not mapping:
-        return _plan_html._remove_meta(source_text, _plan_html.DESCOPE_REASONS_META)
-    content = json.dumps(mapping, ensure_ascii=True, separators=(",", ":"))
-    return _plan_html._set_meta(source_text, _plan_html.DESCOPE_REASONS_META, content)
+        edits.append((str(request["section"]), reason or None))
+    return _plan_html.edit_keyed_meta(
+        source_text, _plan_html.DESCOPE_REASONS_META, edits
+    )
 
 
 def _require_descope_reasons(state: Mapping[str, Any]) -> None:

@@ -50,7 +50,7 @@ def setup(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
 
 
 def _recordless_plan(slug: str, state: dict) -> str:
-    """A plan shaped like nova's: a declarations map and bare, id-less headings."""
+    """A plan with a declarations map and bare, id-less headings."""
     base = dict(state)
     base.setdefault("slug", slug)
     base.setdefault("title", slug.title())
@@ -189,6 +189,133 @@ def test_an_unreasoned_descope_is_refused_naming_a_form_that_works(setup) -> Non
     assert '{"status": "descoped", "reason":' in message, (
         "the refusal names the reasoned form the dotted write accepts"
     )
+
+    # The refusal names a form, and that form is the one that works: the same
+    # plan, the same section, the named shape.
+    accepted = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations.s1",
+                "value": {"status": "descoped", "reason": DESCOPED_REASON},
+            }
+        ],
+        0,
+    )
+
+    assert accepted["ok"] is True, accepted
+    data, _version = _store_module.read_plan(project, SLUG)
+    assert data["descope_reasons"]["s1"] == DESCOPED_REASON
+
+
+def test_two_sequential_descopes_leave_both_reasons(setup) -> None:
+    docs_dir, _, project = setup
+    _recordless(docs_dir)
+    second_reason = "the second interface was never adopted by any consumer"
+
+    version = 0
+    for section, reason in (("s1", DESCOPED_REASON), ("s4", second_reason)):
+        result = mcp_module._edit_plan(
+            project,
+            SLUG,
+            [
+                {
+                    "op": "set",
+                    "path": f"section_declarations.{section}",
+                    "value": {"status": "descoped", "reason": reason},
+                }
+            ],
+            version,
+        )
+        assert result["ok"] is True, result
+        version = result["new_version"]
+
+    data, _version = _store_module.read_plan(project, SLUG)
+    assert data["section_declarations"] == {"s1": "descoped", "s4": "descoped"}
+    assert data["descope_reasons"] == {
+        "s1": DESCOPED_REASON,
+        "s4": second_reason,
+    }, "the second descope lands beside the first rather than replacing it"
+
+
+def test_a_declaration_leaving_descoped_clears_the_map_entry(setup) -> None:
+    docs_dir, _, project = setup
+    _recordless(docs_dir)
+
+    descoped = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations.s1",
+                "value": {"status": "descoped", "reason": DESCOPED_REASON},
+            }
+        ],
+        0,
+    )
+    assert descoped["ok"] is True, descoped
+
+    reinstated = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [{"op": "set", "path": "section_declarations.s1", "value": "implementable"}],
+        1,
+    )
+
+    assert reinstated["ok"] is True, reinstated
+    data, _version = _store_module.read_plan(project, SLUG)
+    assert data["section_declarations"]["s1"] == "implementable"
+    assert "s1" not in (data.get("descope_reasons") or {}), (
+        "a reason beside a declaration that is no longer descoped contradicts it"
+    )
+
+
+def test_the_whole_map_form_works_on_a_plan_with_records(setup) -> None:
+    docs_dir, _, project = setup
+    _write_plan(
+        docs_dir,
+        SLUG,
+        _recorded_plan(
+            SLUG,
+            {
+                "version": 0,
+                "section_declarations": {"s1": "implementable", "s2": "implementable"},
+                "sections": [
+                    _section("s1", "implementable"),
+                    _section("s2", "implementable"),
+                ],
+            },
+        ),
+    )
+
+    result = mcp_module._edit_plan(
+        project,
+        SLUG,
+        [
+            {
+                "op": "set",
+                "path": "section_declarations",
+                "value": {
+                    "s1": {"status": "descoped", "reason": DESCOPED_REASON},
+                    "s2": "done",
+                },
+            }
+        ],
+        0,
+    )
+
+    assert result["ok"] is True, result
+    data, _version = _store_module.read_plan(project, SLUG)
+    assert data["section_declarations"] == {"s1": "descoped", "s2": "done"}
+    records = {row["id"]: row for row in data["sections"]}
+    assert records["s1"]["descope_reason"] == DESCOPED_REASON, (
+        "the reasoned entry reaches the record on a plan that has one"
+    )
+    assert records["s2"]["status"] == "done"
+    assert "s1" not in (data.get("descope_reasons") or {})
 
 
 def test_a_plan_with_records_keeps_the_reason_on_the_record(setup) -> None:
