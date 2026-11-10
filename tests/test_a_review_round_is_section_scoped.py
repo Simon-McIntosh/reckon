@@ -238,8 +238,39 @@ def test_a_first_review_composed_with_a_section_widens_to_every_unit(
     assert PROSE["s5"] in brief
 
 
-def test_the_stored_scope_covers_the_section_it_traced_and_no_other(sectioned_plan):
+def test_a_widened_first_review_records_the_units_it_actually_traced(sectioned_plan):
+    """The record keeps what the round traced, not what it was asked about.
+
+    A first round asked for §3 widens to every unit, and the round that reads
+    them all must cover them all: a record narrowed to the asking would leave
+    the sections the brief widened past uncovered, so the one full round a plan
+    ever gets would cover a sixth of it.
+    """
     _store(sectioned_plan, sections=["s3"])
+
+    record = plan_review.read_plan_review("sample", "fixture", plan=sectioned_plan)
+    assert record is not None
+    assert set(record[plan_review.TRACED_UNITS_KEY]) == set(SECTIONS) | {
+        plan_review.DOCUMENT_UNIT
+    }
+
+    _records, uncovered, _changes = plan_review.review_coverage(
+        "sample", "fixture", plan=sectioned_plan
+    )
+    assert sorted(uncovered) == []
+
+
+def test_the_stored_scope_covers_the_section_it_traced_and_no_other(sectioned_plan):
+    # A first round reads the whole plan, so a scope that narrows is a later
+    # round; and §5 is rewritten after that round, so only a round that traces
+    # it can cover it.
+    _store(sectioned_plan, run_id="review-first")
+    sectioned_plan.write_text(
+        sectioned_plan.read_text().replace(
+            PROSE["s5"], "Name the owner the section reuses, not the one it cites."
+        )
+    )
+    _store(sectioned_plan, run_id="review-second", sections=["s3"])
     record = plan_review.read_plan_review("sample", "fixture", plan=sectioned_plan)
     assert record is not None
     assert record[plan_review.TRACED_UNITS_KEY] == ["s3"]

@@ -1754,6 +1754,16 @@ _REVIEW_SECTIONS: ContextVar[tuple[str, ...] | None] = ContextVar(
     "plan_review_sections", default=None
 )
 
+# The units the composed review actually traces, which is the asked-for scope
+# only where there is a history to narrow against. A first review widens to
+# every unit because no section can be known settled, and the record must keep
+# what the round traced rather than what it was asked about: a record narrowed
+# to the asking would report the sections the brief widened past as uncovered,
+# and the round that read them would cover nothing it read.
+_COMPOSED_UNITS: ContextVar[tuple[str, ...] | None] = ContextVar(
+    "plan_review_composed_units", default=None
+)
+
 _SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
 
 
@@ -1791,9 +1801,11 @@ def reviewing_sections(sections: Iterable[Any] | None) -> Iterator[None]:
     parameter through every composer between the command and the writer.
     """
     token = _REVIEW_SECTIONS.set(_normalise_sections(sections) or None)
+    composed = _COMPOSED_UNITS.set(None)
     try:
         yield
     finally:
+        _COMPOSED_UNITS.reset(composed)
         _REVIEW_SECTIONS.reset(token)
 
 
@@ -2248,6 +2260,7 @@ def review_scope(
         units = set(named)
         if not prior:
             units = _plan_section_units(plan)
+            _COMPOSED_UNITS.set(tuple(sorted(units | {DOCUMENT_UNIT})))
             lines = [
                 (
                     f"Scope: this plan has no stored {rubric} review yet, so this "
@@ -4725,9 +4738,11 @@ def write_review_sidecar(
     ``name`` is the sidecar's file name, so a code delivery's sidecar is written
     by this one writer under the name its own report kind is read by.
 
-    ``traced_units`` records the section scope the review was composed under.
-    It defaults to the scope the composing block declared, so the record keeps
-    the same narrowing the brief carried; a whole-plan review carries no key.
+    ``traced_units`` records the units the review traced against the code. It
+    defaults to what the completed :func:`review_scope` decided for this
+    composition, falling back to the scope the composing block declared, so a
+    first review that widened past the sections asked for records every unit it
+    widened to; a whole-plan review carries no key.
     """
     directory = Path(directory)
     if payload is None:
@@ -4744,7 +4759,7 @@ def write_review_sidecar(
         traced = (
             _normalise_sections(traced_units)
             if traced_units is not None
-            else (_REVIEW_SECTIONS.get() or ())
+            else (_COMPOSED_UNITS.get() or _REVIEW_SECTIONS.get() or ())
         )
         if traced:
             payload[TRACED_UNITS_KEY] = list(traced)
