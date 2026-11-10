@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "commits_read": [
+    "9c367442631956c3d1ca963c3db0363b340b9a91"
+  ],
+  "completed_at": "2026-11-10T05:38:50.938Z",
+  "dispatched_at": "2026-11-10T05:31:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 2306,
+      "severity": "non-blocking",
+      "text": "reckon/crew/dispatch_launch.py:2306 adds _read_record, which duplicates the existing same-file _read_reservation at reckon/crew/dispatch_launch.py:2414 verbatim apart from joining the directory and name; the addition duplicates that owner rather than extending or wrapping it, and the whole helper could be one call of it."
+    },
+    {
+      "file": "manifest.md",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The manifest's artifacts line reports a 'four-file gate 66 passed, 1 failed', but the four files it names total 58 cases at the head from the stored logs (49 in head-arm.log plus 9 in the two other files, which this review re-ran: 9 passed, EXIT=0), and no log for the gate that produced 66 is recorded in test_logs; the count cannot be reconciled from the recorded evidence."
+    },
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": 3209,
+      "severity": "non-blocking",
+      "text": "reckon/crew/dispatch_launch.py:3209, :3251 and :3261 discard the bool record_reservation_supervisor now returns, so a failed supervisor rewrite is reported only on the dispatch door and stays silent in supervised_launch; the supervisor here is short-lived, so no long-lived hold results, but the new answer is dropped at three of its four call sites."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every launch door reserve exactly the attempt it launches from one on-disk key; reckon/crew/dispatch_launch.py:2315 launch_reservation_key reads receipts, else the marker, else the pointer, and :3163 supervised_launch reserves unconditionally with the record-derived attempt floor removed.\nVERDICT done_when: the done_when asks for behaviour cases failing at the dispatch base and passing at head plus two named mutation controls; base-arm.log records 8 failed / 41 passed EXIT=1, head-arm.log records 49 passed EXIT=0, and both mutation logs record a named FAILED id with EXIT=1.\nVERDICT write_paths: the manifest declares six paths (two production modules, two test files, the evidence fragment and the figures directory); every path in the diff is inside them and the figures directory is simply unused.\nVERDICT manifest: read; it states the base arm, head arm, the four-file gate and both mutations, and records 9c36744263 as its single commit.\nVERDICT diff: read commit by commit against 0f3cd96862; one commit, five files, 500 insertions and 56 deletions, all inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:1691, reckon/crew/dispatch.py:2873, reckon/crew/dispatch.py:2888, reckon/crew/dispatch.py:3570, reckon/crew/dispatch_launch.py:2545, reckon/crew/dispatch_launch.py:2614, reckon/crew/dispatch_launch.py:3169, reckon/crew/dispatch_launch.py:3606\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2315 makes the key read only on-disk facts and :3163-3181 reserves in every door, so the launched attempt is the reserved one.\nSCORE evidence: 17\nJUSTIFICATION evidence: the base, head and both mutation logs are complete with EXIT lines, but the manifest's 66-test four-file figure is unreconcilable with the recorded logs and was verified only in part by this review.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every hunk in git diff 0f3cd96862..9c36744263 lies in reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, tests/test_a_concurrent_launch_is_refused.py, tests/test_a_worker_on_another_host_refuses_a_relaunch.py or the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the strict read at reckon/crew/dispatch_launch.py:2455 reddens tests/test_a_worker_on_another_host_refuses_a_relaunch.py:342, and removing the marker write reddens tests/test_a_concurrent_launch_is_refused.py:1080, both shown by the recorded mutation logs.\nSCORE fit: 18\nJUSTIFICATION fit: the added names are mechanism-named and the function-local recovery_liveness imports at reckon/crew/dispatch_launch.py:2455 match the module's existing idiom at :478 and :2206.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch_launch.py:2306 duplicates the existing _read_reservation at reckon/crew/dispatch_launch.py:2414, while the reservation key otherwise extends the owners attempt_receipt_numbers, read_pointer and recovery_liveness._run_exit_record.",
+  "review_run_id": "r-20261110T052740472512-review-of-the-launch-reservation-leaves-no-stray-state-9c3674426319",
+  "reviewed_base_sha": "0f3cd968626bbb0eedee2d309fc396dce6d0c7b2",
+  "reviewed_head_sha": "9c367442631956c3d1ca963c3db0363b340b9a91",
+  "reviewed_run_id": "r-20261110T031945975140-the-launch-reservation-leaves-no-stray-state",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T05:46:07.229095+00:00",
+  "total": 96
+}
