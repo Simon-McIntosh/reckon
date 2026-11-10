@@ -152,6 +152,11 @@ def _store_review(home: Path) -> None:
     )
 
 
+def _promote(home: Path) -> None:
+    """Promote the delivered run: its live pointer goes as the ledger row lands."""
+    crew.pointer_path(RUN).unlink(missing_ok=True)
+
+
 def _station(tmp_path: Path) -> station_store.StationStore:
     store = station_store.StationStore(tmp_path / "runtime-store")
     store.heartbeat()
@@ -326,10 +331,10 @@ def test_the_fallback_listing_of_an_owed_review_holds_the_pane(
             arming.end()
 
 
-def test_the_station_arm_settles_once_the_review_is_stored(
+def test_the_station_arm_settles_once_the_review_is_promoted(
     home: Path, tmp_path: Path
 ) -> None:
-    """The hold ends when the review is stored: the run owes nothing more."""
+    """The hold ends when the reviewed run is promoted: nothing is owed then."""
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         _write_pointer(home, RUN, phase="working")
@@ -351,17 +356,24 @@ def test_the_station_arm_settles_once_the_review_is_stored(
             _store_review(home)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
+            assert not arming.settles(), (
+                "the pane settled over the promotion the stored review owes"
+            )
+
+            _promote(home)
+            _publish(store, [])
+            _advance_past_grace(arming)
             _wait_for_settle(
-                arming, description="the pane to settle once the review was stored"
+                arming, description="the pane to settle once the review was promoted"
             )
         finally:
             arming.end()
 
 
-def test_the_fallback_arm_settles_once_the_review_is_stored(
+def test_the_fallback_arm_settles_once_the_review_is_promoted(
     home: Path, tmp_path: Path
 ) -> None:
-    """Both settle paths end the hold when the review is stored."""
+    """Both settle paths end the hold once the reviewed run is promoted."""
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
         _write_pointer(home, RUN, phase="working")
@@ -379,8 +391,47 @@ def test_the_fallback_arm_settles_once_the_review_is_stored(
 
             _store_review(home)
             _advance_past_grace(arming)
+            assert not arming.settles(), (
+                "the pane settled over the promotion the stored review owes"
+            )
+
+            _promote(home)
+            _advance_past_grace(arming)
             _wait_for_settle(
-                arming, description="the pane to settle once the review was stored"
+                arming, description="the pane to settle once the review was promoted"
+            )
+        finally:
+            arming.end()
+
+
+def test_a_stored_review_that_is_not_promoted_keeps_the_pane(
+    home: Path, tmp_path: Path
+) -> None:
+    """A promotable run keeps the pane: the coordinator still owes a promotion.
+
+    The review being stored is what ends the review duty, not what ends the
+    session's work. Until the run is promoted the coordinator has an action
+    outstanding on it, and the follower is the only reader that shows it.
+    """
+    with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
+        assert acquired
+        _write_pointer(home, RUN, phase="working")
+        store = _station(tmp_path)
+        clock = _Clock()
+        subscriber = station_subscriber.StationSubscriber(
+            store, PROJECT, session=SESSION, clock=clock
+        )
+        _publish(store, [_read_pointer(RUN)])
+        arming = _Arming(clock=clock, subscriber=subscriber).start()
+        try:
+            _let_a_sample_land(arming)
+            _deliver(home, RUN)
+            _store_review(home)
+            _publish(store, [_read_pointer(RUN)])
+            _advance_past_grace(arming)
+            time.sleep(0.2)
+            assert not arming.settles(), (
+                "the pane settled over a promotion the coordinator still owes"
             )
         finally:
             arming.end()
