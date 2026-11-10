@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T02:08:53.851Z",
+  "dispatched_at": "2026-11-10T01:59:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:176",
+      "id": "done_when-1",
+      "reason": "as written the node's negative control is either unfalsifiable (if the worker follows the \"What changes\" sentence) or contradicted by its own done-when, and the author must delete that sentence and keep only the marker-write removal the done-when already names, which does redden the case.",
+      "text": "\u00a716 states in its defect list (4) that the fresh-run case \"would still pass with the `run_holds_an_attempt_record` guard removed, because its launcher releases any reservation the launch took\", and 30 lines later, in the same section's \"What changes\", states that \"the fresh-run case fails when the attempt-record guard is removed\"; the counterexample it gives for the first claim is correct (removing that guard leaves the reservation block unconditional, so the case still reserves and still passes), so the second claim instructs a worker to log a control that cannot go red \u2014 and the contract requires a declared mutation to actually redden the case it names",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-run-has-one-live-worker.html:279",
+      "id": "wiring-1",
+      "reason": "the next coordinator sweeps open followups and would queue \u00a717 a second time against code that no longer contains the machinery it would delete, which is both wasted work and a red gate on a node whose subject is already gone; resolving f-arolw-017 with the landing commit and outcome is a one-write plan change.",
+      "text": "\u00a717 is declared `done` in `plan-section-declarations` (line 25) and its work has landed (`4b0576b9aa refactor(crew): retire the attempt-claim machinery`; \u00a717's own measure passes: `git grep` over reckon/scripts/skills for `claim_next_attempt|attempt_claim_path|_claim_may_be_reclaimed|\u2026` returns nothing, and over tests only the permitted `ast.parse` fixtures at tests/test_staged_write_inventory.py:160-200), yet f-arolw-017 is still `data-status=\"open\"` with no `resolved_at` or outcome and its body still reads \"Build \u00a717 \u2026 the two run in parallel\" \u2014 so the plan's followup list advertises a delivered section as pending work",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ee49a3545a6682932fd7194cb3c399daf6e3f26d",
+  "plan_fingerprint": "7b45d9b48b55c6025e3cfc09aa6daf7d768f1932cd95df95dff07a9e16825b86",
+  "plan_slug": "a-run-has-one-live-worker",
+  "plan_version": 159,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T015652250348-plan-review-of-a-run-has-one-live-worker",
+  "reviewed_blob_sha": "0cdfea4d8233aaa79bdd0573491c447ade10b211",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited plans, evidence archive, \u00a714 fragment and every named test file exist; the symbols \u00a716 cites resolve at or within a few lines of the numbers given (e.g. `_supervisor_write` dispatch_launch.py:1952 refuses an absent run directory, the `contextlib.suppress(OSError)` rewrite at dispatch_launch.py:2514, the dispatch reservation block at dispatch.py:2863, `test_a_fresh_run_id_takes_no_reservation` at tests/test_a_concurrent_launch_is_refused.py:776); the extensionless plan-level dependency resolves to docs/plans/a-crew-process-ends-with-its-owner.html, which is `shipped`.",
+    "done_when": "a finding \u2014 \u00a716's done-when declares two different mutations for one case, and its own defect analysis says the second cannot redden it.",
+    "evidence_paths": "pass \u2014 \u00a75\u2013\u00a717 require gate logs under the run directory (`~/.config/reckon/crew/runs/<run>/`) with revision, literal command and a bare `EXIT=`; no section sends evidence to a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers reach the symbols \u00a716/\u00a717 propose; the rename to `test_a_fresh_run_ids_reservation_ends_with_its_launch` names the mechanism.",
+    "reasoning": "pass \u2014 each section's stated root cause matches the evidence it cites and the mechanism it describes names a production caller; \u00a716's three defects each reproduce in the code read here (the key ignores the launch marker, `_supervisor_write` drops a write into an absent run directory, and `held_launch_reservation` frees an ended attempt only when the caller passes `skip_ended=True`), and the exit-receipt freeing it relies on does exist in production because `_write_attempt_artifact` writes `attempt-N-exit.json` beside the canonical `exit.json` (dispatch_launch.py:2673-2679).",
+    "single_goal": "pass \u2014 \u00a716 carries the three reservation fixes plus the paired-shadow/marker repair, all one deliverable (\"the reservation leaves no stray state\"), and \u00a717's scope (deleting the retired attempt-claim machinery) is disjoint from it.",
+    "wiring": "a finding \u2014 section relationships are coherent, but \u00a717 is declared `done` (plan.html:25, `s17: done`) while its driving followup f-arolw-017 is still `data-status=\"open\"` with no outcome (plan.html:279), pointing at work that has already landed."
+  },
+  "section_digests": {
+    "_document": "80dd6f0c86f7d8ce96d4b0d52647a0910b34fb714f16722d7027495ab5c14f63",
+    "s1": "db92d3a2d223ac6e6cf721b1e5e7990ca9812048f438ce684697638fe0fc3dc3",
+    "s10": "6dc41ff672ef42b279e0d66e033f19c8c35deb5c39f0efeb637f11ccedd3f7d4",
+    "s11": "beb7d054249b6e83a0d555fe9051398e9d5fb537152e967098b323eb4c3c0122",
+    "s12": "84e2cc4249fe87aae0d3fc8134f2e4808ab95216a81db6b06c7e82eec1df1031",
+    "s13": "4b4ae0dae7a2b681597157a812335ef805227dd61a5e236a20596d030bcdf85e",
+    "s14": "d445ba09decb7b8e049e9f4e9fbb10f191841aea50ca2ab676c523533234b53f",
+    "s15": "f7c67cd73927ac8e48cc86e05b1e3ac67ed46ede0568bc116df126e99df8b73e",
+    "s16": "331cc1d1cf8459c9fb7f92dfddba54349dfb4c9fd4e6eeccb7f3a0fea7e637f8",
+    "s17": "ad946d6749e55112f3d793e2dd0852a64f6d233caf027dd84beb08cb71ef1f41",
+    "s2": "c9e4ff48584d8ce0112c025c8dad40e4cb43826d16eb632e296e12b13a78a3d5",
+    "s3": "c9d03e871e45d25a41d409df2c3df99994c14016940ac541b9063673bc292c53",
+    "s4": "3a58d93f403c56db20efa76febfb2e44549d3805ff296517c27f63bc01055fb8",
+    "s5": "9f3f123d3bb5193920505bd2e51c56d6335bc92fa521f6356c05f19f5741b8c6",
+    "s6": "4d520f960734720984cbac108f4e4a71460566a00bbe3b1d835ede9a8efa96b2",
+    "s7": "11ec5d3ed413c647722d705dc1a7626f68cbafbd4fffca13b44ea6005102ed7b",
+    "s8": "1615d40635864933b3396d3d4ae7b0f94361ec3a105caa540ba761ad95bd24fe",
+    "s9": "1a571813cf821821012487f1bc0e7a9bb360370e7b12b6440683c365dba25774"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T02:17:09.263391+00:00",
+  "total": null
+}
