@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="plan">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-title" content="Workers Spend Fewer Tokens Per Landed Node">
+  <meta name="plan-summary" content="Give crew workers a line-anchored edit tool, pilot oh-my-pi as a local-lane worker program, and measure both against the run store.">
+  <meta name="plan-status" content="active">
+  <meta name="plan-roi" content="high">
+  <meta name="plan-effort-hours" content="9.0">
+  <meta name="plan-capability-version" content="1.0">
+  <meta name="plan-capability-class" content="general">
+  <meta name="plan-capability-reasoning" content="deep">
+  <meta name="plan-capability-verification" content="strict">
+  <meta name="plan-capability-risk" content="moderate">
+  <meta name="plan-owner" content="Simon McIntosh">
+  <meta name="plan-tags" content="crew,reckon-tooling">
+  <meta name="plan-informs" content="a-live-worker-can-be-reached">
+  <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;s3&quot;],&quot;s5&quot;:[&quot;s3&quot;],&quot;s7&quot;:[&quot;s6&quot;],&quot;s8&quot;:[&quot;s4&quot;,&quot;s5&quot;,&quot;s7&quot;]}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — Why: where a worker's tokens go, measured</h2>
+<section data-reckon="section" data-id="s1" data-effort-hours="0.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>A comparison of the crew harness with the oh-my-pi agent program (<code>omp</code>, a fork of Mario Zechner's pi) asked whether its reported token efficiency is worth adopting. The headline figures it publishes — 61% fewer output tokens on Grok 4 Fast, about half on Opus in a third-party measurement — come from its line-anchored edit format, which removes the retry loop a model enters when its retyped <code>old_string</code> does not match the file. Those are cuts in <em>output</em> tokens. The run store says our spend is almost all <em>input</em>.</p>
+    <p>Measured on 10 November 2026 from a copy of <code>~/.config/reckon/crew/run_store.db</code>, every run completed since 10 October, reading <code>budget.tokens.input_tokens_cumulative</code> and <code>output_tokens_cumulative</code> from <code>run_details</code>:</p>
+    <table>
+      <thead><tr><th>Lane / role</th><th>Runs</th><th>Median input per run</th><th>Median output per run</th><th>Input : output</th></tr></thead>
+      <tbody>
+        <tr><td>local DeepSeek lane (<code>clive</code>), review</td><td>6,234</td><td>3.8M</td><td>28k</td><td>142 : 1</td></tr>
+        <tr><td>local DeepSeek lane, implement</td><td>1,930</td><td>7.7M</td><td>35k</td><td>227 : 1</td></tr>
+        <tr><td>codex, implement</td><td>613</td><td>24.9M</td><td>66k</td><td>443 : 1</td></tr>
+        <tr><td>codex, review</td><td>587</td><td>3.4M</td><td>16k</td><td>206 : 1</td></tr>
+        <tr><td>all lanes</td><td>about 10,000</td><td colspan="2">73.6B input, 347M output in total</td><td>output about 0.5%</td></tr>
+      </tbody>
+    </table>
+    <p>So halving output tokens moves total spend by about a quarter of one percent. What a better edit tool can still buy is fewer <em>turns</em>: every failed edit costs a re-read and a retry at a context of 130 to 190 thousand tokens, and on the local lane re-prefilling evicted prefixes is what limits throughput (<a href="/reckon/research/messages-to-workers-never-arrive.html">the cache-residency measurement</a> recorded 18,863 of 22,557 prefill tokens per second spent recomputing prefixes the engine had already built).</p>
+    <p>An edit census over 58 randomly sampled local-lane implement runs since 25 October (Claude Code driving DeepSeek V4.1 Flash) found <strong>168 failed edits in 1,495 edit calls, 11.2%</strong>, about three per run, against about 120 tool calls per run. The commonest refusals were <code>String to replace not found in file</code> (50), <code>InputValidationError</code> on Edit (32), <code>File does not exist</code> (34) and a no-op <code>old_string</code> equal to <code>new_string</code> (25). The same census over 60 codex implement runs counted 594 <code>file_change</code> items and zero failures, which is not believable as a measurement: codex reports a failed patch somewhere that census did not read, so the codex edit failure rate is <strong>unmeasured</strong>, not zero.</p>
+    <p>The expected size of the edit-tool effect on the local lane is therefore a few percent of input tokens per run, not half. That is still worth having on the highest-volume lane, but it has to be measured, and the measurement is what decides adoption.</p>
+
+    <h2 id="s2">§2 — Prototypes: what was run before this plan was written</h2>
+<section data-reckon="section" data-id="s2" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-status="done" data-links=""></section>
+    <p>Each prototype ran in the coordinator's scratch directory against throwaway files, never in a checkout.</p>
+    <table>
+      <thead><tr><th>Question</th><th>Run</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Does a line-anchored edit tool served over MCP work in Claude Code?</td><td>A 120-line FastMCP server exposing <code>read_anchored</code> (lines rendered <code>N:HHH|text</code>, HHH three hex characters of the line's SHA-1) and <code>edit_anchored</code> (replace, insert before or after, addressed by anchors; every anchor verified before anything is written; a stale anchor refuses the whole call and returns fresh anchors for the region). Claude Code headless, <code>--disallowedTools Edit MultiEdit Write</code>, a three-change edit task on a small Python module.</td><td>Correct result, verified by importing the module: one read, two edits, one refusal recovered without a re-read.</td></tr>
+        <tr><td>Does the same tool work in codex?</td><td>Codex 0.167 headless, the server passed as <code>-c mcp_servers.anchored.command=…</code>, the same task.</td><td>First attempt refused every call: <code>MCP tool call requires approval, but approval policy is never</code>. With <code>mcp_servers.anchored.default_tools_approval_mode="approve"</code> (accepted values <code>auto</code>, <code>prompt</code>, <code>writes</code>, <code>approve</code>): correct result, one read, two edits. One call failed because the model passed a bare hash as an anchor with no line number and the prototype raised on it.</td></tr>
+        <tr><td>Is oh-my-pi installable here?</td><td><code>npm view</code>.</td><td>Yes in principle: <code>@oh-my-pi/pi-coding-agent</code> 18.18.6 (published 9 November) needs bun ≥ 1.4.4, which npm carries. It has published 708 versions since 2 January 2026, about two a day.</td></tr>
+      </tbody>
+    </table>
+    <p>Two design consequences follow, and they are written into §3: a bare hash that is unique in the file is a legitimate anchor and must be accepted, and every malformed anchor is answered with a refusal that states the format rather than an exception. The steering prototypes run in the same pass belong to <a href="/reckon/plans/a-live-worker-can-be-reached.html">a-live-worker-can-be-reached</a> and are recorded there.</p>
+
+    <h2 id="s3">§3 — A line-anchored edit tool ships with reckon</h2>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A new module <code>reckon/anchored_edit.py</code>, an MCP stdio server built on the <code>mcp</code> package reckon already depends on, plus a console script <code>reckon-anchored-edit</code> declared in <code>pyproject.toml</code> so a worker's harness can start it by name. Tests in <code>tests/test_anchored_edit.py</code>. The prototype at §2 is the starting shape; the module is product code and owes what the prototype skipped:</p>
+    <ul>
+      <li><strong>Anchors.</strong> <code>N:HHH</code>, or a bare <code>HHH</code> when exactly one line in the file carries that hash. An ambiguous bare hash, a malformed anchor, or a line number out of range is a refusal naming the accepted format, never an exception.</li>
+      <li><strong>Atomicity.</strong> Every anchor in a call is verified before any byte is written; overlapping edits are refused; the file is replaced atomically (written beside the target and renamed), preserving its mode, its line-ending convention and whether it ends in a newline.</li>
+      <li><strong>Confinement.</strong> An MCP server runs outside codex's command sandbox, so the server must enforce its own write roots: it refuses any path that resolves (after symlinks) outside the roots it was started with, given as repeated <code>--root</code> arguments. With no root it refuses every write. This is the property that makes it safe to offer a fenced worker.</li>
+      <li><strong>Refusals that save a turn.</strong> A stale anchor returns the current anchored lines around each stale line, so the model can retry without re-reading the file; a successful edit returns the changed region with fresh anchors.</li>
+      <li><strong>Reads.</strong> <code>read_anchored(path, offset, limit)</code> with a default limit that keeps a call under about 400 lines; files larger than the limit say how many lines remain.</li>
+    </ul>
+    <p><strong>Done when</strong> <code>tests/test_anchored_edit.py</code> passes and covers: a replace, both inserts and a delete by anchor; a unique bare hash accepted and an ambiguous one refused; a stale anchor refusing the whole call with the file byte-identical afterwards; overlapping edits refused; CRLF and missing-final-newline files round-tripping unchanged outside the edited lines; a path outside every <code>--root</code>, including through a symlink, refused with the file untouched; and one test that starts the console script over stdio and completes a read and an edit through the MCP protocol. <strong>Negative control:</strong> with the confinement check removed, the symlink-escape test must fail; with hash verification removed, the stale-anchor test must fail. <code>uv run ruff check</code> and <code>uv run ruff format --check</code> on the staged paths add no findings.</p>
+
+    <h2 id="s4">§4 — Claude-dialect workers can be given the anchored tool</h2>
+<section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> A per-backend flight key, <code>anchored_edit</code> (default false), read where a run home is seeded (<code>reckon/_worker_fence.py</code>, beside <code>_seed_worker_mcp_settings</code>) and where the Claude argv is composed (<code>_ClaudeDialect</code> in <code>reckon/_backends.py</code>; <code>_CliveDialect</code> inherits it). When true for a run's backend: the run home registers the <code>reckon-anchored-edit</code> server with <code>--root</code> set to the run's write roots (the same roots <code>fenced_write_roots</code> computes), its two tools are allowed, and the built-in <code>Edit</code> and <code>MultiEdit</code> tools are disallowed so the run is a clean treatment arm. <code>Write</code> stays, because creating a file has no anchor to address. The run record carries <code>anchored_edit: true</code> so §8 can split the population by arm without inference.</p>
+    <p><strong>Done when</strong> tests show: with the key false, the seeded settings and argv are byte-identical to the base revision's; with it true, the seeded home registers the server with the run's write roots, the argv disallows <code>Edit</code> and <code>MultiEdit</code>, and the run record carries the flag. <strong>Negative control:</strong> a test asserting the false-key argv is unchanged must fail if the disallow list is added unconditionally. The flight schema and its generated JSON change together.</p>
+
+    <h2 id="s5">§5 — Codex workers can be given the anchored tool</h2>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> The same <code>anchored_edit</code> key honoured by <code>_CodexDialect</code>: the run's own codex home (<code>CODEX_HOME</code>, seeded per run by the fence) gets an <code>mcp_servers.anchored</code> entry starting <code>reckon-anchored-edit</code> with the run's write roots and <code>default_tools_approval_mode = "approve"</code>, which §2 found is the only setting under which a headless codex will call the tool at all. Codex cannot be told to stop using its own <code>apply_patch</code>, so this arm offers the tool rather than forcing it; the brief composed for a run with the key on says to prefer it. The run record carries the flag, and the codex stream parser counts edits made through the tool separately from <code>file_change</code> items, so §8 can report what share of edits each arm actually routed through it.</p>
+    <p><strong>Done when</strong> tests show the seeded codex config with and without the key (unchanged without it), the stream parser separating anchored-tool calls from <code>file_change</code> items on a recorded stream fixture, and the flag on the run record. <strong>Negative control:</strong> the parser test must fail if anchored-tool calls are counted as <code>file_change</code>. Never write the user's own <code>~/.codex/config.toml</code>; the per-run home is the only target.</p>
+
+    <h2 id="s6">§6 — Find the headless contract oh-my-pi offers a worker</h2>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An investigation, not an integration. The coordinator installs a pinned oh-my-pi into an isolated prefix before dispatch (version 18.13.2, published 27 October, the newest release at least two weeks old on the day this was written, with the bun it requires); the node reads that install and answers, each with a command and its output recorded:</p>
+    <ul>
+      <li>Which non-interactive mode emits a machine-readable event stream (<code>omp -p</code> with a JSON output mode, or <code>omp --mode rpc</code>), and what one tool call, one tool result, one final message and a token-usage record look like in it.</li>
+      <li>How a run is resumed by id, and whether a resumed run keeps its transcript.</li>
+      <li>How to point it at the local lane's OpenAI-compatible endpoint through <code>models.yml</code>, and one trivial completed prompt against that endpoint.</li>
+      <li>How to turn off, per run, its own subagent fan-out (<code>task</code>), browser, desktop-control and web tools, and its loading of project MCP configuration — a worker that fans out inside itself bypasses the run ledger, so these are requirements rather than preferences.</li>
+      <li>Which home directory it writes (<code>~/.omp</code> by default) and whether an environment variable relocates it, so the fence can give each run its own.</li>
+    </ul>
+    <p><strong>Done when</strong> a note at <code>~/.config/reckon/crew/reports/reckon/omp-headless-contract.md</code> answers every item above with the command and output that settles it, marks any item it could not settle as unsettled with the reason, and includes a recorded event-stream sample of at least one tool call as a test fixture candidate. The node writes no product code.</p>
+
+    <h2 id="s7">§7 — oh-my-pi runs as a crew worker backend on the local lane</h2>
+<section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> An <code>omp</code> dialect registered in <code>_DIALECTS</code> (<code>reckon/_backends.py</code>), built on what §6 settled: argv composition for the headless mode, a stream parser that produces the same run-detail fields the Claude and codex parsers produce (token usage, tool calls, failures, final message), resume, a per-run home under the fence, the fan-out and browser tools disabled, project MCP off, and the anchored edit tool not offered — omp's own anchored edit is the thing being piloted. A host-layer flight backend named <code>omp-local</code> pointing at the same endpoint the <code>clive</code> backend uses, with placement copied from <code>clive</code>.</p>
+    <p><strong>Done when</strong> parser tests pass on §6's recorded fixture; argv tests show each disabled tool; and one real read-only investigate node dispatched with <code>--set backend=omp-local</code> completes, writes its manifest, and its run record carries non-null input and output token totals. <strong>Positive control for the parser:</strong> the same token-summing code reports non-zero totals for a known-healthy recorded stream before it is trusted on a new one. A stream format this parser does not recognise is a refusal, never a run read as empty.</p>
+
+    <h2 id="s8">§8 — Measure each arm against the run store and decide</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+    <p><strong>Deliverable.</strong> Run the arms on comparable work and report. The arms are: local lane baseline (Claude Code built-in edits), local lane with the anchored tool, local lane under omp, codex baseline, codex with the anchored tool offered. Comparable means the same roles and node classes over the same window; the arms run concurrently so the lane's load is shared. At least 30 implement runs per local arm and 15 per codex arm before any verdict.</p>
+    <p>The metrics, each read from the run store, never from prose: edit failure rate (and, for the codex anchored arm, the share of edits routed through the tool); tool calls per run; cumulative input tokens per run; peak context; output tokens per run; landing rate and corrective redispatch rate. The verdict for each treatment is <strong>adopt</strong> only when cumulative input per landed node falls by at least 5% against its baseline with no fall in landing rate; otherwise <strong>do not adopt</strong>, stated as a measured result.</p>
+    <p><strong>Done when</strong> an evidence record at <code>docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html</code> carries the per-arm table, the population sizes, the query that produced it, and the verdict per treatment; and the flight default for <code>anchored_edit</code> per backend is set to what the verdict says. <strong>Two-population check:</strong> the record says which direction is the defect for each metric (fewer edit failures and less input are better; a lower landing rate is worse), so a treatment that cuts tokens by failing more nodes reads as a failure.</p>
+
+    <section data-reckon="decisions" id="decisions" class="r-decisions">
+      <h2><span class="sec">§</span> Decisions</h2>
+      <div class="r-dec" data-key="omp-scope" data-choice="pilot-as-worker" data-by="Simon McIntosh" data-when="2026-11-10">
+        <p class="r-dec-q">How far does oh-my-pi go: replace the crew harness, run as one more worker program, or not at all?</p>
+        <p class="r-dec-opts">
+          <button class="r-opt" data-value="pilot-as-worker">Pilot as one worker backend on the local lane</button>
+          <button class="r-opt" data-value="replace">Replace the crew harness</button>
+          <button class="r-opt" data-value="none">Do not adopt</button>
+        </p>
+        <p class="r-dec-rat">The two systems mostly sit at different layers: oh-my-pi is an agent program, the crew harness is the control plane above whichever programs run. Replacing the harness would discard durability across process death, subscription-window pacing, SLURM placement, write fences and landing checks, none of which oh-my-pi provides. Its token claims are cuts in output tokens, which are about 0.5% of our spend, so the pilot is measured on input per landed node. The lead asked for the pilot on 2026-11-10.</p>
+      </div>
+    </section>
+
+    <section data-reckon="followups" id="followups" class="r-followups">
+      <h2><span class="sec">§</span> Followups</h2>
+      <article class="r-fu" data-id="f-wsft-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-10">
+        <h4 class="r-fu-title">Build the anchored edit tool and the omp headless investigation</h4>
+        <div class="r-fu-body"><p>The plan is written and its prototypes are recorded. §3 and §6 have no upstream and can start at once; §4 and §5 wait on §3, §7 on §6, and §8 on all three arms.</p></div>
+        <pre class="r-fu-prompt">/reckon-build workers-spend-fewer-tokens-per-landed-node</pre>
+      </article>
+    </section>
+  </main>
+</body>
+</html>

@@ -21,12 +21,11 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-modified" content="2026-10-02">
-<meta name="plan-version" content="19">
-<meta name="plan-impl" content="0.7">
+<meta name="plan-version" content="20">
+<meta name="plan-modified" content="2026-11-10">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
-<meta name="plan-section-declarations" content="{&quot;s7&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s7&quot;:&quot;descoped&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
 </head>
 <body>
   <main class="plan-doc">
@@ -169,8 +168,16 @@
     audited, per-run surface both sides agree on.</p>
 
     <h2 id="s7">§7 — Land the inbox and clear two ledger rows</h2>
-<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s7" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="low" data-attempts="0" data-status="descoped" data-descope-reason="superseded by s8: the harness hook delivers at the next tool call, so the prompt-contract checkpoint read s4 and s7 depended on is no longer needed; s8 also carries s7&#x27;s ledger-row check" data-links=""></section>
 The document half and the guard are done; the inbox is what remains of the locked scope. Both its halves are blocked on contention rather than on design: the worker read contract needs the prompt-composing module, held by another coordinator, and the coordinator-side writer needs the CLI module, held by this plan's own unreconciled guard run. Two ledger rows are outstanding behind two separate defects in the promotion surface, each reproduced and owned elsewhere with a repair dispatched: a gate check that greps a cited log for a shell diagnostic its own test file writes as fixture data, and a predicate that demands a commit for any changed path without asking whether the path is inside the repository. Neither was worked around; the runs stay unreconciled so the record stays honest.<p><strong>Done when</strong> the worker read contract and the coordinator-side writer land and the two held ledger runs reconcile.</p><p>Moved from followup land-the-inbox-and-clear-two-ledger-rows on a-live-worker-can-be-reached by work-is-a-section-not-a-followup §4; evidence against main at 1135b00d9 (line numbers may have moved since): plan <code>active</code> impl 0.7; the two halves are blocked on files held elsewhere, not on design (body)</p>
+
+    <h2 id="s8">§8 — A message reaches a live worker at its next tool call</h2>
+<section data-reckon="section" data-id="s8" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<p><strong>Why this replaces §7's mechanism.</strong> §4 and §7 deliver through the prompt contract: the worker is told to read its run directory at named checkpoints, so delivery depends on the model remembering to look. A prototype run on 2026-11-10 found a delivery path that does not. Claude Code runs a <code>PostToolUse</code> hook after every tool call, and a hook's <code>hookSpecificOutput.additionalContext</code> is placed in front of the model before its next step. reckon already uses this path for the worker git guard (<code>reckon/hooks/worker_git_guard.py</code>). In the prototype, a headless <code>claude -p</code> session with a hook that read a scratch inbox directory received a message written there before its first tool call returned, and its final answer obeyed it. The transport is still the run directory, so §6's refusal of a second transport stands; what changes is that the harness reads it, not the model.</p><p>The same prototype found the one defect the product must design out: the model issued three tool calls in parallel, three hook processes ran at once, and each delivered the same message. Delivery must claim a message atomically, so exactly one hook delivers it.</p><p><strong>Deliverable.</strong></p><ul><li>A new hook, <code>reckon/hooks/worker_inbox.py</code>, registered under <code>PostToolUse</code> in every Claude-dialect run home the fence seeds. It reads <code>&lt;run dir&gt;/inbox/*.md</code>, claims each message by renaming it (a rename that fails because another hook already claimed it is skipped), emits the claimed messages as <code>additionalContext</code>, and appends a receipt to <code>&lt;run dir&gt;/inbox/receipts.jsonl</code> naming the message, the delivery time and the tool call it followed. A hook that finds no run directory, or an empty inbox, exits silently in well under the hook timeout, because it runs after every tool call of every worker.</li><li>A coordinator verb, <code>reckon crew tell --run &lt;id&gt; &lt;message&gt;</code>, that writes one message file atomically into a live run's inbox and reports <code>queued_for_next_tool_call</code>, never delivered: delivery is proved only by the receipt. For a run whose process has ended it refuses and names <code>crew resume --advice</code>, the channel that reaches a stopped worker.</li><li>The worker-message guard (<code>reckon/hooks/worker_message_guard.py</code>) names <code>crew tell</code> for a live run in place of the inbox it promised.</li><li>The worker's manifest contract records messages received: a run that received a message quotes it, a run that received none says so, and the coordinator's view of a run shows messages written but not yet delivered.</li><li>Before this section is done, confirm whether the two ledger rows §7 named are still unreconciled, and reconcile them through the promotion surface if so, recording which.</li></ul><p><strong>Done when</strong> tests cover: a message written before a tool call is delivered once as <code>additionalContext</code> and leaves a receipt; three concurrent hook invocations deliver one message exactly once between them; an empty inbox and a missing run directory produce no output; <code>crew tell</code> on a live run writes the file and on an ended run refuses naming <code>crew resume</code>; the new verb passes the CLI help-contract tests. <strong>Negative control:</strong> with the claiming rename replaced by a plain read, the concurrency test must fail. <strong>Live check:</strong> one real read-only investigate node on the local lane, told a codeword through <code>crew tell</code> after it starts, quotes the codeword in its manifest, and its inbox holds the matching receipt.</p>
+
+    <h2 id="s9">§9 — Codex workers receive the same delivery</h2>
+<section data-reckon="section" data-id="s9" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
+<p><strong>What the prototype found.</strong> Codex 0.167 has hooks enabled by default and uses the same schema as Claude Code (<code>hooks.json</code>, <code>PostToolUse</code>, <code>hookSpecificOutput.additionalContext</code>), so §8's hook script works for codex unchanged in principle. But codex runs a hook only after its definition has been trusted, and trust is recorded per hook in config as <code>hooks.state.&lt;key&gt;.trusted_hash</code>. An untrusted hook in a headless run is skipped without a word: two prototype runs with the hook declared in a project <code>.codex/hooks.json</code> and inline through <code>-c hooks.PostToolUse=…</code> both completed normally and delivered nothing. Codex also offers <code>--dangerously-bypass-hook-trust</code>.</p><p><strong><code>codex queue</code> is a false clearance.</strong> <code>codex queue --thread &lt;id&gt; --message …</code> against a running <code>codex exec</code> session printed <code>Queued message … for thread …</code> and exited 0, and the worker finished its turn without ever seeing the message. That is the shape §1 describes, in a different program. Nothing in reckon may use it as a channel to a live worker.</p><p><strong>Deliverable.</strong> Subject to the <code>codex-hook-trust</code> decision: the fence seeds §8's hook into each codex run's own <code>CODEX_HOME</code> (<code>&lt;run dir&gt;/codex-home</code>, which the fence already creates per run) together with the trust record codex requires for exactly that hook definition, so codex runs it and the user's own <code>~/.codex/config.toml</code> is never written. Working out the trust key and hash format is part of the node: from the codex source or from <code>codex app-server</code>'s hook-listing and config-write requests, run against a scratch <code>CODEX_HOME</code>.</p><p><strong>Done when</strong> a test seeds a run home and shows the hook and its trust record present, with the user's codex config untouched; and one real codex investigate node told a codeword through <code>crew tell</code> after it starts quotes it in its manifest, with a matching receipt. <strong>Negative control:</strong> the same live check with the trust record omitted delivers nothing and leaves the message unclaimed, which proves the trust record is what made it work.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
@@ -185,6 +192,15 @@ The document half and the guard are done; the inbox is what remains of the locke
       <button class="r-opt" data-value="docs-only">Documents only</button>
       </p>
     <p class="r-dec-rat">The guard closes the false clearance immediately and touches no contended file; the inbox supplies the capability that is actually missing, and without it the guard would refuse a send while leaving the coordinator with nowhere to go. Landing them separately keeps the cheap half from waiting on the expensive one.</p>
+    </div>
+<div class="r-dec" data-key="codex-hook-trust" data-choice="" data-by="" data-when="">
+    <p class="r-dec-q">How should codex workers be allowed to run reckon&#x27;s inbox hook, given codex skips any hook that has not been trusted?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="trust-in-run-home">trust-in-run-home</button>
+      <button class="r-opt" data-value="claude-only">claude-only</button>
+      <button class="r-opt" data-value="bypass-flag">bypass-flag</button>
+      </p>
+    <p class="r-dec-rat"></p>
     </div>
 </section>
 
@@ -228,15 +244,6 @@ The document half and the guard are done; the inbox is what remains of the locke
 </section>
 
   <section data-reckon="comments" id="comments" class="r-comments">
-<div class="r-comment" data-section="s5" data-id="c-run-r-20260915T060843894914-the-recovery-order-names-a-mechanism" data-who="crew-elapsed" data-when="2026-09-15T07:12:19.106Z">
-    <div class="r-comment-body"><p>The silent-worker recovery step names crew resume and records that a mid-turn run has no channel; grep for the unqualified instruction fell from one line to none.</p></div>
-</div>
-<div class="r-comment" data-section="s5" data-id="inventory-found-five-not-two" data-who="Simon McIntosh" data-when="2026-09-15">
-    <div class="r-comment-body">The inventory node found five instruction sites against the two this section named, and the brief is the reason: it required the node to name every tree searched and said that finding only the known two would not count as success unless the search scope was stated. That clause was written to stop a lazy pass and caught incomplete scoping in the section itself instead.</div>
-</div>
-<div class="r-comment" data-section="s5" data-id="c-run-r-20260915T100718761747-the-remaining-instruction-sites-name-a-mechanism" data-who="crew-admission" data-when="2026-09-15T11:16:20.045Z">
-    <div class="r-comment-body"><p>The out-of-scope correction step now names a corrective dispatch under a new node id, and resume for an ended run whose correction stays in scope. Case-sensitive 'Ask the worker' fell 1 to 0 over the reference; the case-insensitive survivor at line 347 is a prohibition against asking a worker to shrink the work, correctly left. The coordinator authority clause at line 106 was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action.</p></div>
-</div>
 <div class="r-comment" data-section="_top" data-id="c-run-r-20260915T060128606337-how-resume-answers-a-live-run" data-who="crew-codex-usage" data-when="2026-09-15T07:42:04.145Z">
     <div class="r-comment-body"><p>Resume refuses a live run: exit 1, no structured error key, stderr 'still has a live process; observe or stop it before resuming'. The refusal names the reason but no alternative command. Confirms the code comment at runs.py:2081-2089 and removes the inferred claim from the research record.</p></div>
 </div>
@@ -260,6 +267,15 @@ The document half and the guard are done; the inbox is what remains of the locke
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260915T093545453615-the-guard-holds-at-the-merged-head" data-who="reckon-ship" data-when="2026-09-15T09:46:44Z">
     <div class="r-comment-body"><p>The worker-message guard holds at the merged head with zero added failures against twenty pre-existing; review 97/100</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260915T060843894914-the-recovery-order-names-a-mechanism" data-who="crew-elapsed" data-when="2026-09-15T07:12:19.106Z">
+    <div class="r-comment-body"><p>The silent-worker recovery step names crew resume and records that a mid-turn run has no channel; grep for the unqualified instruction fell from one line to none.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="inventory-found-five-not-two" data-who="Simon McIntosh" data-when="2026-09-15">
+    <div class="r-comment-body">The inventory node found five instruction sites against the two this section named, and the brief is the reason: it required the node to name every tree searched and said that finding only the known two would not count as success unless the search scope was stated. That clause was written to stop a lazy pass and caught incomplete scoping in the section itself instead.</div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20260915T100718761747-the-remaining-instruction-sites-name-a-mechanism" data-who="crew-admission" data-when="2026-09-15T11:16:20.045Z">
+    <div class="r-comment-body"><p>The out-of-scope correction step now names a corrective dispatch under a new node id, and resume for an ended run whose correction stays in scope. Case-sensitive 'Ask the worker' fell 1 to 0 over the reference; the case-insensitive survivor at line 347 is a prohibition against asking a worker to shrink the work, correctly left. The coordinator authority clause at line 106 was left unchanged with its criterion stated: it sits inside an enumeration of what the coordinator may do, so it grants a capability rather than instructing an action.</p></div>
 </div>
 </section>
 </main>
