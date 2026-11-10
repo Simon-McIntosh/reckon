@@ -22,17 +22,53 @@
   score returned by each rewrite. The in-place control preserves inode and directory identity.
   Both original regression cases fail against the unmodified base; the atomic replacement control
   also fails against the first implementation, which reread all 40 reviews for one replacement.
-  The final focused gate reads <strong>3 passed in 16.18s</strong>.</p>
+  The initial focused gate reads <strong>3 passed in 16.18s</strong>.</p>
   <p>Measurement correction: the early reproduction's 201 enumerations combined two ticks.
   The final negative control measures 101 on one opening tick and fails both assertions requiring
   one enumeration. Logs and source provenance are retained in run
   <code>r-20261110T142718013800-tick-reads-the-review-store-once</code>.</p>
   <p>The matched direct-importer comparison reads <strong>83 passed, 10 warnings in 28.41s</strong>
-  at base and <strong>86 passed, 10 warnings in 81.92s (0:01:21)</strong> at the final code head,
+  at base and <strong>86 passed, 10 warnings in 81.92s (0:01:21)</strong> at the initial code head,
   with zero added failures. Each arm ran alone with four workers and a 60-second per-test timeout.
   The armed suite reads <strong>51 passed in 20.16s</strong> at base and
   <strong>54 passed in 35.68s</strong> at head. Ruff has the same two pre-existing findings at
   base and head, adds none on the new test, and formatting passes on all changed Python files.</p>
   <p>Production main-thread sampling after integration remains the coordinator's check:
   one sample every 2 seconds for 120 seconds against the previously recorded busy-share log.</p>
+  <h4 id="tick-reads-the-review-store-once-review-coverage">Stat and annotation-input coverage</h4>
+  <p>The expanded regression patches <code>Path.stat</code>, <code>os.stat</code>, and every
+  loaded binding of those callables used by the lookup, alongside the scan and review readers.
+  Its positive control stats a known record through both APIs and observes one Path call and two
+  OS calls. The unchanged second tick makes zero calls through either bound stat API and zero
+  calls to <code>read_review</code>. This bounds the extra per-run work: the shared enumeration
+  still obtains record identities through <code>DirEntry.stat</code>.</p>
+  <p>The declared mutation wraps <code>_misfiled_review_candidates</code> to stat every returned
+  candidate on every run. On its unchanged second tick, the test observes 40 extra Path calls
+  and their 40 corresponding OS calls, while enumeration remains one and review reads remain
+  zero. The dedicated stat assertion fails: <strong>1 failed in 21.69s</strong>, recorded in
+  <code>repair-stat-mutation.log</code>. The mutation runs in an isolated pytest process and
+  changes no product file.</p>
+  <p>Annotated review answers are cached across ticks in the classification memo and producer
+  snapshots. The input key now includes the canonical reviewed-run manifest and the gate logs
+  its two suite fields name, resolved with the annotation reader's own path parser. Manifest
+  text is parsed through the existing bounded memo; gate-log identities are revalidated each
+  tick. Rewriting either input changes the next tick's answer from zero added failures to one,
+  names the added failure, and applies the total cap without changing the review record.</p>
+  <p>The corrected annotation control at <code>ee38d8befd</code> reads
+  <strong>1 failed, 1 passed in 22.17s</strong>: manifest refresh already worked, while a gate-log
+  rewrite left the cached annotation stale. The key repair addresses that missing input. The
+  tick helper now stops at the next published transition or quiet-tick boundary, so an annotation
+  transition cannot make the measure include a following quiet tick.</p>
+  <p>The original base receipt already reports zero review reads on its unchanged second tick,
+  alongside 60 directory enumerations. Thus the revised section's base read-count expectation
+  does not reproduce; the retained original receipt and the new stat mutation distinguish the
+  working review memo from the repeated-store-work defect.</p>
+  <p>The repair comparison reads <strong>91 passed, 10 warnings in 49.30s</strong> at the
+  original base and <strong>97 passed, 10 warnings in 121.09s (0:02:01)</strong> at the repaired
+  code head, with zero added failures. This includes the annotation-reader test family. The
+  re-run armed suite reads <strong>51 passed in 11.32s</strong> at base and
+  <strong>57 passed in 83.20s (0:01:23)</strong> at head. Both arms ran sequentially with a
+  60-second per-test timeout, and importer arms used at most four workers. The armed head log
+  names the mutation command and its failing receipt. Ruff still reports the same two inherited
+  findings, adds none, and formatting passes for every changed Python path.</p>
 </section>
