@@ -1,0 +1,62 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3039 newest_covering_review called by _run_review",
+    "reckon/crew_dispatch_commands.py:2707 _run_review from the crew review command",
+    "reckon/crew_run_commands.py:78 _run_review from the run review command",
+    "reckon/mcp.py:2862 review_run passed to _crew_write_action",
+    "reckon/mcp_crew_actions.py:400 crew_action answer entry"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-10T15:06:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "fca2430fd33",
+      "line": 1113,
+      "severity": "non-blocking",
+      "summary": "newest_covering_review returns None when any single covering record carries neither a timestamp nor a readable plan commit, so an answer to the only covering review is refused; the plan states the refusal remains only when two covering reviews cannot be ordered, and before this change a lone covering review was answered. Reachable only through a hand-written record, because store_plan_review stamps every record it writes."
+    },
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "id": "f368573c3c2",
+      "line": 2996,
+      "severity": "non-blocking",
+      "summary": "the covering set filters out every design review and then appends only newest_design_review, so --review-run naming an older design review of the plan is now refused with 'does not raise finding', where the plan requires --review-run to accept any delivered review of the plan that raises the named finding and the previous candidate set included it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 reckon/crew_dispatch_commands.py:3039, reckon/mcp.py:2862 and reckon/mcp_crew_actions.py:400 examined.",
+    "diff": "pass \u2014 read commit by commit against db774d6c1e.",
+    "done_when": "pass \u2014 six cases in tests/test_an_answer_reaches_the_newest_review.py, gate log logs/head-gate.log EXIT=0.",
+    "goal": "pass \u2014 an answer without --review-run lands on the newest covering review, in reckon/crew_dispatch_commands.py:3039.",
+    "manifest": "pass \u2014 manifest records gate logs with revision, command and EXIT= lines.",
+    "write_paths": "pass \u2014 every changed path in 83dc1b1dd8 is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an answer given without --review-run reaches the newest review that raised the finding; reckon/crew_dispatch_commands.py:3039 selects it through plan_review.newest_covering_review over a covering set rebuilt at line 2993.\nVERDICT done_when: the done_when names six cases in tests/test_an_answer_reaches_the_newest_review.py; all six are present, logs/head-gate.log records 57 passed EXIT=0, and logs/negative-controls.log shows all seven declared mutations red.\nVERDICT write_paths: read the manifest's declared paths; every path in commit 83dc1b1dd8 lies inside them and the declared figures directory is untouched.\nVERDICT manifest: read; it records revision, literal command and EXIT= lines for the head and base gate logs, the affected suites at 118 passed each, and seven negative controls.\nVERDICT diff: read commit by commit against db774d6c1e; six files, one new helper in reckon/crew/plan_review.py:1099, a rebuilt covering set in reckon/crew_dispatch_commands.py:2993, review_run threaded through reckon/mcp.py:2694 and reckon/mcp_crew_actions.py:132, one new test and one evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:3039, reckon/crew_dispatch_commands.py:2707, reckon/crew_run_commands.py:78, reckon/mcp.py:2862, reckon/mcp_crew_actions.py:400\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew_dispatch_commands.py:3039 lands an unnamed answer on the newest covering review, though it orders by plan commit before timestamp where the plan names the run timestamp.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log and logs/base-gate.log each carry a revision header, the literal command and a bare EXIT=0 line, and logs/negative-controls.log records EXIT=1 for all seven mutations.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the six paths in 83dc1b1dd8 all sit inside the declared write paths, and the declared figures directory was not written.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_an_answer_reaches_the_newest_review.py:81 and :96 assert against the stored records rather than against their own inputs, and each case reddens under a declared mutation, but no case covers a lone unorderable covering review or the plan-commit ordering path.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/plan_review.py:1099 sits beside _newest_by_plan_commit in the same module with a matching docstring idiom and names nothing the naming rules forbid.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1119 delegates to the existing _newest_by_plan_commit and reuses _record_plan_commit and _project_repo_root rather than forking a selector.\nFINDING reckon/crew/plan_review.py:1113 non-blocking: a covering set of one record with neither timestamp nor plan commit is refused, where the plan limits the refusal to two unorderable reviews and the previous code answered a lone covering review.\nFINDING reckon/crew_dispatch_commands.py:2996 non-blocking: the covering set excludes every design review but newest_design_review, so --review-run naming an older design review of the plan is refused, narrowing the plan's requirement that any delivered review raising the finding be reachable.",
+  "review_run_id": "r-20261110T153209409487-review-of-an-answer-reaches-the-newest-review-that-raised-the-finding",
+  "reviewed_base_sha": "db774d6c1ede7a4cbb5f3675578bcc0e7032501d",
+  "reviewed_head_sha": "83dc1b1dd844ddf2484831100b25c4af99064696",
+  "reviewed_run_id": "r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:56:53.991244+00:00",
+  "total": 107,
+  "verdicts": {
+    "diff": "read commit by commit against db774d6c1e; six files changed, one new helper in plan_review.py, a rebuilt covering set and selection in crew_dispatch_commands.py, one parameter threaded through mcp.py and mcp_crew_actions.py, one new test and one evidence fragment.",
+    "done_when": "the done_when names six cases in tests/test_an_answer_reaches_the_newest_review.py; all six exist, the head gate records 57 passed EXIT=0 and the seven declared mutations each redden at least one of them.",
+    "goal": "the node's goal is that an answer without --review-run lands on the newest covering review; reckon/crew_dispatch_commands.py:3039 does exactly that through plan_review.newest_covering_review, and both the CLI and the crew tool reach it.",
+    "manifest": "read; it records the head and base gate logs with revisions, literal commands and EXIT= lines, the affected-suite pair at 118 passed each, and seven negative-control mutations.",
+    "write_paths": "read the manifest's declared paths; every path in commit 83dc1b1dd8 is inside them, and the declared figures directory was left untouched."
+  }
+}
