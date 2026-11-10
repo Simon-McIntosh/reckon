@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s67">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-recorded-at" content="2026-11-10">
+  <meta name="plan-tags" content="crew,census,staged-write,suite">
+  <title>The staged-write inventory lists the four writers added since 3 November | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-staged-write-inventory-lists-four-writers" data-reckon="landed" data-when="2026-11-10">
+  <h2>The staged-write inventory lists the four writers added since 3 November</h2>
+
+  <p id="the-staged-write-inventory-lists-four-writers-cause"><strong>Cause.</strong>
+  <code>tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
+  compares the census's own inventory against an expected set, and the set had fallen
+  behind the tree. Four staged writers arrived with four separate nodes, each of which ran
+  only the tests covering its own write paths, so none of them ran the census that lists
+  every staged writer in the checkout. Measured at the dispatch base
+  <code>ee49a3545a</code>: the census reported 10 writers against 6 expected, and the four
+  extras were exactly the four the plan names — 1 failed, 50 passed,
+  <code>EXIT=1</code>.</p>
+
+  <p id="the-staged-write-inventory-lists-four-writers-read"><strong>Each one read in the
+  code before it was listed.</strong> All four stage their replacement in a <code>.tmp</code>
+  sibling and move it into place with <code>os.replace</code>, which is the pattern the
+  expected set's own comments already accept for <code>_bound_run_file</code> and
+  <code>_release_worktree_whole</code>:</p>
+  <ul id="the-staged-write-inventory-lists-four-writers-writers">
+    <li><code>reckon/crew/recovery_watch.py::_update_git_answer_store</code> — writes the
+    git-answer store to <code>.{path.name}.{pid}.tmp</code> and <code>os.replace</code>-s it
+    over the store, inside the store's <code>flock</code>.</li>
+    <li><code>reckon/crew/dispatch_claims.py::_publish_exec_identity</code> — writes this
+    execution's identity to <code>{path.name}.{exec_identity}.tmp</code> and
+    <code>os.replace</code>-s it onto the identity path.</li>
+    <li><code>reckon/crew/gc.py::_write_retention_cursor</code> — writes the retention
+    cursor to <code>path.name + ".tmp"</code> and <code>os.replace</code>-s it over the
+    cursor.</li>
+    <li><code>reckon/crew/obligations.py::_record_index_lag</code> — under the crew home's
+    <code>flock</code>, writes the seen-lag map to <code>seen_path.name + ".tmp"</code> and
+    <code>os.replace</code>-s it there, beside the append-only lag log.</li>
+  </ul>
+
+  <p id="the-staged-write-inventory-lists-four-writers-arms"><strong>Arms.</strong> Base
+  <code>ee49a3545a</code>: 1 failed, 50 passed, <code>EXIT=1</code>, the failing id being the
+  census id alone. Head (the four entries added, every other test untouched): 51 passed,
+  <code>EXIT=0</code>. Negative control — the
+  <code>reckon/crew/dispatch_claims.py</code> entry dropped from the expected set — fails
+  with <code>FAILED tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner</code>
+  and the diff naming <code>('reckon/crew/dispatch_claims.py', '_publish_exec_identity')</code>
+  as an extra item, <code>EXIT=1</code>. <code>ruff check</code> and
+  <code>ruff format --check</code> add no finding on the changed path: 0 before, 0 after,
+  formatted both sides.</p>
+
+  <p id="the-staged-write-inventory-lists-four-writers-scope"><strong>Scope.</strong> One
+  file changed, <code>tests/test_staged_write_inventory.py</code>, 16 lines added and 0
+  deleted, comments and four set entries. The recurrence this census suffers — a node adds
+  a staged writer and its scoped gate never runs the census — is the sibling section's
+  subject, not this one's.</p>
+</article>
+</body>
+</html>

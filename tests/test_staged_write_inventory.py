@@ -58,6 +58,22 @@ def test_every_staged_write_reaches_the_owner(trees):
         # one step. The shared file writer replaces a single file, so it does
         # not apply to a whole directory published in one rename.
         ("reckon/checkout_trust.py", "materialize_committed_tree"),
+        # _update_git_answer_store stages its replacement: it writes the
+        # git-answer store to a pid-suffixed .tmp sibling beside it and
+        # os.replace-s that temporary over the store under one flock.
+        ("reckon/crew/recovery_watch.py", "_update_git_answer_store"),
+        # _publish_exec_identity stages its replacement: it writes this
+        # execution's identity to a .tmp sibling of the identity path and
+        # os.replace-s it into place, so a reader never sees a partial file.
+        ("reckon/crew/dispatch_claims.py", "_publish_exec_identity"),
+        # _write_retention_cursor stages its replacement: it writes the cursor
+        # to a .tmp sibling and os.replace-s it over the cursor, so a pass that
+        # reads the cursor sees either the old position or the new one.
+        ("reckon/crew/gc.py", "_write_retention_cursor"),
+        # _record_index_lag stages its replacement: under the crew home's
+        # flock it writes the seen-lag map to a .tmp sibling of the seen path
+        # and os.replace-s it there, beside the append-only lag log.
+        ("reckon/crew/obligations.py", "_record_index_lag"),
     }, sorted(observed)
 
 
