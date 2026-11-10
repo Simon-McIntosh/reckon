@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T22:27:33.101Z",
+  "dispatched_at": "2026-11-10T22:17:02Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:84",
+      "id": "reasoning-1",
+      "reason": "implemented literally the instruction is either absent for every run or emitted on the flight key, so unfenced, resumed and operator-settings runs would be told to prefer a tool their launch never registered, and \u00a78 would then report a share of anchored edits for an arm that had none.",
+      "text": "\u00a75 says compose_prompt \"adds, only for a run whose launch recorded anchored_edit: true, one instruction\", but dispatch.py:2942 composes the prompt before the launch plan is built, and the anchored_edit fact is derived from that plan and written at dispatch.py:3372 (the `fenced` read it sits beside); compose_prompt takes no flag, no record and not even the backend mapping, so the stated condition cannot be evaluated where the section puts it, and the only value reachable at that point is the flight key \u2014 which \u00a74 and \u00a78 both say is not the arm split",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:85",
+      "id": "wiring-1",
+      "reason": "a \u00a75 node dispatched before \u00a79 lands produces evidence that cannot be promoted, and the plan should either declare \u00a75 depends-on \u00a79 or keep the parser test reading docs/research/fixtures/codex-anchored-edit-stream.jsonl as the omp node did.",
+      "text": "\u00a75's done-when copies the codex stream \"into the test fixtures\", i.e. under tests/, which is exactly the case \u00a79 says \"cannot be promoted, whichever way its arms are run\": is_test_path (reckon/crew/node.py:1018) returns true for any path under a tests directory, so _node_test_files (reckon/crew/promotion_records.py:526) passes the .jsonl to pytest, which exits 4 and the arm reader records collected_no_test (promotion_records.py:623-638); \u00a75 declares depends-on \u00a73 only, so nothing orders it after \u00a79",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "done_when-1",
+      "reason": "an implementer taking the option the section calls simpler lands a narrowing that keeps the same unpromotable outcome for any node writing a non-test .py under tests/, while the gate reports success, so the section's purpose is only met by the first rule and the done-when must test that distinction (a helper module under tests/ yields a command naming no test file).",
+      "text": "\u00a79 offers two narrowing rules (\"Python files matching the test-file pattern, or more simply the .py files is_test_path admits\") but its done-when tests only a .jsonl fixture and a test_x.py, both of which the simpler rule passes; that rule still admits tests/conftest.py and tests/helpers.py, which pytest exits 5 on, and promotion_records.py:623 counts exits 4 and 5 alike as collected_no_test",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "52c417f575400b596eaf81368d42962b41f26e9d",
+  "plan_fingerprint": "fdf3b1cb26e4aed6a3859774ea5ef9b94025cbf6e714033613137e98b70b4f2d",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 11,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T221249873192-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "22f835e85c6fa7240c2eca18c1d32bdac16b4ae3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 compose_prompt at reckon/crew/prompts.py:610, _node_test_files at reckon/crew/promotion_records.py:526, _scoped_suite_command at :569, is_test_path at reckon/crew/node.py:1018, and docs/research/fixtures/codex-anchored-edit-stream.jsonl all resolve, as do the extensionless hrefs resolved as <path>.html.",
+    "done_when": "a finding \u2014 \u00a79 offers two narrowing rules and its done-when cannot distinguish them, so the simpler rule it names passes the gate while leaving the defect in place for .py files under tests/.",
+    "evidence_paths": "pass \u2014 \u00a75's fixture sits at docs/research/fixtures/, \u00a78's record at docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html, and \u00a76's note at ~/.config/reckon/crew/reports/reckon/omp-headless-contract.md; all exist on disk and none is a scratch path.",
+    "naming": "pass \u2014 the symbols these units introduce (_node_test_files, is_test_path, anchored_edit, compose_prompt) carry no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "a finding \u2014 \u00a75 makes the prompt instruction conditional on the launch's recorded anchored_edit fact, but dispatch composes the prompt before the launch plan that decides and records that fact exists, so the named site has no value to read.",
+    "single_goal": "pass \u2014 \u00a75 names one capability (codex gets the anchored tool), \u00a78 one measure-and-decide, \u00a79 one narrowing of the armed suite command.",
+    "wiring": "a finding \u2014 \u00a75 declares depends-on only \u00a73, yet its done-when creates a fixture under the test fixtures, which \u00a79 states makes such a node unpromotable until \u00a79's narrowing lands."
+  },
+  "section_digests": {
+    "_document": "a9d507204defbfdeb314ce16077e5af01fcf91de1d69a8dc1e4462da50d23675",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "683226921907063eb36df829c3447366162b363cd986337c4c2adf807883a40b",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "1c446ae4a199a19c6e7de97686d696708fd9dcc65c5e1093c5efc17872c3d288",
+    "s9": "214a6ad0865ae647fca8835483d796e292e296a4ab12bed9c69b0f978eba8734"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:41:27.237492+00:00",
+  "total": null
+}
