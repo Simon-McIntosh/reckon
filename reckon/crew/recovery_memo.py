@@ -185,8 +185,7 @@ def _write_classification_memo(
     Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
     half of either. A memo that cannot be written is not an error — it costs
-    the next reader a recomputation, which is the state the fleet was in before
-    the memo existed.
+    the next reader a recomputation.
     """
     path = _classification_memo_path(record)
     if path is None:

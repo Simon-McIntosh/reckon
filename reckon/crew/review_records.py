@@ -15,8 +15,7 @@ its schema constants and revision helpers with it, so those names are imported
 from there rather than restated. The import sits at the foot of this module
 because :mod:`reckon.crew.review` re-exports this family: each module imports
 the names it needs once the other has finished defining them, which breaks the
-cycle without either module owning a copy of what the other defines. No
-behaviour changes here; the move leaves the store exactly as it was written.
+cycle without either module owning a copy of what the other defines.
 """
 
 from __future__ import annotations
