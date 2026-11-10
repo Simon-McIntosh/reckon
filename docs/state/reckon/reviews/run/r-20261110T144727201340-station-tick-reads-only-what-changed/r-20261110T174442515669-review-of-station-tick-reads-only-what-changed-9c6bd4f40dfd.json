@@ -1,0 +1,156 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed manifest baseline_suite and after_suite log contents: 54 passed / 62 passed, both EXIT=0, no FAILED or ERROR ids; this is the focused gate delta, not a claim about final-source broad importer coverage.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The first or second sweep selects an expired/older author, or fails to refresh after r-newest is added; fixed expected run ids do not move with the implementation.",
+      "lines": "442,452"
+    },
+    {
+      "failure_condition": "The child cannot read the known 4096 control bytes, or the trace parser misses/counts that read incorrectly; this validates the instrument, not the ledger policy.",
+      "lines": "449,526"
+    },
+    {
+      "failure_condition": "Incremental classify_tick returns any field different from separately computed fresh _watch_snapshot results; the JSON boolean is a second report of that independently computed comparison.",
+      "lines": "461,508"
+    },
+    {
+      "failure_condition": "The traced child aborts or any child assertion fails, yielding nonzero returncode.",
+      "lines": "505"
+    },
+    {
+      "failure_condition": "The independently counted on-disk dominant inputs total below 10 MB, the fixture has fewer than five stored pointers, or fresh verdict equivalence fails.",
+      "lines": "507-508"
+    },
+    {
+      "failure_condition": "The kernel trace lacks either measurement boundary, preventing an empty measurement from reading as zero.",
+      "lines": "525"
+    },
+    {
+      "failure_condition": "Restoring the unbounded read_records call or removing SQL activity selection fetches the 11 MB expired rows; recorded base control fails at 11,075,805 bytes.",
+      "lines": "532"
+    },
+    {
+      "failure_condition": "A strict boundary, earliest-instead-of-latest timestamp, or ignored valid alternate timestamp loses boundary/completed/launched/created plans, while missing filtering adds expired or unknown plans; expected plan identities are selected independently from the fixture.",
+      "lines": "570-576"
+    },
+    {
+      "failure_condition": "Index file-identity refresh fails to expose replacement of an expired document with a recent returned plan.",
+      "lines": "581"
+    },
+    {
+      "failure_condition": "Omitting activity_since from the region key reuses the earlier result for the later bound; failing to filter returns both ids; fixed expected id lists independently anchor whole==early.",
+      "lines": "597-599"
+    },
+    {
+      "failure_condition": "The normal/stale/uncached branches omit or alter the bound, or change returned values; expected is anchored by a fixed r-later list, so comparisons cannot move together undetected for the target filter regression.",
+      "lines": "617-619"
+    },
+    {
+      "failure_condition": "Moving conflict validation behind activity filtering suppresses LedgerError for conflicting expired copies; pytest.raises then fails.",
+      "lines": "630"
+    },
+    {
+      "failure_condition": "Timestamp conversion rejects datetime values, treats naive datetime in local time, or returns an incorrect epoch; datetime.fromtimestamp creates an input representation while the numeric epoch expectation independently specifies conversion semantics.",
+      "lines": "635-643"
+    },
+    {
+      "failure_condition": "Restoring the prior if-extra-only sort emits r-z before r-a when every per-run document is expired; the fixed literal order anchors the full/bounded comparison.",
+      "lines": "659-660"
+    }
+  ],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/station.py:SweepBeat.__init__",
+    "reckon/crew/resumption.py:sweep",
+    "reckon/crew/plan_review.py:compose_owed_plan_reviews",
+    "reckon/crew/plan_review.py:plan_authoring_run",
+    "reckon/crew/plan_review.py:plan_authoring_runs",
+    "reckon/ledger.py:read_records",
+    "reckon/ledger.py:load"
+  ],
+  "completed_at": "2026-11-10T18:06:30Z",
+  "dispatched_at": "2026-11-10T17:48:59Z",
+  "findings": [
+    {
+      "file": "docs/research/monitor-storage-load-rca.html",
+      "line": "413",
+      "severity": "blocking",
+      "text": "blocking: the accepted live evidence attributes 58% of profile samples to the ledger stack and records process-wide rchar, but supplies no per-path byte census covering at least 90% of station reads as the quantitative done_when requires; CPU sample share cannot establish byte share, so that prerequisite remains unproved."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/station-tick-reads-only-what-changed.html",
+      "line": "31",
+      "severity": "blocking",
+      "text": "blocking: the matched importer head arm excludes the final promotion-order source repair at 93fd51108b603435722ae150d30be58cffc64a3e, so its zero-added-failure result does not establish the required importer delta for the reviewed head; obtain a completed matched comparison covering the final source before accepting that gate."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "all seven commits from e7d60f9d562f4c4e848491e044eee375e4467935 to 9c6bd4f40dfdf6da2789adce435c713f359e0a77 were read; the diff changes five granted files, extends the existing ledger index, adds regression assertions and records evidence without changing station classification rules.",
+    "done_when": "prompt.txt:112 requires a per-path census covering at least 90% of bytes, a sub-1-MB moved-input fixture, a live 20-MB/min and 5%-CPU window, matched importer arms and lint; the fixture and lint receipts exist, but the live census substitutes sampled stacks for byte attribution and the broad head arm predates the final source repair.",
+    "goal": "reckon/crew/plan_review.py:3797 now requests recent rows before ledger payload decoding, and the five-run fixture records 53,469 second-tick bytes against 11,075,805 at base, while the live station cost bound remains unmeasured.",
+    "manifest": "manifest.md records seven commits and readable baseline_suite/after_suite logs with 54 and 62 passing tests and no failures, and explicitly acknowledges that final-source broad verification and the coordinator-owned live after-window remain outstanding.",
+    "write_paths": "resume-1-advice.txt explicitly widens the original prompt.txt:80 scope to reckon/ledger.py, reckon/crew/plan_review.py and docs/research/monitor-storage-load-rca.html, covering all five changed files with the original test and evidence fragment grants."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_reads_only_what_changed.py:532 fails when the full-history read is restored, lines 570-643 detect timestamp/filter/cache/refusal regressions, and line 659 fails if expired documents cease to trigger promotion ordering; the syscall guard skips when strace is absent.",
+    "evidence": "tests/test_the_station_reads_only_what_changed.py:532 has a recorded failing base control and passing head receipt, whereas docs/evidence/fragments/the-monitor-reads-each-fact-once/station-tick-reads-only-what-changed.html:31 acknowledges a broad arm that excludes the final source repair and docs/research/monitor-storage-load-rca.html:413 cites sampled stacks rather than per-path byte totals.",
+    "fit": "reckon/ledger.py:1647 migrates the disposable index through its existing version mechanism and reckon/crew/plan_review.py:3764 delegates timestamp policy to the ledger owner, with no new forbidden source names.",
+    "goal_fidelity": "reckon/crew/plan_review.py:3797 and reckon/ledger.py:1468 remove the measured full-payload decode for the authoring sweep, but docs/research/monitor-storage-load-rca.html:440 leaves the live station cost unproved.",
+    "reuse": "searches for activity-window selection, timestamp derivation and syscall counters found reckon/ledger.py:_index_payload, reckon/crew/plan_review.py:_run_moment and reckon/_timestamps.py:parse_utc as the owners extended or reused, while reckon/ledger.py:_run_files_written_since filters file mtime and cannot substitute for record activity.",
+    "scope_discipline": "the five paths in the e7d60f9d562f4c4e848491e044eee375e4467935..9c6bd4f40dfdf6da2789adce435c713f359e0a77 diff are all covered by prompt.txt:80 plus the explicit scope grant in resume-1-advice.txt."
+  },
+  "limitations": [
+    "No suite rerun in review; source receipts were read.",
+    "Coordinator explicitly owns the live after-window under resume-1-advice.txt; it is pending and no 20 MB/min or 5% CPU success is inferred.",
+    "The review worktree HEAD is 2a16ef9f3311283b07ded8e24b2d69b6194364af; all implementation reads used explicit reviewed commit objects, not that checkout head."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: reckon/crew/plan_review.py:3797 now requests recent rows before ledger payload decoding, and the five-run fixture records 53,469 second-tick bytes against 11,075,805 at base, while the live station cost bound remains unmeasured.\nVERDICT done_when: prompt.txt:112 requires a per-path census covering at least 90% of bytes, a sub-1-MB moved-input fixture, a live 20-MB/min and 5%-CPU window, matched importer arms and lint; the fixture and lint receipts exist, but the live census substitutes sampled stacks for byte attribution and the broad head arm predates the final source repair.\nVERDICT write_paths: resume-1-advice.txt explicitly widens the original prompt.txt:80 scope to reckon/ledger.py, reckon/crew/plan_review.py and docs/research/monitor-storage-load-rca.html, covering all five changed files with the original test and evidence fragment grants.\nVERDICT manifest: manifest.md records seven commits and readable baseline_suite/after_suite logs with 54 and 62 passing tests and no failures, and explicitly acknowledges that final-source broad verification and the coordinator-owned live after-window remain outstanding.\nVERDICT diff: all seven commits from e7d60f9d562f4c4e848491e044eee375e4467935 to 9c6bd4f40dfdf6da2789adce435c713f359e0a77 were read; the diff changes five granted files, extends the existing ledger index, adds regression assertions and records evidence without changing station classification rules.\nCALL_SITES: reckon/crew/station.py:SweepBeat.__init__, reckon/crew/resumption.py:sweep, reckon/crew/plan_review.py:compose_owed_plan_reviews, reckon/crew/plan_review.py:plan_authoring_run, reckon/crew/plan_review.py:plan_authoring_runs, reckon/ledger.py:read_records, reckon/ledger.py:load\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3797 and reckon/ledger.py:1468 remove the measured full-payload decode for the authoring sweep, but docs/research/monitor-storage-load-rca.html:440 leaves the live station cost unproved.\nSCORE evidence: 11\nJUSTIFICATION evidence: tests/test_the_station_reads_only_what_changed.py:532 has a recorded failing base control and passing head receipt, whereas docs/evidence/fragments/the-monitor-reads-each-fact-once/station-tick-reads-only-what-changed.html:31 acknowledges a broad arm that excludes the final source repair and docs/research/monitor-storage-load-rca.html:413 cites sampled stacks rather than per-path byte totals.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths in the e7d60f9d562f4c4e848491e044eee375e4467935..9c6bd4f40dfdf6da2789adce435c713f359e0a77 diff are all covered by prompt.txt:80 plus the explicit scope grant in resume-1-advice.txt.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_the_station_reads_only_what_changed.py:532 fails when the full-history read is restored, lines 570-643 detect timestamp/filter/cache/refusal regressions, and line 659 fails if expired documents cease to trigger promotion ordering; the syscall guard skips when strace is absent.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/ledger.py:1647 migrates the disposable index through its existing version mechanism and reckon/crew/plan_review.py:3764 delegates timestamp policy to the ledger owner, with no new forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: searches for activity-window selection, timestamp derivation and syscall counters found reckon/ledger.py:_index_payload, reckon/crew/plan_review.py:_run_moment and reckon/_timestamps.py:parse_utc as the owners extended or reused, while reckon/ledger.py:_run_files_written_since filters file mtime and cannot substitute for record activity.\nFINDING docs/research/monitor-storage-load-rca.html:413 blocking: the accepted live evidence attributes 58% of profile samples to the ledger stack and records process-wide rchar, but supplies no per-path byte census covering at least 90% of station reads as the quantitative done_when requires; CPU sample share cannot establish byte share, so that prerequisite remains unproved.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/station-tick-reads-only-what-changed.html:31 blocking: the matched importer head arm excludes the final promotion-order source repair at 93fd51108b603435722ae150d30be58cffc64a3e, so its zero-added-failure result does not establish the required importer delta for the reviewed head; obtain a completed matched comparison covering the final source before accepting that gate.\n",
+  "reuse_analysis": {
+    "_active_records": "Filters fallback/figure rows inside ledger, using the same activity derivation as SQL index population; existing _run_files_written_since instead filters filesystem modification time and is semantically different.",
+    "run_activity_seconds": "Moves the newest-stamp derivation from plan_review._run_moment into the ledger owner and reuses _timestamps.parse_utc; _run_moment remains a delegating wrapper.",
+    "test_helpers": "_stamp, _row, _write_row construct this test fixture; _probe exercises the existing Station and SweepBeat owners; the repository searches of tests/helpers and ledger tests found no shared kernel per-path counter to extend."
+  },
+  "review_run_id": "r-20261110T174442515669-review-of-station-tick-reads-only-what-changed-9c6bd4f40dfd",
+  "reviewed_base_sha": "e7d60f9d562f4c4e848491e044eee375e4467935",
+  "reviewed_head_sha": "9c6bd4f40dfdf6da2789adce435c713f359e0a77",
+  "reviewed_run_id": "r-20261110T144727201340-station-tick-reads-only-what-changed",
+  "scores": {
+    "durability": 19,
+    "evidence": 11,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_suite_receipts": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_reads_only_what_changed.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/after-suite-ordering.log",
+      "revision": "b669bdd1077751c3dcc8817d8cd9482b01952390"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_the_station_reads_only_what_changed.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/baseline-suite-resumed.log",
+      "revision": "e7d60f9d562f4c4e848491e044eee375e4467935"
+    }
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T18:31:31.433498+00:00",
+  "total": 105
+}
