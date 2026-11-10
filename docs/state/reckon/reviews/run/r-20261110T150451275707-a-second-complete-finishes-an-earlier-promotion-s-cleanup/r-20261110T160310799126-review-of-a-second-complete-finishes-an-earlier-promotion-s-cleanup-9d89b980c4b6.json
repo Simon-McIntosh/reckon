@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms ran the same fifteen importing files with no new test in the base tree; base-suite.log reads '3 failed, 177 passed in 550.60s' and head-suite-head.log reads '3 failed, 180 passed in 212.30s' with the identical failure ids test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory, test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload and test_*_payload, so the delta is zero added failures.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:1259",
+    "reckon/crew/promotion.py:1801",
+    "reckon/crew/promotion_scope.py:2327"
+  ],
+  "completed_at": "2026-11-10T16:24:02.416Z",
+  "dispatched_at": "2026-11-10T16:10:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 2327,
+      "severity": "non-blocking",
+      "text": "_ledger_row_is_written duplicates the run-row scan that _ledger_holds_row at :2304 already owns, differing only in which ledger read it uses and what an unreadable store answers, so a future change to how a committed row is proven has to be made in two places; a single helper parameterised on the unknown-store policy would extend the owner instead of forking it."
+    },
+    {
+      "file": "tests/test_a_second_complete_finishes_cleanup.py",
+      "line": 169,
+      "severity": "non-blocking",
+      "text": "assert comment['requested_narrative'] == retried compares the receipt's echo of the outcome the test itself passed into the call, so it holds for any implementation that reflects its input and cannot catch a regression in the behaviour under test; the case's durable guards are the kept_narrative assertion at :168 and the comment-body assertions at :172-174."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1462,
+      "severity": "non-blocking",
+      "text": "the refusal this change keeps for a differing narrative before a ledger row exists has no test, and neither does the unreadable-ledger arm that answers False at :2340, so reinstating a permissive path there would not redden any assertion even though the module docstring at :1453-1461 and the evidence fragment state the refusal as behaviour."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1474,
+      "severity": "non-blocking",
+      "text": "_narrative_text is applied to existing_body and requested_body, both already passed through html.unescape at :1450-1451, so the receipt's note unescapes a second time and would report text containing a literal entity such as '&amp;lt;' as '<', which is not what the landing comment holds."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against db774d6c1e: aeeff2fd5b changes reckon/crew/promotion_scope.py by +78/-8 and adds the 193-line test file; 9d89b980c4 adds an 82-line evidence fragment under docs/evidence/fragments/.",
+    "done_when": "the done_when asks tests/test_a_second_complete_finishes_cleanup.py for three cases plus a restored-refusal negative control and no added failures; head-new-tests.log records '3 passed', negative-control-second-complete.log records '1 failed, 2 passed', and both suite arms record the identical three pre-existing failure ids.",
+    "goal": "the node's goal is 'A second complete finishes an earlier promotion's cleanup', and reckon/crew/promotion_scope.py:1461-1495 makes a ledger-row-written run return a finished_cleanup receipt instead of the double refusal, so reckon/crew/promotion.py:1259-1307 retires the pointer and writes no second row.",
+    "manifest": "read in full; it records status complete, the gate command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_second_complete_finishes_cleanup.py', four log paths, the negative-control note and the outside_scope entry, while the ruff cleanliness claim at the artifacts line carries no log.",
+    "write_paths": "the node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three files in the diff sit inside that set and the figures directory was not written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_second_complete_finishes_cleanup.py:165-177 reddens when the refusal is restored (negative-control-second-complete.log names that test), but the new refusal branch at reckon/crew/promotion_scope.py:1462 and its unreadable-ledger arm at :2340 have no test, and :169 compares the receipt's echo of the narrative the test itself passed in.",
+    "evidence": "base-suite.log and head-suite-head.log carry the same three failure ids, so the added-failure delta is zero while head-new-tests.log reads '3 passed in 21.81s' and negative-control-second-complete.log reads '1 failed, 2 passed'; the manifest's ruff claim at line 'artifacts' names no log, and the negative-control log's header labels its tree with the base revision though it ran at the head tree under a mutation.",
+    "fit": "the added helpers follow the module's existing idiom, with docstrings in the same voice and placement beside their sibling at reckon/crew/promotion_scope.py:2304, and neither new name carries a plan label or ticket reference.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:1461-1495 returns a finished_cleanup receipt instead of raising when _ledger_row_is_written proves the row, so the already-promoted branch at reckon/crew/promotion.py:1259 retires the pointer and releases the worktree without a second ledger row.",
+    "reuse": "reckon/crew/promotion_scope.py:2327 duplicates the row-presence scan the repository already owns at reckon/crew/promotion_scope.py:2304 (_ledger_holds_row) without extending it; _narrative_text at :1349 has no owner in the tree, so only the ledger helper costs a score.",
+    "scope_discipline": "the diff touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup.html, all inside the run's declared and granted write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'A second complete finishes an earlier promotion's cleanup', and reckon/crew/promotion_scope.py:1461-1495 makes a ledger-row-written run return a finished_cleanup receipt instead of the double refusal, so reckon/crew/promotion.py:1259-1307 retires the pointer and writes no second row.\nVERDICT done_when: the done_when asks tests/test_a_second_complete_finishes_cleanup.py for three cases plus a restored-refusal negative control and no added failures; head-new-tests.log records '3 passed', negative-control-second-complete.log records '1 failed, 2 passed', and both suite arms record the identical three pre-existing failure ids.\nVERDICT write_paths: the node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three files in the diff sit inside that set and the figures directory was not written.\nVERDICT manifest: read in full; it records status complete, the gate command 'PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_second_complete_finishes_cleanup.py', four log paths, the negative-control note and the outside_scope entry, while the ruff cleanliness claim at the artifacts line carries no log.\nVERDICT diff: read both commits against db774d6c1e: aeeff2fd5b changes reckon/crew/promotion_scope.py by +78/-8 and adds the 193-line test file; 9d89b980c4 adds an 82-line evidence fragment under docs/evidence/fragments/.\nCALL_SITES: reckon/crew/promotion.py:1259, reckon/crew/promotion.py:1801, reckon/crew/promotion_scope.py:2327\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:1461-1495 returns a finished_cleanup receipt instead of raising when _ledger_row_is_written proves the row, so the already-promoted branch at reckon/crew/promotion.py:1259 retires the pointer and releases the worktree without a second ledger row.\nSCORE evidence: 15\nJUSTIFICATION evidence: base-suite.log and head-suite-head.log carry the same three failure ids, so the added-failure delta is zero while head-new-tests.log reads '3 passed in 21.81s' and negative-control-second-complete.log reads '1 failed, 2 passed'; the manifest's ruff claim at line 'artifacts' names no log, and the negative-control log's header labels its tree with the base revision though it ran at the head tree under a mutation.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup.html, all inside the run's declared and granted write paths.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_second_complete_finishes_cleanup.py:165-177 reddens when the refusal is restored (negative-control-second-complete.log names that test), but the new refusal branch at reckon/crew/promotion_scope.py:1462 and its unreadable-ledger arm at :2340 have no test, and :169 compares the receipt's echo of the narrative the test itself passed in.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers follow the module's existing idiom, with docstrings in the same voice and placement beside their sibling at reckon/crew/promotion_scope.py:2304, and neither new name carries a plan label or ticket reference.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_scope.py:2327 duplicates the row-presence scan the repository already owns at reckon/crew/promotion_scope.py:2304 (_ledger_holds_row) without extending it; _narrative_text at :1349 has no owner in the tree, so only the ledger helper costs a score.\nFINDING reckon/crew/promotion_scope.py:2327 non-blocking: _ledger_row_is_written duplicates the run-row scan that _ledger_holds_row at :2304 already owns, differing only in which ledger read it uses and what an unreadable store answers, so a future change to how a committed row is proven has to be made in two places; a single helper parameterised on the unknown-store policy would extend the owner instead of forking it.\nFINDING tests/test_a_second_complete_finishes_cleanup.py:169 non-blocking: assert comment['requested_narrative'] == retried compares the receipt's echo of the outcome the test itself passed into the call, so it holds for any implementation that reflects its input and cannot catch a regression in the behaviour under test; the case's durable guards are the kept_narrative assertion at :168 and the comment-body assertions at :172-174.\nFINDING reckon/crew/promotion_scope.py:1462 non-blocking: the refusal this change keeps for a differing narrative before a ledger row exists has no test, and neither does the unreadable-ledger arm that answers False at :2340, so reinstating a permissive path there would not redden any assertion even though the module docstring at :1453-1461 and the evidence fragment state the refusal as behaviour.\nFINDING reckon/crew/promotion_scope.py:1474 non-blocking: _narrative_text is applied to existing_body and requested_body, both already passed through html.unescape at :1450-1451, so the receipt's note unescapes a second time and would report text containing a literal entity such as '&amp;lt;' as '<', which is not what the landing comment holds.\n",
+  "review_run_id": "r-20261110T160310799126-review-of-a-second-complete-finishes-an-earlier-promotion-s-cleanup-9d89b980c4b6",
+  "reviewed_base_sha": "db774d6c1ede7a4cbb5f3675578bcc0e7032501d",
+  "reviewed_head_sha": "9d89b980c4b6b8afdd80477c94f49083f9a8b4f6",
+  "reviewed_run_id": "r-20261110T150451275707-a-second-complete-finishes-an-earlier-promotion-s-cleanup",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:01:48.662518+00:00",
+  "total": 91
+}
