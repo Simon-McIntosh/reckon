@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Any, Iterable, Mapping, Sequence
 
 from reckon import ledger, review_tiers
+from reckon.git_head import _head_identity
 from reckon.crew import plan_review, runs
 from reckon.crew import review as review_module
 from reckon.crew.node import (
@@ -201,40 +202,45 @@ def _reviewed_run_head(record: Mapping[str, Any]) -> str:
 
 
 _FULL_REVISION = re.compile(r"[0-9A-Fa-f]{40,64}")
+_HEX_REVISION = re.compile(r"[0-9A-Fa-f]{7,64}")
 
-# A full revision resolves to the same commit for as long as the repository
-# holds it, so its answer is kept for the life of the process and, through the
-# crew home's store, across processes. The key carries the tree because an
-# object id resolves only in a repository that has it; a ref name or an
-# abbreviation can move, so neither is ever kept.
-_RESOLVE_COMMIT_CACHE: dict[tuple[str, str], str] = {}
+# Successful object prefixes are immutable answers, shared through the crew
+# home's store. Misses live only in this bounded process cache, against HEAD's
+# identity, so a commit in the tree makes the next lookup ask git again.
+_RESOLVE_COMMIT_CACHE: dict[tuple[str, str], tuple[str, tuple | None]] = {}
 _RESOLVE_COMMIT_CACHE_LIMIT = 256
 
 
-def _stored_commit_answer(tree: Path, candidate: str) -> str:
-    """The commit a store holds for this full revision in this tree, or empty."""
-    if not _FULL_REVISION.fullmatch(candidate):
-        return ""
+def _stored_commit_answer(tree: Path, candidate: str) -> str | None:
+    """A remembered commit or HEAD-scoped miss; None means git must be asked."""
+    if not _HEX_REVISION.fullmatch(candidate):
+        return None
     key = (str(tree), candidate)
-
     cached = _RESOLVE_COMMIT_CACHE.get(key)
     if cached is not None:
-        return cached
+        answer, head = cached
+        if answer or (head is not None and head == _head_identity(tree)):
+            return answer
     from reckon.crew.recovery_watch import _stored_commit_answer as stored
 
     answer = stored(tree, candidate)
-    if answer:
+    if _FULL_REVISION.fullmatch(answer) and answer.lower().startswith(
+        candidate.lower()
+    ):
         _remember_resolved_commit(key, answer)
-    return answer
+        return answer
+    return None
 
 
-def _remember_resolved_commit(key: tuple[str, str], sha: str) -> None:
-    """Keep one resolved revision, bounded so a long-lived process cannot grow."""
+def _remember_resolved_commit(
+    key: tuple[str, str], sha: str, head: tuple | None = None
+) -> None:
+    """Keep one resolved revision or HEAD-scoped miss, bounded per process."""
     if len(_RESOLVE_COMMIT_CACHE) >= _RESOLVE_COMMIT_CACHE_LIMIT and key not in (
         _RESOLVE_COMMIT_CACHE
     ):
         _RESOLVE_COMMIT_CACHE.pop(next(iter(_RESOLVE_COMMIT_CACHE)), None)
-    _RESOLVE_COMMIT_CACHE[key] = sha
+    _RESOLVE_COMMIT_CACHE[key] = (sha, head)
 
 
 def _resolve_commit(
@@ -268,8 +274,10 @@ def _resolve_commit(
         return ""
     if cached and not strict:
         stored = _stored_commit_answer(tree, candidate)
-        if stored:
+        if stored is not None:
             return stored
+    cacheable = cached and not strict and _HEX_REVISION.fullmatch(candidate)
+    head = _head_identity(tree) if cacheable else None
     try:
         completed = subprocess.run(
             [
@@ -303,9 +311,13 @@ def _resolve_commit(
             "revision that names no commit"
         ) from failure
     sha = completed.stdout.strip()
-    if completed.returncode or not re.fullmatch(r"[0-9A-Fa-f]{40,64}", sha):
+    if completed.returncode:
+        if cacheable and head is not None:
+            _remember_resolved_commit((str(tree), candidate), "", head)
         return ""
-    if _FULL_REVISION.fullmatch(candidate):
+    if not _FULL_REVISION.fullmatch(sha):
+        return ""
+    if _HEX_REVISION.fullmatch(candidate) and sha.lower().startswith(candidate.lower()):
         _remember_resolved_commit((str(tree), candidate), sha)
         from reckon.crew.recovery_watch import _remember_commit_answer
 
