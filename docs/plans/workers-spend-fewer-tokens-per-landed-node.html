@@ -24,6 +24,8 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="1">
+<meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
   <main class="plan-doc">
@@ -56,7 +58,7 @@
         <tr><td>Is oh-my-pi installable here?</td><td><code>npm view</code>.</td><td>Yes in principle: <code>@oh-my-pi/pi-coding-agent</code> 18.18.6 (published 9 November) needs bun ≥ 1.4.4, which npm carries. It has published 708 versions since 2 January 2026, about two a day.</td></tr>
       </tbody>
     </table>
-    <p>Two design consequences follow, and they are written into §3: a bare hash that is unique in the file is a legitimate anchor and must be accepted, and every malformed anchor is answered with a refusal that states the format rather than an exception. The steering prototypes run in the same pass belong to <a href="/reckon/plans/a-live-worker-can-be-reached.html">a-live-worker-can-be-reached</a> and are recorded there.</p>
+    <p>Two design consequences follow, and they are written into §3: a bare hash that is unique in the file is a legitimate anchor and must be accepted, and every malformed anchor is answered with a refusal that states the format rather than an exception. The steering prototypes run in the same pass belong to <a href="/reckon/plans/a-live-worker-can-be-reached.html">a-live-worker-can-be-reached</a>. Every run in this table, its script and its quoted output is recorded in <a href="/reckon/research/worker-steering-and-anchored-edit-prototypes.html">Worker steering and anchored edit prototypes</a>.</p>
 
     <h2 id="s3">§3 — A line-anchored edit tool ships with reckon</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -72,8 +74,9 @@
 
     <h2 id="s4">§4 — Claude-dialect workers can be given the anchored tool</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="1.25" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> A per-backend flight key, <code>anchored_edit</code> (default false), read where a run home is seeded (<code>reckon/_worker_fence.py</code>, beside <code>_seed_worker_mcp_settings</code>) and where the Claude argv is composed (<code>_ClaudeDialect</code> in <code>reckon/_backends.py</code>; <code>_CliveDialect</code> inherits it). When true for a run's backend: the run home registers the <code>reckon-anchored-edit</code> server with <code>--root</code> set to the run's write roots (the same roots <code>fenced_write_roots</code> computes), its two tools are allowed, and the built-in <code>Edit</code> and <code>MultiEdit</code> tools are disallowed so the run is a clean treatment arm. <code>Write</code> stays, because creating a file has no anchor to address. The run record carries <code>anchored_edit: true</code> so §8 can split the population by arm without inference.</p>
-    <p><strong>Done when</strong> tests show: with the key false, the seeded settings and argv are byte-identical to the base revision's; with it true, the seeded home registers the server with the run's write roots, the argv disallows <code>Edit</code> and <code>MultiEdit</code>, and the run record carries the flag. <strong>Negative control:</strong> a test asserting the false-key argv is unchanged must fail if the disallow list is added unconditionally. The flight schema and its generated JSON change together.</p>
+    <p><strong>Deliverable.</strong> A per-backend flight key, <code>anchored_edit</code> (default false), read where a run home is seeded (<code>reckon/_worker_fence.py</code>, beside <code>_seed_worker_mcp_settings</code>) and where the Claude argv is composed (<code>_ClaudeDialect</code> in <code>reckon/_backends.py</code>; <code>_CliveDialect</code> inherits it). When true for a run's backend: the run home registers the <code>reckon-anchored-edit</code> server with <code>--root</code> set to the run's write roots (the same roots <code>fenced_write_roots</code> computes), its two tools are allowed, and the built-in <code>Edit</code> and <code>MultiEdit</code> tools are disallowed so the run is a clean treatment arm. <code>Write</code> stays, because creating a file has no anchor to address.</p>
+    <p>The settings seeder runs only for a fenced Claude-dialect run whose run home had no <code>settings.json</code> of its own, and is passed no server list when no flight config resolves (<code>reckon/_worker_fence.py</code> near line 267, called from <code>reckon/_backends.py</code> near line 2383). An unfenced run, a resumed run and a run with an operator-supplied settings file therefore never reach it. So the run record does not copy the flight key: it records <code>anchored_edit</code> as what the launch actually did — <code>true</code> only when the server was registered and <code>Edit</code> and <code>MultiEdit</code> were disallowed in this launch, otherwise <code>false</code> with the reason (<code>unfenced</code>, <code>resumed</code>, <code>operator-settings</code>, <code>no-flight-config</code>). §8 splits the population on that recorded fact, never on the flight key.</p>
+    <p><strong>Done when</strong> tests show: with the key false, the seeded settings and argv are byte-identical to the base revision's; with it true, the seeded home registers the server with the run's write roots, the argv disallows <code>Edit</code> and <code>MultiEdit</code>, and the run record carries <code>anchored_edit: true</code>; with it true on an unfenced run and on a resumed run, the record carries <code>false</code> with the matching reason and the argv keeps the built-in tools. <strong>Negative control:</strong> a test asserting the false-key argv is unchanged must fail if the disallow list is added unconditionally. The flight schema and its generated JSON change together.</p>
 
     <h2 id="s5">§5 — Codex workers can be given the anchored tool</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
@@ -90,40 +93,41 @@
       <li>How to turn off, per run, its own subagent fan-out (<code>task</code>), browser, desktop-control and web tools, and its loading of project MCP configuration — a worker that fans out inside itself bypasses the run ledger, so these are requirements rather than preferences.</li>
       <li>Which home directory it writes (<code>~/.omp</code> by default) and whether an environment variable relocates it, so the fence can give each run its own.</li>
     </ul>
-    <p><strong>Done when</strong> a note at <code>~/.config/reckon/crew/reports/reckon/omp-headless-contract.md</code> answers every item above with the command and output that settles it, marks any item it could not settle as unsettled with the reason, and includes a recorded event-stream sample of at least one tool call as a test fixture candidate. The node writes no product code.</p>
+    <p><strong>Done when</strong> a note at <code>~/.config/reckon/crew/reports/reckon/omp-headless-contract.md</code> settles, each with the command and its recorded output, the three items §7 cannot be built without: the event-stream format (with a recorded sample containing at least one tool call, one tool result and one token-usage record, kept as a fixture candidate), one prompt completed against the local endpoint through <code>models.yml</code>, and the per-run switches that turn off <code>task</code>, the browser and desktop tools and project MCP. If any of those three cannot be settled, the node's manifest status is <code>blocked</code>, naming the item and what was tried, and §7 is not dispatched. The remaining two items (resume and the home directory) are answered or marked unsettled with the reason. The node writes no product code.</p>
 
     <h2 id="s7">§7 — oh-my-pi runs as a crew worker backend on the local lane</h2>
 <section data-reckon="section" data-id="s7" data-effort-hours="2.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> An <code>omp</code> dialect registered in <code>_DIALECTS</code> (<code>reckon/_backends.py</code>), built on what §6 settled: argv composition for the headless mode, a stream parser that produces the same run-detail fields the Claude and codex parsers produce (token usage, tool calls, failures, final message), resume, a per-run home under the fence, the fan-out and browser tools disabled, project MCP off, and the anchored edit tool not offered — omp's own anchored edit is the thing being piloted. A host-layer flight backend named <code>omp-local</code> pointing at the same endpoint the <code>clive</code> backend uses, with placement copied from <code>clive</code>.</p>
-    <p><strong>Done when</strong> parser tests pass on §6's recorded fixture; argv tests show each disabled tool; and one real read-only investigate node dispatched with <code>--set backend=omp-local</code> completes, writes its manifest, and its run record carries non-null input and output token totals. <strong>Positive control for the parser:</strong> the same token-summing code reports non-zero totals for a known-healthy recorded stream before it is trusted on a new one. A stream format this parser does not recognise is a refusal, never a run read as empty.</p>
+    <p><strong>Done when</strong> parser tests pass on §6's recorded fixture and argv tests show each disabled tool. <strong>Positive control:</strong> the token-summing code reports non-zero totals for a known-healthy recorded stream before it is trusted on a new one. <strong>Negative control:</strong> a fixture in a format the parser does not recognise (a codex <code>thread.started</code> stream, say) is refused with a named error rather than parsed as a run with zero tokens and zero tool calls, and the test fails if the refusal is removed. <strong>Live check, dispatched by the coordinator after the node lands:</strong> one read-only investigate node with <code>--backend omp-local</code> completes, writes its manifest, and its run record carries non-null input and output token totals; the section closes only on that run.</p>
 
     <h2 id="s8">§8 — Measure each arm against the run store and decide</h2>
 <section data-reckon="section" data-id="s8" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> Run the arms on comparable work and report. The arms are: local lane baseline (Claude Code built-in edits), local lane with the anchored tool, local lane under omp, codex baseline, codex with the anchored tool offered. Comparable means the same roles and node classes over the same window; the arms run concurrently so the lane's load is shared. At least 30 implement runs per local arm and 15 per codex arm before any verdict.</p>
     <p>The metrics, each read from the run store, never from prose: edit failure rate (and, for the codex anchored arm, the share of edits routed through the tool); tool calls per run; cumulative input tokens per run; peak context; output tokens per run; landing rate and corrective redispatch rate. The verdict for each treatment is <strong>adopt</strong> only when cumulative input per landed node falls by at least 5% against its baseline with no fall in landing rate; otherwise <strong>do not adopt</strong>, stated as a measured result.</p>
-    <p><strong>Done when</strong> an evidence record at <code>docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html</code> carries the per-arm table, the population sizes, the query that produced it, and the verdict per treatment; and the flight default for <code>anchored_edit</code> per backend is set to what the verdict says. <strong>Two-population check:</strong> the record says which direction is the defect for each metric (fewer edit failures and less input are better; a lower landing rate is worse), so a treatment that cuts tokens by failing more nodes reads as a failure.</p>
+    <p><strong>Controls on the query.</strong> Positive: run over the baseline local arm by the method of §1, it reproduces an edit failure rate of the same order as §1's 11.2%; and for codex, the edit-failure parser first finds the failure in a recorded stream known to contain a refused patch, so a zero for codex means zero and not an unread field. Negative: the baseline local arm split by run-id parity into two pseudo-arms shows a difference in cumulative input per landed node below the 5% adoption threshold; if it does not, the population is too noisy for a verdict and the record says so instead of giving one.</p>
+    <p><strong>Done when</strong> an evidence record at <code>docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html</code> carries the per-arm table, both controls' results, the population sizes, the query that produced it, and the verdict per treatment; and the flight default for <code>anchored_edit</code> per backend is set to what the verdict says. <strong>Two-population check:</strong> the record says which direction is the defect for each metric (fewer edit failures and less input are better; a lower landing rate is worse), so a treatment that cuts tokens by failing more nodes reads as a failure.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="omp-scope" data-choice="pilot-as-worker" data-by="Simon McIntosh" data-when="2026-11-10">
-        <p class="r-dec-q">How far does oh-my-pi go: replace the crew harness, run as one more worker program, or not at all?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="pilot-as-worker">Pilot as one worker backend on the local lane</button>
-          <button class="r-opt" data-value="replace">Replace the crew harness</button>
-          <button class="r-opt" data-value="none">Do not adopt</button>
-        </p>
-        <p class="r-dec-rat">The two systems mostly sit at different layers: oh-my-pi is an agent program, the crew harness is the control plane above whichever programs run. Replacing the harness would discard durability across process death, subscription-window pacing, SLURM placement, write fences and landing checks, none of which oh-my-pi provides. Its token claims are cuts in output tokens, which are about 0.5% of our spend, so the pilot is measured on input per landed node. The lead asked for the pilot on 2026-11-10.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="omp-scope" data-choice="pilot-as-worker" data-by="Simon McIntosh" data-when="2026-11-10">
+    <p class="r-dec-q">How far does oh-my-pi go: replace the crew harness, run as one more worker program, or not at all?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="pilot-as-worker">Pilot as one worker backend on the local lane</button>
+      <button class="r-opt" data-value="replace">Replace the crew harness</button>
+      <button class="r-opt" data-value="none">Do not adopt</button>
+      </p>
+    <p class="r-dec-rat">The two systems mostly sit at different layers: oh-my-pi is an agent program, the crew harness is the control plane above whichever programs run. Replacing the harness would discard durability across process death, subscription-window pacing, SLURM placement, write fences and landing checks, none of which oh-my-pi provides. Its token claims are cuts in output tokens, which are about 0.5% of our spend, so the pilot is measured on input per landed node. The lead asked for the pilot on 2026-11-10.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-wsft-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-10">
-        <h4 class="r-fu-title">Build the anchored edit tool and the omp headless investigation</h4>
-        <div class="r-fu-body"><p>The plan is written and its prototypes are recorded. §3 and §6 have no upstream and can start at once; §4 and §5 wait on §3, §7 on §6, and §8 on all three arms.</p></div>
-        <pre class="r-fu-prompt">/reckon-build workers-spend-fewer-tokens-per-landed-node</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-wsft-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-10" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build the anchored edit tool and the omp headless investigation</h4>
+    <div class="r-fu-body"><p>The plan is written and its prototypes are recorded. §3 and §6 have no upstream and can start at once; §4 and §5 wait on §3, §7 on §6, and §8 on all three arms.</p></div>
+    <pre class="r-fu-prompt">/reckon-build workers-spend-fewer-tokens-per-landed-node</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>

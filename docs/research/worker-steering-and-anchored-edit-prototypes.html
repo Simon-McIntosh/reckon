@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="research">
+  <meta name="plan-slug" content="worker-steering-and-anchored-edit-prototypes">
+  <meta name="plan-title" content="Worker Steering And Anchored Edit Prototypes">
+  <meta name="plan-summary" content="Five headless prototypes run on 2026-11-10: mid-run hook delivery in Claude Code and codex, codex queue, and a line-anchored MCP edit tool in both.">
+  <meta name="plan-tags" content="crew,reckon-tooling,delivery">
+  <meta name="plan-informs" content="a-live-worker-can-be-reached,workers-spend-fewer-tokens-per-landed-node">
+  <title>Worker Steering And Anchored Edit Prototypes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h2 id="s1">§1 — What was run, and where</h2>
+    <p>All five runs took place on 2026-11-10 on the fleet node (SLURM job 1291586, host 98dci4-clu-2023), from a coordinator session's scratch directory, against throwaway files and never inside a checkout. Claude Code 2.1.322 and codex-cli 0.167.0 were the installed versions. Each Claude run used <code>--model haiku</code> and each codex run <code>-m gpt-6-luna</code>, the cheapest models available, because the question was the harness's behaviour, not the model's. The scratch directory does not survive the allocation, so the scripts are reproduced in full below and each result is quoted from the run's own output.</p>
+    <table>
+      <thead><tr><th>Run</th><th>Question</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Claude Code, session <code>02f01c36-7b6c-4b2f-950b-db44c8c5a4f4</code></td><td>Does a <code>PostToolUse</code> hook's <code>additionalContext</code> reach a headless <code>claude -p</code> worker mid-run?</td><td><strong>Yes.</strong> Final result: <q>All three commands printed as expected: `one`, `two`, `three`. PELICAN, as the coordinator note asked.</q> The codeword existed only in the inbox file the hook read.</td></tr>
+        <tr><td>codex exec, three attempts</td><td>Does the same hook run under codex?</td><td><strong>Not without trust.</strong> Declared in a project <code>.codex/hooks.json</code> (plain and with the project marked trusted) and inline via <code>-c hooks.PostToolUse=[…]</code>: all three runs completed normally, the hook never ran, no receipt was written. The codex binary carries <code>hooks.state.&lt;key&gt;.trusted_hash</code>, the message <q>hooks are new or changed</q>, and a <code>--dangerously-bypass-hook-trust</code> flag. The bypass flag was not run: the coordinator's safety classifier refused it.</td></tr>
+        <tr><td>codex queue, thread <code>01a1c633-98e3-7f30-a8e2-87384ac4c161</code></td><td>Does <code>codex queue</code> reach a running <code>codex exec</code> session?</td><td><strong>No, and it reports success.</strong> It printed <q>Queued message 01a1c633-b15b-7810-9d72-4c3da249d147 for thread 01a1c633-98e3-7f30-a8e2-87384ac4c161.</q> and exited 0, while the worker, mid-way through three 15-second commands, finished its turn with no mention of the message.</td></tr>
+        <tr><td>Claude Code with the anchored MCP server</td><td>Can a worker edit through line anchors alone?</td><td><strong>Yes.</strong> With <code>--disallowedTools Edit MultiEdit Write</code>, a three-change task on a small module was completed through one <code>read_anchored</code> and the anchored edits; the result was verified by importing the module (<code>summarise([1,2,3])</code> returned mean, variance and stdev; <code>mean([])</code> raised <code>ValueError</code>).</td></tr>
+        <tr><td>codex with the anchored MCP server</td><td>Does the same tool work under codex?</td><td><strong>Yes, once its tools are pre-approved.</strong> The first attempt refused every call: <q>MCP tool call requires approval, but approval policy is never</q>. With <code>mcp_servers.anchored.default_tools_approval_mode="approve"</code> (accepted values: <code>auto</code>, <code>prompt</code>, <code>writes</code>, <code>approve</code>) the task completed with one read and two successful edits: <q>Updated `stats.py`: renamed `describe` to `summarise`, added `stdev` using `math.sqrt`, and made `mean([])` raise `ValueError`.</q> One further edit call failed because the model passed bare hashes (<code>"start":"b07"</code>) with no line number and the prototype raised <code>invalid literal for int()</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 id="s2">§2 — The duplicate delivery the steering prototype exposed</h2>
+    <p>In the Claude run the model issued its three <code>echo</code> commands as parallel tool calls. Three hook processes ran concurrently, each found the same unread message, and each delivered it. The receipts file held three rows for one message, all within 0.2 ms: <code>{"message": "001.md", "delivered_at": 1794326473.1949534, "event": "PostToolUse", "tool": "Bash"}</code>, then the same at <code>…194959</code> and <code>…1951315</code>. A product hook must claim each message atomically, for example by renaming it into a claimed name, so exactly one hook process delivers it.</p>
+
+    <h2 id="s3">§3 — The steering hook as run</h2>
+    <p>Registered as <code>{"hooks":{"PostToolUse":[{"matcher":"*","hooks":[{"type":"command","command":"STEER_INBOX=&lt;dir&gt;/inbox &lt;dir&gt;/hook.py"}]}]}}</code> through <code>claude -p --settings</code>, with the prompt on stdin and <code>--allowedTools "Bash(echo:*)"</code>.</p>
+<pre>
+#!/usr/bin/env python3
+# Deliver unread inbox messages as additionalContext after a tool call; record a receipt.
+import json
+import os
+import pathlib
+import sys
+import time
+
+event = json.load(sys.stdin)
+inbox = pathlib.Path(os.environ[&quot;STEER_INBOX&quot;])
+msgs = sorted(inbox.glob(&quot;*.md&quot;))
+if not msgs:
+    sys.exit(0)
+text = &quot;\n\n&quot;.join(f&quot;[coordinator message {p.name}]\n{p.read_text()}&quot; for p in msgs)
+receipt = inbox.parent / &quot;receipts.jsonl&quot;
+with receipt.open(&quot;a&quot;) as f:
+    for p in msgs:
+        f.write(json.dumps({
+            &quot;message&quot;: p.name,
+            &quot;delivered_at&quot;: time.time(),
+            &quot;event&quot;: event.get(&quot;hook_event_name&quot;),
+            &quot;tool&quot;: event.get(&quot;tool_name&quot;),
+        }) + &quot;\n&quot;)
+        p.rename(p.with_suffix(&quot;.delivered&quot;))
+print(json.dumps({&quot;hookSpecificOutput&quot;: {
+    &quot;hookEventName&quot;: event.get(&quot;hook_event_name&quot;, &quot;PostToolUse&quot;),
+    &quot;additionalContext&quot;: text,
+}}))
+
+</pre>
+
+    <h2 id="s4">§4 — The anchored edit server as run</h2>
+    <p>Started over stdio from the reckon checkout's interpreter (<code>mcp</code> 1.28.1). For Claude: <code>--mcp-config</code> naming it, <code>--strict-mcp-config</code>, and its two tools in <code>--allowedTools</code>. For codex: <code>-c mcp_servers.anchored.command=…</code>, <code>-c mcp_servers.anchored.args=[…]</code> and the approval mode above, with <code>-s workspace-write</code>. It has no write-root confinement; the product module must add it, because an MCP server runs outside codex's command sandbox.</p>
+<pre>
+&quot;&quot;&quot;Prototype: line-anchored file editing over MCP.
+
+read_anchored returns each line as ``N:HHH|text``, where HHH is a short hash of
+the line&#x27;s content. edit_anchored addresses lines by those anchors, so the model
+never retypes the old text; an anchor whose hash no longer matches the file is
+refused before anything is written, and the refusal carries fresh anchors for
+the region so a retry needs no re-read.
+&quot;&quot;&quot;
+
+from __future__ import annotations
+
+import hashlib
+from pathlib import Path
+
+from mcp.server.fastmcp import FastMCP
+
+HASH_CHARS = 3
+CONTEXT = 3
+server = FastMCP(&quot;anchored-edit&quot;)
+
+
+def line_hash(text: str) -&gt; str:
+    return hashlib.sha1(text.encode(&quot;utf-8&quot;, &quot;surrogatepass&quot;)).hexdigest()[:HASH_CHARS]
+
+
+def render(lines: list[str], start: int, stop: int) -&gt; str:
+    return &quot;\n&quot;.join(f&quot;{n}:{line_hash(lines[n - 1])}|{lines[n - 1]}&quot; for n in range(start, stop + 1))
+
+
+def parse_anchor(anchor: str) -&gt; tuple[int, str]:
+    number, _, digest = anchor.strip().partition(&quot;:&quot;)
+    return int(number), digest.split(&quot;|&quot;, 1)[0]
+
+
+@server.tool()
+def read_anchored(path: str, offset: int = 1, limit: int = 400) -&gt; str:
+    &quot;&quot;&quot;Read a text file as anchored lines `N:HASH|text`. Use the `N:HASH` anchors with edit_anchored.&quot;&quot;&quot;
+    lines = Path(path).read_text().split(&quot;\n&quot;)
+    stop = min(len(lines), offset + limit - 1)
+    header = f&quot;{path}: lines {offset}-{stop} of {len(lines)}&quot;
+    return header + &quot;\n&quot; + render(lines, offset, stop)
+
+
+@server.tool()
+def edit_anchored(path: str, edits: list[dict]) -&gt; str:
+    &quot;&quot;&quot;Apply edits addressed by anchors from read_anchored.
+
+    Each edit: {&quot;start&quot;: &quot;N:HASH&quot;, &quot;end&quot;: &quot;M:HASH&quot; (optional, inclusive, default start),
+    &quot;op&quot;: &quot;replace&quot; | &quot;insert_after&quot; | &quot;insert_before&quot; (default replace),
+    &quot;text&quot;: &quot;new lines joined by \\n; empty string with replace deletes the range&quot;}.
+    All anchors are checked before anything is written; a stale anchor refuses the whole call.
+    &quot;&quot;&quot;
+    target = Path(path)
+    lines = target.read_text().split(&quot;\n&quot;)
+    resolved = []
+    stale = []
+    for edit in edits:
+        start, start_hash = parse_anchor(edit[&quot;start&quot;])
+        end, end_hash = parse_anchor(edit.get(&quot;end&quot;) or edit[&quot;start&quot;])
+        for number, digest in ((start, start_hash), (end, end_hash)):
+            if not 1 &lt;= number &lt;= len(lines) or line_hash(lines[number - 1]) != digest:
+                stale.append(number)
+        resolved.append((start, end, edit.get(&quot;op&quot;, &quot;replace&quot;), edit.get(&quot;text&quot;, &quot;&quot;)))
+    if stale:
+        regions = []
+        for number in sorted(set(stale)):
+            low = max(1, number - CONTEXT)
+            high = min(len(lines), number + CONTEXT)
+            regions.append(render(lines, low, high))
+        return &quot;REFUSED: stale anchor(s) at line(s) &quot; + &quot;, &quot;.join(map(str, sorted(set(stale)))) + \
+            &quot;; nothing was written. Current anchors:\n&quot; + &quot;\n...\n&quot;.join(regions)
+    spans = sorted(resolved, key=lambda item: item[0], reverse=True)
+    for (a_start, a_end, *_), (b_start, b_end, *_) in zip(spans, spans[1:]):
+        if b_end &gt;= a_start:
+            return f&quot;REFUSED: edits overlap at lines {b_start}-{b_end} and {a_start}-{a_end}; nothing was written.&quot;
+    touched = []
+    for start, end, op, text in spans:
+        new = [] if (op == &quot;replace&quot; and text == &quot;&quot;) else text.split(&quot;\n&quot;)
+        if op == &quot;replace&quot;:
+            lines[start - 1:end] = new
+            touched.append((start, start + len(new) - 1))
+        elif op == &quot;insert_after&quot;:
+            lines[end:end] = new
+            touched.append((end + 1, end + len(new)))
+        elif op == &quot;insert_before&quot;:
+            lines[start - 1:start - 1] = new
+            touched.append((start, start + len(new) - 1))
+        else:
+            return f&quot;REFUSED: unknown op {op!r}; nothing was written.&quot;
+    target.write_text(&quot;\n&quot;.join(lines))
+    shown = []
+    for start, end in sorted(touched):
+        low = max(1, start - 1)
+        high = min(len(lines), max(end, start) + 1)
+        shown.append(render(lines, low, high))
+    return f&quot;OK: {len(edits)} edit(s) applied to {path}. Fresh anchors around the change:\n&quot; + &quot;\n...\n&quot;.join(shown)
+
+
+if __name__ == &quot;__main__&quot;:
+    server.run()
+
+</pre>
+  </main>
+</body>
+</html>
