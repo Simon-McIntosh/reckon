@@ -60,6 +60,54 @@
       receipts and cancellation by reported job ID. All changed Python paths
       pass Ruff check and Ruff format --check with no findings.</p>
   </section>
+  <section id="landing-measure-runs-on-its-partition-destination-scratch">
+    <h3>Scratch belongs to the destination node</h3>
+    <p>The reviewed implementation used the submitter's inherited
+      <code>TMPDIR</code> to place its checkout. The runtime control reproduced
+      this at <code>a62c222d2e4d59e3cc32c8daca8916d43cf9cad4</code>:
+      <code>mktemp</code> attempted the fixture's
+      <code>absent-on-destination/landing-arm-XXXXXX</code> path and reported
+      <code>No such file or directory</code>; the base arm was unreadable.
+      Both script-order controls also failed because no reset to
+      <code>/tmp</code> preceded scratch creation.</p>
+    <p>Commit <code>9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d</code> sets the
+      submitted batch environment's <code>TMPDIR</code> to <code>/tmp</code>.
+      The job initializes its scratch variable and installs the cleanup and
+      exit-receipt trap before the first external command. It resets
+      <code>TMPDIR=/tmp</code>, calls <code>mktemp</code> with an explicit
+      <code>/tmp/$USER-landing-…-XXXXXX</code> template, and exports the private
+      directory as <code>TMPDIR</code> before creating the tree or calling Git.
+      The directory identity comes from the arm's durable log path; mktemp
+      supplies its exclusive random suffix.</p>
+    <p>The controls cover both an absent inherited directory and an existing
+      inherited directory. For every arm they require the trap and reset before
+      the first mktemp or Git call, the explicit node-local template, the private
+      directory export before checkout, and a batch environment free of the
+      inherited path. The shell-execution control maps the explicit
+      <code>/tmp</code> template into its fixture's simulated node filesystem,
+      records mktemp's actual arguments and environment, and verifies that the
+      suite's exported TMPDIR owns the checkout and is removed afterwards.
+      Its base/head content assertions remain; the redundant assertion that
+      every script merely contains a supplied SHA is removed.</p>
+    <table>
+      <thead><tr><th>Repair reading</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime control before repair</td><td>1 failed; EXIT=1.</td></tr>
+        <tr><td>Absent/existing inherited-directory controls before repair</td>
+          <td>2 failed; EXIT=1.</td></tr>
+        <tr><td>Focused controls after repair</td><td>10 passed; EXIT=0.</td></tr>
+        <tr><td>Original base armed suite</td><td>51 passed; EXIT=0.</td></tr>
+        <tr><td>Repaired head armed suite</td><td>61 passed; EXIT=0.</td></tr>
+        <tr><td>Importer comparison</td>
+          <td>Base: 8 failed, 162 passed. Head: 8 failed, 172 passed.
+            Identical failing IDs; zero added failures.</td></tr>
+      </tbody>
+    </table>
+    <p>All suite and importer arms ran sequentially, with a 60-second per-test
+      bound and at most four pytest workers. Ruff check and format --check
+      report no findings on the changed Python paths. The repair logs and the
+      exact failure-ID comparison are retained in the run directory.</p>
+  </section>
 </main>
 </body>
 </html>
