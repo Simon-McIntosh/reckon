@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The delivery module binding is no longer counted; the assertion protects the instrument against silently missing that alias.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:73"
+    },
+    {
+      "failure_condition": "The synthetic home contains other than forty live pointers; the fixture premise fails independently of the ticker.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:74"
+    },
+    {
+      "failure_condition": "Any of the five seeded records fails the real delivery predicate; the positive control prevents zero work from passing the count check.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:76"
+    },
+    {
+      "failure_condition": "The ticker cannot yield the forty requested rows; obtaining forty is structurally ensured by the comprehension when it returns, so this is a population sanity assertion and not the regression guard.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:96"
+    },
+    {
+      "failure_condition": "Review event subject resolution is removed or points at another run/node; expected IDs are derived from fixture identities independently of the event output.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:100-101"
+    },
+    {
+      "failure_condition": "The stop skips a reviewer, targets another pid/start identity, repeats a stop, or changes the expected order; the Mock observes the calls actually issued.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:102-104"
+    },
+    {
+      "failure_condition": "The stop no longer persists phase=stopped, despite signalling; runs.read_pointer reads the written result.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:107"
+    },
+    {
+      "failure_condition": "The persisted stop receipt is missing or names a record other than the declaration; comparison to fixture input is legitimate round-trip evidence, not the one-list regression guard, and cannot pass if the write is removed.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:108-110"
+    },
+    {
+      "failure_condition": "Remove forwarding from any delivery-chain hop or baseline-event subject resolution: original code makes eleven reads, and restoring either nested path exceeds the independent literal one; negative-control.log records the original failure.",
+      "lines": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:111"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:watch_ticker:3382",
+    "reckon/crew/recovery_watch.py:watch_ticker:3476",
+    "reckon/crew/recovery_watch.py:watch_ticker:3503",
+    "reckon/crew/recovery_review_acceptance.py:469",
+    "reckon/crew/recovery_review_acceptance.py:480",
+    "reckon/crew/promotion_records.py:_review_record_evidence:269"
+  ],
+  "completed_at": "2026-11-10T00:08:20Z",
+  "dispatched_at": "2026-11-09T23:53:52Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[streaming]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers/resume-scoped-head.log",
+      "revision": "8e44515bbdf9753b2222bf67c3f81830de39f6e1",
+      "summary": "1 failed, 9 passed in 88.10s (0:01:28)"
+    },
+    "baseline_suite": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_the_watcher_sweeps_unfollowed_sessions.py::test_the_watcher_sweeps_only_the_sessions_nobody_follows[streaming]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers/resume-scoped-base.log",
+      "revision": "0a50d367fc7e69a5d957323c24f045f181bf3d22",
+      "summary": "1 failed, 8 passed in 94.97s (0:01:34)"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "reviewed a39e7b529db6a886397d1d5f868707332af773a0, 03d22584406c97c5206febd0259ad1e492a42e65, 6559f07175e4bc27a6b1d0f2df6e35eebf173a8c and 8e44515bbdf9753b2222bf67c3f81830de39f6e1 individually; they contain pointer forwarding, its regression test, a compatible test double and the evidence fragment.",
+    "done_when": "the live plan docs/plans/the-monitor-reads-each-fact-once.html:554 requires a 40-pointer single-list tick, and the new test plus negative-control.log measure one at head versus eleven at base with five actual stop receipts.",
+    "goal": "prompt.txt:38 asks the delivered-review stop to share tick pointers, and reckon/crew/recovery_review_delivery.py:604 forwards them through the existing delivery chain.",
+    "manifest": "manifest.md records all four commits and readable baseline_suite/after_suite receipts whose resume-scoped-base.log and resume-scoped-head.log both end EXIT=1 with the same sole streaming-watcher failure.",
+    "write_paths": "the five changed paths from 0a50d367fc7e69a5d957323c24f045f181bf3d22 to 8e44515bbdf9753b2222bf67c3f81830de39f6e1 are within prompt.txt:80 and the explicit test-scope extension in resume-1-advice.txt:1."
+  },
+  "justifications": {
+    "durability": "tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:111 fails if either delivery or baseline-event resolution again lists the fleet, with independent signal and persisted-receipt checks at lines 100-110, although the later transition-event branch at recovery_watch.py:3503 is not separately driven.",
+    "evidence": "negative-control.log records assert 11 == 1 with five signals, resume-scoped-head.log records the new regression passing at the reviewed head, and the matched importer logs record identical six failure IDs with four workers and a 60-second timeout.",
+    "fit": "reckon/crew/recovery_review_delivery.py:110,386,510,548 and recovery_watch.py:2262,2295,2332 extend the surrounding keyword-only optional-pointer idiom without adding forbidden source names.",
+    "goal_fidelity": "reckon/crew/recovery_review_delivery.py:604,572,525,417,124 passes the tick context to the existing resolver, and recovery_watch.py:3489,3512 does the same for review events.",
+    "reuse": "capability searches for review-store resolution and pointer-sharing found the existing owners recovery_review_delivery.py:_review_store_record_paths and _resolved_reviewed_run_id plus tests/test_a_producer_tick_reads_live_pointers_once.py:tick, all of which this diff extends or reuses rather than duplicating.",
+    "scope_discipline": "the five paths changed across the four commits are covered by prompt.txt:80 and resume-1-advice.txt:1, and the conditionally granted watcher test is unchanged because its failure also reproduces at base."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 asks the delivered-review stop to share tick pointers, and reckon/crew/recovery_review_delivery.py:604 forwards them through the existing delivery chain.\nVERDICT done_when: the live plan docs/plans/the-monitor-reads-each-fact-once.html:554 requires a 40-pointer single-list tick, and the new test plus negative-control.log measure one at head versus eleven at base with five actual stop receipts.\nVERDICT write_paths: the five changed paths from 0a50d367fc7e69a5d957323c24f045f181bf3d22 to 8e44515bbdf9753b2222bf67c3f81830de39f6e1 are within prompt.txt:80 and the explicit test-scope extension in resume-1-advice.txt:1.\nVERDICT manifest: manifest.md records all four commits and readable baseline_suite/after_suite receipts whose resume-scoped-base.log and resume-scoped-head.log both end EXIT=1 with the same sole streaming-watcher failure.\nVERDICT diff: reviewed a39e7b529db6a886397d1d5f868707332af773a0, 03d22584406c97c5206febd0259ad1e492a42e65, 6559f07175e4bc27a6b1d0f2df6e35eebf173a8c and 8e44515bbdf9753b2222bf67c3f81830de39f6e1 individually; they contain pointer forwarding, its regression test, a compatible test double and the evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:watch_ticker:3382, reckon/crew/recovery_watch.py:watch_ticker:3476, reckon/crew/recovery_watch.py:watch_ticker:3503, reckon/crew/recovery_review_acceptance.py:469, reckon/crew/recovery_review_acceptance.py:480, reckon/crew/promotion_records.py:_review_record_evidence:269\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_delivery.py:604,572,525,417,124 passes the tick context to the existing resolver, and recovery_watch.py:3489,3512 does the same for review events.\nSCORE evidence: 20\nJUSTIFICATION evidence: negative-control.log records assert 11 == 1 with five signals, resume-scoped-head.log records the new regression passing at the reviewed head, and the matched importer logs record identical six failure IDs with four workers and a 60-second timeout.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the five paths changed across the four commits are covered by prompt.txt:80 and resume-1-advice.txt:1, and the conditionally granted watcher test is unchanged because its failure also reproduces at base.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_delivered_review_stop_reads_the_tick_pointers.py:111 fails if either delivery or baseline-event resolution again lists the fleet, with independent signal and persisted-receipt checks at lines 100-110, although the later transition-event branch at recovery_watch.py:3503 is not separately driven.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_delivery.py:110,386,510,548 and recovery_watch.py:2262,2295,2332 extend the surrounding keyword-only optional-pointer idiom without adding forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for review-store resolution and pointer-sharing found the existing owners recovery_review_delivery.py:_review_store_record_paths and _resolved_reviewed_run_id plus tests/test_a_producer_tick_reads_live_pointers_once.py:tick, all of which this diff extends or reuses rather than duplicating.\n",
+  "review_limits": [
+    "Read-only review; no product tests rerun.",
+    "Importer head receipt is at 6559f07175e4bc27a6b1d0f2df6e35eebf173a8c; the only subsequent commit edits evidence HTML, and the scoped head receipt names reviewed head 8e44515bbdf9753b2222bf67c3f81830de39f6e1.",
+    "The live 120-second production sample and merged-head validation belong to the coordinator under the live plan."
+  ],
+  "review_run_id": "r-20261109T234906008576-review-of-delivered-review-stop-reads-the-tick-pointers-8e44515bbdf9",
+  "reviewed_base_sha": "0a50d367fc7e69a5d957323c24f045f181bf3d22",
+  "reviewed_head_sha": "8e44515bbdf9753b2222bf67c3f81830de39f6e1",
+  "reviewed_run_id": "r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers",
+  "scores": {
+    "durability": 19,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:21:18.628171+00:00",
+  "total": 119
+}
