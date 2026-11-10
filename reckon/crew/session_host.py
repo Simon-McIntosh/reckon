@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import contextlib
 import ctypes
+import fcntl
 import json
 import os
 import select
@@ -121,6 +122,30 @@ _EXITED_REASON = "host exited"
 # stop: an OSError from select or read, say. The exception still propagates; the
 # reason exists so the final census bounds the end rather than leaving it null.
 _FAILED_REASON = "host failed"
+
+# A host is the only one for its owner pair. It holds an advisory lock naming
+# the pair for as long as it runs, so a second host started for the same owner
+# exits instead of reading the same FIFO beside the first, replacing the first
+# host's census, and removing a FIFO the first host still reads.
+OWNER_LOCK_SUFFIX = ".lock"
+ALREADY_RUNNING_REASON = "another session host already serves this owner pair"
+ALREADY_RUNNING_EXIT_CODE = 1
+
+
+def _fifo_identity(path: Path | None) -> tuple[int, int] | None:
+    """The device and inode a FIFO path names now, or None when it names none.
+
+    A path is not its file: the FIFO this host was handed can be removed and
+    another created at the same path while the host runs. Recording the
+    identity at the start lets the stop path unlink only the file it was given.
+    """
+    if path is None:
+        return None
+    try:
+        status = path.stat()
+    except OSError:
+        return None
+    return (status.st_dev, status.st_ino)
 
 
 def _state_dir(environ: Mapping[str, str] | None = None) -> Path:
@@ -497,6 +522,10 @@ class SessionHost:
         self._record_path = _state_dir(self._environ) / f"{self._stem}{RECORD_SUFFIX}"
         self._log_path = _log_dir(self._environ) / f"{self._stem}.log"
         self._fifo_path = _fifo_path(self._owner)
+        # The FIFO this host was handed, by identity rather than by name, so
+        # the stop path never removes a later session's FIFO from this path.
+        self._fifo_identity = _fifo_identity(self._fifo_path)
+        self._owner_lock: Any | None = None
 
     # -- identity -----------------------------------------------------------
 
@@ -507,6 +536,39 @@ class SessionHost:
     @property
     def record_path(self) -> Path:
         return self._record_path
+
+    # -- one host per owner pair -------------------------------------------
+
+    def acquire_owner_lock(self) -> bool:
+        """Take the advisory lock naming this host's owner pair.
+
+        The lock file is named for the pair beside the census record, and it is
+        held for as long as the host runs -- the descriptor is kept open, so the
+        lock goes with this process. ``False`` means another host already holds
+        the pair: a second host that went on would read the same FIFO beside the
+        first, replace its census, and remove a FIFO that host is still reading.
+        """
+        path = self._record_path.with_suffix(OWNER_LOCK_SUFFIX)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle = path.open("a+b")
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError:
+            handle.close()
+            return False
+        self._owner_lock = handle
+        return True
+
+    def release_owner_lock(self) -> None:
+        """Release the pair lock, if this host took it."""
+        handle = self._owner_lock
+        self._owner_lock = None
+        if handle is None:
+            return
+        with contextlib.suppress(OSError):
+            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+        with contextlib.suppress(OSError):
+            handle.close()
 
     # -- record -------------------------------------------------------------
 
@@ -951,17 +1013,21 @@ class SessionHost:
         for child in list(self._children.values()):
             self._stop_child(child)
         self._write_record(force=True)
+        self.release_owner_lock()
 
     def _remove_fifo(self) -> None:
-        """Remove the request FIFO this host was handed, if it still exists.
+        """Remove the request FIFO this host was handed, if it is still there.
 
         An owner that ends and a signal both reach the stop path, so a session
         that ends leaves no stale FIFO in the runtime directory for a later
-        session to inherit. Only this host's own FIFO -- the path named from its
-        owner pair -- is touched; a FIFO belonging to another session is never
-        removed.
+        session to inherit. Ownership is decided by identity, not by path: the
+        FIFO this host was handed can be removed and another created at the same
+        path while the host runs, and a later session's FIFO is not this host's
+        to remove. A path that now names a different file is left alone.
         """
-        if self._fifo_path is None:
+        if self._fifo_path is None or self._fifo_identity is None:
+            return
+        if _fifo_identity(self._fifo_path) != self._fifo_identity:
             return
         with contextlib.suppress(OSError):
             self._fifo_path.unlink(missing_ok=True)
@@ -1007,10 +1073,20 @@ class SessionHost:
         # scan reads the predecessor's census, so it runs before the write below
         # replaces it.
         self.adopt_live_work()
+        if self._fifo_identity is None:
+            # The FIFO can appear between the host being built and the read
+            # starting, which is the moment it becomes this host's to remove.
+            self._fifo_identity = _fifo_identity(self._fifo_path)
         self._write_record(force=True)
         if first_request:
             self.handle(first_request)
         descriptor = requests.fileno()
+        # A FIFO can have more than one reader. select reports it readable when
+        # bytes arrive, and another reader can take those bytes before this one
+        # runs; a blocking read would then wait for input that has already gone
+        # and the host would sit in it, deaf to a request and to a stop. The
+        # descriptor is read raw and non-blocking for that reason.
+        os.set_blocking(descriptor, False)
         buffer = b""
         reason: str | None = None
         try:
@@ -1028,14 +1104,22 @@ class SessionHost:
                     # available chunk into the stream's own buffer, so requests
                     # arriving together are invisible to ``select`` after the
                     # first line and every later one waits for new input.
-                    chunk = os.read(descriptor, 65536)
-                    if not chunk:
+                    try:
+                        chunk = os.read(descriptor, 65536)
+                    except BlockingIOError:
+                        # Another reader took the bytes select reported. Nothing
+                        # is pending and nothing is lost, so this pass falls
+                        # through to the owner check and the tick instead of
+                        # waiting in a read it cannot leave.
+                        chunk = None
+                    if chunk == b"":
                         reason = _REQUEST_ENDED_REASON
                         break
-                    buffer += chunk
-                    while b"\n" in buffer:
-                        raw, buffer = buffer.split(b"\n", 1)
-                        self.handle(raw.decode("utf-8", errors="replace"))
+                    if chunk:
+                        buffer += chunk
+                        while b"\n" in buffer:
+                            raw, buffer = buffer.split(b"\n", 1)
+                            self.handle(raw.decode("utf-8", errors="replace"))
                 if not owner_alive(self._owner):
                     reason = _OWNER_ENDED_REASON
                     break
@@ -1070,6 +1154,15 @@ def run(
     """
     environ = os.environ if environ is None else environ
     host = SessionHost(owner=owner, follower_argv=follower_argv, environ=environ)
+    if not host.acquire_owner_lock():
+        # Say why on stderr and leave everything the first host owns in place:
+        # its FIFO, its census and its children. A second host that went on
+        # would read the same FIFO beside the first and remove it at its stop.
+        _log(
+            f"{ALREADY_RUNNING_REASON}; leaving owner "
+            f"{host.owner['pid']}-{host.owner['start_time'] or '0'} to it"
+        )
+        return ALREADY_RUNNING_EXIT_CODE
     wake_read, wake_write = os.pipe()
     os.set_blocking(wake_read, False)
     os.set_blocking(wake_write, False)
