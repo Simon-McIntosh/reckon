@@ -828,6 +828,67 @@ def test_the_resume_compatibility_path_launches_the_pointer_attempt(
     assert (home / "attempt-3.reservation").exists(), "the launch took no reservation"
 
 
+def test_a_failed_supervisor_rewrite_on_a_supervised_launch_is_published(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A door with no launch result publishes the failed rewrite on the pointer.
+
+    The dispatch door reports the failure in the result it returns; a resume,
+    review dispatch or compatibility launch has no such result. A rewrite that
+    does not land leaves the hold naming the reserving process, so the same
+    field is written to the run's pointer rather than dropped.
+    """
+    from reckon import _backends
+
+    runs_module._write_json(runs_module.pointer_path(RUN_ID), _pointer(attempt=3))
+    supervisor = _live_child()
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_start_supervisor",
+        lambda spec_path, run_directory, run_id: supervisor.pid,
+    )
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_confirm_supervisor_survived",
+        lambda pid, run_directory, run_id: None,
+    )
+    original_write = dispatch_launch_module._write_json
+
+    def failing_write(path, payload, **keywords):
+        if str(path).endswith(dispatch_launch_module.RESERVATION_SUFFIX):
+            raise OSError("the reservation could not be rewritten")
+        return original_write(path, payload, **keywords)
+
+    monkeypatch.setattr(dispatch_launch_module, "_write_json", failing_write)
+    plan = _backends.LaunchPlan(
+        backend="probe",
+        dialect="claude",
+        argv=[sys.executable, "-c", "pass"],
+        cwd=str(home),
+        stdin_text="",
+        environment={},
+        final_message_path=None,
+        resumed_session=None,
+    )
+    try:
+        dispatch_launch_module._spawn(
+            plan,
+            log_path=home / "resume-1.jsonl",
+            stderr_path=home / "resume-1.stderr.log",
+            prompt_path=home / "prompt.txt",
+        )
+    finally:
+        _stop(supervisor)
+
+    pointer = json.loads(runs_module.pointer_path(RUN_ID).read_text(encoding="utf-8"))
+    assert pointer["reservation_supervisor_recorded"] is False, (
+        "the failed rewrite was dropped instead of published"
+    )
+    assert (home / "attempt-3.reservation").exists(), (
+        "the failed rewrite removed the hold"
+    )
+
+
 def test_the_window_is_refused_before_the_worktree_is_touched(
     repo_context: tuple[Path, Path],
     tmp_path: Path,

@@ -2303,14 +2303,6 @@ def _attempt_number(payload: Mapping[str, Any]) -> int | None:
     return None
 
 
-def _read_record(run_directory: Path, name: str) -> Mapping[str, Any] | None:
-    try:
-        payload = json.loads((run_directory / name).read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    return payload if isinstance(payload, Mapping) else None
-
-
 def _pointer_attempt_number(run_directory: Path) -> int | None:
     """The attempt the run's live pointer records, or None when it has none."""
     try:
@@ -2347,7 +2339,7 @@ def launch_reservation_key(run_directory: Path) -> int:
     """
     numbers = attempt_receipt_numbers(run_directory)
     for name in (WORKER_RECORD_NAME, EXIT_RECORD_NAME):
-        payload = _read_record(run_directory, name)
+        payload = _read_reservation(run_directory / name)
         if payload is None:
             continue
         number = _attempt_number(payload)
@@ -2356,7 +2348,7 @@ def launch_reservation_key(run_directory: Path) -> int:
     if numbers:
         return max(numbers) + 1
     readings: list[int] = []
-    marker = _read_record(run_directory, ATTEMPT_RECORD_NAME)
+    marker = _read_reservation(run_directory / ATTEMPT_RECORD_NAME)
     if marker is not None:
         number = _attempt_number(marker)
         if number is not None:
@@ -2601,6 +2593,25 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> b
     except OSError:
         return False
     return True
+
+
+def _record_supervisor_reporting(reservation: LaunchReservation, pid: int) -> None:
+    """Record the supervisor, publishing a failed rewrite on the run's pointer.
+
+    The dispatch door reports this failure in its launch result, which is merged
+    onto the run's pointer. A door with no result dict — a resume, a review
+    dispatch, the compatibility seam — publishes the same field on the pointer
+    directly, so a reservation left naming the reserving process is visible
+    rather than silent. The launch itself has already succeeded: the attempt's
+    own exit receipt is what frees the hold in its own time.
+    """
+    if record_reservation_supervisor(reservation, pid):
+        return
+    with contextlib.suppress(CrewError):
+        _mutate_pointer(
+            reservation.run_id,
+            lambda pointer: {**pointer, "reservation_supervisor_recorded": False},
+        )
 
 
 def refuse_held_launch(run_id: str, run_directory: Path) -> None:
@@ -3206,7 +3217,7 @@ def supervised_launch(
     )
     pid = _start_supervisor(spec_path, run_directory, run_directory.name)
     if reservation is not None:
-        record_reservation_supervisor(reservation, pid)
+        _record_supervisor_reporting(reservation, pid)
     return pid
 
 
@@ -3248,7 +3259,7 @@ def _start_supervisor(
                 release_launch_reservation(reservation, only_when_unspawned=True)
                 raise
             if reservation is not None:
-                record_reservation_supervisor(reservation, pid)
+                _record_supervisor_reporting(reservation, pid)
             _confirm_supervisor_survived(pid, run_directory, run_id)
             return pid
     argv = _supervisor_argv(spec_path=spec_path)
@@ -3258,7 +3269,7 @@ def _start_supervisor(
         release_launch_reservation(reservation, only_when_unspawned=True)
         raise
     if reservation is not None:
-        record_reservation_supervisor(reservation, pid)
+        _record_supervisor_reporting(reservation, pid)
     _confirm_supervisor_survived(pid, run_directory, run_id)
     return pid
 
