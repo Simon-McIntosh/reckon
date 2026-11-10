@@ -35,7 +35,12 @@ def fleet(tmp_path, monkeypatch):
     git(repository, "config", "user.email", "fixture@example.invalid")
     (repository / "seed").write_text("seed")
     git(repository, "add", "seed")
-    git(repository, "commit", "-qm", "test: seed held trees")
+    git(
+        repository,
+        "commit",
+        "-qm",
+        "test: seed held trees\n\nProvide a committed seed for detached fixture worktrees.",
+    )
     trees = []
 
     def add_tree():
