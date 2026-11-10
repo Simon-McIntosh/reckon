@@ -38,11 +38,22 @@
         points outside it is refused with the target untouched.</p>
 
       <h2>Measure</h2>
-      <p><code>tests/test_anchored_edit.py</code>: 21 passed over the 19
-        behaviours the section lists, including the console-script round trip
+      <p><code>tests/test_anchored_edit.py</code>: 23 passed, covering every
+        behaviour the section lists and including the console-script round trip
         that starts the server over stdio and completes a read and an edit
         through the MCP protocol. Ruff reports no findings on either staged
         path, and <code>ruff format --check</code> finds them formatted.</p>
+
+      <h2>Defect found on review</h2>
+      <p>The first version of the build loop left each original line with
+        <code>continue</code> once it had emitted a replacement or dropped a
+        deleted line, so the <code>insert_after</code> handler for that anchor
+        never ran: a call that replaced line 2 and inserted after line 2 wrote
+        only the replacement and reported success. The edit was lost without a
+        refusal, which is the failure this tool exists to prevent. The three
+        cases now branch on their own so the after-insert always applies, and a
+        parametrised test covers the insert sharing an anchor with a replace
+        and with a delete; both cases fail against the previous loop.</p>
 
       <h2>Negative controls</h2>
       <p>With the root containment check removed (<code>_outside</code>
@@ -50,15 +61,16 @@
         symlink-escape one among them. With the line-hash verification removed
         (<code>_hash_matches</code> returning <code>True</code>), the
         stale-anchor test fails alone: the two-edit call is applied and the
-        stale anchor is accepted. Both runs restored the module to its
-        committed checksum.</p>
+        stale anchor is accepted. A third run reverts the build loop to its
+        <code>continue</code> form and fails both insert-after cases. Each run
+        restored the module to its committed checksum.</p>
 
       <h2>Suite</h2>
       <p>Base arm <code>cb5dcf17a3</code> resolved to
         <code>tests/test_staged_write_inventory.py</code> alone (the node's test
-        file does not exist there): 51 passed. After arm at
-        <code>574651bd6b</code>: <code>tests/test_anchored_edit.py</code> and
-        <code>tests/test_staged_write_inventory.py</code>, 72 passed. The
+        file does not exist there): 51 passed. After arm at the node's
+        final head: <code>tests/test_anchored_edit.py</code> and
+        <code>tests/test_staged_write_inventory.py</code>, 74 passed. The
         inventory arm is unchanged because the module publishes through
         <code>_store.write_atomically</code> rather than a private sibling
         temporary and rename.</p>
