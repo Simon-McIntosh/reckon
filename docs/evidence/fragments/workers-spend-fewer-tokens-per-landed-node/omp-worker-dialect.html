@@ -70,13 +70,13 @@
         <td>51 passed, <code>EXIT=0</code></td></tr>
       <tr><td>armed after, exactly as this scope resolves it:
         <code>tests/test_omp_dialect.py tests/test_staged_write_inventory.py</code></td>
-        <td><code>45d15ce250</code></td>
-        <td><strong>71 passed</strong>, <code>EXIT=0</code></td></tr>
+        <td><code>cbb1b00692</code></td>
+        <td><strong>75 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>node tests alone</td>
-        <td><code>45d15ce250</code></td>
-        <td><strong>20 passed</strong>, <code>EXIT=0</code></td></tr>
+        <td><code>cbb1b00692</code></td>
+        <td><strong>24 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: remove the foreign-vocabulary refusal</td>
-        <td><code>45d15ce250</code> + mutation</td>
+        <td><code>cbb1b00692</code> + mutation</td>
         <td><strong>1 failed, 19 passed</strong>, <code>EXIT=1</code> &mdash;
         <code>DID NOT RAISE BackendError</code> in
         <code>test_a_stream_in_another_dialects_vocabulary_is_refused_by_name</code></td></tr>
@@ -97,6 +97,35 @@
   is worth repairing for any node that ships a data fixture under
   <code>tests/</code>, and it is filed as its own section rather than absorbed
   here.</p>
+
+  <h3 id="omp-worker-dialect-held">Three cases held by a test rather than by care</h3>
+
+  <p><strong>The zero-usage guard now fails if the fold becomes an
+  assignment.</strong> The first version read the stream's head and its tail,
+  which puts the placeholder <em>before</em> the measured totals: an
+  implementation that assigned the last usage record over the running total
+  stayed green, because the last record it saw was the measured one. A stream
+  now carries a later turn's placeholder <em>after</em> a measured total, and
+  replacing the accumulate call with an assignment reports a run that spent
+  nothing &mdash; <code>1 failed</code>, measured.</p>
+
+  <p><strong>The launch rewrote the run's <code>prompt.txt</code> from the
+  stdin text alone</strong>, which is the whole brief for a stdin-fed dialect
+  and empty for one that carries the brief on <code>argv</code>. The plan now
+  carries the composed prompt whichever channel transports it, and the run's
+  prompt file is written from that; both directions are asserted.</p>
+
+  <p><strong>A fenced omp run can commit, but not as its operator.</strong> The
+  entry that relocates <code>HOME</code> also hides <code>~/.gitconfig</code>,
+  and git does not fail: it synthesises an identity from the account's GECOS
+  field, measured here as <code>Mcintosh Simon
+  &lt;mcintos@98dci4-clu-2023.&hellip;&gt;</code> against the configured
+  <code>simon.mcintosh@iter.org</code>. A run would have landed commits
+  attributed to nobody. The plan now names the global config through
+  <code>GIT_CONFIG_GLOBAL</code>, which the fence already mounts read-only, so
+  the identity arrives without a writable path being added, and the test
+  resolves a real identity through it rather than asserting that a variable
+  was set.</p>
 
   <h3 id="omp-worker-dialect-open">Left open</h3>
 
