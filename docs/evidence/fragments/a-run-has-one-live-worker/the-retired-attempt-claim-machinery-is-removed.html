@@ -25,6 +25,16 @@
     (<code>test_every_staged_write_reaches_the_owner</code>, whose census expects a set of staged writers that other
     landed work has since extended by four entries, identical in both arms), and nine fewer passing ids at the head —
     exactly the nine deleted cases.</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-population">The 69 test files that import
+    <code>reckon.crew.resumption</code> or <code>reckon.crew.recovery_liveness</code> were then run one arm at a time
+    with <code>-n 6</code>. The base arm (<code>664f5ccc23</code>, in a scratch checkout under the run's temporary
+    directory) reports <strong>14 failed, 708 passed, 1 skipped, EXIT=1</strong>; the head arm reports
+    <strong>13 failed, 707 passed, 1 skipped, EXIT=1</strong>. Comparing failure ids, the head adds none: its thirteen
+    are a subset of the base's fourteen, and the one base-only id is
+    <code>tests/test_crew_recover.py::test_the_follow_loop_sweeps_on_a_cadence_not_every_iteration</code>, a cadence
+    test that passed at the head. The raw totals differ by two fewer collected at the head although nine cases were
+    deleted, so seven tests elsewhere in the population collected only in one arm; the id-level comparison above is
+    what the measure rests on, and no failure id moves from pass to fail.</p>
   <p id="the-retired-attempt-claim-machinery-is-removed-cases">Deleted cases and the mechanism each pinned. In
     <code>tests/test_a_resume_never_launches_beside_another_node.py</code>:
     <code>test_an_abandoned_claim_is_reclaimed_after_the_launch_window</code> (a claim older than the launch window is
