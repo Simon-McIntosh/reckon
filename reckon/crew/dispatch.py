@@ -2773,21 +2773,21 @@ def dispatch(
         # writes nothing else, so the run would keep a claim and no attempt at
         # all. The marker is what makes such a run name the attempt it stopped
         # on instead of reading as one that never started.
-        _supervisor_write(
-            directory / ATTEMPT_RECORD_NAME,
-            {
-                "run_id": run_id,
-                "attempt": attempt,
-                "attempt_kind": (
-                    "shadow"
-                    if shadow_lineage
-                    else "redispatch"
-                    if lineage
-                    else "dispatch"
-                ),
-                "attempt_started_at": _utc_now(),
-            },
-        )
+        attempt_marker = {
+            "run_id": run_id,
+            "attempt": attempt,
+            "attempt_kind": (
+                "shadow" if shadow_lineage else "redispatch" if lineage else "dispatch"
+            ),
+            "attempt_started_at": _utc_now(),
+        }
+        # A solo shadow launch publishes no claim, and the marker write refuses
+        # to create its run directory, so nothing else would put that directory
+        # there. Without it a launch that dies mid-composition leaves no record
+        # of the attempt it was making.
+        if shadow_lineage is not None and paired_masks is None:
+            directory.mkdir(parents=True, exist_ok=True)
+        _supervisor_write(directory / ATTEMPT_RECORD_NAME, attempt_marker)
         dispatch_watch, session_delivery, watch_override = _arrange_dispatch_follower(
             project,
             session,
@@ -2876,6 +2876,14 @@ def dispatch(
                 attempt = reservation.attempt
                 if lineage:
                     lineage["attempt"] = attempt
+                # The reserved attempt is the attempt this launch runs, so the
+                # marker is rewritten to name it. A marker left naming an older
+                # attempt would duplicate that attempt's number while a receipt
+                # for it already exists, and the run would read as one that
+                # launched an attempt it did not.
+                if attempt != attempt_marker["attempt"]:
+                    attempt_marker["attempt"] = attempt
+                    _supervisor_write(directory / ATTEMPT_RECORD_NAME, attempt_marker)
             else:
                 refuse_held_launch(run_id, run_dir(run_id))
         rendered_images = []
@@ -3554,8 +3562,13 @@ def dispatch(
                         # The supervisor only becomes the hold once it exists:
                         # from here the reservation is freed by its exit, not by
                         # this dispatching process, which returns while the
-                        # worker it started runs on.
-                        _record_reservation_supervisor(reservation, spawned_pid)
+                        # worker it started runs on. A rewrite that does not
+                        # land leaves the hold naming this process, so it is
+                        # reported rather than suppressed; the attempt's own
+                        # exit receipt frees it in its own time.
+                        record["reservation_supervisor_recorded"] = bool(
+                            _record_reservation_supervisor(reservation, spawned_pid)
+                        )
                     advance_launch_step(run_id, LAUNCH_WORKER_STEP)
                 else:
                     _require_fleet_gate_open()

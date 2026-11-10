@@ -213,6 +213,39 @@ def test_a_fresh_run_keys_at_one(tmp_path: Path) -> None:
     assert dispatch_launch_module.launch_reservation_key(tmp_path / "absent") == 1
 
 
+def test_the_marker_names_the_attempt_a_first_launch_keeps(home: Path) -> None:
+    """With no receipt on disk, a launch keeps the attempt it was dispatched with.
+
+    A paired shadow arm derives its attempt from the node's own committed runs,
+    so its first launch is already dispatched with an attempt above one. The
+    marker is the only record of that attempt, and the key must read it rather
+    than restart at one.
+    """
+    runs_module.pointer_path(RUN_ID).unlink(missing_ok=True)
+    runs_module._write_json(
+        home / "attempt.json",
+        {"run_id": RUN_ID, "attempt": 2, "attempt_kind": "shadow"},
+    )
+    assert dispatch_launch_module.launch_reservation_key(home) == 2
+    taken = dispatch_launch_module.reserve_launch_attempt(home, RUN_ID, kind="dispatch")
+    assert taken.attempt == 2
+    dispatch_launch_module.release_launch_reservation(taken)
+
+
+def test_the_pointer_names_the_attempt_a_compatibility_launch_keeps(
+    home: Path,
+) -> None:
+    """A launch carrying no trace but the pointer keys on the pointer's attempt.
+
+    The compatibility seam starts a ``resume-*`` launch without a reservation of
+    its own, so the pointer is the only on-disk reading. Keying at one there
+    would launch attempt one over a run whose pointer already names attempt
+    three, duplicating a number the run has used.
+    """
+    runs_module._write_json(runs_module.pointer_path(RUN_ID), _pointer(attempt=3))
+    assert dispatch_launch_module.launch_reservation_key(home) == 3
+
+
 def test_an_attempt_never_retired_into_receipts_still_takes_the_next_number(
     home: Path,
 ) -> None:
@@ -276,6 +309,39 @@ def test_a_resume_and_a_dispatch_take_the_same_key(home: Path) -> None:
     )
     assert reserved.attempt == 2
     assert "attempt 2" in str(refused)
+
+
+def test_a_resume_and_a_dispatch_racing_on_a_marker_only_run_share_one_key(
+    home: Path,
+) -> None:
+    """A run with no receipt at all: both doors still compute one attempt."""
+    runs_module.pointer_path(RUN_ID).unlink(missing_ok=True)
+    runs_module._write_json(home / "attempt.json", {"run_id": RUN_ID, "attempt": 1})
+    reserved = dispatch_launch_module.reserve_launch_attempt(
+        home, RUN_ID, kind="resume"
+    )
+    refused = _refused(
+        lambda: dispatch_launch_module.reserve_launch_attempt(
+            home, RUN_ID, kind="dispatch"
+        )
+    )
+    assert reserved.attempt == 1
+    assert "attempt 1" in str(refused) and IN_FLIGHT in str(refused)
+
+
+def test_a_marker_only_run_resumes_attempt_one_and_its_exit_frees_it(
+    home: Path,
+) -> None:
+    """The only trace is the marker, so the resume launches the attempt it names."""
+    runs_module.pointer_path(RUN_ID).unlink(missing_ok=True)
+    runs_module._write_json(home / "attempt.json", {"run_id": RUN_ID, "attempt": 1})
+    taken = dispatch_launch_module.reserve_launch_attempt(home, RUN_ID, kind="resume")
+    assert taken.attempt == 1
+    assert dispatch_launch_module.held_launch_reservation(home) is not None
+    _retired_exit(home, 1)
+    assert dispatch_launch_module.held_launch_reservation(home) is None, (
+        "the attempt's own exit receipt did not free its reservation"
+    )
 
 
 # ── freed by liveness, never by age or the pointer ──────────────────────────
@@ -355,6 +421,72 @@ def test_a_spawned_supervisor_keeps_the_reservation(home: Path) -> None:
         assert taken.path.exists(), "a spawned launch released its reservation"
     finally:
         _stop(supervisor)
+
+
+def test_an_attempts_exit_receipt_frees_the_admitted_runs_door(home: Path) -> None:
+    """A hold naming a live process is freed by the attempt's own ending.
+
+    The admit service outlives every run it launches, so a reservation left
+    naming it would keep the run unlaunchable for the service's whole life. The
+    attempt's exit receipt is written to shared storage by the launch itself and
+    frees the hold whatever process the reservation names.
+    """
+    _reservation(home, 2, pid=os.getpid())
+    assert dispatch_launch_module.held_launch_reservation(home) is not None
+    _retired_exit(home, 2)
+    assert dispatch_launch_module.held_launch_reservation(home) is None
+    taken = dispatch_launch_module.reserve_launch_attempt(home, RUN_ID, kind="dispatch")
+    assert taken.attempt == 3
+    dispatch_launch_module.release_launch_reservation(taken)
+
+
+def test_an_attempts_exit_receipt_frees_the_in_harness_door(home: Path) -> None:
+    """The reader a non-cli launch takes answers on the same facts."""
+    _reservation(home, 2, pid=os.getpid())
+    assert "in flight" in str(
+        _refused(lambda: dispatch_launch_module.refuse_held_launch(RUN_ID, home))
+    )
+    _retired_exit(home, 2)
+    dispatch_launch_module.refuse_held_launch(RUN_ID, home)
+
+
+def test_a_run_less_exit_receipt_frees_the_admitted_runs_door(home: Path) -> None:
+    """A receipt carrying no run id stands where one goes; it frees nothing."""
+    _reservation(home, 2, pid=os.getpid())
+    runs_module._write_json(home / "attempt-2-exit.json", {"exit_code": 0})
+    assert dispatch_launch_module.held_launch_reservation(home) is not None
+    refused = _refused(
+        lambda: dispatch_launch_module.reserve_launch_attempt(
+            home, RUN_ID, kind="dispatch"
+        )
+    )
+    assert "attempt 2" in str(refused)
+
+
+def test_a_run_less_exit_receipt_frees_the_in_harness_door(home: Path) -> None:
+    _reservation(home, 2, pid=os.getpid())
+    runs_module._write_json(home / "attempt-2-exit.json", {"exit_code": 0})
+    assert "in flight" in str(
+        _refused(lambda: dispatch_launch_module.refuse_held_launch(RUN_ID, home))
+    )
+
+
+def test_a_truncated_exit_receipt_frees_neither_door(home: Path) -> None:
+    _reservation(home, 2, pid=os.getpid())
+    (home / "attempt-2-exit.json").write_text(
+        f'{{"run_id": "{RUN_ID}", "exit_c', encoding="utf-8"
+    )
+    assert dispatch_launch_module.held_launch_reservation(home) is not None
+    assert "in flight" in str(
+        _refused(
+            lambda: dispatch_launch_module.reserve_launch_attempt(
+                home, RUN_ID, kind="dispatch"
+            )
+        )
+    )
+    assert "in flight" in str(
+        _refused(lambda: dispatch_launch_module.refuse_held_launch(RUN_ID, home))
+    )
 
 
 def test_the_newest_receipt_decides(home: Path) -> None:
@@ -443,7 +575,14 @@ def test_an_earlier_attempts_reservation_does_not_guard_a_later_launch(
     _reservation(home, 3, pid=os.getpid())
     pid = dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 4))
     try:
-        assert pid > 0, "the guard refused on a reservation older than the launch"
+        # The guard admitted the launch: the worker receipt it writes names the
+        # process it started, which a refused launch never reaches.
+        receipts = sorted(home.glob("attempt-*-worker.json"))
+        assert receipts, "the guard admitted no worker"
+        worker = json.loads(receipts[-1].read_text(encoding="utf-8"))
+        assert worker["pid"] == pid, (
+            "the guard refused on a reservation older than the launch"
+        )
     finally:
         with contextlib.suppress(OSError):
             os.kill(pid, signal.SIGTERM)
@@ -458,7 +597,12 @@ def test_a_reservation_whose_attempt_already_ended_is_skipped(home: Path) -> Non
     _retired_exit(home, 3)
     pid = dispatch_launch_module._supervisor_spawn_worker(_spawn_spec(home, 2))
     try:
-        assert pid > 0, "the guard refused on an attempt that had already ended"
+        receipts = sorted(home.glob("attempt-*-worker.json"))
+        assert receipts, "the guard admitted no worker"
+        worker = json.loads(receipts[-1].read_text(encoding="utf-8"))
+        assert worker["pid"] == pid, (
+            "the guard refused on an attempt that had already ended"
+        )
     finally:
         with contextlib.suppress(OSError):
             os.kill(pid, signal.SIGTERM)
@@ -631,6 +775,59 @@ def _hold_a_live_supervisor(monkeypatch: pytest.MonkeyPatch) -> subprocess.Popen
     return supervisor
 
 
+def test_the_resume_compatibility_path_launches_the_pointer_attempt(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A compatibility launch carries no reservation, so it keys on the pointer.
+
+    The ``resume-*`` seam starts the supervisor without a reservation of its
+    own. The pointer names attempt three and no receipt exists, so the launch
+    reserves and starts attempt three rather than restarting at one.
+    """
+    from reckon import _backends
+
+    runs_module._write_json(runs_module.pointer_path(RUN_ID), _pointer(attempt=3))
+    supervisor = _live_child()
+    specs: list[Path] = []
+
+    def capture(spec_path, run_directory, run_id):
+        specs.append(Path(spec_path))
+        return supervisor.pid
+
+    monkeypatch.setattr(dispatch_launch_module, "_start_supervisor", capture)
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_confirm_supervisor_survived",
+        lambda pid, run_directory, run_id: None,
+    )
+    plan = _backends.LaunchPlan(
+        backend="probe",
+        dialect="claude",
+        argv=[sys.executable, "-c", "pass"],
+        cwd=str(home),
+        stdin_text="",
+        environment={},
+        final_message_path=None,
+        resumed_session=None,
+    )
+    try:
+        dispatch_launch_module._spawn(
+            plan,
+            log_path=home / "resume-1.jsonl",
+            stderr_path=home / "resume-1.stderr.log",
+            prompt_path=home / "prompt.txt",
+        )
+    finally:
+        _stop(supervisor)
+
+    assert specs, "the compatibility seam started no supervisor"
+    spec = json.loads(specs[0].read_text(encoding="utf-8"))
+    assert spec["attempt"] == 3, (
+        "the launch did not start the attempt the pointer names"
+    )
+    assert (home / "attempt-3.reservation").exists(), "the launch took no reservation"
+
+
 def test_the_window_is_refused_before_the_worktree_is_touched(
     repo_context: tuple[Path, Path],
     tmp_path: Path,
@@ -773,11 +970,113 @@ def test_a_dispatch_is_held_by_the_supervisor_it_recorded(
     dispatch_launch_module.release_launch_reservation(again)
 
 
-def test_a_fresh_run_id_takes_no_reservation(
+def test_a_relaunch_rewrites_its_marker_with_the_reserved_attempt(
     repo_context: tuple[Path, Path], tmp_path: Path
 ) -> None:
+    """The marker always names the attempt the launch runs.
+
+    A run holding an earlier attempt receipt but no ledger row is dispatched
+    with attempt one and reserves attempt two. A marker left naming one would
+    duplicate that attempt's number while a receipt for it already exists, and
+    a later reader would take the reserved number for an attempt that never ran.
+    """
     _config_home, repo = repo_context
+    _tree, _head, _note = _stand_in_tree(repo)
+    directory = runs_module.run_dir(RUN_ID)
+    directory.mkdir(parents=True, exist_ok=True)
+    _retired_exit(directory, 1)
+    runs_module._write_json(
+        directory / "attempt.json",
+        {"run_id": RUN_ID, "attempt": 1, "attempt_kind": "redispatch"},
+    )
+    runs_module._write_json(
+        runs_module.pointer_path(RUN_ID), _pointer(attempt=1, pid=_dead_pid())
+    )
+    (directory / "prompt.txt").write_text("do the work\n", encoding="utf-8")
+
+    record = _dispatch(repo, tmp_path / "manifests" / "again.md")
+
+    assert record["attempt"] == 2, "the launch did not reserve the next attempt"
+    marker = json.loads((directory / "attempt.json").read_text(encoding="utf-8"))
+    assert marker["attempt"] == 2, "the marker names an attempt the launch did not run"
+
+
+def test_a_failed_supervisor_rewrite_is_reported_and_still_holds(
+    repo_context: tuple[Path, Path],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A reservation that cannot name its supervisor keeps refusing.
+
+    The rewrite lands after the supervisor is spawned, so releasing the hold
+    when it fails would invite a relaunch over a live worker. The failure is
+    reported in the launch result instead, and the attempt's own exit receipt
+    is what frees the hold in its own time.
+    """
+    _config_home, repo = repo_context
+    tree, _head, _note = _stand_in_tree(repo)
+    _window_run(tmp_path, tree)
+    directory = runs_module.run_dir(RUN_ID)
+
+    supervisor = _live_child()
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_spawn_detached_supervisor",
+        lambda argv, stderr_path: supervisor.pid,
+    )
+    monkeypatch.setattr(
+        dispatch_launch_module,
+        "_confirm_supervisor_survived",
+        lambda pid, run_directory, run_id: None,
+    )
+    original_write = dispatch_launch_module._write_json
+
+    def failing_write(path, payload, **keywords):
+        if str(path).endswith(dispatch_launch_module.RESERVATION_SUFFIX):
+            raise OSError("the reservation could not be rewritten")
+        return original_write(path, payload, **keywords)
+
+    monkeypatch.setattr(dispatch_launch_module, "_write_json", failing_write)
+    try:
+        record = _dispatch(repo, tmp_path / "manifests" / "first.md", launcher=None)
+    finally:
+        _stop(supervisor)
+
+    assert record["reservation_supervisor_recorded"] is False, (
+        "the failed rewrite was not reported in the launch result"
+    )
+    refused = _refused(
+        lambda: dispatch_launch_module.reserve_launch_attempt(
+            directory, RUN_ID, kind="dispatch"
+        )
+    )
+    assert "attempt 2" in str(refused) and IN_FLIGHT in str(refused)
+
+
+def test_a_fresh_run_ids_reservation_ends_with_its_launch(
+    repo_context: tuple[Path, Path], tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A first launch reserves the attempt it starts and drops the hold at its end.
+
+    The marker is written before the reservation block, so the run always holds
+    an attempt record when the door keys and every launch reserves. A launch
+    that ends leaves no reservation behind, so the run stays launchable.
+    """
+    _config_home, repo = repo_context
+    taken: list[int] = []
+    original = dispatch_launch_module.reserve_launch_attempt
+
+    def spy(run_directory, run_id, *, kind):
+        reservation = original(run_directory, run_id, kind=kind)
+        taken.append(reservation.attempt)
+        return reservation
+
+    monkeypatch.setattr(dispatch_launch_module, "reserve_launch_attempt", spy)
     record = _dispatch(repo, tmp_path / "manifests" / "fresh.md", run_id="r-fresh-run")
     directory = runs_module.run_dir("r-fresh-run")
-    assert not list(directory.glob("attempt-*.reservation"))
+
+    assert taken == [1], "a fresh launch took no reservation"
     assert record["attempt"] == 1, "the ledger attempt was not kept"
+    assert not list(directory.glob("attempt-*.reservation")), (
+        "a launch that ended left its reservation behind"
+    )
