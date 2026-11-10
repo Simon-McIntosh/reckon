@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections import Counter, defaultdict, deque
 from collections.abc import Mapping, Sequence
@@ -18,7 +19,6 @@ _LOGGER = logging.getLogger(__name__)
 _PRIORITY_KEYS: dict[
     tuple[str, str], tuple[tuple[Any, ...], dict[str, tuple[Any, ...]]]
 ] = {}
-_DIRECTORY_FILES: dict[Path, tuple[Any, tuple[Path, ...]]] = {}
 
 
 def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
@@ -36,42 +36,74 @@ def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
     return tuple(signature)
 
 
+def _plan_priority_state(docs_dir: Path, slug: str, project: str) -> str | None:
+    """The named plan's structured ranking inputs, without editorial stamps."""
+    from reckon import _plan_html
+    from reckon.crew.plan_review import _plan_inventory_item
+
+    item = _plan_inventory_item(project, docs_dir, slug)
+    if item is None:
+        return None
+    for field in ("title", "summary", "owner", "modified", "version"):
+        item.pop(field, None)
+    state, text = _plan_html.read_state_and_text_file(
+        docs_dir / "plans" / f"{slug}.html"
+    )
+    item["sections"] = state.get("sections")
+    item["section_ids"] = [
+        identity for identity, _heading in _plan_html.authored_section_headings(text)
+    ]
+    return json.dumps(item, sort_keys=True, separators=(",", ":"))
+
+
 def _roadmap_input_signature(
     docs_dir: Path, slugs: set[str], project: str
 ) -> tuple[Any, ...]:
-    """Plan and sprint identities, including additions and in-place edits.
+    """Queued plans' priority state and the sprint inputs used beside them.
 
-    Directory stamps detect arrivals and removals; file stamps detect edits
-    that leave the containing directory unchanged. Directory contents are
-    listed only when that directory's own identity moves.
+    File identities avoid reparsing unchanged plans, but only their structured
+    priority state enters the roadmap key. An unrelated plan or an editorial
+    change therefore leaves the queued work's priorities reusable.
     """
     from reckon import file_memo
     from reckon._store import state_path
 
+    plans = tuple(
+        (
+            slug,
+            file_memo.memoized_key(
+                "queue_plan_priority",
+                (project, str(docs_dir), slug, identity),
+                lambda slug=slug: _plan_priority_state(docs_dir, slug, project),
+            )
+            if identity is not None
+            else None,
+        )
+        for slug, identity in _named_plan_signature(docs_dir, slugs)
+    )
     signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
     paths = {
         state_path(project, "index"),
         state_path(project, "index", root=docs_dir.parent),
     }
-    for directory in (docs_dir / "plans", docs_dir / "sprints"):
-        try:
-            identity = file_memo.file_signature(directory)
-        except OSError:
-            identity = None
-        signature.append((str(directory), identity))
-        cached = _DIRECTORY_FILES.get(directory)
-        if cached is None or cached[0] != identity:
-            cached = (identity, tuple(directory.glob("*.html")))
-            _DIRECTORY_FILES[directory] = cached
-        paths.update(cached[1])
-    paths.difference_update(docs_dir / "plans" / f"{slug}.html" for slug in slugs)
+    directory = docs_dir / "sprints"
+    try:
+        identity = file_memo.file_signature(directory)
+    except OSError:
+        identity = None
+    files = file_memo.memoized_key(
+        "queue_priority_directory",
+        (str(directory), identity),
+        lambda: tuple(directory.glob("*.html")),
+    )
+    paths.update(files)
     for path in sorted(paths):
         try:
             identity = file_memo.file_signature(path)
         except OSError:
             identity = None
         signature.append((str(path), identity))
-    return _named_plan_signature(docs_dir, slugs), tuple(signature)
+    return plans, tuple(signature)
 
 
 def _roadmap_priority_keys(
