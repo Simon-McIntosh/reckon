@@ -184,17 +184,16 @@ def test_an_unreadable_ledger_is_not_proof_of_a_written_row(
     )
 
 
-def test_a_row_the_aggregate_carries_alone_is_not_proof(
+def test_a_row_the_aggregate_carries_alone_is_proof(
     repository: Path,
 ) -> None:
-    """A promoted run proves itself by its document; the aggregate alone does not."""
+    """Either source carries the run's record, so either one proves the row."""
     landed = "r-promoted-with-a-document"
     _pointer(repository, landed)
     _promote(repository, landed, outcome="landed the ordinary way")
 
-    # A promotion appends the run's own document, and the aggregate carries only
-    # rows that have none — so this shape is proof even though the aggregate
-    # does not name it.
+    # A promoted run lives in its own document, and the aggregate names no row
+    # for it; that document alone proves the row.
     aggregate, version = ledger.load_aggregate(PROJECT, root=repository)
     assert not any(str(row.get("run_id")) == landed for row in aggregate["runs"])
     assert (
@@ -202,19 +201,58 @@ def test_a_row_the_aggregate_carries_alone_is_not_proof(
         is True
     )
 
-    # A row the aggregate carries with no document beside it is the one shape
-    # the two sources disagree about, and a disagreement proves neither.
-    orphan = "r-aggregate-without-document"
+    # An aggregate row with no document beside it is the same record held in
+    # one place, and the promotion path reads it as the run's record.
+    carried = "r-aggregate-without-document"
     data = dict(aggregate)
-    data["runs"] = [*aggregate["runs"], {"run_id": orphan, "gate": "not-run"}]
+    data["runs"] = [*aggregate["runs"], {"run_id": carried, "gate": "not-run"}]
     ledger.write(PROJECT, data, version, root=repository)
-    assert not ledger.run_path(PROJECT, orphan, repository).exists()
+    assert not ledger.run_path(PROJECT, carried, repository).exists()
 
     assert (
-        promotion_scope._ledger_holds_row(PROJECT, repository, orphan, unreadable=False)
-        is False
+        promotion_scope._ledger_holds_row(
+            PROJECT, repository, carried, unreadable=False
+        )
+        is True
     )
-    assert promotion_scope._ledger_holds_row(PROJECT, repository, orphan) is True
+    assert promotion_scope._ledger_holds_row(PROJECT, repository, carried) is True
+
+
+def test_an_aggregate_only_row_finishes_a_differing_narrative(
+    repository: Path,
+) -> None:
+    """A row the aggregate carries alone defers to no second refusal."""
+    run_id = "r-aggregate-only-narrative"
+    recorded = "the account the aggregate row was written with"
+    retried = "a later account of the same landing"
+    _pointer(repository, run_id)
+    promotion._record_landing_comment(
+        project=PROJECT,
+        plan=PLAN,
+        section="s1",
+        run_id=run_id,
+        narrative=recorded,
+        author="reckon-build",
+        when="2026-10-01T06:00:00Z",
+        root=repository,
+        worker_tree=repository,
+    )
+    # The row the interrupted promotion committed, with no document beside it.
+    aggregate, version = ledger.load_aggregate(PROJECT, root=repository)
+    data = dict(aggregate)
+    data["runs"] = [*aggregate["runs"], {"run_id": run_id, "gate": "not-run"}]
+    ledger.write(PROJECT, data, version, root=repository)
+    assert not ledger.run_path(PROJECT, run_id, repository).exists()
+
+    second = _promote(repository, run_id, outcome=retried)
+
+    assert second["already_promoted"] is True
+    assert not pointer_path(run_id).exists()
+    comment = second["plan_comment"]
+    assert comment["reason"] == "different_narrative"
+    assert comment["finished_cleanup"] is True
+    assert comment["kept_narrative"] == recorded
+    assert any(recorded in body for body in _landing_comment_bodies(repository))
 
 
 # ── Case 6: an entity the narrative names survives as written ───────────────

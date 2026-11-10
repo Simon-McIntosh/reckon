@@ -2304,13 +2304,13 @@ def _ledger_holds_row(
 ) -> bool:
     """Whether the ledger holds this run's row, read without other runs.
 
-    The two sources are not mirrors. A promotion appends the run's own document,
-    which is where the row lives, and the aggregate carries only the rows that
-    have none — so a document with no aggregate row is the ordinary shape of a
-    document, not a disagreement. The source that proves the row is therefore
-    the document alone; a row the aggregate carries with no document beside it
-    is a state the two disagree about, and a read that failed agrees in proving
-    nothing. Both of those answer ``unreadable``.
+    Either source carries the run's record, so either one proves it. A
+    promotion appends the run's own document under ``runs/``, and a row the
+    aggregate carries without one is read as the run's record by the promotion
+    path and returned by the ledger's own reader; the two shapes are one
+    record kept in two places, not a disagreement between them. A document that
+    cannot be read, or an aggregate that cannot be, proves neither and answers
+    ``unreadable``.
 
     The default suits a receipt, which must not claim a rollback it cannot show
     and so treats an unprovable row as present; a caller deciding whether a
@@ -2321,11 +2321,12 @@ def _ledger_holds_row(
         data, _version = ledger.load_aggregate(project, root=root)
     except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
         return unreadable
-    in_aggregate = any(str(item.get("run_id") or "") == run_id for item in data["runs"])
+    if any(str(item.get("run_id") or "") == run_id for item in data["runs"]):
+        return True
     try:
         ledger.run_path(project, run_id, root).stat()
     except FileNotFoundError:
-        return unreadable if in_aggregate else False
+        return False
     except OSError:
         return unreadable
     return True
