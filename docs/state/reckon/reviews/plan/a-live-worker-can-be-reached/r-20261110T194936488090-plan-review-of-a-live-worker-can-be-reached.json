@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T20:27:33.876Z",
+  "dispatched_at": "2026-11-10T20:12:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "reasoning-1",
+      "reason": "it adds one refusal clause and one done-when case (a live fenced run whose home carries no entry) and the property is checkable directly by reading the run home's settings.json, so the node should refuse on the fact rather than on its proxy.",
+      "text": "\u00a78 refuses `crew tell` on \"a live run whose record does not say `fenced: true`\", treating the fence flag as proof that the run home carries the `PostToolUse` entry; a fenced Claude-dialect run launched before this section lands carries `fenced: true` and a settings.json seeded without the entry, and nothing re-seeds a live run's home (`seed_harness_home` is called from launch composition only, `reckon/_backends.py:2383`, gated on `adopts_harness_home = fence` at `:2379`), so `crew tell` would answer `queued_for_next_tool_call`, the message would sit unclaimed, and the section would reproduce \u00a71's silent non-delivery one hop later \u2014 the exact outcome its own sentence says it refuses in order to prevent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "reasoning-2",
+      "reason": "the deliverable's own instruction is \"create the run home's `settings.json` when the loop produced none\", which yields the right file under either reading of it, so only the explanatory sentence is imprecise and no node would be sent down a wrong path.",
+      "text": "the sentence \"an operator with no `~/.claude/settings.json` gets no run-home settings at all\" is false in the ordinary fenced Claude dispatch: `_seed_worker_mcp_settings` (`reckon/_worker_fence.py:317-338`) writes `<run home>/settings.json` whenever `worker_mcp_servers` is not `None`, which is every launch composed from a resolved flight config, so the file exists with the MCP keys and no hooks even when the operator has no settings file",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "d75d0a033b5e1fae7a1582b1120b3f1e340ca130",
+  "plan_fingerprint": "360e2add17ff4abbfe05df697dd8c5a7fe6264dc42b278654c880d15aeb96354",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T194936488090-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "7f676cc946a70a7ad34b0c2335c766d2f7a15104",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited anchor was opened and resolves: `_seed_harness_entry` at `reckon/_worker_fence.py:425` with `if destination.exists(): return` at `:436`; the seeding loop at `:249` with its absent-source skip at `:254`; `install_hook_settings` / `configure_crew_guards` at `reckon/hooks/install.py:229` / `:276`, whose only callers (`reckon/cli_entry.py:356`, `reckon/project_maintenance_commands.py:502`) name the user-scope or a project settings path; `\"fenced\": False` with the \"a record written before the field existed carries neither value\" comment at `reckon/crew/dispatch.py:3111`; `RESUME_INVOCATION_SHAPE` at `reckon/hooks/worker_message_guard.py:52,129`; `additionalContext`/`hookEventName: PreToolUse` at `reckon/hooks/worker_git_guard.py:587-589`; the prototype session `02f01c36-\u2026` quoted in `docs/research/worker-steering-and-anchored-edit-prototypes.html:24`; `codex-home` in `_HARNESS_HOME` at `reckon/_worker_fence.py:37`.",
+    "done_when": "pass \u2014 every clause of \u00a78's done-when names an observable (one delivery, one receipt, one `PostToolUse` entry in each of three seeding cases, a refusal naming its alternative, a manifest flag, a run-view row) and the negative control is a genuine falsifier (\"with the claiming rename replaced by a plain read, the concurrency test must fail\").",
+    "evidence_paths": "pass \u2014 no path in \u00a78 is a scratchpad or node-local temporary: the hook, the seeding change and the merge live in the checkout (`reckon/hooks/worker_inbox.py`, `reckon/_worker_fence.py`, `reckon/hooks/install.py`), tests under `tests/`, and the live check closes on a dispatched run's own manifest and receipt inside its run directory.",
+    "naming": "pass \u2014 the new module, hook and verb are named for what they do (`worker_inbox.py`, `crew tell`), with no plan label, stage name, ticket number or version tag, and no changelog prose in the section.",
+    "reasoning": "a finding \u2014 \u00a78's refusal predicate substitutes the record's `fenced` flag for the property that actually decides delivery, so the new verb can report a message queued to a run that has no hook.",
+    "single_goal": "pass \u2014 \u00a78's four bullets are the halves of one deliverable, the delivery channel (hook, its coordinator writer, the guard's redirection to it, the record that delivery happened); the bundled ledger-row deliverable that made s7 unclosable has been removed.",
+    "wiring": "pass \u2014 the plan's section-level wiring holds: `plan-section-depends-on` declares s9 -> s8 (meta line 29), s7 is `descoped` and s4 opens with its \"Superseded by \u00a78\" note, so no live node is left building the mechanism s8 replaces, and s8 needs no dependency it does not declare."
+  },
+  "section_digests": {
+    "_document": "746b563f5126dc6e8ed4189cb7eaa14994d2d06e295e2880f4b7e5f7f3c47c73",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "8419b9919c4a5072eee0e4a0edf92cc65e756bd37a38caf9191ff27921f9f27b",
+    "s9": "04a3a9c3465211256706e7581c8950fb2451ef6ac7b7f0876744ed336fa7e3bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:45:19.313237+00:00",
+  "total": null
+}
