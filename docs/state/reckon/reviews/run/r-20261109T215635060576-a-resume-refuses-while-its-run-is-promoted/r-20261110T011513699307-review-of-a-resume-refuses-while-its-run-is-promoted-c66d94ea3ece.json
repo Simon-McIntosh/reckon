@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T01:28:27.091Z",
+  "dispatched_at": "2026-11-10T01:17:02Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: the pid assertion is redundant but harmless; the case's guard is that _resume returns rather than raising, which the test does assert",
+      "recorded_at": "2026-11-10T01:36:44.266850+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_resume_waits_out_a_promotion.py",
+      "line": 219,
+      "severity": "non-blocking",
+      "summary": "the new case asserts launched[\"pid\"] == 424242 against the same value the test passes to _resume through _launcher(pid) at line 60, so it holds whatever the guard does and adds no durability; the case's real guard is that _resume returns instead of raising PromotionInProgressError"
+    },
+    {
+      "file": "tests/test_a_resume_waits_out_a_promotion.py",
+      "line": 57,
+      "severity": "non-blocking",
+      "summary": "PROMOTION_REFUSAL falls back to CrewError through getattr, so a renamed or removed PromotionInProgressError leaves both refusal-type assertions passing against the base class and nothing reddens; the delta hoists the fallback to module scope without adding a head assertion that the specific class was raised"
+    },
+    {
+      "file": "tests/test_a_resume_waits_out_a_promotion.py",
+      "line": 287,
+      "severity": "non-blocking",
+      "summary": "the five-second deadlock bound has no negative control in any recorded arm, so the assertion that a promotion and a resume started together never deadlock is never shown to fire on the inverse lock order it exists to catch"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a resume refuses while its run's promotion lock is held; this delta changes only tests/test_a_resume_waits_out_a_promotion.py and its evidence fragment, leaving reckon/crew/resumption.py:252-273 hold_against_promotion and its hold in reckon/crew/dispatch_sessions.py:1439 as they were, and it weakens neither.\nVERDICT done_when: plan section 8 names the refusal, the no-promotion resume and a five-second no-deadlock case; the delta keeps the refusal at tests/test_a_resume_waits_out_a_promotion.py:142 reddening at the base revision, rewrites the concurrent case's bound at line 287 and adds test_a_resume_proceeds_once_the_promotion_has_finished at line 203, and the manifest records 5 passed at the head against 2 failed / 3 passed at f6a07c1c23, both figures read from the recorded logs.\nVERDICT write_paths: the node's declared scope is reckon/crew/runs.py, reckon/crew/resumption.py, tests/test_a_resume_waits_out_a_promotion.py and docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-resume-refuses-while-its-run-is-promoted.html; git diff --stat f4b4467767..c66d94ea3e touches exactly the test and the fragment.\nVERDICT manifest: read at its own path; it records status complete, all six rubric lines, after_suite at 6026341b24 as 20 consecutive green runs ending EXIT=0, baseline_suite at f6a07c1c23 as 2 failed / 3 passed ending EXIT=1, measurement_module and measurement_cwd naming the scratch tree, and ruff clean on the staged paths.\nVERDICT diff: read commit by commit against f4b4467767; 6026341b24 replaces the racy \"both sides succeed\" assertion with a per-round invariant plus a determined-proceed case, and c66d94ea3e records that change and the 20-run gate in the fragment, both inside the declared paths.\nVERDICT call_sites: the guard this node landed reaches production through reckon/crew/resumption.py:289 in mark_resume_launching, the refusal arm at reckon/crew/resumption.py:1872, and the outer hold at reckon/crew/dispatch_sessions.py:1439 in resume_plan; this delta changes none of them.\nCALL_SITES: reckon/crew/resumption.py:289 (mark_resume_launching), reckon/crew/resumption.py:1872 (_resume refusal arm), reckon/crew/resumption.py:2509, reckon/crew/dispatch_sessions.py:1439 (resume_plan hold)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta leaves reckon/crew/resumption.py:252-273 unchanged and repairs only the gate that guards it, adding no behaviour of its own.\nSCORE evidence: 18\nJUSTIFICATION evidence: negative-control-base-arm.log ends \"2 failed, 3 passed in 23.81s\" then EXIT=1 and node-test-20x.log ends \"runs=20 failures=0\" then EXIT=0, and the reviewed head c66d94ea3e changes only the fragment over the revision those logs ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat f4b4467767..c66d94ea3e lists only tests/test_a_resume_waits_out_a_promotion.py and docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-resume-refuses-while-its-run-is-promoted.html, both declared.\nSCORE durability: 16\nJUSTIFICATION durability: the refusal assertion at tests/test_a_resume_waits_out_a_promotion.py:142 reddens at the base revision, but the deadlock bound at line 287 is not shown to fire in any recorded arm and the refusal type resolved at line 57 falls back to CrewError.\nSCORE fit: 19\nJUSTIFICATION fit: the new case at tests/test_a_resume_waits_out_a_promotion.py:203 follows the file's _fixture and _resume idiom, and the module-scope constant at line 57 carries its reason in a comment beside it.\nSCORE reuse: 20\nJUSTIFICATION reuse: the added case reuses the existing _fixture, _resume and promotion._promotion_lock, and the delta adds no production definition and no capability the repository already owns.\nFINDING tests/test_a_resume_waits_out_a_promotion.py:219 non-blocking: the new case asserts launched[\"pid\"] == 424242 against the same 424242 the test hands to _resume through _launcher(pid) at line 60, so the assertion holds whatever the guard does, including after reverting the refusal path; what actually guards the case is that _resume returns rather than raising PromotionInProgressError, and this line adds no durability of its own.\nFINDING tests/test_a_resume_waits_out_a_promotion.py:57 non-blocking: PROMOTION_REFUSAL is resolved with getattr(resumption, \"PromotionInProgressError\", CrewError), so a rename or removal of the refusal class silently degrades both refusal-type assertions to any CrewError and nothing reddens; the prior review round recorded this at the call site inside the case and the delta hoists it to module scope without adding a head-only assertion that the specific class is what was raised.\nFINDING tests/test_a_resume_waits_out_a_promotion.py:287 non-blocking: the five-second deadlock bound carries no negative control in any recorded arm, since the base arm passes the concurrent case as 3 passed and the mutation control targets the refusal path, so the assertion that no deadlock occurs is never shown to fail on the inverse lock order it exists to catch.\n",
+  "review_run_id": "r-20261110T011513699307-review-of-a-resume-refuses-while-its-run-is-promoted-c66d94ea3ece",
+  "reviewed_base_sha": "f4b4467767478317233ba7c853d16192472c27b2",
+  "reviewed_head_sha": "c66d94ea3ecec2b4a39ee77623bdc3dc5b983428",
+  "reviewed_run_id": "r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T01:42:49.946437+00:00",
+  "total": 112
+}
