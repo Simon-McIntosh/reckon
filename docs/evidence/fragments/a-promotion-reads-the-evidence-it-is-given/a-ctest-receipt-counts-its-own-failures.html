@@ -36,21 +36,21 @@
 
   <p><strong>Armed suite.</strong> Base arm at
   <code>18e89c95a3</code> over the template resolved on its own tree &mdash; the
-  new test is absent there, so it drops &mdash; is <code>51 passed</code>,
-  exit 0. After arm at <code>01c19e531f</code> over both files is
-  <code>55 passed</code>, exit 0.</p>
+  new test is absent there, so it drops &mdash; is <code>61 passed</code>,
+  exit 0. After arm at <code>c620b273ff</code> over the three files is
+  <code>65 passed</code>, exit 0.</p>
 
   <p><strong>Importer population.</strong> The eight test files importing
   <code>reckon.crew.promotion_evidence</code>, one arm at a time with
-  <code>-n 4</code>: <code>49 passed</code> at the base and <code>1 failed,
-  48 passed</code> at the head. The single added failure is
-  <code>tests/test_a_receipt_agrees_with_its_log.py::test_a_ctest_log_compares_its_ids_and_not_its_count</code>,
-  which asserts exactly the behaviour this section replaces &mdash; a ctest arm
-  recording <code>failure_count: 5</code> beside a log with one FAILED entry is
-  accepted there and refused here. That file is outside this node's write
-  scope and is left untouched; the repair it needs (the arm's count set to the
-  block's one entry, and the test's name and docstring to match) is recorded
-  under <code>outside_scope</code> in the manifest.</p>
+  <code>-n 4</code>: <code>49 passed</code> at the base and <code>49 passed</code>
+  at the head, no added failure. One of those files,
+  <code>tests/test_a_receipt_agrees_with_its_log.py</code>, had asserted the
+  behaviour this section replaces &mdash; a ctest arm recording
+  <code>failure_count: 5</code> accepted beside a FAILED block with one entry
+  &mdash; and was the single added failure before the file was granted. Its case
+  now records <code>failure_count: 1</code>, agreeing with the block, is named
+  <code>test_a_ctest_logs_count_is_read_from_its_failed_block</code>, and keeps
+  its ids comparison.</p>
 
   <p><strong>Negative control.</strong> Restoring the pytest reader for every
   format (the pre-change body of <code>_log_failure_count</code>) makes the
