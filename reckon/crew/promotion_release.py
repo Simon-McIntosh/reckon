@@ -28,6 +28,7 @@ from reckon.crew.routing import (
     RECLAIMABLE_CLASSES,
     WITHHELD_REASONS,
     _inspect_workspace,
+    _ledger_index_locked,
     _live_pointer_worktrees,
     _release_worktree_whole,
     _signal_process_group,
@@ -334,6 +335,50 @@ def remove_cited_arms(record: Mapping[str, Any], *, gate: str = "") -> dict[str,
     return result
 
 
+def _released_tree_index(
+    record: Mapping[str, Any], worktree: Path
+) -> tuple[Path | None, str]:
+    """The ledger index the worktree published, and why it is withheld.
+
+    A worktree resolves its own ledger path, so its reader publishes an index
+    keyed to a checkout that the release is about to remove and nothing
+    resolves again. The path is computed here, while the tree still exists, so
+    the key matches the one its reader built. No index is named when the
+    ledger resolves outside the tree — a checkout whose state is shared through
+    a link publishes the shared index, which the release must not take.
+    """
+    project = str(record.get("project") or "").strip()
+    if not project:
+        return None, "no project is recorded for this run"
+    try:
+        source = ledger.ledger_path(project, worktree).resolve()
+    except ledger.LedgerError:
+        return None, f"project {project!r} does not resolve a ledger"
+    if Path(worktree).resolve() not in source.parents:
+        return None, "the ledger resolves outside the released tree"
+    return ledger._run_index_path(project, worktree), ""
+
+
+def _unlink_released_tree_index(index: Path | None, withheld: str) -> dict[str, Any]:
+    """Remove a released worktree's index, keeping one a process holds open.
+
+    The unlink is O(1): the index file is named by a hash of the ledger path
+    alone, so no scan of the cache is involved and no other checkout's index
+    can match it. A reader mid-refresh holds SQLite's write lock, and its file
+    is kept rather than pulled out from under it; the next run-less sweep
+    takes it once its recorded checkout is gone.
+    """
+    if index is None:
+        return {"ledger_index_withheld": withheld}
+    if not index.is_file():
+        return {}
+    if _ledger_index_locked(index):
+        return {"ledger_index_withheld": "a live process holds the index open"}
+    index.unlink()
+    print(f"removed ledger index {index}")
+    return {"ledger_index_removed": str(index)}
+
+
 def _release_run_workspace(
     record: Mapping[str, Any],
     retention: Mapping[str, str] | None = None,
@@ -413,6 +458,9 @@ def _release_run_workspace(
                 classification, "unrecognised classification"
             )
         else:
+            # The index path is resolved while the tree still exists, so it is
+            # the key the tree's own reader published under.
+            index, index_withheld = _released_tree_index(record, worktree)
             released = _release_worktree_whole(repo, worktree, run_id=run_id)
             if not released.get("released", True):
                 # The named path is not a disposable linked worktree — a
@@ -421,6 +469,7 @@ def _release_run_workspace(
                 result["worktree_withheld"] = released["withheld"]
             else:
                 result["worktree_released"] = True
+                result.update(_unlink_released_tree_index(index, index_withheld))
                 if not released.get("trash_removed"):
                     # The tree is off its registered path and deregistered, so
                     # the release itself is whole; only the copy's deletion is
