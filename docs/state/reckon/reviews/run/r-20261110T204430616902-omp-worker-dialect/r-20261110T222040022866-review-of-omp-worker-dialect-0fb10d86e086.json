@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by differencing the reviewed manifest's two arms against their logs: baseline-arm.log records '51 passed in 24.04s' with a bare EXIT=0 at base 67c9e36671107c5c73905e9fcb58088927395294 over tests/test_staged_write_inventory.py and no FAILED line, and after-arm-head.log records '71 passed in 60.83s (0:01:00)' with a bare EXIT=0 at head 0fb10d86e0 over tests/test_omp_dialect.py plus the same census file, also with no FAILED line. Zero failing ids in either arm, so nothing is added.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/_backends.py:2883 (launch_plan composes argv through dialect.argv)",
+    "reckon/_backends.py:3432 (_observe_events folds a stream through dialect.observe)",
+    "reckon/_backends.py:3132 (_requests_tool in the machine-span scan)",
+    "reckon/crew/dispatch.py:3322 (fresh dispatch)",
+    "reckon/crew/resumption.py:532 (availability probe)",
+    "reckon/crew/dispatch_sessions.py:1339",
+    "reckon/crew/dispatch_sessions.py:1862"
+  ],
+  "completed_at": "2026-11-10T22:49:42.924Z",
+  "dispatched_at": "2026-11-10T22:27:45Z",
+  "findings": [
+    {
+      "file": "tests/test_omp_dialect.py",
+      "line": "246",
+      "severity": "non-blocking",
+      "text": "non-blocking: the test named and documented for the placeholder-replacement guard does not deliver the shape it names. Its head slice, `lines[:7]`, ends at a `message_start` (the zero-usage assistant record is index 6 and its `message_end` is index 11, inside the tail), so no zero-usage `message_end` ever arrives after a measured total; and because the fixture's real 32722/18 record is the last usage record in the stream, changing reckon/_backends.py:1941 from `_accumulate_usage(tokens, _omp_usage(usage))` to a replacing assignment leaves the whole of tests/test_omp_dialect.py green. The change is correct today, but a multi-turn stream whose later tool turn reports zeros would fold to a run that spent nothing and no test would redden."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3361",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed change sets `stdin_prompt = False` at reckon/_backends.py:1838, and this pre-existing line then rewrites the run's prompt.txt with `plan.stdin_text`, which is the empty string for an argv-prompt dialect. An omp run's prompt.txt is therefore emptied of the brief the run was dispatched with, leaving that composition only in the argv; the harness still receives the brief correctly, and the path is reachable only once an omp lane is dispatchable (the flight entry omp-local is the coordinator's and is named under outside_scope in the reviewed manifest), which is why this does not hold the node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 67c9e36671107c5c73905e9fcb58088927395294: 21ccbe709d adds the omp dialect, the _HARNESS_HOME entry, the recorded stream fixture and its tests, 45d15ce250 moves the fixture out of tests/ behind a re-granted path, and 0fb10d86e0 rewrites the landing fragment after the armed command became collectible; 5 files, +958/-7, no unrelated edits.",
+    "done_when": "the measure asks for parser tests over the recorded fixture reporting the real totals rather than the zero placeholder, a non-zero positive control, a codex-vocabulary refusal the test reddens on, argv tests for closed stdin, the --config overlay and the --tools allowlist, and clean ruff; tests/test_omp_dialect.py covers each half and baseline-arm.log, after-arm-head.log, negative-control.log, ruff-check.log and ruff-format.log record the results.",
+    "goal": "the goal names three things \u2014 an omp dialect registered in reckon/_backends.py, composed from the recorded headless contract, with its run home relocated through HOME in _HARNESS_HOME; reckon/_backends.py:2582 registers _OmpDialect, :1836-1881 composes `omp -p --mode=json` with the brief last on argv and no stdin text, and reckon/_worker_fence.py:44 adds `\"omp\": (\"HOME\", \"omp-home\", \".omp\")`, so all three landed.",
+    "manifest": "read; it records commits 21ccbe709d/45d15ce250/0fb10d86e0, a 51-passed base arm, a 71-passed after arm, a negative control reading '1 failed, 19 passed' with EXIT=1, and a ruff result of two pre-existing findings \u2014 which reconciles with ruff-check.log's two hits at reckon/_backends.py:713 and :3691, both blamed to commits before this node, so the lint claim holds.",
+    "write_paths": "the source run was fenced to six paths and the diff changes five; the one deviation is the stream fixture landing at docs/research/fixtures/omp-stream.jsonl instead of the declared tests/fixtures/omp-stream.jsonl, and resume-1-advice.txt grants exactly that move ('this path is now granted to you'), so the tree stays inside a granted scope."
+  },
+  "justifications": {
+    "durability": "tests/test_omp_dialect.py:246 is the one guard that does not hold: its head slice ends at a message_start and the fixture's measured total is the last usage record, so replacing reckon/_backends.py:1941's _accumulate_usage with an assignment leaves the file green.",
+    "evidence": "baseline-arm.log and after-arm-head.log each end in a summary and a bare EXIT line (51 and 71 passed, EXIT=0), negative-control.log records the refusal removed at '1 failed, 19 passed' with EXIT=1, and I re-ran tests/test_omp_dialect.py at 0fb10d86e0 to 20 passed, EXIT=0.",
+    "fit": "reckon/_backends.py:1818-2110 follows the surrounding shape \u2014 a Dialect subclass, module-level constant tables with measured commentary, and the shared throughput_block/unknown_budget/_phase helpers \u2014 and no added symbol carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/_backends.py:2582 registers the dialect in _DIALECTS and reckon/_worker_fence.py:44 names HOME for it, which with the argv at :1836-1881 is the whole of what the goal states.",
+    "reuse": "searches for overlay/config writers, for the omp usage keys and for a foreign-vocabulary refusal over reckon/ found no owner at the base (only flight.deep_merge and the routing overlays, neither of which writes a harness config), and the fold extends _accumulate_usage:2469, _sum_tokens:2461, _phase:2542 and _store.write_atomically rather than reimplementing them.",
+    "scope_discipline": "every changed path is inside the six declared ones except the fixture, which the coordinator's resume advice explicitly re-granted at docs/research/fixtures/omp-stream.jsonl, and nothing else in the diff leaves the section's subject."
+  },
+  "node": "review-of-omp-worker-dialect-0fb10d86e086",
+  "node:reviewed": "omp-worker-dialect",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal names three things \u2014 an omp dialect registered in reckon/_backends.py, composed from the recorded headless contract, with its run home relocated through HOME in _HARNESS_HOME; reckon/_backends.py:2582 registers _OmpDialect, :1836-1881 composes `omp -p --mode=json` with the brief last on argv and no stdin text, and reckon/_worker_fence.py:44 adds `\"omp\": (\"HOME\", \"omp-home\", \".omp\")`, so all three landed.\nVERDICT done_when: the measure asks for parser tests over the recorded fixture reporting the real totals rather than the zero placeholder, a non-zero positive control, a codex-vocabulary refusal the test reddens on, argv tests for closed stdin, the --config overlay and the --tools allowlist, and clean ruff; tests/test_omp_dialect.py covers each half and baseline-arm.log, after-arm-head.log, negative-control.log, ruff-check.log and ruff-format.log record the results.\nVERDICT write_paths: the source run was fenced to six paths and the diff changes five; the one deviation is the stream fixture landing at docs/research/fixtures/omp-stream.jsonl instead of the declared tests/fixtures/omp-stream.jsonl, and resume-1-advice.txt grants exactly that move ('this path is now granted to you'), so the tree stays inside a granted scope.\nVERDICT manifest: read; it records commits 21ccbe709d/45d15ce250/0fb10d86e0, a 51-passed base arm, a 71-passed after arm, a negative control reading '1 failed, 19 passed' with EXIT=1, and a ruff result of two pre-existing findings \u2014 which reconciles with ruff-check.log's two hits at reckon/_backends.py:713 and :3691, both blamed to commits before this node, so the lint claim holds.\nVERDICT diff: read commit by commit from 67c9e36671107c5c73905e9fcb58088927395294: 21ccbe709d adds the omp dialect, the _HARNESS_HOME entry, the recorded stream fixture and its tests, 45d15ce250 moves the fixture out of tests/ behind a re-granted path, and 0fb10d86e0 rewrites the landing fragment after the armed command became collectible; 5 files, +958/-7, no unrelated edits.\nCALL_SITES: reckon/_backends.py:2883 (launch_plan composes argv through dialect.argv), reckon/_backends.py:3432 (_observe_events folds a stream through dialect.observe), reckon/_backends.py:3132 (_requests_tool in the machine-span scan), reckon/crew/dispatch.py:3322 (fresh dispatch), reckon/crew/resumption.py:532 (availability probe), reckon/crew/dispatch_sessions.py:1339, reckon/crew/dispatch_sessions.py:1862\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2582 registers the dialect in _DIALECTS and reckon/_worker_fence.py:44 names HOME for it, which with the argv at :1836-1881 is the whole of what the goal states.\nSCORE evidence: 18\nJUSTIFICATION evidence: baseline-arm.log and after-arm-head.log each end in a summary and a bare EXIT line (51 and 71 passed, EXIT=0), negative-control.log records the refusal removed at '1 failed, 19 passed' with EXIT=1, and I re-ran tests/test_omp_dialect.py at 0fb10d86e0 to 20 passed, EXIT=0.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is inside the six declared ones except the fixture, which the coordinator's resume advice explicitly re-granted at docs/research/fixtures/omp-stream.jsonl, and nothing else in the diff leaves the section's subject.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_omp_dialect.py:246 is the one guard that does not hold: its head slice ends at a message_start and the fixture's measured total is the last usage record, so replacing reckon/_backends.py:1941's _accumulate_usage with an assignment leaves the file green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/_backends.py:1818-2110 follows the surrounding shape \u2014 a Dialect subclass, module-level constant tables with measured commentary, and the shared throughput_block/unknown_budget/_phase helpers \u2014 and no added symbol carries a plan, ticket or version label.\nSCORE reuse: 19\nJUSTIFICATION reuse: searches for overlay/config writers, for the omp usage keys and for a foreign-vocabulary refusal over reckon/ found no owner at the base (only flight.deep_merge and the routing overlays, neither of which writes a harness config), and the fold extends _accumulate_usage:2469, _sum_tokens:2461, _phase:2542 and _store.write_atomically rather than reimplementing them.\nFINDING tests/test_omp_dialect.py:246 non-blocking: the test named and documented for the placeholder-replacement guard does not deliver the shape it names. Its head slice, `lines[:7]`, ends at a `message_start` (the zero-usage assistant record is index 6 and its `message_end` is index 11, inside the tail), so no zero-usage `message_end` ever arrives after a measured total; and because the fixture's real 32722/18 record is the last usage record in the stream, changing reckon/_backends.py:1941 from `_accumulate_usage(tokens, _omp_usage(usage))` to a replacing assignment leaves the whole of tests/test_omp_dialect.py green. The change is correct today, but a multi-turn stream whose later tool turn reports zeros would fold to a run that spent nothing and no test would redden.\nFINDING reckon/crew/dispatch.py:3361 non-blocking: the landed change sets `stdin_prompt = False` at reckon/_backends.py:1838, and this pre-existing line then rewrites the run's prompt.txt with `plan.stdin_text`, which is the empty string for an argv-prompt dialect. An omp run's prompt.txt is therefore emptied of the brief the run was dispatched with, leaving that composition only in the argv; the harness still receives the brief correctly, and the path is reachable only once an omp lane is dispatchable (the flight entry omp-local is the coordinator's and is named under outside_scope in the reviewed manifest), which is why this does not hold the node.",
+  "review_run_id": "r-20261110T222040022866-review-of-omp-worker-dialect-0fb10d86e086",
+  "reviewed_base_sha": "67c9e36671107c5c73905e9fcb58088927395294",
+  "reviewed_head_sha": "0fb10d86e086dcaf5d18d693fb600c4903017a58",
+  "reviewed_run_id": "r-20261110T204430616902-omp-worker-dialect",
+  "scores": {
+    "durability": 13,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:58:00+00:00",
+  "total": 105
+}
