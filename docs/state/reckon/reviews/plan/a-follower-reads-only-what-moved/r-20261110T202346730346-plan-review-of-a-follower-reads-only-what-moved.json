@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T20:36:51.575Z",
+  "dispatched_at": "2026-11-10T20:27:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-follower-reads-only-what-moved.html:45",
+      "id": "reasoning-1",
+      "reason": "a node implementing this as written widens a documented invariant with no stated justification; either the key must carry an identity that moves with the object store or the plan must state why a 10-character prefix makes the risk negligible.",
+      "text": "\u00a71 caches a resolved short citation \"under its tree and the candidate as written, whatever its length\" in `_RESOLVE_COMMIT_CACHE` and the persistent `recovery_watch` store, but the guard it removes is documented at recovery_review_subject.py:205-209 as existing precisely because \"a ref name or an abbreviation can move, so neither is ever kept\"; the replacement key carries only tree and candidate, with no head or object-store identity, so an abbreviation whose referent changes (a fetched object making the prefix ambiguous, or a worktree path reused at a different revision) returns the stale commit forever \u2014 and the persistent store survives process exit, so nothing re-asks.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-follower-reads-only-what-moved.html:51",
+      "id": "reasoning-2",
+      "reason": "the section may fix the wrong call site; the plan needs either the trace's attribution of the opens or a change that covers `flight.resolve`'s read too.",
+      "text": "\u00a72 asserts that `ledger.lanes_declaring_model` and `_identity_catalogue` are \"where the follower's repeated catalogue opens come from\", but the cited evidence (intro, line 40) is a bare count of 86 `openat`s with no call-site attribution, and `reckon/flight.py:2201` reads the same catalogue through `read_layer_file` on an uncached path that many crew modules reach via `flight.resolve` (`runs.py:1178`, `paid_lanes.py:1083`, `routing.py:2061`), which \u00a72 explicitly excludes (\"Nothing is added to `reckon/flight.py`\"); its done-when measures only a ledger-only test, so it can pass while the measured cost survives.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-follower-reads-only-what-moved.html:60",
+      "id": "reasoning-3",
+      "reason": "a followup that describes the already-true state dispatches a node against an expectation the section does not satisfy, and the followup is not regenerated when the section lands.",
+      "text": "the \u00a71 followup body says \"\u00a71 stops each follower starting git every second: it re-derives its code identity only when HEAD moves\", which describes behaviour the plan's own intro (line 40) says already exists in `checkout_trust._identity_hold` and is \"not a cost here\", while \u00a71 actually memoises short-sha resolutions in `_resolve_commit`; the followup is the text a coordinator reads to decide what the dispatch delivers.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-follower-reads-only-what-moved.html:45",
+      "id": "reasoning-4",
+      "reason": "the case the section serves \u2014 a worker committing in its own worktree, which advances that worktree's HEAD \u2014 is covered, so the qualification changes no code the section writes.",
+      "text": "\u00a71 states an unresolved citation \"is remembered only against the reading of `git_head._head_identity` for that tree, so a commit that arrives later is asked about again once HEAD or its ref moves\", but `_head_identity` (reckon/git_head.py:82-107) reads only `HEAD` and the ref it names, so an object fetched into the repository without advancing that ref leaves the negative answer cached.",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-follower-reads-only-what-moved.html:46",
+      "id": "done_when-1",
+      "reason": "the two files are tiny and the choice is a one-token edit, but a worker following the text as written exceeds a binding host limit, so it is worth correcting in passing.",
+      "text": "both sections fix their gate with \"run in place on the fleet node with `-n 6 --timeout 120`\" (also line 53), above the `-n 4` ceiling the host rule states for a focused in-place run on the shared fleet node, which is the node the work runs on.",
+      "type": "done_when",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "f7054a36c0b078ae03faf4bde39aa0c42b133964",
+  "plan_fingerprint": "cc721450ef8812edddbbe5b2264220d5022c3dd9f2e17be6801917a94e539cc2",
+  "plan_slug": "a-follower-reads-only-what-moved",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T202346730346-plan-review-of-a-follower-reads-only-what-moved",
+  "reviewed_blob_sha": "47331f934ea03820527099941ab4a4c731ea8576",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_resolve_commit` (recovery_review_subject.py:240), `_FULL_REVISION` (:203), `_stored_commit_answer` (:214), the `cached=True` derivation (:347), `recovery_watch._stored_commit_answer` (:241), `ledger._identity_catalogue` (:248), `ledger.lanes_declaring_model` (:297), `file_memo.memoized` (:358), `signature_from_stat` (:279), `checkout_trust._identity_hold` (reckon/checkout_trust.py:101) and `git_head._head_identity` (reckon/git_head.py:82) all resolve at or near the cited lines.",
+    "done_when": "a finding \u2014 both sections carry a declared negative control, but \u00a71 and \u00a72 both fix the gate concurrency at `-n 6` on the fleet node (snapshot lines 46, 53), above the host rule's `-n 4` ceiling for in-place runs.",
+    "evidence_paths": "pass \u2014 each section's logs are stated to sit \"under the run directory\" with a revision header, the literal command and a bare `EXIT=` last line, which is the durable crew run directory and not a node-local scratch path.",
+    "naming": "pass \u2014 the two new test modules are named by the mechanism they assert, and no plan label, gate id, ticket number or changelog prose appears in a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a71 removes a guard whose documented purpose it does not address, \u00a72's root-cause attribution is not supported by its own trace, and the \u00a71 followup describes work \u00a71 does not do.",
+    "single_goal": "pass \u2014 \u00a71 changes one mechanism (remember a short-citation resolution) and \u00a72 changes one (one catalogue memo), each with its own test file and its own gate.",
+    "wiring": "pass \u2014 the plan declares `plan-after: the-monitor-reads-each-fact-once`, which is the wiring field reckon treats as a relationship (`reckon/_plan_html.py:677`, `reckon/_schema.py:356`), and that target exists and its \u00a712 (\"Cutover, measured with the same instruments\") is the section the intro cites; no dependency is claimed that the sections need, since both are stated to land before the station work."
+  },
+  "section_digests": {
+    "_document": "c56fa981311c28e74feed50a06b27125ae8f6e8f1e816f1ae32447e93e8068cd",
+    "s1": "eeb385abca4eb70370d59e68443cfdae25b4cc3c3259fc77866f908e7ac33ac3",
+    "s2": "8c7aad91d7cbc8451bbbd2e42b11051bd58b2ae95901ba32bfec24aa243285a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:42:35.873667+00:00",
+  "total": null
+}
