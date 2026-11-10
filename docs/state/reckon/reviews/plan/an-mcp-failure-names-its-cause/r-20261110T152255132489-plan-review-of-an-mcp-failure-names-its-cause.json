@@ -1,0 +1,83 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T15:34:49.943Z",
+  "dispatched_at": "2026-11-10T15:25:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261110T152255132489-plan-review-of-an-mcp-failure-names-its-cause/plan.html:219",
+      "id": "wiring-1",
+      "reason": "the section is invisible as open work, the same defect an earlier review had repaired for \u00a710, \u00a711, \u00a716 and \u00a718.",
+      "text": "s19 is declared `implementable` while every followup is resolved, so no open followup names `/reckon-build an-mcp-failure-names-its-cause \u00a719` and a coordinator reading the open-work list never dispatches it",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261110T152255132489-plan-review-of-an-mcp-failure-names-its-cause/plan.html:220",
+      "id": "reasoning-1",
+      "reason": "without `reckon/_mcp_tools.py` in the write paths the node's own first done-when case (\"a body at 13 s CPU \u2026 returns read-slow\") cannot pass, because the model field rejects the value.",
+      "text": "\u00a719 makes a computing timed-out read report `error` `read-slow`, but `StorageSlowResult.error` is declared `Literal[\"storage-slow\"] = STORAGE_SLOW` at reckon/_mcp_tools.py:179 and the result is constructed there by `for_call`, while \u00a719's write paths name only `reckon/mcp_deadlines.py` and the new test, so a builder fenced to those paths cannot emit `read-slow` at all",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261110T152255132489-plan-review-of-an-mcp-failure-names-its-cause/plan.html:220",
+      "id": "done_when-1",
+      "reason": "the one component that pattern-matches the error value, `_SLOW_ERROR` in the census, matches only `storage-slow` and would silently stop counting `read-slow` results; that is the caller the bullet needed to name.",
+      "text": "\"Every caller that branched on storage-slow handles read-slow the same way\" names no caller and no test that enumerates them; `grep -rn storage-slow reckon/` finds no production branch on the error value, only the census regex at reckon/mcp_census.py:87 and a printer at reckon/project_maintenance_commands.py:1073, so the clause passes vacuously for a node that ignores it",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/an-mcp-failure-names-its-cause/r-20261110T152255132489-plan-review-of-an-mcp-failure-names-its-cause/plan.html:220",
+      "id": "evidence_paths-1",
+      "reason": "the builder must otherwise invent a log location, and the same omission was repaired for \u00a717 and \u00a718 after review.",
+      "text": "\u00a719 states its negative control (\"restores the half-wall threshold and the fixed label\") but names no durable path for that log or for the gate run that reads it, where \u00a716 and \u00a717 each say \"under the run directory\"",
+      "type": "evidence_paths",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3b9fa9c08bf4c6b7d4868867f9e82c57fe773f58",
+  "plan_fingerprint": "495cbe9b9ba086dbee5e9220cc892b789b375b8f026195b7cc8f9ca3c2749be2",
+  "plan_slug": "an-mcp-failure-names-its-cause",
+  "plan_version": 132,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T152255132489-plan-review-of-an-mcp-failure-names-its-cause",
+  "reviewed_blob_sha": "a7972efd5c21e0c214b7a36de78475485c50e3c8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a719's only file anchor resolves: `reckon/mcp_deadlines.py` near lines 113\u2013123 holds the computing measure, with `_COMPUTING_WORK_FRACTION = 0.5` at reckon/mcp_deadlines.py:122.",
+    "done_when": "a finding \u2014 \u00a719's third done-when bullet, \"Every caller that branched on storage-slow handles read-slow the same way\" (plan.html:220), names no caller and no test that enumerates them, so it measures nothing.",
+    "evidence_paths": "a finding \u2014 \u00a719 declares a negative control but names no durable path for its log or its gate run, where \u00a716 and \u00a717 say \"under the run directory\" (plan.html:206, :212).",
+    "naming": "pass \u2014 \u00a719's new symbol (`read-slow`) and test file (`tests/test_a_slow_read_names_what_it_measured.py`) are named by mechanism, with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the change \u00a719 requires does not run on the real code path it names: the `error` value is declared and built in `reckon/_mcp_tools.py`, which \u00a719's write paths omit.",
+    "single_goal": "pass \u2014 \u00a719 carries one deliverable: a timed-out read reports what it measured instead of a binary label.",
+    "wiring": "a finding \u2014 s19 is declared `implementable` (plan.html:24, plan.html:219) and every followup in the plan is resolved (plan.html:236-289, zero `data-status=\"open\"`), so no open followup recommends `/reckon-build an-mcp-failure-names-its-cause \u00a719`."
+  },
+  "section_digests": {
+    "_document": "d9073ef165dc879d5b17d0c624b6aa1328282f85274ff7db284a7868a168fe4f",
+    "s1": "d0ea88c8e7e70627417eeb698c89b91962c8e03f4f18bbdc2e310ceeb8b0f1f5",
+    "s10": "469866bcda74ceac15429518848b4083b1f85964c53820829d32e65df2661acc",
+    "s11": "ba5d0db257057d6dede25c9555898552abc78e291d39b953a7da192229ffbd2f",
+    "s12": "371c3889cd142db38637604c178d996b86294895ad0edc5534d1731f0271fefe",
+    "s13": "79a2b6dff46b0ddd765c409edeb1596fe9bbdf3e4c884875a0e137630010b0db",
+    "s14": "9c62796a08277a796de0c39af58a83a98ae5b16d930532f934636d24dad5d4c5",
+    "s15": "2cc785cc7428c93e41c236ddb2a247143254032421d61d555e7da335bcaf3734",
+    "s16": "144aaa17b20cffc95b3b9ca1166d7efa4069f736dbf892de8f81914afcd8bb31",
+    "s17": "81144ffa35b8763d57edc6f75fe9526743f0644d38d442d3c684e76396ebd7f2",
+    "s18": "8f47682f9566ed3cd91db89f77405cc52763a9ed094f3b0f832f54b6013ed4a1",
+    "s19": "06ff7882facce02bc8ab15091325c6d2cb743be6338457de7a6200f8a3b2981c",
+    "s2": "3a0632a9c77266389bb16c116a82d809d3c62b98f0ca44f8c9f8eb4ccde7a18e",
+    "s3": "05d43e5ed58103318c10e33d1dc6795cf27a2ab17593f4c172bb381d8c00fcde",
+    "s4": "fd5d8817baa9c4f4d8838eaad2fd20fb5a6088ac1c8dad8718a0fc1f7eeec45f",
+    "s5": "16d91b56539888d5683fc9808616b764742e6c7e93516541ff6dc793aec9fc84",
+    "s6": "38a3b13749c17899e607aeb6eb1c1324c5b7b7ecbe0f2027b43a50657e063c20",
+    "s7": "9a485205c44b324dcb24ad7acf24f7bfd53171fa8c18a03e9c9a2bdf3a458bed",
+    "s8": "019dc7e9b6ed8d4895820ecc99822eb6c6d34ba61c11a67986dd5d0154d5f3c1",
+    "s9": "633f50004da507a9f6881ceffc2c738ff841e6e61a27b5ff963f53749c491fcd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:30:45.206450+00:00",
+  "total": null
+}
