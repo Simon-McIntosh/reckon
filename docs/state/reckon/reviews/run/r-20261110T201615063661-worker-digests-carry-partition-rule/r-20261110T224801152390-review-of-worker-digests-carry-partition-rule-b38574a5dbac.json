@@ -1,0 +1,126 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "An empty, wrong or misparsed pinned policy omits the independently known Git Safety block; this is the positive input control.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 75
+    },
+    {
+      "failure_condition": "Restore the retired fleet heading in FLEET_COMPUTE_HEADER and the mapping, or remove a mapped heading from POLICY: the pinned literal headers remain independent and implement/test fail, as both red logs demonstrate.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 82
+    },
+    {
+      "failure_condition": "Restore the retired committed compute digest or remove its new fleet heading: the literal required-heading assertion fails.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 92
+    },
+    {
+      "failure_condition": "Restore or append the retired heading to a committed compute digest: the forbidden-heading assertion fails even if the new heading is also present.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 94
+    },
+    {
+      "failure_condition": "Keep the new heading but truncate or change the pinned fleet paragraph in a committed digest: membership of the independent POLICY block fails; changing the lookup header cannot make the pinned block follow it.",
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 96
+    }
+  ],
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-10T23:07:25Z",
+  "dispatched_at": "2026-11-10T22:53:26Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none; the incremental files contain test-only fixture data and an evidence fragment, with no production caller.",
+    "diff": "read 0200640b8bf8da0a0591e39e702a948396e98300 and b38574a5dbace943d606fa4d17513c83fdaf388c commit by commit; the first replaces external test input with a pinned fixture and the second appends five evidence lines without removing prior content.",
+    "done_when": "source prompt.txt:121 requires current digests, mapped-heading coverage and no added failures; repair-digest-check.log reports all four roles current, repair-clean-home.log records six passes, and the suite, importer and Ruff receipts meet the remaining measures.",
+    "goal": "source prompt.txt:38 and live plan s12 require the renamed partition rule; this incremental repair in tests/test_worker_digest_headings_exist.py:7-97 answers the previous review by pinning independent policy input and removing all six host-dependent skips.",
+    "manifest": "source manifest.md:10-15 names the repair commits and completed gates; its baseline_suite and after_suite receipts reconcile with repair-baseline-suite.log and repair-after-suite.log, each recording 65 passed and EXIT=0.",
+    "write_paths": "source prompt.txt:80 grants the heading test and landing fragment; the two files changed between 8478192429bfb236c1732d8d5960a1255e4a5b3c and b38574a5dbace943d606fa4d17513c83fdaf388c are both granted and are exactly the incremental review scope."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_digest_headings_exist.py:75-96 compares the mapping and committed digests with independently pinned headings and text; restoring the retired mapping reddens :82 for implement/test, and stale or truncated pinned policy reddens :92-96 without a host-policy skip.",
+    "evidence": "repair-reproduction.log records 6 skipped at the reviewed base, repair-clean-home.log records 6 passed at the repair commit, both armed logs record 65 passed with EXIT=0, and repair-old-heading-control.log records the intended two failing role ids.",
+    "fit": "tests/test_worker_digest_headings_exist.py:64-97 uses the surrounding pytest fixture and parametrization idiom and satisfies AGENTS.md test isolation; quoted policy headings and source paths are fixture data, not new attributed symbols or comments.",
+    "goal_fidelity": "tests/test_worker_digest_headings_exist.py:7-67 supplies independent canonical headings and the fleet paragraph, so the six existing rule checks remain active without an operator policy, resolving the previous blocking finding.",
+    "reuse": "the capability search found tests/test_worker_digest.py:55 builds its synthetic policy from SECTION_MAP and cannot supply independent expected headings; the new constant fixture adds that missing oracle while reusing reckon/crew/worker_digest.py:398 block_map rather than duplicating parsing.",
+    "scope_discipline": "the incremental diff changes only tests/test_worker_digest_headings_exist.py and docs/evidence/fragments/a-worker-is-charged-to-a-job/worker-digests-carry-partition-rule.html, both inside source prompt.txt:80 grants."
+  },
+  "production_context_examined": [
+    "reckon/crew/worker_digest.py:398 block_map",
+    "reckon/crew/worker_digest.py:438 select_blocks",
+    "reckon/crew/worker_digest.py:493 generate",
+    "reckon/crew/worker_digest.py:581 verify",
+    "reckon/crew/worker_digest.py:593 main"
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 and live plan s12 require the renamed partition rule; this incremental repair in tests/test_worker_digest_headings_exist.py:7-97 answers the previous review by pinning independent policy input and removing all six host-dependent skips.\nVERDICT done_when: source prompt.txt:121 requires current digests, mapped-heading coverage and no added failures; repair-digest-check.log reports all four roles current, repair-clean-home.log records six passes, and the suite, importer and Ruff receipts meet the remaining measures.\nVERDICT write_paths: source prompt.txt:80 grants the heading test and landing fragment; the two files changed between 8478192429bfb236c1732d8d5960a1255e4a5b3c and b38574a5dbace943d606fa4d17513c83fdaf388c are both granted and are exactly the incremental review scope.\nVERDICT manifest: source manifest.md:10-15 names the repair commits and completed gates; its baseline_suite and after_suite receipts reconcile with repair-baseline-suite.log and repair-after-suite.log, each recording 65 passed and EXIT=0.\nVERDICT diff: read 0200640b8bf8da0a0591e39e702a948396e98300 and b38574a5dbace943d606fa4d17513c83fdaf388c commit by commit; the first replaces external test input with a pinned fixture and the second appends five evidence lines without removing prior content.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_worker_digest_headings_exist.py:7-67 supplies independent canonical headings and the fleet paragraph, so the six existing rule checks remain active without an operator policy, resolving the previous blocking finding.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log records 6 skipped at the reviewed base, repair-clean-home.log records 6 passed at the repair commit, both armed logs record 65 passed with EXIT=0, and repair-old-heading-control.log records the intended two failing role ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the incremental diff changes only tests/test_worker_digest_headings_exist.py and docs/evidence/fragments/a-worker-is-charged-to-a-job/worker-digests-carry-partition-rule.html, both inside source prompt.txt:80 grants.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_worker_digest_headings_exist.py:75-96 compares the mapping and committed digests with independently pinned headings and text; restoring the retired mapping reddens :82 for implement/test, and stale or truncated pinned policy reddens :92-96 without a host-policy skip.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_worker_digest_headings_exist.py:64-97 uses the surrounding pytest fixture and parametrization idiom and satisfies AGENTS.md test isolation; quoted policy headings and source paths are fixture data, not new attributed symbols or comments.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found tests/test_worker_digest.py:55 builds its synthetic policy from SECTION_MAP and cannot supply independent expected headings; the new constant fixture adds that missing oracle while reusing reckon/crew/worker_digest.py:398 block_map rather than duplicating parsing.\n",
+  "recommendation": "accept-incremental-repair",
+  "resolved_prior_findings": [
+    {
+      "file": "tests/test_worker_digest_headings_exist.py",
+      "line": 7,
+      "record": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/review-records/r-20261110T201615063661-worker-digests-carry-partition-rule.at-8478192429bfb236c1732d8d5960a1255e4a5b3c.json",
+      "resolution": "External canonical_path lookup and skip decorators removed; pinned literal policy and six-case clean-home pass recorded."
+    }
+  ],
+  "review_limitations": "Incremental static review and source gate receipts only; no suite rerun or mutation. The after gate ran at 0200640b8bf8da0a0591e39e702a948396e98300; git diff --quiet confirms no source or test changed between that revision and the reviewed head. The pinned content assertion covers the first fleet paragraph, while live canonical currency remains the explicit worker_digest --check gate. Assigned review worktree HEAD is f0b6d57c190fab578a77f5221faa3455de770282; all substantive code reads used the explicit reviewed head.",
+  "review_run_id": "r-20261110T224801152390-review-of-worker-digests-carry-partition-rule-b38574a5dbac",
+  "reviewed_base_sha": "8478192429bfb236c1732d8d5960a1255e4a5b3c",
+  "reviewed_commits": [
+    "0200640b8bf8da0a0591e39e702a948396e98300",
+    "b38574a5dbace943d606fa4d17513c83fdaf388c"
+  ],
+  "reviewed_head_sha": "b38574a5dbace943d606fa4d17513c83fdaf388c",
+  "reviewed_run_id": "r-20261110T201615063661-worker-digests-carry-partition-rule",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [],
+  "status": "parsed",
+  "suite_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_nested_refusal_names_the_route.py tests/test_worker_digest_headings_exist.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/repair-after-suite.log",
+      "revision": "0200640b8bf8da0a0591e39e702a948396e98300",
+      "summary": "65 passed in 48.39s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_nested_refusal_names_the_route.py tests/test_worker_digest_headings_exist.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/repair-baseline-suite.log",
+      "revision": "8478192429bfb236c1732d8d5960a1255e4a5b3c",
+      "summary": "65 passed in 49.44s"
+    },
+    "positive_control": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_worker_digest_headings_exist.py::test_every_mapped_heading_exists_in_the_canonical_source[implement]",
+        "tests/test_worker_digest_headings_exist.py::test_every_mapped_heading_exists_in_the_canonical_source[test]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T201615063661-worker-digests-carry-partition-rule/repair-old-heading-control.log",
+      "summary": "2 failed, 2 passed in 10.56s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T23:29:39.710867+00:00",
+  "total": 120
+}
