@@ -913,7 +913,9 @@ def _harvest_lane_receipt(
     # lookup.  The receipt prices a lane the model names; a record carrying no
     # model keeps the explicit no-model marker rather than a fabricated figure.
     receipt = rollout.read_rollout_receipt(
-        str(session_id or ""), model_identifier=_agent_model_identifier(record)
+        str(session_id or ""),
+        model_identifier=_agent_model_identifier(record),
+        run_id=str(record.get("run_id") or "") or None,
     )
     unmeasured: dict[str, str] = {}
     context_reason = _receipt_unmeasured_reason(receipt.model_context_window)
