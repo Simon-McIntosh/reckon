@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:232",
+    "reckon/crew/pending_landing.py:363",
+    "reckon/crew/recovery_repair_dispatch.py:82",
+    "reckon/crew/queue_landing.py:1705",
+    "reckon/crew_run_commands.py:3226"
+  ],
+  "completed_at": "2026-11-10T00:45:17.076Z",
+  "dispatched_at": "2026-11-10T00:30:56Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: the recovery_repair_dispatch write was granted by the coordinator through crew widen, and the base arm fails on the new symbol as expected; coordinator importer arms show 0 added",
+      "recorded_at": "2026-11-10T01:06:03.495444+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking: the recovery_repair_dispatch write was granted by the coordinator through crew widen, and the base arm fails on the new symbol as expected; coordinator importer arms show 0 added",
+      "recorded_at": "2026-11-10T01:06:20.799861+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "82",
+      "severity": "non-blocking",
+      "text": "the mark write was changed here to call pending_landing.mark_pending_landing_repair, but this file is in neither the plan's section-6 write paths nor the dispatch fence, so the node wrote outside its exclusive scope without requesting a scope extension; the change itself is correct and the two tests that reach this line (tests/test_a_conflicting_landing_is_repaired.py, tests/test_a_repair_has_one_path.py) assert individual pointer keys rather than whole-pointer equality, so the added pending_landing_repair_attempt field does not break them, but the remedy is a scope grant recorded by the coordinator rather than a repair to the code."
+    },
+    {
+      "file": "tests/test_a_landing_record_waits_for_the_merge.py",
+      "line": "223",
+      "severity": "non-blocking",
+      "text": "the retargeted-mark case fails at the base revision with AttributeError on pending_landing.pointer_attempt rather than by releasing the newer pointer, so the manifest's negative_control_note claim that the retargeted-mark case fails at base holds only in the sense that a symbol the change introduces is absent; the behavioural reading for that case is the deliberate one at the head, and the base arm does not demonstrate the pointer loss it is credited with there."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "The mark writer is reached from reckon/crew/promotion.py:232 (called at promotion.py:1289 and promotion.py:1941) and from reckon/crew/recovery_repair_dispatch.py:82, itself called from reckon/crew/pending_landing.py:306 and :333, reckon/crew/queue_landing.py:1570 and :1926, and reckon/crew_run_commands.py:3550; the gated release is inside reckon/crew/pending_landing.py:363 finish_pending_landings, reached from reckon/crew/queue_landing.py:1705 and reckon/crew_run_commands.py:3225.",
+    "diff": "Read both gained commits against 00f01893709e: 37968aa6bc changes pending_landing.py (pointer_attempt, mark_pending_landing_repair, _release_marked_pointer and the gated release), promotion.py:215, recovery_repair_dispatch.py:82 and adds 66 test lines; 0bd1599b30 splices 18 lines into the evidence fragment without deleting the predecessor's record or its ids.",
+    "done_when": "Plan section 6's done-when names tests/test_a_landing_record_waits_for_the_merge.py, the importer arms over reckon.crew.promotion and ruff on the staged paths; the manifest records 5 passed EXIT=0 at 37968aa6bc (test-logs/after.log) and 3 failed/2 passed EXIT=1 at 22cfac95 (test-logs/base.log), the four importer arms' 36 failing ids I compared and found identical base to head, and ruff which I re-ran read-only at the reviewed head: check passed and 4 files already formatted.",
+    "goal": "The node's goal is that a --land promotion whose merge did not run hands the run to the pending-landing recovery; the gained commits keep that handover and stop it stranding a newer attempt, at reckon/crew/pending_landing.py:363, which releases only the attempt the mark names, and reckon/crew/promotion.py:215, which writes the mark through the one writer.",
+    "manifest": "Read the source manifest; it states status complete, names commits 00f0189370, 37968aa6bc and 0bd1599b30, quotes the gate command literally, and its arm counts (head 5 passed, base 3 failed/2 passed, importers 8/6/15/7 whose ids equal the base arm's) reconcile with the logs I opened.",
+    "write_paths": "The declared scope is reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew/pending_landing.py, tests/test_a_landing_record_waits_for_the_merge.py, the evidence fragment and the figures directory; four of the five changed paths are inside it and reckon/crew/recovery_repair_dispatch.py:82 is not."
+  },
+  "justifications": {
+    "durability": "tests/test_a_landing_record_waits_for_the_merge.py:242-249 reddens at 00f0189370, where the pass unlinks the newer pointer so read_pointer raises and release_landed_worktrees is called so releases is non-empty, while the retargeted-mark case at :223 is a control that passes with or without the comparison.",
+    "evidence": [
+      "test-logs/after.log reads 5 passed EXIT=0 and test-logs/base.log 3 failed/2 passed EXIT=1, and the importer arms carry 36 failing ids identical base to head, but no arm covers the changed line at reckon/crew/recovery_repair_dispatch.py:82."
+    ],
+    "fit": "The new helpers at reckon/crew/pending_landing.py:85-129 follow the module's private-constant and docstring idiom, and the local import at reckon/crew/promotion.py:205 breaks no cycle because pending_landing imports only runs at module level.",
+    "goal_fidelity": [
+      "reckon/crew/pending_landing.py:352-366 lands the promoted head and removes and releases only the attempt the mark records, which is the section-6 handover without stranding the newer attempt."
+    ],
+    "reuse": "reckon/crew/pending_landing.py:94 is now the one writer of the mark, called from promotion.py:215 and recovery_repair_dispatch.py:82, which resolves the earlier second-writer finding; _release_marked_pointer at :115 is close in shape to promotion._remove_promoted_pointer, but no shared owner for an unlink-if-unchanged guard exists, which the search over reckon/crew confirms.",
+    "scope_discipline": "Four of the five changed paths are declared write paths, and reckon/crew/recovery_repair_dispatch.py:82 was written without a scope extension."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a --land promotion whose merge did not run hands the run to the pending-landing recovery; the gained commits keep that handover and stop it stranding a newer attempt, at reckon/crew/pending_landing.py:363, which releases only the attempt the mark names, and reckon/crew/promotion.py:215, which writes the mark through the one writer.\nVERDICT done_when: Plan section 6's done-when names tests/test_a_landing_record_waits_for_the_merge.py, the importer arms over reckon.crew.promotion and ruff on the staged paths; the manifest records 5 passed EXIT=0 at 37968aa6bc (test-logs/after.log) and 3 failed/2 passed EXIT=1 at 22cfac95 (test-logs/base.log), the four importer arms' 36 failing ids I compared and found identical base to head, and ruff which I re-ran read-only at the reviewed head: check passed and 4 files already formatted.\nVERDICT write_paths: The declared scope is reckon/crew/promotion.py, reckon/crew/promotion_records.py, reckon/crew/pending_landing.py, tests/test_a_landing_record_waits_for_the_merge.py, the evidence fragment and the figures directory; four of the five changed paths are inside it and reckon/crew/recovery_repair_dispatch.py:82 is not.\nVERDICT manifest: Read the source manifest; it states status complete, names commits 00f0189370, 37968aa6bc and 0bd1599b30, quotes the gate command literally, and its arm counts (head 5 passed, base 3 failed/2 passed, importers 8/6/15/7 whose ids equal the base arm's) reconcile with the logs I opened.\nVERDICT diff: Read both gained commits against 00f01893709e: 37968aa6bc changes pending_landing.py (pointer_attempt, mark_pending_landing_repair, _release_marked_pointer and the gated release), promotion.py:215, recovery_repair_dispatch.py:82 and adds 66 test lines; 0bd1599b30 splices 18 lines into the evidence fragment without deleting the predecessor's record or its ids.\nCALL_SITES: reckon/crew/promotion.py:232, reckon/crew/pending_landing.py:363, reckon/crew/recovery_repair_dispatch.py:82, reckon/crew/queue_landing.py:1705, reckon/crew_run_commands.py:3226\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: ('reckon/crew/pending_landing.py:352-366 lands the promoted head and removes and releases only the attempt the mark records, which is the section-6 handover without stranding the newer attempt.',)\nSCORE evidence: 16\nJUSTIFICATION evidence: ('test-logs/after.log reads 5 passed EXIT=0 and test-logs/base.log 3 failed/2 passed EXIT=1, and the importer arms carry 36 failing ids identical base to head, but no arm covers the changed line at reckon/crew/recovery_repair_dispatch.py:82.',)\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: Four of the five changed paths are declared write paths, and reckon/crew/recovery_repair_dispatch.py:82 was written without a scope extension.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_landing_record_waits_for_the_merge.py:242-249 reddens at 00f0189370, where the pass unlinks the newer pointer so read_pointer raises and release_landed_worktrees is called so releases is non-empty, while the retargeted-mark case at :223 is a control that passes with or without the comparison.\nSCORE fit: 18\nJUSTIFICATION fit: The new helpers at reckon/crew/pending_landing.py:85-129 follow the module's private-constant and docstring idiom, and the local import at reckon/crew/promotion.py:205 breaks no cycle because pending_landing imports only runs at module level.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/crew/pending_landing.py:94 is now the one writer of the mark, called from promotion.py:215 and recovery_repair_dispatch.py:82, which resolves the earlier second-writer finding; _release_marked_pointer at :115 is close in shape to promotion._remove_promoted_pointer, but no shared owner for an unlink-if-unchanged guard exists, which the search over reckon/crew confirms.\nFINDING reckon/crew/recovery_repair_dispatch.py:82 non-blocking: the mark write was changed here to call pending_landing.mark_pending_landing_repair, but this file is in neither the plan's section-6 write paths nor the dispatch fence, so the node wrote outside its exclusive scope without requesting a scope extension; the change itself is correct and the two tests that reach this line (tests/test_a_conflicting_landing_is_repaired.py, tests/test_a_repair_has_one_path.py) assert individual pointer keys rather than whole-pointer equality, so the added pending_landing_repair_attempt field does not break them, but the remedy is a scope grant recorded by the coordinator rather than a repair to the code.\nFINDING tests/test_a_landing_record_waits_for_the_merge.py:223 non-blocking: the retargeted-mark case fails at the base revision with AttributeError on pending_landing.pointer_attempt rather than by releasing the newer pointer, so the manifest's negative_control_note claim that the retargeted-mark case fails at base holds only in the sense that a symbol the change introduces is absent; the behavioural reading for that case is the deliberate one at the head, and the base arm does not demonstrate the pointer loss it is credited with there.\n",
+  "review_run_id": "r-20261110T002500048777-review-of-a-land-promotion-hands-an-unmerged-head-to-pending-landing-0bd1599b3052",
+  "reviewed_base_sha": "00f01893709e121411f6d036fdba65cb6cda9e65",
+  "reviewed_head_sha": "0bd1599b3052a63ceaf181e42fe45e59d1896ac7",
+  "reviewed_run_id": "r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T01:12:03.411370+00:00",
+  "total": 101
+}
