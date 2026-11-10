@@ -1,0 +1,41 @@
+<article class="r-evidence-fragment" id="attribute-a-promotions-time-by-stage">
+  <h2 id="attribute-a-promotions-time-by-stage-title">Attribute a promotion's time by stage (partial)</h2>
+  <p id="attribute-a-promotions-time-by-stage-outcome">
+    The no-code promotion verb was profiled from process start with
+    <code>py-spy record --format raw</code> at two seeded crew-home populations
+    (300 and 22&nbsp;304 run directories) with the node at load 91&ndash;102, and
+    its filesystem calls counted with <code>strace -f -c -e trace=%file</code>.
+    The implement-landing verb was not captured: the seeded fixture refused its
+    release step because the run's worktree was its own repository root. The
+    measure the plan states &mdash; both profiles, at least 90&nbsp;% of each
+    verb's main-thread samples attributed &mdash; is therefore unmet.
+  </p>
+  <table id="attribute-a-promotions-time-by-stage-stages">
+    <caption>
+      Deepest reckon frame under <code>_complete_locked</code>, no-code
+      <code>crew complete --gate not-run</code>, population 22&nbsp;304:
+      111 of 316 main-thread samples are inside the promotion body.
+    </caption>
+    <thead>
+      <tr><th>stage</th><th>share of promotion body</th><th>population dependence</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>_migrate_runs</code></td><td>28.8&nbsp;%</td><td>flat at 29.8&nbsp;% at population 300</td></tr>
+      <tr><td>ledger and run-record writes (<code>_create</code>, <code>append</code>)</td><td>22.5&nbsp;%</td><td>&plusmn;0.10 in samples over a &times;74 population</td></tr>
+      <tr><td>git subprocesses (<code>run_git</code>, <code>_git_stdout</code>)</td><td>8.1&nbsp;%</td><td>flat</td></tr>
+      <tr><td>path and index resolution (<code>_config_home</code>, <code>_run_index_path</code>, <code>_index_stamp_members</code>, <code>_file_identity</code>)</td><td>20.8&nbsp;%</td><td>flat</td></tr>
+    </tbody>
+  </table>
+  <p id="attribute-a-promotions-time-by-stage-findings">
+    Two findings worth carrying into a proposal. Run-directory population is not
+    what this verb's stages scale on: promotion-body samples moved
+    94&nbsp;&rarr;&nbsp;111 (&times;1.18) while the population grew
+    &times;74.3. And 65&nbsp;% of the command's main-thread samples sit outside
+    <code>_complete_locked</code>, in interpreter start-up and module import
+    &mdash; the fixed cost that a profiler attached late cannot see, and the
+    reason the plan's three late samples each caught a different stage.
+    Filesystem calls total 28&nbsp;832 (<code>openat</code> 12&nbsp;207,
+    <code>newfstatat</code> 10&nbsp;164, <code>execve</code> 1&nbsp;191 carrying
+    29&nbsp;% of the straced time).
+  </p>
+</article>
