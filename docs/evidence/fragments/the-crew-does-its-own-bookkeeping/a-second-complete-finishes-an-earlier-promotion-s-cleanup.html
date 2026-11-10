@@ -1,0 +1,82 @@
+<section id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-landing">
+  <h2>A second complete finishes an interrupted promotion's cleanup</h2>
+
+  <p><strong>What changed.</strong> A promotion writes the plan comment, appends
+  the ledger row, then retires the live pointer and releases the worktree. A
+  landing that stops after the row leaves the run recorded by the ledger and
+  still live through its pointer, which no recovery verb clears because the row
+  already exists. The next <code>crew complete</code> refused twice over, both
+  refusals raised inside <code>_report_written_ledger_row</code>'s span and
+  reported as one message: &ldquo;the ledger row for run ... is already written;
+  do not re-promote. Landing or cleanup failed: landing comment ... already
+  contains a different narrative; refusing to report the corrected outcome as
+  recorded&rdquo;.</p>
+
+  <p><strong>The reproduction, captured before the repair.</strong> With the
+  refusal restored
+  (<code>tests/test_a_second_complete_finishes_cleanup.py</code> run against a
+  <code>promotion_scope.py</code> whose differing-narrative branch raises
+  unconditionally), the differing-narrative case reds with exactly that message
+  and the two other cases pass:</p>
+
+  <pre id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-refusal">E   reckon.crew.CrewError: the ledger row for run 'r-second-complete-other-narrative' is already written; do not re-promote. Landing or cleanup failed: landing comment 'c-run-r-second-complete-other-narrative' for plan 'plan-a' already contains a different narrative; refusing to report the corrected outcome as recorded</pre>
+
+  <p><strong>The repair.</strong> The committed ledger row is the record of the
+  promotion, so a call that finds one is finishing that promotion's cleanup
+  instead of promoting again. <code>_record_landing_comment</code> now reports a
+  differing narrative beside the receipt rather than raising it, names both
+  narratives (<code>kept_narrative</code>, <code>requested_narrative</code>) in
+  one <code>note</code>, and leaves the comment the first promotion wrote
+  untouched. Before the row exists the first narrative still pins the outcome,
+  so a differing one stays a refusal; that branch is decided by
+  <code>_ledger_row_is_written</code>, which answers written only when it can
+  show the row, so an unreadable ledger is never read as a promotion the run
+  already landed. The promotion path itself is unchanged and is not in this
+  node's write scope.</p>
+
+  <table id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree,
+    resolved module and command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>new tests, repaired module</td>
+        <td><code>aeeff2fd5b</code></td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td>new tests, refusal restored (negative control)</td>
+        <td><code>db774d6c1e</code> + mutation</td>
+        <td>1 failed
+        (<code>test_a_differing_narrative_finishes_the_cleanup_and_is_named</code>),
+        2 passed</td>
+      </tr>
+      <tr>
+        <td>files importing <code>reckon.crew.promotion_scope</code>, head</td>
+        <td><code>db774d6c1e</code> + change</td>
+        <td>3 failed, 180 passed &mdash; the same three ids as the base arm,
+        so no failure is added</td>
+      </tr>
+      <tr>
+        <td>same files, base scratch tree</td>
+        <td><code>db774d6c1e</code></td>
+        <td>3 failed, 177 passed &mdash; the same three ids, all present
+        before the change</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The three failures are the same in both arms and are not this change's:
+  <code>test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory</code>,
+  <code>test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload</code>
+  and
+  <code>test_crew_promotion.py::test_a_failing_store_write_is_reported_on_the_ordinary_success_payload</code>
+  (reported twice by pytest). The head arm differs from the base arm only by
+  this change and the sixteenth file it adds.</p>
+
+  <p>Both arms run the same fifteen existing files that import
+  <code>reckon.crew.promotion_scope</code>; the base tree is
+  <code>git archive</code> of the base revision, where the new test does not
+  exist, so the arms differ only by this change.</p>
+</section>
