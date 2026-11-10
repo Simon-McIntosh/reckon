@@ -18,6 +18,17 @@
   does not carry, the map is also queued as a document write effect and applied
   to the plan's head, the same way the section-scoped dependency meta is.</p>
 
+  <p><strong>Scope.</strong> The one editor for a keyed head meta,
+  <code>edit_keyed_meta</code>, lives in <code>reckon/_plan_html.py</code> and is
+  now called by both <code>reckon/_store.py</code> and
+  <code>reckon/_store_section_ops.py</code>. The second file was not on this
+  node's original write-path grant, so the review that asked for one shared
+  editor extended the grant to name it; the run record carries that extension
+  and <code>reckon crew check --manifest</code> reads the change as in scope.
+  The dependency applier keeps its own judgement of the mapping it already holds
+  and passes it in, so an unreadable value is still refused rather than
+  replaced.</p>
+
   <h3 id="a-descope-with-its-reason-is-written-on-any-plan-measured">Measured</h3>
 
   <p>The new test is seven cases on a temporary copy of a plan with no section
