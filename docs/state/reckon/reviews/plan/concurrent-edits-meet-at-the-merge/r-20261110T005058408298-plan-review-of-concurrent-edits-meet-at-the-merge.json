@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T01:04:21.209Z",
+  "dispatched_at": "2026-11-10T00:55:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:150",
+      "id": "done_when-1",
+      "reason": "the floor must be set from the measured population (5 runs / 3 pairs over 17 h) or the window extended, otherwise the node is dispatched to compute a verdict it cannot produce.",
+      "text": "the floor \"at least 20 runs in the ledger window that were admitted with a file claim under a shared root while another live run held the same file\" is above the population the fleet produces: over the whole after window to date (2026-11-09T07:39Z to now, ~17 h, wider than the 12 h minimum) the run ledger holds 141 runs, of which 121 are review nodes with only absolute out-of-repo report paths and no shared-root file claim; just 19 runs carried a shared-root file claim at all, and only 5 of those overlapped another live run on the same file (4 same-file concurrent pairs across 3 distinct run pairs) \u2014 so the floor can only ever report the zero as unmeasured, and \u00a74 can never close",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:148",
+      "id": "done_when-2",
+      "reason": "the floor must be counted inside the hours the copies actually cover, or the zero is \"backed\" by evidence of concurrency in a window in which nothing was observed.",
+      "text": "the zero is observed on the retained copies (about 4.5 h of coverage: 07:39\u201310:37Z and 20:46\u201322:12Z on 9 November) while its backing floor is counted over \"at least 12 hours\" of ledger after the 07:39Z reload, so a 12 h window ending 19:39Z excludes the 20:46\u201322:12Z copy entirely and, more generally, concurrency anywhere in the ledger window can back a zero taken in copied hours that held none",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "reasoning-1",
+      "reason": "without excluding holds caused by an exclusive directory claim (and by an exclusive pattern under \u00a72), the zero fails on behaviour the plan deliberately preserves, and the node reads a correct refusal as a regression.",
+      "text": "the numerator counts \"held-on-claim verdicts on file claims ... split by whether the claimed path is under a shared root\" with no exclusion for a hold that \u00a72 keeps correct \u2014 \u00a72 states \"A directory claim stays exclusive, as it is today\", so a file claim on a shared-root path whose holder is a live run claiming the enclosing directory is still refused, and that refusal lands in the zero's numerator as a failure of the shared-file default",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "a5d384e44a797ace536daa9a82a99f6ad442c5bf",
+  "plan_fingerprint": "ac8ed899603f34eb98710dcb420bd0a67561e88d79cd6b6466ce882adc6f5648",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 19,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T005058408298-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "5aa70e5b3e4794166addb0e021a5a29fcb52dc92",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 reckon/crew/queue_admission.py:2453\u20132454 is the trim_service_log call with limit=ADMISSION_VERDICT_LOG_MAX_BYTES and :103 is that constant (1_048_576); the cited snapshot and all three after copies resolve on disk.",
+    "done_when": "a finding \u2014 \u00a74's retained-copy arm now floors the zero at \"at least 20 runs in the ledger window ... while another live run held the same file\", a population the fleet does not produce, and the floor is counted over a wider window than the zero it backs.",
+    "evidence_paths": "pass \u2014 the before-window snapshot, the three retained after copies and the evidence fragment are all named by durable path, and the three copy paths exist in the measuring run's directory.",
+    "naming": "pass \u2014 \u00a74 names no plan label, stage name, ticket number or version tag in any symbol or path it introduces.",
+    "reasoning": "a finding \u2014 the zero counts held-on-claim verdicts on shared-root file paths without excluding a hold that \u00a72 keeps correct (a directory claim held by a live peer), so a correct refusal registers as a failed measure.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable, a measurement with one evidence fragment and one verdict, and its scope is unchanged by the amendment.",
+    "wiring": "pass \u2014 plan-section-depends-on declares s4 waiting on s2 and s3, and both are declared done, so the measurement node's upstream exists."
+  },
+  "section_digests": {
+    "_document": "040335a70dff03152d2485f289c86f33d81d7076aea0b303198a1ad1a58281f3",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "4e25b1dae2ad7ea3989d560b48cc074c2b2083d8fb41d23af35de97734629e4a",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T14:57:48.848843+00:00",
+  "total": null
+}
