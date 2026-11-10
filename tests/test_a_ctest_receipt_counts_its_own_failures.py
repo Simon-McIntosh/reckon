@@ -19,8 +19,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from reckon.crew.promotion_evidence import _receipt_mismatches
 
 CTEST_COMMAND = "ctest --output-on-failure -L VALIDATION"
