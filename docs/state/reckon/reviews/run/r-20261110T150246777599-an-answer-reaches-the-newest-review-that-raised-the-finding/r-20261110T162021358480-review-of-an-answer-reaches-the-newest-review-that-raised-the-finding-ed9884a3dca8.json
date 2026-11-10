@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:3040 newest_covering_review from the answer verb",
+    "reckon/crew_dispatch_commands.py:2990 stored_raisers covering set",
+    "reckon/crew_dispatch_commands.py:2942 newest_design_review",
+    "reckon/mcp_crew_actions.py:132 answer action argument map",
+    "reckon/mcp.py:2862 review_run passed to the crew write action"
+  ],
+  "completed_at": "2026-11-10T16:33:44.989Z",
+  "dispatched_at": "2026-11-10T16:22:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew_dispatch_commands.py",
+      "line": 2988,
+      "severity": "non-blocking",
+      "summary": "the comment says the newest design review joins the covering set 'for the case where it covers without raising the id', but the loop at 3002-3005 drops every candidate whose finding_ids do not hold the answer, so the stated case never occurs and the comment describes a behaviour the code does not implement."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass \u2014 reckon/crew_dispatch_commands.py:3040, :2990 and :2942 examined.",
+    "diff": "pass \u2014 read commit by commit against 83dc1b1d.",
+    "done_when": "pass \u2014 the six named cases plus two added ones, logs/head-gate.log EXIT=0.",
+    "goal": "pass \u2014 the repairs land at reckon/crew/plan_review.py:1119 and reckon/crew_dispatch_commands.py:2990.",
+    "manifest": "pass \u2014 gate logs carry revision, command and EXIT= lines.",
+    "write_paths": "pass \u2014 all four changed paths are declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an answer without --review-run reaches the newest review that raised the finding, and the two gained commits repair the two findings the earlier review recorded at reckon/crew/plan_review.py:1119 and reckon/crew_dispatch_commands.py:2990.\nVERDICT done_when: the done_when names six cases in tests/test_an_answer_reaches_the_newest_review.py; the file now holds eight, the two this diff adds guard the repairs, and logs/head-gate.log records 59 passed EXIT=0 at 923e74f.\nVERDICT write_paths: the node declares plan_review.py, crew_dispatch_commands.py, mcp_crew_actions.py, mcp.py, the new test and the fragment; the two gained commits touch four declared paths and nothing else.\nVERDICT manifest: read; it records the head gate and both affected arms with revision, literal command and EXIT= lines, and nine negative-control mutations.\nVERDICT diff: read 83dc1b1..ed9884a3 commit by commit; 923e74f adds the lone-cover guard, removes the design-review filter from the covering set and adds two cases, and ed9884a3 updates the fragment's counts.\nCALL_SITES: reckon/crew_dispatch_commands.py:3040 newest_covering_review, reckon/crew_dispatch_commands.py:2990 stored_raisers covering set, reckon/crew_dispatch_commands.py:2942 newest_design_review, reckon/mcp_crew_actions.py:132 answer action argument map, reckon/mcp.py:2862 review_run pass-through\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: 923e74f makes a lone covering review answerable at reckon/crew/plan_review.py:1119 and puts every raising design round in the covering set at reckon/crew_dispatch_commands.py:2990, which are exactly the two defects the prior review recorded.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log names revision 923e74f, the literal pytest command and EXIT=0 on 59 passed, and logs/base-affected.log and logs/head-affected.log record 118 passed on each arm with EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the four paths changed in 83dc1b1..ed9884a3 \u2014 reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, tests/test_an_answer_reaches_the_newest_review.py and the evidence fragment \u2014 are all declared write paths of the node.\nSCORE durability: 18\nJUSTIFICATION durability: the two added cases redden under the run's own declared mutations in logs/negative-control-8-review-run-drops-design-reviews.log and logs/negative-control-9-a-lone-cover-still-needs-a-stamp.log, each asserting on stored responses rather than on a value the test handed in.\nSCORE fit: 16\nJUSTIFICATION fit: the guard and the covering set follow the surrounding idiom, but reckon/crew_dispatch_commands.py:2988 states a case the loop at 3002-3005 excludes.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/plan_review.py:1119 extends the existing selector instead of forking one, and the covering set reuses newest_design_review and _covering_review_identity rather than adding a new mechanism.\nFINDING reckon/crew_dispatch_commands.py:2988 non-blocking: the comment says the newest design review joins the covering set 'for the case where it covers without raising the id', but the loop at 3002-3005 drops every candidate that does not raise the id, so the stated case never occurs and the comment describes a behaviour the code does not implement.",
+  "review_run_id": "r-20261110T162021358480-review-of-an-answer-reaches-the-newest-review-that-raised-the-finding-ed9884a3dca8",
+  "reviewed_base_sha": "83dc1b1dd844ddf2484831100b25c4af99064696",
+  "reviewed_head_sha": "ed9884a3dca8eef1ea784a40525764ff4db5d59d",
+  "reviewed_run_id": "r-20261110T150246777599-an-answer-reaches-the-newest-review-that-raised-the-finding",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:28:27.596004+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "read 83dc1b1..ed9884a3 commit by commit; 923e74f adds the lone-cover guard, removes the design-review filter from the covering set and adds two cases, and ed9884a3 updates the fragment's counts.",
+    "done_when": "the done_when names six cases in tests/test_an_answer_reaches_the_newest_review.py; the file now holds eight, the two this diff adds guard the repairs, and logs/head-gate.log records 59 passed EXIT=0 at 923e74f.",
+    "goal": "the node's goal is that an answer without --review-run reaches the newest review that raised the finding; the two gained commits repair the two findings the earlier review raised, at reckon/crew/plan_review.py:1119 and reckon/crew_dispatch_commands.py:2990.",
+    "manifest": "read; it records the head gate and both affected arms with revision, literal command and EXIT= lines, and nine negative-control mutations.",
+    "write_paths": "the node declares plan_review.py, crew_dispatch_commands.py, mcp_crew_actions.py, mcp.py, the new test and the fragment; the two gained commits touch four declared paths and nothing else."
+  }
+}
