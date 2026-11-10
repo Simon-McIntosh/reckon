@@ -1486,6 +1486,17 @@ def _index_payload(
     ]
     if extra:
         data["runs"].extend(extra)
+    # Even excluded documents trigger promotion ordering in an unfiltered read.
+    # Preserve that order so equal activity stamps select the same author.
+    has_documents = bool(extra) or (
+        activity_since is not None
+        and connection.execute(
+            "SELECT 1 FROM records WHERE payload IS NOT NULL AND name NOT IN "
+            "(SELECT run_id FROM aggregate_rows WHERE run_id IS NOT NULL) LIMIT 1"
+        ).fetchone()
+        is not None
+    )
+    if has_documents:
         data["runs"].sort(key=promotion_order_key)
     if headers_only:
         data["runs"] = [{"run_id": row["run_id"]} for row in data["runs"]]

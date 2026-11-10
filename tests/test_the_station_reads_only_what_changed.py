@@ -642,3 +642,19 @@ def test_live_datetime_stamps_keep_their_authoring_semantics():
         )
         == MOMENT
     )
+
+
+def test_recent_rows_keep_the_unfiltered_promotion_order(home):
+    rows = [_row("r-z"), _row("r-a")]
+    path = ledger.ledger_path(LEDGER_PROJECT)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        json.dumps({"data": {"_version": 1, "members": [], "holds": [], "runs": rows}})
+    )
+    _write_row(_row("r-expired", at=MOMENT - 2 * plan_review.PLAN_REVIEW_BURST_SECONDS))
+    whole, _ = ledger.read_records(LEDGER_PROJECT, with_figures=False)
+    recent, _ = ledger.read_records(
+        LEDGER_PROJECT, with_figures=False, activity_since=MOMENT
+    )
+    assert [row["run_id"] for row in recent] == ["r-a", "r-z"]
+    assert recent == [row for row in whole if row["run_id"] != "r-expired"]
