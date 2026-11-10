@@ -24,7 +24,7 @@
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="38">
+<meta name="plan-version" content="39">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
@@ -130,14 +130,17 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261109T181933671262-a-plain-complete-refuses-an-unmerged-head" data-who="reckon-build" data-when="2026-11-09T19:18:23Z">
     <div class="r-comment-body"><p>changed the plain `crew complete` path to refuse a reviewed head the remote primary branch does not carry, naming the head and the branch with the pointer and ledger untouched; added `merge.head_on_remote_branch`, which reads the remote, retries port 443, fetches an absent remote head and answers through `_is_ancestor`; added refusal family D25. Measure: the new test file goes from 4 passed/6 failed at the base revision to 10 passed at the head revision, no added failure id.</p></div>
 </div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261109T230927162871-review-of-a-land-promotion-hands-an-unmerged-head-to-pending-landing-00f01893709e" data-who="reckon-build" data-when="2026-11-09T23:29:28.177Z">
+    <div class="r-comment-body"><p>The review of run r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing at head 00f0189370 is stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 13, scope_discipline 20, durability 17, fit 18, reuse 14), reading base 22cfac95 and head 00f0189370, with added_failure_count 0 and three non-blocking findings.</p></div>
+</div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261109T223337768671-review-of-reflex-acceptance-reads-the-remote-primary-ea1fca828431" data-who="reckon-build" data-when="2026-11-09T22:49:27.380Z">
     <div class="r-comment-body"><p>independent review of r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary at ea1fca8284 against base bf85149157 scores goal_fidelity 19, evidence 15, durability 19, scope_discipline 19, fit 17, reuse 20 (total 109) with no blocking finding, so the correction lands; five non-blocking findings name a dead test fixture, one self-referential assertion, a done_when importer arm that was not run, a duplicated constant and two reason-attribution weaknesses.</p></div>
 </div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261109T232857586491-review-of-reflex-acceptance-reads-the-remote-primary-1219837c0f80" data-who="reckon-build" data-when="2026-11-09T23:47:14.054Z">
+    <div class="r-comment-body"><p>independent review of r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary over ea1fca8284..1219837c0f: parsed, all 6 dimensions scored (goal_fidelity 17, evidence 10, scope_discipline 18, durability 17, fit 16, reuse 5), 4 findings (1 blocking on the four importer tests the removed local-HEAD fallback reddens, 3 non-blocking reuse and diagnosis defects), added_failure_count 4</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261109T223953408524-review-of-a-resume-refuses-while-its-run-is-promoted-051d449f410d" data-who="reckon-build" data-when="2026-11-09T22:59:54.700Z">
     <div class="r-comment-body"><p>Independent review of r-20261109T215635060576-a-resume-refuses-while-its-run-is-promoted — recorded as review records at review-records/ for head 051d449f410d575177cf4ea994f8925ec6db5c2b against base f6a07c1c23b10edbc5dedb607c87ef55ce0863c7. Scores: goal_fidelity 17, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 5 (total 91). Added failures against the reviewed run's own gate: 0 (head failure ids minus base failure ids is empty). Five non-blocking findings: the refusal path waits on the pointer lock inside clear_resume_launching so a real promotion delays rather than refuses; resumption.promotion_lock_name restates the lock name owned by promotion.py:162 so a rename there silently disables the guard with no test reddening; dispatch_sessions.resume_plan mutates the pointer before the new guard; a dead DECLARED_MUTATION constant in the test; and the base-arm log's module header naming the worktree instead of the scratch tree.</p></div>
-</div>
-<div class="r-comment" data-section="s6" data-id="c-run-r-20261109T230927162871-review-of-a-land-promotion-hands-an-unmerged-head-to-pending-landing-00f01893709e" data-who="reckon-build" data-when="2026-11-09T23:29:28.177Z">
-    <div class="r-comment-body"><p>The review of run r-20261109T220018531268-a-land-promotion-hands-an-unmerged-head-to-pending-landing at head 00f0189370 is stored as a parsed record scoring all six dimensions (goal_fidelity 19, evidence 13, scope_discipline 20, durability 17, fit 18, reuse 14), reading base 22cfac95 and head 00f0189370, with added_failure_count 0 and three non-blocking findings.</p></div>
 </div>
 </section>
 </main>

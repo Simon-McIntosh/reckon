@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 4,
+  "added_failure_ids": [
+    "tests/test_review_acceptance_promotes.py::test_a_clean_review_promotes_its_run_without_a_coordinator",
+    "tests/test_review_acceptance_promotes.py::test_a_gate_failing_at_the_merged_head_does_not_promote",
+    "tests/test_review_acceptance_promotes.py::test_an_unmerged_run_is_not_promoted",
+    "tests/test_review_acceptance_promotes.py::test_promoted_by_is_present_on_every_ledger_row"
+  ],
+  "added_failures_note": "derived from the reviewed run's own arms for tests/test_review_acceptance_promotes.py: logs/baseline_arm.log (bf85149157, 6 passed) against logs/head_regression_arm.log (1219837c0f, 4 failed 2 passed); the manifest's after_suite names the node test instead, a different file, so that pair yields no delta",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:787 accept_clean_review",
+    "reckon/crew/recovery.py:191 the re-export",
+    "reckon/crew/resumption.py:2450 dispatch_awaiting_reviews"
+  ],
+  "completed_at": "2026-11-09T23:47:14.054Z",
+  "dispatched_at": "2026-11-09T23:35:54Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "296",
+      "severity": "blocking",
+      "text": "blocking: dropping the REMOTE_UNCONFIGURED fallback to the local checkout (the `if cause is not None` refusal at line 296 now covers it) reddens four tests in tests/test_review_acceptance_promotes.py, which build a remote-less fixture: logs/head_regression_arm.log records 4 failed 2 passed and logs/importer_arm.log records 4 failed 26 passed, every refusal naming `remote_cause: no-remote`, against 6 passed for the same file at base bf85149157 (logs/baseline_arm.log). That contradicts the plan's done_when clause that the test files importing this module add no failure against the base revision, and leaves the repository's suite red under this commit. The repair is the fixture change the manifest already names under outside_scope (a bare origin pushed at each landed commit), which needs a scope extension rather than being landed as the commit's known cost."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "220",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_checked_out_branch` repeats the capability reckon/crew/merge.py:606 `_current_branch` already owns \u2014 the same `git symbolic-ref --quiet --short HEAD` query \u2014 rather than extending it. `_current_branch` already raises MergeError('HEAD is detached; check out the primary branch first'), which is the exact reason this helper returns, and the caller already catches MergeError from the same module three lines later at line 287."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "231",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_names_a_commit` is a second commit resolver beside the repository's one shared resolver, reckon/crew/recovery_review_subject.py:240 `_resolve_commit`, whose docstring states it exists so 'a spelling that resolves for one reader resolves for all of them'. The addition drops two guarantees that resolver carries: it passes no `--end-of-options`, so a citation beginning with a dash is read as an option and misreported as unresolvable-commit, and it runs `subprocess.run` with no timeout, so on a stalled GPFS checkout the acceptance sweep blocks where the shared resolver is deliberately bounded."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "279",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_checked_out_branch` reports an empty branch for every failure of `git symbolic-ref`, so a checkout that is not a git repository at all (a directory that exists but was never initialised, which passes the `checkout.is_dir()` test at line 405) is misdiagnosed as `detached-head` and the coordinator is told to check out a branch in a repository that has none."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read ea1fca8284..1219837c0f commit by commit \u2014 1219837c0f removes `_commits_missing_from_local_head`, adds the detached-head and unresolvable-commit probes and a per-cause repair sentence in `_remote_unreadable_reason`, adds 117 lines of test and updates the fragment.",
+    "done_when": "\u00a77's done_when names the four arms plus a base-revision negative control and the clause that importer test files add no failure; tests/test_reflex_acceptance_reads_the_remote_primary.py carries every arm (logs/after_arm.log 12 passed EXIT=0, logs/negative_control.log 7 failed 5 passed EXIT=1) but logs/importer_arm.log records 4 failed 26 passed, so the importer clause is not met.",
+    "goal": "the goal is that the reflex acceptance tests a run's commits against the remote primary branch; reckon/crew/recovery_review_acceptance.py:296 returns a named refusal for every answer that is not \u201con the branch\u201d, so no promotion in this range rests on the local checkout.",
+    "manifest": "read; it records 12 passed at 1219837c0f, the base arm, the negative control and the four importer failures under outside_scope, but its baseline_suite names tests/test_review_acceptance_promotes.py while after_suite names the node test; the two arms measure different files, so the recorded pair cannot yield a delta.",
+    "write_paths": "the node was fenced to reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py and the landing fragment and figures; every path in ea1fca8284..1219837c0f lies inside that set."
+  },
+  "justifications": {
+    "durability": "tests/test_reflex_acceptance_reads_the_remote_primary.py:376 asserts `remote_cause: detached-head` against a real detached checkout and :395 supplies the branch as a control, so reinstating the local-HEAD probe reddens them, as logs/negative_control.log shows at base.",
+    "evidence": "the gate exercises every arm \u00a77 names and its negative control is red at base (logs/negative_control.log, 7 failed EXIT=1), but logs/importer_arm.log shows 4 failures the done_when forbids and the manifest's baseline_suite and after_suite name different test files, so the recorded pair measures no delta.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:210-218 declares DETACHED_HEAD and UNRESOLVABLE_COMMIT with the `#:` comment form merge.py:614-616 uses for its causes, and no name carries a plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:278-296 refuses promotion on every unreadable answer, which is the goal's remote-anchored test, and the added detached-head and unresolvable-commit causes each name their own repair rather than one blanket network message.",
+    "reuse": "of the three definitions the commit adds, `_checked_out_branch` duplicates merge.py:606 `_current_branch` and `_names_a_commit` duplicates recovery_review_subject.py:240 `_resolve_commit` without extending either owner, leaving only `_remote_unreadable_reason`'s rewritten body as new work.",
+    "scope_discipline": "every path in ea1fca8284..1219837c0f (reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py, docs/evidence/fragments/.../reflex-acceptance-reads-the-remote-primary.html) is inside the declared write paths, and the out-of-scope fixture is reported under outside_scope rather than edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the reflex acceptance tests a run's commits against the remote primary branch; reckon/crew/recovery_review_acceptance.py:296 returns a named refusal for every answer that is not \"on the branch\", so no promotion in this range rests on the local checkout.\nVERDICT done_when: \u00a77's done_when names the four arms plus a base-revision negative control and the clause that importer test files add no failure; tests/test_reflex_acceptance_reads_the_remote_primary.py carries every arm (logs/after_arm.log 12 passed EXIT=0, logs/negative_control.log 7 failed 5 passed EXIT=1) but logs/importer_arm.log records 4 failed 26 passed, so the importer clause is not met.\nVERDICT write_paths: the node was fenced to reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py and the landing fragment and figures; every path in ea1fca8284..1219837c0f lies inside that set.\nVERDICT manifest: read; it records 12 passed at 1219837c0f, the base arm, the negative control and the four importer failures under outside_scope, but its baseline_suite names tests/test_review_acceptance_promotes.py while after_suite names the node test; the two arms measure different files, so the recorded pair cannot yield a delta.\nVERDICT diff: read ea1fca8284..1219837c0f commit by commit \u2014 1219837c0f removes `_commits_missing_from_local_head`, adds the detached-head and unresolvable-commit probes and a per-cause repair sentence in `_remote_unreadable_reason`, adds 117 lines of test and updates the fragment.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:787 accept_clean_review, reckon/crew/recovery.py:191 the re-export, reckon/crew/resumption.py:2450 dispatch_awaiting_reviews\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:278-296 refuses promotion on every unreadable answer, which is the goal's remote-anchored test, and the added detached-head and unresolvable-commit causes each name their own repair rather than one blanket network message.\nSCORE evidence: 10\nJUSTIFICATION evidence: the gate exercises every arm \u00a77 names and its negative control is red at base (logs/negative_control.log, 7 failed EXIT=1), but logs/importer_arm.log shows 4 failures the done_when forbids and the manifest's baseline_suite and after_suite name different test files, so the recorded pair measures no delta.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in ea1fca8284..1219837c0f (reckon/crew/recovery_review_acceptance.py, tests/test_reflex_acceptance_reads_the_remote_primary.py, docs/evidence/fragments/.../reflex-acceptance-reads-the-remote-primary.html) is inside the declared write paths, and the out-of-scope fixture is reported under outside_scope rather than edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_reflex_acceptance_reads_the_remote_primary.py:376 asserts `remote_cause: detached-head` against a real detached checkout and :395 supplies the branch as a control, so reinstating the local-HEAD probe reddens them, as logs/negative_control.log shows at base.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:210-218 declares DETACHED_HEAD and UNRESOLVABLE_COMMIT with the `#:` comment form merge.py:614-616 uses for its causes, and no name carries a plan or ticket label.\nSCORE reuse: 5\nJUSTIFICATION reuse: of the three definitions the commit adds, `_checked_out_branch` duplicates merge.py:606 `_current_branch` and `_names_a_commit` duplicates recovery_review_subject.py:240 `_resolve_commit` without extending either owner, leaving only `_remote_unreadable_reason`'s rewritten body as new work.\nFINDING reckon/crew/recovery_review_acceptance.py:296 blocking: dropping the REMOTE_UNCONFIGURED fallback to the local checkout (the `if cause is not None` refusal at line 296 now covers it) reddens four tests in tests/test_review_acceptance_promotes.py, which build a remote-less fixture: logs/head_regression_arm.log records 4 failed 2 passed and logs/importer_arm.log records 4 failed 26 passed, every refusal naming `remote_cause: no-remote`, against 6 passed for the same file at base bf85149157 (logs/baseline_arm.log). That contradicts the plan's done_when clause that the test files importing this module add no failure against the base revision, and leaves the repository's suite red under this commit. The repair is the fixture change the manifest already names under outside_scope (a bare origin pushed at each landed commit), which needs a scope extension rather than being landed as the commit's known cost.\nFINDING reckon/crew/recovery_review_acceptance.py:220 non-blocking: `_checked_out_branch` repeats the capability reckon/crew/merge.py:606 `_current_branch` already owns \u2014 the same `git symbolic-ref --quiet --short HEAD` query \u2014 rather than extending it. `_current_branch` already raises MergeError('HEAD is detached; check out the primary branch first'), which is the exact reason this helper returns, and the caller already catches MergeError from the same module three lines later at line 287.\nFINDING reckon/crew/recovery_review_acceptance.py:231 non-blocking: `_names_a_commit` is a second commit resolver beside the repository's one shared resolver, reckon/crew/recovery_review_subject.py:240 `_resolve_commit`, whose docstring states it exists so 'a spelling that resolves for one reader resolves for all of them'. The addition drops two guarantees that resolver carries: it passes no `--end-of-options`, so a citation beginning with a dash is read as an option and misreported as unresolvable-commit, and it runs `subprocess.run` with no timeout, so on a stalled GPFS checkout the acceptance sweep blocks where the shared resolver is deliberately bounded.\nFINDING reckon/crew/recovery_review_acceptance.py:279 non-blocking: `_checked_out_branch` reports an empty branch for every failure of `git symbolic-ref`, so a checkout that is not a git repository at all (a directory that exists but was never initialised, which passes the `checkout.is_dir()` test at line 405) is misdiagnosed as `detached-head` and the coordinator is told to check out a branch in a repository that has none.",
+  "review_run_id": "r-20261109T232857586491-review-of-reflex-acceptance-reads-the-remote-primary-1219837c0f80",
+  "reviewed_base_sha": "ea1fca828431c5ca8791d23db2db27677daa292e",
+  "reviewed_head_sha": "1219837c0f8024883a2e65c937b09c8a72020c21",
+  "reviewed_run_id": "r-20261109T215304002343-reflex-acceptance-reads-the-remote-primary",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:47:00+00:00",
+  "total": 83
+}
