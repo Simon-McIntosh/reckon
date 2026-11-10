@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-run-has-one-live-worker">
   <meta name="plan-title" content="A Run Has One Live Worker">
   <meta name="plan-summary" content="Two workers drove one run&#x27;s session in one worktree; the second closed the run and dropped five of eight commits. Find the second launcher, then refuse it.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="shipped">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -26,7 +26,7 @@
   <title>A Run Has One Live Worker | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="168">
+<meta name="plan-version" content="169">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-commits" content="a88e6f09">
 </head>
@@ -271,10 +271,11 @@
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §15</pre>
     <p class="r-fu-outcome">§15 landed: a relaunch beside a worker launched on another host is refused until that launch's exit receipt, read through the one exit-record reader and naming the run, shows it ended. The strict-read case on the retired path is in §16.</p>
     </article>
-<article class="r-fu" data-id="f-arolw-016" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-09" data-recommends-skill="/reckon-build a-run-has-one-live-worker §16" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arolw-016" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-09" data-recommends-skill="/reckon-build a-run-has-one-live-worker §16" data-resolved-at="2026-11-10T14:49:00+00:00" data-resolved-by="coordinator">
     <h4 class="r-fu-title">Build §16</h4>
     <div class="r-fu-body"><p>§16 clears the six defects the review of §13's merge head found in the launch reservation. It writes <code>dispatch.py</code> and <code>dispatch_launch.py</code>, as §15 does, so it waits on §15.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-run-has-one-live-worker §16</pre>
+    <p class="r-fu-outcome">§16 landed: every launch door reserves exactly the attempt it launches, keyed on the greatest on-disk reading (newest receipt + 1, else the attempt marker, else the pointer); an ended reservation is freed by its strict exit receipt; a failed supervisor rewrite is reported, not stored. Armed four-file gate: 11 failed + 2 errors at the base, 111 passed at the head. With §13 to §17 landed, a run has one live worker and the chain ends — no followup.</p>
     </article>
 <article class="r-fu" data-id="f-arolw-017" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-09" data-recommends-skill="/reckon-build a-run-has-one-live-worker §17" data-resolved-at="2026-11-10T02:19:51+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §17</h4>
