@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T19:18:45.312Z",
+  "dispatched_at": "2026-11-10T19:08:55Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "done_when-1",
+      "reason": "a refusal path with no test is a guard nobody has seen fire, and the earlier review already established this section's negative controls are the only evidence its guards exist.",
+      "text": "the `crew tell` bullet states \"Until \u00a79 lands it also refuses a live codex run for the same reason\", but the done-when's test list covers only the live fenced Claude-dialect write, the ended-run refusal and the unfenced refusal; no test exercises the codex refusal, so the node can pass its gate with that branch unimplemented or inverted",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "reasoning-1",
+      "reason": "the correct predicate is \"unless the record says fenced is true\", so the sentence as written sends the node at an inverted default for the one case the check exists to catch.",
+      "text": "the verb refuses \"a live run whose record says `fenced: false`\", a match on the literal false value, but the record writer states that \"a record written before the field existed carries neither value\" (`reckon/crew/dispatch.py:3105-3110`); an implementer following the sentence literally reads a missing key as not-false, writes the message into a run with no seeded home, and reports `queued_for_next_tool_call` \u2014 the very \"\u00a71 silent non-delivery one hop later\" the paragraph is written to prevent",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "anchors_resolve-1",
+      "reason": "neither path can reach a run home, so the conclusion that registration must go in `seed_harness_home` stands unchanged; the sentence needs the word \"only\" dropped, not the mechanism redesigned.",
+      "text": "the section says \"the only code that adds a hook entry is `install_hook_settings` at user scope\", but `configure_crew_guards` (`reckon/hooks/install.py:269`, reached from `reckon sync` via `reckon/cli_entry.py:345`) also merges hook entries, so \"the only code\" is an overstatement",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "1b145cf208027ae9a0ef6493a4cc3544a6c90f37",
+  "plan_fingerprint": "d52b802e7ccd411daa72a36fd6e55926763189de7a254aaa98d20fa54ef48114",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 24,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T190529015878-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "413ff4ff26a9ca6ed91d6a33ae99ada7253a57dd",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_harness_entry` (`_worker_fence.py:425`, early return at `:436`), `seed_harness_home` (`:186`, the source-absent `continue` in its loop near `:254`), `install_hook_settings` (`hooks/install.py:229`), `hooks/worker_git_guard.py` (`additionalContext` at `:589`), `hooks/worker_message_guard.py` (`RESUME_INVOCATION_SHAPE` at `:52`, refusal at `:129-140`), the `codex-home` binding (`_worker_fence.py:37`), \u00a71, \u00a76 and the extensionless research href all resolve; `grep -rn PostToolUse reckon/` returns nothing, as the plan states.",
+    "done_when": "a finding \u2014 the deliverable's `crew tell` bullet requires a live codex run to be refused until \u00a79 lands, but the done-when tests only the Claude-dialect, ended-run and unfenced refusals.",
+    "evidence_paths": "pass \u2014 the prototype evidence is a committed research document under `docs/research/`, the delivery proof is `<run dir>/inbox/receipts.jsonl`, and the live check closes on a worker manifest, none of which is a session scratchpad.",
+    "naming": "pass \u2014 `worker_inbox.py`, `crew tell`, `queued_for_next_tool_call` and `receipts.jsonl` name the mechanism, and no plan label, stage name or ticket number reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the \"fenced: false\" refusal condition, written as a match on the literal false value, does not cover a live pointer whose record carries no `fenced` key, which is exactly the silent-non-delivery case the paragraph exists to prevent.",
+    "single_goal": "pass \u2014 the hook, the verb, the guard wording and the manifest clause are one deliverable: make a message reach a live worker and make the channel honest about it.",
+    "wiring": "pass \u2014 s9 declares `plan-section-depends-on s9 -> a-live-worker-can-be-reached#s8` (plan.html:29) and s7 is marked descoped citing s8, so the one relationship s8's work needs is present; s8 itself needs no upstream section."
+  },
+  "section_digests": {
+    "_document": "746b563f5126dc6e8ed4189cb7eaa14994d2d06e295e2880f4b7e5f7f3c47c73",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "5645d76bc9814d9811aaa8e51df6eed979b6c0cef963bc74712fb963a038add7",
+    "s9": "04a3a9c3465211256706e7581c8950fb2451ef6ac7b7f0876744ed336fa7e3bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T19:43:24.977708+00:00",
+  "total": null
+}
