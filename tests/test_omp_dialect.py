@@ -1,8 +1,9 @@
 """The oh-my-pi dialect: its argv, and its stream read against a recorded run.
 
 Every parser case here reads the stream recorded in
-``~/.config/reckon/crew/reports/reckon/omp-headless-contract.md``, kept at
-``tests/fixtures/omp-stream.jsonl``. That fixture is the note's four verbatim
+``~/.config/reckon/crew/reports/reckon/omp-headless-contract.md``, kept beside
+the codex stream at ``docs/research/fixtures/omp-stream.jsonl``. That fixture is
+the note's four verbatim
 records — the session header, the tool-call announcement, the tool result and
 the settled assistant message carrying the run's token usage — together with
 the surrounding event kinds the note names, the one truncated field (the last
@@ -29,7 +30,7 @@ import yaml
 
 from reckon import _backends, _worker_fence
 
-FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURES = Path(__file__).resolve().parents[1] / "docs" / "research" / "fixtures"
 STREAM = FIXTURES / "omp-stream.jsonl"
 
 OMP = {
