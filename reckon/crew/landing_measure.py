@@ -37,6 +37,7 @@ from __future__ import annotations
 
 import ast
 import contextlib
+import hashlib
 import math
 import os
 import re
@@ -66,6 +67,9 @@ POPULATION_WORKERS = 8
 #: project with no measurement history is bounded by, and it is deliberately
 #: modest so an unreadable arm releases the landing worker promptly.
 DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
+
+# mktemp creates a private directory beneath this node-local root.
+NODE_LOCAL_TEMP_ROOT = "/tmp"  # noqa: S108
 
 #: How many times a population's own measured seconds per file an arm's bound
 #: is. A bound of one multiple would time out an arm that simply repeated its
@@ -581,6 +585,7 @@ def _partition_runner(
         minutes, seconds = divmod(remainder, 60)
         bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         log = Path(options.pop("arm_log_path")).resolve()
+        scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
         git = shlex.join(["git", "--git-dir", str(git_dir)])
         carry = "\n".join(
@@ -594,8 +599,11 @@ def _partition_runner(
             ["env", *[f"{k}={v}" for k, v in assignments.items()], *command]
         )
         script = f"""set -euo pipefail
-scratch=$(mktemp -d "${{TMPDIR:-/tmp}}/landing-arm-XXXXXX")
-trap 'status=$?; rm -rvf "$scratch"; printf "EXIT=%s\n" "$status"' EXIT
+scratch=
+trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\n" "$status"' EXIT
+export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+scratch=$(mktemp -d "{NODE_LOCAL_TEMP_ROOT}/$USER-landing-{scratch_id}-XXXXXX")
+export TMPDIR="$scratch"
 mkdir "$scratch/tree"
 {git} archive {quote(revision)} | tar -x -C "$scratch/tree"
 git init -q "$scratch/tree"
@@ -652,6 +660,7 @@ exit "$status"
             if not k.startswith(("SLURM_", "SBATCH_"))
         }
         env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+        env["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
         log.write_text("")
         try:
             finished = runner(

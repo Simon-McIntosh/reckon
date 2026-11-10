@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import shlex
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -15,6 +16,9 @@ from reckon import flight
 from reckon.crew import landing_measure
 
 FAILURE = "tests/test_subject.py::test_subject"
+
+# The job must allocate private scratch on the destination node.
+NODE_TEMP_ROOT = "/tmp"  # noqa: S108
 
 
 def _git(repo, *args):
@@ -171,7 +175,6 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
             config={"landing": {"measure_partition": "all_debug"}}
         ),
     )
-    scripts = []
     node_tmp = tmp_path / "job-tmp"
     node_tmp.mkdir()
     shim = tmp_path / "bin"
@@ -180,15 +183,25 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
         '#!/bin/sh\nprintf "%s\\n" "$@" >> "$SRUN_ARGV_LOG"\nwhile [ "${1#--}" != "$1" ]; do shift; done\nexec "$@"\n'
     )
     (shim / "srun").chmod(0o755)
+    real_mktemp = shlex.quote(shutil.which("mktemp"))
+    (shim / "mktemp").write_text(
+        '#!/bin/sh\nprintf "%s\\n" "$TMPDIR" "$@" >> "$MKTEMP_ARGV_LOG"\n'
+        'case "$2" in /tmp/*) template="$NODE_TMP/${2##*/}";; '
+        f'*) exec {real_mktemp} "$@";; esac\n'
+        f'exec {real_mktemp} "$1" "$template"\n'
+    )
+    (shim / "mktemp").chmod(0o755)
+    inherited = tmp_path / "absent-on-destination"
 
     def run(argv, **options):
         assert Path(argv[0]).name == "sbatch"
         script = argv[argv.index("--wrap") + 1]
-        scripts.append(script)
         env = {
             **options["env"],
             "PATH": str(shim) + ":" + options["env"]["PATH"],
-            "TMPDIR": str(node_tmp),
+            "TMPDIR": str(inherited),
+            "NODE_TMP": str(node_tmp),
+            "MKTEMP_ARGV_LOG": str(tmp_path / "mktemp-argv.log"),
             "SRUN_ARGV_LOG": str(tmp_path / "srun-argv.log"),
         }
         return subprocess.run(
@@ -197,8 +210,9 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
 
     log_dir = tmp_path / "run/logs"
     command = "PYTHONPATH=. .venv/bin/python -c " + shlex.quote(
-        "import pathlib,socket; print(pathlib.Path('subject.py').read_text().strip()); "
-        "print('host=' + socket.gethostname()); print('tree=' + str(pathlib.Path.cwd()))"
+        "import os,pathlib,socket; print(pathlib.Path('subject.py').read_text().strip()); "
+        "print('host=' + socket.gethostname()); print('tree=' + str(pathlib.Path.cwd())); "
+        "print('tmpdir=' + os.environ['TMPDIR'])"
     )
     with landing_measure.base_checkout(repo, base) as tree:
         measured = landing_measure.measure_run(
@@ -212,14 +226,39 @@ def test_job_builds_the_named_revision_and_cleans_its_tree(
             changed=[],
             run=run,
         )
-    assert not measured.unreadable
+    assert not measured.unreadable, (log_dir / "suite-base.log").read_text()
     assert "VALUE = 'base'" in (log_dir / "suite-base.log").read_text()
     assert "VALUE = 'head'" in (log_dir / "suite-head.log").read_text()
+    for name in ("suite-base.log", "suite-head.log"):
+        output = (log_dir / name).read_text().splitlines()
+        job_tmpdir = Path(
+            next(
+                line.removeprefix("tmpdir=")
+                for line in output
+                if line.startswith("tmpdir=")
+            )
+        )
+        job_tree = Path(
+            next(
+                line.removeprefix("tree=")
+                for line in output
+                if line.startswith("tree=")
+            )
+        )
+        assert job_tmpdir.parent == node_tmp
+        assert job_tree.parent == job_tmpdir
+        assert str(inherited) not in "\n".join(output)
+    assert not inherited.exists()
     assert not list(node_tmp.iterdir())
+    temp_calls = (tmp_path / "mktemp-argv.log").read_text().splitlines()
+    assert temp_calls[::3] == [NODE_TEMP_ROOT, NODE_TEMP_ROOT]
+    assert temp_calls[1::3] == ["-d", "-d"]
+    assert all(
+        Path(template).parent == Path(NODE_TEMP_ROOT) for template in temp_calls[2::3]
+    )
     recorded = (tmp_path / "srun-argv.log").read_text()
     assert recorded.count("--partition=all_debug\n--time=00:10:00\n--ntasks=1\n") == 2
     assert "--overlap" not in recorded
-    assert all(base in script or head in script for script in scripts)
     assert json.loads(json.dumps(measured.as_dict()))["execution"] == "slurm"
 
 
@@ -271,3 +310,33 @@ def test_a_failed_scheduler_cannot_accept_an_earlier_success_receipt(
     result, _ = _measure(project, monkeypatch, tmp_path, scheduler_status=1)
     assert result.unreadable == "the base arm did not run"
     assert result.suite["base"]["exit_status"] == 3
+
+
+@pytest.mark.parametrize("inherited_exists", [False, True])
+def test_job_uses_node_local_tmpdir_before_creating_its_tree(
+    project, monkeypatch, tmp_path, inherited_exists
+):
+    inherited = tmp_path / "submitter-scratch"
+    if inherited_exists:
+        inherited.mkdir()
+    monkeypatch.setenv("TMPDIR", str(inherited))
+    _, calls = _measure(project, monkeypatch, tmp_path)
+    assert calls
+    for argv, options in calls:
+        wrapped = shlex.split(argv[argv.index("--wrap") + 1])
+        script = wrapped[wrapped.index("-c") + 1]
+        assert "export TMPDIR=/tmp" in script
+        local = script.index("export TMPDIR=/tmp")
+        create = script.index("mktemp")
+        checkout = script.index("\ngit ")
+        assert local < create < checkout
+        assert script.index("trap ") < local
+        assert create < script.index('export TMPDIR="$scratch"') < checkout
+        assert 'mktemp -d "/tmp/$USER-' in script
+        assert "TMPDIR:-" not in script
+        assert str(inherited) not in script
+        assert options["env"]["TMPDIR"] == NODE_TEMP_ROOT
+    if inherited_exists:
+        assert not list(inherited.iterdir())
+    else:
+        assert not inherited.exists()
