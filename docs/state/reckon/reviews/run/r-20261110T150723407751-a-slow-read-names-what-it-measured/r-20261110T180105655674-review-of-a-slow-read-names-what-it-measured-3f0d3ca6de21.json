@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/mcp_deadlines.py:_await_body",
+    "reckon/mcp_census.py:_storage_slow",
+    "reckon/project_maintenance_commands.py:_echo_mcp_census"
+  ],
+  "completed_at": "2026-11-10T18:34:00.009Z",
+  "dispatched_at": "2026-11-10T18:20:11Z",
+  "findings": [
+    {
+      "file": "reckon/project_maintenance_commands.py",
+      "line": "1086",
+      "severity": "non-blocking",
+      "text": "non-blocking: the printed heading still reads \"storage-slow results\" although the total it labels now includes read-slow results, so a reader is shown a name covering half of what was counted; the manifest records the label is pinned by tests/test_mcp_census.py:390."
+    },
+    {
+      "file": "tests/test_a_slow_read_names_what_it_measured.py",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert result[\"deadline_seconds\"] == _WALL_SECONDS compares the output against the same constant the test passed as deadline=, so it holds whatever the deadline composition does and guards nothing its own input does not already fix."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 84570bc804; fa1221919a and 1c40801ce9 change the product, 5a91562501 and 3f0d3ca6de record and then close the evidence fragment, and the product diff sets the computing line to one third of the wall, adds READ_SLOW and SLOW_ERRORS, and widens the census pattern.",
+    "done_when": "read the node's done_when against tests/test_a_slow_read_names_what_it_measured.py:104-140 and tests/test_a_slow_read_names_what_it_measured.py:225-240; the stubbed computing case asserts read-slow with cpu 13.1, runnable 1.4 and waited 30.0, the blocked case asserts storage-slow, and the census and printer cases assert both values are counted.",
+    "goal": "read the node goal \"A slow read names what it measured\" against the plan \u00a719 deliverable; reckon/_mcp_tools.py:246 carries READ_SLOW for a computing body beside its three measured figures, so a timed-out read names what the deadline found rather than blaming the mount.",
+    "manifest": "read; it records status complete, four commits fa1221919a..3f0d3ca6de, a gate at EXIT=0 and a negative control at EXIT=1, but its baseline_suite header resolves the module to the worktree file rather than the base tree's.",
+    "write_paths": "read the node's declared write paths against the diffstat; all seven changed paths, including reckon/_mcp_tools.py, reckon/mcp_census.py, reckon/project_maintenance_commands.py and both test files, sit inside the manifest's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_slow_read_names_what_it_measured.py:107 fails with the half-wall threshold and fixed label restored, which negative_control.log shows as 1 failed 4 passed EXIT=1.",
+    "evidence": "logs/after_suite.log records 56 passed EXIT=0 and /tmp/reckon-crew-scratch/r-20261110T150723407751-a-slow-read-names-what-it-measured/baseline_suite.log records 51 passed EXIT=0, so the added failure count derived from that pair is zero and the importer arms agree (9 head ids against 10 base ids).",
+    "fit": "the new READ_SLOW and SLOW_ERRORS constants at reckon/_mcp_tools.py:12-15 follow the STORAGE_SLOW idiom beside them, and no added name carries a plan or ticket identifier.",
+    "goal_fidelity": "reckon/_mcp_tools.py:246 sets READ_SLOW when the cause is computing and STORAGE_SLOW otherwise, so the error label follows the measurement the deadline already reported.",
+    "reuse": "reckon/mcp_census.py:90 extends the existing _SLOW_ERROR pattern in place rather than duplicating it, and the only new fixture builder, _transcript_tree, matches the per-file transcript-helper convention at tests/test_mcp_census.py:163 with no shared owner to extend.",
+    "scope_discipline": "every path in the diffstat sits inside the manifest's declared orientation_write_paths, and no file outside the granted set changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node goal \"A slow read names what it measured\" against the plan \u00a719 deliverable; reckon/_mcp_tools.py:246 carries READ_SLOW for a computing body beside its three measured figures, so a timed-out read names what the deadline found rather than blaming the mount.\nVERDICT done_when: read the node's done_when against tests/test_a_slow_read_names_what_it_measured.py:104-140 and tests/test_a_slow_read_names_what_it_measured.py:225-240; the stubbed computing case asserts read-slow with cpu 13.1, runnable 1.4 and waited 30.0, the blocked case asserts storage-slow, and the census and printer cases assert both values are counted.\nVERDICT write_paths: read the node's declared write paths against the diffstat; all seven changed paths, including reckon/_mcp_tools.py, reckon/mcp_census.py, reckon/project_maintenance_commands.py and both test files, sit inside the manifest's orientation_write_paths.\nVERDICT manifest: read; it records status complete, four commits fa1221919a..3f0d3ca6de, a gate at EXIT=0 and a negative control at EXIT=1, but its baseline_suite header resolves the module to the worktree file rather than the base tree's.\nVERDICT diff: read commit by commit against base 84570bc804; fa1221919a and 1c40801ce9 change the product, 5a91562501 and 3f0d3ca6de record and then close the evidence fragment, and the product diff sets the computing line to one third of the wall, adds READ_SLOW and SLOW_ERRORS, and widens the census pattern.\nCALL_SITES: reckon/mcp_deadlines.py:_await_body, reckon/mcp_census.py:_storage_slow, reckon/project_maintenance_commands.py:_echo_mcp_census\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_mcp_tools.py:246 sets READ_SLOW when the cause is computing and STORAGE_SLOW otherwise, so the error label follows the measurement the deadline already reported.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after_suite.log records 56 passed EXIT=0 and /tmp/reckon-crew-scratch/r-20261110T150723407751-a-slow-read-names-what-it-measured/baseline_suite.log records 51 passed EXIT=0, so the added failure count derived from that pair is zero and the importer arms agree (9 head ids against 10 base ids).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diffstat sits inside the manifest's declared orientation_write_paths, and no file outside the granted set changed.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_slow_read_names_what_it_measured.py:107 fails with the half-wall threshold and fixed label restored, which negative_control.log shows as 1 failed 4 passed EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: the new READ_SLOW and SLOW_ERRORS constants at reckon/_mcp_tools.py:12-15 follow the STORAGE_SLOW idiom beside them, and no added name carries a plan or ticket identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: reckon/mcp_census.py:90 extends the existing _SLOW_ERROR pattern in place rather than duplicating it, and the only new fixture builder, _transcript_tree, matches the per-file transcript-helper convention at tests/test_mcp_census.py:163 with no shared owner to extend.\nFINDING reckon/project_maintenance_commands.py:1086 non-blocking: the printed heading still reads \"storage-slow results\" although the total it labels now includes read-slow results, so a reader is shown a name covering half of what was counted; the manifest records the label is pinned by tests/test_mcp_census.py:390.\nFINDING tests/test_a_slow_read_names_what_it_measured.py:112 non-blocking: assert result[\"deadline_seconds\"] == _WALL_SECONDS compares the output against the same constant the test passed as deadline=, so it holds whatever the deadline composition does and guards nothing its own input does not already fix.",
+  "review_run_id": "r-20261110T180105655674-review-of-a-slow-read-names-what-it-measured-3f0d3ca6de21",
+  "reviewed_base_sha": "84570bc80443d244785875510103d25169b3707a",
+  "reviewed_head_sha": "3f0d3ca6de213b2cee5c5dd2a621255d5cee308d",
+  "reviewed_run_id": "r-20261110T150723407751-a-slow-read-names-what-it-measured",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T19:25:00.221511+00:00",
+  "total": 109
+}

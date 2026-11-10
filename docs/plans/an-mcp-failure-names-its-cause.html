@@ -21,13 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-depends-on" content="reckon-reads-answer-in-seconds">
   <meta name="plan-north-star" content="unattended-execution">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>An MCP Failure Names Its Cause | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-impl" content="0.75">
-<meta name="plan-version" content="132">
-<meta name="plan-modified" content="2026-11-05">
+<meta name="plan-version" content="133">
+<meta name="plan-modified" content="2026-11-10">
 <meta name="plan-commits" content="cff2bbed,e52b056f,abb84ca7,7057e247">
 </head>
 <body>
@@ -468,6 +467,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261008T073628406268-one-plan-read-is-not-a-corpus-scan" data-who="reckon-build" data-when="2026-10-08T08:46:52.920Z">
     <div class="r-comment-body"><p>§9 — a one-plan read resolves the named plan at its canonical typed path (resources._resolve_canonical and _canonical_resource_at, no corpus scan) and takes its north-star diagnostic from a memoised result keyed on the project state directory. The fast path decides only where the canonical location is unambiguous: it counts the canonical candidates for the slug and, when a live and an archived document both claim it, returns None so the scan resolves the duplicate with its own collision rule. Warm one-plan read_plan scandir is equal for 5 and 60 plans (0) with payload equal to the scan path, and the negative control with the direct resolution reverted fails EXIT=1 at 22 vs 132.</p></div>
+</div>
+<div class="r-comment" data-section="s19" data-id="c-run-r-20261110T180105655674-review-of-a-slow-read-names-what-it-measured-3f0d3ca6de21" data-who="reckon-build" data-when="2026-11-10T18:34:00.009Z">
+    <div class="r-comment-body"><p>Reviewer verdict: parsed review of run r-20261110T150723407751-a-slow-read-names-what-it-measured at base 84570bc80443 / head 3f0d3ca6de21 scores goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 19, reuse 17 with 2 non-blocking findings and 0 added failures; the change lands.</p></div>
 </div>
 </section>
 </main>
