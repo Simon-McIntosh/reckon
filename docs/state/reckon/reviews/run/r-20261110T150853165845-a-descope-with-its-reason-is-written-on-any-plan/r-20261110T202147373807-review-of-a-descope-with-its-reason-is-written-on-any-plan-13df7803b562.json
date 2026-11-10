@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T20:57:48.230Z",
+  "dispatched_at": "2026-11-10T20:38:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html",
+      "line": 68,
+      "severity": "non-blocking",
+      "text": "the ruff sentence still reads 'the two edited modules' while the Scope paragraph added at :21 now names three Python modules carrying the change (reckon/_store.py, reckon/_plan_html.py and reckon/_store_section_ops.py), so the fragment contradicts itself twelve lines apart; the 28 it quotes is also a wc -l line count including ruff's own summary lines rather than a finding count."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "'the review that asked for one shared editor extended the grant to name it' attributes the grant extension to a review; the run record shows the review asked for the extension and the repair dispatch carried it out (repair_dispatch recorded 2026-11-10T19:35:55Z, node.write_paths now naming reckon/_store_section_ops.py), so the provenance a reader takes from this sentence is one step off."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/evidence.py:694 compose reads docs/evidence/fragments/<plan>/*.html, reckon/serve.py:2694 serves the composed record, reckon/doccheck.py:1889 reads a record through its composition, and reckon/compliance.py:107 globs the fragment directory; the fragment parses as one well-formed section with four paragraphs and one table.",
+    "diff": "read commit by commit 91362fd9fc..13df7803b5; one commit, one file, 11 insertions and no deletions, entirely inside docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html.",
+    "done_when": "the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py, two negative controls and a ruff check on the staged paths; gate-after-repair.log records 58 passed with EXIT=0 at 13df7803b5 over that file and tests/test_staged_write_inventory.py, gate-base-repair.log records the same at 91362fd9fc, and nc1r-5G17.log shows the declared mutation failing four cases.",
+    "goal": "the node goal is that a descope with its reason is written on any plan; the commit gained since the previous review, 13df7803b5 is documentation only, and every technical claim it adds about where the shared editor lives and which files call it holds at the reviewed head.",
+    "manifest": "read; it records base 58 passed EXIT=0 at 91362fd9fc and after 58 passed EXIT=0 at 13df7803b5 with both log paths, the reproduction of 6 failed and 1 passed at 198c403ed9, the two declared mutation controls, and the grant-revert control at nc-grant-reverted.log.",
+    "write_paths": "the run record's node.write_paths lists reckon/_store.py, reckon/_plan_html.py, tests/test_a_descope_is_written_on_any_plan.py, the landing fragment, its figures directory and reckon/_store_section_ops.py; the gained commit touches only the landing fragment, so it is inside the grant."
+  },
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a descope with its reason is written on any plan; the gained commit 13df7803b5 is documentation only, and its claims about the shared editor hold at the reviewed head.\nVERDICT done_when: the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py, two negative controls and a ruff check; gate-after-repair.log records 58 passed EXIT=0 at 13df7803b5 and gate-base-repair.log the same at 91362fd9fc, with nc1r-5G17.log showing the declared mutation failing four cases.\nVERDICT write_paths: the run record's node.write_paths covers the landing fragment and reckon/_store_section_ops.py; the gained commit touches only the fragment, and crew check --manifest on the run returns ok:true with no findings.\nVERDICT manifest: read; base 58 passed EXIT=0 at 91362fd9fc, after 58 passed EXIT=0 at 13df7803b5, the reproduction 6 failed of 7 at 198c403ed9, two mutation controls and a grant-revert control.\nVERDICT diff: read commit by commit 91362fd9fc..13df7803b5; one commit, one file, 11 insertions and no deletions in the evidence fragment.\nCALL_SITES: reckon/evidence.py:694 compose, reckon/serve.py:2694, reckon/doccheck.py:1889, reckon/compliance.py:107\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the Scope paragraph at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:21-30 names reckon/_plan_html.py:1379 edit_keyed_meta and its two callers, which I confirmed at reckon/_store.py:3058 and reckon/_store_section_ops.py:514.\nSCORE evidence: 16\nJUSTIFICATION evidence: both arms in the manifest are readable end to end (58 passed and a bare EXIT=0 each), but neither runs the dependency-route tests that reckon/_store_section_ops.py:514 now serves through the shared editor.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the gained commit touches only docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html, which the run record's node.write_paths names, and crew check --manifest returns ok:true.\nSCORE durability: 14\nJUSTIFICATION durability: the gained commit adds no assertion, so its central claim at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:27 that crew check reads the change as in scope is verified by an out-of-band command and by no test.\nSCORE fit: 17\nJUSTIFICATION fit: the added paragraph at docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:21 follows the fragment's existing prose idiom and names the mechanism, not a plan label, though it carries the node-record vocabulary of its genre.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the paragraph documents that reckon/_plan_html.py:1379 edit_keyed_meta is the single owner both reckon/_store.py:3058 and reckon/_store_section_ops.py:514 call, and a search of reckon/*.py at the reviewed head found no other JSON-object head-meta writer.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:68 non-blocking: the ruff sentence says 'the two edited modules' while the Scope paragraph added at :21 names three, so the fragment contradicts itself, and the 28 it quotes is a wc -l line count including ruff's summary lines rather than a finding count.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:26 non-blocking: the sentence attributes the write-path grant extension to the review when the review asked for it and the repair dispatch carried it out, so the provenance it records is one step off.\n",
+  "review_run_id": "r-20261110T202147373807-review-of-a-descope-with-its-reason-is-written-on-any-plan-13df7803b562",
+  "reviewed_base_sha": "91362fd9fce1c53bea1e06d122215a475435a4e8",
+  "reviewed_head_sha": "13df7803b562596eca2052b7b3113b745cc5bfd4",
+  "reviewed_run_id": "r-20261110T150853165845-a-descope-with-its-reason-is-written-on-any-plan",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:30:52.363209+00:00",
+  "total": 104
+}

@@ -1,0 +1,63 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T18:41:06.866Z",
+  "dispatched_at": "2026-11-10T18:25:10Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-descope-with-its-reason-is-written-on-any-plan",
+      "recorded_at": "2026-11-10T20:15:38.256582+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_store_section_ops.py",
+      "id": "faa088e4963",
+      "line": 514,
+      "severity": "blocking",
+      "text": "the gained commit rewrites apply_section_dependency_edits in a file outside the node's declared write paths, so reckon crew check --manifest refuses the run at promotion until the grant is extended or the extract is re-dispatched to a node that owns the file; the edit itself is equivalence-preserving \u2014 the mapping is still judged by _read_section_dependency_mapping and passed in by mapping=, so the unreadable-value refusal stands \u2014 and it was made on the earlier review's explicit instruction to give both maps one editor, which the reviewer should record as an authorised scope extension rather than a defect of the change."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "id": "f67e696bf03",
+      "line": 1396,
+      "severity": "non-blocking",
+      "text": "edit_keyed_meta is now the shared owner of the section-dependency write too, but the node's gate runs only tests/test_a_descope_is_written_on_any_plan.py and tests/test_staged_write_inventory.py, so a regression in the shared editor on the dependency route would pass this gate; the pre-existing tests/test_section_edge_summary_and_malformed_mapping.py and tests/test_section_edge_stays_off_plan_blocking.py cover it and were not in either arm."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html",
+      "id": "ff5075ee6ee",
+      "line": 56,
+      "severity": "non-blocking",
+      "text": "the fragment states 28 ruff findings over 'the two edited modules' at the base and the same 28 at this node, but the node now edits three modules (reckon/_store_section_ops.py joined them) and the figure 28 is the line count of --output-format=concise, which includes ruff's own summary lines \u2014 the earlier review measured 26 findings \u2014 so the sentence names the wrong module count and a count that is not the finding count."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/_plan_html.py:read_state and write_state, reckon/_store.py:_apply_set (dotted and whole-map branches), reckon/_store.py:_write_state_locked at :1688, reckon/_store.py:_require_descope_reasons at :4954, reckon/_store_section_ops.py:apply_section_dependency_edits and reckon/mcp.py:_edit_plan at :1475.",
+    "diff": "read commit by commit 79ff6bdadf..91362fd9fc; one commit, five files, 222 insertions and 38 deletions \u2014 the extraction, three added test cases and corrected arm figures in the fragment, with no behaviour change to the descope store.",
+    "done_when": "the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py; the head file carries seven, the four plus three the earlier review asked for, and gate-after-review.log records 58 passed with EXIT=0 at 91362fd9fc over that file and tests/test_staged_write_inventory.py.",
+    "goal": "the node goal is that a descope with its reason is written on any plan; the commit gained since the earlier review, 91362fd9fc, extracts the two keyed head-meta writers into reckon/_plan_html.py:1379 edit_keyed_meta without changing the delivered behaviour, so the goal still holds at the reviewed head.",
+    "manifest": "read; it records the base arm 51 passed EXIT=0 at 198c403ed9, the after arm 58 passed EXIT=0 at 91362fd9fc, the reproduction 6 failed and 1 passed at the base, both negative controls re-run on the review-fixed tree, and surfaces the reckon/_store_section_ops.py grant gap under outside_scope and blockers.",
+    "write_paths": "the declared paths are reckon/_store.py, reckon/_plan_html.py, tests/test_a_descope_is_written_on_any_plan.py and the landing fragment authorised with the node; the gained commit also rewrites reckon/_store_section_ops.py:514, which is outside that grant."
+  },
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a descope with its reason is written on any plan; the gained commit 91362fd9fc extracts the keyed head-meta writer into reckon/_plan_html.py:1379 and leaves the delivered behaviour intact, so the goal holds at the reviewed head.\nVERDICT done_when: the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py; the head file carries seven, and gate-after-review.log records 58 passed with EXIT=0 at 91362fd9fc over that file and tests/test_staged_write_inventory.py.\nVERDICT write_paths: the declared paths are reckon/_store.py, reckon/_plan_html.py, tests/test_a_descope_is_written_on_any_plan.py and the landing fragment; the gained commit also rewrites reckon/_store_section_ops.py:514, outside that grant.\nVERDICT manifest: read; it records base 198c403ed9 51 passed EXIT=0, head 58 passed EXIT=0, the reproduction 6 failed and 1 passed, both negative controls re-run, and surfaces the reckon/_store_section_ops.py grant gap.\nVERDICT diff: read commit by commit 79ff6bdadf..91362fd9fc; one commit, five files, 222 insertions and 38 deletions, being an extraction, three added test cases and corrected fragment figures.\nCALL_SITES: reckon/_plan_html.py:read_state, reckon/_plan_html.py:write_state, reckon/_store.py:_apply_set, reckon/_store.py:_write_state_locked, reckon/_store.py:_require_descope_reasons, reckon/_store_section_ops.py:apply_section_dependency_edits, reckon/mcp.py:_edit_plan\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_plan_html.py:1379 edit_keyed_meta replaces the two divergent read-modify-write bodies and reckon/_store.py:3039 calls it, so the delivered descope behaviour is unchanged and the goal still holds at the reviewed head.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after-review.log carries revision, tree, module.__file__, cwd, 58 passed and a bare EXIT=0 at 91362fd9fc against gate-base.log's 51 passed at 198c403ed9, but neither arm runs the dependency-edit tests that the refactored reckon/_plan_html.py:1396 now serves.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: reckon/_store_section_ops.py:514 is outside the node's declared write paths even though it was edited on the earlier review's instruction and the manifest surfaces the gap.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_descope_is_written_on_any_plan.py:213 asserts both reasons survive two sequential writes against the literal constants the test passes in, so it reddens if edit_keyed_meta replaces rather than merges the mapping, and nc1r-5G17.log shows the guard firing when the map store is removed.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_plan_html.py:1353 _meta_content and :1379 edit_keyed_meta are mechanism-named and follow the module's existing meta helpers, though the descope meta name still lives in reckon/_plan_html.py while the sibling plan-section-depends-on name lives in reckon/_schema.py.\nSCORE reuse: 19\nJUSTIFICATION reuse: the commit removes the duplicate rather than adding one, making reckon/_plan_html.py:1396 the single owner that reckon/_store.py:3058 and reckon/_store_section_ops.py:514 both call.\nFINDING reckon/_store_section_ops.py:514 blocking: the gained commit writes a file outside the node's declared write paths, so the run cannot promote until the grant is extended; the change is equivalence-preserving and was made on the earlier review's instruction.\nFINDING reckon/_plan_html.py:1396 non-blocking: the shared editor now serves the dependency route, but the gate runs none of the dependency-edit tests, so a regression there would pass this node's evidence.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:56 non-blocking: the fragment names two edited modules when the node edits three, and quotes 28 as a finding count when it is a wc -l line count including ruff's summary lines.\n",
+  "review_run_id": "r-20261110T181359101121-review-of-a-descope-with-its-reason-is-written-on-any-plan-91362fd9fce1",
+  "reviewed_base_sha": "79ff6bdadfd52704f9d3eafd5cb240aac079ab8d",
+  "reviewed_head_sha": "91362fd9fce1c53bea1e06d122215a475435a4e8",
+  "reviewed_run_id": "r-20261110T150853165845-a-descope-with-its-reason-is-written-on-any-plan",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:00:08.167779+00:00",
+  "total": 102
+}
