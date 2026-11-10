@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-title" content="A landing is on main when it says so">
+  <meta name="plan-summary" content="The reflex acceptance now asks whether a run's commits are on the remote primary branch, through the same merge.head_on_remote_branch the landing uses, instead of the checkout's local HEAD. A run whose commits sit only on a local main whose push failed is not promoted; an unreachable remote or a remote carrying no primary ref declines naming the cause; a repository with no remote configured still judges its own branch.">
+  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <title>The reflex acceptance reads the remote primary branch | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>The reflex acceptance reads the remote primary branch</h1>
+
+    <section id="reflex-acceptance-reads-the-remote-primary-what-changed">
+      <h2>What changed</h2>
+      <p>The accepting branch of the reflex promoted a reviewed run once its
+        recorded gate still passed at the merged head, but it answered "is the
+        run merged?" with <code>git merge-base --is-ancestor ... HEAD</code>
+        against the checkout's own tree. A checkout whose <code>main</code> was
+        fast-forwarded while the push failed satisfies that test while the
+        remote has never seen the work, so acceptance could promote a run no
+        other reader can find.</p>
+      <p><code>reckon/crew/recovery_review_acceptance.py</code> now asks
+        <code>merge.head_on_remote_branch</code> — the function the plain-complete
+        path already uses, which reads <code>ls-remote</code> over the port-22 to
+        443 retry, fetches a remote head it does not hold, and answers through
+        the same <code>_is_ancestor</code> the landing lands by. The local probe
+        survives as <code>_commits_missing_from_local_head</code> and is reached
+        when the checkout configures no remote, which is the one case where
+        there is no remote branch to be off.</p>
+      <p>An unreachable remote and a reachable remote carrying no primary ref are
+        distinct answers and each declines the promotion, recording
+        <code>remote_cause</code> and a reason naming the remote, the branch and
+        the commits. So does a checkout that configures no remote at all: there is
+        no remote branch to show the work on, and judging the checkout's own HEAD
+        is exactly the local-only promotion this section closes. A detached HEAD
+        and a commit the checkout cannot resolve are told apart from those three,
+        because each has a different repair — check the primary branch out, fetch
+        the commit, configure the remote, retry the network — and reporting any of
+        them as an unreachable remote sends the coordinator to the wrong fix.</p>
+    </section>
+
+    <section id="reflex-acceptance-reads-the-remote-primary-measure">
+      <h2>Measure</h2>
+      <p>Gate: <code>tests/test_reflex_acceptance_reads_the_remote_primary.py</code>
+        over a temporary repository and a bare <code>origin</code>. At the head it
+        reports 12 passed, <code>EXIT=0</code>. Each declined arm carries a control,
+        because a guard that never fires passes the same assertions as one that
+        refuses everything: a run whose commits are only on local <code>main</code>
+        is not promoted, while the same run with the deliverable pushed promotes;
+        an unreachable remote declines with <code>remote_cause: unreachable</code>
+        and a control that answers the remote read as promotable promotes it; a
+        remote with <code>refs/heads/main</code> deleted declines with
+        <code>remote_cause: missing-branch</code>; a checkout configuring no remote
+        declines with <code>remote_cause: no-remote</code> and a control that
+        answers the question as promotable promotes it; and a detached checkout
+        declines with <code>remote_cause: detached-head</code>, with a control that
+        supplies the branch the refusal named promoting the same run. A commit the
+        checkout cannot resolve is asked of the guard directly, since the review
+        store refuses to record a reviewed head it cannot resolve, and its reason
+        names the commit rather than the network.</p>
+      <p>Negative control: the declared mutation reverts the question to the local
+        checkout. Over a tree extracted from base revision
+        <code>bf85149157</code> with this node's test copied in, the
+        local-<code>main</code> case fails because the run is promoted, and
+        <code>report["accepted"]</code> reads
+        <code>['r-20261109T120000000000-reflex-acceptance']</code> against the
+        expected empty list — the defect §7 records, reproduced. With it the
+        unreachable-remote and missing-branch arms fail too, since neither cause
+        is represented in the base code. That run reports 3 failed, 5 passed,
+        <code>EXIT=1</code>.</p>
+      <p>The importer file <code>tests/test_review_acceptance_promotes.py</code>
+        built its repository with no remote, so the <code>no-remote</code> decline
+        returned four of its cases before reaching the behaviour each measures.
+        Its fixture now builds the checkout through
+        <code>tests/helpers/landing_repository._write_origin_and_checkout</code>,
+        the helper every landing test already shares, and pushes each landed
+        commit, so the shared setup is used rather than re-derived and the
+        remote-less state no longer exists in the suite. With it the two files
+        report 18 passed, <code>EXIT=0</code>; the same command over the repair's
+        base <code>1219837c0f</code> reports 4 failed, 14 passed, <code>EXIT=1</code>,
+        every refusal naming <code>remote_cause: no-remote</code>. Ruff check and
+        <code>ruff format --check</code> are clean on the three staged paths.</p>
+    </section>
+  </main>
+</body>
+</html>

@@ -28,27 +28,19 @@ from pathlib import Path
 
 import pytest
 
-from reckon import _plan_html, crew, ledger
+from reckon import crew, ledger
 from reckon.crew import recovery
 from reckon.crew import review as review_module
 from reckon.crew.runs import _write_json, crew_home, pointer_path
 from tests.helpers.git import git as _git
+from tests.helpers.landing_repository import (
+    PLAN,
+    PROJECT,
+    _write_origin_and_checkout,
+)
 
-PROJECT = "review-acceptance-fixture"
-PLAN = "acceptance-target"
 RUN_ID = "r-20261002T120000000000-acceptance-target"
 GATE_COMMAND = "sh gate.sh"
-
-
-def _write_resource(path: Path, state: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    bare = (
-        "<!doctype html><html><head>"
-        f'<meta name="docs-project" content="{PROJECT}">'
-        f"<title>{state['slug']}</title>"
-        '</head><body><main class="plan-doc"></main></body></html>\n'
-    )
-    path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
 
 
 @pytest.fixture(autouse=True)
@@ -70,34 +62,21 @@ def repository(isolated_reckon_home: Path, tmp_path: Path) -> Path:
     for ``satisfied``), so the re-run at the merged head has a real command to
     execute. Each test lands its own run commit onto the same main branch, which
     is what "the run merged" means by the time acceptance runs.
+
+    The checkout carries a bare ``origin`` and every landed commit is pushed to
+    it, because acceptance asks the remote branch whether the run is merged: a
+    repository with no remote has no branch to show the work on, and acceptance
+    declines rather than reading the checkout's own HEAD.
     """
     assert crew_home().is_relative_to(isolated_reckon_home)
-    root = tmp_path / "repo"
-    _write_resource(
-        root / "docs" / "plans" / f"{PLAN}.html",
-        {
-            "type": "plan",
-            "slug": PLAN,
-            "title": "Acceptance Target",
-            "status": "active",
-            "version": 0,
-            "comments": {},
-        },
-    )
-    (root / "docs" / "state" / PROJECT).mkdir(parents=True, exist_ok=True)
-    for arguments in (
-        ("init", "-q", "-b", "main"),
-        ("config", "user.email", "worker@example.invalid"),
-        ("config", "user.name", "Worker"),
-    ):
-        _git(root, *arguments)
-    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _origin, root = _write_origin_and_checkout(tmp_path)
     (root / "gate.sh").write_text(
         '#!/bin/sh\ngrep -q "satisfied" node.txt\n', encoding="utf-8"
     )
     (root / "node.txt").write_text("satisfied\n", encoding="utf-8")
-    _git(root, "add", "seed.txt", "gate.sh", "node.txt", "docs")
-    _git(root, "commit", "-q", "-m", "chore: seed repository")
+    _git(root, "add", "gate.sh", "node.txt")
+    _git(root, "commit", "-q", "-m", "chore: seed the recorded gate")
+    _git(root, "push", "-q", "origin", "main")
     (isolated_reckon_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(root / "docs")}),
         encoding="utf-8",
@@ -124,6 +103,10 @@ def _land_run_commit(repository: Path, *, green_gate: bool = True) -> str:
         paths.append("gate.sh")
     _git(repository, "add", *paths)
     _git(repository, "commit", "-q", "-m", "feat: land the run deliverable")
+    # The run is merged only once the remote carries it: acceptance asks the
+    # remote branch, and a commit left on local main is exactly the state it
+    # refuses.
+    _git(repository, "push", "-q", "origin", "main")
     return _git(repository, "rev-parse", "HEAD")
 
 
