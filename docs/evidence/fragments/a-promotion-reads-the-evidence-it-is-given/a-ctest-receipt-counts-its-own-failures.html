@@ -1,0 +1,63 @@
+<section id="a-ctest-receipt-counts-its-own-failures-landing">
+  <h2>A ctest receipt is counted in its own format</h2>
+
+  <p><strong>What changed.</strong> <code>_receipt_mismatches</code> compared a
+  suite arm's <code>failure_count</code> with every cited log through
+  <code>pytest_summary_failure_count</code>, whatever the log's format. A ctest
+  log prints no result-count line; its test programs print counts of their own,
+  and the reader matched the last such line, so a suite whose programs reported
+  <code>0 failed</code> apiece was measured at zero however many tests ctest
+  listed as failed. The count is now read in the log's own format by a new
+  <code>_log_failure_count</code>, through the same dispatch
+  <code>gate_log_failure_ids</code> uses (<code>_gate_log_format</code>): a
+  pytest log keeps its summary figure, a ctest log's count is the number of
+  entries in its <code>The following tests FAILED:</code> block &mdash; the set
+  its ids comparison already reads &mdash; and a log in neither format states no
+  count, so the figure is left uncompared rather than read as zero.</p>
+
+  <p><strong>The defect, reproduced on the log that raised it.</strong> Run
+  <code>r-20261110T144158998914-sizing-solver-fixes</code>' cited
+  <code>candidate/validation.receipt.log</code> reads as format
+  <code>ctest</code>; the pytest count reader returns <code>0</code>, the ids
+  reader returns <code>22</code>, and an arm recording
+  <code>failure_count: 22</code> was refused with <em>its failure_count records
+  22 and the log's last run names 0 failed or errored test(s)</em> &mdash; the
+  refusal the section quotes. After the change the same log and the same arm
+  raise no mismatch, with the ids figure unchanged at 22.</p>
+
+  <h3 id="a-ctest-receipt-counts-its-own-failures-measured">Measured</h3>
+
+  <p>The new test, <code>tests/test_a_ctest_receipt_counts_its_own_failures.py</code>,
+  shows four cases over temporary logs: a ctest log whose programs print
+  <code>0 failed</code> and whose FAILED block lists 22 entries agrees with a
+  receipt of 22; the same log disagrees with a receipt of 21, naming both
+  figures; a pytest log is read from its summary line as before (3 agrees, 2 is
+  refused as 3); and a log in neither format raises no count mismatch.</p>
+
+  <p><strong>Armed suite.</strong> Base arm at
+  <code>18e89c95a3</code> over the template resolved on its own tree &mdash; the
+  new test is absent there, so it drops &mdash; is <code>51 passed</code>,
+  exit 0. After arm at <code>01c19e531f</code> over both files is
+  <code>55 passed</code>, exit 0.</p>
+
+  <p><strong>Importer population.</strong> The eight test files importing
+  <code>reckon.crew.promotion_evidence</code>, one arm at a time with
+  <code>-n 4</code>: <code>49 passed</code> at the base and <code>1 failed,
+  48 passed</code> at the head. The single added failure is
+  <code>tests/test_a_receipt_agrees_with_its_log.py::test_a_ctest_log_compares_its_ids_and_not_its_count</code>,
+  which asserts exactly the behaviour this section replaces &mdash; a ctest arm
+  recording <code>failure_count: 5</code> beside a log with one FAILED entry is
+  accepted there and refused here. That file is outside this node's write
+  scope and is left untouched; the repair it needs (the arm's count set to the
+  block's one entry, and the test's name and docstring to match) is recorded
+  under <code>outside_scope</code> in the manifest.</p>
+
+  <p><strong>Negative control.</strong> Restoring the pytest reader for every
+  format (the pre-change body of <code>_log_failure_count</code>) makes the
+  first case report the 0-versus-22 mismatch again:
+  <code>2 failed</code>, exit 1, the failure text reading
+  <em>its failure_count records 21 and the log's last run names 0 failed</em>.</p>
+
+  <p><strong>Ruff.</strong> Zero findings on both staged paths before and
+  after; <code>ruff format --check</code> clean on both.</p>
+</section>
