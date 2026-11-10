@@ -419,7 +419,12 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
                 identities[str(path)] = _file_identity(path)
                 committed_record_exists = True
     directory = review_module.review_store_root() / project
-    identities[str(directory)] = _directory_identity(directory)
+    snapshot = _tick_store(directory)
+    # A tick knows every candidate's identity. Another run's atomic write
+    # therefore cannot invalidate this run merely by moving the shared directory.
+    identities[str(directory)] = (
+        "tick-snapshot" if snapshot is not None else _directory_identity(directory)
+    )
     # A run whose record is committed is answered from the committed tree before
     # any staging file is consulted, so its own record exists and no store-wide
     # staging search runs — the same settling the staging check makes alone.
@@ -435,7 +440,7 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     candidates = [directory / f"{run_id}.json"]
     with contextlib.suppress(OSError):
         candidates.extend(sorted(_store_paths(directory, f"{run_id}.at-*.json")))
-    if not own_record_exists:
+    if snapshot is not None or not own_record_exists:
         candidates.extend(_misfiled_review_candidates(record))
     for path in candidates:
         identities[str(path)] = _record_identity(path)
@@ -776,5 +781,6 @@ from .review_records import (  # noqa: E402
     _record_exists,
     _record_identity,
     _store_paths,
+    _tick_store,
     review_store_tick,
 )

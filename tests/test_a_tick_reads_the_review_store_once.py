@@ -150,3 +150,21 @@ def test_an_in_place_rewrite_is_read_on_the_next_tick(reviewed_store):
     assert first["enumerations"] == 1
     assert second == {"enumerations": 1, f"read:{run_id}": 1}
     assert observed[run_id]["scores"]["goal_fidelity"] == 5
+
+
+def test_an_atomic_replacement_rereads_only_its_run(reviewed_store):
+    paths, counts, _bindings, observed = reviewed_store
+    run_id = "r-author-01"
+    path = paths[run_id]
+
+    def replace():
+        record = json.loads(path.read_text())
+        record["scores"]["goal_fidelity"] = 6
+        replacement = path.with_suffix(".pending")
+        replacement.write_text(json.dumps(record))
+        replacement.replace(path)
+
+    first, second = _ticks(paths, counts, replace)
+    assert first["enumerations"] == 1
+    assert second == {"enumerations": 1, f"read:{run_id}": 1}
+    assert observed[run_id]["scores"]["goal_fidelity"] == 6
