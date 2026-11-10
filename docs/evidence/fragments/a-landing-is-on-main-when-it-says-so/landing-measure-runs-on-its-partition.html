@@ -34,6 +34,9 @@
   </section>
   <section id="landing-measure-runs-on-its-partition-measure">
     <h3>Controls and armed suite</h3>
+    <p>The <a href="#landing-measure-runs-on-its-partition-partition-importers">partition-job importer measurements below</a>
+      supersede the earlier fleet-host importer readings in this record.
+      Those earlier readings remain as history.</p>
     <table>
       <thead><tr><th>Reading</th><th>Result</th></tr></thead>
       <tbody>
@@ -107,6 +110,55 @@
       bound and at most four pytest workers. Ruff check and format --check
       report no findings on the changed Python paths. The repair logs and the
       exact failure-ID comparison are retained in the run directory.</p>
+  </section>
+  <section id="landing-measure-runs-on-its-partition-partition-importers">
+    <h3>Authoritative importer arms run in separate partition jobs</h3>
+    <p>The importer measurements recorded before this section ran as subprocesses
+      inside fleet job <code>1291586</code> on <code>98dci4-clu-2023</code>.
+      They do not satisfy the partition-job evidence requirement. The two
+      measurements below replace them for importer acceptance; product source
+      and tests are unchanged from
+      <code>dc8a413077e61f99908a5967ca80b68d45236160</code>.</p>
+    <p>Each arm was submitted sequentially through
+      <code>RECKON_ALLOW_NESTED_LAUNCH=1 sbatch</code> with
+      <code>--partition=all_debug --time=00:59:00 --cpus-per-task=8 --mem=32G --wait</code>.
+      Scheduler accounting confirms separate job IDs, 8 CPUs, 32G memory and a
+      59-minute bound. Both ran on <code>98dci4-clu-3141</code>, away from
+      the fleet node.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Job</th><th>Node</th><th>Pytest result</th><th>Allocation elapsed</th></tr></thead>
+      <tbody>
+        <tr><td>Base</td><td>1309910</td><td>98dci4-clu-3141</td>
+          <td>7 failed, 163 passed in 22.90 s</td><td>29 s</td></tr>
+        <tr><td>Head</td><td>1309913</td><td>98dci4-clu-3141</td>
+          <td>7 failed, 173 passed in 24.12 s</td><td>30 s</td></tr>
+      </tbody>
+    </table>
+    <p>The base job archived
+      <code>4a4188d18d6bb0d9bfff213f54d392e30451ab32</code>; the head job
+      archived <code>dc8a413077e61f99908a5967ca80b68d45236160</code>.
+      Each created its private directory beneath its destination node's
+      <code>/tmp</code>, exported that directory as TMPDIR, constructed local
+      Git metadata backed by the shared object store, and linked the common
+      virtualenv. The job printed the actual imported module path and resolved
+      working directory from that tree before executing its revision-specific
+      importer population with <code>-n 4 --timeout=60</code> and an exclusive
+      basetemp. Both job logs confirm scratch removal before their terminal
+      exit receipt.</p>
+    <p>The completed receipts contain the same seven failing IDs, so the change
+      adds zero importer failures. Both jobs return exit 1 because pytest
+      reports those baseline failures; this is distinct from an incomplete job
+      or an infrastructure failure. The armed-command case that timed out in
+      the fleet measurements passes in both partition arms.</p>
+    <p>Primary job logs are <code>logs/importers-1309910.log</code> and
+      <code>logs/importers-1309913.log</code> beneath the run directory.
+      Revision, job ID, node, command, module binding, counts and failure IDs
+      are retained in the corresponding per-arm JSON receipts and gate logs.
+      <code>partition-importer-comparison.json</code> records the exact ID
+      comparison, and <code>logs/importers-partition-accounting.log</code>
+      records the scheduler's allocation and completion rows. The earlier
+      non-partition importer logs remain historical artifacts and are removed
+      from the manifest's active test-log list.</p>
   </section>
 </main>
 </body>
