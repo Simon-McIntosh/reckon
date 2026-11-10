@@ -256,11 +256,11 @@ def _newest_stream_in_motion(
 
     ``from_stream_alone`` drops the attempt bound. A caller deciding whether a
     run's *previous* worker has stopped asks about the stream, and the attempt
-    clock is dated from the claim a launch takes before it composes anything
-    else — so a door reading that clock after reserving its own attempt sees a
-    run launched this instant and reads three hours of silence as output. The
-    reservation is the new attempt's, and is no evidence about the worker that
-    wrote the stream.
+    clock is dated from the record a launch publishes for the attempt it is
+    starting — so a door reading that clock after starting its own attempt sees
+    a run launched this instant and reads three hours of silence as output. That
+    record is the new attempt's, and is no evidence about the worker that wrote
+    the stream.
     """
     if not _newest_stream_shows_work(record):
         return False
@@ -511,9 +511,6 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
     only one of the two is still dated from that one.
     """
     candidates = [record.get("attempt_started_at")]
-    claimed = _attempt_started_from_claim(record)
-    if claimed is not None:
-        candidates.append(claimed)
     try:
         marker = json.loads(
             (_run_directory(record) / ATTEMPT_RECORD_NAME).read_text(encoding="utf-8")
@@ -535,31 +532,14 @@ def _attempt_started_seconds(record: Mapping[str, Any]) -> float | None:
 
 
 def _current_attempt_number(record: Mapping[str, Any]) -> int | None:
-    """The attempt the run's own records say is running, or None when no record does.
+    """The attempt the run's attempt record names, or None when no record does.
 
-    Two records advance a run and they are written a moment apart. A resume takes
-    the claim ``attempt-N.claim`` first, before it composes anything else, and
-    only then publishes the attempt record. The claim is what makes the attempt
-    known in the interval between them, so a run whose attempt record has not
-    been written yet is still a run with an attempt of its own — reading the
-    attempt record alone leaves that window with no attempt number at all, and
-    the caller then compares nothing, stands its deferral down, and reads the
-    starting attempt from the word its predecessor left.
-
-    The attempt record is the newer statement when both exist and it names the
-    same attempt, so the higher of the two is the attempt now running; a claim
-    ahead of the attempt record is a resume whose attempt record is still to
-    come. A run with neither record has no attempt identity to compare a worker
+    A resume publishes the attempt record before its supervisor can spawn a
+    worker, so that record is the run's own statement that the attempt began. A
+    run with no attempt record has no attempt identity to compare a worker
     record against, and is read from its pointer alone.
     """
-    recorded = _attempt_record_number(record)
-    claimed = _newest_attempt_claim_number(record)
-
-    if recorded is None:
-        return claimed
-    if claimed is None:
-        return recorded
-    return max(recorded, claimed)
+    return _attempt_record_number(record)
 
 
 def _attempt_record_number(record: Mapping[str, Any]) -> int | None:
@@ -573,87 +553,6 @@ def _attempt_record_number(record: Mapping[str, Any]) -> int | None:
     if not isinstance(marker, Mapping):
         return None
     return _int_or_none(marker.get("attempt"))
-
-
-def _attempt_claim_path(run_id: str, attempt: int) -> Path:
-    """One attempt's claim, at the path the module that owns its name builds.
-
-    Every reader of a claim takes its path through here, so the claim's name is
-    decided in one place and no reader can drift from the file a launch reserves.
-    """
-    # Imported here rather than at module scope: resumption reads this module, so
-    # a module-scope import would be a cycle.
-    from reckon.crew import resumption
-
-    return resumption.attempt_claim_path(run_id, attempt)
-
-
-def _attempt_claim_numbers(record: Mapping[str, Any]) -> list[int]:
-    """Every attempt the run's directory holds a claim for, least number first.
-
-    The directory is read for the claims it holds rather than a run of numbers
-    guessed from the records beside them. A resume takes its claim before it
-    writes anything else, so two claims can stand with no attempt record between
-    them — the window this reader exists for — and a count derived from the
-    records beside them finds neither. The name to look for is the owner's own,
-    taken from the path it builds for one attempt, so the file this reads and
-    the file a launch reserves cannot drift apart.
-    """
-    run_id = str(record.get("run_id") or "")
-    if not run_id:
-        return []
-    prefix, _, suffix = _attempt_claim_path(run_id, 1).name.partition("1")
-    numbers: list[int] = []
-    for path in _run_directory(record).glob(f"{prefix}*{suffix}"):
-        attempt = _int_or_none(path.name[len(prefix) : len(path.name) - len(suffix)])
-        if attempt is not None:
-            numbers.append(attempt)
-    return sorted(set(numbers))
-
-
-def _newest_attempt_claim_number(record: Mapping[str, Any]) -> int | None:
-    """The highest attempt number claimed in the run's directory.
-
-    Claims are taken in order, and a resume takes its own before it starts the
-    attempt, so the highest one is the attempt the run is on or is about to be
-    on. An older claim left beside it names an attempt that has already ended.
-    """
-    numbers = _attempt_claim_numbers(record)
-    return numbers[-1] if numbers else None
-
-
-def _attempt_claim_seconds(record: Mapping[str, Any]) -> float | None:
-    """When the run's current attempt took its claim, or None when it holds none.
-
-    The claim carries the moment it was taken, and it is taken before the
-    attempt's record is written, so it is the earliest statement the run makes
-    about when the attempt it is on began.
-    """
-    run_id = str(record.get("run_id") or "")
-    attempt = _current_attempt_number(record)
-    if not run_id or attempt is None:
-        return None
-    try:
-        payload = json.loads(
-            _attempt_claim_path(run_id, attempt).read_text(encoding="utf-8")
-        )
-    except (OSError, ValueError):
-        return None
-    if not isinstance(payload, Mapping):
-        return None
-    raw = payload.get("at")
-    if not raw:
-        return None
-    taken = parse_utc(str(raw))
-    return taken.timestamp() if taken is not None else None
-
-
-def _attempt_started_from_claim(record: Mapping[str, Any]) -> str | None:
-    """The claim's own timestamp, as the attempt-start candidates carry it."""
-    taken = _attempt_claim_seconds(record)
-    if taken is None:
-        return None
-    return datetime.fromtimestamp(taken, tz=UTC).isoformat()
 
 
 def _worker_record_names_attempt(record: Mapping[str, Any], attempt: int) -> bool:
@@ -773,9 +672,8 @@ def _claim_or_creation_seconds(record: Mapping[str, Any]) -> float | None:
 
     The attempt clock is the launch's own statement of when it began, and it is
     the reading whenever it exists. A cli launch cut off between composing its
-    pointer and spawning its supervisor writes neither an attempt record nor an
-    attempt claim, so it holds no attempt clock at all and would read as one in
-    flight forever. Such a launch is still dated: first from the claim its
+    pointer and spawning its supervisor writes no attempt record, so it holds
+    no attempt clock at all and would read as one in flight forever. Such a launch is still dated: first from the claim its
     dispatch registered in the run directory, and failing that from the pointer's
     own ``created_at``, and a run holding neither is left undated.
     """
