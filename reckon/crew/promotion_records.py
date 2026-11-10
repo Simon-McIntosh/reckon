@@ -497,6 +497,32 @@ def _paths_present_in_tree(
     }
 
 
+def _repository_write_paths(record: Mapping[str, Any]) -> list[str]:
+    """The node's fenced write paths, repository-relative, in declared order.
+
+    The paths are named relative to the run's tree because the same command runs
+    against two trees — the base and the head — and an absolute path into one of
+    them names the wrong tree in the other. A path outside that tree names the
+    run rather than the repository, so it is dropped: a default role path under
+    the run directory is not a file any suite in the tree can measure.
+    """
+    node = record.get("node")
+    write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
+    if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
+        return []
+    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
+    repo = Path(repo_text).expanduser() if repo_text else None
+    relative_paths: list[str] = []
+    for entry in write_paths:
+        text = str(entry or "").strip()
+        if not text:
+            continue
+        relative = _repository_relative_scope(text, repo)
+        if relative is not None:
+            relative_paths.append(relative)
+    return relative_paths
+
+
 def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     """The node's fenced write paths that are tests, sorted and repo-relative.
 
@@ -505,31 +531,11 @@ def _node_test_files(record: Mapping[str, Any]) -> list[str]:
     the node was dispatched with. Which paths count as tests is the dispatcher's
     own rule rather than a second one written here: a node scoped to
     ``tests/body_test.py`` is a node writing a check under ``is_test_path``, so
-    the scoped command has to measure it, and a narrower rule would arm the gate
-    and then silently record no observation for it.
-
-    The paths are named relative to the run's tree because the same command runs
-    against two trees — the base and the head — and an absolute path into one of
-    them names the wrong tree in the other.
+    the scoped command has to measure it, which a narrower rule would not.
     """
-    node = record.get("node")
-    write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
-    if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
-        return []
-    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
-    repo = Path(repo_text).expanduser() if repo_text else None
-    files: set[str] = set()
-    for entry in write_paths:
-        text = str(entry or "").strip()
-        if not text or not is_test_path(text):
-            continue
-        relative = _repository_relative_scope(text, repo)
-        if relative is None:
-            # Outside the run's own tree: a default role path under the run
-            # directory names the run, not the repository's tests.
-            continue
-        files.add(relative)
-    return sorted(files)
+    return sorted(
+        {path for path in _repository_write_paths(record) if is_test_path(path)}
+    )
 
 
 def _census_tests(record: Mapping[str, Any]) -> list[str]:
@@ -555,23 +561,9 @@ def _writes_product_source(record: Mapping[str, Any]) -> bool:
     any other runtime source the census inventories, so running the whole-tree
     census for it would spend its gate budget measuring work it did not touch.
     """
-    node = record.get("node")
-    write_paths = node.get("write_paths") if isinstance(node, Mapping) else None
-    if isinstance(write_paths, (str, bytes)) or not isinstance(write_paths, Sequence):
-        return False
-    repo_text = str(record.get("worktree") or record.get("repo") or "").strip()
-    repo = Path(repo_text).expanduser() if repo_text else None
-    for entry in write_paths:
-        text = str(entry or "").strip()
-        if not text:
-            continue
-        relative = _repository_relative_scope(text, repo)
-        if relative is None:
-            continue
-        if Path(relative).parts[:1] == ("docs",):
-            continue
-        return True
-    return False
+    return any(
+        Path(path).parts[:1] != ("docs",) for path in _repository_write_paths(record)
+    )
 
 
 def _scoped_suite_command(
