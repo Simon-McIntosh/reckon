@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T16:27:54.585Z",
+  "dispatched_at": "2026-11-10T16:20:34Z",
+  "findings": [
+    {
+      "anchor": "plan#s7:98",
+      "id": "reasoning-1",
+      "reason": "the node's whole evidence is one real run on the new backend, and a dispatch that is refused or routes elsewhere leaves it either blocked on a command form that cannot work or reporting a `clive` run as the omp arm.",
+      "text": "the done-when says the pilot node is \"dispatched with `--set backend=omp-local`\", but `--set` overrides flight keys after file layers (`reckon/crew_dispatch_commands.py:1377`, \"Override one flight key after file layers \u2026 A path naming a backend or role no config layer defines is refused\") and the flight schema has no `backend` key \u2014 it has `default_backend`, `local_backend` and `backends` (`reckon/_flight_schema.py:205-210`); backend selection is `--backend` / `--local` (`reckon/crew_dispatch_commands.py:1199`, `:1432`)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s4:75",
+      "id": "reasoning-2",
+      "reason": "an unfenced or resumed run records the treatment flag while receiving no anchored server and no disallowed `Edit`, so \u00a78 would split the population by a flag that does not describe what ran and would score the arm on contaminated runs.",
+      "text": "the plan reads the `anchored_edit` key \"where a run home is seeded \u2026 beside `_seed_worker_mcp_settings`\", but that function is called only when the dialect is claude, the run is fenced, the run home's `settings.json` did not already exist, and `worker_mcp_servers is not None` (`reckon/_worker_fence.py:267-272`, called from `reckon/_backends.py:2383-2397` with `None` when no flight config is resolved), while the plan sets `anchored_edit: true` on the run record unconditionally",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s6:93",
+      "id": "done_when-1",
+      "reason": "\u00a77 is declared to be built on what \u00a76 settled, so an empty \u00a76 result still promotes and hands the dependent node a contract it cannot implement.",
+      "text": "the investigation's done-when is satisfied by a note that \"marks any item it could not settle as unsettled with the reason\", so a node that settles none of the five items passes, and nothing in the measure can fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s7:98",
+      "id": "done_when-2",
+      "reason": "the empty-read failure is the shape \u00a71 already records once (60 codex runs, 594 `file_change` items and zero failures, judged \"not believable as a measurement\"), and without a fixture that must trip the refusal nothing shows the parser's refusal path executes.",
+      "text": "the node declares a positive control for the parser (non-zero totals on a known-healthy stream) but no negative control, though the section states the guard it needs: \"a stream format this parser does not recognise is a refusal, never a run read as empty\"",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan#s8:104",
+      "id": "done_when-3",
+      "reason": "the adopt/no-adopt verdict is the plan's only output, and a query that returns a uniform column for both arms would satisfy the stated done-when unchanged.",
+      "text": "the measurement record asserts a per-arm table and a verdict but names no control showing the query can distinguish arms, while \u00a71 records a census of the same shape reporting zero codex edit failures and calls it \"not believable as a measurement\"",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3eebcd6b8d5ac3b5b8f0fa4cca2e931e9193f62e",
+  "plan_fingerprint": "2dc6ba269cc9ab8a0bca075c2c01ba475766da91098b23493e44d51960c2ab84",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 0,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T161820898360-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "d894c2e55eb4145821e2831219f939aa2160e036",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/_worker_fence.py` carries `_seed_worker_mcp_settings` (l.317) and `reckon/_backends.py` carries `fenced_write_roots` (l.274), `_ClaudeDialect` (l.1690), `_CliveDialect` (l.2122), `_CodexDialect` (l.1320) and `_DIALECTS` (l.2133); `mcp>=1.0.0` is a dependency (pyproject.toml:29), `[project.scripts]` exists for the new console script, and both `docs/research/messages-to-workers-never-arrive.html` and `docs/plans/a-live-worker-can-be-reached.html` resolve.",
+    "done_when": "a finding \u2014 \u00a76, \u00a77 and \u00a78 each assert a measure with no declared negative control, and \u00a76's can pass with nothing settled.",
+    "evidence_paths": "pass \u2014 \u00a73\u2013\u00a75 gate on tests inside the repository and \u00a78's record is `docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html` (the directory exists and already holds landed records); \u00a76's note at `~/.config/reckon/crew/reports/reckon/omp-headless-contract.md` is durable and openable, though outside version control.",
+    "naming": "pass \u2014 proposed symbols (`anchored_edit`, `reckon-anchored-edit`, `omp-local`, `read_anchored`, `edit_anchored`) name mechanisms, and no plan-stage label or ticket number is proposed for any code path; the \u00a76 version pin is a dependency version, not a plan tag.",
+    "reasoning": "a finding \u2014 \u00a77's evidence instruction names a dispatch flag that does not select a backend, and \u00a74's seeding site is reached only under conditions the plan does not state, so the treatment arm can silently run as its own baseline.",
+    "single_goal": "pass \u2014 each of s3\u2013s8 names one deliverable (a module, a dialect arm, the codex arm, one investigation, one backend, one measurement record); the flight-default change in \u00a78 is the verdict's own consequence, not a second goal.",
+    "wiring": "pass \u2014 `plan-section-depends-on` matches the order the followup states (s4,s5\u2190s3; s7\u2190s6; s8\u2190s4,s5,s7), no node consumes another's output undeclared, and `plan-informs` resolves to `docs/plans/a-live-worker-can-be-reached.html`, which exists and records the steering prototypes \u00a72 defers to."
+  },
+  "section_digests": {
+    "_document": "ac39042a1d4e13e871350c4b74dc8f2d3d91bc6da2b7abd9bfb6f3bb2f8a7754",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "65aaf875fab9a29682674006110d755c697c466bc074202dc0d5cb9a32a2bcd2",
+    "s3": "dd01f87ba5679294bc19905a1cf7697dd537b753b178d06792cf59772740e821",
+    "s4": "516dda77554f01b70188cb5b3c84a457f221f4408a1df2dfaeb5cbeff87f2ff6",
+    "s5": "19bf891776e13d4fca6bfcb6a80d143e134222c956bae0fe89b7900f540a10bc",
+    "s6": "e2ba34a939fd7d14d42e28c4bfa98c29809feb0263e99b6a5ff557124478064b",
+    "s7": "b35e61de32d6e73d137f96b5d654003f6c1823935754fc1f6761babefe4e4fe6",
+    "s8": "4a5358cc109237a8a0a1acff3d20f7e7a5f6c9b8a857b491f9c1283c6f71a63a"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T16:52:24.365378+00:00",
+  "total": null
+}
