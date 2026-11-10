@@ -1,0 +1,68 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by differencing the reviewed manifest's two arms against their logs: suite-baseline.log:6 records '51 passed in 20.68s' with EXIT=0 at base cb5dcf17a3 over tests/test_staged_write_inventory.py and no FAILED line, and suite-after.log:7-8 records '74 passed in 45.21s' with EXIT=0 at head 27ed13983a over tests/test_anchored_edit.py plus the same inventory file, also with no FAILED line. Zero failing ids in either arm, so nothing is added.",
+  "call_site_count": 1,
+  "call_sites": [
+    "pyproject.toml:51"
+  ],
+  "completed_at": "2026-11-10T20:58:16.138Z",
+  "dispatched_at": "2026-11-10T20:41:31Z",
+  "findings": [
+    {
+      "file": "tests/test_anchored_edit.py",
+      "line": "54",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion builds its expected string from `_anchors(editor, target)[1]`, a second call to the same read being judged, so its two sides move together and a consistently wrong hash would pass; the hash is pinned independently at tests/test_anchored_edit.py:149-151 and by the round trip at :258-262, which is why this does not hold the node."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/negative-control-containment.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names revision ea11246363 as the state measured, but the restored module checksum it prints is d9add9e1, the blob at the later head 27ed13983a, so the header's revision line does not identify the module the control ran against; the checksum resolves it but a reader must reconcile the two."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-tool.html",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states 'Ruff reports no findings on either staged path' as part of the measure, but no ruff log is among the recorded test_logs, so that half of the done_when is claimed without an artifact; re-running ruff check and ruff format --check under the repo config against both blobs returned 'All checks passed' and '2 files already formatted', and an out-of-package copy did report an import-order finding, so the check was shown to see something."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from cb5dcf17a3: 574651bd6b adds the module, its tests and the console script, ea11246363 adds the evidence fragment, 7e3dea8112 repairs the insert_after loop with a parametrised test, and 27ed13983a updates the fragment; 4 files, +977 lines, no deletions.",
+    "done_when": "the done_when asks for tests/test_anchored_edit.py passing over the section's listed cases, two negative controls that redden with their guards removed, and clean ruff on the staged paths; suite-after.log:7-8 records 74 passed with EXIT=0 at 27ed13983a, negative-control-containment.log and negative-control-hash.log record EXIT=1, and the ruff half carries no log but re-ran clean under the repo config.",
+    "goal": "the goal is a confined line-anchored MCP edit server with its console script and tests; reckon/anchored_edit.py:453-491 serves read_anchored and edit_anchored over stdio with repeated --root, pyproject.toml:51 declares the console script, and tests/test_anchored_edit.py exercises both.",
+    "manifest": "read; it records 23 tests, a 51-passed base arm, a 74-passed after arm and three control runs whose restored blob checksum d9add9e1 matches `git show 27ed13983a:reckon/anchored_edit.py | sha256sum`, so the controls measured the delivered module.",
+    "write_paths": "the declared five paths are reckon/anchored_edit.py, tests/test_anchored_edit.py, pyproject.toml and the fragment and figure directories under docs/; the diff changes four files, every one inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit.py:118-132 reddens against the reverted loop, as guard-showing-insert-after.log:75-76 shows, while tests/test_anchored_edit.py:54 compares the read output against a second call to the same read, so a wrong hash would satisfy it.",
+    "evidence": "suite-after.log:7-8 records '74 passed in 45.21s' and EXIT=0 at the head, but the ruff half of the done_when has no recorded log and had to be re-run to be read.",
+    "fit": "reckon/anchored_edit.py:425 publishes through _store.write_atomically and :163 confines through _worker_fence._within_any, matching the surrounding idiom, and no symbol carries a plan or ticket label.",
+    "goal_fidelity": "reckon/anchored_edit.py:296-334 verifies every anchor and refuses overlaps before any write and :375-437 publishes atomically, which is the deliverable the goal names, with reads at :240 confined by the same root check.",
+    "reuse": "no owner for line-anchored editing existed at cb5dcf17a3, where searches for sha1(, insert_before/insert_after and def _split_lines over the base tree found only docs/figures/plan-review-cycles/measure_review_cycles.py, and the change extends _within_any and write_atomically rather than duplicating either.",
+    "scope_discipline": "all four changed paths are inside the declared five, and the one behaviour beyond the section, confining reads at reckon/anchored_edit.py:246, is flagged in the manifest rather than slipped in."
+  },
+  "node": "review-of-anchored-edit-tool-27ed13983a3d",
+  "node:reviewed": "anchored-edit-tool",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is a confined line-anchored MCP edit server with its console script and tests; reckon/anchored_edit.py:453-491 serves read_anchored and edit_anchored over stdio with repeated --root, pyproject.toml:51 declares the console script, and tests/test_anchored_edit.py exercises both.\nVERDICT done_when: the done_when asks for tests/test_anchored_edit.py passing over the section's listed cases, two negative controls that redden with their guards removed, and clean ruff on the staged paths; suite-after.log:7-8 records 74 passed with EXIT=0 at 27ed13983a, negative-control-containment.log and negative-control-hash.log record EXIT=1, and the ruff half carries no log but re-ran clean under the repo config.\nVERDICT write_paths: the declared five paths are reckon/anchored_edit.py, tests/test_anchored_edit.py, pyproject.toml and the fragment and figure directories under docs/; the diff changes four files, every one inside them.\nVERDICT manifest: read; it records 23 tests, a 51-passed base arm, a 74-passed after arm and three control runs whose restored blob checksum d9add9e1 matches `git show 27ed13983a:reckon/anchored_edit.py | sha256sum`, so the controls measured the delivered module.\nVERDICT diff: read commit by commit from cb5dcf17a3: 574651bd6b adds the module, its tests and the console script, ea11246363 adds the evidence fragment, 7e3dea8112 repairs the insert_after loop with a parametrised test, and 27ed13983a updates the fragment; 4 files, +977 lines, no deletions.\nCALL_SITES: pyproject.toml:51 (reckon-anchored-edit -> reckon.anchored_edit:main)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/anchored_edit.py:296-334 verifies every anchor and refuses overlaps before any write and :375-437 publishes atomically, which is the deliverable the goal names, with reads at :240 confined by the same root check.\nSCORE evidence: 17\nJUSTIFICATION evidence: suite-after.log:7-8 records '74 passed in 45.21s' and EXIT=0 at the head, but the ruff half of the done_when has no recorded log and had to be re-run to be read.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: all four changed paths are inside the declared five, and the one behaviour beyond the section, confining reads at reckon/anchored_edit.py:246, is flagged in the manifest rather than slipped in.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_anchored_edit.py:118-132 reddens against the reverted loop, as guard-showing-insert-after.log:75-76 shows, while tests/test_anchored_edit.py:54 compares the read output against a second call to the same read, so a wrong hash would satisfy it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/anchored_edit.py:425 publishes through _store.write_atomically and :163 confines through _worker_fence._within_any, matching the surrounding idiom, and no symbol carries a plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: no owner for line-anchored editing existed at cb5dcf17a3, where searches for sha1(, insert_before/insert_after and def _split_lines over the base tree found only docs/figures/plan-review-cycles/measure_review_cycles.py, and the change extends _within_any and write_atomically rather than duplicating either.\nFINDING tests/test_anchored_edit.py:54 non-blocking: the assertion builds its expected string from `_anchors(editor, target)[1]`, a second call to the same read being judged, so its two sides move together and a consistently wrong hash would pass; the hash is pinned independently at tests/test_anchored_edit.py:149-151 and by the round trip at :258-262, which is why this does not hold the node.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192355232896-anchored-edit-tool/negative-control-containment.log:1 non-blocking: the header names revision ea11246363 as the state measured, but the restored module checksum it prints is d9add9e1, the blob at the later head 27ed13983a, so the header's revision line does not identify the module the control ran against; the checksum resolves it but a reader must reconcile the two.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-tool.html:44 non-blocking: the fragment states 'Ruff reports no findings on either staged path' as part of the measure, but no ruff log is among the recorded test_logs, so that half of the done_when is claimed without an artifact; re-running ruff check and ruff format --check under the repo config against both blobs returned 'All checks passed' and '2 files already formatted', and an out-of-package copy did report an import-order finding, so the check was shown to see something.",
+  "review_run_id": "r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d",
+  "reviewed_base_sha": "cb5dcf17a3be6c8a022f5c9391ec843c67adb509",
+  "reviewed_head_sha": "27ed13983a3d19b3a69b18e35b56b33e9f52b354",
+  "reviewed_run_id": "r-20261110T192355232896-anchored-edit-tool",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:05:00+00:00",
+  "total": 110
+}
