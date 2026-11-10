@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="21">
+<meta name="plan-version" content="22">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -138,8 +138,8 @@
     before window is the snapshot copied on 8 November before §2 landed,
     <code>~/.cache/reckon-claims/admission-verdicts-before-shared-default.jsonl</code> (212 passes from
     2026-11-07T05:38Z to 2026-11-08T12:33Z, 296 held-on-claim verdicts; its last hours already include the
-    interim shared list of commit <code>5cf29445c8</code>). Because of that bound, the after window has two parts, amended on 9 November with the lead's approval. Hold counts come from every retained copy of the live log taken after the admit service reloaded onto §2 and §3 (07:39–10:37Z and 20:46–22:12Z on 9 November, about 4.5 hours: <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-interim.jsonl</code>, <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-20261109T103644Z.jsonl</code> and <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-verdicts-after-20261109T2212Z.jsonl</code>). Concurrent pairs come from the run ledger (<code>docs/state/reckon/runs/</code>) over at least 12 hours after that reload, since each landed run records its write paths and its dispatch and landing times. The measure counts <code>held-on-claim</code> verdicts on file claims in both windows, split by
-    whether the claimed path is under a shared root. It also lists every pair of runs that held
+    interim shared list of commit <code>5cf29445c8</code>). Because of that bound, the after window has two parts, amended on 9 November with the lead's approval. Hold counts come from every retained copy of the live log taken after the admit service reloaded onto §2 and §3 (07:39–10:37Z and 20:46–22:12Z on 9 November, about 4.5 hours: <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-interim.jsonl</code>, <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-after-20261109T103644Z.jsonl</code> and <code>~/.config/reckon/crew/runs/r-20261109T074919528432-parallel-nodes-on-one-module/admission-verdicts-after-20261109T2212Z.jsonl</code>). Concurrent pairs come from the run ledger (<code>docs/state/reckon/runs/</code>) over at least 12 hours after that reload, reading each run's write paths from <code>node_definition.write_paths</code>, its dispatch time from <code>dispatched_at</code> and its landing time from <code>completed_at</code>, since the ledger keeps no separate landing stamp. The measure counts <code>held-on-claim</code> verdicts on file claims in both windows, split by
+    whether the claimed path is under a shared root declared by the claiming run's own project. Shared roots are per project, so a hold in a project that declares none (power_convertor's 1,496 holds on <code>scripts/iter/integrated_simulation.py</code>, for instance) is listed separately and never counted against the zero. It also lists every pair of runs that held
     concurrent claims on one file in the ledger window after, and whether each landed cleanly, landed
     after a merge repair, or is still open.</p>
     <p><strong>Done when</strong> the evidence fragment
