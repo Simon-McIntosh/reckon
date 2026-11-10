@@ -1,0 +1,33 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T04:58:30.436Z",
+  "dispatched_at": "2026-11-10T04:51:27Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "composed-units-set-without-a-paired-reset",
+      "line": 2263,
+      "severity": "non-blocking",
+      "text": "review_scope sets _COMPOSED_UNITS directly (_COMPOSED_UNITS.set(...)) where its sibling _REVIEW_SECTIONS is only ever set inside the reviewing_sections context manager, which resets both on exit. Every production path is safe because crew_dispatch_commands.py:3128 wraps the composition in reviewing_sections, but review_scope is public and takes an explicit sections parameter, so a direct caller on an unreviewed plan leaves the widened tuple set in its context; a later write_review_sidecar call with no traced_units in that same context would then stamp every unit as traced for a record whose composition never widened. The test seam is exactly the pattern at tests/test_a_review_round_is_section_scoped.py:109, where the context manager is used deliberately, so nothing fails today. Wrapping the set in a token reset owned by the caller, or having review_scope return the decided units rather than side-effect them, removes the latent cross-composition carry."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261110T044940150824-review-of-a-review-round-is-section-scoped-5db68db75d5d",
+  "reviewed_base_sha": "8d1785f9c3cbad857e5036bfaf9ae290007a49ca",
+  "reviewed_head_sha": "5db68db75d5d589afb80e70d79fb37d0239f9b17",
+  "reviewed_run_id": "r-20261103T054937809738-a-review-round-is-section-scoped",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T05:02:39.278840+00:00",
+  "total": 112
+}
