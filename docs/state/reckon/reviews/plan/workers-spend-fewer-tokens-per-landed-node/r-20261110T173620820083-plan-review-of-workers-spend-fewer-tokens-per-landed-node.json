@@ -1,0 +1,62 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T17:52:03.630Z",
+  "dispatched_at": "2026-11-10T17:40:12Z",
+  "findings": [
+    {
+      "anchor": "reckon/anchored_edit.py",
+      "id": "reuse_search-1",
+      "reason": "one sentence naming which owner is reused (and why the other cannot be) decides whether confinement becomes a third implementation that drifts from the fence's own roots, which is the defect this item exists to catch.",
+      "text": "\u00a73's Confinement bullet proposes a fresh write-root check while the package already holds two (`sandbox_can_write` at reckon/_backends.py:320, `_within_any` at reckon/_worker_fence.py:983), and it adds a second stdio MCP entrypoint beside `reckon/mcp.py:3837`/`:3846` without saying so",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_worker_fence.py:35",
+      "id": "duplicate_owner-1",
+      "reason": "naming the new TOML merge seam, or switching to the argv `-c` form the prototype proved, removes a mechanism the plan has not budgeted.",
+      "text": "two instances of the same defect. (a) \u00a77 says an `omp` dialect gets \"a per-run home under the fence\" but names only `_DIALECTS` (reckon/_backends.py:2133); the dialect-keyed registry that actually resolves a run home is `_HARNESS_HOME` (reckon/_worker_fence.py:35, read by `harness_home` at :158 and by reckon/_backends.py:2400), so an entry added only to `_DIALECTS` makes `harness_home()` return None and the run silently keeps the operator's own `~/.omp` \u2014 the opposite of what \u00a77 claims. (b) reckon/_worker_fence.py:425 \u2014 \u00a75's \"seeded codex config with and without the key\" requires writing `mcp_servers.anchored` into `CODEX_HOME`'s `config.toml`, but `_seed_harness_entry` copies that file verbatim and returns without touching an existing one, `_merge_harness_entry` (:341) merges JSON only, and the dependency set carries no TOML writer (pyproject: `tomllib` reads only, as at reckon/agent_context.py:350) \u2014 while \u00a72's own codex prototype already succeeded by passing `-c mcp_servers.anchored.command=\u2026` on argv, which needs no config write at all",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:65",
+      "id": "interface_budget-1",
+      "reason": "the plan can satisfy this by one sentence per section; without it, \u00a78's \"set the default to what the verdict says\" leaves both the new surface and the built-in edit tools permanently in place.",
+      "text": "\u00a73 adds `reckon/anchored_edit.py`, a `reckon-anchored-edit` console script and two MCP tools; \u00a74 adds a flight key (`anchored_edit`), \u00a75 a codex stream-parser branch, \u00a77 an `omp` dialect and an `omp-local` host backend, and no section in the plan states what it retires, merges or brings back from the same family, against public_definitions 2444, cli_options 470, mcp_views 15, refusal_families 25",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "10af044d3141267c131c8da2030d537924087b96",
+  "plan_fingerprint": "a568ea652992eaa4707db3a00d7fe4c64829d5a5926a98ddf73404c992fa81c7",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 2,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T173620820083-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "d6efd3092e43c457c496d8869b9ccf9cc069c5e6",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 `reckon/anchored_edit.py` hides anchor verification, all-or-nothing atomic replacement preserving mode and line endings, and confinement behind two tools, and \u00a77 extends the existing `Dialect` seam (`reckon/_backends.py:1111`) instead of layering a wrapper over it.",
+    "duplicate_owner": "a finding \u2014 \u00a75 and \u00a77 each add a mechanism whose existing owner is not named: the per-run harness-home registry `_HARNESS_HOME` (`reckon/_worker_fence.py:35`) and the codex config seeding `_seed_harness_entry` (`reckon/_worker_fence.py:425`).",
+    "interface_budget": "a finding \u2014 public_definitions 2444, cli_options 470, mcp_views 15, refusal_families 25; \u00a73, \u00a74, \u00a75 and \u00a77 each add surface (a module, a console script, two MCP tools, a flight key, a dialect, a host backend) and none names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a73 cites its prototype but no search of `reckon/mcp.py` (the package's only stdio MCP entrypoint) or of the existing write-root check `sandbox_can_write` (`reckon/_backends.py:320`).",
+    "thin_wrapper": "pass \u2014 \u00a74 and \u00a75 extend `Dialect`/`_ClaudeDialect` (`reckon/_backends.py:1690`, `_DIALECTS` at `:2133`) and `seed_harness_home` (`reckon/_worker_fence.py:194`); the separate `reckon-anchored-edit` process is justified because the `reckon` MCP server is user-scope and stays enabled for every worker unnamed (`reckon/_worker_fence.py:325`)."
+  },
+  "section_digests": {
+    "_document": "ac39042a1d4e13e871350c4b74dc8f2d3d91bc6da2b7abd9bfb6f3bb2f8a7754",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "dd01f87ba5679294bc19905a1cf7697dd537b753b178d06792cf59772740e821",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "19bf891776e13d4fca6bfcb6a80d143e134222c956bae0fe89b7900f540a10bc",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "10130f57cdc4ce2ba89e63ac2d9ac41580d7668772116ac182e2ad7b30f19a40",
+    "s8": "105b4637be4a038c2b71ac086feb22e482452b2e03667ba909b095c64a8df426"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T18:30:40.560390+00:00",
+  "total": null
+}
