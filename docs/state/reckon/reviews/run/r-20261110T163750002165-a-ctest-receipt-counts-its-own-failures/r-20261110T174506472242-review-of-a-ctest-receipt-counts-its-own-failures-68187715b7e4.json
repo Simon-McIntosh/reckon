@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "the reviewed run's armed pair is green both sides (base-arm.log 51 passed, after-arm.log 55 passed), so the count taken from baseline_suite and after_suite is 0; a separately run importer arm (importers-base.log 49 passed, importers-head.log 1 failed and 48 passed) records one added failure, reported here as a blocking finding rather than folded into this figure.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion_evidence.py:_receipt_mismatches",
+    "reckon/crew/promotion_evidence.py:_require_gate_log_agrees",
+    "reckon/crew/promotion.py:654",
+    "reckon/crew/promotion.py:2576"
+  ],
+  "completed_at": "2026-11-10T18:13:27.573Z",
+  "dispatched_at": "2026-11-10T17:48:03Z",
+  "findings": [
+    {
+      "file": "tests/test_a_receipt_agrees_with_its_log.py",
+      "line": "197",
+      "severity": "blocking",
+      "text": "the existing test asserts a ctest arm recording failure_count 5 is accepted beside a log whose FAILED block has one entry, which is the behaviour this change replaces; at the reviewed head it fails with the refusal at reckon/crew/promotion_evidence.py:1383, so the landed change adds a failure to the suite against 18e89c95 and the section's done-when clause that the importing test files add no failure is unmet until that arm's count is set to 1 and the test renamed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 4 ways into the change: _receipt_mismatches at reckon/crew/promotion_evidence.py:1240, its only caller _require_gate_log_agrees at :1351, that function's use at reckon/crew/promotion.py:654 and its export in the promotion check registry at reckon/crew/promotion.py:2576.",
+    "diff": "read commit by commit from 18e89c95 to 68187715; 5933d32932 adds _log_failure_count at reckon/crew/promotion_evidence.py:1185 and switches _receipt_mismatches at :1240 onto it with two docstrings corrected, 01c19e531f drops an unused pytest import and a stray whitespace line from the new test, 68187715 adds the 63-line landing fragment.",
+    "done_when": "the four cases named are present in tests/test_a_ctest_receipt_counts_its_own_failures.py and green (after-arm.log 55 passed EXIT=0 against base-arm.log 51 passed EXIT=0), and negative-control.log is 2 failed EXIT=1, but the done-when's importer clause is red: importers-base.log is 49 passed at 18e89c95 and importers-head.log is 1 failed, 48 passed at 5933d32, the failure being tests/test_a_receipt_agrees_with_its_log.py::test_a_ctest_log_compares_its_ids_and_not_its_count.",
+    "goal": "the node goal is that a ctest receipt is counted in its own format; at head 68187715 reckon/crew/promotion_evidence.py:1185 adds _log_failure_count, which dispatches on review_module._gate_log_format and returns len(gate_log_failure_ids(log_text)) for a ctest log, pytest_summary_failure_count for a pytest log, and None for neither format, and _receipt_mismatches:1240 calls it.",
+    "manifest": "read; status complete, commits 5933d32932, 01c19e531f and 68187715, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed true, six test_logs whose heads name their revision and tree and whose tails end in a bare EXIT= line, and an outside_scope entry naming the same added failure I measured.",
+    "write_paths": "the dispatch fence named reckon/crew/promotion_evidence.py, tests/test_a_ctest_receipt_counts_its_own_failures.py, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html and a figures directory, and the three-commit diff touches exactly the first three of those with nothing else."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows that restoring the pytest reader for every format reddens tests/test_a_ctest_receipt_counts_its_own_failures.py:110 and :117, and the fourth case at :137 would redden if _log_failure_count returned 0 rather than None for an unformatted log, though case one's expected count at :73 is len() of the same list that generates the FAILED block.",
+    "evidence": "base-arm.log and after-arm.log carry their revisions and EXIT= lines and negative-control.log reddens cases one and two, but the done-when's importer clause is unmet by importers-head.log's 1 failed and 48 passed against importers-base.log's 49 passed, which I reproduced at the reviewed head.",
+    "fit": "the helper follows the surrounding private-reader idiom of reckon/crew/promotion_evidence.py beside _arm_describes_the_cited_log at :1157, its docstring states what None means, and it introduces no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion_evidence.py:1185 reads the count in the log's own format through _gate_log_format, giving ctest the len() of the FAILED block its ids comparison already reads and leaving a log in neither format with no count.",
+    "reuse": "_log_failure_count extends the existing owners rather than forking them, calling review_module._gate_log_format, gate_log_failure_ids and pytest_summary_failure_count in reckon/crew/review.py, and no second format detector or count parser is added.",
+    "scope_discipline": "every path in the 18e89c95..68187715 diff is one the dispatch fence granted, and the module change is 34 added and 4 removed lines around _receipt_mismatches at reckon/crew/promotion_evidence.py:1240."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a ctest receipt is counted in its own format; at head 68187715 reckon/crew/promotion_evidence.py:1185 adds _log_failure_count, which dispatches on review_module._gate_log_format and returns len(gate_log_failure_ids(log_text)) for a ctest log, pytest_summary_failure_count for a pytest log, and None for neither format, and _receipt_mismatches:1240 calls it.\nVERDICT done_when: the four cases named are present in tests/test_a_ctest_receipt_counts_its_own_failures.py and green (after-arm.log 55 passed EXIT=0 against base-arm.log 51 passed EXIT=0), and negative-control.log is 2 failed EXIT=1, but the done-when's importer clause is red: importers-base.log is 49 passed at 18e89c95 and importers-head.log is 1 failed, 48 passed at 5933d32, the failure being tests/test_a_receipt_agrees_with_its_log.py::test_a_ctest_log_compares_its_ids_and_not_its_count.\nVERDICT write_paths: the dispatch fence named reckon/crew/promotion_evidence.py, tests/test_a_ctest_receipt_counts_its_own_failures.py, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-ctest-receipt-counts-its-own-failures.html and a figures directory, and the three-commit diff touches exactly the first three of those with nothing else.\nVERDICT manifest: read; status complete, commits 5933d32932, 01c19e531f and 68187715, baseline_suite and after_suite each carrying revision, literal command, exit_status and completed true, six test_logs whose heads name their revision and tree and whose tails end in a bare EXIT= line, and an outside_scope entry naming the same added failure I measured.\nVERDICT diff: read commit by commit from 18e89c95 to 68187715; 5933d32932 adds _log_failure_count at reckon/crew/promotion_evidence.py:1185 and switches _receipt_mismatches at :1240 onto it with two docstrings corrected, 01c19e531f drops an unused pytest import and a stray whitespace line from the new test, 68187715 adds the 63-line landing fragment.\nCALL_SITES: reckon/crew/promotion_evidence.py:_receipt_mismatches, reckon/crew/promotion_evidence.py:_require_gate_log_agrees, reckon/crew/promotion.py:654, reckon/crew/promotion.py:2576\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_evidence.py:1185 reads the count in the log's own format through _gate_log_format, giving ctest the len() of the FAILED block its ids comparison already reads and leaving a log in neither format with no count.\nSCORE evidence: 11\nJUSTIFICATION evidence: base-arm.log and after-arm.log carry their revisions and EXIT= lines and negative-control.log reddens cases one and two, but the done-when's importer clause is unmet by importers-head.log's 1 failed, 48 passed against importers-base.log's 49 passed, which I reproduced at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the 18e89c95..68187715 diff is one the dispatch fence granted, and the module change is 34 added and 4 removed lines around _receipt_mismatches at reckon/crew/promotion_evidence.py:1240.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows that restoring the pytest reader for every format reddens tests/test_a_ctest_receipt_counts_its_own_failures.py:110 and :117, and the fourth case at :137 would redden if _log_failure_count returned 0 instead of None for an unformatted log, though case one's expected count at :73 is len() of the same list that generates the FAILED block, so it cannot catch a fixture that drops entries from both sides.\nSCORE fit: 16\nJUSTIFICATION fit: the helper follows the surrounding private-reader idiom of reckon/crew/promotion_evidence.py (a module-level function beside _arm_describes_the_cited_log at :1157, docstring stating what None means) and introduces no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: _log_failure_count extends the existing owners rather than forking them, calling review_module._gate_log_format, gate_log_failure_ids and pytest_summary_failure_count in reckon/crew/review.py, and no second format detector or count parser is added.\nFINDING tests/test_a_receipt_agrees_with_its_log.py:197 blocking: the existing test asserts a ctest arm recording failure_count 5 is accepted beside a log whose FAILED block has one entry, which is the behaviour this change replaces; at the reviewed head it fails with the refusal at reckon/crew/promotion_evidence.py:1383 (I ran it there: 1 failed), so the landed change adds a failure to the suite against 18e89c95 and the section's own done-when clause that the importing test files add no failure is unmet until that arm's count is set to 1 and the test renamed.",
+  "review_checks": [],
+  "review_run_id": "r-20261110T174506472242-review-of-a-ctest-receipt-counts-its-own-failures-68187715b7e4",
+  "reviewed_base_sha": "18e89c95a3e2004588d120be35c03dcfecfac452",
+  "reviewed_head_sha": "68187715b7e462fd81f036c1c8b29e373b2ed573",
+  "reviewed_run_id": "r-20261110T163750002165-a-ctest-receipt-counts-its-own-failures",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T19:02:14.101853+00:00",
+  "total": 103
+}
