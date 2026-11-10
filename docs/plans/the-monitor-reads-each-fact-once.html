@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="140">
+<meta name="plan-version" content="141">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -704,6 +704,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s19" data-id="c-close-s19" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>Landed from r-20261109T120446544718 (head c73a7d1dd0, on main at bb05fcd011). One producer tick now makes one <code>list_live</code> call and one watch-stream publish and hands its pointer set to <code>sweep_unfollowed_sessions</code>, <code>resumption.sweep</code>, the owed-review pass and <code>dispatch_awaiting_reviews</code>; flight resolves once per project per tick, and a tick past its bound returns to its reload check. Node test: 3 passed at head, 3 failed with the file on base 3118c2969a. The coordinator compared all 786 importing test files at base and head in 13 slices with no added failure that survives a rerun (<code>~/.config/reckon/crew/runs/r-20261109T120446544718-producer-tick-reads-live-pointers-once/logs/pop/summary.txt</code>).</p><p><strong>The live check does not pass.</strong> The lock file is rewritten at reloads, not on every tick, so its mtime is not a tick heartbeat. Sampling the producer's main thread instead (pid 3781488, on the landed code, 16:15–16:17Z) found it busy in 54 of 57 samples, with a run of 26 consecutive busy samples, so ticks still last about a minute. A 75 s profile puts about 30% in the one remaining <code>list_live</code> publish, 30% in <code>_stop_delivered_reviews</code> scanning review-store paths, and about 25% in <code>_crew_home_change_token</code> globbing every run's review records (<code>~/.config/reckon/crew/runs/r-20261109T120446544718-producer-tick-reads-live-pointers-once/logs/post-landing-heartbeats.log</code>). That remaining cost is §20.</p></div>
 </div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261109T234906008576-review-of-delivered-review-stop-reads-the-tick-pointers-8e44515bbdf9" data-who="reckon-build" data-when="2026-11-10T00:08:20Z">
+    <div class="r-comment-body"><p>Stored parsed independent review of base 0a50d367fc7e69a5d957323c24f045f181bf3d22 to head 8e44515bbdf9753b2222bf67c3f81830de39f6e1; six dimensions scored 20,20,20,19,20,20, no findings, zero added failures from the source scoped receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers" data-who="reckon-build" data-when="2026-11-09T23:24:36Z">
+    <div class="r-comment-body"><p>Delivered-review and review-event resolution now consume the tick pointers: 40 live pointers and five delivered reviews make one list_live call versus eleven at base, with five persisted stop receipts. Test double updated; watcher file unchanged after three probes per case per revision. Matched 71-file importer arms each report 6 failed and 570 passed, zero added IDs; widened scoped arms report base 8 passed/1 failed and head 9 passed/1 failed with the same baseline streaming failure. Evidence anchor: delivered-review-stop-reads-the-tick-pointers-outcome.</p></div>
+</div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261109T225924821159-review-of-tick-computes-each-runs-inputs-once-d5d44a52d2c0" data-who="reckon-build" data-when="2026-11-09T23:14:25Z">
     <div class="r-comment-body"><p>Reviewed b1a9e13a0b4312d8d1595f07cf75ced4ca907d68 to d5d44a52d2c03bdc370a38bfcff78dc578e2a932; parsed review scores all six dimensions and blocks acceptance on unmet importer evidence and mismatched suite fields.</p></div>
 </div>
@@ -793,9 +799,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s20" data-id="c-run-r-20261109T234906008576-review-of-delivered-review-stop-reads-the-tick-pointers-8e44515bbdf9" data-who="reckon-build" data-when="2026-11-10T00:08:20Z">
-    <div class="r-comment-body"><p>Stored parsed independent review of base 0a50d367fc7e69a5d957323c24f045f181bf3d22 to head 8e44515bbdf9753b2222bf67c3f81830de39f6e1; six dimensions scored 20,20,20,19,20,20, no findings, zero added failures from the source scoped receipts.</p></div>
 </div>
 </section>
 </main>
