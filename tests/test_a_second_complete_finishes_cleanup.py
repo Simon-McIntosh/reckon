@@ -19,89 +19,20 @@ different narrative finishes the cleanup and names the difference. The third is
 the ordinary promotion of a run with no row, which still writes one.
 """
 
+# ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
+
 from __future__ import annotations
 
-import json
 from pathlib import Path
 
-import pytest
-
 from reckon import _plan_html, crew, ledger
-from reckon.crew.runs import _write_json, pointer_path
-from tests.helpers.git import git as _git
-
-PROJECT = "sample"
-PLAN = "plan-a"
-
-
-def _write_resource(path: Path, state: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    bare = (
-        "<!doctype html><html><head>"
-        f'<meta name="docs-project" content="{PROJECT}">'
-        f"<title>{state['slug']}</title>"
-        '</head><body><main class="plan-doc"></main></body></html>\n'
-    )
-    path.write_text(_plan_html.write_state(bare, state), encoding="utf-8")
-
-
-@pytest.fixture()
-def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    """A synthetic config home and committed repository, isolated from the fleet."""
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    root = tmp_path / "repo"
-    (root / "docs" / "state" / PROJECT).mkdir(parents=True)
-    _write_resource(
-        root / "docs" / "plans" / f"{PLAN}.html",
-        {
-            "type": "plan",
-            "slug": PLAN,
-            "title": "Plan A",
-            "status": "active",
-            "version": 0,
-            "impl": 0.0,
-            "comments": {},
-        },
-    )
-    for arguments in (
-        ("init", "-q", "-b", "main"),
-        ("config", "user.email", "worker@example.invalid"),
-        ("config", "user.name", "Worker"),
-    ):
-        _git(root, *arguments)
-    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
-    _git(root, "add", "seed.txt", "docs")
-    _git(root, "commit", "-q", "-m", "test: seed repository")
-    (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
-    )
-    return root
-
-
-def _pointer(repository: Path, run_id: str) -> None:
-    _write_json(
-        pointer_path(run_id),
-        {
-            "run_id": run_id,
-            "project": PROJECT,
-            "repo": str(repository),
-            "worktree": str(repository),
-            "base_sha": "",
-            "launch": "in-harness",
-            "role": "review",
-            "backend": "native",
-            "created_at": "2026-10-01T06:00:00Z",
-            "manifest_path": "",
-            "node": {
-                "id": "node-a",
-                "plan": PLAN,
-                "section": "s1",
-                "write_paths": [],
-            },
-        },
-    )
+from reckon.crew.runs import pointer_path
+from tests.test_a_run_can_always_be_reconciled import (  # noqa: F401 - fixture
+    PLAN,
+    PROJECT,
+    _pointer,
+    repository,
+)
 
 
 def _promote(repository: Path, run_id: str, *, outcome: str) -> dict:

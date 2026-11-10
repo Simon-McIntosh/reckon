@@ -19,7 +19,7 @@ from reckon import (
     ledger,
     shadow_reads,
 )
-from reckon._plan_html import section_anchor
+from reckon._plan_html import _strip_tags, section_anchor
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
@@ -1346,17 +1346,6 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
-def _narrative_text(body: str) -> str:
-    """The narrative a caller reads, with the comment's own markup removed.
-
-    A stored body is the ``<p>``-wrapped form this module writes and a decoded
-    entity, while the caller supplied plain text. The receipt's report of the
-    difference is read by a coordinator, so it states both sides as narrative
-    text rather than making them compare an HTML fragment with a sentence.
-    """
-    return html.unescape(re.sub(r"<[^>]+>", "", str(body or ""))).strip()
-
-
 def _record_landing_comment(
     *,
     project: str,
@@ -1471,14 +1460,14 @@ def _record_landing_comment(
                     "section": anchor,
                     "reason": "different_narrative",
                     "finished_cleanup": True,
-                    "kept_narrative": _narrative_text(existing_body),
-                    "requested_narrative": _narrative_text(requested_body),
+                    "kept_narrative": _strip_tags(existing_body),
+                    "requested_narrative": _strip_tags(requested_body),
                     "note": (
                         "finished an earlier promotion's cleanup: the landing "
                         "comment keeps the narrative that promotion recorded "
-                        f"({_narrative_text(existing_body)!r}), which differs "
+                        f"({_strip_tags(existing_body)!r}), which differs "
                         "from the one requested "
-                        f"({_narrative_text(requested_body)!r})"
+                        f"({_strip_tags(requested_body)!r})"
                     ),
                 }
             return {
@@ -2301,18 +2290,23 @@ def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
     return error
 
 
-def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
-    """Read this run's file and the aggregate without consulting other runs.
+def _ledger_row_state(
+    project: str, root: str | Path | None, run_id: str
+) -> bool | None:
+    """Whether the ledger holds this run's row: True, False, or None unknown.
 
-    A union read can fail on an unrelated damaged run document. Treating that
-    failure as proof that this row survived would forbid the re-promotion that
-    recovers a file the rollback removed. An unreadable aggregate or target
-    file still answers present, so the receipt only claims a provable absence.
+    One read serves the two callers below, which differ only in what they do
+    with an unreadable ledger. The aggregate and the run's own file are both
+    consulted, without reading other runs: a union read can fail on an
+    unrelated damaged run document, and one damaged file must not decide this
+    run's state. ``None`` says the state could not be established, so a caller
+    that must not claim an absence can read it as present and a caller that
+    must not claim a promotion can read it as absent.
     """
     try:
         data, _version = ledger.load_aggregate(project, root=root)
     except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
-        return True
+        return None
     if any(str(item.get("run_id") or "") == run_id for item in data["runs"]):
         return True
     try:
@@ -2320,25 +2314,29 @@ def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> boo
     except FileNotFoundError:
         return False
     except OSError:
-        return True
+        return None
     return True
+
+
+def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
+    """Present unless the ledger provably lacks the row.
+
+    The receipt only claims a rollback it can show, so an unreadable ledger
+    answers present rather than forbidding the re-promotion that recovers a
+    file the rollback removed.
+    """
+    return _ledger_row_state(project, root, run_id) is not False
 
 
 def _ledger_row_is_written(project: str, root: str | Path | None, run_id: str) -> bool:
     """True only when the ledger provably holds a row for this run.
 
-    The counterpart of :func:`_ledger_holds_row` for a decision that acts on
-    the answer. That helper answers present for anything it cannot read, so no
-    receipt claims a rollback it cannot show; here an unreadable ledger proves
-    nothing and must not be read as a promotion the run already landed, which
-    would let a narrative that differs from an interrupted attempt's own
-    through as if a committed row stood behind it.
+    Used where the answer decides whether a promotion already landed: an
+    unreadable ledger proves nothing and must not be read as a committed row,
+    which would let a narrative that differs from an interrupted attempt's own
+    through as if a promotion stood behind it.
     """
-    try:
-        data, _version = ledger.load(project, root=root)
-    except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
-        return False
-    return any(str(item.get("run_id") or "") == run_id for item in data["runs"])
+    return _ledger_row_state(project, root, run_id) is True
 
 
 def _discard_run_store_row(run_id: str) -> bool:
