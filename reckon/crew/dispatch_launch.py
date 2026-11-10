@@ -2141,18 +2141,10 @@ def _retired_attempt_ended(record: Mapping[str, Any]) -> bool | None:
     from reckon.crew.recovery_wait import _run_directory
 
     directory = _run_directory(record)
-    try:
-        names = [path.name for path in directory.iterdir()]
-    except OSError:
-        return None
-    numbers = [
-        int(match.group(1))
-        for name in names
-        if (match := _ATTEMPT_RECEIPT_PATTERN.match(name))
-    ]
+    numbers = attempt_receipt_numbers(directory)
     if not numbers:
         return None
-    attempt = max(numbers)
+    attempt = numbers[-1]
     # The receipt must name this run: a foreign launch is freed only by the
     # attempt's own account of its end, never by a file standing where one goes.
     receipt = _run_exit_record(
@@ -2288,32 +2280,75 @@ def run_holds_an_attempt_record(run_directory: Path) -> bool:
     return bool(attempt_receipt_numbers(run_directory))
 
 
+def _attempt_number(payload: Mapping[str, Any]) -> int | None:
+    """The attempt a record names, taking a record that names none as the first.
+
+    A canonical worker, exit or pointer record written before the attempt field
+    existed belongs to the run's first attempt, which is how every other reader
+    of those records takes one that names no attempt.
+    """
+    number = payload.get("attempt") or 1
+    if isinstance(number, int) and not isinstance(number, bool):
+        return number
+    if isinstance(number, str) and number.isdigit():
+        return int(number)
+    return None
+
+
+def _pointer_attempt_number(run_directory: Path) -> int | None:
+    """The attempt the run's live pointer records, or None when it has none."""
+    try:
+        payload = read_pointer(run_directory.name)
+    except CrewError:
+        return None
+    if not isinstance(payload, Mapping):
+        return None
+    return _attempt_number(payload)
+
+
 def launch_reservation_key(run_directory: Path) -> int:
-    """The attempt a relaunch takes: the newest record's number plus one.
+    """The attempt this launch takes, from what the run's storage records.
 
-    A run can hold an attempt that was never retired into ``attempt-N`` receipts
-    — a launch that wrote its canonical ``worker.json`` or ``exit.json`` and
-    ended before a later attempt archived them. Reading only the retired names
-    would hand a relaunch the number that attempt already took, so the canonical
-    records are read too, by the attempt they carry. A canonical record written
-    before the attempt field existed is the run's first attempt, which is how
-    every other reader of those records takes one that names no attempt.
+    The key is the greatest of the readings the run's own directory and pointer
+    carry, never an input local to the door, so every door computes the same
+    number from what is on disk.
 
+    A receipt — an ``attempt-N`` receipt, or a canonical ``worker.json`` or
+    ``exit.json`` — answers the newest attempt the run has taken, so the launch
+    takes the next. A run can hold an attempt that was never retired into
+    receipts: a launch that wrote its canonical record and ended before a later
+    attempt archived it. Reading only the retired names would hand a relaunch
+    the number that attempt already took, so the canonical records are read too.
+
+    With no receipt on disk the run has taken no attempt that needs a fresh
+    number, so the launch keeps the one it is already dispatched with. The
+    marker is the attempt this launch or its door named, and the pointer is the
+    attempt the run last published; taking the greater of the two keeps a
+    compatibility launch, which carries no reservation of its own, on the
+    attempt its pointer names rather than restarting at one. The in-flight
+    ``attempt.json`` is never a receipt, so two doors racing on a first attempt
+    still compute one key and the reservation they share refuses the second.
     """
     numbers = attempt_receipt_numbers(run_directory)
     for name in (WORKER_RECORD_NAME, EXIT_RECORD_NAME):
-        try:
-            payload = json.loads((run_directory / name).read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        payload = _read_reservation(run_directory / name)
+        if payload is None:
             continue
-        if not isinstance(payload, Mapping):
-            continue
-        number = payload.get("attempt") or 1
-        if isinstance(number, int) and not isinstance(number, bool):
+        number = _attempt_number(payload)
+        if number is not None:
             numbers.append(number)
-        elif isinstance(number, str) and number.isdigit():
-            numbers.append(int(number))
-    return max(numbers) + 1 if numbers else 1
+    if numbers:
+        return max(numbers) + 1
+    readings: list[int] = []
+    marker = _read_reservation(run_directory / ATTEMPT_RECORD_NAME)
+    if marker is not None:
+        number = _attempt_number(marker)
+        if number is not None:
+            readings.append(number)
+    pointer = _pointer_attempt_number(run_directory)
+    if pointer is not None:
+        readings.append(pointer)
+    return max(readings) if readings else 1
 
 
 def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
@@ -2388,18 +2423,48 @@ def reservation_in_flight(payload: Mapping[str, Any] | None) -> bool:
     return record_process_alive(payload, process_alive) is True
 
 
+def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:
+    """Whether the reserved attempt's own exit receipt is on disk.
+
+    A reservation whose attempt recorded its end is freed by that record
+    whatever process the reservation names. The admitting process outlives every
+    run it launches, so a hold left naming it would keep the run unlaunchable
+    for that process's whole life; the exit receipt is the launch's own end,
+    written to shared storage, and it is the same fact a launch on another host
+    is freed by.
+
+    Read through the strict exit-receipt reader: a truncated receipt, or one
+    naming no run, is not this attempt's account of its end and frees nothing.
+    """
+    from reckon.crew.recovery_liveness import _run_exit_record
+
+    return (
+        _run_exit_record(
+            {"run_id": run_directory.name},
+            f"attempt-{attempt}-exit.json",
+            require_run_id=True,
+        )
+        is not None
+    )
+
+
 def held_launch_reservation(
     run_directory: Path,
     *,
     exclude_attempt: int | None = None,
     before_attempt: int | None = None,
-    skip_ended: bool = False,
 ) -> Mapping[str, Any] | None:
     """The reservation still holding an attempt.
 
     ``exclude_attempt`` drops one attempt's reservation and ``before_attempt``
     drops every attempt older than that number: an older attempt's launch has
     already been superseded, so its reservation cannot guard a later one.
+
+    A reservation whose attempt has ended is not a hold for any reader. The
+    attempt's own exit receipt is what shows it ended, so a launch that failed
+    to record its supervisor — leaving the reservation naming the door, which
+    may outlive every run it launches — is freed when its worker exits rather
+    than when the door does.
     """
     try:
         names = [path.name for path in run_directory.iterdir()]
@@ -2414,9 +2479,7 @@ def held_launch_reservation(
             continue
         if before_attempt is not None and attempt < before_attempt:
             continue
-        if skip_ended and (run_directory / f"attempt-{attempt}-exit.json").exists():
-            # The attempt this reservation held has an ending recorded, so the
-            # launch that took it is over however its processes read.
+        if _reserved_attempt_ended(run_directory, attempt):
             continue
         payload = _read_reservation(run_directory / name)
         if reservation_in_flight(payload):
@@ -2492,11 +2555,17 @@ def reserve_launch_attempt(
     )
 
 
-def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> None:
+def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> bool:
     """Record the supervisor on the reservation before it is waited for.
 
     Recorded at spawn rather than after the survival wait, so no interval holds
     a live supervisor that the reservation does not name.
+
+    The answer is whether the rewrite landed. A rewrite that cannot be written
+    leaves the hold naming the reserving process, which on a long-lived admit
+    service would outlast every run it launches; the caller reports that rather
+    than suppressing it, and the attempt's own exit receipt still frees the
+    hold in its own time.
     """
     payload = _read_reservation(reservation.path)
     if not isinstance(payload, Mapping):
@@ -2511,8 +2580,36 @@ def record_reservation_supervisor(reservation: LaunchReservation, pid: int) -> N
     record = dict(payload)
     record["supervisor_pid"] = pid
     record["supervisor_pid_start_time"] = _process_start_time(pid)
-    with contextlib.suppress(OSError):
+    try:
         _write_json(reservation.path, record)
+    except OSError:
+        return False
+    return True
+
+
+SUPERVISOR_UNRECORDED_WARNING = (
+    "the launch reservation could not be rewritten to name its supervisor"
+)
+
+
+def record_supervisor(reservation: LaunchReservation, pid: int) -> None:
+    """Record the supervisor on the reservation, warning when the write fails.
+
+    A rewrite that does not land leaves the hold naming the process that
+    reserved it rather than the supervisor, so the failure is reported where a
+    caller reads it — this process's stderr — and never stored on the run's
+    pointer: a pointer field outlives the failure it describes, because no
+    later launch clears it. The launch itself has already succeeded; the
+    reserved attempt's own exit receipt is what frees the hold in its own time.
+    """
+    if record_reservation_supervisor(reservation, pid):
+        return
+    print(
+        f"reckon: run {reservation.run_id!r} attempt {reservation.attempt}: "
+        f"{SUPERVISOR_UNRECORDED_WARNING}; pid {pid} is not named on it, and the "
+        "attempt's exit receipt frees it",
+        file=sys.stderr,
+    )
 
 
 def refuse_held_launch(run_id: str, run_directory: Path) -> None:
@@ -3072,20 +3169,21 @@ def supervised_launch(
         reservation = _reservation_taken_by_this_process(
             run_directory, at_least=from_record
         )
-    reserved_here = False
-    if reservation is None and run_holds_an_attempt_record(run_directory):
+    if reservation is None:
+        # Every launch that spawns a supervisor reserves the attempt it starts,
+        # held until that attempt's own end. A door that reached here carried no
+        # reservation: the run's marker, a receipt or its pointer names the
+        # attempt, so the key is an on-disk reading and two doors racing on the
+        # same run still compute one number between them.
         reservation = reserve_launch_attempt(
             run_directory, run_directory.name, kind=attempt_kind
         )
-        reserved_here = reservation is not None
     if attempt is None:
-        # A door launches exactly the attempt it reserved. A launch that
-        # reserved its own attempt has only the run's records to go on, and its
-        # record may name an attempt that left no receipt at all, so it takes
-        # the later of the key and the record's next attempt.
+        # A door launches exactly the attempt it reserved. The key reads the
+        # pointer too, so a launch that reserved its own attempt is already on
+        # the attempt the run's records name, and a launch that was handed a
+        # reservation carries that reservation's attempt.
         attempt = reservation.attempt if reservation is not None else from_record
-        if reserved_here and reservation is not None:
-            attempt = max(reservation.attempt, from_record)
     try:
         _prepare_attempt_records(
             run_directory,
@@ -3117,7 +3215,7 @@ def supervised_launch(
     )
     pid = _start_supervisor(spec_path, run_directory, run_directory.name)
     if reservation is not None:
-        record_reservation_supervisor(reservation, pid)
+        record_supervisor(reservation, pid)
     return pid
 
 
@@ -3159,7 +3257,7 @@ def _start_supervisor(
                 release_launch_reservation(reservation, only_when_unspawned=True)
                 raise
             if reservation is not None:
-                record_reservation_supervisor(reservation, pid)
+                record_supervisor(reservation, pid)
             _confirm_supervisor_survived(pid, run_directory, run_id)
             return pid
     argv = _supervisor_argv(spec_path=spec_path)
@@ -3169,7 +3267,7 @@ def _start_supervisor(
         release_launch_reservation(reservation, only_when_unspawned=True)
         raise
     if reservation is not None:
-        record_reservation_supervisor(reservation, pid)
+        record_supervisor(reservation, pid)
     _confirm_supervisor_survived(pid, run_directory, run_id)
     return pid
 
@@ -3518,7 +3616,6 @@ def _supervisor_spawn_worker(spec: Mapping[str, Any]) -> int:
             Path(str(reserved_directory)),
             exclude_attempt=launch_attempt,
             before_attempt=launch_attempt or None,
-            skip_ended=True,
         )
         if held is not None:
             raise _reservation_refusal(run_id, held)

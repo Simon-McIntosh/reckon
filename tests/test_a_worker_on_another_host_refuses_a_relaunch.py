@@ -339,6 +339,31 @@ def test_a_truncated_retired_exit_receipt_on_another_host_still_refuses(
     ), "a truncated retired exit receipt was read as the worker's end"
 
 
+def test_a_retired_exit_receipt_naming_no_run_on_another_host_still_refuses(
+    run_directory: Path,
+) -> None:
+    """(a2) A retired receipt must name this run to free the launch.
+
+    The retired path reads its receipt through the same strict reader as the
+    canonical one: a file that parses but carries no run id is a file standing
+    where a receipt goes, not this attempt's account of its end. Read leniently,
+    any JSON object dropped at ``attempt-1-exit.json`` would launch a second
+    worker beside a live one.
+    """
+    pointer_pid = _dead_pid()
+    _write_retired_worker(run_directory, 1, _dead_pid())
+    _truncate(run_directory / "attempt-1-exit.json", "{}")
+    _write_pointer(pid=pointer_pid)
+
+    text = _refused(run_directory)
+
+    assert text == (
+        f"run {RUN_ID!r} cannot read whether its worker is live "
+        f"(launched on host {FOREIGN_HOST}, pid {pointer_pid}): "
+        f"{SPAWN_TAIL}; {FOREIGN_REMEDY}"
+    ), "a retired receipt naming no run was read as this run's end"
+
+
 def test_an_exit_receipt_for_another_run_on_another_host_still_refuses(
     run_directory: Path,
 ) -> None:
