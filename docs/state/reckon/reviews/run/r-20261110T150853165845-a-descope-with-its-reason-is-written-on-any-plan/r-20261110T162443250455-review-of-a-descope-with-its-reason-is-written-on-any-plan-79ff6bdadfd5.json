@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T16:46:26.385Z",
+  "dispatched_at": "2026-11-10T16:31:25Z",
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": 3039,
+      "severity": "non-blocking",
+      "text": "_apply_descope_reason_edits is a second copy of the keyed head-meta read-modify-write that reckon/_store_section_ops.py:490 apply_section_dependency_edits already owns, and it is placed in a different module, so the next fix to that pattern has to be made in two places; the two do differ in value type (a reason string against a ref list) and both reuse reckon/_plan_html.py:2074 _set_meta and :2087 _remove_meta, so this is duplication of the orchestration rather than of the primitive."
+    },
+    {
+      "file": "tests/test_a_descope_is_written_on_any_plan.py",
+      "line": 189,
+      "severity": "non-blocking",
+      "text": "the third case asserts only that the refusal text contains the literal '{\"status\": \"descoped\", \"reason\":', so it stays green if the refusal names a form the store rejects; the claim in its own name, that the named form works, rests entirely on the first case and is not asserted here."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 3044,
+      "severity": "non-blocking",
+      "text": "the docstring claims an edit lands on the reasons already on the page rather than replacing its siblings, and no test asserts that claim: each of the four cases performs exactly one write on a plan that carries no reasons meta. I verified the claim by probe (two sequential reasoned descopes on a recordless plan leave both reasons in the map), but the behaviour is unguarded by any committed assertion."
+    },
+    {
+      "file": "docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html",
+      "line": 50,
+      "severity": "non-blocking",
+      "text": "the ruff figure of 28 is the line count of --output-format=concise, which includes ruff's own two summary lines; the finding count is 26 at both the base and the head revision (my measurement), and the new test adds none because it passes every check. The conclusion stands and the quoted number does not."
+    },
+    {
+      "file": "tests/test_a_descope_is_written_on_any_plan.py",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "the helper docstring names an external project ('a plan shaped like nova's') in reckon's own source, against the repo-agnostic rule that reckon carries no project name; the fixture is synthesised and the name adds provenance the reader does not need."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified reckon/mcp_edit_plan.py:_edit_plan, reckon/_store.py:apply_ops, reckon/_store.py:_write_state_locked, reckon/_plan_html.py:read_state and reckon/serve.py:3909.",
+    "diff": "read commit by commit against 198c403ed9; one commit, four files, 466 insertions and 30 deletions, all inside the declared scope.",
+    "done_when": "the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py; all four exist, and gate-after.log records 55 passed with EXIT=0 over that file and tests/test_staged_write_inventory.py.",
+    "goal": "the goal is that a reasoned descope succeeds on a plan with no section records; reckon/_store.py:3020 stores the reason in the plan-descope-reasons map and reckon/_store.py:3086 makes the guard read it.",
+    "manifest": "read; it records the four cases, both negative controls, the base and after arms with log paths, and the reproduction at the base revision.",
+    "write_paths": "the declared paths were reckon/_store.py, reckon/_plan_html.py, the new test and the landing fragment; every path in the diff is inside them."
+  },
+  "plan_slug": "every-plan-write-goes-through-edit-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a reasoned descope succeeds on a plan with no section records; reckon/_store.py:3020 stores the reason in the plan-descope-reasons map and reckon/_store.py:3086 makes the guard read it.\nVERDICT done_when: the done_when names four cases in tests/test_a_descope_is_written_on_any_plan.py; all four exist, and gate-after.log records 55 passed with EXIT=0 over that file and tests/test_staged_write_inventory.py.\nVERDICT write_paths: the declared paths were reckon/_store.py, reckon/_plan_html.py, the new test and the landing fragment; every path in the diff is inside them.\nVERDICT manifest: read; it records the four cases, both negative controls, the base and after arms with log paths, and the reproduction at the base revision.\nVERDICT diff: read commit by commit against 198c403ed9; one commit, four files, 466 insertions and 30 deletions, all inside the declared scope.\nCALL_SITES: reckon/mcp_edit_plan.py:_edit_plan, reckon/_store.py:apply_ops, reckon/_store.py:_write_state_locked, reckon/_plan_html.py:read_state, reckon/serve.py:3909\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:3020 puts a recordless section's reason in the plan-descope-reasons map and reckon/_store.py:3086 makes the guard read that map second, so all four done-when cases land.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-after.log and gate-base.log each carry revision, tree, module path, cwd and a bare EXIT=0 line with 55 and 51 passed, and reproduction-before-fix.log shows the two reasoned cases failing at 198c403ed9, but the fragment's ruff figure at line 50 is a wc -l artefact (26 findings, not 28).\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git diff 198c403ed9..79ff6bdadf touches only reckon/_store.py, reckon/_plan_html.py, tests/test_a_descope_is_written_on_any_plan.py and the landing fragment, all inside the granted write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_descope_is_written_on_any_plan.py:144 and :173 read the stored reason back from disk and redden when the map store is removed, which nc1-Ht45.log shows, but no assertion guards the sibling-preservation claim at reckon/_store.py:3044 and my probe is the only evidence for it.\nSCORE fit: 16\nJUSTIFICATION fit: the new meta reader follows the shape of reckon/_plan_html.py's existing plan-section-depends-on handling and the effect follows _store_section_ops, though tests/test_a_descope_is_written_on_any_plan.py:53 names an external project in its docstring.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/_store.py:3039 re-implements the keyed head-meta edit owned by reckon/_store_section_ops.py:490 without extending it, though both reuse reckon/_plan_html.py:2074 and :2087, so the shared primitives are not forked.\nFINDING reckon/_store.py:3039 non-blocking: _apply_descope_reason_edits duplicates the keyed head-meta read-modify-write owned by reckon/_store_section_ops.py:490 in another module, so the pattern must be fixed twice.\nFINDING tests/test_a_descope_is_written_on_any_plan.py:189 non-blocking: the refusal case asserts only the literal text of the message and not that the named form succeeds, so its own claim rests on the first case.\nFINDING reckon/_store.py:3044 non-blocking: the sibling-preservation claim in the docstring has no committed assertion; each case performs one write on a plan with no reasons meta.\nFINDING docs/evidence/fragments/every-plan-write-goes-through-edit-plan/a-descope-with-its-reason-is-written-on-any-plan.html:50 non-blocking: the ruff figure 28 counts ruff's summary lines; the finding count is 26 at both revisions and the new test adds none.\nFINDING tests/test_a_descope_is_written_on_any_plan.py:53 non-blocking: the helper docstring names an external project, against reckon's repo-agnostic rule.\n",
+  "review_run_id": "r-20261110T162443250455-review-of-a-descope-with-its-reason-is-written-on-any-plan-79ff6bdadfd5",
+  "reviewed_base_sha": "198c403ed94fbd49a9bf33a91fb7d05210a8cf13",
+  "reviewed_head_sha": "79ff6bdadfd52704f9d3eafd5cb240aac079ab8d",
+  "reviewed_run_id": "r-20261110T150853165845-a-descope-with-its-reason-is-written-on-any-plan",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:22:20.827480+00:00",
+  "total": 92
+}
