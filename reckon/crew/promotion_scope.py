@@ -1346,6 +1346,17 @@ def _worker_authored_landing_record(
     return shown.returncode == 0 and f'data-id="{comment_id}"' in shown.stdout
 
 
+def _narrative_text(body: str) -> str:
+    """The narrative a caller reads, with the comment's own markup removed.
+
+    A stored body is the ``<p>``-wrapped form this module writes and a decoded
+    entity, while the caller supplied plain text. The receipt's report of the
+    difference is read by a coordinator, so it states both sides as narrative
+    text rather than making them compare an HTML fragment with a sentence.
+    """
+    return html.unescape(re.sub(r"<[^>]+>", "", str(body or ""))).strip()
+
+
 def _record_landing_comment(
     *,
     project: str,
@@ -1436,19 +1447,53 @@ def _record_landing_comment(
             # and every re-promotion then refuses a narrative it already wrote.
             # Compare the unescaped text on both sides so the same narrative
             # always matches however the store happens to encode it.
-            if html.unescape(str(existing.get("body") or "")) != html.unescape(
-                desired_body
-            ):
-                raise CrewError(
-                    f"landing comment {comment_id!r} for plan {plan!r} already "
-                    "contains a different narrative; refusing to report the "
-                    "corrected outcome as recorded"
-                )
+            existing_body = html.unescape(str(existing.get("body") or ""))
+            requested_body = html.unescape(desired_body)
+            if existing_body != requested_body:
+                # The committed ledger row is the record of the promotion, so a
+                # run that already holds one is finishing the cleanup an
+                # interrupted promotion left behind, not promoting again. The
+                # narrative was pinned by the promotion that wrote the comment,
+                # and a later call's narrative that differs from it is reported
+                # beside the receipt rather than raised as a refusal, which
+                # would leave the live pointer and the worktree for a reader to
+                # clear by hand. Before the row exists there is no promotion to
+                # defer to, so a differing narrative stays a refusal.
+                if not _ledger_row_is_written(project, root, run_id):
+                    raise CrewError(
+                        f"landing comment {comment_id!r} for plan {plan!r} already "
+                        "contains a different narrative; refusing to report the "
+                        "corrected outcome as recorded"
+                    )
+                return {
+                    "recorded": False,
+                    "comment_id": comment_id,
+                    "section": anchor,
+                    "reason": "different_narrative",
+                    "finished_cleanup": True,
+                    "kept_narrative": _narrative_text(existing_body),
+                    "requested_narrative": _narrative_text(requested_body),
+                    "note": (
+                        "finished an earlier promotion's cleanup: the landing "
+                        "comment keeps the narrative that promotion recorded "
+                        f"({_narrative_text(existing_body)!r}), which differs "
+                        "from the one requested "
+                        f"({_narrative_text(requested_body)!r})"
+                    ),
+                }
             return {
                 "recorded": True,
                 "comment_id": comment_id,
                 "section": anchor,
                 "already_recorded": True,
+                **(
+                    {
+                        "finished_cleanup": True,
+                        "note": "finished an earlier promotion's cleanup",
+                    }
+                    if _ledger_row_is_written(project, root, run_id)
+                    else {}
+                ),
             }
         if worker_recorded:
             return {
@@ -2277,6 +2322,23 @@ def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> boo
     except OSError:
         return True
     return True
+
+
+def _ledger_row_is_written(project: str, root: str | Path | None, run_id: str) -> bool:
+    """True only when the ledger provably holds a row for this run.
+
+    The counterpart of :func:`_ledger_holds_row` for a decision that acts on
+    the answer. That helper answers present for anything it cannot read, so no
+    receipt claims a rollback it cannot show; here an unreadable ledger proves
+    nothing and must not be read as a promotion the run already landed, which
+    would let a narrative that differs from an interrupted attempt's own
+    through as if a committed row stood behind it.
+    """
+    try:
+        data, _version = ledger.load(project, root=root)
+    except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
+        return False
+    return any(str(item.get("run_id") or "") == run_id for item in data["runs"])
 
 
 def _discard_run_store_row(run_id: str) -> bool:
