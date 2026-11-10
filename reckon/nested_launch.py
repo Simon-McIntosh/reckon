@@ -9,8 +9,10 @@ module is the decision the ``srun``/``sbatch``/``salloc`` shims under
 The answer comes from :func:`reckon.host.host_facts`, whose ``in_allocation``
 is taken from the process's own cgroup line rather than from ``SLURM_JOB_ID``
 (a variable a shell outside the job inherits). Inside the allocation a launch
-is refused with status 97 unless one of two things holds:
+is refused with status 97 unless one of these things holds:
 
+* it is an ``sbatch`` naming a partition explicitly (``--partition`` or
+  ``-p``), which submits a job of its own; or
 * the caller set ``RECKON_ALLOW_NESTED_LAUNCH`` — the deliberate discharge,
   named in every refusal so the escape is one visible step rather than a
   default; or
@@ -137,19 +139,41 @@ def _explicit_single_step(tool: str, argv: Sequence[str]) -> bool:
     return _names_one_task(argv) or _names_a_job(argv)
 
 
+def _explicit_partition_submission(tool: str, argv: Sequence[str]) -> bool:
+    """Whether sbatch explicitly selects a partition for its separate job."""
+    if tool != "sbatch":
+        return False
+    for index, argument in enumerate(argv):
+        if argument == "--":
+            break
+        if argument.startswith("--partition="):
+            value = argument.removeprefix("--partition=")
+        elif argument in ("--partition", "-p"):
+            value = argv[index + 1] if index + 1 < len(argv) else ""
+        elif argument.startswith("-p"):
+            value = argument[2:]
+        else:
+            continue
+        if value.strip() and not value.startswith("-"):
+            return True
+    return False
+
+
 def refuses_implicit_launch(
     tool: str, argv: Sequence[str], facts: HostFacts, environ: Mapping[str, str]
 ) -> bool:
     """Whether ``tool`` with ``argv`` must be refused where it stands.
 
     Outside the allocation nothing is refused. Inside it, only the implicit
-    launch is: the override discharges all of them, and an explicit single-step
-    ``srun`` is already the shape the rule wants.
+    launch is: sbatch may name a partition for a separate job, the override
+    discharges deliberate nesting, and an explicit single-step ``srun`` names
+    the step it wants.
     """
     return (
         facts.in_allocation
         and not _override_set(environ)
         and not _explicit_single_step(tool, argv)
+        and not _explicit_partition_submission(tool, argv)
     )
 
 
@@ -179,6 +203,7 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
             f"{PARTITION_ROUTE} instead (for example on "
             f"{' or '.join(PARTITION_EXAMPLES)})."
         ),
+        "Submit it with sbatch --partition=<partition> (or sbatch -p <partition>).",
         NESTED_SRUN_SENTENCE,
     ]
     if tool == _SRUN:
