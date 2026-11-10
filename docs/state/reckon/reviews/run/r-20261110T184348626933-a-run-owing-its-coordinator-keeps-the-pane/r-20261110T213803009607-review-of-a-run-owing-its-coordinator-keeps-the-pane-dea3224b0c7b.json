@@ -1,0 +1,70 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:337 (live_work_populations -> run_owes_its_coordinator)",
+    "reckon/crew/station_subscriber.py:266 (population_has_live_work -> live_work_populations)"
+  ],
+  "completed_at": "2026-11-10T22:04:20.114Z",
+  "dispatched_at": "2026-11-10T21:43:25Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md",
+      "line": "17",
+      "severity": "blocking",
+      "text": "the recorded baseline_suite and after_suite both run tests/test_staged_write_inventory.py, which imports only reckon.interface_counts and neither reckon.crew.station_subscriber nor reckon.crew.session_host, so the done_when's clause that the tests importing the changed modules add no failure against the base revision was never measured and the recorded added_failure_count of 0 is evidence about a file the change does not reach."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "91",
+      "severity": "non-blocking",
+      "text": "delivered_run_owes_review has no caller left at dea3224b0c (git grep finds only its definition and a docstring reference), so the change leaves a dead public function whose behaviour the new rule supersedes."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "191",
+      "severity": "non-blocking",
+      "text": "the docstring claims the pane and the obligations view cannot disagree, but terminal_run_duty_items omits the reviews_in_flight and _refused_delivered_review exclusions that _obligations_view applies at reckon/crew/obligations.py:2996-3005, so a scoring run whose review run ended without storing a review keeps the pane while the coordinator's view lists no duty for it."
+    },
+    {
+      "file": "tests/test_a_run_owing_its_coordinator_keeps_the_pane.py",
+      "line": "223",
+      "severity": "non-blocking",
+      "text": "the assertion that the pane and the obligations view agree compares terminal_run_duty_items output against the same pointer run_id it was called with, rather than reading the obligations view, so it cannot detect the disagreement it names and would stay true if the two readers diverged."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 86493937b5; the single commit dea3224b0c adds terminal_run_duty_items and run_owes_its_coordinator to reckon/crew/station_subscriber.py, swaps the predicate at live_work_populations, and adds the test and the evidence fragment, with no path outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_run_owing_its_coordinator_keeps_the_pane.py and the negative control; that file is recorded green (after-arm.log, 8 passed, EXIT=0) and negative-control.log shows 4 failed, but the done_when's clause that the tests importing station_subscriber or session_host add no failure against the base revision was not run over those files.",
+    "goal": "the node goal is that a run owing its coordinator an action keeps the pane; reckon/crew/station_subscriber.py:337 makes the has-live-work rule read every terminal run's own duties, and the five keep-live cases in the added test exercise promotion owed, promotable, refused landing, owed repair and needs-help.",
+    "manifest": "read; it records 8 passed / EXIT=0 for the new test, the negative-control log, the two changed code paths and an outside_scope note about the obligations.py per-row loop, but its baseline_suite and after_suite fields name a test file that does not import the changed modules.",
+    "write_paths": "the declared write paths are reckon/crew/station_subscriber.py and tests/test_a_run_owing_its_coordinator_keeps_the_pane.py plus the granted evidence fragment and figures directory; git diff --stat 86493937b5..dea3224b0c shows exactly those three files changed."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows 4 of 5 keep-live cases failing when the review-only rule is restored, so the keep-live assertions do redden on the regression they guard; the one independent-assertion gap is at tests/test_a_run_owing_its_coordinator_keeps_the_pane.py:223.",
+    "evidence": "tests/test_a_run_owing_its_coordinator_keeps_the_pane.py is recorded green at after-arm.log (8 passed, EXIT=0) with a genuine negative control, but the manifest's baseline_suite and after_suite (manifest.md:17-18) run tests/test_staged_write_inventory.py, which imports only reckon.interface_counts, so the done_when's no-added-failure clause is unmeasured.",
+    "fit": "the new functions at reckon/crew/station_subscriber.py:170 and :220 follow the surrounding module's idiom (local obligations import, Any-typed now, optional live_pointers/placements) and introduce no plan label, ticket id or attribution, though the superseded delivered_run_owes_review at :91 is left in place.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:337 gates live_work_populations on run_owes_its_coordinator, so a terminal run with any duty carrying its own run_id keeps the session live rather than only a run owing its review.",
+    "reuse": "terminal_run_duty_items at reckon/crew/station_subscriber.py:170 re-implements the per-row duty dispatch that reckon/crew/obligations.py:2979-3049 already owns in _obligations_view, calling that module's helpers but duplicating its branch selection rather than extending it.",
+    "scope_discipline": "the diff of 86493937b5..dea3224b0c touches only reckon/crew/station_subscriber.py, tests/test_a_run_owing_its_coordinator_keeps_the_pane.py and the granted evidence fragment under docs/evidence/fragments/, all inside the declared and granted paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a run owing its coordinator an action keeps the pane; reckon/crew/station_subscriber.py:337 makes the has-live-work rule read every terminal run's own duties, and the five keep-live cases in the added test exercise promotion owed, promotable, refused landing, owed repair and needs-help.\nVERDICT done_when: the done_when names tests/test_a_run_owing_its_coordinator_keeps_the_pane.py and the negative control; that file is recorded green (after-arm.log, 8 passed, EXIT=0) and negative-control.log shows 4 failed, but the done_when's clause that the tests importing station_subscriber or session_host add no failure against the base revision was not run over those files.\nVERDICT write_paths: the declared write paths are reckon/crew/station_subscriber.py and tests/test_a_run_owing_its_coordinator_keeps_the_pane.py plus the granted evidence fragment and figures directory; git diff --stat 86493937b5..dea3224b0c shows exactly those three files changed.\nVERDICT manifest: read; it records 8 passed / EXIT=0 for the new test, the negative-control log, the two changed code paths and an outside_scope note about the obligations.py per-row loop, but its baseline_suite and after_suite fields name a test file that does not import the changed modules.\nVERDICT diff: read commit by commit against 86493937b5; the single commit dea3224b0c adds terminal_run_duty_items and run_owes_its_coordinator to reckon/crew/station_subscriber.py, swaps the predicate at live_work_populations, and adds the test and the evidence fragment, with no path outside the declared scope.\nCALL_SITES: reckon/crew/station_subscriber.py:337 (live_work_populations -> run_owes_its_coordinator), reckon/crew/station_subscriber.py:266 (population_has_live_work -> live_work_populations)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:337 gates live_work_populations on run_owes_its_coordinator, so a terminal run with any duty carrying its own run_id keeps the session live rather than only a run owing its review.\nSCORE evidence: 12\nJUSTIFICATION evidence: tests/test_a_run_owing_its_coordinator_keeps_the_pane.py is recorded green at after-arm.log (8 passed, EXIT=0) with a genuine negative control, but the manifest's baseline_suite and after_suite (manifest.md:17-18) run tests/test_staged_write_inventory.py, which imports only reckon.interface_counts, so the done_when's no-added-failure clause is unmeasured.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff of 86493937b5..dea3224b0c touches only reckon/crew/station_subscriber.py, tests/test_a_run_owing_its_coordinator_keeps_the_pane.py and the granted evidence fragment under docs/evidence/fragments/, all inside the declared and granted paths.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log shows 4 of 5 keep-live cases failing when the review-only rule is restored, so the keep-live assertions do redden on the regression they guard; the one independent-assertion gap is at tests/test_a_run_owing_its_coordinator_keeps_the_pane.py:223.\nSCORE fit: 16\nJUSTIFICATION fit: the new functions at reckon/crew/station_subscriber.py:170 and :220 follow the surrounding module's idiom (local obligations import, Any-typed now, optional live_pointers/placements) and introduce no plan label, ticket id or attribution, though the superseded delivered_run_owes_review at :91 is left in place.\nSCORE reuse: 5\nJUSTIFICATION reuse: terminal_run_duty_items at reckon/crew/station_subscriber.py:170 re-implements the per-row duty dispatch that reckon/crew/obligations.py:2979-3049 already owns in _obligations_view, calling that module's helpers but duplicating its branch selection rather than extending it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md:17 blocking: the recorded baseline_suite and after_suite both run tests/test_staged_write_inventory.py, which imports only reckon.interface_counts and neither reckon.crew.station_subscriber nor reckon.crew.session_host, so the done_when's clause that the tests importing the changed modules add no failure against the base revision was never measured and the recorded added_failure_count of 0 is evidence about a file the change does not reach.\nFINDING reckon/crew/station_subscriber.py:91 non-blocking: delivered_run_owes_review has no caller left at dea3224b0c (git grep finds only its definition and a docstring reference), so the change leaves a dead public function whose behaviour the new rule supersedes.\nFINDING reckon/crew/station_subscriber.py:191 non-blocking: the docstring claims the pane and the obligations view cannot disagree, but terminal_run_duty_items omits the reviews_in_flight and _refused_delivered_review exclusions that _obligations_view applies at reckon/crew/obligations.py:2996-3005, so a scoring run whose review run ended without storing a review keeps the pane while the coordinator's view lists no duty for it.\nFINDING tests/test_a_run_owing_its_coordinator_keeps_the_pane.py:223 non-blocking: the assertion that the pane and the obligations view agree compares terminal_run_duty_items output against the same pointer run_id it was called with, rather than reading the obligations view, so it cannot detect the disagreement it names and would stay true if the two readers diverged.",
+  "review_run_id": "r-20261110T213803009607-review-of-a-run-owing-its-coordinator-keeps-the-pane-dea3224b0c7b",
+  "reviewed_base_sha": "86493937b571cfc42cd3c59257b22d0ec470c1b6",
+  "reviewed_head_sha": "dea3224b0c7b5d3e5f9d692887c86575f4a4ce21",
+  "reviewed_run_id": "r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:14:21.595299+00:00",
+  "total": 86
+}
