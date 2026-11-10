@@ -1,0 +1,60 @@
+<section id="held-worktrees-read-once-per-change">
+  <h2>Held worktree discovery follows source changes</h2>
+  <p>Initial commit <code>adb858c38821b14348fed0e1e350733a7b0cc75a</code> reuses directory
+  listings and held records through the existing read-only file memo. Repair commit
+  <code>7914a6e20710dc39cc191509e04c846655eb1b58</code> projects pointer identities into
+  occupied registered paths and parent-directory identities into registered-tree presence.
+  The answer therefore survives pointer phase updates, unregistered claims and unrelated
+  sibling files, while a removed tree invalidates it. Source-file memo anchors also keep
+  unrelated checkout-directory changes from invalidating the answer.</p>
+  <p>Input stamps are still checked: the measure below concerns repeated discovery,
+  rather than all filesystem metadata calls. Aggregate and per-run file identities
+  preserve in-place record edits, and the common Git registry covers linked checkouts.</p>
+  <table>
+    <caption>Unchanged second refresh over 20 registered worktrees and 30 live pointers</caption>
+    <thead><tr><th>Discovery work</th><th>Base</th><th>Changed source</th></tr></thead>
+    <tbody>
+      <tr><td>Held-record derivations</td><td>1</td><td>0</td></tr>
+      <tr><td>Registry listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Underlying stats, including held-path checks</td><td>75</td><td>0</td></tr>
+      <tr><td>Live-pointer listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Directory scans</td><td>3</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The base negative control records <code>1 failed, 2 passed in 19.56s</code>;
+  the initial focused head probe records <code>54 passed in 43.77s</code>. The regressions
+  cover an added worktree, a pointer’s claim moving, an in-place release-record edit
+  and a vanished directory. Both discovery aliases are patched, alongside the
+  physical stat and directory-scan functions, and the first refresh proves that
+  the instrument observes real work.</p>
+  <p>The scope extension permits the explicit-root index control to clear the held-record
+  memo before counting a fresh derivation. Its answer-parity comparison and the shared
+  route’s one-build assertion remain. The focused repair gate records
+  <code>11 passed in 75.63s (0:01:15)</code>, including both reproduced acceptance failures.</p>
+  <table>
+    <caption>Verification at the original base and committed repair</caption>
+    <thead><tr><th>Measure</th><th>Base</th><th>Repair</th></tr></thead>
+    <tbody>
+      <tr><td>Scoped gate</td><td>54 passed</td><td>58 passed</td></tr>
+      <tr><td>Importer tests passed</td><td>586</td><td>590</td></tr>
+      <tr><td>Importer tests failed</td><td>55</td><td>55</td></tr>
+      <tr><td>Importer setup errors</td><td>15</td><td>15</td></tr>
+      <tr><td>Added failing test identities</td><td>—</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The scoped base arm records <code>54 passed in 29.37s</code>; the committed after arm
+  records <code>58 passed in 89.82s (0:01:29)</code>. The matched importer head records
+  <code>55 failed, 590 passed, 15 errors in 368.22s (0:06:08)</code>, against base
+  <code>55 failed, 586 passed, 15 errors in 385.77s (0:06:25)</code>. All failing and setup-error
+  identities match, with zero added and zero removed. Both importer arms use four workers,
+  file-grouped scheduling and a 60-second per-test bound. Lint and formatting add no findings.</p>
+  <p>Receipts in the assigned run directory: <code>negative-control.log</code>,
+  <code>resume-reproduction.log</code>, <code>focused-resumed.log</code>,
+  <code>baseline-scoped-resumed.log</code>, <code>after-scoped-resumed.log</code>,
+  <code>importers-base.log</code>, <code>importers-head-resumed.log</code>,
+  <code>importer-comparison-resumed.json</code>, <code>lint-resumed.log</code> and
+  <code>source-marker-resumed.log</code>. The two acceptance failures from the initial
+  delivery are retained in <code>importers-head.log</code> and resolved by the repair.</p>
+  <p>The coordinator owns review, integration and the post-landing 60-second station
+  read-rate and CPU measurement. This worker record does not close the section.</p>
+</section>
