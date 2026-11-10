@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "both arms of the repair gate ran the new test file beside tests/test_staged_write_inventory.py; repair-base-suite.log reads '54 passed in 29.79s' EXIT=0 at revision 9d89b980c4 and repair-head-suite.log reads '54 passed in 56.67s' EXIT=0 at revision c2bfce9548, so the delta adds no failure; the head commit e595f9f236 adds only the evidence fragment, which the diff confirms.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1254",
+    "reckon/crew/promotion.py:1259",
+    "reckon/crew/promotion.py:1801",
+    "reckon/crew/promotion.py:1862"
+  ],
+  "completed_at": "2026-11-10T18:58:54.553Z",
+  "dispatched_at": "2026-11-10T18:42:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 2310,
+      "severity": "non-blocking",
+      "text": "_ledger_row_state answers True from the aggregate alone, so a run whose aggregate row and per-run document disagree now reads as a provable row where the previous head's ledger.load refused the union read and _ledger_row_is_written answered False; the same commit's claim at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup.html:47-48 that behaviour is unchanged, and the docstring's 'provably holds a row' at :2332, both read stronger than the code now delivers."
+    },
+    {
+      "file": "tests/test_a_second_complete_finishes_cleanup.py",
+      "line": 100,
+      "severity": "non-blocking",
+      "text": "assert comment['requested_narrative'] == retried compares the receipt's echo of the outcome the test itself passed into the call, so it holds for any implementation that reflects its input and survives the regression it was written beside; carried forward unchanged from the prior review, and the case's real guards are :99 and :101-104."
+    },
+    {
+      "file": "reckon/crew/promotion_scope.py",
+      "line": 1463,
+      "severity": "non-blocking",
+      "text": "_strip_tags unescapes internally at reckon/_plan_html.py:2396 and is applied to existing_body and requested_body, both already passed through html.unescape at :1439-1440, so a body holding a literal '&amp;lt;' is reported in the receipt as '<'; carried forward from the prior review, unchanged in effect by this delta's substitution of the helper."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 9d89b980c4 \u2014 c2bfce9548 changes 68 lines of reckon/crew/promotion_scope.py, deleting _narrative_text and merging _ledger_holds_row with _ledger_row_is_written into one _ledger_row_state reader, and 87 lines of the test file, replacing its private fixture with an import of tests/test_a_run_can_always_be_reconciled.py; e595f9f236 adds 13 lines of evidence to the fragment.",
+    "done_when": "the done_when asks for three cases plus a restored-refusal negative control, no added failures and no new ruff findings; repair-base-suite.log and repair-head-suite.log each read '54 passed' with EXIT=0, repair-negative-control.log records the duplication counts 3 -> 0, 2 -> 1 and 1 -> 0 with its tree correctly labelled, and re-run of the three tests and of ruff on both staged paths at head was clean.",
+    "goal": "the node's goal is 'A second complete finishes an earlier promotion's cleanup', and the delta I reviewed is a reuse repair that leaves that path intact \u2014 reckon/crew/promotion_scope.py:1451-1472 still answers a differing narrative with a finished_cleanup receipt once a row is written, and the three cases at tests/test_a_second_complete_finishes_cleanup.py:54-124 pass at head.",
+    "manifest": "read in full; it records status complete, commits aeeff2fd5b through e595f9f236, the repair gate's two arms with their log paths, a negative_control_log path whose header now names the reverted tree, and rubric lines for all eight dimensions.",
+    "write_paths": "the node declared reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three files in the delta sit inside that set and the figures directory was not written."
+  },
+  "justifications": {
+    "durability": "c2bfce9548 adds no assertion at all \u2014 it deletes the test file's fixture and keeps its three assertion blocks unchanged \u2014 so the merged reader rests on tests/test_a_second_complete_finishes_cleanup.py:93-95, while the aggregate-only answer at reckon/crew/promotion_scope.py:2310 and the self-comparison at tests/test_a_second_complete_finishes_cleanup.py:100 are untested.",
+    "evidence": "repair-base-suite.log and repair-head-suite.log record '54 passed' with EXIT=0 at revisions 9d89b980c4 and c2bfce9548, but repair-negative-control.log's last arm is a count of duplicated definitions rather than a failing test, so the refactor's behaviour is asserted rather than measured.",
+    "fit": "the cross-module private import of _strip_tags at reckon/crew/promotion_scope.py:22 matches reckon/crew/dispatch_sections.py:16, and the file-level F811 waiver at tests/test_a_second_complete_finishes_cleanup.py:22 matches tests/test_a_reflex_review_appears_as_working.py:3.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2331-2339 keeps _ledger_row_is_written true for a committed row, so the differing-narrative cleanup at :1457-1472 still finishes instead of refusing.",
+    "reuse": "the previously recorded fork is gone \u2014 _strip_tags reclaims the plan reader's stripper, reckon/crew/promotion_scope.py:2293 unifies the two ledger readers, and the fixture is imported \u2014 and a capability search over reckon/ found only weaker per-run-file checks at reckon/crew/recovery_watch.py:809, which this reader already subsumes.",
+    "scope_discipline": "every path in the delta is inside the manifest's declared write paths, though reckon/crew/promotion_scope.py:2306-2318 changes which ledger reads decide a committed row inside a commit that presents itself as a pure reuse refactor."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'A second complete finishes an earlier promotion's cleanup', and the delta I reviewed is a reuse repair that leaves that path intact \u2014 reckon/crew/promotion_scope.py:1451-1472 still answers a differing narrative with a finished_cleanup receipt once a row is written, and the three cases at tests/test_a_second_complete_finishes_cleanup.py:54-124 pass at head.\nVERDICT done_when: the done_when asks for three cases plus a restored-refusal negative control, no added failures and no new ruff findings; repair-base-suite.log and repair-head-suite.log each read '54 passed' with EXIT=0, repair-negative-control.log records the duplication counts 3 -> 0, 2 -> 1 and 1 -> 0 with its tree correctly labelled, and re-run of the three tests and of ruff on both staged paths at head was clean.\nVERDICT write_paths: the node declared reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the evidence fragment and figures directory granted; all three files in the delta sit inside that set and the figures directory was not written.\nVERDICT manifest: read in full; it records status complete, commits aeeff2fd5b through e595f9f236, the repair gate's two arms with their log paths, a negative_control_log path whose header now names the reverted tree, and rubric lines for all eight dimensions.\nVERDICT diff: read both commits against 9d89b980c4 \u2014 c2bfce9548 changes 68 lines of reckon/crew/promotion_scope.py, deleting _narrative_text and merging _ledger_holds_row with _ledger_row_is_written into one _ledger_row_state reader, and 87 lines of the test file, replacing its private fixture with an import of tests/test_a_run_can_always_be_reconciled.py; e595f9f236 adds 13 lines of evidence to the fragment.\nCALL_SITES: reckon/crew/promotion.py:1254, reckon/crew/promotion.py:1259, reckon/crew/promotion.py:1801, reckon/crew/promotion.py:1862\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2331-2339 keeps _ledger_row_is_written true for a committed row, so the differing-narrative cleanup at :1457-1472 still finishes instead of refusing.\nSCORE evidence: 16\nJUSTIFICATION evidence: repair-base-suite.log and repair-head-suite.log record '54 passed' with EXIT=0 at revisions 9d89b980c4 and c2bfce9548, but repair-negative-control.log's last arm is a count of duplicated definitions rather than a failing test, so the refactor's behaviour is asserted rather than measured.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the delta is inside the manifest's declared write paths, though reckon/crew/promotion_scope.py:2306-2318 changes which ledger reads decide a committed row inside a commit that presents itself as a pure reuse refactor.\nSCORE durability: 14\nJUSTIFICATION durability: c2bfce9548 adds no assertion at all \u2014 it deletes the test file's fixture and keeps its three assertion blocks unchanged \u2014 so the merged reader rests on tests/test_a_second_complete_finishes_cleanup.py:93-95, while the aggregate-only answer at reckon/crew/promotion_scope.py:2310 and the self-comparison at tests/test_a_second_complete_finishes_cleanup.py:100 are untested.\nSCORE fit: 18\nJUSTIFICATION fit: the cross-module private import of _strip_tags at reckon/crew/promotion_scope.py:22 matches reckon/crew/dispatch_sections.py:16, and the file-level F811 waiver at tests/test_a_second_complete_finishes_cleanup.py:22 matches tests/test_a_reflex_review_appears_as_working.py:3.\nSCORE reuse: 19\nJUSTIFICATION reuse: the previously recorded fork is gone \u2014 _strip_tags reclaims the plan reader's stripper, reckon/crew/promotion_scope.py:2293 unifies the two ledger readers, and the fixture is imported \u2014 and a capability search over reckon/ found only weaker per-run-file checks at reckon/crew/recovery_watch.py:809, which this reader already subsumes.\nFINDING reckon/crew/promotion_scope.py:2310 non-blocking: _ledger_row_state answers True from the aggregate alone, so a run whose aggregate row and per-run document disagree now reads as a provable row where the previous head's ledger.load refused the union read and _ledger_row_is_written answered False; the same commit's claim at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-second-complete-finishes-an-earlier-promotion-s-cleanup.html:47-48 that behaviour is unchanged, and the docstring's 'provably holds a row' at :2332, both read stronger than the code now delivers.\nFINDING tests/test_a_second_complete_finishes_cleanup.py:100 non-blocking: assert comment['requested_narrative'] == retried compares the receipt's echo of the outcome the test itself passed into the call, so it holds for any implementation that reflects its input and survives the regression it was written beside; carried forward unchanged from the prior review, and the case's real guards are :99 and :101-104.\nFINDING reckon/crew/promotion_scope.py:1463 non-blocking: _strip_tags unescapes internally at reckon/_plan_html.py:2396 and is applied to existing_body and requested_body, both already passed through html.unescape at :1439-1440, so a body holding a literal '&amp;lt;' is reported in the receipt as '<'; carried forward from the prior review, unchanged in effect by this delta's substitution of the helper.\n",
+  "review_run_id": "r-20261110T183900249997-review-of-a-second-complete-finishes-an-earlier-promotion-s-cleanup-e595f9f2361c",
+  "reviewed_base_sha": "9d89b980c4b6b8afdd80477c94f49083f9a8b4f6",
+  "reviewed_head_sha": "e595f9f2361c633b32375803cf1eb5477413c22d",
+  "reviewed_run_id": "r-20261110T150451275707-a-second-complete-finishes-an-earlier-promotion-s-cleanup",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T19:23:03.555488+00:00",
+  "total": 103
+}
