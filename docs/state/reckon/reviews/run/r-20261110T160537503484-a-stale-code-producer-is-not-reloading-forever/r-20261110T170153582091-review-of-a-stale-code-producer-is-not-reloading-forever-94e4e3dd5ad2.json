@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1368 reload_in_progress in the prompt-hook reloading branch",
+    "reckon/hooks/coordinator_obligations.py:1628 reload_in_progress in the session-start/deferral branch"
+  ],
+  "completed_at": "2026-11-10T17:16:27.277Z",
+  "dispatched_at": "2026-11-10T17:04:32Z",
+  "findings": [
+    {
+      "file": "tests/test_a_stale_code_producer_is_not_reloading_forever.py",
+      "line": "85",
+      "severity": "non-blocking",
+      "text": "non-blocking: the past-window case computes its input as producer_reload_window_seconds() + 60, so the document age moves with the constant under test and the assertion stays green if the window constant is inflated to years; no case pins the window's magnitude independently."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T160537503484-a-stale-code-producer-is-not-reloading-forever/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records revision 2550638a49 while the reviewed head is 94e4e3dd5a, so the recorded head arm predates the head it is read against; harmless here because the two intervening commits are docs-only, but a reader comparing revisions sees a pair that does not match."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit from 523a1c9e to 94e4e3dd5a; cd1c031d31 carries the condition change and the new test, 2550638a49 only adds a trailing newline, and 589804f094 and 94e4e3dd5a touch only the evidence fragment.",
+    "done_when": "the done_when names three cases in a new tests/test_a_stale_code_producer_is_not_reloading_forever.py plus a negative control and an import-set comparison against the base; all three cases exist (lines 75, 83, 92) and logs/negative-control.log records 2 failed, 1 passed with the unconditional arm restored.",
+    "goal": "the goal is that a producer stuck on old code is not reported as reloading; reckon/crew/obligation_snapshot.py:885-888 now gates the STALE_CODE arm on snapshot_age_seconds(document) <= producer_reload_window_seconds(), so an aged stale-code snapshot falls through to the not-fresh line that carries the watch --ensure remedy.",
+    "manifest": "read in full; it records status complete, 59 passed at head (logs/head-node-tests.log, EXIT=0), 54 passed + 2 scaffold-attributed errors at base, the negative control and the base comparison, with a rubric line per dimension.",
+    "write_paths": "the manifest declares reckon/crew/obligation_snapshot.py, tests/test_a_quiet_foreign_producer_reads_live.py, tests/test_a_stale_code_producer_is_not_reloading_forever.py and the evidence fragment under docs/; `git diff --stat 523a1c9e..94e4e3dd5a` lists exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stale_code_producer_is_not_reloading_forever.py:83-90 reddens when the unconditional STALE_CODE arm is restored, as logs/negative-control.log shows, but its input age is derived from producer_reload_window_seconds() itself so an inflated window moves both sides.",
+    "evidence": "logs/head-node-tests.log ends \"59 passed\" with EXIT=0 and logs/negative-control.log ends \"2 failed, 1 passed\" with EXIT=1 on the mutated arm, though the head arm ran at 2550638a49 rather than the reviewed head 94e4e3dd5a (two docs-only commits later).",
+    "fit": "the docstring at reckon/crew/obligation_snapshot.py:866-877 is reflowed in the surrounding prose style and the test's comment explains the changed expectation, though the new 122-line test file repeats its git-repo fixture rather than using a shared helper.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:885-888 now bounds the code-stamp arm by the same window the seat-intent and silent-producer arms already carried, which is exactly the reported defect.",
+    "reuse": "the change adds no definition; it extends the existing owner reckon/crew/obligation_snapshot.py:858 reload_in_progress and reuses producer_reload_window_seconds() and snapshot_age_seconds() rather than forking a second bound.",
+    "scope_discipline": "every path in `git diff --stat 523a1c9e..94e4e3dd5a` is one of the three declared code/test paths or the declared evidence fragment directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a producer stuck on old code is not reported as reloading; reckon/crew/obligation_snapshot.py:885-888 now gates the STALE_CODE arm on snapshot_age_seconds(document) <= producer_reload_window_seconds(), so an aged stale-code snapshot falls through to the not-fresh line that carries the watch --ensure remedy.\nVERDICT done_when: the done_when names three cases in a new tests/test_a_stale_code_producer_is_not_reloading_forever.py plus a negative control and an import-set comparison against the base; all three cases exist (lines 75, 83, 92) and logs/negative-control.log records 2 failed, 1 passed with the unconditional arm restored.\nVERDICT write_paths: the manifest declares reckon/crew/obligation_snapshot.py, tests/test_a_quiet_foreign_producer_reads_live.py, tests/test_a_stale_code_producer_is_not_reloading_forever.py and the evidence fragment under docs/; `git diff --stat 523a1c9e..94e4e3dd5a` lists exactly those four paths and nothing else.\nVERDICT manifest: read in full; it records status complete, 59 passed at head (logs/head-node-tests.log, EXIT=0), 54 passed + 2 scaffold-attributed errors at base, the negative control and the base comparison, with a rubric line per dimension.\nVERDICT diff: read commit by commit from 523a1c9e to 94e4e3dd5a; cd1c031d31 carries the condition change and the new test, 2550638a49 only adds a trailing newline, and 589804f094 and 94e4e3dd5a touch only the evidence fragment.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1368 (prompt-hook reloading branch), reckon/hooks/coordinator_obligations.py:1628 (session-start and deferral branch)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:885-888 now bounds the code-stamp arm by the same window the seat-intent and silent-producer arms already carried, which is exactly the reported defect.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-node-tests.log ends \"59 passed\" with EXIT=0 and logs/negative-control.log ends \"2 failed, 1 passed\" with EXIT=1 on the mutated arm, though the head arm ran at 2550638a49 rather than the reviewed head 94e4e3dd5a (two docs-only commits later).\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 523a1c9e..94e4e3dd5a` is one of the three declared code/test paths or the declared evidence fragment directory.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stale_code_producer_is_not_reloading_forever.py:83-90 reddens when the unconditional STALE_CODE arm is restored, as logs/negative-control.log shows, but its input age is derived from producer_reload_window_seconds() itself so an inflated window moves both sides.\nSCORE fit: 16\nJUSTIFICATION fit: the docstring at reckon/crew/obligation_snapshot.py:866-877 is reflowed in the surrounding prose style and the test's comment explains the changed expectation, though the new 122-line test file repeats its git-repo fixture rather than using a shared helper.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; it extends the existing owner reckon/crew/obligation_snapshot.py:858 reload_in_progress and reuses producer_reload_window_seconds() and snapshot_age_seconds() rather than forking a second bound.\nFINDING tests/test_a_stale_code_producer_is_not_reloading_forever.py:85 non-blocking: the past-window case computes its input as producer_reload_window_seconds() + 60, so the document age moves with the constant under test and the assertion stays green if the window constant is inflated to years; no case pins the window's magnitude independently.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T160537503484-a-stale-code-producer-is-not-reloading-forever/manifest.md:18 non-blocking: after_suite records revision 2550638a49 while the reviewed head is 94e4e3dd5a, so the recorded head arm predates the head it is read against; harmless here because the two intervening commits are docs-only, but a reader comparing revisions sees a pair that does not match.",
+  "review_run_id": "r-20261110T170153582091-review-of-a-stale-code-producer-is-not-reloading-forever-94e4e3dd5ad2",
+  "reviewed_base_sha": "523a1c9e772f33cafd89352853fa547e7bd94fdf",
+  "reviewed_head_sha": "94e4e3dd5ad25df29f0778d97ea6ff544e4c5c3b",
+  "reviewed_run_id": "r-20261110T160537503484-a-stale-code-producer-is-not-reloading-forever",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T18:26:16.353889+00:00",
+  "total": 109
+}
