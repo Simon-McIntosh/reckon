@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="157">
-<meta name="plan-modified" content="2026-11-10">
+<meta name="plan-version" content="158">
+<meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -767,6 +767,15 @@ staged paths.</p>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261110T142718013800-tick-reads-the-review-store-once" data-who="reckon-build" data-when="2026-11-10T15:57:58Z">
     <div class="r-comment-body"><p>One review-store enumeration serves 40 runs per tick; unchanged ticks add 0 bound Path.stat calls, 0 os.stat calls and 0 read_review calls. The required per-run-stat mutation fails with 40 extra calls through each stat API. Manifest and named gate-log rewrites each refresh the annotation; a missing gate-log key input is repaired. Importer arms pass 91/97 and armed arms 51/57, with 0 added failures. [Evidence](/reckon/evidence/fragments/the-monitor-reads-each-fact-once/tick-reads-the-review-store-once.html#tick-reads-the-review-store-once-review-coverage).</p></div>
 </div>
+<div class="r-comment" data-section="s23" data-id="c-run-r-20261110T213833644491-review-of-held-worktrees-read-once-per-change-ec676fcad554" data-who="reckon-build" data-when="2026-11-10T22:03:27Z">
+    <div class="r-comment-body"><p>Parsed independent review of a0c0431d011d96118a1a4c784cd723d766ec198d to ec676fcad5544604fc2e324a8d7f6bb692256779; all six dimensions scored, scoped added_failure_count 0, one blocking finding requiring a compliant separate-partition importer rerun.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261110T202504427879-review-of-queue-order-rebuilds-roadmap-on-change-6b86e20289e8" data-who="reckon-build" data-when="2026-11-10T20:51:37Z">
+    <div class="r-comment-body"><p>Independent review of source base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd to head 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 stores all six scores, zero added failures and one non-blocking reuse finding; no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261110T224004013687-review-of-queue-order-rebuilds-roadmap-on-change-2633d00a96d4" data-who="reckon-build" data-when="2026-11-10T22:59:35Z">
+    <div class="r-comment-body"><p>Independent delta review of 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 to 2633d00a96d4004af347dc12b6ee9e02c88366ba stores six scores, zero added failures and two blocking findings: nested editorial invalidation and heavy importer evidence executed on the fleet allocation.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
@@ -847,12 +856,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s24" data-id="c-run-r-20261110T202504427879-review-of-queue-order-rebuilds-roadmap-on-change-6b86e20289e8" data-who="reckon-build" data-when="2026-11-10T20:51:37Z">
-    <div class="r-comment-body"><p>Independent review of source base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd to head 6b86e20289e8f09b71bac4dc2589f22b1d8f8084 stores all six scores, zero added failures and one non-blocking reuse finding; no blocking finding.</p></div>
-</div>
-<div class="r-comment" data-section="s23" data-id="c-run-r-20261110T213833644491-review-of-held-worktrees-read-once-per-change-ec676fcad554" data-who="reckon-build" data-when="2026-11-10T22:03:27Z">
-    <div class="r-comment-body"><p>Parsed independent review of a0c0431d011d96118a1a4c784cd723d766ec198d to ec676fcad5544604fc2e324a8d7f6bb692256779; all six dimensions scored, scoped added_failure_count 0, one blocking finding requiring a compliant separate-partition importer rerun.</p></div>
 </div>
 </section>
 </main>

@@ -1,0 +1,161 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "A missing queued placement, position other than one or fallback reason fails; the ranked positive control proves the builder did useful work.",
+      "lines": "62,64"
+    },
+    {
+      "failure_condition": "Removing cache reuse, rebuilding on timestamp-only edits or omitting the initial build changes the counted calls; output changes fail the prior-output invariance checks.",
+      "lines": "78-85"
+    },
+    {
+      "failure_condition": "Restoring the reviewed broad signature rebuilds after the unqueued prose edit and gives two calls rather than one; this exact assertion is red in repair-negative-unrelated-plan.log.",
+      "lines": "119,123-124"
+    },
+    {
+      "failure_condition": "Restoring plan-directory membership invalidation makes unqueued arrival/removal increase the build count.",
+      "lines": "135,138"
+    },
+    {
+      "failure_condition": "Rebuilding on figure writes or changing placements after an unrelated write fails.",
+      "lines": "149-150"
+    },
+    {
+      "failure_condition": "The first observed sprint listing proves the counter is attached; listing unchanged directories fails the empty assertion, a private cache survives file_memo.clear and fails the required fresh listing, and over-invalidation fails the one-build assertion.",
+      "lines": "169,172,175-176"
+    },
+    {
+      "failure_condition": "Restoring file-stamp invalidation rebuilds after body prose/version/modified changes; including nested editorial fields survives this test because none are changed.",
+      "lines": "192-193"
+    },
+    {
+      "failure_condition": "An ineffective fixture edit fails changed!=text; failing to invalidate a relevant state/wait/sprint/ROI/effort edit leaves one call; cached placements differing from a separately forced fresh computation fail equality, though one queued request cannot demonstrate relative reordering.",
+      "lines": "211,214,216"
+    },
+    {
+      "failure_condition": "Ignoring queued-plan disappearance or return prevents the expected second or third build, and differing restored placements fail prior-output equality.",
+      "lines": "228,230-231"
+    }
+  ],
+  "assertion_input_tethers": "None: builder and listing counts compare independently observed events; output equality compares prior output or a forced fresh invocation rather than an input supplied to the code. The singleton fresh-result comparison has limited sensitivity to priority ordering.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:fair_share_admission_order:5079",
+    "reckon/crew/queue_admission.py:queued_placements:5138",
+    "reckon/crew/station_subscriber.py:live_work_populations:233",
+    "reckon/crew/station.py:tick:524"
+  ],
+  "completed_at": "2026-11-10T22:59:35Z",
+  "dispatched_at": "2026-11-10T22:45:40Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: 6eb915d68bd7390af3edf8e42762740147f4d43e; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/repair-after-suite.log",
+      "summary": "65 passed in 51.69s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /var/tmp/queue-order-baseline-c4cj2e3f/checkout; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/repair-baseline-suite.log",
+      "summary": "51 passed in 10.89s"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_order.py",
+      "line": "55",
+      "severity": "blocking",
+      "text": "blocking: The semantic key serializes the complete inventory after dropping only five top-level fields; plan_review._plan_inventory_item retains full followups and decisions (plan_review.py:6052-6053), so an edit solely to a followup title/body or a decision context/rationale changes this JSON and rebuilds the roadmap despite unchanged state, waits, sprint and ranking inputs. Project only priority-affecting nested fields and add a nested-prose regression case; the current prose test appends a free paragraph and cannot catch this."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/queue-order-rebuilds-roadmap-on-change.html",
+      "line": "90",
+      "severity": "blocking",
+      "text": "blocking: The admitted importer evidence was produced by running the nine-file population directly in the fleet allocation: resume-1.jsonl:206 launches repair_gate.py with the pytest command, and repair_gate.py:14 executes it locally; repair-after-importers.log reports 167.97 seconds. The binding fleet rule requires importer populations to run as a separate partition job and treats in-place heavy evidence as a scope defect. Rerun matched arms via sbatch on all_debug or rigel and retain partition/job provenance before accepting this evidence."
+    }
+  ],
+  "importer_delta_evidence": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: 6eb915d68bd7390af3edf8e42762740147f4d43e; tree: /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/queue-order-rebuilds-roadmap-on-change; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/repair-after-importers.log",
+      "summary": "6 failed, 62 passed in 167.97s (0:02:47)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /var/tmp/queue-order-baseline-roqzpz3u/checkout; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/repair-baseline-importers.log",
+      "summary": "6 failed, 62 passed in 53.53s"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew/queue_admission.py:fair_share_admission_order:5079, reckon/crew/queue_admission.py:queued_placements:5138, reckon/crew/station_subscriber.py:live_work_populations:233, reckon/crew/station.py:tick:524",
+    "diff": "Read both gained commits 6eb915d68bd7390af3edf8e42762740147f4d43e and 2633d00a96d4004af347dc12b6ee9e02c88366ba against prior reviewed head 6b86e20289e8f09b71bac4dc2589f22b1d8f8084; they add semantic projection/shared memo reuse, fourteen focused cases and cumulative evidence inside the three named paths.",
+    "done_when": "Read prompt.txt:121-122 and the reframed resume advice; the all-binding builder counter and negative control measure irrelevant-edit reuse, with 65 armed passes and zero added importer ids, although the heavy importer evidence ran inside the fleet allocation and the live touch-rebuild sentence conflicts with the reframed deliverable.",
+    "goal": "Read prompt.txt:38, resume-1-advice.txt:1 and live plan s24; reckon/crew/queue_order.py:39-107 excludes unqueued plans and ordinary body prose, but serializes nested editorial fields that can still trigger irrelevant rebuilds.",
+    "manifest": "Read manifest.md and its repair baseline, head, negative-control, importer and lint receipts; their summaries support its counts, but repair_gate.py:14 and resume-1.jsonl:206 show the importer population executed directly in the worker allocation.",
+    "write_paths": "Read prompt.txt:80-85 and manifest.md:3; the three changed paths are the assigned queue_order module, focused test and cumulative evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:108-124 fails under the reviewed broad signature and :153-176 fails under a private uncleared directory cache, but :180-193 exercises no nested editorial prose and :194-216 uses one queued request.",
+    "evidence": "repair-negative-unrelated-plan.log records the intended two-versus-one failure and repair-after-suite.log records 65 passes, but the nine-file importer run supporting evidence fragment lines 90-95 was launched directly on the fleet node.",
+    "fit": "reckon/crew/queue_order.py:39-107 follows the surrounding lazy imports, shared file identities and owner inventory reads with descriptive source and test names.",
+    "goal_fidelity": "reckon/crew/queue_order.py:39-55 implements the requested semantic key but retains complete followup and decision records, so editing their display text changes the key without moving priority.",
+    "reuse": "reckon/crew/queue_order.py:73-78 and :96-100 extend the queue signature using reckon/file_memo.py:memoized_key, while the new projection wraps plan_review._plan_inventory_item and _plan_html readers rather than copying their parsing.",
+    "scope_discipline": "The 6b86e202..2633d00a diff changes only reckon/crew/queue_order.py, tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py and the declared evidence fragment, preserving previous evidence."
+  },
+  "limitations": "Read-only review; no test rerun or mutation. Reviewed head differs from reviewer worktree HEAD; all changed source/test/evidence content was read using git show at reviewed_head_sha. Armed baseline is the original source base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd, not the incremental review base; head measurement is 6eb915d68, with the final commit documentation-only. Live station I/O and CPU remain a coordinator integration measure.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38, resume-1-advice.txt:1 and live plan s24; reckon/crew/queue_order.py:39-107 excludes unqueued plans and ordinary body prose, but serializes nested editorial fields that can still trigger irrelevant rebuilds.\nVERDICT done_when: Read prompt.txt:121-122 and the reframed resume advice; the all-binding builder counter and negative control measure irrelevant-edit reuse, with 65 armed passes and zero added importer ids, although the heavy importer evidence ran inside the fleet allocation and the live touch-rebuild sentence conflicts with the reframed deliverable.\nVERDICT write_paths: Read prompt.txt:80-85 and manifest.md:3; the three changed paths are the assigned queue_order module, focused test and cumulative evidence fragment.\nVERDICT manifest: Read manifest.md and its repair baseline, head, negative-control, importer and lint receipts; their summaries support its counts, but repair_gate.py:14 and resume-1.jsonl:206 show the importer population executed directly in the worker allocation.\nVERDICT diff: Read both gained commits 6eb915d68bd7390af3edf8e42762740147f4d43e and 2633d00a96d4004af347dc12b6ee9e02c88366ba against prior reviewed head 6b86e20289e8f09b71bac4dc2589f22b1d8f8084; they add semantic projection/shared memo reuse, fourteen focused cases and cumulative evidence inside the three named paths.\nCALL_SITES: reckon/crew/queue_admission.py:fair_share_admission_order:5079, reckon/crew/queue_admission.py:queued_placements:5138, reckon/crew/station_subscriber.py:live_work_populations:233, reckon/crew/station.py:tick:524\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:39-55 implements the requested semantic key but retains complete followup and decision records, so editing their display text changes the key without moving priority.\nSCORE evidence: 12\nJUSTIFICATION evidence: repair-negative-unrelated-plan.log records the intended two-versus-one failure and repair-after-suite.log records 65 passes, but the nine-file importer run supporting evidence fragment lines 90-95 was launched directly on the fleet node.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The 6b86e202..2633d00a diff changes only reckon/crew/queue_order.py, tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py and the declared evidence fragment, preserving previous evidence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:108-124 fails under the reviewed broad signature and :153-176 fails under a private uncleared directory cache, but :180-193 exercises no nested editorial prose and :194-216 uses one queued request.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_order.py:39-107 follows the surrounding lazy imports, shared file identities and owner inventory reads with descriptive source and test names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/queue_order.py:73-78 and :96-100 extend the queue signature using reckon/file_memo.py:memoized_key, while the new projection wraps plan_review._plan_inventory_item and _plan_html readers rather than copying their parsing.\nFINDING reckon/crew/queue_order.py:55 blocking: The semantic key serializes the complete inventory after dropping only five top-level fields; plan_review._plan_inventory_item retains full followups and decisions (plan_review.py:6052-6053), so an edit solely to a followup title/body or a decision context/rationale changes this JSON and rebuilds the roadmap despite unchanged state, waits, sprint and ranking inputs. Project only priority-affecting nested fields and add a nested-prose regression case; the current prose test appends a free paragraph and cannot catch this.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/queue-order-rebuilds-roadmap-on-change.html:90 blocking: The admitted importer evidence was produced by running the nine-file population directly in the fleet allocation: resume-1.jsonl:206 launches repair_gate.py with the pytest command, and repair_gate.py:14 executes it locally; repair-after-importers.log reports 167.97 seconds. The binding fleet rule requires importer populations to run as a separate partition job and treats in-place heavy evidence as a scope defect. Rerun matched arms via sbatch on all_debug or rigel and retain partition/job provenance before accepting this evidence.\n",
+  "reuse_search": "Searched semantic priority/ranking state, authored-section projection and directory/stat-key memo capabilities; opened roadmap.py:_plan_authored_state, crew/plan_review.py:_plan_inventory_item, _plan_html.py section/decision/followup readers, metadata_index.py:readiness_from_state and file_memo.py:memoized_key/clear. The sole new production definition _plan_priority_state composes those owners for the queue-specific projection. Changed _placements test helper extends existing fixture instrumentation, and the directory counter remains test-specific.",
+  "review_run_id": "r-20261110T224004013687-review-of-queue-order-rebuilds-roadmap-on-change-2633d00a96d4",
+  "reviewed_base_sha": "6b86e20289e8f09b71bac4dc2589f22b1d8f8084",
+  "reviewed_commits": [
+    "6eb915d68bd7390af3edf8e42762740147f4d43e",
+    "2633d00a96d4004af347dc12b6ee9e02c88366ba"
+  ],
+  "reviewed_head_sha": "2633d00a96d4004af347dc12b6ee9e02c88366ba",
+  "reviewed_run_id": "r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T23:12:26.054014+00:00",
+  "total": 106
+}
