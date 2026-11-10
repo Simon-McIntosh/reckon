@@ -1,0 +1,96 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T19:53:20.663Z",
+  "dispatched_at": "2026-11-10T19:33:30Z",
+  "findings": [
+    {
+      "anchor": "reckon/checkout_trust.py:101",
+      "id": "reuse_search-1",
+      "reason": "the section would reimplement a landed, tested mechanism, so it should be deleted or rewritten around the one gap the existing hold does not cover.",
+      "text": "\u00a71's \"What changes\" is existing code: `_identity_hold` holds the reading against `git_head._head_identity` (a stat-only read of `.git/HEAD`, the ref it names and `commondir`, with no git spawn) and `source_code_identity` (`reckon/checkout_trust.py:419`) re-derives with `git ls-tree`/`mktree` only when that reading moves; `tests/test_the_code_identity_is_read_only_when_head_moves.py` already proves the plan's four done-when cases, including \"20 identity reads against an unmoved HEAD start git only on the first read\" (`:113`) and \"a commit outside the package moves the stamp and runs the reads\" (`:241`), and `tests/test_a_commit_without_code_moves_no_identity.py:101` covers the third",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/checkout_trust.py:419",
+      "id": "reuse_search-2",
+      "reason": "the diagnosis is aimed at `_FollowerReloader.poll` and the wrong layer; the fix is to key the existing hold on the image commit the reloader already carries in `RECKON_FOLLOWER_IMAGE_COMMIT`, not to add a second key reader.",
+      "text": "the gap the existing hold really leaves is the reload-image path, which the plan never names: `stamp = _head_identity(source_root) if own_root else None` returns `None` outside git, and a follower re-exec'd from a published image has no `.git` (`materialize_committed_tree` extracts a `git archive` tarball at `reckon/checkout_trust.py:600-621`), so every tick of a reloaded follower spawns `git -C <image> ls-tree HEAD reckon skills` that fails and then falls through to `code_stamp`'s `rglob(\"*.py\")` walk (`reckon/crew/obligation_snapshot.py:729`) \u2014 which is the per-second cost the strace measured, and the one place the plan's new key machinery would still be needed",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/follower_reload.py:346",
+      "id": "deep_module-1",
+      "reason": "the change belongs inside the existing function (extend the stamp to cover the image case), which also collapses three write paths to one.",
+      "text": "\u00a71's write paths span three modules for behaviour that is a single guarded dictionary lookup and one conditional already inside `source_code_identity`, so the plan's placement turns one deep function into a key reader in `checkout_trust`, a call site in `follower_reload` and an unchanged `follower_registration`, adding surface without depth",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/follower_reload.py:346",
+      "id": "thin_wrapper-1",
+      "reason": "the item asks for exactly this justification, and here the honest change is an extension of the owner rather than a parallel path beside it.",
+      "text": "the plan's \u00a71 places the identity key in the follower, which is a wrapper over `checkout_trust.source_code_identity` \u2014 the function that already resolves the source root, already holds the identity and already returns `IDENTITY_UNKNOWN` on a failed read \u2014 and never says why that function cannot be extended",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/ledger.py:249",
+      "id": "duplicate_owner-1",
+      "reason": "landing \u00a72 as written leaves two caches for one file that can disagree, and the plan must say which one goes.",
+      "text": "`_identity_catalogue` is already a stamp-keyed cache for the model catalogue (`@lru_cache(maxsize=8)` keyed on `_file_identity(path)` at `reckon/ledger.py:1170`), and `resolve_name` reads through it (`reckon/ledger.py:252`), so \u00a72's \"memo at the one read boundary\" would be the second memo for this file; the plan does not name `_identity_catalogue` for retirement or say what becomes of it",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/file_memo.py:358",
+      "id": "duplicate_owner-2",
+      "reason": "the section should cite `file_memo.memoized` as the mechanism it extends and name `_identity_catalogue` as what it retires, which is the difference between a fix and a third memo.",
+      "text": "\u00a72's stated requirement \"callers receive a value they cannot mutate into the cache: either an immutable view, or a copy\" is `reckon/file_memo.memoized` verbatim \u2014 `copy.deepcopy` on hand-out (`reckon/file_memo.py:406`) and `read_only_region` for a shared view (`:257`) \u2014 while the existing `_identity_catalogue` fails it: I confirmed on this checkout that `ledger._identity_catalogue(p, ledger._file_identity(p)) is ledger._identity_catalogue(...)` is True and a `__mutated__` key written into the first result is visible in the second, so the defect \u00a72 identifies is real and its remedy is already owned here",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/file_memo.py:279",
+      "id": "duplicate_owner-3",
+      "reason": "both sections are about stat-keyed identity, so a section touching them should route through `signature_from_stat` rather than add a fifth spelling of the same tuple.",
+      "text": "census of the stat-identity helper \u00a71 and \u00a72 both need: `signature_from_stat` is the declared owner (\"The one place the identity's fields and their order are written\"), and the same tuple is re-derived at `reckon/git_head.py:46` `_file_identity` (mtime_ns, ino, size), `reckon/ledger.py:1170` `_file_identity` (mtime_ns, ctime_ns, size, ino), `reckon/crew/review_records.py:1308` `_stat_identity`, `reckon/crew/recovery_memo.py:108` `_file_identity`, `reckon/crew/queue_admission.py:1018`, `reckon/roadmap_snapshot.py:375`, `reckon/mcp_deadlines.py:215`, `reckon/serve.py:786`, `reckon/project_state.py:1174`, `reckon/_backends.py:2789`",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/follower_registration.py:554",
+      "id": "interface_budget-1",
+      "reason": "with public_definitions at 2448 the rule is that every section names what it merges or retires; \u00a71 retires nothing because it duplicates, and \u00a72 leaves the duplicate it should absorb.",
+      "text": "the two sections add public surface and retire none: \u00a71 leaves `FOLLOWER_FRESHNESS_SECONDS` and its per-tick `follower_code_stamp()` call in place while adding a key-read definition and a new test module; \u00a72 adds a catalogue memo while leaving `ledger._identity_catalogue` and `lanes_declaring_model`'s direct uncached `flight.read_layer_file` call (`reckon/ledger.py:307`) in place",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f43e1faa4708c35873476bd3332c143ff58cb88a",
+  "plan_fingerprint": "d6afab87ba9038aabb39aa1a57fe4576bbf38e1efd6df6934f60f1ab0604eaee",
+  "plan_slug": "a-follower-reads-only-what-moved",
+  "plan_version": 3,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T193001160109-plan-review-of-a-follower-reads-only-what-moved",
+  "reviewed_blob_sha": "4205c26c26e04aca4b02b3c4a2bf50079ef3fb39",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 \u00a71 spreads a key-read, a hold and a re-derive across three modules (`checkout_trust.py`, `follower_reload.py`, `follower_registration.py`) when the whole mechanism is one bounded dict and one guard in `checkout_trust.source_code_identity`; \u00a72 is sound on this item, since one memo at `flight.read_layer_file` is smaller than the callers it serves.",
+    "duplicate_owner": "a finding \u2014 \u00a71 duplicates `checkout_trust._identity_hold`, and \u00a72 adds a second catalogue memo beside `ledger._identity_catalogue` without naming it for retirement, while `reckon/file_memo.py` owns stat-keyed parse memoisation for the repository.",
+    "interface_budget": "a finding \u2014 public_definitions 2448, cli_options 470, mcp_views 15, refusal_families 25; \u00a71 adds a public key-read definition and a test module while identical definitions already exist, and \u00a72 adds a memo without retiring `ledger._identity_catalogue`, so neither section names what it retires, merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 the plan adds no reuse map, and the mechanism \u00a71 proposes in full already exists at `reckon/checkout_trust.py:101` (`_identity_hold`, landed 33ad6f4bbe 2026-10-19) keyed on `reckon/git_head.py:82` `_head_identity`, with eight covering tests in `tests/test_the_code_identity_is_read_only_when_head_moves.py`.",
+    "thin_wrapper": "a finding \u2014 \u00a71 would place the new key check in `follower_reload.py` beside `checkout_trust.source_code_identity`, a forwarding layer over machinery that is already the extension point it needs to be."
+  },
+  "section_digests": {
+    "_document": "41b6300cb9f3d5ad9cc8cc6b2b6d961cd67b8f7e757d2d4cfbdbafdc2a53ec2f",
+    "s1": "2a145e7a6ceb031a577f27ccc4e4e9321c90f7d4601827d70e8e6e8e9d9ad2d5",
+    "s2": "d1e07810f601d78cf20ef67f5c87db7d90242f9a539eef3bafa2d319cb2aeafd"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:04:30.605316+00:00",
+  "total": null
+}
