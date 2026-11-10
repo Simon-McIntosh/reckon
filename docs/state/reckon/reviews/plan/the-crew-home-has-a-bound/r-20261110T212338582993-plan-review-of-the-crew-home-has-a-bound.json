@@ -1,0 +1,77 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T21:38:23.329Z",
+  "dispatched_at": "2026-11-10T21:27:56Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:236",
+      "id": "wiring-1",
+      "reason": "without an open followup the roadmap cannot dispatch the section that was just authorised, which is exactly the defect the author accepted and fixed for \u00a713 by adding f-tchhab-013.",
+      "text": "\u00a75 was un-deferred to `implementable` on 2026-11-10, but every open followup names a different section (f-tchhab-008 \u00a78, f-tchhab-011 \u00a711, f-tchhab-012 \u00a712, f-tchhab-013 \u00a713); the only followup whose prompt invokes \u00a75, f-tchhab-003, is `resolved` and carries an outcome, so the roadmap has no invocation that reaches \u00a75",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:135",
+      "id": "done_when-1",
+      "reason": "the node can execute its deliverable correctly and still fail its gate, or pass because \u00a711's 148 GB index reclaim landed on 2026-11-10 without \u00a75 removing anything; either way the measure is not attributable to this node's action, so the criterion must be a before/after delta the run's own log establishes.",
+      "text": "the closing criterion \"the combined size of the four stores is at least 100 GB lower than the \u00a71 figures\" has already been run and already failed: f-tchhab-003 records that the 2026-10-16 reclaim \"freed 162.6 GB and took no worktree\u2026 It did not bring the four stores 100 GB below \u00a71, because other projects' report stores grew past it\", and f-tchhab-004 records `crew/reports` at 187 GB, mostly imas-efit's 139 GB and nova's 35 GB, which the plan itself says its coordinators own",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:130",
+      "id": "done_when-2",
+      "reason": "the two done-when clauses that cover those groups (\"the crew home holds no redirection-named directory\", \"git status --porcelain lists none of the seven files\") hold before the node touches anything and therefore cannot fail, and a node told to remove \"the 18\" from a set of 106 has no way to identify which trees were meant.",
+      "text": "two of the three removal groups are already gone from the live tree and the third is sized against a stale count: `~/.config/reckon/crew` holds no redirection-named directory (0 of its 75 entries carry a space), none of `9`, `14`, `16`, `42`, `47`, `192`, `head` exists at `/home/ITER/mcintos/Code/reckon`, and `git worktree list` at that checkout reports 106 worktrees against the \"18 clean worktrees\" the deliverable names",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:132",
+      "id": "done_when-3",
+      "reason": "the node already runs the report-only pass first, so the control is one sentence away (that pass removes nothing and the store sizes are unchanged after it), and without it nothing in the record shows the `--apply` pass stayed inside the set it listed.",
+      "text": "\u00a75 declares no negative control for an irreversible destructive pass; \"the removal listing is in the log before the first removal line\" is an ordering check that holds however the removal behaves",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0909cc88e12c69ce08b1df4f4c3c038810197ab5",
+  "plan_fingerprint": "ee0e2f6ddef34dd0c748abfcb4335c50c58613cd376fd8c85888c06f406de05f",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 105,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T212338582993-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "2975a3c6e054e1a194a476b39cb8b6e26d84b7c4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75 cites no file or line anchor; its only pointers are to \u00a71 (the size table) and `reckon crew gc --apply`, both of which resolve.",
+    "done_when": "a finding \u2014 \u00a75's closers are either already true before the node acts or anchored to a \u00a71 baseline this plan does not control.",
+    "evidence_paths": "pass \u2014 \u00a75 writes its listing and before/after sizes to a log under the run directory, a durable path a later reader can open.",
+    "naming": "pass \u2014 \u00a75 is prose with no plan labels, ticket numbers or changelog phrasing reaching a symbol or a file name.",
+    "reasoning": "pass \u2014 \u00a75's mechanism (the gc sweep \u00a72\u2013\u00a74 delivered, run report-first then with `--apply`) is a production path with a named caller, and its premises (the stores, the redirection-named directories, the stray files) are operational facts rather than a code claim.",
+    "single_goal": "pass \u2014 \u00a75 is one operational goal (reclaim the existing backlog), with its three removal groups as one pass over the same stores.",
+    "wiring": "a finding \u2014 \u00a75 is now `implementable`, but no open followup names it; the only followup that does, f-tchhab-003, was resolved on 2026-10-16."
+  },
+  "section_digests": {
+    "_document": "8dbf3931cf51d4f9e385eee50ffeaf942f75c992211bd29b064ea8615ef7a5d7",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "acf680c3187bbb981fd28a86fcf53a07328031935536c58872746cc6e10a6f26",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "75a8a336e2ee62426e5a8c3ed3310e0cf614b82a8cf7ae6a5985fcb99f2b1648",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:39:28.940494+00:00",
+  "total": null
+}
