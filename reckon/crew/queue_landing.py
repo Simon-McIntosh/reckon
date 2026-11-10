@@ -875,8 +875,8 @@ def _merge_conflicts(pointer: Mapping[str, Any], head: str) -> list[str]:
     return merge.refusing_conflicts(conflicts)
 
 
-def _measure_timeout(pointer: Mapping[str, Any]) -> float:
-    """The wall-clock bound per measurement subprocess, from flight config."""
+def _measure_config(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Read measurement settings from the project checkout, before scratch trees."""
     from reckon import flight
 
     try:
@@ -885,8 +885,13 @@ def _measure_timeout(pointer: Mapping[str, Any]) -> float:
             checkout_path=str(pointer.get("repo") or "") or None,
         )
     except (OSError, ValueError, flight.FlightConfigError):
-        return landing_measure.DEFAULT_MEASURE_TIMEOUT_SECONDS
-    return landing_measure.measure_timeout(resolved.config)
+        return {}
+    return resolved.config
+
+
+def _measure_timeout(pointer: Mapping[str, Any]) -> float:
+    """The wall-clock bound per measurement subprocess, from flight config."""
+    return landing_measure.measure_timeout(_measure_config(pointer))
 
 
 def _primary_revision(pointer: Mapping[str, Any]) -> str:
@@ -1098,6 +1103,7 @@ def _measure_delivery(
                     stored=stored,
                     project=project,
                     changed=changed,
+                    config=_measure_config(pointer),
                 )
                 measured = replace(
                     measured,
