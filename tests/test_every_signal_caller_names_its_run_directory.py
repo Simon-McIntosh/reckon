@@ -274,7 +274,11 @@ def test_recovery_delivered_review_stop_names_the_run_directory(
     monkeypatch.setattr(
         recovery_review_delivery,
         "review_delivered",
-        lambda record: {"delivered_at": 0.0, "record_path": "", "manifest_path": ""},
+        lambda record, **_kwargs: {
+            "delivered_at": 0.0,
+            "record_path": "",
+            "manifest_path": "",
+        },
     )
     (monkeypatch.setattr(recovery_review_delivery, "_run_stream_mtime", lambda record: 1000.0), monkeypatch.setattr(recovery_liveness, "_run_stream_mtime", lambda record: 1000.0), monkeypatch.setattr(recovery_classification, "_run_stream_mtime", lambda record: 1000.0))
 

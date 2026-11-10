@@ -2259,7 +2259,12 @@ def _transition_counts(
     return {**_fleet_counts(snapshots), "sessions": _session_fleet_counts(snapshots)}
 
 
-def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, Any]:
+def _reviewed_run_facts(
+    project: str,
+    snapshot: Mapping[str, Any],
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> dict[str, Any]:
     """The run a review run's event reviews, or nothing for any other run.
 
     A review node id carries the run it reads: ``review-of-<run>-<head>``. The
@@ -2278,14 +2283,19 @@ def _reviewed_run_facts(project: str, snapshot: Mapping[str, Any]) -> dict[str, 
     source = round_node_source(node_id, REVIEW_NODE_PREFIX)
     if not source:
         return {}
-    reviewed = _resolved_reviewed_run(project, node_id)
+    reviewed = _resolved_reviewed_run(project, node_id, pointers=pointers)
     return {
         "reviewed_run_id": reviewed,
         "reviewed_node": _reviewed_run_node(reviewed, source),
     }
 
 
-def _resolved_reviewed_run(project: str, node_id: str) -> str:
+def _resolved_reviewed_run(
+    project: str,
+    node_id: str,
+    *,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
+) -> str:
     """The run a review node id names, through the resolver that already owns it.
 
     The shared resolver matches a source against the live fleet and falls back
@@ -2300,7 +2310,9 @@ def _resolved_reviewed_run(project: str, node_id: str) -> str:
     previous = getattr(runs._SWEEP_LOCAL, "in_sweep", False)
     runs._SWEEP_LOCAL.in_sweep = True
     try:
-        return delivery._resolved_reviewed_run_id({"node": {"id": node_id}}, project)
+        return delivery._resolved_reviewed_run_id(
+            {"node": {"id": node_id}}, project, pointers=pointers
+        )
     finally:
         runs._SWEEP_LOCAL.in_sweep = previous
 
@@ -2332,6 +2344,7 @@ def _watch_transition(
     spend_runs: Sequence[Mapping[str, Any]] | None = None,
     rate_statuses: Mapping[str, Any] | None = None,
     streams_root: str | Path | None = None,
+    pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Build one lossless transition object for text or JSON rendering.
 
@@ -2412,7 +2425,7 @@ def _watch_transition(
     # A review run's event names the run it reviews and the node that run is
     # drawn under, so the pane can show the review starting on the reviewed
     # run rather than only on the reviewer. Every other run adds nothing.
-    event.update(_reviewed_run_facts(project, snapshot))
+    event.update(_reviewed_run_facts(project, snapshot, pointers=pointers))
     if snapshot.get("status_repaired"):
         # The transition a coordinator's own ``crew repair --status`` caused.
         # The stamp names the repair's instant and reason, so the stream can
@@ -3473,6 +3486,7 @@ def watch_ticker(
                                 counts=counts,
                                 spend_runs=pointers,
                                 rate_statuses=rate_statuses,
+                                pointers=pointers,
                             )
                         continue
 
@@ -3495,6 +3509,7 @@ def watch_ticker(
                             counts=event_counts,
                             spend_runs=pointers,
                             rate_statuses=rate_statuses,
+                            pointers=pointers,
                         )
                         for snapshot, previous, state, event_counts in folded
                     ]
