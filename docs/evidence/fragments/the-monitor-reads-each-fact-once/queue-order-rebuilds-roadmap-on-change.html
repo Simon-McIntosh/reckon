@@ -1,5 +1,8 @@
 <section id="queue-order-rebuilds-roadmap-on-change-priority-cache">
-  <h2>Queue placement reuses roadmap priorities until an input changes</h2>
+  <h2>Reviewed input-stamp implementation</h2>
+  <p>This section records the implementation reviewed at <code>6b86e20289</code>.
+  The <a href="#queue-order-rebuilds-roadmap-on-change-semantic-priorities">semantic-priority repair below</a>
+  supersedes its broad invalidation rule and private directory cache.</p>
   <p>The priority cache retains named-plan inventory construction and its existing
   named-plan identity helper. Its input signature also tracks plan and sprint
   directory membership, the other HTML files in those directories, and the
@@ -43,4 +46,61 @@
   signature helper, and the delivered source restores and reuses it.
   The coordinator owns the post-landing 60-second station I/O and CPU reading;
   no live station reduction is claimed by this worker evidence.</p>
+</section>
+
+<section id="queue-order-rebuilds-roadmap-on-change-semantic-priorities">
+  <h2>Queued priorities survive irrelevant plan edits</h2>
+  <p>Commit <code>6eb915d68bd7390af3edf8e42762740147f4d43e</code>
+  keys queued plans by their structured ranking inputs. The projection reuses the
+  plan inventory and semantic HTML readers, retains section records and heading
+  identities, and excludes title, summary, owner, modified date and version.
+  An edit to a plan with no queued request is outside that key. Ordinary body
+  prose and timestamp-only touches of a queued plan leave its key unchanged;
+  changes to state, waits, sprint, ROI and effort still rebuild it.</p>
+  <p>The sprint directory listing and per-file semantic projections now use
+  <code>file_memo.memoized_key</code>. The shared module owns their stat-keyed
+  cache entries, lock, bounded retention and clearing. A functional probe clears
+  that memo and observes a fresh directory listing while the unchanged roadmap
+  priority keys remain reusable. Sprint file identities and the configured and
+  checkout index identities remain inputs.</p>
+  <table>
+    <thead><tr><th>Probe</th><th>Roadmap builds after repair</th></tr></thead>
+    <tbody>
+      <tr><td>Two unchanged placements</td><td>1</td></tr>
+      <tr><td>Edit a valid plan with no queued request</td><td>1; reviewed implementation built 2</td></tr>
+      <tr><td>Change queued-plan body prose and bookkeeping</td><td>1</td></tr>
+      <tr><td>Touch the queued plan without changing its content</td><td>1</td></tr>
+      <tr><td>Change queued state, wait, sprint, ROI or effort</td><td>2 per case; each matches a forced fresh result</td></tr>
+      <tr><td>Clear the shared file memo</td><td>1 total; directory is listed again</td></tr>
+      <tr><td>Remove and return the queued plan</td><td>3 total</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control was run before the repair at the reviewed commit
+  <code>6b86e20289e8f09b71bac4dc2589f22b1d8f8084</code>. Editing the
+  unqueued plan between calls preserved placements but produced
+  <code>['proj', 'proj']</code> where the new assertion requires
+  <code>['proj']</code>. The runner reports <code>1 failed in 18.43s</code>
+  and names <code>test_an_unqueued_plan_edit_keeps_the_build</code>.
+  That case is among the 14 focused tests passing after the repair.</p>
+  <p>The fresh armed baseline uses the original node base
+  <code>5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd</code>, extracted to a
+  disposable node-local tree with the imported module path and working directory
+  recorded in its log. It reports <code>51 passed in 10.89s</code>.
+  The committed repair reports <code>65 passed in 51.69s</code>.
+  Matching nine-file importer arms report
+  <code>6 failed, 62 passed in 53.53s</code> at the original node base and
+  <code>6 failed, 62 passed in 167.97s (0:02:47)</code> at the repair,
+  with identical failing-id sets and zero added failures. The archived base and
+  assigned worktree have different I/O paths, and the head arm encountered
+  filesystem waits; this comparison judges failure IDs. Both Python paths
+  pass Ruff lint and format checks.</p>
+  <p>The repair receipts share the run directory named above:
+  <code>repair-negative-unrelated-plan.log</code>,
+  <code>repair-baseline-suite.log</code>, <code>repair-after-suite.log</code>,
+  <code>repair-baseline-importers.log</code>, <code>repair-after-importers.log</code>,
+  <code>repair-importer-delta.json</code> and <code>repair-lint.log</code>.
+  An initial baseline extraction omitted the census helper; its rejected receipt
+  is retained as <code>repair-baseline-suite-scaffolding.log</code>, and the
+  admitted baseline includes both helper modules. The coordinator still owns
+  integration and the post-landing 60-second station I/O and CPU reading.</p>
 </section>
