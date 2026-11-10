@@ -449,13 +449,34 @@ def _write_json(path: Path, payload: Mapping[str, Any]) -> None:
     )
 
 
+class PointerLockHeldError(CrewError):
+    """A pointer lock asked for without waiting is held by someone else.
+
+    Raised only by a non-blocking take, so the caller that must not queue behind
+    another holder — a resume beside a promotion — refuses rather than waits.
+    """
+
+    def __init__(self, run_id: str) -> None:
+        super().__init__(f"the lock for {run_id!r} is held elsewhere")
+        self.run_id = run_id
+
+
 @contextmanager
-def _pointer_lock(run_id: str):
-    """Serialise every read-modify-write cycle for one live pointer."""
+def _pointer_lock(run_id: str, *, blocking: bool = True):
+    """Serialise every read-modify-write cycle for one live pointer.
+
+    ``blocking=False`` takes the lock only if it is free and raises
+    :class:`PointerLockHeldError` otherwise, so a holder the caller must not queue
+    behind (a promotion) is a refusal rather than a wait.
+    """
     path = crew_home() / "locks" / f"{run_id}.lock"
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
+        flags = fcntl.LOCK_EX if blocking else fcntl.LOCK_EX | fcntl.LOCK_NB
+        try:
+            fcntl.flock(handle.fileno(), flags)
+        except BlockingIOError as exc:
+            raise PointerLockHeldError(run_id) from exc
         try:
             yield
         finally:
