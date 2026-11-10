@@ -1,0 +1,106 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "First expected set fails if any held run is omitted or added; positive counters fail if the instrument observes no derivation, stat, registry, live or directory work; warm expected-set assertions fail if reuse loses content; the zero counter fails if unchanged refresh repeats discovery or held-path stats; the added-tree set and derive counter fail if registry changes do not invalidate. added.is_dir is fixture sanity, not regression coverage.",
+      "path": "tests/test_held_worktrees_are_read_once_per_change.py:171-187"
+    },
+    {
+      "failure_condition": "The independent literal run-id sets fail if changing a live claim or rewriting the release record leaves the old held record cached.",
+      "path": "tests/test_held_worktrees_are_read_once_per_change.py:190-205"
+    },
+    {
+      "failure_condition": "Renaming the registered directory without updating Git must remove held-run-0; removal of parent-presence validation leaves that id and fails.",
+      "path": "tests/test_held_worktrees_are_read_once_per_change.py:208-213"
+    },
+    {
+      "failure_condition": "len(expected)==20 rejects an empty initial result; result parity rejects lost rows; independent derive==0 counters fail if unrelated pointer creation, a phase-only pointer rewrite, an unregistered claim or sibling-file churn is put back into the held-answer key. Parity alone is not counted as a semantic oracle.",
+      "path": "tests/test_held_worktrees_are_read_once_per_change.py:216-246"
+    },
+    {
+      "failure_condition": "The retained parity and nonempty assertions compare two routes; the new explicit cache clear makes the retained index.calls==2 fail if the explicit-root route loses its second index build rather than accepting a cached held result.",
+      "path": "tests/test_a_derivation_builds_the_ledger_index_once.py:198-208"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:2468:_held_worktrees_by_session",
+    "reckon/crew/obligation_snapshot.py:1326:_derive_fleet_state",
+    "reckon/crew/station_obligations.py:185:refresh"
+  ],
+  "completed_at": "2026-11-10T22:03:27Z",
+  "dispatched_at": "2026-11-10T21:44:28Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/held-worktrees-read-once-per-change.html",
+      "line": "49",
+      "severity": "blocking",
+      "text": "blocking: The importer acceptance figures rely on heavy gates run directly inside fleet job 1291586: stream.jsonl:427 and resume-1.jsonl:162 record direct measure.py/measure_resume.py launches, and the logs report 385.77 s and 368.22 s; the binding fleet policy requires these arms in a separate all_debug or rigel job, so rerun the matched importer pair there and record those receipts before accepting this evidence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all five commits from a0c0431d011d96118a1a4c784cd723d766ec198d to ec676fcad5544604fc2e324a8d7f6bb692256779; the diff changes obligations.py, two tests and the evidence fragment, preserving the index test's answer-parity and one-build assertions.",
+    "done_when": "Read prompt.txt:119-130 and live plan section s23; the 20-tree/30-pointer tests and scoped receipts measure discovery reuse and report zero added failures, but the six-minute importer arms ran in the shared fleet allocation and require a separate-partition rerun.",
+    "goal": "Read the goal in the source prompt.txt and obligations.py:2197-2370; the change caches held records by registered-tree presence and occupied paths while retaining the existing derivation.",
+    "manifest": "Read the source manifest.md and its baseline_suite/after_suite logs; both completed scoped arms have EXIT=0 and no failed ids, and the final head adds only evidence prose after the measured repair revision.",
+    "write_paths": "Read the original prompt.txt:176 and resume-1-advice.txt:1 granting the extra index test; all four changed paths are covered by the original scope or that explicit extension."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktrees_are_read_once_per_change.py:171-246 independently asserts run identities, positive instrument counts, zero warm work and invalidation, while tests/test_a_derivation_builds_the_ledger_index_once.py:203 retains the fresh explicit-root two-build control.",
+    "evidence": "source after-scoped-resumed.log:6 records 58 passed and negative-control.log records the base regression failing, but resume-1.jsonl:162 launches the six-minute importer measurement directly in the fleet allocation rather than a separate partition job.",
+    "fit": "reckon/crew/obligations.py:2223-2370 uses descriptive mechanism names, typed helpers, read-only memo regions and the surrounding module's existing private-helper idiom.",
+    "goal_fidelity": "reckon/crew/obligations.py:2313-2332 keys the held answer on present registered trees and their live occupancy, so unrelated pointer changes preserve the cached derivation.",
+    "reuse": "Capability searches for signatures, memoization and registered-tree discovery found reckon/file_memo.py:358 and reckon/crew/routing.py:578-599; the added helpers wrap those owners, _live_worktrees and git_head._common_git_directory rather than duplicating their implementations.",
+    "scope_discipline": "The four paths in the revision diff match source manifest.md:11 and the explicit grant in resume-1-advice.txt:1, while the importer execution violates the shared fleet compute boundary."
+  },
+  "negative_control_reading": "negative-control.log records one failed test and two passed at original base; the measured warm-work counter is nonzero (derive 1, registry_listing 1, stat 75, live_listing 1, listing 3). The final churn cases are assessed by reading: reverting semantic occupancy/presence to raw source identities makes derive==0 fail. The recorded negative arm did not itself apply the plan-specific phase-only churn.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the goal in the source prompt.txt and obligations.py:2197-2370; the change caches held records by registered-tree presence and occupied paths while retaining the existing derivation.\nVERDICT done_when: Read prompt.txt:119-130 and live plan section s23; the 20-tree/30-pointer tests and scoped receipts measure discovery reuse and report zero added failures, but the six-minute importer arms ran in the shared fleet allocation and require a separate-partition rerun.\nVERDICT write_paths: Read the original prompt.txt:176 and resume-1-advice.txt:1 granting the extra index test; all four changed paths are covered by the original scope or that explicit extension.\nVERDICT manifest: Read the source manifest.md and its baseline_suite/after_suite logs; both completed scoped arms have EXIT=0 and no failed ids, and the final head adds only evidence prose after the measured repair revision.\nVERDICT diff: Read all five commits from a0c0431d011d96118a1a4c784cd723d766ec198d to ec676fcad5544604fc2e324a8d7f6bb692256779; the diff changes obligations.py, two tests and the evidence fragment, preserving the index test's answer-parity and one-build assertions.\nCALL_SITES: reckon/crew/obligations.py:2468:_held_worktrees_by_session, reckon/crew/obligation_snapshot.py:1326:_derive_fleet_state, reckon/crew/station_obligations.py:185:refresh\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2313-2332 keys the held answer on present registered trees and their live occupancy, so unrelated pointer changes preserve the cached derivation.\nSCORE evidence: 12\nJUSTIFICATION evidence: source after-scoped-resumed.log:6 records 58 passed and negative-control.log records the base regression failing, but resume-1.jsonl:162 launches the six-minute importer measurement directly in the fleet allocation rather than a separate partition job.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: The four paths in the revision diff match source manifest.md:11 and the explicit grant in resume-1-advice.txt:1, while the importer execution violates the shared fleet compute boundary.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_held_worktrees_are_read_once_per_change.py:171-246 independently asserts run identities, positive instrument counts, zero warm work and invalidation, while tests/test_a_derivation_builds_the_ledger_index_once.py:203 retains the fresh explicit-root two-build control.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/obligations.py:2223-2370 uses descriptive mechanism names, typed helpers, read-only memo regions and the surrounding module's existing private-helper idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for signatures, memoization and registered-tree discovery found reckon/file_memo.py:358 and reckon/crew/routing.py:578-599; the added helpers wrap those owners, _live_worktrees and git_head._common_git_directory rather than duplicating their implementations.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/held-worktrees-read-once-per-change.html:49 blocking: The importer acceptance figures rely on heavy gates run directly inside fleet job 1291586: stream.jsonl:427 and resume-1.jsonl:162 record direct measure.py/measure_resume.py launches, and the logs report 385.77 s and 368.22 s; the binding fleet policy requires these arms in a separate all_debug or rigel job, so rerun the matched importer pair there and record those receipts before accepting this evidence.\n",
+  "reuse_audit": {
+    "production_helpers": "_held_input_signature and _held_directory_signature wrap file_memo.file_signature/memoized; _held_live_worktrees wraps the existing _live_worktrees resolver; _held_present_worktrees uses parent-scoped cached presence; _held_registered_worktrees wraps routing._registered_worktrees; registry resolution reuses git_head._common_git_directory. No second owner of these held-input projections found in the capability search.",
+    "test_helpers": "fleet/add_tree/refresh/state compose existing tests.helpers.git, ledger and station APIs; Counts/listing/live_listing/measured_stat/measured_scandir add scoped physical-work instrumentation rather than a second product mechanism."
+  },
+  "review_run_id": "r-20261110T213833644491-review-of-held-worktrees-read-once-per-change-ec676fcad554",
+  "reviewed_base_sha": "a0c0431d011d96118a1a4c784cd723d766ec198d",
+  "reviewed_head_sha": "ec676fcad5544604fc2e324a8d7f6bb692256779",
+  "reviewed_run_id": "r-20261110T192857883480-held-worktrees-read-once-per-change",
+  "scores": {
+    "durability": 19,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_derivation_builds_the_ledger_index_once.py tests/test_held_worktrees_are_read_once_per_change.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192857883480-held-worktrees-read-once-per-change/after-scoped-resumed.log",
+      "revision": "7914a6e20710dc39cc191509e04c846655eb1b58",
+      "verified_failure_ids": []
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_derivation_builds_the_ledger_index_once.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T192857883480-held-worktrees-read-once-per-change/baseline-scoped-resumed.log",
+      "revision": "a0c0431d011d96118a1a4c784cd723d766ec198d",
+      "verified_failure_ids": []
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:28:01.626770+00:00",
+  "total": 109
+}
