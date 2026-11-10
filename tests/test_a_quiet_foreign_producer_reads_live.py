@@ -171,4 +171,7 @@ def test_snapshot_from_predecessor_uses_seated_producers_stamp(
             for word in ("no producer", "producer reloading", "--ensure")
         ), line
     else:
-        assert "producer reloading" in line, line
+        # The snapshot is 20 hours old, far outside the reload window, so the
+        # older code stamp is a producer to cycle rather than one reloading.
+        assert "the producer is running older code than the checkout" in line, line
+        assert "producer reloading" not in line, line
