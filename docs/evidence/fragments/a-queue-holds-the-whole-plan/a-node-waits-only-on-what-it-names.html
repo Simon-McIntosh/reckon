@@ -30,9 +30,19 @@
   already held there. Two negative controls fail exactly the case they name:
   ignoring the flag fails the flagged-waits and gate cases, and keying the
   cache without <code>node.after</code> fails the sibling case. The armed
-  suite arm passes 56 tests at the head against 51 at the base revision. On
-  the importing test population measured, the change adds no failure: 165 pass
-  and 22 fail at the head, and the same 22 ids fail at the base revision (the
-  pre-existing manifest-path refusal a queued node meets at queue time). The
-  remaining importer chunks were not completed inside the node's fence.
+  suite arm passes 56 tests at the head against 51 at the base revision, both
+  with the armed command recorded verbatim.
+
+  <p><strong>The importing population.</strong> The test files importing
+  <code>reckon.crew_dispatch_commands</code> or
+  <code>reckon.crew.queue_admission</code> were run in place at
+  <code>-n 4 --timeout 120</code>, one arm at a time, over the same 140-file
+  list at both revisions. Chunk 00 adds one id —
+  <code>test_a_single_section_check_costs_a_tenth_of_the_whole_project_build</code>,
+  a cost-ratio test that passes alone at both revisions and fails only under
+  four-way contention. Chunk 01 adds none: 36 ids fail at the base and the
+  same 36 at the head. Chunk 03 completed at the base (50 failed, 326 passed,
+  1 skipped) and its head arm was cut off by the run's command budget under
+  storage contention, so no comparison exists for it; chunk 02 did not complete
+  at the base. Those two chunks are outstanding, not passed.
 </article>
