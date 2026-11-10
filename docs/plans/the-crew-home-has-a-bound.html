@@ -21,11 +21,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-north-star" content="unattended-execution">
   <meta name="plan-standalone" content="Storage bounds for the crew home and caches; no live plan waits on them and they wait on none. The pick-input index belongs to one-typesafe-model-picker&#x27;s code and is fixed here because its growth is independent of the picker&#x27;s open sections.">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;deferred&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="104">
+<meta name="plan-version" content="105">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;]}">
 </head>
@@ -123,7 +123,7 @@
       <code>tests/test_gc_bounds_a_run_file.py</code>; <code>tests/test_flight.py</code> passes; the fleet supervisor's own log tests pass. This section runs after §3, which writes the same module.</p>
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
-<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="deferred" data-links=""></section>
+<section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
     <p><strong>Deliverable.</strong> An operational node, run after §2 to §4 are promoted and installed: run <code>reckon crew gc</code> for
       the reckon repository and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under
       the run directory; remove the six redirection-named directories in the crew home and the seven stray files at the checkout root after
@@ -242,6 +242,9 @@
 <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="_top" data-id="c-close-s8" data-who="" data-when="">
     <div class="r-comment-body"><p>Ticked done 6 November: the rule landed in <code>d5c008a224</code> (an empty ledger is not content, so it builds no index), with <code>tests/test_a_reader_builds_no_index_for_a_missing_ledger.py</code> in the tree and a stored review. The declaration had not been moved when it landed.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-undefer-s5" data-who="reckon-build" data-when="2026-11-10T21:20:00Z">
+    <div class="r-comment-body"><p>§5 is un-deferred and authorised to run, by the lead on 10 November. The authorisation was first relayed at about 22:10 CET by power-convertor-48, from <code>docs/research/why-a-promotion-takes-minutes.html</code> (proposal R4), and then confirmed by the lead directly in session efd0ee8c. The crew home held 22,350 run directories. The node runs under the destructive-command rules: it lists the set before any removal, prints every removal, and states what survives and why. It skips any run whose live pointer exists, or whose worktree has uncommitted or unlanded commits, because peer sessions have reviews in flight.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T024854758850-review-of-a-single-run-gc-reads-its-own-run-directory-f95f0a792ccd" data-who="reckon-build" data-when="2026-10-17T02:57:23.880Z">
     <div class="r-comment-body"><p>review of run r-20261017T023056594694-a-single-run-gc-reads-its-own-run-directory at head f95f0a792: goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 19, reuse 20; one follow-on finding on the evidence fragment.</p></div>
