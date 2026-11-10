@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T04:20:19.703Z",
+  "dispatched_at": "2026-11-10T04:10:11Z",
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "widened-record-names-only-the-asked-section",
+      "line": 4744,
+      "severity": "blocking",
+      "text": "A first review composed with --section s3 tells the reviewer in its brief that the scope 'widens to the whole plan' and names every unit as traced, but write_review_sidecar records the asked-for scope, not the traced one: it reads the composing context (_REVIEW_SECTIONS) and writes traced_units ['s3']. review_coverage then leaves s1, s2, s4, s5 and s6 uncovered even though the round traced them all, so the section's 'a first review is always full, with every unit in scope' does not hold in the one place the scope is consumed. Reproduced at 8d1785f9c3: the brief text contains 'widens to the whole plan' (True), the stored record carries traced_units ['s3'], and review_coverage returns uncovered ['_document','s1','s2','s4','s5','s6'] (logs/scope-widening-repro.log, EXIT=1). No test asserts the stored scope for the widened case; test_a_first_review_composed_with_a_section_widens_to_every_unit reads the brief only. The same record shape means a section-scoped round can never cover the document unit unless the caller spells --section _document, which no command surface advertises."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "id": "section-token-regex-duplicates-the-identity-derivation",
+      "line": 1757,
+      "severity": "non-blocking",
+      "text": "_SECTION_TOKEN re-derives a grammar the repository already owns: reckon/_plan_html.py:85 _SECTION_IDENTITY (behind section_record_id) already accepts the s prefix, the section symbol, '#N', a bare number and 'section N', so the '\u00a7' + token[1:] rewrite here is a no-op (section_record_id('s3') is already 's3'). The raise at plan_review.py:1772 is therefore unreachable \u2014 section_record_id never returns an empty identity for a non-empty token \u2014 and the docstring's 'refused here' is not what happens: an unknown token is refused later by review_scope at plan_review.py:2237 with a crew_error naming the sections the plan does carry, which is a better message than this one would be."
+    },
+    {
+      "file": "tests/test_a_review_round_is_section_scoped.py",
+      "id": "traced-units-assertion-echoes-the-tests-own-input",
+      "line": 245,
+      "severity": "non-blocking",
+      "text": "assert record[plan_review.TRACED_UNITS_KEY] == ['s3'] compares the stored scope against the list the test itself passed to _store(sections=['s3']), so it holds for any implementation that echoes its input; it is exactly the echo the blocking finding shows is wrong when the scope widens. The independently sourced assertions are the two coverage checks below it ('s3' not in uncovered, 's5' in uncovered)."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261110T040446282064-review-of-a-review-round-is-section-scoped-8d1785f9c3cb",
+  "reviewed_base_sha": "6c36e8c9e5ffd77c9d9633135bc8b6589b05af01",
+  "reviewed_head_sha": "8d1785f9c3cbad857e5036bfaf9ae290007a49ca",
+  "reviewed_run_id": "r-20261103T054937809738-a-review-round-is-section-scoped",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 14,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T04:27:45.442398+00:00",
+  "total": 96
+}
