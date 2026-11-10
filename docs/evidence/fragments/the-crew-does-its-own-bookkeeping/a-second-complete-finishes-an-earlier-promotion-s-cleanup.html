@@ -1,0 +1,180 @@
+<section id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-landing">
+  <h2>A second complete finishes an interrupted promotion's cleanup</h2>
+
+  <p><strong>What changed.</strong> A promotion writes the plan comment, appends
+  the ledger row, then retires the live pointer and releases the worktree. A
+  landing that stops after the row leaves the run recorded by the ledger and
+  still live through its pointer, which no recovery verb clears because the row
+  already exists. The next <code>crew complete</code> refused twice over, both
+  refusals raised inside <code>_report_written_ledger_row</code>'s span and
+  reported as one message: &ldquo;the ledger row for run ... is already written;
+  do not re-promote. Landing or cleanup failed: landing comment ... already
+  contains a different narrative; refusing to report the corrected outcome as
+  recorded&rdquo;.</p>
+
+  <p><strong>The reproduction, captured before the repair.</strong> With the
+  refusal restored
+  (<code>tests/test_a_second_complete_finishes_cleanup.py</code> run against a
+  <code>promotion_scope.py</code> whose differing-narrative branch raises
+  unconditionally), the differing-narrative case reds with exactly that message
+  and the two other cases pass:</p>
+
+  <pre id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-refusal">E   reckon.crew.CrewError: the ledger row for run 'r-second-complete-other-narrative' is already written; do not re-promote. Landing or cleanup failed: landing comment 'c-run-r-second-complete-other-narrative' for plan 'plan-a' already contains a different narrative; refusing to report the corrected outcome as recorded</pre>
+
+  <p><strong>The repair.</strong> The committed ledger row is the record of the
+  promotion, so a call that finds one is finishing that promotion's cleanup
+  instead of promoting again. <code>_record_landing_comment</code> now reports a
+  differing narrative beside the receipt rather than raising it, names both
+  narratives (<code>kept_narrative</code>, <code>requested_narrative</code>) in
+  one <code>note</code>, and leaves the comment the first promotion wrote
+  untouched. Before the row exists the first narrative still pins the outcome,
+  so a differing one stays a refusal; that branch is decided by
+  <code>_ledger_row_is_written</code>, which answers written only when it can
+  show the row, so an unreadable ledger is never read as a promotion the run
+  already landed. The promotion path itself is unchanged and is not in this
+  node's write scope.</p>
+
+  <p><strong>Repair round: reuse.</strong> The first landing carried three
+  copies of things the tree already had. The receipt reduced a stored comment
+  to plain text with a local regex rather than the plan reader's tag stripper;
+  whether a run's row is written was asked by a second ledger read beside the
+  receipt's own; and the new test built its own config home, repository and
+  pointer beside the reconciliation tests' fixture for the same
+  promote-and-retry path. The narrative now goes through
+  <code>_strip_tags</code>, one reader answers the row's state as
+  <code>True</code>, <code>False</code> or <code>None</code> and each caller
+  applies its own reading of an unreadable ledger, and the test imports the
+  sibling fixture and keeps only the assertions this case adds. Behaviour is
+  unchanged: both arms of the repair gate collect 54 tests and pass.</p>
+
+  <p><strong>Review round: which source proves the row.</strong> The two halves
+  of the ledger are not mirrors, and a repair that treated them as one made the
+  ordinary case unprovable. A promotion appends the run's own document under
+  <code>runs/</code>, and the aggregate carries only the rows that have none, so
+  <em>document without aggregate row</em> is the normal shape of a promoted run;
+  reading it as a disagreement refused the very call this node exists to let
+  through, and the gate caught it as four red cases. The document alone now
+  proves the row. A row the aggregate carries with no document beside it is the
+  one shape the two sources disagree about, and both that and a failed read are
+  answered by the caller's choice: the receipt answers present, so it never
+  withholds a cleanup it performed, and the decision to promote answers absent,
+  so an unproven row never stands in for a promotion. Both callers now share one
+  helper parameterised on that answer.</p>
+
+  <p><strong>Either source is the record.</strong> A row the aggregate carries
+  with no per-run document beside it is the run's ledger row — the promotion
+  path reads it as one and the ledger's own reader returns it — so it proves
+  the row, as the base revision answered. A call that finds only that shape
+  therefore finishes the cleanup too, which a case drives through
+  <code>crew complete</code> with a differing narrative: it retires the
+  pointer and reports both narratives instead of raising the double refusal.
+  Reading it as unproven, the over-corrected half of the round above, is what
+  the negative control restores to red that case.</p>
+
+  <p><strong>The receipt names an entity once.</strong> The stored and requested
+  bodies were unescaped for comparison and then stripped by the plan reader's
+  tag stripper, which unescapes again, so a narrative that writes
+  <code>&amp;lt;</code> was reported as <code>&lt;</code>. Both bodies now go to
+  the stripper as they were written, which decodes exactly once; a case asserts
+  that a literal entity survives as written.</p>
+
+  <table id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-arms">
+    <caption>Every arm is a log whose first lines name its revision, tree,
+    resolved module and command, and whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>new tests, repaired module</td>
+        <td><code>aeeff2fd5b</code></td>
+        <td>3 passed</td>
+      </tr>
+      <tr>
+        <td>new tests, refusal restored (negative control)</td>
+        <td><code>db774d6c1e</code> + mutation</td>
+        <td>1 failed
+        (<code>test_a_differing_narrative_finishes_the_cleanup_and_is_named</code>),
+        2 passed</td>
+      </tr>
+      <tr>
+        <td>files importing <code>reckon.crew.promotion_scope</code>, head</td>
+        <td><code>db774d6c1e</code> + change</td>
+        <td>3 failed, 180 passed &mdash; the same three ids as the base arm,
+        so no failure is added</td>
+      </tr>
+      <tr>
+        <td>same files, base scratch tree</td>
+        <td><code>db774d6c1e</code></td>
+        <td>3 failed, 177 passed &mdash; the same three ids, all present
+        before the change</td>
+      </tr>
+      <tr>
+        <td>gate cohort, review-round head</td>
+        <td><code>274c671e4f</code></td>
+        <td>58 passed &mdash; the 7 cases here plus the 51 the inventory file
+        carries</td>
+      </tr>
+      <tr>
+        <td>the same command, base scratch tree</td>
+        <td><code>e595f9f236</code></td>
+        <td>54 passed &mdash; the 3 cases that predate this round plus the same
+        51, so the round adds four cases and no failure</td>
+      </tr>
+      <tr>
+        <td>negative control: the differing branch raises unconditionally</td>
+        <td><code>e595f9f236</code> + change + mutation</td>
+        <td>2 failed, 5 passed &mdash; both differing-narrative cases,
+        including the entity one, which reaches that branch</td>
+      </tr>
+      <tr>
+        <td>negative control: the receipt strips the already-unescaped bodies</td>
+        <td><code>e595f9f236</code> + change + mutation</td>
+        <td>1 failed, 6 passed &mdash; the entity case reports
+        <code>&lt;</code> where the narrative wrote <code>&amp;lt;</code></td>
+      </tr>
+      <tr>
+        <td>gate cohort, aggregate-row round</td>
+        <td><code>8f8a96a1b4</code></td>
+        <td>59 passed &mdash; the 8 cases here plus the 51 the inventory file
+        carries</td>
+      </tr>
+      <tr>
+        <td>the same command, base scratch tree</td>
+        <td><code>9260a0096d</code></td>
+        <td>58 passed &mdash; one fewer case, no failure</td>
+      </tr>
+      <tr>
+        <td>negative control: an aggregate-only row answers unproven</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>2 failed, 6 passed &mdash; the aggregate-only unit case and the
+        <code>crew complete</code> case, the latter raising the double
+        refusal</td>
+      </tr>
+      <tr>
+        <td>negative control: the receipt strips the already-unescaped bodies</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>1 failed, 7 passed &mdash; the entity case</td>
+      </tr>
+      <tr>
+        <td>negative control: the differing branch raises unconditionally</td>
+        <td><code>9260a0096d</code> + change + mutation</td>
+        <td>3 failed, 5 passed &mdash; every case that reaches that branch</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>The three failures are the same in both arms and are not this change's:
+  <code>test_a_paired_dispatch_hides_each_arm.py::test_the_primary_arm_cannot_read_the_shadows_session_directory</code>,
+  <code>test_crew_promotion.py::test_a_successful_store_write_is_reported_written_on_the_command_payload</code>
+  and
+  <code>test_crew_promotion.py::test_a_failing_store_write_is_reported_on_the_ordinary_success_payload</code>
+  (reported twice by pytest). The head arm differs from the base arm only by
+  this change and the sixteenth file it adds.</p>
+
+  <p>The two gate cohorts are the same command in each tree, and they differ
+  only by this change: the base scratch tree is a shared clone checked out at
+  the base revision, so it carries git history and the inventory file can run
+  there. The negative controls are that same tree with this round's change
+  installed and one mutation applied to it; each mutation is reverted before the
+  next arm runs.</p>
+</section>

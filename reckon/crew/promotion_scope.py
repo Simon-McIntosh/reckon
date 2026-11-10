@@ -19,7 +19,7 @@ from reckon import (
     ledger,
     shadow_reads,
 )
-from reckon._plan_html import section_anchor
+from reckon._plan_html import _strip_tags, section_anchor
 from reckon._timestamps import parse_iso, parse_utc
 from reckon.crew.node import (
     STALL_BUDGET_MULTIPLE,
@@ -1436,19 +1436,58 @@ def _record_landing_comment(
             # and every re-promotion then refuses a narrative it already wrote.
             # Compare the unescaped text on both sides so the same narrative
             # always matches however the store happens to encode it.
-            if html.unescape(str(existing.get("body") or "")) != html.unescape(
-                desired_body
-            ):
-                raise CrewError(
-                    f"landing comment {comment_id!r} for plan {plan!r} already "
-                    "contains a different narrative; refusing to report the "
-                    "corrected outcome as recorded"
-                )
+            existing_body = html.unescape(str(existing.get("body") or ""))
+            requested_body = html.unescape(desired_body)
+            if existing_body != requested_body:
+                # The committed ledger row is the record of the promotion, so a
+                # run that already holds one is finishing the cleanup an
+                # interrupted promotion left behind, not promoting again. The
+                # narrative was pinned by the promotion that wrote the comment,
+                # and a later call's narrative that differs from it is reported
+                # beside the receipt rather than raised as a refusal, which
+                # would leave the live pointer and the worktree for a reader to
+                # clear by hand. Before the row exists there is no promotion to
+                # defer to, so a differing narrative stays a refusal.
+                if not _ledger_holds_row(project, root, run_id, unreadable=False):
+                    raise CrewError(
+                        f"landing comment {comment_id!r} for plan {plan!r} already "
+                        "contains a different narrative; refusing to report the "
+                        "corrected outcome as recorded"
+                    )
+                # Both sides go to the stripper as they were written: it
+                # unescapes once, so a narrative that names an entity in its
+                # own text keeps it. Feeding it the already-unescaped forms
+                # above would decode such a narrative twice.
+                kept_narrative = _strip_tags(str(existing.get("body") or ""))
+                requested_narrative = _strip_tags(desired_body)
+                return {
+                    "recorded": False,
+                    "comment_id": comment_id,
+                    "section": anchor,
+                    "reason": "different_narrative",
+                    "finished_cleanup": True,
+                    "kept_narrative": kept_narrative,
+                    "requested_narrative": requested_narrative,
+                    "note": (
+                        "finished an earlier promotion's cleanup: the landing "
+                        "comment keeps the narrative that promotion recorded "
+                        f"({kept_narrative!r}), which differs from the one "
+                        f"requested ({requested_narrative!r})"
+                    ),
+                }
             return {
                 "recorded": True,
                 "comment_id": comment_id,
                 "section": anchor,
                 "already_recorded": True,
+                **(
+                    {
+                        "finished_cleanup": True,
+                        "note": "finished an earlier promotion's cleanup",
+                    }
+                    if _ledger_holds_row(project, root, run_id)
+                    else {}
+                ),
             }
         if worker_recorded:
             return {
@@ -2256,18 +2295,32 @@ def _landing_refusal(message: str, rollback: Mapping[str, bool]) -> CrewError:
     return error
 
 
-def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> bool:
-    """Read this run's file and the aggregate without consulting other runs.
+def _ledger_holds_row(
+    project: str,
+    root: str | Path | None,
+    run_id: str,
+    *,
+    unreadable: bool = True,
+) -> bool:
+    """Whether the ledger holds this run's row, read without other runs.
 
-    A union read can fail on an unrelated damaged run document. Treating that
-    failure as proof that this row survived would forbid the re-promotion that
-    recovers a file the rollback removed. An unreadable aggregate or target
-    file still answers present, so the receipt only claims a provable absence.
+    Either source carries the run's record, so either one proves it. A
+    promotion appends the run's own document under ``runs/``, and a row the
+    aggregate carries without one is read as the run's record by the promotion
+    path and returned by the ledger's own reader; the two shapes are one
+    record kept in two places, not a disagreement between them. A document that
+    cannot be read, or an aggregate that cannot be, proves neither and answers
+    ``unreadable``.
+
+    The default suits a receipt, which must not claim a rollback it cannot show
+    and so treats an unprovable row as present; a caller deciding whether a
+    promotion already landed passes False, because an unproven row must not
+    stand in for one.
     """
     try:
         data, _version = ledger.load_aggregate(project, root=root)
     except (OSError, ValueError, _store.CorruptEnvelopeError, ledger.LedgerError):
-        return True
+        return unreadable
     if any(str(item.get("run_id") or "") == run_id for item in data["runs"]):
         return True
     try:
@@ -2275,7 +2328,7 @@ def _ledger_holds_row(project: str, root: str | Path | None, run_id: str) -> boo
     except FileNotFoundError:
         return False
     except OSError:
-        return True
+        return unreadable
     return True
 
 
