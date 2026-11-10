@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-follower-reads-only-what-moved">
   <meta name="plan-title" content="A Follower Reads Only What Moved">
-  <meta name="plan-summary" content="Each crew follower runs git and re-parses the model catalogue every second; it should read them again only when HEAD or the file has moved.">
+  <meta name="plan-summary" content="Each crew follower re-runs git for every short commit citation and re-parses the model catalogue on every pass; each should be asked once.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="2.5">
@@ -24,7 +24,7 @@
   <title>A Follower Reads Only What Moved | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="3">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -43,7 +43,7 @@
       <code>packed-refs</code> and both gitconfig files. The follower itself opened the reload tree's
       <code>docs/state/reckon/model-catalogue.yaml</code> 86 times.</p>
 
-    <h2 id="s1">§1 — A follower derives its code identity only when HEAD moves</h2>
+    <h2 id="s1">§1 — A short commit citation is resolved once per process</h2>
 <section data-reckon="section" data-id="s1" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> <code>_FollowerReloader</code> in <code>reckon/crew/follower_reload.py</code> checks for a code
       move every <code>FOLLOWER_FRESHNESS_SECONDS</code>, which is 1.0 s (<code>reckon/crew/follower_registration.py</code>
@@ -78,7 +78,7 @@
       starts with its revision and the literal command and ends in a bare <code>EXIT=</code> line. ruff check and ruff
       format --check are clean on those paths by delta.</p>
 
-    <h2 id="s2">§2 — The model catalogue is parsed once per file stamp</h2>
+    <h2 id="s2">§2 — The model catalogue has one memo, and it hands out copies</h2>
 <section data-reckon="section" data-id="s2" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
     <p><strong>Why.</strong> The same follower opened and parsed <code>docs/state/reckon/model-catalogue.yaml</code> 86
       times in 15 s, about six a second. The catalogue changes only when a commit changes it. It is read through
