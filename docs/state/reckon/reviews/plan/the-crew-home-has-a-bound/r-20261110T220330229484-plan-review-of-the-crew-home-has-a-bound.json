@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T22:19:49.723Z",
+  "dispatched_at": "2026-11-10T22:08:44Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "done_when-1",
+      "reason": "the whole section is invoked to shrink a measured population, and as written its measure cannot distinguish reclaiming 22,350 directories from reclaiming none; it needs a required reduction (or a floor on directories removed) and a stated retention window, so the node must show the count fell.",
+      "text": "the apply pass can reclaim nothing and still satisfy every criterion: the before/after figures are only *recorded*, and the sole population criterion is \"no run directory remains that the report named as reclaimable\", which holds vacuously when the report names none. `garbage_collect` skips any directory not in the project's ledger (`gc.py:767`, `if directory.name not in ledgered ... continue`) and the unledgered sweep fails closed, marking every row `withheld`, whenever any registered mount's ledger is unreadable (`routing.py:2009-2017`); the unledgered cutoff is also `now - retention_days`, default 30 days (`routing.py:1986`)`, so a rerun on 10 November reaches only directories untouched for a month. A node can therefore run the pass, watch it remove 0 of the 22,350 directories it exists to reclaim, and report the section met.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:128",
+      "id": "done_when-2",
+      "reason": "the pass is irreversible and destructive over a live shared store, and the control as written cannot go red on the failure that matters, which is deleting a peer's live run rather than failing to delete a dead one.",
+      "text": "the declared negative control is the report-only pass: \"after it, the counts and sizes are unchanged\". That shows only that a dry run does not write; it presents no case in which the keep-guard must fire and no mutation that makes it red. Nothing in the done-when puts a live run's directory, or a worktree with uncommitted or unreachable commits, in front of the pass and requires it to be skipped and listed as kept, so a gc that removed one would still satisfy the control.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-home-has-a-bound.html:127",
+      "id": "reasoning-1",
+      "reason": "the deliverable and its measure do not rest on which module walks the population, so correcting the sentence changes the rationale and not the work; it is still worth doing because the next reader will look for the walk where the plan says it is.",
+      "text": "the justification \"Every promotion and the station still walk that population\" names two callers that do not exist in the tree: no `reckon/crew/station*.py` and no `reckon/crew/promotion*.py` module references `runs_dir`, `runs_root` or `crew/runs`. The readers that do walk it are `recovery_watch.py:3027` (a file stamp over the runs root), `dispatch_claims.py:1797`, `node.py:915` and `routing.py:1980`.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "379ed481fd04947ed0fee05a955a36169930dbcf",
+  "plan_fingerprint": "1ad5983601c38d9e26114586b91c97142011a3528ee13ea130315fbcaf759bf3",
+  "plan_slug": "the-crew-home-has-a-bound",
+  "plan_version": 108,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T220330229484-plan-review-of-the-crew-home-has-a-bound",
+  "reviewed_blob_sha": "114b0675f1fc2db8067761ee5ed78eea4241df9f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a75 cites one anchor, `f-tchhab-003`, which resolves as a resolved followup carrying the 162.6 GB outcome it is cited for; the evidence-fragment path is a new artifact rather than a pointer to something that exists.",
+    "done_when": "a finding \u2014 \u00a75's criteria record the before and after counts rather than require a reduction, and the only reachable population target is \"no run directory remains that the report named as reclaimable\", which is conditional on the report's own scope (plan.html:128).",
+    "evidence_paths": "pass \u2014 the log sits in the run's own directory under `~/.config/reckon/crew/runs/<run>/` and the report fragment under `docs/evidence/fragments/the-crew-home-has-a-bound/`; both survive the run and a later reader can open them.",
+    "naming": "pass \u2014 no plan labels, stage names or ticket numbers enter a symbol, file or comment; the section numbers are plan structure and no code is named by them.",
+    "reasoning": "a finding \u2014 the urgency sentence names two readers of the population, \"every promotion and the station\", and neither module reads the run directory: no `reckon/crew/station*.py` and no `reckon/crew/promotion*.py` mentions `runs_dir`, `runs_root` or `crew/runs`, while the modules that do are `recovery_watch.py:3027`, `dispatch_claims.py:1797`, `node.py:915` and `routing.py:1980`.",
+    "single_goal": "pass \u2014 \u00a75 carries one deliverable: run the reclaim pass and record what it kept and removed. The before/after figures and the kept list are records of that one act, not a second deliverable.",
+    "wiring": "pass \u2014 \u00a75 is reachable: `f-tchhab-014` is open (plan.html:231) with the prompt `/reckon-build the-crew-home-has-a-bound \u00a75`; \u00a75 declares no depends-on and the \u00a72\u2013\u00a74 precondition the earlier text carried is gone, so nothing is left dangling."
+  },
+  "section_digests": {
+    "_document": "8dbf3931cf51d4f9e385eee50ffeaf942f75c992211bd29b064ea8615ef7a5d7",
+    "s1": "32d74b1202f967c9688afa80dbd94719f49d78f6a5afcc8d56d9c46602e1c0a5",
+    "s10": "56c18da5f95c1af6bc07050b4374f565f11fa8750f575894cd4e1cc2b5ea773a",
+    "s11": "80acd3bb5f292230c27316d662ee39353a2f9d2571e4aa608f5e765924e25480",
+    "s12": "45922de00c241b79de39fff9312c389ca9030f6fa16a304a9d0c35e383ad77be",
+    "s13": "acf680c3187bbb981fd28a86fcf53a07328031935536c58872746cc6e10a6f26",
+    "s2": "9328c20a14a28cadebc0cf3424b9fa61772f8c3bea7e4f7b1e097571697c0369",
+    "s3": "42466bfb93ed68c3dcdb669550dae38d00ebbdea5e24407a7579076255209fbf",
+    "s4": "ea437bee063bb05e8f8ddb6f7a30f7f066d66dff1770c1488e31b86a6f5c7ba8",
+    "s5": "c8b4e42f0085c1eaa594c20a0020c5e31a5d954a6de7daa0d9eca4dace52d5e2",
+    "s6": "3f82b3311550663b1d18b1428203c2b44805aff91f1c998049de11dd82bfe201",
+    "s7": "d966e9dc54000fcf7d43d9d39567b2a791c2670b0224b881649472a126a8f106",
+    "s8": "07d9242815cd2c19cf76c9484aa28c908834190af477f204091de9d695b3e8a5",
+    "s9": "5e8a5c96b9e0b65736bdee8a24254ce6fe4a12c73dcb34c44b3a5a72b6e6d9c8"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:43:01.121249+00:00",
+  "total": null
+}
