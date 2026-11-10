@@ -504,16 +504,17 @@ def apply_section_dependency_edits(
     if not requests:
         return html_text
     mapping = _read_section_dependency_mapping(html_text)
-    edits = [
-        (
-            request["section"],
-            None if request.get("refs") is None else list(request["refs"]),
-        )
-        for request in requests
-    ]
-    return _plan_html.edit_keyed_meta(
-        html_text, SECTION_DEPENDS_ON_META, edits, mapping=mapping
-    )
+    for request in requests:
+        section = request["section"]
+        refs = request.get("refs")
+        if refs is None:
+            mapping.pop(section, None)
+        else:
+            mapping[section] = list(refs)
+    if not mapping:
+        return _plan_html._remove_meta(html_text, SECTION_DEPENDS_ON_META)
+    content = json.dumps(mapping, ensure_ascii=True, separators=(",", ":"))
+    return _plan_html._set_meta(html_text, SECTION_DEPENDS_ON_META, content)
 
 
 def apply_declaration_removals(html_text: str, requests: list[dict[str, Any]]) -> None:

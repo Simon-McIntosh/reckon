@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="105">
+<meta name="plan-version" content="108">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;]}">
 </head>
@@ -124,17 +124,8 @@
 
     <h2 id="s5">§5 — The existing backlog is reclaimed</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-    <p><strong>Deliverable.</strong> An operational node, run after §2 to §4 are promoted and installed: run <code>reckon crew gc</code> for
-      the reckon repository and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under
-      the run directory; remove the six redirection-named directories in the crew home and the seven stray files at the checkout root after
-      listing each with its contents' first line; and remove the 18 clean worktrees whose heads <code>main</code> already contains through
-      <code>gc --apply</code>. Nothing is removed that the listing did not name.</p>
-    <p><strong>Done when</strong> the log records the before and after sizes of <code>~/.cache/reckon</code>,
-      <code>~/.config/reckon/crew/runs</code>, <code>reports</code> and <code>locks</code> (measured with <code>du -s</code> under a
-      <code>timeout</code>), the cache holds no ledger index whose recorded checkout is gone, the crew home holds no redirection-named directory,
-      <code>git status --porcelain</code> at the checkout root lists none of the seven files, and the combined size of the four stores is at
-      least 100 GB lower than the §1 figures. The removal listing is in the log before the first removal line. Write paths: the run's own log
-      directory.</p>
+    <p><strong>Deliverable.</strong> An operational node, rerun on 10 November at the lead's authorisation. The backlog this section first named was reclaimed on 16 October (162.6 GB, f-tchhab-003): the redirection-named directories and the stray checkout files are gone. What remains is the population itself: 22,350 run directories under <code>~/.config/reckon/crew/runs</code> and 106 worktrees at the reckon checkout. Every promotion and the station still walk that population. Run <code>reckon crew gc</code> for the reckon repository report-only and capture its report, then <code>reckon crew gc --apply</code>, capturing every printed removal to a log under the run directory. Nothing is removed that the report did not name. Any run whose live pointer exists, and any worktree with uncommitted changes or commits not reachable from main, is skipped and listed as kept.</p>
+    <p><strong>Done when</strong> the log records, before and after the apply pass: the number of run directories, the number of worktrees at the reckon checkout, and the sizes of <code>~/.cache/reckon</code>, <code>~/.config/reckon/crew/runs</code>, <code>reports</code> and <code>locks</code> (each measured under a timeout). The report-only pass's full listing is in the log before the first removal line. The negative control is the report-only pass itself: after it, the counts and sizes are unchanged. After the apply pass, no worktree remains whose head main contains and that is clean and claimed by no live run, and no run directory remains that the report named as reclaimable. The log ends with what was kept and why. Every command runs on the fleet node with a timeout, and its output is captured whole, never discarded or truncated. Write paths: the run's own log directory and <code>docs/evidence/fragments/the-crew-home-has-a-bound/the-existing-backlog-is-reclaimed.html</code>.</p>
 
     
     <h2 id="s6">§6 — gc clears an abandoned clean tree and an already-removed one</h2>
@@ -236,6 +227,11 @@
     <h4 class="r-fu-title">Build §13</h4>
     <div class="r-fu-body"><p>Bound the persisted memo store in <code>crew gc</code>; writes only <code>gc.py</code> and a new test.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §13</pre>
+    </article>
+<article class="r-fu" data-id="f-tchhab-014" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §5" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §5: reclaim the run and worktree population</h4>
+    <div class="r-fu-body"><p>Authorised by the lead on 10 November; the crew home holds 22,350 run directories.</p></div>
+    <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §5</pre>
     </article>
 </section>
   
