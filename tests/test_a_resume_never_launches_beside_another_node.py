@@ -43,7 +43,7 @@ from tests import test_a_live_run_never_reads_dead as liveness
 
 # The declared mutation, verbatim: the string the promotion audit matches
 # against the red log's first line.
-DECLARED_MUTATION = "remove the exclusive attempt claim; both resume doors must launch"
+DECLARED_MUTATION = "remove the launch reservation; both resume doors must launch"
 
 PROJECT = "proj"
 FOREIGN_HOST = "a-launcher-host-that-is-not-this-one"
@@ -51,11 +51,10 @@ FOREIGN_HOST = "a-launcher-host-that-is-not-this-one"
 TWO_DOOR_RUN = "r-two-doors"
 REFUSED_RUN = "r-stream-in-motion"
 ENDED_RUN = "r-stream-quiet"
-RECLAIM_RUN = "r-abandoned-claim"
 
 # Every run id this file mints, so the real-home check names a path only this
 # file creates rather than one a live fleet shares.
-_RUN_IDS = (TWO_DOOR_RUN, REFUSED_RUN, ENDED_RUN, RECLAIM_RUN)
+_RUN_IDS = (TWO_DOOR_RUN, REFUSED_RUN, ENDED_RUN)
 
 # How far past the stall window a quiet stream and an old launch are placed, so
 # the reading is a fixture fact rather than the wall clock.
@@ -335,51 +334,3 @@ def test_a_stream_past_the_window_launches(
     launched = _launch(ENDED_RUN)
 
     assert launched["pid"] == liveness._absent_pid(), launched
-
-
-# --- An abandoned claim is reclaimed ---------------------------------------
-
-
-def test_an_abandoned_claim_is_reclaimed_after_the_launch_window(
-    home: Path, tmp_path: Path, repo: Path
-) -> None:
-    """A claim whose launcher never recorded its attempt is freed once stale."""
-    record = _pointer(
-        tmp_path,
-        repo,
-        RECLAIM_RUN,
-        launcher_host=None,
-        pid=liveness._absent_pid(),
-        stream_quiet_seconds=LONG_AGO_SECONDS,
-    )
-    claim = resumption.attempt_claim_path(RECLAIM_RUN, 2)
-    claim.parent.mkdir(parents=True, exist_ok=True)
-    claim.write_text(json.dumps({"attempt": 2}), encoding="utf-8")
-    old = time.time() - (resumption.LAUNCH_WINDOW_SECONDS + 60)
-    os.utime(claim, (old, old))
-
-    taken = resumption.claim_next_attempt(RECLAIM_RUN, record)
-
-    assert taken == claim, taken
-    assert claim.exists(), claim
-
-
-def test_a_fresh_claim_is_not_reclaimed(home: Path, tmp_path: Path, repo: Path) -> None:
-    """A claim inside the launch window still guards a launcher composing."""
-    record = _pointer(
-        tmp_path,
-        repo,
-        RECLAIM_RUN,
-        launcher_host=None,
-        pid=liveness._absent_pid(),
-        stream_quiet_seconds=LONG_AGO_SECONDS,
-    )
-    claim = resumption.attempt_claim_path(RECLAIM_RUN, 2)
-    claim.parent.mkdir(parents=True, exist_ok=True)
-    claim.write_text(json.dumps({"attempt": 2}), encoding="utf-8")
-
-    with pytest.raises(CrewError) as raised:
-        resumption.claim_next_attempt(RECLAIM_RUN, record)
-
-    assert RECLAIM_RUN in str(raised.value)
-    assert "already has a resume launching" in str(raised.value)

@@ -1,0 +1,50 @@
+<section class="evidence-fragment" id="the-retired-attempt-claim-machinery-is-removed">
+  <h3 id="the-retired-attempt-claim-machinery-is-removed-heading">The retired attempt-claim machinery is removed</h3>
+  <p id="the-retired-attempt-claim-machinery-is-removed-what">The resume door reserves the attempt it launches through
+    <code>reserve_launch_attempt</code>, so the older attempt-claim files had no production writer left. Deleted from
+    <code>reckon/crew/resumption.py</code>: <code>claim_next_attempt</code>, <code>release_attempt_claim</code>,
+    <code>_claim_may_be_reclaimed</code>, <code>attempt_claim_path</code> and the helpers only they reached
+    (<code>_create_attempt_claim</code>, <code>_attempt_claim_age_seconds</code>, <code>_move_attempt_claim_aside</code>,
+    <code>_ATTEMPT_CLAIM_SUFFIX</code>, <code>_ATTEMPT_CLAIM_ATTEMPTS</code>). Deleted from
+    <code>reckon/crew/recovery_liveness.py</code>: <code>_newest_attempt_claim_number</code>,
+    <code>_attempt_claim_seconds</code>, <code>_attempt_started_from_claim</code> and the two readers only they used
+    (<code>_attempt_claim_path</code>, <code>_attempt_claim_numbers</code>).</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-readers"><code>_current_attempt_number</code> now reads only the
+    attempt record a launch publishes, and <code>_attempt_started_seconds</code> candidates only the pointer's
+    <code>attempt_started_at</code> and the attempt record's. No production behaviour changes, because every deleted
+    reader already answered <code>None</code> for every production run: no production path wrote an
+    <code>attempt-N.claim</code> after the reservation landed. <code>scripts/census/monitor_census.py</code> still globs
+    the claim files by name, by design — it reads historical run directories, and it calls none of the deleted
+    functions.</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-measure">The named grep over
+    <code>reckon scripts skills</code> returns nothing. Over <code>tests</code> it returns only the two
+    <code>ast.parse</code> fixture sources in <code>tests/test_staged_write_inventory.py</code> (lines 168, 169, 198 and
+    199), which model a call shape and call nothing. The test files in this node's write scope, run one arm at a time,
+    report <strong>1 failed, 64 passed</strong> at the dispatch base
+    (<code>664f5ccc23</code>) and <strong>1 failed, 55 passed</strong> at the head: the same single failure
+    (<code>test_every_staged_write_reaches_the_owner</code>, whose census expects a set of staged writers that other
+    landed work has since extended by four entries, identical in both arms), and nine fewer passing ids at the head —
+    exactly the nine deleted cases.</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-cases">Deleted cases and the mechanism each pinned. In
+    <code>tests/test_a_resume_never_launches_beside_another_node.py</code>:
+    <code>test_an_abandoned_claim_is_reclaimed_after_the_launch_window</code> (a claim older than the launch window is
+    reclaimed by age) and <code>test_a_fresh_claim_is_not_reclaimed</code> (a claim inside the window still refuses).
+    In <code>tests/test_a_resumed_attempt_is_read_through_its_own_records.py</code>:
+    <code>test_arm_i_a_claim_after_a_status_repair_is_not_the_repaired_word</code>,
+    <code>test_arm_ii_a_claiming_attempt_with_a_worker_is_not_the_repaired_word</code>,
+    <code>test_arm_iii_a_launch_failed_attempt_with_a_next_claim_starts</code>,
+    <code>test_arm_iv_an_exit_unfinished_attempt_with_a_next_claim_starts</code>,
+    <code>test_arm_v_the_attempts_own_word_is_provisional_while_it_writes</code> (all five resolve the current attempt
+    from the claim, which is what made the resumed attempt visible), <code>test_a_claim_alone_dates_the_attempt</code>
+    (the claim is the attempt's only clock) and <code>test_every_claim_in_the_directory_dates_the_attempt</code> (two
+    claims with no attempt record between them both date the run). The two surviving cases date an attempt from its own
+    exit record and from its own quiet word, so they stay.</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-fixture">The duplicated <code>_create_attempt_claim</code>
+    fixture in <code>tests/test_staged_write_inventory.py</code> was reviewed rather than merged: the two census cases
+    drive different analyser branches — one delegates the move to a helper, the other inlines <code>os.rename</code> —
+    and their names already say which (<code>..._delegated_move_aside_...</code> and
+    <code>..._inline_move_aside_...</code>), so merging them would drop a branch from the census.</p>
+  <p id="the-retired-attempt-claim-machinery-is-removed-control">The declared negative control is none: this deletes
+    code no production path reaches, and the measure is the empty production grep and the importer-population delta
+    rather than a failure that a mutation would produce.</p>
+</section>

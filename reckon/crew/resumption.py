@@ -75,7 +75,7 @@ from reckon.crew.dispatch import (
 from reckon.crew.node import CrewError
 from reckon.crew.process_liveness import _process_start_time as process_start_time
 from reckon.crew.recovery import (
-    LAUNCH_WINDOW_SECONDS,
+    LAUNCH_WINDOW_SECONDS,  # noqa: F401 -- re-exported: resume doors read it here
     WORKER_RECORD_NAME,
     _newest_stream_shows_work,
     _opened_repair_rounds,
@@ -290,128 +290,6 @@ def _refuse_a_launch_already_running(run_id: str) -> None:
     """
     if run_id not in _LAUNCHES_IN_THIS_PROCESS:
         return
-    raise _in_flight_refusal(run_id, {})
-
-
-# The claim file a launch takes for the attempt it is about to start. The
-# in-flight mark above and the process-table guard beside it both read a fact
-# that is local to one kernel: a pid is meaningful only on the machine that
-# issued it, so a launch on another host reads as no process at all and the
-# guard lets a second door start a worker the first cannot see. The exclusive
-# create is the one coordination primitive that is coherent across hosts on
-# this shared home — the pointer is read and written under a flock, which is
-# node-local — so the attempt number a launch takes is claimed with it. Of two
-# doors that read the same current attempt, only one creates the claim for the
-# next; the other refuses with the in-flight wording and keeps its advice.
-_ATTEMPT_CLAIM_SUFFIX = ".claim"
-
-# How many times a launch re-runs its reclaim-or-refuse decision before giving
-# up. One reclaim is the ordinary case; the bound only exists so a storm of
-# reclaimers cannot spin.
-_ATTEMPT_CLAIM_ATTEMPTS = 8
-
-
-def attempt_claim_path(run_id: str, attempt: int) -> Path:
-    """The file whose exclusive creation reserves one attempt number."""
-    return run_dir(run_id) / f"attempt-{attempt}{_ATTEMPT_CLAIM_SUFFIX}"
-
-
-def _create_attempt_claim(path: Path, attempt: int) -> bool:
-    """Reserve ``attempt`` by creating its claim file exclusively.
-
-    O_CREAT | O_EXCL makes the create and the test one operation, so of two
-    launchers that read the same current attempt exactly one wins. The record
-    written inside names the launcher, so a reader can tell a claim still being
-    taken from one abandoned mid-write.
-    """
-    try:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        descriptor = os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o644)
-    except FileExistsError:
-        return False
-    with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
-        json.dump(
-            {
-                "attempt": attempt,
-                "pid": os.getpid(),
-                "pid_start_time": process_start_time(os.getpid()),
-                "at": _utc_now(),
-            },
-            handle,
-        )
-    return True
-
-
-def _attempt_claim_age_seconds(path: Path) -> float | None:
-    try:
-        return max(0.0, time.time() - path.stat().st_mtime)
-    except OSError:
-        return None
-
-
-def _move_attempt_claim_aside(path: Path) -> None:
-    """Retire a spent claim without deleting a file another reader may hold."""
-    with suppress(OSError):
-        os.rename(path, path.with_name(f"{path.name}.reclaimed"))
-
-
-def release_attempt_claim(path: Path | None) -> None:
-    """Drop the claim this process took for a launch that did not start."""
-    if path is None:
-        return
-    with suppress(OSError):
-        os.unlink(path)
-
-
-def _claim_may_be_reclaimed(run_id: str, path: Path, claimed: int) -> bool:
-    """Whether an existing claim no longer guards a live or pending attempt.
-
-    Two readings free a claim. A pointer already at the claimed number names an
-    attempt the run has recorded, so the claim and the stale door reading it
-    must both stand down and the reclaiming door aims at the run's real next
-    attempt. A pointer short of the claimed number is a claim whose launcher
-    never recorded its attempt — an abandoned reservation — and it is freed
-    only once its launch has exceeded the window a fresh dispatch is given, so
-    a launcher still composing its attempt is not displaced by a faster door.
-    """
-    try:
-        current = int(read_pointer(run_id).get("attempt") or 1)
-    except CrewError:
-        current = claimed
-    if current == claimed:
-        return False
-    if current > claimed:
-        return True
-    age = _attempt_claim_age_seconds(path)
-    return age is not None and age >= LAUNCH_WINDOW_SECONDS
-
-
-def claim_next_attempt(run_id: str, record: Mapping[str, Any]) -> Path:
-    """Reserve the attempt this launch is about to start, or refuse.
-
-    The claim is taken before any plan is built, so the number is held for the
-    whole launch and a second door reading the same current attempt meets it
-    rather than starting a worker beside the first. A claim is raised with the
-    same refusal every other in-flight door uses, so no refusal family is added
-    and a coordinator reads one wording whichever guard met it.
-    """
-    claimed = int(record.get("attempt") or 1) + 1
-    for _ in range(_ATTEMPT_CLAIM_ATTEMPTS):
-        path = attempt_claim_path(run_id, claimed)
-        if _create_attempt_claim(path, claimed):
-            return path
-        if not _claim_may_be_reclaimed(run_id, path, claimed):
-            raise _in_flight_refusal(run_id, {})
-        _move_attempt_claim_aside(path)
-        try:
-            current = int(read_pointer(run_id).get("attempt") or 1)
-        except CrewError:
-            current = claimed
-        if current > claimed:
-            # The run has moved past the reserved attempt, so the next free
-            # number is the pointer's own successor rather than the stale one
-            # this door read.
-            claimed = current + 1
     raise _in_flight_refusal(run_id, {})
 
 
@@ -1331,11 +1209,10 @@ def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
     forever. A stream that carries no assistant turn — or none at all — is
     neither, so the missing verdict stands.
 
-    The stream is read on its own clock. A launch reserves its attempt claim
-    before it reaches any guard, and that claim dates the attempt this door is
-    starting; reading the attempt-bounded quiet time here would let the
-    reservation shorten the predecessor's silence to nothing and refuse the
-    very resume that took it.
+    The stream is read on its own clock rather than the attempt-bounded one:
+    this door asks whether the *previous* worker stopped, and dating that
+    silence from the attempt now starting would shorten it to nothing and let
+    the resume through on no evidence at all.
     """
     return _newest_stream_shows_work(record) and not _newest_stream_in_motion(
         record, from_stream_alone=True
@@ -1787,10 +1664,7 @@ def _resume(
             # arm covers the launch alone: once a worker has been started its
             # process holds the run, and a later failure recording the attempt
             # must not drop the guard that keeps another door from launching a
-            # second worker beside it. The attempt claim goes with the marker
-            # for the same reason and on the same terms: a claim left standing
-            # would refuse the run's next resume against a launch that never
-            # produced a worker.
+            # second worker beside it.
             clear_resume_launching(run_id)
             release_launch_reservation(reservation, only_when_unspawned=True)
             raise
