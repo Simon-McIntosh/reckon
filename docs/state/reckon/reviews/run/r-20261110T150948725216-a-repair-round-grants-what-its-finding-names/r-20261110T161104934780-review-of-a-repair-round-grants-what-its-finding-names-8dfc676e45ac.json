@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T16:30:08.703Z",
+  "dispatched_at": "2026-11-10T16:16:27Z",
+  "findings": [
+    {
+      "file": "tests/test_a_repair_round_grants_a_missing_test.py",
+      "line": "136",
+      "severity": "non-blocking",
+      "text": "non-blocking: the reason assertion compares the recorded grant reason against the id the test itself supplied (repair.finding_id over the same finding), and in the single-finding case _grant_reason falls back to findings[0]['id'], which is that same id, so reverting the reason logic leaves this assertion true; the reason behaviour is actually guarded only by the two-finding test at line 156, whose `!= first['id']` does compare against an independent value."
+    },
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "607",
+      "severity": "non-blocking",
+      "text": "non-blocking: the third asking pattern (`missing|uncommitted` ... `test`) matches any clause that carries one of those adjectives before the word test, so a finding about something else such as 'the uncommitted rename breaks the test suite' or 'the missing branch is uncovered by tests' is read as a test ask and grants a spurious tests/ path; the path grant is additive so this over-grants a write path rather than breaking the repair."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is a repair round grants what its finding names; reckon/crew/recovery_repair_dispatch.py:611-637 adds _asks_for_a_test and _missing_test_paths and :687-694 extends the granted and advised scope with the test path the finding's text asks for, keeping the cited production file.\nVERDICT done_when: the done_when names a new tests/test_a_repair_round_grants_a_missing_test.py proving five cases over a temporary crew home; the manifest records that file green (5 passed at baf8f37f85, logs/gate-head.log) plus the base-vs-head importer suite and three negative controls, all logs ending in EXIT=0 or EXIT=1 with headers naming their revision and literal command.\nVERDICT write_paths: read the reviewed prompt's FENCE \u2014 SCOPE (reckon/crew/recovery_repair_dispatch.py, tests/test_a_repair_round_grants_a_missing_test.py, the evidence fragment, the figure dir); every path in the diff is inside that list.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T150948725216-a-repair-round-grants-what-its-finding-names/manifest.md; it states 5 passed at the head, the 164-vs-159 importer delta with zero failures either arm, and three negative controls with their own logs.\nVERDICT diff: read both commits against b593080a11: baf8f37f85 changes reckon/crew/recovery_repair_dispatch.py and adds the test module, 8dfc676e45 corrects the fragment's cited head; three files, all inside the declared fence.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:1640 (dispatch_repair_for_run -> _grant_round_scope), reckon/crew/recovery_review_acceptance.py:799 (dispatch_awaiting_reviews -> dispatch_repair_for_run)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:687-694 grants the named tests/ module or tests/test_<node>.py and records the asking finding's id, which is the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: the gate at logs/gate-head.log runs the five named cases (5 passed, EXIT=0) and logs/importers-base.log vs logs/importers-head.log show 159 vs 164 passed; the done_when's three negative controls each ran red under their own log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three diff paths reckon/crew/recovery_repair_dispatch.py, tests/test_a_repair_round_grants_a_missing_test.py and the evidence fragment all appear in the reviewed prompt's FENCE \u2014 SCOPE list.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_repair_round_grants_a_missing_test.py:156 (`grant['reason'] != first['id']`) reddens under the _grant_reason mutation, but the same reason assertion at :136 and :171 compares against the id the test supplied and stays true under that regression.\nSCORE fit: 18\nJUSTIFICATION fit: _asks_for_a_test and _missing_test_paths at reckon/crew/recovery_repair_dispatch.py:611-637 sit beside _grant_reason, follow the module's private-helper and docstring idiom, and introduce no plan label, version or ticket name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner _grant_round_scope at reckon/crew/recovery_repair_dispatch.py:644 rather than forking a grant path; a search of reckon/crew for an existing test-ask detector found only landing_measure._carry_missing_tests, which moves files between trees and does not parse findings.\nFINDING tests/test_a_repair_round_grants_a_missing_test.py:136 non-blocking: the reason assertion compares the recorded reason against the id the test itself supplied, so reverting to _grant_reason leaves it true in the single-finding case; only line 156 guards the behaviour independently.\nFINDING reckon/crew/recovery_repair_dispatch.py:607 non-blocking: the third asking pattern matches a clause carrying missing/uncommitted before the word test, so an unrelated finding mentioning an uncommitted change that breaks a test grants a spurious tests/ path.",
+  "review_run_id": "r-20261110T161104934780-review-of-a-repair-round-grants-what-its-finding-names-8dfc676e45ac",
+  "reviewed_base_sha": "b593080a11d75a59159c23bc69c54b61a7880606",
+  "reviewed_head_sha": "8dfc676e45acdecfdf9ad3027a363b8f1804a29b",
+  "reviewed_run_id": "r-20261110T150948725216-a-repair-round-grants-what-its-finding-names",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:16:29.808402+00:00",
+  "total": 110
+}
