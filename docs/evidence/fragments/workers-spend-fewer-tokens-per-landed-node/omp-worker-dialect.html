@@ -64,45 +64,39 @@
     <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>revision / tree</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>node tests, after</td>
-        <td><code>67c9e366</code> + this worktree</td>
-        <td><strong>20 passed</strong>, <code>EXIT=0</code></td></tr>
-      <tr><td>census baseline (HEAD is the base revision; nothing committed
-        yet, so the census reads the base)</td>
+      <tr><td>armed baseline (the command resolves to the census alone at the
+        base, which holds neither of this node's test files)</td>
         <td><code>67c9e366</code></td>
         <td>51 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>armed suite command, after, exactly as the run's scope
-        resolves it</td>
-        <td>this worktree</td>
-        <td><strong>refused by pytest</strong>: <code>not found:
-        tests/fixtures/omp-stream.jsonl (no match in any of [&lt;Dir
-        fixtures&gt;])</code>, no tests ran, <code>EXIT=4</code></td></tr>
-      <tr><td>census + node tests, after (the same files the armed command
-        names, minus the fixture it cannot collect)</td>
-        <td>this worktree</td>
+      <tr><td>armed after, exactly as this scope resolves it:
+        <code>tests/test_omp_dialect.py tests/test_staged_write_inventory.py</code></td>
+        <td><code>45d15ce250</code></td>
         <td><strong>71 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>node tests alone</td>
+        <td><code>45d15ce250</code></td>
+        <td><strong>20 passed</strong>, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: remove the foreign-vocabulary refusal</td>
-        <td>this worktree + mutation</td>
-        <td><strong>1 failed</strong>, <code>EXIT=1</code> &mdash;
+        <td><code>45d15ce250</code> + mutation</td>
+        <td><strong>1 failed, 19 passed</strong>, <code>EXIT=1</code> &mdash;
         <code>DID NOT RAISE BackendError</code> in
         <code>test_a_stream_in_another_dialects_vocabulary_is_refused_by_name</code></td></tr>
     </tbody>
   </table>
 
-  <p><strong>The armed command cannot be run, and that is a defect in the
-  scoped-suite rule rather than in this node.</strong> The node's scope holds a
-  test <em>fixture</em> under <code>tests/fixtures/omp-stream.jsonl</code>.
-  <code>is_test_path</code> classifies every path under a <code>tests</code>
-  directory as a test file, so <code>_node_test_files</code> hands the fixture
-  to pytest, which exits 4 on any argument it cannot collect. Promotion then
-  reads that exit as <code>collected_no_test</code> and refuses the arm; a
-  command naming only the two collectible files is refused instead as
-  <code>command_matches_suite_command</code>. Every arm is therefore refused,
-  whichever way it is run, for a node that ships a data fixture under
-  <code>tests/</code>. The two-sided log is kept so the refusal is a measurement
-  rather than an assertion, and the repair &mdash; restrict
-  <code>_node_test_files</code> to collectible paths, or exempt a declared
-  fixture &mdash; belongs to a reckon node, not to this one.</p>
+  <p><strong>The fixture sits beside the codex stream, and the reason is a rule
+  that reads a directory name as a file kind.</strong> The armed command is
+  derived from the node's fenced write scope, and <code>is_test_path</code>
+  classifies every path under a <code>tests</code> directory as a test
+  file. A recorded stream is data, not a test; pytest refuses a path it cannot
+  collect and exits 4, and promotion reads that exit as an arm that collected
+  nothing. The fixture now lives at
+  <code>docs/research/fixtures/omp-stream.jsonl</code>, beside the codex stream
+  already recorded there, and the parser cases reach it through the repository
+  root. The scope then resolves to the two files pytest can run, which is the
+  pair above &mdash; one node test file and the project's census. The refusal
+  is worth repairing for any node that ships a data fixture under
+  <code>tests/</code>, and it is filed as its own section rather than absorbed
+  here.</p>
 
   <h3 id="omp-worker-dialect-open">Left open</h3>
 
