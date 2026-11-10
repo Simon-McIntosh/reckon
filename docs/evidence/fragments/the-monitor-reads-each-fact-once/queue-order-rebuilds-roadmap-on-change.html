@@ -49,7 +49,13 @@
 </section>
 
 <section id="queue-order-rebuilds-roadmap-on-change-semantic-priorities">
-  <h2>Queued priorities survive irrelevant plan edits</h2>
+  <h2>Reviewed semantic projection</h2>
+  <p>This projection was reviewed at <code>2633d00a96</code>. Its followup and
+  decision payloads still admitted editorial changes to the key. The
+  <a href="#queue-order-rebuilds-roadmap-on-change-workflow-state">workflow-state repair below</a>
+  narrows those inputs. Earlier importer arms in this fragment ran inside the
+  fleet allocation and are retained as history; the partition-job receipts below
+  replace them as admission evidence.</p>
   <p>Commit <code>6eb915d68bd7390af3edf8e42762740147f4d43e</code>
   keys queued plans by their structured ranking inputs. The projection reuses the
   plan inventory and semantic HTML readers, retains section records and heading
@@ -103,4 +109,54 @@
   is retained as <code>repair-baseline-suite-scaffolding.log</code>, and the
   admitted baseline includes both helper modules. The coordinator still owns
   integration and the post-landing 60-second station I/O and CPU reading.</p>
+</section>
+
+<section id="queue-order-rebuilds-roadmap-on-change-workflow-state">
+  <h2>Workflow text stays outside the priority key</h2>
+  <p>Commit <code>baf77cdef3778dad79eb663fa53792d965f1fd93</code>
+  constructs the fingerprint from explicit ordering fields. Followups contribute
+  only identity and status. Decisions contribute identity, readiness state and
+  section scope, derived by the roadmap's existing decision-state owner.
+  Section records contribute identity, declaration and effort. Plan state,
+  declared waits, sprint and priority inputs remain. Gate inputs retain the
+  fields the roadmap reads to resolve section waits. Full followup and decision
+  payloads are no longer serialized into the key.</p>
+  <p>Before the repair, three probes at reviewed commit
+  <code>2633d00a96d4004af347dc12b6ee9e02c88366ba</code> each preserved
+  placements while producing two builds instead of one: a followup title edit,
+  a followup body edit and a decision rationale rewrite. The control reports
+  <code>3 failed in 14.22s</code>. Those cases pass after the repair.
+  A positive control opens a scoped decision, changes the placement's readiness
+  reason, rebuilds and matches a forced fresh result.</p>
+  <p>All admitted armed and importer arms ran as separate job
+  <code>1309909</code> on <code>98dci4-clu-3141.iter.org</code>, partition
+  <code>all_debug</code>, submitted with
+  <code>RECKON_ALLOW_NESTED_LAUNCH=1 sbatch --partition=all_debug --time=00:59:00 --cpus-per-task=8 --mem=32G --wait</code>.
+  Scheduler accounting records <code>COMPLETED</code>, exit <code>0:0</code>,
+  8 allocated CPUs, 32G requested memory and elapsed time <code>00:00:49</code>.
+  The job differs from the originating fleet allocation <code>1291586</code>.
+  Both revision trees were extracted inside the job beneath
+  <code>/tmp/queue-importers-1309909-4yxz0g9c/</code>, and each log records the
+  imported module and resolved working directory. The job removed its scratch
+  before completing. Importer arms ran sequentially with four pytest workers
+  and a 60-second per-test bound.</p>
+  <table>
+    <thead><tr><th>Partition-job arm</th><th>Original node base</th><th>Repaired source</th></tr></thead>
+    <tbody>
+      <tr><td>Armed gate</td><td>51 passed in 6.56s</td><td>69 passed in 8.25s</td></tr>
+      <tr><td>Nine-file importer population</td><td>6 failed, 62 passed in 9.84s</td><td>6 failed, 62 passed in 9.36s</td></tr>
+      <tr><td>Added failing test IDs</td><td colspan="2">0; identical six failing IDs</td></tr>
+    </tbody>
+  </table>
+  <p>The armed base is <code>5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd</code>;
+  the source head is the commit above. Raw arm logs reconcile with
+  <code>partition-receipt.json</code> and <code>partition-verification.json</code>.
+  Durable receipts in the assigned run directory are
+  <code>partition-baseline-suite.log</code>, <code>partition-after-suite.log</code>,
+  <code>partition-baseline-importers.log</code>, <code>partition-after-importers.log</code>,
+  <code>partition-scheduler-receipt.log</code> and
+  <code>logs/importers-1309909.log</code>. The editorial control is
+  <code>workflow-editorial-negative.log</code>; both Python paths pass the checks
+  recorded in <code>workflow-lint.log</code>. Coordinator review, integration and
+  the live 60-second station I/O and CPU measurement remain coordinator-owned.</p>
 </section>
