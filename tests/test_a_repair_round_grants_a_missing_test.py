@@ -126,7 +126,11 @@ def test_a_missing_test_finding_grants_the_node_test_and_its_file(
 ) -> None:
     """The cited module and the node-named test both reach the grant and advice."""
     finding = _finding(MERGE, "the new refusal has no committed regression test")
-    advised, grants, advice = _round(_repo(tmp_path), [finding], [MERGE])
+    # A second finding citing the same test path but asking for nothing: the
+    # file-matching _grant_reason would name it, so an assertion against its id
+    # only passes when the grant records the asking finding's own id.
+    decoy = _finding(NODE_TEST, "the helper's name breaks the module's style")
+    advised, grants, advice = _round(_repo(tmp_path), [finding, decoy], [MERGE])
 
     assert MERGE in advised
     assert NODE_TEST in advised
@@ -134,6 +138,7 @@ def test_a_missing_test_finding_grants_the_node_test_and_its_file(
     assert MERGE in pointer_paths
     assert NODE_TEST in pointer_paths
     assert _grant(grants, NODE_TEST)["reason"] == finding["id"]
+    assert _grant(grants, NODE_TEST)["reason"] != decoy["id"]
     assert _grant(grants, NODE_TEST)["source"] == "repair-round"
     assert NODE_TEST in _scope_line(advice)
 
@@ -195,5 +200,8 @@ def test_asks_for_a_test_reads_the_three_phrasings_and_nothing_else() -> None:
     for text in (
         "the identifier is named in the wrong style",
         "rename the constant to match the module's naming",
+        "the uncommitted rename breaks the suite",
+        "the uncommitted rename breaks the test suite",
+        "the missing cache key makes the test suite slower",
     ):
         assert recovery_repair_dispatch._asks_for_a_test({"text": text}) is False, text

@@ -597,14 +597,20 @@ _TEST_PATH_PATTERN = re.compile(r"\btests/[A-Za-z0-9_./-]+\.py\b")
 
 # A finding asks for a test when it says one is absent or not committed. The
 # phrasings are the ones a review writes: "no committed ... test",
-# "test ... missing" and "test ... uncommitted", with the adjective either
-# before or after the noun so "the missing test" reads the same as "the test is
-# missing". The gap between the two words stops at a sentence or clause
-# boundary, so an unrelated sentence mentioning a test is not read as the ask.
+# "test ... missing" and "test ... uncommitted". The gap between the two words
+# stops at a sentence or clause boundary, so an unrelated sentence mentioning a
+# test is not read as the ask. The adjective-before-noun form is held to the
+# words that qualify a test ("missing regression test", "uncommitted unit
+# test"), because a looser gap also read "the uncommitted rename breaks the
+# test suite" as an ask and granted the round a test path nobody requested.
+_TEST_QUALIFIERS = r"(?:regression|unit|integration|node|acceptance|end-to-end|e2e)"
 _TEST_ASKING_PATTERNS = (
     re.compile(r"\bno committed\b[^.;]*\btests?\b", re.IGNORECASE),
     re.compile(r"\btests?\b[^.;]*\b(?:missing|uncommitted)\b", re.IGNORECASE),
-    re.compile(r"\b(?:missing|uncommitted)\b[^.;]*\btests?\b", re.IGNORECASE),
+    re.compile(
+        rf"\b(?:missing|uncommitted)\s+(?:{_TEST_QUALIFIERS}\s+)?tests?\b",
+        re.IGNORECASE,
+    ),
 )
 
 
