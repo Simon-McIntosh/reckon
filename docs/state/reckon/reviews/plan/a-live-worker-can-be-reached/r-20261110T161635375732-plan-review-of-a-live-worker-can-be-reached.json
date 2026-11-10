@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T16:29:11.939Z",
+  "dispatched_at": "2026-11-10T16:19:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:176",
+      "id": "reasoning-1",
+      "reason": "a node reading \"registered under PostToolUse in every Claude-dialect run home the fence seeds\" has no named caller, and the plausible reading (add a hook to the test harness) delivers a hook no production harness ever runs, which is the exact defect the plan exists to remove.",
+      "text": "\u00a78 says \"reckon already uses this path for the worker git guard (`reckon/hooks/worker_git_guard.py`)\", but that guard is registered only under PreToolUse (`reckon/hooks/install.py:395`, `install.py:216-225`), and `grep -rn PostToolUse reckon/ --include=*.py` returns nothing, so no PostToolUse hook exists to copy and the run-home seeder is not the installer the section names \u2014 the only code that writes a `hooks` entry is `install_hook_settings` (`reckon/hooks/install.py:229`), called solely from `reckon/project_maintenance_*` at user scope, while `_worker_fence.py:426-445` merely copies the operator's top-level `hooks` key into each run home",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:176",
+      "id": "single_goal-1",
+      "reason": "a node can close on every stated measure with the ledger half untouched, and a reconciliation of rows whose blocking defects are owned elsewhere is a different deliverable with a different gate, so the node's verdict proves neither half.",
+      "text": "\u00a78 carries the fifth deliverable \"confirm whether the two ledger rows \u00a77 named are still unreconciled, and reconcile them through the promotion surface if so\", carried over from the descoped \u00a77, and \u00a78's done-when names tests, a negative control and a live check but no measure for the ledger rows",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:176",
+      "id": "done_when-1",
+      "reason": "the node's own gate cannot be closed by the node, so it either blocks on an authority it does not hold or satisfies the measure with a fabricated observation; naming the live check as its own node, or the coordinator's dispatch inside the done-when, makes the gate reachable.",
+      "text": "\u00a78's \"Live check: one real read-only investigate node on the local lane, told a codeword through `crew tell` after it starts\" makes the gate depend on a second worker being dispatched and observed, which the implementing worker cannot do: dispatch is a coordinator action and its own assignment is the section",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:176",
+      "id": "anchors_resolve-1",
+      "reason": "the loneliest claim in the plan is also its most load-bearing \u2014 it retires an implementable section and a whole design direction \u2014 and a later reader cannot open the record to check it, so the descope is indistinguishable from an unverified assertion.",
+      "text": "the section that descopes \u00a77 rests on \"A prototype run on 2026-11-10 found a delivery path that does not\" and on the parallel prototype findings in \u00a79, and no run id, run directory or evidence document is cited for any of them",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:171",
+      "id": "reasoning-2",
+      "reason": "a reader routed to \u00a74 by the plan's own prose will build the checkpoint read the plan has just declared unnecessary, and that section has no section record at all, so it will never appear in the declarations the roadmap schedules from.",
+      "text": "\u00a77's new descope reason says \"the prompt-contract checkpoint read s4 and s7 depended on is no longer needed\", retiring \u00a74 as well, but \u00a74 (`plan.html:112-133`) carries no superseded marker and keeps a live done-when: \"a message written to a live run is quoted back in that worker's manifest\"",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:176",
+      "id": "anchors_resolve-2",
+      "reason": "the deliverable (name `crew tell` for a live run) is unchanged and still worth doing; only one clause of its justification is wrong, and correcting that clause is a sentence edit.",
+      "text": "\u00a78 says the worker-message guard \"names `crew tell` for a live run in place of the inbox it promised\", but `reckon/hooks/worker_message_guard.py` promises no inbox: its refusal names only `RESUME_INVOCATION_SHAPE` (`worker_message_guard.py:52,129-140`), so nothing is being replaced",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "3eebcd6b8d5ac3b5b8f0fa4cca2e931e9193f62e",
+  "plan_fingerprint": "077129f3b14ba7d21f47285a09ba56e0bf06a53fccb50a9aa60f16629162aed8",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 20,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T161635375732-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "c57be5d462d932c650505524fa80f50e7402a491",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the prototype run of 2026-11-10 that justifies descoping \u00a77 is cited by no run id or evidence path, and the guard bullet describes a promise `worker_message_guard.py` does not make.",
+    "done_when": "a finding \u2014 \u00a78's live check requires a second real node dispatched on the local lane, which the implementing node cannot dispatch for itself, so the gate cannot be closed by the run it is assigned to.",
+    "evidence_paths": "pass \u2014 the hook's receipts and inbox live under the run directory and the live check's evidence is the worker manifest, both durable per-run paths rather than a scratchpad.",
+    "naming": "pass \u2014 `worker_inbox.py`, `crew tell`, `queued_for_next_tool_call` and `receipts.jsonl` name mechanisms, and the new descope reason names sections rather than tickets or stage labels.",
+    "reasoning": "a finding \u2014 the claimed precedent for the registration path is a PreToolUse hook, no PostToolUse hook is registered anywhere in the tree, and the plan names no caller that would register the new hook in a run home.",
+    "single_goal": "a finding \u2014 \u00a78 carries the ledger-row reconciliation as a fifth deliverable with no line in its done-when, so the node can close on its tests while that deliverable is silently undone.",
+    "wiring": "pass \u2014 the changed units declare no dependency that is missing: \u00a78 consumes the landed \u00a73 guard and the existing run-home seeder, and the descope of \u00a77 leaves no node that named a wait on it."
+  },
+  "section_digests": {
+    "_document": "746b563f5126dc6e8ed4189cb7eaa14994d2d06e295e2880f4b7e5f7f3c47c73",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "c908a64349d35b2d5285d1e053bf09719ed03a20de7fe8e8f5c47822720fd7c6",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "0128cb81ed7c167b132eba34a0315b4e6e5bda048b75fc33afd04ba4dfa69117",
+    "s9": "754dd5914110faaac2aa0b43ef6965a83ef3da2c16f0b29e18a1e7399d2308ce"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T16:58:48.778397+00:00",
+  "total": null
+}
