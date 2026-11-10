@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-delivered-plan-review-does-not-hold-the-gate">
+<meta name="plan-title" content="A delivered plan review does not hold the gate">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s47">
+<meta name="plan-recorded-at" content="2026-11-11">
+<meta name="plan-verdict" content="passed">
+<title>A delivered plan review does not hold the gate | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-delivered-plan-review-does-not-hold-the-gate-verification">
+<h1>A delivered plan review does not hold the gate</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Delivered, unpromoted review whose record is stored</td><td>Lets the next review compose</td><td><code>_standing_plan_review</code> returns empty for a live plan-review pointer whose run id the store holds</td></tr>
+<tr><td>A review still working</td><td>Refuses as before</td><td>No stored record for the run; the reader names the run id</td></tr>
+<tr><td>A delivered review with an unreadable record</td><td>Still refuses</td><td>A corrupt record file at the store path is skipped by the store's reader, so the review keeps the gate</td></tr>
+<tr><td>A record stored for another run</td><td>Still refuses</td><td>A record naming an earlier round is not this run's delivery</td></tr>
+<tr><td>Base arm</td><td>51 passed in 13.80s; EXIT=0</td><td>base-arm.log; base revision extracted with <code>git archive</code> from 592a63d279, <code>PYTHONPATH</code> over that tree, module path printed in the log; the new test is absent from that tree so the armed template resolves to the inventory file alone</td></tr>
+<tr><td>Head arm</td><td>55 passed in 33.96s; EXIT=0</td><td>after-arm.log; the same command with the new test present at the change's revision</td></tr>
+<tr><td>Importing test files at head</td><td>338 passed in 437.77s; EXIT=0</td><td>importers-head.log; every test file importing <code>reckon.crew.recovery_review_dispatch</code>, <code>-n 4</code>, one arm; zero failures, so no failure is added against the base revision</td></tr>
+<tr><td>Declared negative control</td><td>1 failed, 3 passed in 13.57s; EXIT=1</td><td>negative-control.log; with the any-live-pointer check restored at the committed head, the first case refuses and no other case moves</td></tr>
+<tr><td></tr>
+<tr><td>Scoped lint and format</td><td>0 findings, formatted</td><td><code>ruff check</code> and <code>ruff format --check</code> clean on both staged paths</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p><code>_standing_plan_review</code> counted any live plan-review pointer for the plan, so the next round could not be composed until the previous run was promoted — and promotion takes ten to fifteen minutes and can fail partway, leaving the gate shut until it is re-run by hand.</p>
+<p>A new reader, <code>_delivered_plan_review</code>, asks the plan-review store whether a record naming the run is stored and readable. The in-flight check now skips such a run and returns the first pointer still composing or working. What remains for a delivered review is its promotion, which is owed and listed as it is today; it no longer blocks the next compose. A review whose record is missing, unreadable, or belongs to another run is still working and keeps the gate.</p>
+<p>The gate is one reader for the locked dispatch, the preview and the obligations view, so all three move together: a preview no longer reports a delivered review as in flight, and a queued request waiting on one reads as owing its own compose again rather than as a wait on a review that has already delivered.</p>
+</section>
+</main></body></html>
