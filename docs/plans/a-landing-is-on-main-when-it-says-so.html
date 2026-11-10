@@ -8,7 +8,7 @@
   <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
   <meta name="plan-title" content="A Landing Is On Main When It Says So">
   <meta name="plan-summary" content="A promotion with --land either puts the reviewed head on the remote main or reports that it did not, and every landing outcome reaches the pass record.">
-  <meta name="plan-status" content="active">
+  <meta name="plan-status" content="done">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="3.0">
   <meta name="plan-capability-version" content="1.0">
@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;}">
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="50">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
@@ -68,7 +68,7 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 <p><strong>Why.</strong> The review of §5 found a second route to a passed ledger row for a head the remote does not carry: <code>recovery_review_acceptance._commits_missing_from</code> (<code>reckon/crew/recovery_review_acceptance.py</code> near lines 209&ndash;240) tests a run's commits against local <code>HEAD</code>, then promotes through <code>promotion_module.complete(...)</code> (near line 348). A checkout whose <code>main</code> was fast-forwarded and whose push failed passes that test.</p><p><strong>Deliverable.</strong> The reflex acceptance tests a run's commits against the remote primary branch through the function §5 adds to <code>merge.py</code>, replacing the hand-rolled <code>git merge-base --is-ancestor ... HEAD</code> probe in <code>_commits_missing_from</code>, and declines to promote when the remote is unreachable or the branch is missing.</p><p><strong>Done when</strong> a new <code>tests/test_reflex_acceptance_reads_the_remote_primary.py</code> shows, with a temporary repository and a bare remote: a run whose commits are on local <code>main</code> but not on the remote is not promoted; a run whose commits are on the remote is promoted as before; an unreachable remote declines, with a negative control in which an unreachable answer promotes; a reachable remote with no primary ref declines, with a negative control in which reading the missing branch as promotable promotes. Negative control: at the base revision the first case promotes. The test files importing <code>reckon.crew.recovery_review_acceptance</code> add no failure against the base revision, one arm at a time with at most <code>-n 4</code>, logs under the run directory. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/recovery_review_acceptance.py</code> and the new test.</p>
 
     <h2 id="s8">§8 — A resume refuses while its run is being promoted</h2>
-<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s8" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Why.</strong> Split from §6. In the measured landing the pointer changed during the promotion because a resume started after the promotion's live-worker check passed. The live-worker check (<code>_require_worker_stopped_before_promotion</code>, <code>reckon/crew/promotion_checks.py</code> near lines 787&ndash;845) already refuses a promotion that starts while a turn runs; the measured resume began after that check passed, because promotion holds <code>_promotion_lock</code> (<code>_pointer_lock("promotion-&lt;run&gt;")</code>, <code>reckon/crew/promotion.py</code> near line 161) while the resume takes the run's own pointer lock (<code>reckon/crew/resumption.py</code> near line 217). <code>_pointer_lock</code> (<code>reckon/crew/runs.py</code> near lines 453&ndash;462) takes a blocking <code>flock(LOCK_EX)</code> only, so §8 gives it a non-blocking mode, and a resume takes the run's promotion lock first in that mode (<code>LOCK_NB</code>), before the pointer lock it already takes in <code>mark_resume_launching</code>; that is the order promotion uses (<code>with _promotion_lock(run_id), _promotion_host_lease(run_id):</code> and then an inner <code>with _pointer_lock(run_id):</code>, <code>reckon/crew/promotion.py</code> near lines 335&ndash;337), so the two cannot deadlock. If the promotion lock is held, the resume refuses rather than waits.</p><p><strong>Done when</strong> a new <code>tests/test_a_resume_waits_out_a_promotion.py</code> shows, with a temporary crew home: a resume of a run attempted while its promotion lock is held refuses and leaves the pointer unchanged; a resume with no promotion in progress proceeds as before; a promotion and a resume started together never deadlock, bounded by a five-second timeout. Negative control: at the base revision the first case proceeds while the promotion lock is held. The test files importing <code>reckon.crew.resumption</code> or <code>reckon.crew.runs</code> add no failure against the base revision, one arm at a time with at most <code>-n 4</code>, logs under the run directory. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/runs.py</code>, <code>reckon/crew/resumption.py</code> and the new test.</p>
 
     <section data-reckon="followups" id="followups" class="r-followups">
@@ -103,10 +103,11 @@ unfinished makes the fourth case's head absent from the remote. The test files i
     <pre class="r-fu-prompt">/reckon-build a-landing-is-on-main-when-it-says-so §7</pre>
     <p class="r-fu-outcome"><p>§7 landed at <code>75884c8bbf</code>.</p></p>
     </article>
-<article class="r-fu" data-id="f-alomwiss-009" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-09" data-recommends-skill="/reckon-build a-landing-is-on-main-when-it-says-so §8" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-alomwiss-009" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="coordinator" data-written-at="2026-11-09" data-recommends-skill="/reckon-build a-landing-is-on-main-when-it-says-so §8" data-resolved-at="2026-11-10T03:05:51+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §8</h4>
     <div class="r-fu-body"><p>A resume takes the promotion lock first and refuses while a promotion holds it.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-landing-is-on-main-when-it-says-so §8</pre>
+    <p class="r-fu-outcome">§8 landed at c66d94ea3e; a resume refuses while its run's promotion lock is held.</p>
     </article>
 </section>
     
@@ -119,6 +120,9 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 </div>
 <div class="r-comment" data-section="_top" data-id="c-close-s6" data-who="" data-when="">
     <div class="r-comment-body"><p>§6 landed at <code>0bd1599b30</code>: a <code>--land</code> promotion whose merge did not run keeps the pointer marked <code>pending_landing_repair</code> for the marked attempt only, and the next <code>finish_pending_landings</code> pass lands the head; one marking function serves both writers. Its own landing exercised the path (d10ae04589 finished a landing interrupted after its promotion). Review 101/120 after one repair round; importer arms over promotion, promotion_records, pending_landing and recovery_repair_dispatch: 37 failed at base, 34 at head, none added. <a href="/reckon/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-land-promotion-hands-an-unmerged-head-to-pending-landing.html">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-close-s8" data-who="" data-when="">
+    <div class="r-comment-body"><p>Landed: reviewed head <code>c66d94ea3e</code> (run r-20261109T215635060576). A resume now takes its run's promotion lock without blocking and refuses with <code>PromotionInProgressError</code> while a promotion holds it, so a resume can no longer rewrite the pointer mid-promotion. Review scored 112/120; its three non-blocking findings were exempted. The importer population over 710 files added no failure: six ids red under load at head passed when rerun alone. Evidence: <a href="/reckon/evidence/fragments/a-landing-is-on-main-when-it-says-so/a-resume-refuses-while-its-run-is-promoted.html">the section's landing record</a>.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-reopen-s2" data-who="reckon-build" data-when="2026-11-08T00:30:00Z">
     <div class="r-comment-body"><p>§2 reopened. It was descoped on the finding that no landing left a head unmerged. On 7 November reckon-0f measured one that did: <code>crew complete --land</code> on <code>r-20261107T152305119816</code> was killed by its time bound (exit 143) after pushing promote <code>c0ba9ee0af</code> (passed) and release <code>3deae1db06</code>. The monitor drew the run as landed, but none of its commits (<code>b1cfbd7d30</code>, <code>c0ec02d067</code>, <code>06c67c9893</code>) reached origin/main for about three hours, until <code>crew gc</code> withheld the tree and reckon-0f merged the head by hand. The done-when gains that fourth case. The same day, four <code>--land</code> calls exited 1 with a false "worktree withheld" after merging and pushing successfully (5bc89fc029, ea60b2749f, b706dae898 and r-20261107T100007560977); that is §3's.</p></div>
