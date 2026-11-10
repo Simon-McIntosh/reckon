@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_classification.py:82",
+    "reckon/crew/recovery_classification.py:366",
+    "reckon/crew/recovery_classification.py:608",
+    "reckon/crew/placement.py:1224",
+    "reckon/crew/recovery_watch.py:1405"
+  ],
+  "completed_at": "2026-11-10T01:12:03.293Z",
+  "dispatched_at": "2026-11-10T01:02:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 676,
+      "severity": "non-blocking",
+      "text": "the edited _claim_or_creation_seconds docstring carries a node-introduced line about 118 columns wide ('no attempt clock at all and would read as one in flight forever. Such a launch is still dated: first from the claim its') inside prose wrapped to 79 columns, so the paragraph reads ragged where every neighbouring line is wrapped."
+    },
+    {
+      "file": "reckon/crew/recovery_liveness.py",
+      "line": 534,
+      "severity": "non-blocking",
+      "text": "_current_attempt_number now reads the attempt record alone, but no test in the populating suite writes an attempt-N.claim file beside a run, so reinstating the deleted claim-based read would not redden any assertion: the retirement is ungated against regression."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against 664f5ccc: 103 insertions and 666 deletions across five files, with the source deletions confined to the claim helpers and the two readers that consulted them.",
+    "done_when": "The done_when's three measures are all present and reproduced: an empty production grep over reckon scripts skills, a tests grep returning only the ast.parse fixture sources at tests/test_staged_write_inventory.py:168-199, an importer population whose head adds no failure id, and a ruff delta with identical pre-existing hunks.",
+    "goal": "The node goal is to delete the retired attempt-claim writers and readers with the tests that pin them; reckon/crew/resumption.py and reckon/crew/recovery_liveness.py no longer define claim_next_attempt, attempt_claim_path, release_attempt_claim, _newest_attempt_claim_number, _attempt_claim_seconds or _attempt_started_from_claim.",
+    "manifest": "The manifest reads complete, names two commits and four gate logs, and each log opens with its revision and ends with a bare EXIT= line.",
+    "write_paths": "Read the declared write paths (seven, two of them a figure directory and tests/test_staged_write_inventory.py left untouched); all five changed paths sit inside them."
+  },
+  "justifications": {
+    "durability": "no assertion is added and nine are removed, so nothing in tests/ would redden if a claim-based read were reinstated in reckon/crew/recovery_liveness.py:534.",
+    "evidence": "the done-when's three arms are all recorded and independently reproduced: the production grep is empty, the importer population adds no failure id, and ruff reports the same three pre-existing format hunks at base and head.",
+    "fit": "the deletion follows the module's idiom and ruff check is clean, but reckon/crew/recovery_liveness.py:676 is a node-introduced line the surrounding 79-column docstring wrap does not allow.",
+    "goal_fidelity": "Both retired readers and writers are gone from reckon/crew/resumption.py and reckon/crew/recovery_liveness.py, and the nine cases that pinned them are deleted from the two test files.",
+    "reuse": "the node adds no definition; it defers to the reservation owner reckon/crew/dispatch_launch.py:2457 reserve_launch_attempt and forks nothing.",
+    "scope_discipline": "every path in the diff (reckon/crew/resumption.py, reckon/crew/recovery_liveness.py, two test files, the landing fragment) is inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to delete the retired attempt-claim writers and readers with the tests that pin them; reckon/crew/resumption.py and reckon/crew/recovery_liveness.py no longer define claim_next_attempt, attempt_claim_path, release_attempt_claim, _newest_attempt_claim_number, _attempt_claim_seconds or _attempt_started_from_claim.\nVERDICT done_when: The done_when's three measures are all present and reproduced: an empty production grep over reckon scripts skills, a tests grep returning only the ast.parse fixture sources at tests/test_staged_write_inventory.py:168-199, an importer population whose head adds no failure id, and a ruff delta with identical pre-existing hunks.\nVERDICT write_paths: Read the declared write paths; all five changed paths sit inside them.\nVERDICT manifest: The manifest reads complete, names two commits and four gate logs, and each log opens with its revision and ends with a bare EXIT= line.\nVERDICT diff: Read both commits against 664f5ccc: 103 insertions and 666 deletions across five files, with the source deletions confined to the claim helpers and the two readers that consulted them.\nCALL_SITES: reckon/crew/recovery_classification.py:82, reckon/crew/recovery_classification.py:366, reckon/crew/recovery_classification.py:608, reckon/crew/placement.py:1224, reckon/crew/recovery_watch.py:1405\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: Both retired readers and writers are gone from reckon/crew/resumption.py and reckon/crew/recovery_liveness.py, and the nine cases that pinned them are deleted from the two test files.\nSCORE evidence: 17\nJUSTIFICATION evidence: the done-when's three arms are all recorded and independently reproduced: the production grep is empty, the importer population adds no failure id, and ruff reports the same three pre-existing format hunks at base and head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths.\nSCORE durability: 13\nJUSTIFICATION durability: no assertion is added and nine are removed, so nothing in tests/ would redden if a claim-based read were reinstated in reckon/crew/recovery_liveness.py:534.\nSCORE fit: 17\nJUSTIFICATION fit: the deletion follows the module's idiom and ruff check is clean, but reckon/crew/recovery_liveness.py:676 is a node-introduced line the surrounding docstring wrap does not allow.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition; it defers to the reservation owner reckon/crew/dispatch_launch.py:2457 reserve_launch_attempt and forks nothing.\nFINDING reckon/crew/recovery_liveness.py:676 non-blocking: the edited _claim_or_creation_seconds docstring carries a node-introduced line about 118 columns wide inside prose wrapped to 79 columns, so the paragraph reads ragged where every neighbouring line is wrapped.\nFINDING reckon/crew/recovery_liveness.py:534 non-blocking: _current_attempt_number now reads the attempt record alone, but no test writes an attempt-N.claim file beside a run, so reinstating the deleted claim-based read would not redden any assertion: the retirement is ungated against regression.\n",
+  "review_run_id": "r-20261110T005157441681-review-of-the-retired-attempt-claim-machinery-is-removed-69faf98b523a",
+  "reviewed_base_sha": "664f5ccc23a7542ab9d71b5184d370f1b26c0d6a",
+  "reviewed_head_sha": "69faf98b523ae31347bdc89a7f2395d1f2b32120",
+  "reviewed_run_id": "r-20261109T232845458647-the-retired-attempt-claim-machinery-is-removed",
+  "scores": {
+    "durability": 13,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T01:20:38.054010+00:00",
+  "total": 105
+}
