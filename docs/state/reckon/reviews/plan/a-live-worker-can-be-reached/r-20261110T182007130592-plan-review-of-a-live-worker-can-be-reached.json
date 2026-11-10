@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T18:39:06.804Z",
+  "dispatched_at": "2026-11-10T18:23:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "reasoning-1",
+      "reason": "the remedy is a stated refusal in the `crew tell` bullet (\"refuses a live run whose record says `fenced: false`, naming the reason\"), without which a node implements the verb for every live run and the plan reproduces its own motivating defect for the one population it never tests.",
+      "text": "s8 places the inbox hook in the run home through the fence's `seed_harness_home` (`reckon/_worker_fence.py:238-272`, reached only when `adopts_harness_home = fence`, `reckon/_backends.py:2378`), but specifies `crew tell` as writing into \"a live run's inbox\" and reporting `queued_for_next_tool_call` with no check that the addressed run was fenced; a live run dispatched with `--no-fence` or attached in-harness has no seeded home and therefore no hook, so the message is queued against a reader that does not exist and the coordinator is told only \"queued\" \u2014 the silent-undelivered shape \u00a71 exists to close, one hop later, and the run record already carries `\"fenced\"` (`reckon/crew/dispatch.py:3111,3427`) so the check is one line",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:178",
+      "id": "done_when-1",
+      "reason": "naming the file (\"no `PostToolUse` entry in a codex home's `settings.json`\") costs one clause and stops the s8 worker writing an assertion, or a guard, that the next section has to undo.",
+      "text": "the seeding test's third clause reads \"a codex run home does not [carry the `PostToolUse` entry]\", but \u00a79's deliverable is to seed that same hook into each codex run's `<run dir>/codex-home` together with its trust record, so once s9 lands the assertion is either false or restricted to a file that does not exist in a codex home",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4a4188d18d6bb0d9bfff213f54d392e30451ab32",
+  "plan_fingerprint": "6c9bb614554a638610b1340b77643a17b157a93d3778b17addb7415f560cdb78",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 23,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T182007130592-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "dd7e05e2cf21c67852e21e948b79192b46906fb3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_harness_entry` is at `reckon/_worker_fence.py:425` with its early return at `:436`, the seeding loop spans `:249-256` with the source-absent skip at `:254`, `install_hook_settings` is at `reckon/hooks/install.py:229`, `RESUME_INVOCATION_SHAPE` is at `reckon/hooks/worker_message_guard.py:52`, and the cited research doc and session `02f01c36-7b6c-4b2f-950b-db44c8c5a4f4` both resolve, the doc recording the three-concurrent-delivery receipts the section relies on.",
+    "done_when": "a finding \u2014 s8's seeding test asserts \"a codex run home does not\" carry a `PostToolUse` entry, while \u00a79's deliverable is to seed that same hook into each codex run's own `CODEX_HOME`.",
+    "evidence_paths": "pass \u2014 every artefact the done-when names lands inside the run directory (`inbox/receipts.jsonl`, the manifest) or in the run's own home, all durable under the crew runs tree; nothing is placed in a scratchpad or a node-local temporary directory.",
+    "naming": "pass \u2014 `worker_inbox.py`, `crew tell`, `receipts.jsonl` and `queued_for_next_tool_call` name the mechanism they implement, and no plan label, stage name, ticket number or changelog prose reaches a symbol or a comment.",
+    "reasoning": "a finding \u2014 the registration path reaches only fenced runs, while `crew tell` addresses any live run and reports `queued_for_next_tool_call` even where no hook was ever seeded.",
+    "single_goal": "pass \u2014 the four bullets are one capability (the hook, its coordinator writer, its refusal wording, its receipt and run view), and the ledger-row second deliverable the earlier review flagged has been removed.",
+    "wiring": "pass \u2014 s9 declares `plan-section-depends-on` to s8, s8 needs no upstream of its own, and its one cross-section citation (\u00a76's refusal of a second transport) resolves to a section that says exactly that."
+  },
+  "section_digests": {
+    "_document": "746b563f5126dc6e8ed4189cb7eaa14994d2d06e295e2880f4b7e5f7f3c47c73",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "268ba8a5b03b6794d7e046dc4370027ea433818afdd28d05adf20e62b49d6a85",
+    "s9": "04a3a9c3465211256706e7581c8950fb2451ef6ac7b7f0876744ed336fa7e3bc"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T18:57:30.610276+00:00",
+  "total": null
+}
