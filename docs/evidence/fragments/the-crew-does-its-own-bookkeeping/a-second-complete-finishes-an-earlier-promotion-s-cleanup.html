@@ -47,6 +47,27 @@
   sibling fixture and keeps only the assertions this case adds. Behaviour is
   unchanged: both arms of the repair gate collect 54 tests and pass.</p>
 
+  <p><strong>Review round: which source proves the row.</strong> The two halves
+  of the ledger are not mirrors, and a repair that treated them as one made the
+  ordinary case unprovable. A promotion appends the run's own document under
+  <code>runs/</code>, and the aggregate carries only the rows that have none, so
+  <em>document without aggregate row</em> is the normal shape of a promoted run;
+  reading it as a disagreement refused the very call this node exists to let
+  through, and the gate caught it as four red cases. The document alone now
+  proves the row. A row the aggregate carries with no document beside it is the
+  one shape the two sources disagree about, and both that and a failed read are
+  answered by the caller's choice: the receipt answers present, so it never
+  withholds a cleanup it performed, and the decision to promote answers absent,
+  so an unproven row never stands in for a promotion. Both callers now share one
+  helper parameterised on that answer.</p>
+
+  <p><strong>The receipt names an entity once.</strong> The stored and requested
+  bodies were unescaped for comparison and then stripped by the plan reader's
+  tag stripper, which unescapes again, so a narrative that writes
+  <code>&amp;lt;</code> was reported as <code>&lt;</code>. Both bodies now go to
+  the stripper as they were written, which decodes exactly once; a case asserts
+  that a literal entity survives as written.</p>
+
   <table id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-arms">
     <caption>Every arm is a log whose first lines name its revision, tree,
     resolved module and command, and whose last line reads
@@ -77,6 +98,35 @@
         <td>3 failed, 177 passed &mdash; the same three ids, all present
         before the change</td>
       </tr>
+      <tr>
+        <td>gate cohort, review-round head</td>
+        <td><code>274c671e4f</code></td>
+        <td>58 passed &mdash; the 7 cases here plus the 51 the inventory file
+        carries</td>
+      </tr>
+      <tr>
+        <td>the same command, base scratch tree</td>
+        <td><code>e595f9f236</code></td>
+        <td>54 passed &mdash; the 3 cases that predate this round plus the same
+        51, so the round adds four cases and no failure</td>
+      </tr>
+      <tr>
+        <td>negative control: the differing branch raises unconditionally</td>
+        <td><code>e595f9f236</code> + change + mutation</td>
+        <td>2 failed, 5 passed &mdash; both differing-narrative cases,
+        including the entity one, which reaches that branch</td>
+      </tr>
+      <tr>
+        <td>negative control: the receipt strips the already-unescaped bodies</td>
+        <td><code>e595f9f236</code> + change + mutation</td>
+        <td>1 failed, 6 passed &mdash; the entity case reports
+        <code>&lt;</code> where the narrative wrote <code>&amp;lt;</code></td>
+      </tr>
+      <tr>
+        <td>negative control: an aggregate row alone answers written</td>
+        <td><code>e595f9f236</code> + change + mutation</td>
+        <td>1 failed, 6 passed &mdash; the disagreement case reads as proof</td>
+      </tr>
     </tbody>
   </table>
 
@@ -88,8 +138,10 @@
   (reported twice by pytest). The head arm differs from the base arm only by
   this change and the sixteenth file it adds.</p>
 
-  <p>Both arms run the same fifteen existing files that import
-  <code>reckon.crew.promotion_scope</code>; the base tree is
-  <code>git archive</code> of the base revision, where the new test does not
-  exist, so the arms differ only by this change.</p>
+  <p>The two gate cohorts are the same command in each tree, and they differ
+  only by this change: the base scratch tree is a shared clone checked out at
+  the base revision, so it carries git history and the inventory file can run
+  there. The negative controls are that same tree with this round's change
+  installed and one mutation applied to it; each mutation is reverted before the
+  next arm runs.</p>
 </section>
