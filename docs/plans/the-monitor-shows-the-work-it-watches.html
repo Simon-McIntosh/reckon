@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="740">
+<meta name="plan-version" content="741">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1454,6 +1454,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s119" data-id="c-run-r-20261110T164240550402-review-of-a-session-host-never-blocks-in-its-read-465e0b7442a5" data-who="reckon-build" data-when="2026-11-10T16:57:13.061Z">
     <div class="r-comment-body"><p>review of a-session-host-never-blocks-in-its-read at 465e0b7442 scores 20/17/20/18/19/16 (goal_fidelity/evidence/scope_discipline/durability/fit/reuse) with added_failure_count 0, two non-blocking findings, and no blocking finding; the landed change takes an advisory pair lock in `run()` and a non-blocking read in `SessionHost.supervise`, and the declared negative control reddens cases (a), (b) and (d) as specified.</p></div>
+</div>
+<div class="r-comment" data-section="s119" data-id="c-run-r-20261110T160357323816-a-session-host-never-blocks-in-its-read" data-who="reckon-build" data-when="2026-11-10T16:38:50.437Z">
+    <div class="r-comment-body"><p>a-session-host-never-blocks-in-its-read: `SessionHost.supervise` reads the request FIFO non-blocking and treats a `BlockingIOError` as an empty pass, so a shared FIFO whose bytes another reader took no longer strands the host in a read it cannot leave (gate `4 passed`, EXIT=0); a host takes an advisory lock named for its owner pair so a second host for that pair exits with `ALREADY_RUNNING_EXIT_CODE` stating why and leaves the first host&#x27;s FIFO in place, and it unlinks at stop only the FIFO it was handed, decided by device and inode rather than by path.</p></div>
 </div>
 <div class="r-comment" data-section="s12" data-id="c-s12-deferred-on-scheduling-surface" data-who="reckon-build" data-when="2026-10-17T05:30:00Z">
     <div class="r-comment-body"><p>Deferred. The plan review of 2026-10-17 found §12 declared implementable while its own text says the coverage figure belongs to work-scheduling-surface §3, which is unbuilt. Its done-when asks for a value from the roadmap's own derivation, and that derivation does not exist yet. §12 becomes implementable when work-scheduling-surface §3 lands.</p></div>
