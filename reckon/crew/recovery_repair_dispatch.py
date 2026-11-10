@@ -79,8 +79,7 @@ def dispatch_merge_repair(
 
         pending = pending_landing._read(pending_landing._record_path(run_id))
         if pending is not None:
-            fresh = {**record, "pending_landing_repair": True}
-            runs._write_json(runs.pointer_path(run_id), fresh)
+            fresh = pending_landing.mark_pending_landing_repair(run_id, record)
     previous = (fresh or {}).get("merge_conflict") or {}
     if previous.get("round_id") == round_id and previous.get("status") == "resumed":
         return dict(previous)

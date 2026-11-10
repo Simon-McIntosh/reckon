@@ -195,6 +195,49 @@ def _remove_promoted_pointer(run_id: str, record: Mapping[str, Any]) -> bool:
         return True
 
 
+def _keep_pointer_for_pending_landing(run_id: str) -> bool:
+    """Mark the live pointer a promotion could not remove, or report failure.
+
+    The mark is the only thing that distinguishes this pointer from one a newer
+    attempt owns: the landing pass leaves an unmarked live pointer alone, so
+    without it the reviewed head stays off the branch beside a passed row.
+    """
+    from reckon.crew import pending_landing
+
+    with _pointer_lock(run_id):
+        try:
+            current = read_pointer(run_id)
+        except CrewError:
+            return False
+        if current.get("pending_landing_repair"):
+            return True
+        try:
+            pending_landing.mark_pending_landing_repair(run_id, current)
+        except OSError:
+            return False
+        return True
+
+
+def _remove_promoted_pointer_or_defer(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Remove the promoted pointer, or keep it marked for the landing pass.
+
+    The ledger row and plan comment are committed before this runs, so a
+    pointer that moved under the promotion leaves a promoted run whose head was
+    never merged: a second recovery would duplicate what the pending-landing
+    pass already does, so the pointer is kept and marked instead.
+    """
+    try:
+        return _remove_promoted_pointer(run_id, record)
+    except CrewError as exc:
+        if not _keep_pointer_for_pending_landing(run_id):
+            raise
+        raise CrewError(
+            f"run {run_id!r} changed while promotion ran; its promotion is "
+            "recorded and its pointer is kept, marked pending_landing_repair, so "
+            "the next landing pass finishes the merge of its reviewed head"
+        ) from exc
+
+
 def _promotion_lease_name(run_id: str) -> str:
     return f"promotion-{run_id}"
 
@@ -1243,7 +1286,7 @@ def _complete_locked(
             )
             capture = capture_run_session(record)
             path = pointer_path(run_id)
-            _remove_promoted_pointer(run_id, record)
+            _remove_promoted_pointer_or_defer(run_id, record)
             retention = existing.get("worktree_retention")
             release = _release_after_promotion(
                 run_id,
@@ -1895,7 +1938,7 @@ def _complete_locked(
         # Return capture metadata while the pointer still exists. Session
         # ownership has already been copied onto the committed ledger row.
         capture = capture_run_session(record)
-        _remove_promoted_pointer(run_id, record)
+        _remove_promoted_pointer_or_defer(run_id, record)
         release = _release_after_promotion(
             run_id,
             record,

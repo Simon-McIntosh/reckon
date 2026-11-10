@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-title" content="A landing is on main when it says so">
+  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-node" content="a-land-promotion-hands-an-unmerged-head-to-pending-landing">
+  <meta name="plan-recorded-at" content="2026-11-09">
+  <meta name="plan-verdict" content="passed">
+  <title>A --land promotion hands an unmerged head to the landing pass | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A --land promotion hands an unmerged head to the pending landing</h1>
+
+    <section id="a-land-promotion-hands-an-unmerged-head-to-pending-landing-what-changed">
+      <h2>What changed</h2>
+      <p>A <code>crew complete --land</code> committed its ledger row and plan
+        comment, then the pointer-removal guard raised
+        <code>run ... changed while promotion ran</code> because a resume had
+        started the same run again. The merge never ran, the row read landed, and
+        the reviewed head stayed off the primary branch. The pending-landing pass
+        already finishes a promoted-but-unmerged head, but it read a run's pointer
+        only when its record carried <code>merge_conflict</code>, so this state was
+        skipped.</p>
+      <p><code>reckon/crew/promotion.py</code> now keeps the pointer it could not
+        remove, marks it <code>pending_landing_repair</code>, and reports the
+        promotion as recorded with its landing pending, so the caller stops before
+        the merge rather than deleting the newer attempt's pointer.
+        <code>reckon/crew/pending_landing.py</code> reads a live pointer even when
+        the record carries no conflict: a marked pointer is finished by the pass,
+        and an unmarked one is left alone as belonging to a newer attempt. The
+        mark records the attempt it belongs to, because the pointer live when a
+        promotion fails is usually the newer attempt's; the pass lands the
+        promoted head but removes and releases only a pointer still carrying that
+        attempt, so a live attempt keeps its pointer. One function writes the
+        mark, shared with the merge repair that rebuilds an absent pointer. No
+        second recovery and no refusal family were added; the run finishes through
+        the mechanism the interrupted-landing repair already provides.</p>
+    </section>
+
+    <section id="a-land-promotion-hands-an-unmerged-head-to-pending-landing-evidence">
+      <h2>Evidence</h2>
+      <p><code>tests/test_a_landing_record_waits_for_the_merge.py</code> synthesises
+        a repository with a bare <code>origin</code> and a temporary crew home. A
+        patched resume moves the pointer's attempt and phase after the ledger
+        commit; the promotion raises naming the change, and the pointer survives
+        marked <code>pending_landing_repair</code>. The next
+        <code>finish_pending_landings</code> pass lands the reviewed head on the
+        remote branch, removes the pointer and clears the record. An undisturbed
+        promotion removes its pointer and lands as before, and an unmarked live
+        pointer is still left alone.</p>
+      <p>A second case moves the marked pointer to a newer attempt before the pass
+        runs: the head still lands, and the newer pointer and its worktree are
+        kept. Its negative control retargets the mark at that newer attempt, as a
+        mark written without recording its attempt would, and the pointer is then
+        removed.</p>
+      <p>Head arm: 5 passed. Base arm, the same test over the base revision with the
+        new test copied in: 3 failed, 2 passed, so the base leaves the pointer
+        unmarked beside a passed row and the head never lands. Importer arms over
+        <code>promotion</code> (four chunks, <code>-n 4</code>) fail exactly the
+        same ids as the base revision and add none;
+        <code>promotion_records</code> and <code>pending_landing</code> pass
+        clean.</p>
+    </section>
+  </main>
+</body>
+</html>
