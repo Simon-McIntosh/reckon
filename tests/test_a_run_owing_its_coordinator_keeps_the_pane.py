@@ -207,22 +207,46 @@ def test_a_completed_run_owing_nothing_lets_the_pane_settle(home: Path) -> None:
     assert _populations([pointer]) == (False, False, [])
 
 
-def test_the_pane_and_the_obligations_view_agree_on_every_keep_live_run(
+def _view_item_run_ids(pointers: list[dict]) -> set[str]:
+    """The runs the obligations view itself lists as owing this session an action."""
+    token = obligations._VIEW_LIVE_POINTERS.set({PROJECT: tuple(pointers)})
+    try:
+        view = obligations._obligations_view(PROJECT, SESSION)
+    finally:
+        obligations._VIEW_LIVE_POINTERS.reset(token)
+    rows = view.get("obligations") if isinstance(view, dict) else None
+    assert rows is not None, f"the view answered no duty list: {view!r}"
+    return {str(item.get("run_id") or "") for item in rows if item.get("run_id")}
+
+
+def _delivered_with_a_review_that_ended(home: Path) -> dict:
+    """A delivered scoring run whose dispatched review ended without a record."""
+    review_run = "r-review-ended"
+    crew._write_json(
+        crew.pointer_path(review_run),
+        _pointer(home, review_run, phase="complete", extra={"role": "review"}),
+    )
+    return _pointer(
+        home,
+        "r-review-in-flight",
+        extra={"review_dispatch": {"run_id": review_run, "at": runs._utc_now()}},
+    )
+
+
+def test_the_pane_and_the_obligations_view_name_the_same_owing_runs(
     home: Path,
 ) -> None:
-    """One derivation: every keep-live reading is a duty the view also raises."""
-    pointers = [_pointer(home, "r-unpromoted")]
-    for pointer in pointers:
-        assert _populations([pointer]) == (True, False, [SESSION])
-        items = station_subscriber.terminal_run_duty_items(
-            pointer,
-            now=obligations._utc_now(),
-            grace=900,
-            live_pointers=pointers,
-        )
-        assert any(item["run_id"] == pointer["run_id"] for item in items), (
-            "the pane reads work the obligations view raises no duty for"
-        )
+    """One derivation: the runs that keep the pane owe exactly what the view lists."""
+    pointers = [
+        _pointer(home, "r-unpromoted"),
+        _delivered_with_a_review_that_ended(home),
+    ]
+    assert _populations(pointers) == (True, False, [SESSION])
+    # The second run's review ended without storing a record, so the view lists
+    # no duty for it and the pane must not hold its session for it either.
+    assert _view_item_run_ids(pointers) == {"r-unpromoted"}
+    assert _populations([pointers[1]]) == (False, False, [])
+    assert _view_item_run_ids([pointers[1]]) == set()
 
 
 class StubHost(session_host.SessionHost):
