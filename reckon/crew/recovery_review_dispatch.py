@@ -2113,6 +2113,24 @@ def _resolved_review_config(
     return runs.resolved_tick_config(project, config)
 
 
+def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
+    """Whether a plan review run's record is stored and readable.
+
+    A plan review is stored as soon as its reviewer writes it, which happens
+    before the run is promoted, so a record naming the run is the evidence that
+    the review has delivered. The store's reader skips a file it cannot parse,
+    so an unreadable record reads as absent here and the review keeps standing.
+    """
+    if not run_id:
+        return False
+    return any(
+        str(record.get("review_run_id") or "").strip() == run_id
+        for record in plan_review.list_plan_reviews(
+            project=project, plan_slug=plan_slug
+        )
+    )
+
+
 def _standing_plan_review(
     project: str,
     plan_slug: str,
@@ -2131,6 +2149,12 @@ def _standing_plan_review(
     again, so the review a view names comes from the same reading as the row
     that names it.
 
+    Only a review still composing or working stands. Once its record is stored
+    and readable the review has delivered, and what remains is its promotion,
+    which is owed and listed as it is today; it does not hold the next round's
+    compose. A review whose record is missing or unreadable is still working,
+    and keeps the gate.
+
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
     runs inside every session's obligations reading, and one malformed pointer
     on disk must not raise the reader out of listing everything else.
@@ -2144,7 +2168,10 @@ def _standing_plan_review(
             continue
         if session and str(pointer.get("session") or "") != session:
             continue
-        return str(pointer.get("run_id") or "")
+        run_id = str(pointer.get("run_id") or "")
+        if _delivered_plan_review(project, plan_slug, run_id):
+            continue
+        return run_id
     return ""
 
 
