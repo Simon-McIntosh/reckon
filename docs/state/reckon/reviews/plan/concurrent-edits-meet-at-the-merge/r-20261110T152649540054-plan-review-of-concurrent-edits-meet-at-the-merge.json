@@ -1,0 +1,61 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T15:40:28.709Z",
+  "dispatched_at": "2026-11-10T15:30:15Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:150",
+      "id": "done_when-1",
+      "reason": "a node dispatched against this done-when runs the measurement, finds the asserted zero unmet on the section's own named data, and must either fail the measure or spend the run diagnosing a \u00a72 gap the plan never mentions.",
+      "text": "the amended done-when asserts the retained copies show held-on-claim verdicts on shared-root file paths at zero, but the three copies it names hold 401, 396 and 699 such verdicts, every one on `scripts/iter/integrated_simulation.py` under the declared shared root `scripts/` (added by `0b28ace43f` on 2026-11-08, before all three copies), held by `r-20261108T065757180968-unverified-switching-windows-s2` with a file path in the detail string, so the amendment's only exclusion (\"a hold whose holder claims the enclosing directory\") does not reach them",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "reasoning-1",
+      "reason": "without this, a window where the mechanism never runs reads as an unmeasured floor indefinitely, and the plan can never distinguish \"no holds because sharing works\" from \"no admitted pairs because sharing never applied\".",
+      "text": "\u00a74 rests the after window on \"every retained copy ... taken after the admit service reloaded onto \u00a72 and \u00a73\", but those copies show the admission path still refusing a claim on a shared-root file 1,496 times across the three overlapping copies, and \u00a74's own floor (runs \"admitted with a file claim under a shared root while another live run held the same file\") cannot be reached while that path holds instead of admitting; the section names no check that the shared rule is actually consulted by `queue_admission._live_claim_detail`, whose collision test only skips a shared path when the two scope strings are exactly equal and only when the queued pointer resolved a non-empty project and repo",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:141",
+      "id": "evidence_paths-1",
+      "reason": "the arm still measures claim concurrency from `node_definition.write_paths` with `dispatched_at` and `completed_at`, so the measure survives; the wording costs a reader one search, not the node.",
+      "text": "\u00a74 says concurrent pairs come from the run ledger \"since each landed run records its write paths and its dispatch and landing times\", but the ledger records write paths only nested at `node_definition.write_paths` and records no landing timestamp at all (60 of 60 sampled records carry `write_paths` only inside `node_definition`, 0 carry `landed_at`; the terminal field is `completed_at`)",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "500fcef136caafdfdbcd9421a1204ca18198d111",
+  "plan_fingerprint": "8ef3b8d4563b3c31d7d635b2dffdc653df3ec1fe73e4a0272f1ad9bf7d6fbb06",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 21,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T152649540054-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "5a5a6d277b1ce809332067c78a53e4e4f076058d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/queue_admission.py:2453\u20132454` is the `trim_service_log(...)` call and `:103` is `ADMISSION_VERDICT_LOG_MAX_BYTES = 1_048_576`; all three retained copies exist under `r-20261109T074919528432-parallel-nodes-on-one-module/`; the before-window snapshot resolves and reproduces the plan's own figures exactly (296 `held-on-claim` pointers, 2026-11-07T05:38:15Z to 2026-11-08T12:33:24Z); `docs/state/reckon/runs/` holds 7,700 run records.",
+    "done_when": "a finding \u2014 \u00a74's done-when requires the three retained copies it names by path to show `held-on-claim` verdicts on shared-root file paths \"at zero\", and those copies hold 401, 396 and 699 such verdicts.",
+    "evidence_paths": "pass \u2014 the fragment sits at `docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html` in the served repository, and the commands are logged in the measuring run's own `~/.config/reckon/crew/runs/<run>/` directory whose path the fragment cites; both survive the run and are openable by a later reader.",
+    "naming": "pass \u2014 \u00a74 introduces no symbol, file or comment, and nothing in it carries a plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a74's zero is contradicted by the copies it names, and the retained copies show the shared-root admission rule did not take effect on the admit service's own path in the recorded window, which \u00a74 neither names nor excludes.",
+    "single_goal": "pass \u2014 \u00a74 carries one deliverable (one measurement of the two windows) and one verdict, and its floors, negative control and pair inventory all serve that single measure.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares `s4: [s2, s3]` and `s5: [s2]`; each target exists in the plan and \u00a72 and \u00a73 are declared done, so the measurement node starts only once both mechanisms are on main."
+  },
+  "section_digests": {
+    "_document": "040335a70dff03152d2485f289c86f33d81d7076aea0b303198a1ad1a58281f3",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "21f1fd1168806bffa2a82fe4726e8ca7333ecdcc4b999b94b4151a0baa5f505b",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:54:13.142528+00:00",
+  "total": null
+}
