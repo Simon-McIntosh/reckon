@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s11">
+  <meta name="plan-recorded-at" content="2026-11-10">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,index,cache,quota,release">
+  <title>A released worktree takes its ledger index with it &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-released-worktree-takes-its-ledger-index-with-it-landing" data-node="a-released-worktree-takes-its-ledger-index-with-it" data-reckon="landed" data-when="2026-11-10">
+
+<section>
+<h3 id="a-released-worktree-takes-its-ledger-index-with-it-change">What changed</h3>
+<p><code>_release_run_workspace</code> in <code>reckon/crew/promotion_release.py</code> now unlinks the ledger index of
+the worktree it releases. Every worktree resolves its own ledger path, so its reader publishes a
+full-size index under <code>~/.cache/reckon/</code> keyed to that checkout; the release removed the tree and left
+the index behind, where nothing resolved it again until a sweep nobody ran.</p>
+<p>Three properties hold the change to the narrow part of the leak. The index path is resolved
+<em>before</em> the tree moves, so it is the key the tree's own reader published under. The unlink runs only
+after <code>_release_worktree_whole</code> reports the tree itself released. And an index a live process holds
+open &mdash; SQLite's write lock refused, the same test the run-less sweep already applies &mdash; is kept and named in
+the release record.</p>
+<p>One guard is not in the plan's text and was added because the hash alone does not prove provenance: a
+checkout whose <code>docs/state</code> reaches the main checkout through a link publishes the <em>shared</em> index,
+so the release names no index at all when the resolved ledger path is not inside the released tree.
+Deleting by hashed filename would have taken a live index there.</p>
+<p>The removal is printed and returned on the release result as <code>ledger_index_removed</code>, so the record
+names the path it took rather than only that it took one. The run-less <code>crew gc --apply</code> sweep is
+unchanged: it keeps reaping what earlier releases left behind.</p>
+</section>
+
+<section>
+<h3 id="a-released-worktree-takes-its-ledger-index-with-it-gate">The gate</h3>
+<p><code>tests/test_a_released_worktree_takes_its_index.py</code> is the committed gate. It builds a synthesised checkout,
+two linked worktrees and a temporary cache root under a temporary configuration home; no real fleet
+directory is read or written. Its four cases are:</p>
+<ul>
+<li>releasing one worktree removes that worktree's index, leaves the peer worktree's index in place, and
+prints the path it removed;</li>
+<li>an index a live process holds open is kept, and the release says so;</li>
+<li>the run-less sweep removes an index whose recorded checkout is gone, and reports it
+<code>recorded-checkout-gone</code>;</li>
+<li>the sweep leaves an index whose checkout exists.</li>
+</ul>
+<p>Each case publishes its index by reading a ledger through <code>ledger.load</code>, so the file under test is the
+one a worker's reader builds rather than one the fixture names by hand; the first case asserts both
+indexes exist before the release, so the absence it later reports cannot be an instrument seeing nothing.</p>
+</section>
+
+<section>
+<h3 id="a-released-worktree-takes-its-ledger-index-with-it-gate-figures">Gate figures</h3>
+<table>
+<tr><th>arm</th><th>command</th><th>result</th></tr>
+<tr><td>base (a617a653)</td><td><code>pytest tests/test_staged_write_inventory.py</code></td><td>51 passed, <code>EXIT=0</code></td></tr>
+<tr><td>head</td><td><code>pytest tests/test_a_released_worktree_takes_its_index.py tests/test_staged_write_inventory.py</code></td><td>55 passed, <code>EXIT=0</code></td></tr>
+<tr><td>negative control</td><td>head with the unlink removed from the release path</td><td>2 failed, 2 passed, <code>EXIT=1</code></td></tr>
+</table>
+<p>The negative control fails the first case on its own assertion that the released tree's index is gone,
+and the held-open case on the withheld reason it no longer records.</p>
+</section>
+
+<section>
+<h3 id="a-released-worktree-takes-its-ledger-index-with-it-host">Host measure</h3>
+<p>The fleet-wide <code>crew gc --repo ~/Code/reckon --project reckon</code> report-only pass did not come back:
+it was stopped by a 600&nbsp;s bound with no report written, so the traversal of this host's registered
+worktrees and run directories is itself over the command's budget &mdash; the accumulation §10 measured, still
+present. The index component, which the command reaches through <code>_orphan_ledger_indexes</code> and which
+reads no repository at all, was therefore run directly through that same function with
+<code>apply=True</code>: the report it printed is the evidence below, and it is the component this section
+exists to reclaim. The deviation is recorded against this node.</p>
+<table>
+<tr><th>measure</th><th>before</th><th>after</th></tr>
+<tr><td><code>~/.cache/reckon/ledger-*.sqlite</code> files</td><td>683</td><td>71</td></tr>
+<tr><td>their apparent size</td><td>163&nbsp;525&nbsp;103&nbsp;616&nbsp;B (152.3&nbsp;GiB)</td><td>15&nbsp;106&nbsp;265&nbsp;088&nbsp;B (14.1&nbsp;GiB)</td></tr>
+</table>
+<p><strong>612 indexes removed, none withheld</strong>, every one classified <code>recorded-checkout-gone</code>,
+148&nbsp;418&nbsp;838&nbsp;528&nbsp;B (138.2&nbsp;GiB) of cache reclaimed. The 71 that remain record a checkout that exists,
+or carry no recorded path and have not yet aged past the unrecorded-age threshold. Every removed path is
+listed in <code>gc-index-apply.log</code> in the run directory, one row each with its path, size and reason.</p>
+<p>The command that promotes applies the same unlink per release, so no new index joins the backlog from a
+worktree the fleet releases; the demonstration at a promoted run is the gate's first case, which drives the
+release function a promotion calls.</p>
+</section>
+</article>
+</body>
+</html>
