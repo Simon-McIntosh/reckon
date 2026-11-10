@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -147,7 +147,7 @@
     records both windows' counts, with the commands that produced them logged in the measuring
     run's own directory, whose path the fragment cites. The ledger window after must hold at least five
     pairs of runs with concurrent claims on one shared-root file, and the retained copies after show
-    <code>held-on-claim</code> verdicts on shared-root file paths at zero across at least 20 admission evaluations of a file claim under a shared root; with fewer, the zero is reported as unmeasured, never as a pass. Negative control: the
+    <code>held-on-claim</code> verdicts on shared-root file paths at zero backed by at least 20 runs in the ledger window that were admitted with a file claim under a shared root while another live run held the same file (the verdict log names a path only on a refusal, so the ledger's write paths and dispatch and landing times are the instrument); with fewer, the zero is reported as unmeasured, never as a pass. Negative control: the
     before window shows such verdicts above zero. A window with fewer than five concurrent pairs is
     reported as unmeasured and re-taken later, never as a pass. Every concurrent pair is accounted for, and any pair left with conflict
     markers or an unlanded head with no repair round fails the measure.</p>
