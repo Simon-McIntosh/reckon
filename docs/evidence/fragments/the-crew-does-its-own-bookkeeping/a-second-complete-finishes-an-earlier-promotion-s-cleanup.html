@@ -34,6 +34,19 @@
   already landed. The promotion path itself is unchanged and is not in this
   node's write scope.</p>
 
+  <p><strong>Repair round: reuse.</strong> The first landing carried three
+  copies of things the tree already had. The receipt reduced a stored comment
+  to plain text with a local regex rather than the plan reader's tag stripper;
+  whether a run's row is written was asked by a second ledger read beside the
+  receipt's own; and the new test built its own config home, repository and
+  pointer beside the reconciliation tests' fixture for the same
+  promote-and-retry path. The narrative now goes through
+  <code>_strip_tags</code>, one reader answers the row's state as
+  <code>True</code>, <code>False</code> or <code>None</code> and each caller
+  applies its own reading of an unreadable ledger, and the test imports the
+  sibling fixture and keeps only the assertions this case adds. Behaviour is
+  unchanged: both arms of the repair gate collect 54 tests and pass.</p>
+
   <table id="a-second-complete-finishes-an-earlier-promotion-s-cleanup-arms">
     <caption>Every arm is a log whose first lines name its revision, tree,
     resolved module and command, and whose last line reads
