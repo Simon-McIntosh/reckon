@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:_validated_batch_waits",
+    "reckon/crew/dispatch.py:dispatch_waits",
+    "reckon/crew/queue_admission.py:_advance_waiting_requests via _rederive_waits",
+    "reckon/crew_dispatch_commands.py:crew_dispatch",
+    "reckon/crew/dispatch_batch.py:_entry_node",
+    "reckon/crew/queue_edit.py:validate_node"
+  ],
+  "completed_at": "2026-11-10T18:43:01.326Z",
+  "dispatched_at": "2026-11-10T18:23:47Z",
+  "findings": [
+    {
+      "file": "tests/test_a_node_waits_only_on_what_it_names.py",
+      "line": "183",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the stored flag against the same True the test handed the code, so it is a serialization round-trip and not a test of any derived behaviour; it reddens only if _node_from_pointer stops carrying dataclass fields, and the derivation the test exists to protect is guarded by the waits assertions around it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks that the test files importing reckon.crew_dispatch_commands or reckon.crew.queue_admission add no failure against the base, but only chunk 00 and the six failing modules were measured, with importers-head-01.log and -02.log both ending EXIT=124, so the population clause is partly unmeasured even though the record discloses it."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read commit by commit from 434ec98a to a09488d9; eec4eb8aa1 carries the implementation, 19dc4744d7 and a09488d9c4 carry only the evidence fragment, and no commit touches a file outside the declared scope.",
+    "done_when": "the done_when names tests/test_a_node_waits_only_on_what_it_names.py as the measure and requires every case \u00a731 lists plus the two mechanisms in c-s31-two-mechanisms; the file carries five tests covering the four bullets and both mechanisms, and the manifest plus logs/gate-head.log record the armed run at the head.",
+    "goal": "the node goal is that a request's waits are exactly its own dispatch and section, with --waits-only-after restricting them to its --after refs; reckon/crew/queue_admission.py:2711-2723 returns the explicit run refs alone when the flag is set, and the field at reckon/crew/node.py:789 carries it.",
+    "manifest": "read; it records status complete, three commits, gate-head.log \"56 passed in 27.98s\" and gate-base.log \"51 passed\", both baseline_suite and after_suite with completed true and exit_status 0, and two negative controls each red on the case it names.",
+    "write_paths": "the manifest declares seven paths (four source files, the new test, the evidence fragment and a figures directory); all six paths in the diff sit inside them and the figures directory was correctly left empty because the done_when names no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_node_waits_only_on_what_it_names.py:150 and :243 fail if the flag is ignored (logs/negative-control-ignore-flag.log) and :270 fails if the re-derivation cache drops node.after (logs/negative-control-cache-key.log), while the storage round-trip at line 183 guards only serialization.",
+    "evidence": "the armed gate at logs/gate-head.log passes 56 and the base arm at logs/gate-base-with-new-test.log fails 4 of the 5 new cases, but the done_when's importer clause was measured on one chunk plus six modules (logs/importers-head-01.log and -02.log both exit 124) and the record carries no ruff log, so two of its clauses are only partly evidenced.",
+    "fit": "the new validate property at reckon/crew/node.py:1353 follows the existing property-id idiom beside \"fully-specified\", the CLI option at reckon/crew_dispatch_commands.py:1198 states its refusal, and the comment at reckon/crew/node.py:782-788 explains the mechanism rather than a plan.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:2712-2723 drops the section's declared waits and the plan's depends_on, and line 2856-2860 plus 3603 drop the readiness ref, so the flagged request waits on its --after refs alone with the section still recorded for routing and landing.",
+    "reuse": "the change extends the existing owners \u2014 derive_wait_refs at reckon/crew/queue_admission.py:2711, _validated_batch_waits at :2730, validate_node at reckon/crew/node.py:1351 \u2014 and forks no mechanism; the new test reuses the existing chain_repo fixture and helpers through the __wrapped__ idiom already used in ten other test files.",
+    "scope_discipline": "all six changed paths sit inside the manifest's declared write paths, and the diff carries only the flag, its two suppression points, the cache key and the test that measures them."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a request's waits are exactly its own dispatch and section, with --waits-only-after restricting them to its --after refs; reckon/crew/queue_admission.py:2711-2723 returns the explicit run refs alone when the flag is set, and the field at reckon/crew/node.py:789 carries it.\nVERDICT done_when: the done_when names tests/test_a_node_waits_only_on_what_it_names.py as the measure and requires every case \u00a731 lists plus the two mechanisms in c-s31-two-mechanisms; the file carries five tests covering the four bullets and both mechanisms, and the manifest plus logs/gate-head.log record the armed run at the head.\nVERDICT write_paths: the manifest declares seven paths (four source files, the new test, the evidence fragment and a figures directory); all six paths in the diff sit inside them and the figures directory was correctly left empty because the done_when names no figure.\nVERDICT manifest: read; it records status complete, three commits, gate-head.log \"56 passed in 27.98s\" and gate-base.log \"51 passed\", both baseline_suite and after_suite with completed true and exit_status 0, and two negative controls each red on the case it names.\nVERDICT diff: read commit by commit from 434ec98a to a09488d9; eec4eb8aa1 carries the implementation, 19dc4744d7 and a09488d9c4 carry only the evidence fragment, and no commit touches a file outside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:_validated_batch_waits, reckon/crew/dispatch.py:dispatch_waits, reckon/crew/queue_admission.py:_advance_waiting_requests via _rederive_waits, reckon/crew_dispatch_commands.py:crew_dispatch, reckon/crew/dispatch_batch.py:_entry_node, reckon/crew/queue_edit.py:validate_node\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:2712-2723 drops the section's declared waits and the plan's depends_on, and line 2856-2860 plus 3603 drop the readiness ref, so the flagged request waits on its --after refs alone with the section still recorded for routing and landing.\nSCORE evidence: 15\nJUSTIFICATION evidence: the armed gate at logs/gate-head.log passes 56 and the base arm at logs/gate-base-with-new-test.log fails 4 of the 5 new cases, but the done_when's importer clause was measured on one chunk plus six modules (logs/importers-head-01.log and -02.log both exit 124) and the record carries no ruff log, so two of its clauses are only partly evidenced.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six changed paths sit inside the manifest's declared write paths, and the diff carries only the flag, its two suppression points, the cache key and the test that measures them.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_node_waits_only_on_what_it_names.py:150 and :243 fail if the flag is ignored (logs/negative-control-ignore-flag.log) and :270 fails if the re-derivation cache drops node.after (logs/negative-control-cache-key.log), while the storage round-trip at line 183 guards only serialization.\nSCORE fit: 19\nJUSTIFICATION fit: the new validate property at reckon/crew/node.py:1353 follows the existing property-id idiom beside \"fully-specified\", the CLI option at reckon/crew_dispatch_commands.py:1198 states its refusal, and the comment at reckon/crew/node.py:782-788 explains the mechanism rather than a plan.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owners \u2014 derive_wait_refs at reckon/crew/queue_admission.py:2711, _validated_batch_waits at :2730, validate_node at reckon/crew/node.py:1351 \u2014 and forks no mechanism; the new test reuses the existing chain_repo fixture and helpers through the __wrapped__ idiom already used in ten other test files.\nFINDING tests/test_a_node_waits_only_on_what_it_names.py:183 non-blocking: the assertion compares the stored flag against the same True the test handed the code, so it is a serialization round-trip and not a test of any derived behaviour; it reddens only if _node_from_pointer stops carrying dataclass fields, and the derivation the test exists to protect is guarded by the waits assertions around it.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html:37 non-blocking: the done_when asks that the test files importing reckon.crew_dispatch_commands or reckon.crew.queue_admission add no failure against the base, but only chunk 00 and the six failing modules were measured, with importers-head-01.log and -02.log both ending EXIT=124, so the population clause is partly unmeasured even though the record discloses it.\n",
+  "review_run_id": "r-20261110T181856296912-review-of-a-node-waits-only-on-what-it-names-a09488d9c451",
+  "reviewed_base_sha": "434ec98ace1c5c575dd0dcc1bff4609f308ed8b1",
+  "reviewed_head_sha": "a09488d9c451f3795934d71a8a074503958d600d",
+  "reviewed_run_id": "r-20261110T165947769366-a-node-waits-only-on-what-it-names",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T19:00:40.826165+00:00",
+  "total": 112
+}
