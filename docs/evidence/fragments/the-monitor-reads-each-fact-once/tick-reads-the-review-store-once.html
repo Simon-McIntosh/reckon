@@ -1,0 +1,38 @@
+<section id="tick-reads-the-review-store-once">
+  <h3>A producer tick shares one review-store snapshot</h3>
+  <p>The classification-input tick opens a context-local review-store snapshot. Record selection,
+  the reviewed-run and reviewer indexes, and classification candidate identities share its single
+  enumeration and per-file stat readings. Parsed records use the existing bounded file memo,
+  keyed by the file signature. Each new tick revalidates every file, including an in-place rewrite
+  that keeps the directory identity unchanged. Within a tick, each run's classification key names
+  its complete candidate set, so another run's atomic store write does not invalidate its review.</p>
+  <table>
+    <thead><tr><th>Measure over 40 live pointers</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base directory enumerations on the opening tick</td><td>101</td></tr>
+      <tr><td>Head directory enumerations per tick</td><td>1</td></tr>
+      <tr><td>Opening tick calls to read_review</td><td>40, one per run</td></tr>
+      <tr><td>Unchanged next tick calls to read_review</td><td>0</td></tr>
+      <tr><td>Next tick after an in-place rewrite</td><td>1, for the rewritten run</td></tr>
+      <tr><td>Next tick after atomic replacement</td><td>1, for the replaced run</td></tr>
+    </tbody>
+  </table>
+  <p>The regression patches every loaded binding of <code>read_review</code> and
+  <code>scandir</code>, seeds both correctly filed and misfiled records, and verifies the changed
+  score returned by each rewrite. The in-place control preserves inode and directory identity.
+  Both original regression cases fail against the unmodified base; the atomic replacement control
+  also fails against the first implementation, which reread all 40 reviews for one replacement.
+  The final focused gate reads <strong>3 passed in 16.18s</strong>.</p>
+  <p>Measurement correction: the early reproduction's 201 enumerations combined two ticks.
+  The final negative control measures 101 on one opening tick and fails both assertions requiring
+  one enumeration. Logs and source provenance are retained in run
+  <code>r-20261110T142718013800-tick-reads-the-review-store-once</code>.</p>
+  <p>The matched direct-importer comparison reads <strong>83 passed, 10 warnings in 28.41s</strong>
+  at base and <strong>86 passed, 10 warnings in 81.92s (0:01:21)</strong> at the final code head,
+  with zero added failures. Each arm ran alone with four workers and a 60-second per-test timeout.
+  The armed suite reads <strong>51 passed in 20.16s</strong> at base and
+  <strong>54 passed in 35.68s</strong> at head. Ruff has the same two pre-existing findings at
+  base and head, adds none on the new test, and formatting passes on all changed Python files.</p>
+  <p>Production main-thread sampling after integration remains the coordinator's check:
+  one sample every 2 seconds for 120 seconds against the previously recorded busy-share log.</p>
+</section>
