@@ -1,0 +1,115 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "A patched scan/read_review binding was not found; positive instrumentation checks, not product regression coverage.",
+      "lines": "93-94"
+    },
+    {
+      "fails_if": "The ticker omits or substitutes a run, or the fixture stops representing forty live pointers; events come from runtime and paths from the independently seeded fixture.",
+      "lines": "105,116"
+    },
+    {
+      "fails_if": "The producer fails to complete a second tick and invoke the injected sleeper with the expected sentinel.",
+      "lines": "110"
+    },
+    {
+      "fails_if": "Restoring per-run store listings makes enumerations exceed one, or repeated/missing first-tick reviews change independently counted call totals.",
+      "lines": "126-129"
+    },
+    {
+      "fails_if": "An unchanged second tick performs any review read or extra listing; base already satisfies the zero-read portion but fails the one-listing portion.",
+      "lines": "130"
+    },
+    {
+      "fails_if": "The rewrite control replaces the inode or changes directory identity; these check that the test exercises in-place invalidation.",
+      "lines": "146-147"
+    },
+    {
+      "fails_if": "Restoring the old per-run listing path makes first-tick enumerations exceed one.",
+      "lines": "150,168"
+    },
+    {
+      "fails_if": "An in-place rewrite is missed, or restoring shared-directory invalidation rereads unrelated runs on atomic replacement.",
+      "lines": "151,169"
+    },
+    {
+      "fails_if": "Record bytes remain stale after rewrite even if lookup is called; returned values are compared with fixed expected scores from independent on-disk edits, not with an input passed to the lookup.",
+      "lines": "152,170"
+    }
+  ],
+  "base_log_revision": "ca9e1cc5f90d81e9c515ab860670a6679cd88ada",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_watch.py:watch_ticker:3325",
+    "reckon/crew/recovery_memo.py:_classification_inputs:505",
+    "reckon/crew/recovery_review_subject.py:_stored_review:1284",
+    "reckon/crew/recovery_review_subject.py:select_review_for_head:141",
+    "reckon/crew/review.py:read_review:3785"
+  ],
+  "completed_at": "2026-11-10T15:11:40Z",
+  "dispatched_at": "2026-11-10T15:03:21Z",
+  "evidence_caveats": [
+    "The base negative control already reports no second-tick read_review calls; it fails the opening-tick enumeration assertion (101 versus 1), not the unchanged-read assertion. Preserve this observed correction rather than asserting the live plan's unsupported expected base read count.",
+    "Gate logs measure code revision a43d8ca6fca20352b58243b0d2965b1ac816b66b; the reviewed final commit changes only evidence HTML.",
+    "No product code or tests were modified or rerun by this review; review worktree HEAD is db774d6c1ede7a4cbb5f3675578bcc0e7032501d and source was read with git show at the reviewed head."
+  ],
+  "evidence_logs": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T142718013800-tick-reads-the-review-store-once/after-suite.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T142718013800-tick-reads-the-review-store-once/baseline-suite.log",
+    "negative_control": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T142718013800-tick-reads-the-review-store-once/negative-control-final.log"
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_tick_reads_the_review_store_once.py",
+      "line": "81",
+      "severity": "blocking",
+      "text": "blocking: The live section requires a bound on per-run stat calls through every binding, but the fixture instruments only scandir and read_review; restoring repeated Path.stat or os.stat calls inside the review lookup would leave every added assertion green."
+    },
+    {
+      "file": "tests/test_a_tick_reads_the_review_store_once.py",
+      "line": "133",
+      "severity": "blocking",
+      "text": "blocking: None of the three regression cases rewrites a reviewed run's manifest or its named gate logs; the live section requires these annotation inputs to invalidate the answer, and a stale added-failure annotation can therefore pass this gate."
+    }
+  ],
+  "head_log_revision": "a43d8ca6fca20352b58243b0d2965b1ac816b66b",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read ab6341d9ef81b62a0751fbbb392e11b85ea2e6d6, c450827ee5f6977de0114ecbf0a37a835228852f, a43d8ca6fca20352b58243b0d2965b1ac816b66b and ee38d8befd3d454098452bb62fc485e4199abda8; the diff adds context-local store helpers, candidate-key refinement, three regression cases and the scoped evidence fragment.",
+    "done_when": "Live section s22 version 144 requires stat counting and manifest rewrite coverage beyond the dispatched prompt.txt measure; tests/test_a_tick_reads_the_review_store_once.py:81 counts only scans and review reads and its three cases mutate only review records.",
+    "goal": "Source prompt.txt states one producer-tick enumeration serving every run; reckon/crew/recovery_memo.py:474 enters the shared store context and review_records.py:1580 shares both indexes, satisfying that narrower runtime goal.",
+    "manifest": "Source manifest.md pins four commits and readable baseline-suite.log and after-suite.log receipts, whose completed summaries show 51 and 54 passing tests with EXIT=0 and no failures.",
+    "write_paths": "Source manifest.md lists nine allowed paths or directories, and the four changed files in ca9e1cc5f90d81e9c515ab860670a6679cd88ada..ee38d8befd3d454098452bb62fc485e4199abda8 all fall inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_reads_the_review_store_once.py:126,152,170 fail on repeated enumeration, stale in-place content or broad atomic invalidation, but no assertion protects the required per-file stat bound or manifest/gate-log invalidation.",
+    "evidence": "baseline-suite.log and after-suite.log record zero added failures, but tests/test_a_tick_reads_the_review_store_once.py:81 omits stat instrumentation and negative-control-final.log reports zero second-tick base review reads rather than the live section's expected forty.",
+    "fit": "reckon/crew/review_records.py:44 follows recovery_memo.py:469's ContextVar context-manager idiom, uses mechanism-based names and leaves the two recorded pre-existing lint findings unchanged.",
+    "goal_fidelity": "reckon/crew/recovery_memo.py:474 and reckon/crew/review_records.py:1580 connect the producer tick to one snapshot, but the broader live-section invalidation contract lacks its required proof.",
+    "reuse": "Capability searches found file_memo.py:279,439 owning signatures and bounded parse caching and runs.py:1150 owning the producer context; review_records.py:44-120 extends the existing store owner and wraps those memo primitives without duplicating either capability.",
+    "scope_discipline": "Source manifest.md declares all four paths changed by the reviewed commits, including docs/evidence/fragments/the-monitor-reads-each-fact-once/tick-reads-the-review-store-once.html, with no unrelated changes."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt states one producer-tick enumeration serving every run; reckon/crew/recovery_memo.py:474 enters the shared store context and review_records.py:1580 shares both indexes, satisfying that narrower runtime goal.\nVERDICT done_when: Live section s22 version 144 requires stat counting and manifest rewrite coverage beyond the dispatched prompt.txt measure; tests/test_a_tick_reads_the_review_store_once.py:81 counts only scans and review reads and its three cases mutate only review records.\nVERDICT write_paths: Source manifest.md lists nine allowed paths or directories, and the four changed files in ca9e1cc5f90d81e9c515ab860670a6679cd88ada..ee38d8befd3d454098452bb62fc485e4199abda8 all fall inside them.\nVERDICT manifest: Source manifest.md pins four commits and readable baseline-suite.log and after-suite.log receipts, whose completed summaries show 51 and 54 passing tests with EXIT=0 and no failures.\nVERDICT diff: Read ab6341d9ef81b62a0751fbbb392e11b85ea2e6d6, c450827ee5f6977de0114ecbf0a37a835228852f, a43d8ca6fca20352b58243b0d2965b1ac816b66b and ee38d8befd3d454098452bb62fc485e4199abda8; the diff adds context-local store helpers, candidate-key refinement, three regression cases and the scoped evidence fragment.\nCALL_SITES: reckon/crew/recovery_watch.py:watch_ticker:3325, reckon/crew/recovery_memo.py:_classification_inputs:505, reckon/crew/recovery_review_subject.py:_stored_review:1284, reckon/crew/recovery_review_subject.py:select_review_for_head:141, reckon/crew/review.py:read_review:3785\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_memo.py:474 and reckon/crew/review_records.py:1580 connect the producer tick to one snapshot, but the broader live-section invalidation contract lacks its required proof.\nSCORE evidence: 12\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log record zero added failures, but tests/test_a_tick_reads_the_review_store_once.py:81 omits stat instrumentation and negative-control-final.log reports zero second-tick base review reads rather than the live section's expected forty.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Source manifest.md declares all four paths changed by the reviewed commits, including docs/evidence/fragments/the-monitor-reads-each-fact-once/tick-reads-the-review-store-once.html, with no unrelated changes.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_tick_reads_the_review_store_once.py:126,152,170 fail on repeated enumeration, stale in-place content or broad atomic invalidation, but no assertion protects the required per-file stat bound or manifest/gate-log invalidation.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/review_records.py:44 follows recovery_memo.py:469's ContextVar context-manager idiom, uses mechanism-based names and leaves the two recorded pre-existing lint findings unchanged.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found file_memo.py:279,439 owning signatures and bounded parse caching and runs.py:1150 owning the producer context; review_records.py:44-120 extends the existing store owner and wraps those memo primitives without duplicating either capability.\nFINDING tests/test_a_tick_reads_the_review_store_once.py:81 blocking: The live section requires a bound on per-run stat calls through every binding, but the fixture instruments only scandir and read_review; restoring repeated Path.stat or os.stat calls inside the review lookup would leave every added assertion green.\nFINDING tests/test_a_tick_reads_the_review_store_once.py:133 blocking: None of the three regression cases rewrites a reviewed run's manifest or its named gate logs; the live section requires these annotation inputs to invalidate the answer, and a stale added-failure annotation can therefore pass this gate.\n",
+  "review_run_id": "r-20261110T150136851590-review-of-tick-reads-the-review-store-once-ee38d8befd3d",
+  "reviewed_base_sha": "ca9e1cc5f90d81e9c515ab860670a6679cd88ada",
+  "reviewed_head_sha": "ee38d8befd3d454098452bb62fc485e4199abda8",
+  "reviewed_run_id": "r-20261110T142718013800-tick-reads-the-review-store-once",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T15:25:20.480560+00:00",
+  "total": 103
+}
