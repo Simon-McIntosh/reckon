@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured by differencing the reviewed manifest's two arms: baseline_suite (fb7dfe0003, base-arm.log, 1 failed, 167 passed, 2 errors, EXIT=1) fails tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove; after_suite (ad1e6697d0, 1 failed, 171 passed, EXIT=1) fails that same id and nothing else. The base arm's two erroring ids in test_staged_write_inventory.py are absent from the head arm and are attributed in the manifest as scratch-tree scaffolding. No failure id is new at the head, so zero added.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1391",
+    "reckon/crew/rollout.py:185"
+  ],
+  "completed_at": "2026-11-10T20:23:27.975Z",
+  "dispatched_at": "2026-11-10T20:04:51Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T182351558449-a-promotion-reads-only-its-own-rollout-home/head-arm.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the log cited as after_suite's log_path holds only its two header lines, with no test output, summary line or EXIT= line, so the arm's result cannot be read from the artifact the manifest names; the run did occur and its summary ('1 failed, 171 passed in 332.74s', EXIT=1) survives in the worker's stream.jsonl."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit against fb7dfe000357f37c56b699fc728601e0e569ce01; the single commit changes three files, adding a run_id keyword argument at reckon/crew/promotion_release.py:915 and a new 138-line test file, and adds no production definition.",
+    "done_when": "the done_when asks for a test building a temporary crew home at 200 and 20 peer runs that counts the directories the lookup stats and asserts the count does not grow, plus a negative control that drops run_id; tests/test_a_promotion_reads_only_its_own_rollout_home.py:103-118 builds and asserts exactly that, :121-138 is the population-control arm, and negative-control.log shows the same assertion reddening at 403 stats against 43.",
+    "goal": "the node goal is that a promotion reads only its own run's rollout home; commit ad1e6697d0 passes the promoting run's id from the live pointer record into rollout.read_rollout_receipt at reckon/crew/promotion_release.py:915, and reckon/crew/rollout.py:199-201 then resolves run_home_rollout_paths against runs_root / run_id instead of iterating every run directory.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T182351558449-a-promotion-reads-only-its-own-rollout-home/manifest.md; it records the node test as 2 passed, the head arm as 1 failed and 171 passed, the base arm as 1 failed, 167 passed and 2 errors carrying the same single failure id, and cites head.log, head-arm.log, base-arm.log and negative-control.log.",
+    "write_paths": "the declared paths are reckon/crew/promotion_release.py, tests/test_a_promotion_reads_only_its_own_rollout_home.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/ and a figures directory; git diff --stat fb7dfe0003..ad1e6697d0 lists only the source, the test and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_reads_only_its_own_rollout_home.py:113 reddens under exactly the regression it guards, as the negative control proves, while the context-window assertions at :114-117 would still pass with run_id dropped because the promoting run's path sorts last among the peers'.",
+    "evidence": "the measure is asserted and its negative control genuinely reddens (negative-control.log: 403 stats at 200 peers against 43 at 20), but the after_suite log cited as head-arm.log holds only its two header lines, so the arm's own result is readable only from the worker's stream.jsonl.",
+    "fit": "the change is one keyword argument in the existing call at reckon/crew/promotion_release.py:913-917, and the test follows the repository's established Path-patching idiom (tests/test_the_wait_check_reads_the_stream_tail.py:86) with names carrying no plan, version or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion_release.py:915 reads the id from record['run_id'], which both the live pointer and the record rebuilt at reckon/crew/promotion_records.py:111 carry, so the confined branch at reckon/crew/rollout.py:199 is the one a promotion takes.",
+    "reuse": "run_id support already existed at the base revision (reckon/crew/rollout.py:186 and :212), so the change extends that owner rather than forking it, and a search over tests for an existing stat-count helper found only the per-test Path patching this file reuses.",
+    "scope_discipline": "git diff --stat fb7dfe0003..ad1e6697d0 names only reckon/crew/promotion_release.py, tests/test_a_promotion_reads_only_its_own_rollout_home.py and the evidence fragment, every one inside the four declared write paths and implied by the goal."
+  },
+  "node": "review-of-a-promotion-reads-only-its-own-rollout-home-ad1e6697d06f",
+  "node:reviewed": "a-promotion-reads-only-its-own-rollout-home",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a promotion reads only its own run's rollout home; commit ad1e6697d0 passes the promoting run's id from the live pointer record into rollout.read_rollout_receipt at reckon/crew/promotion_release.py:915, and reckon/crew/rollout.py:199-201 then resolves run_home_rollout_paths against runs_root / run_id instead of iterating every run directory.\nVERDICT done_when: the done_when asks for a test building a temporary crew home at 200 and 20 peer runs that counts the directories the lookup stats and asserts the count does not grow, plus a negative control that drops run_id; tests/test_a_promotion_reads_only_its_own_rollout_home.py:103-118 builds and asserts exactly that, :121-138 is the population-control arm, and negative-control.log shows the same assertion reddening at 403 stats against 43.\nVERDICT write_paths: the declared paths are reckon/crew/promotion_release.py, tests/test_a_promotion_reads_only_its_own_rollout_home.py, the evidence fragment under docs/evidence/fragments/a-read-answers-inside-its-deadline/ and a figures directory; git diff --stat fb7dfe0003..ad1e6697d0 lists only the source, the test and the fragment, all inside them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T182351558449-a-promotion-reads-only-its-own-rollout-home/manifest.md; it records the node test as 2 passed, the head arm as 1 failed and 171 passed, the base arm as 1 failed, 167 passed and 2 errors carrying the same single failure id, and cites head.log, head-arm.log, base-arm.log and negative-control.log.\nVERDICT diff: read commit by commit against fb7dfe000357f37c56b699fc728601e0e569ce01; the single commit changes three files, adding a run_id keyword argument at reckon/crew/promotion_release.py:915 and a new 138-line test file, and adds no production definition.\nCALL_SITES: reckon/crew/promotion.py:1391, reckon/crew/rollout.py:185\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_release.py:915 reads the id from record['run_id'], which both the live pointer and the record rebuilt at reckon/crew/promotion_records.py:111 carry, so the confined branch at reckon/crew/rollout.py:199 is the one a promotion takes.\nSCORE evidence: 16\nJUSTIFICATION evidence: the measure is asserted and its negative control genuinely reddens (negative-control.log: 403 stats at 200 peers against 43 at 20), but the after_suite log cited as head-arm.log holds only its two header lines, so the arm's own result is readable only from the worker's stream.jsonl.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat fb7dfe0003..ad1e6697d0 names only reckon/crew/promotion_release.py, tests/test_a_promotion_reads_only_its_own_rollout_home.py and the evidence fragment, every one inside the four declared write paths and implied by the goal.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_promotion_reads_only_its_own_rollout_home.py:113 reddens under exactly the regression it guards, as the negative control proves, while the context-window assertions at :114-117 would still pass with run_id dropped because the promoting run's path sorts last among the peers'.\nSCORE fit: 19\nJUSTIFICATION fit: the change is one keyword argument in the existing call at reckon/crew/promotion_release.py:913-917, and the test follows the repository's established Path-patching idiom (tests/test_the_wait_check_reads_the_stream_tail.py:86) with names carrying no plan, version or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: run_id support already existed at the base revision (reckon/crew/rollout.py:186 and :212), so the change extends that owner rather than forking it, and a search over tests for an existing stat-count helper found only the per-test Path patching this file reuses.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T182351558449-a-promotion-reads-only-its-own-rollout-home/head-arm.log:2 non-blocking: the log cited as after_suite's log_path holds only its two header lines, with no test output, no summary and no EXIT= line, so a later reader cannot read the arm's status from the artifact the manifest names; the run did occur and its summary ('1 failed, 171 passed in 332.74s', EXIT=1) survives only in the worker's stream.jsonl.",
+  "review_run_id": "r-20261110T193925052728-review-of-a-promotion-reads-only-its-own-rollout-home-ad1e6697d06f",
+  "reviewed_base_sha": "fb7dfe000357f37c56b699fc728601e0e569ce01",
+  "reviewed_head_sha": "ad1e6697d06fc8256eb24b30b5e8e449e636559a",
+  "reviewed_run_id": "r-20261110T182351558449-a-promotion-reads-only-its-own-rollout-home",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T20:17:17+00:00",
+  "total": 113
+}
