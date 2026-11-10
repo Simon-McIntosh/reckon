@@ -399,11 +399,10 @@ class AnchoredEditor:
                 added(before[index])
             if index in deletions:
                 affected.append(len(out))
-                continue
-            if index in replacements:
+            elif index in replacements:
                 added(replacements[index])
-                continue
-            out.append(line)
+            else:
+                out.append(line)
             if index in after:
                 added(after[index])
 

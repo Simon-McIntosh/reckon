@@ -108,6 +108,30 @@ def test_inserts_by_anchor(editor, root, op, expected):
     assert target.read_bytes() == expected
 
 
+@pytest.mark.parametrize(
+    ("op", "expected"),
+    [
+        ("replace", b"one\nTWO\nzero\nthree\n"),
+        ("delete", b"one\nzero\nthree\n"),
+    ],
+)
+def test_an_insert_after_a_changed_line_survives_the_change(editor, root, op, expected):
+    target = root / f"after_{op}.py"
+    target.write_bytes(b"one\ntwo\nthree\n")
+    anchor = _anchor(editor, target, 2)
+
+    result = editor.edit(
+        str(target),
+        [
+            {"anchor": anchor, "op": op, "text": "TWO"},
+            {"anchor": anchor, "op": "insert_after", "text": "zero"},
+        ],
+    )
+
+    assert not result.startswith("refused:"), result
+    assert target.read_bytes() == expected
+
+
 def test_delete_by_anchor(editor, root):
     target = root / "delete.py"
     target.write_bytes(b"one\ntwo\nthree\n")
