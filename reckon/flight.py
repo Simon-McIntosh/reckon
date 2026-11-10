@@ -42,7 +42,7 @@ from pathlib import Path
 from types import UnionType
 from typing import Any, Union, get_args, get_origin
 
-from reckon import capability
+from reckon import capability, file_memo
 from reckon._store import _config_home
 from reckon._timestamps import parse_utc
 
@@ -625,23 +625,29 @@ def read_layer_file(path: str | Path) -> dict[str, Any]:
     """Parse one YAML layer, returning {} when the file does not exist.
 
     An absent layer is normal — most installs have no project layer. A file that
-    exists but does not parse, or does not hold a mapping, is an error.
+    exists but does not parse, or does not hold a mapping, is an error. Unchanged
+    layers share one parse; callers get mutable copies outside a read-only
+    region and the memo's read-only view inside one.
     """
-    yaml = _require_yaml()
     path = Path(path)
-    if not path.exists():
-        return {}
-    text = _read_text(path)
-    raw = _load_yaml_unique_keys(text, path, yaml)
-    if raw is None:
-        return {}
-    if not isinstance(raw, Mapping):
-        raise FlightConfigError(
-            path,
-            "",
-            f"must hold a mapping at the top level, found {type(raw).__name__}",
-        )
-    return dict(raw)
+
+    def read() -> dict[str, Any]:
+        yaml = _require_yaml()
+        if not path.exists():
+            return {}
+        text = _read_text(path)
+        raw = _load_yaml_unique_keys(text, path, yaml)
+        if raw is None:
+            return {}
+        if not isinstance(raw, Mapping):
+            raise FlightConfigError(
+                path,
+                "",
+                f"must hold a mapping at the top level, found {type(raw).__name__}",
+            )
+        return dict(raw)
+
+    return file_memo.memoized("flight_layer", path, read)
 
 
 def _read_text(path: Path) -> str:
