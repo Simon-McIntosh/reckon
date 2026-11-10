@@ -1,0 +1,42 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T21:18:49.709Z",
+  "dispatched_at": "2026-11-10T21:06:38Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/reckon/file_memo.py:395",
+      "id": "reasoning-1",
+      "reason": "the three consumers the section names (`flight.resolve`, `ledger.resolve_name`, `ledger.lanes_declaring_model`) all run outside a region, none of them mutates the returned mapping (`flight.resolve` deep-copies the layer before editing it, at `_ignore_removed_backend_keys`), and the section's mutation test is written against a direct call, so the deletion, the memo and every done-when arm stand unchanged.",
+      "text": "\"each caller gets its own copy\" describes `memoized`'s behaviour outside a `read_only_region`, but inside one it hands every caller a shared read-only view and copies only when `mutable=True` (`reckon/file_memo.py:392-406`); a future reader who takes the sentence literally could add a `read_layer_file` caller inside a region and be surprised by a mutation refusal rather than a copy",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "b5af896a63bd76f564e4dd9850a346b03abe8661",
+  "plan_fingerprint": "e80523f06ef41c8e811bf0fe27a5d9d031c7a25376140289f4d7595b2e1618d0",
+  "plan_slug": "a-follower-reads-only-what-moved",
+  "plan_version": 7,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T210223838641-plan-review-of-a-follower-reads-only-what-moved",
+  "reviewed_blob_sha": "e95fd2a5318480dda9022042b1e8b5bd99b530df",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 all four cited anchors resolve on the reviewed tree: `flight.read_layer_file` at reckon/flight.py:624, `ledger._identity_catalogue` at reckon/ledger.py:248, `ledger.lanes_declaring_model` at reckon/ledger.py:297, `file_memo.memoized` at reckon/file_memo.py:358; `paid_lanes.py`, `runs.py` and `routing.py` all exist under `reckon/crew/` and each calls `flight.resolve`.",
+    "done_when": "pass \u2014 every arm is measurable (a `git grep` that must return nothing, four named test assertions, a declared negative control on the deep-copy, a delta arm against the base revision, and a strace count with both figures logged), and the negative control is one that genuinely fails when the copy is removed.",
+    "evidence_paths": "pass \u2014 \u00a72's logs go under the run directory on durable storage, and the strace arm's before/after counts are logged rather than left in a scratchpad.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the section's prose, symbols or the new test filename.",
+    "reasoning": "a finding \u2014 the mechanism, the effect and the callers all check out against the code, but \u00a72's sentence that `memoized` hands \"each caller ... its own copy\" is true only outside a `read_only_region`, where `memoized` hands a shared read-only view unless the caller passes `mutable=True`.",
+    "single_goal": "pass \u2014 \u00a72 carries one deliverable: one stat-keyed memo at `flight.read_layer_file`, with the ledger's second cache deleted.",
+    "wiring": "pass \u2014 \u00a72 declares no depends-on/gates and needs none: it edits `reckon/flight.py` and `reckon/ledger.py`, which no other section owns, and the ordered `plan-after` pointer to `the-monitor-reads-each-fact-once` covers the station overlap the intro names."
+  },
+  "section_digests": {
+    "_document": "c56fa981311c28e74feed50a06b27125ae8f6e8f1e816f1ae32447e93e8068cd",
+    "s1": "4e2d067e57abb4f291e83eac5fc0f378af8b0a0eda92363447444834e18081e6",
+    "s2": "ff7400cab0bc752d7a3add988800f8e5b7d6e6fe54edff6d621f27a3f3225afa"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:19:58.317098+00:00",
+  "total": null
+}
