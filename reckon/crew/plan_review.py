@@ -1754,15 +1754,33 @@ _REVIEW_SECTIONS: ContextVar[tuple[str, ...] | None] = ContextVar(
     "plan_review_sections", default=None
 )
 
-# The units the composed review actually traces, which is the asked-for scope
-# only where there is a history to narrow against. A first review widens to
-# every unit because no section can be known settled, and the record must keep
-# what the round traced rather than what it was asked about: a record narrowed
-# to the asking would report the sections the brief widened past as uncovered,
-# and the round that read them would cover nothing it read.
-_COMPOSED_UNITS: ContextVar[tuple[str, ...] | None] = ContextVar(
+# What the composition in progress decided to trace, which is the asked-for
+# scope only where there is a history to narrow against. A first review widens
+# to every unit because no section can be known settled, and the record must
+# keep what the round traced rather than what it was asked about: a record
+# narrowed to the asking would report the sections the brief widened past as
+# uncovered, and the round that read them would cover nothing it read. The
+# holder is made and discarded by the composing block, so the decision lives no
+# longer than the composition that made it.
+_COMPOSED_UNITS: ContextVar[dict[str, tuple[str, ...]] | None] = ContextVar(
     "plan_review_composed_units", default=None
 )
+
+
+def _decided_units() -> tuple[str, ...]:
+    """The units the composition in progress decided to trace, or ``()``."""
+    holder = _COMPOSED_UNITS.get()
+    if not holder:
+        return ()
+    return tuple(holder.get("units") or ())
+
+
+def _record_decided_units(units: Iterable[str]) -> None:
+    """Note the units this composition traces, for the sidecar to keep."""
+    holder = _COMPOSED_UNITS.get()
+    if holder is not None:
+        holder["units"] = tuple(sorted(units))
+
 
 _SECTION_TOKEN = re.compile(r"^[sS][0-9]+(?:[.-][0-9]+)*$")
 
@@ -1801,7 +1819,7 @@ def reviewing_sections(sections: Iterable[Any] | None) -> Iterator[None]:
     parameter through every composer between the command and the writer.
     """
     token = _REVIEW_SECTIONS.set(_normalise_sections(sections) or None)
-    composed = _COMPOSED_UNITS.set(None)
+    composed = _COMPOSED_UNITS.set({})
     try:
         yield
     finally:
@@ -2260,7 +2278,7 @@ def review_scope(
         units = set(named)
         if not prior:
             units = _plan_section_units(plan)
-            _COMPOSED_UNITS.set(tuple(sorted(units | {DOCUMENT_UNIT})))
+            _record_decided_units(units | {DOCUMENT_UNIT})
             lines = [
                 (
                     f"Scope: this plan has no stored {rubric} review yet, so this "
@@ -2275,6 +2293,7 @@ def review_scope(
                 ),
             ]
             return "\n".join([*lines, *_whole_plan_block(plan)]) + "\n"
+        _record_decided_units(units)
         lines = [
             (
                 f"Scope: this {rubric} review is scoped to "
@@ -4759,7 +4778,7 @@ def write_review_sidecar(
         traced = (
             _normalise_sections(traced_units)
             if traced_units is not None
-            else (_COMPOSED_UNITS.get() or _REVIEW_SECTIONS.get() or ())
+            else (_decided_units() or _REVIEW_SECTIONS.get() or ())
         )
         if traced:
             payload[TRACED_UNITS_KEY] = list(traced)

@@ -2673,7 +2673,6 @@ def _review_options(callback):
 def crew_review(
     project,
     plan_slug,
-    review_sections,
     around_plan,
     paths,
     sprint_id,
@@ -2689,6 +2688,7 @@ def crew_review(
     review_run="",
     note="",
     accept_edits="",
+    review_sections=(),
 ):
     """Review one plan's content, a code neighbourhood or a portfolio, or answer a finding.
 
