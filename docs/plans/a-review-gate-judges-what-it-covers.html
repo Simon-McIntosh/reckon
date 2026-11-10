@@ -25,7 +25,7 @@
   <title>A Review Gate Judges What It Covers | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-section-depends-on" content="{&quot;s10&quot;:[&quot;a-review-gate-judges-what-it-covers#s2&quot;,&quot;a-review-gate-judges-what-it-covers#s9&quot;],&quot;s12&quot;:[&quot;a-review-gate-judges-what-it-covers#s9&quot;,&quot;a-review-gate-judges-what-it-covers#s10&quot;],&quot;s14&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;],&quot;s15&quot;:[&quot;a-review-gate-judges-what-it-covers#s13&quot;,&quot;a-review-gate-judges-what-it-covers#s14&quot;]}">
 </head>
@@ -316,7 +316,10 @@
     <div class="r-comment-body"><p>Reviewed r-20261103T054937809738-a-review-round-is-section-scoped over the one commit it gained since its previous review (8d1785f9c3..5db68db75d): the repair makes a widened first round record every unit it traced, which answers the earlier blocking finding; stored a parsed review record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 19, fit 18, reuse 19, added_failure_count 0 and added_failure_ids [] from the run's own baseline_suite and after_suite logs, with one non-blocking finding on an unreset context variable at reckon/crew/plan_review.py:2263.</p></div>
 </div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261110T052438424440-review-of-a-review-round-is-section-scoped-23588d921db5" data-who="reckon-build" data-when="2026-11-10T05:32:53.287Z">
-    <div class="r-comment-body"><p>Review of run r-20261103T054937809738-a-review-round-is-section-scoped at 23588d921db5 (base 5db68db75d5d) stored as parsed: scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 15, fit 19, reuse 20; added_failure_count 0 with no added ids; one non-blocking finding at reckon/crew/plan_review.py:1781, that the new decided-units holder silently drops the decision for a direct caller of review_scope(..., sections=...), so such a caller&#x27;s record carries no traced_units and reads as whole-plan coverage.</p></div>
+    <div class="r-comment-body"><p>Review of run r-20261103T054937809738-a-review-round-is-section-scoped at 23588d921db5 (base 5db68db75d5d) stored as parsed: scores goal_fidelity 19, evidence 14, scope_discipline 20, durability 15, fit 19, reuse 20; added_failure_count 0 with no added ids; one non-blocking finding at reckon/crew/plan_review.py:1781, that the new decided-units holder silently drops the decision for a direct caller of review_scope(..., sections=...), so such a caller's record carries no traced_units and reads as whole-plan coverage.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261103T054937809738-a-review-round-is-section-scoped" data-who="reckon-build" data-when="2026-11-10T05:21:43Z">
+    <div class="r-comment-body"><p>§15 landed: a review composed with `crew review --plan &lt;slug&gt; --section sN` reads the whole plan, traces the code of the named sections only, and carries every prior finding on them in full with its answer and note (no cap, no truncation), while findings on units out of scope are absent; the stored record keeps the units it traced under `traced_units` — every unit for a first round that widened past the ones asked for — and the coverage predicate counts exactly those units. Node gate 7 passed; the declared control restoring the twenty-finding cap fails the first case, and the control reverting the widened-scope repair fails the case that reads the stored scope.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-20261023-s2-docunit" data-who="reckon-build" data-when="2026-10-23T08:00:00Z">
     <div class="r-comment-body"><p>Content review of v5 on 2026-10-23, finding done_when-2, declined for that wave because §2 was not being built: §2's done-when has no arm for its document-unit rule (summary, decisions and gates), so that branch can ship wrong and pass. Add the arm before dispatching §2.</p></div>
