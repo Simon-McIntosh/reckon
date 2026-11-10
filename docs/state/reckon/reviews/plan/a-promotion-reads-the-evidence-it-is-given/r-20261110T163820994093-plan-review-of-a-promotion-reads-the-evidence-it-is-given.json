@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T16:51:12.068Z",
+  "dispatched_at": "2026-11-10T16:42:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:115",
+      "id": "wiring-1",
+      "reason": "a queue dispatching s12 and s13 as the declared waits permit admits two nodes into `promotion_records.py` at once, which the one-writer-per-file rule forbids, and the fix is a declared wait (or a split write path) the worker cannot invent for itself.",
+      "text": "\u00a713's write scope includes \"the manifest checker module that validates `baseline_suite`\", which is `reckon/crew/promotion_records.py` (the arm validation at lines 778\u2013790, through `ledger.suite_observation_missing_fields`), the file \u00a712 declares as its own write path; `plan-section-depends-on` gives s13 only `s11`, and f-aprteig-011's body orders \"\u00a713 runs after \u00a711\", so nothing the plan declares keeps the two sections out of one file at the same time",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:115",
+      "id": "anchors_resolve-1",
+      "reason": "an exclusive write scope that names no path is unenforceable, and the guess decides whether the node edits one file or two.",
+      "text": "\u00a713's third write path is a description, \"the manifest checker module that validates `baseline_suite`\", not a file: the arm validation it points at is `reckon/crew/promotion_records.py` lines 778\u2013790, so a worker holding that write scope can open nothing from the plan and must guess whether the field is accepted at the parse in `reckon/crew/reports.py` or at the arm check in `promotion_records.py`",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:115",
+      "id": "reasoning-1",
+      "reason": "\u00a77 already settled that one log has two identities to compare against, so a worker implementing \u00a713 as written re-creates the wrong-base comparison for every digest-carrying gate; the plan must either match on both identities or refuse when no pair matches and the gate is not the default.",
+      "text": "\u00a713 matches a gate to its pair by \"the pair whose head arm's log is the gate log\" and falls back to the default pair when none matches, but a gate check may carry a digest instead of a path (`_default_gate_evidence_from_manifest`, `reckon/crew/promotion_records.py:345\u2013347`, treats `log_path` or `log_digest` as the given evidence), and a suite arm may record `log_digest` rather than `log_path` (`reckon/crew/promotion_evidence.py:1177`); a digest-named gate therefore matches no pair, falls back to `baseline_suite`, and is judged against the wrong base \u2014 the exact defect \u00a713 exists to remove \u2014 with no refusal to say so",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "18e89c95a3e2004588d120be35c03dcfecfac452",
+  "plan_fingerprint": "115eb9cf64bdea75d99e830f6905071b12bb5b300b8b2f8311d466abd6f12186",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 73,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T163820994093-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "5669dec1e96702306517567d33f90162ba58d9f4",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a713's write scope names \"the manifest checker module that validates `baseline_suite`\" rather than a path, so one of its three write paths opens nothing.",
+    "done_when": "pass \u2014 s12's three cases and s13's three cases are each an assertion over a temporary manifest or run record, and each section names a declared negative control (s12 restores `test_logs[0]`, which reddens all three of its branches; s13 drops the pair selection, which reddens case 1).",
+    "evidence_paths": "pass \u2014 the refusal output s12 cites at `~/.cache/reckon-ctest-receipt/merge-solver-20261110.out` exists and opens, and both sections keep gate material in the new test files and the run directory, with no node-local temp path and no session scratchpad.",
+    "naming": "pass \u2014 the two new test names state the mechanism (`test_a_default_gate_is_never_the_negative_control.py`, `test_a_gate_meets_the_base_of_its_own_suite.py`), and no plan label, stage name or ticket number reaches a symbol, file or comment.",
+    "reasoning": "a finding \u2014 \u00a713 selects the suite pair by the gate log's path alone, so a gate named by digest falls silently back to the default pair and is judged against the wrong base again; \u00a712's cause does match its evidence.",
+    "single_goal": "pass \u2014 s12 carries the default head gate log alone; s13 carries the `suite_pairs` field alone.",
+    "wiring": "a finding \u2014 \u00a713's declared waits give it \u00a711 alone, while its write scope includes the same module \u00a712 writes."
+  },
+  "section_digests": {
+    "_document": "a65c746e257d28cc3d64a22bf66de2ad2846838c99791edb95c92042216333a8",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:29:54.769470+00:00",
+  "total": null
+}
