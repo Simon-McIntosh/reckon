@@ -1,0 +1,135 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "assert resolution_count <= 2 * len(rows)",
+      "fails_when": "the nested per-tree scan is restored: logs/negative-control.log:68 records 11,061 against 2 * 501 = 1002, so the assertion reddens exactly on the regression it was added for.",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "independent": true,
+      "line": "356"
+    },
+    {
+      "assertion": "assert _head_held() == reference",
+      "fails_when": "the derivation drops any row the naming rule would have applied, or attributes a tree to a different row: the reference is computed from ledger rows through routing.record_names_worktree, not from the derivation's own output.",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "independent": true,
+      "line": "285"
+    },
+    {
+      "assertion": "assert _head_held().get(orphan_tree) == \"\"",
+      "fails_when": "run-less rows are dropped from the fallback index instead of being filed into it, which is the specific repair the c6bbfcc737 elif branch makes.",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "independent": true,
+      "line": "302"
+    },
+    {
+      "assertion": "assert held == _reference_held(ledger.run_rows_from_documents(PROJECT, root), root)",
+      "fails_when": "the refused-namings path stops admitting the run-less row, since the reference reads the same document rows independently.",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "independent": true,
+      "line": "388"
+    },
+    {
+      "assertion": "assert obligations_module._run_namings(PROJECT, root) is None",
+      "fails_when": "never for the code under test: it asserts the monkeypatched lambda's own return value.",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "independent": false,
+      "line": "383"
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:_held_worktrees_by_session (calls _held_worktree_records at :2354 and skips the run-less row when building duties)",
+    "reckon/crew/merge.py:976 (release-on-merge reads obligations._held_worktree_records(project) for every project)"
+  ],
+  "completed_at": "2026-11-10T00:13:38.837Z",
+  "dispatched_at": "2026-11-09T23:56:55Z",
+  "findings": [
+    {
+      "disposition": "exempted",
+      "file": "reckon/crew/obligations.py",
+      "line": "2009",
+      "severity": "non-blocking",
+      "text": "non-blocking: _names_worktree has no production caller after the change \u2014 its only call site was the per-tree scan that :2309-2330 replaced \u2014 so it is dead code retained solely because a peer test patches the imported record_names_worktree name at tests/test_held_worktree_records_match_each_record_once.py:251; the manifest's outside_scope records this deliberately, and removing the wrapper plus the import is a separate cleanup."
+    },
+    {
+      "disposition": "folded: the assertion is a deliberate control and reads correctly as one; no repair node is needed",
+      "file": "tests/test_held_worktree_fallback_resolves_each_row_once.py",
+      "line": "383",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert obligations_module._run_namings(PROJECT, root) is None` asserts the return of the lambda the test installed one line earlier, so it cannot fail for any behaviour of the code under test; it is a patch-took control rather than coverage, and the substantive guard is the held-map comparison at :388."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "Read both commits against base cb8059587d commit by commit; c6bbfcc737 changes only reckon/crew/obligations.py:2287-2330 (+40/-11 lines, the left_out list, the run-less guard and the second index) plus the 391-line new test, and 2bfb95821 adds only the 25-line evidence fragment.",
+    "done_when": "Read source prompt.txt:103-104 and tests/test_held_worktree_fallback_resolves_each_row_once.py:40-44,122-129,305-361; the fixture holds 500 run records and 20 registered trees no record names plus one tree named only by a run-less row, the case counts routing._retained_worktree and the name obligations imports against 2 * len(rows), compares the held map to a reference the test computes through routing.record_names_worktree, and logs/after-suite.log:9-10 records 25 passed, EXIT=0.",
+    "goal": "Read source prompt.txt:38 and the landed change at reckon/crew/obligations.py:2309-2330; the per-tree nested scan is replaced by a second WorktreeRecordIndex filed once from the left-out rows and looked up per unresolved tree, and logs/head-resolution-count.log records 541 resolutions over 501 records against a bound of 1002, so the fallback no longer scales with the product of records and unresolved trees.",
+    "manifest": "Read source manifest.md; it states the gate command, the five log paths, the 541/1002 head count and the 11,061 negative-control count, and its baseline_suite (cb8059587d, 20 passed, EXIT=0) and after_suite (c6bbfcc737, 25 passed, EXIT=0) both match the summary and EXIT lines of logs/baseline-suite.log and logs/after-suite.log.",
+    "write_paths": "Read source prompt.txt:80-84 and the base-to-head diff; the three changed paths (reckon/crew/obligations.py, tests/test_held_worktree_fallback_resolves_each_row_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/held-worktree-fallback-resolves-each-row-once.html) are all inside the four declared paths, with reckon/crew/routing.py declared and correctly left untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_held_worktree_fallback_resolves_each_row_once.py:356 fails on the restored per-tree scan, shown red at 11,061 resolutions in logs/negative-control.log:68, and :285/:360/:388 compare against a reference the test computes itself through routing.record_names_worktree rather than through the derivation.",
+    "evidence": "logs/after-suite.log:9-10 and logs/baseline-suite.log:9-10 carry the 25-passed and 20-passed arms with EXIT=0 and name their revisions, but the head arm ran at c6bbfcc737 while the reviewed head is the docs-only 2bfb95821, and the worker recorded no ruff result although prompt.txt:104 asks for one (independently verified clean by this review).",
+    "fit": "reckon/crew/obligations.py:2287-2330 follows the surrounding idiom (module docstring updated, mechanism comments, no plan label or ticket reference), but _names_worktree at :2009 is left with no production caller.",
+    "goal_fidelity": "reckon/crew/obligations.py:2309-2330 files the left-out rows once into a second WorktreeRecordIndex and looks each unresolved tree up in it, so the fallback cost is records plus trees rather than their product, which is the goal at prompt.txt:38.",
+    "reuse": "The change adds no new matching mechanism: it files rows into the repository's existing routing.WorktreeRecordIndex (reckon/crew/routing.py:1191) and consults routing.record_names_worktree only through that index, so the owning capability is extended rather than forked.",
+    "scope_discipline": "The whole base-to-head diff is the three declared paths at git diff --stat cb8059587d..2bfb95821, with no plan, state or index file touched and no untracked work left in the worktree."
+  },
+  "limitations": [
+    "The gate was not re-run during this review; the figures were checked against the recorded logs, and ruff check / ruff format --check were run on the two staged Python paths and reported clean.",
+    "The head arm was run at c6bbfcc737, one commit before the reviewed head 2bfb95821, which adds only the evidence fragment, so no code or test differs between them.",
+    "The fixture holds no row carrying a run id that the naming screen excludes yet that names an inspected tree; the decision to drop such rows rests on reading the screen as a superset of record_names_worktree (reckon/crew/obligations.py:2106-2124 comparing node id membership in the tree-name set and an exact retained-path match), not on a red test."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and the landed change at reckon/crew/obligations.py:2309-2330; the per-tree nested scan is replaced by a second WorktreeRecordIndex filed once from the left-out rows and looked up per unresolved tree, and logs/head-resolution-count.log records 541 resolutions over 501 records against a bound of 1002, so the fallback no longer scales with the product of records and unresolved trees.\nVERDICT done_when: Read source prompt.txt:103-104 and tests/test_held_worktree_fallback_resolves_each_row_once.py:40-44,122-129,305-361; the fixture holds 500 run records and 20 registered trees no record names plus one tree named only by a run-less row, the case counts routing._retained_worktree and the name obligations imports against 2 * len(rows), compares the held map to a reference the test computes through routing.record_names_worktree, and logs/after-suite.log:9-10 records 25 passed, EXIT=0.\nVERDICT write_paths: Read source prompt.txt:80-84 and the base-to-head diff; the three changed paths (reckon/crew/obligations.py, tests/test_held_worktree_fallback_resolves_each_row_once.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/held-worktree-fallback-resolves-each-row-once.html) are all inside the four declared paths, with reckon/crew/routing.py declared and correctly left untouched.\nVERDICT manifest: Read source manifest.md; it states the gate command, the five log paths, the 541/1002 head count and the 11,061 negative-control count, and its baseline_suite (cb8059587d, 20 passed, EXIT=0) and after_suite (c6bbfcc737, 25 passed, EXIT=0) both match the summary and EXIT lines of logs/baseline-suite.log and logs/after-suite.log.\nVERDICT diff: Read both commits against base cb8059587d commit by commit; c6bbfcc737 changes only reckon/crew/obligations.py:2287-2330 (+40/-11 lines, the left_out list, the run-less guard and the second index) plus the 391-line new test, and 2bfb95821 adds only the 25-line evidence fragment.\nCALL_SITES: reckon/crew/obligations.py:_held_worktrees_by_session, reckon/crew/merge.py:976\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2309-2330 files the left-out rows once into a second WorktreeRecordIndex and looks each unresolved tree up in it, so the fallback cost is records plus trees rather than their product, which is the goal at prompt.txt:38.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/after-suite.log:9-10 and logs/baseline-suite.log:9-10 carry the 25-passed and 20-passed arms with EXIT=0 and name their revisions, but the head arm ran at c6bbfcc737 while the reviewed head is the docs-only 2bfb95821, and the worker recorded no ruff result although prompt.txt:104 asks for one.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The whole base-to-head diff is the three declared paths at git diff --stat cb8059587d..2bfb95821, with no plan, state or index file touched and no untracked work left in the worktree.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_held_worktree_fallback_resolves_each_row_once.py:356 fails on the restored per-tree scan, shown red at 11,061 resolutions in logs/negative-control.log:68, and :285/:360/:388 compare against a reference the test computes itself through routing.record_names_worktree rather than through the derivation.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligations.py:2287-2330 follows the surrounding idiom (module docstring updated, mechanism comments, no plan label or ticket reference), but _names_worktree at :2009 is left with no production caller.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change adds no new matching mechanism: it files rows into the repository's existing routing.WorktreeRecordIndex (reckon/crew/routing.py:1191) and consults routing.record_names_worktree only through that index, so the owning capability is extended rather than forked.\nFINDING reckon/crew/obligations.py:2009 non-blocking: _names_worktree has no production caller after the change, its only call site being the per-tree scan the diff replaced, so it is dead code retained only because a peer test patches the imported record_names_worktree name; the manifest records this in outside_scope.\nFINDING tests/test_held_worktree_fallback_resolves_each_row_once.py:383 non-blocking: the assertion compares the monkeypatched lambda's own return against None, so it is a patch-took control that cannot fail for any behaviour of the code under test; the substantive guard is the held-map comparison at :388.\n",
+  "reuse_search": "Searched for an existing bounded lookup over run records by naming key: reckon/crew/routing.py:1191 WorktreeRecordIndex already owns that capability, and the diff files rows into it rather than adding a parallel structure. Also checked for an existing second-binding patch harness for _retained_worktree; tests/test_held_worktree_records_match_each_record_once.py:244-251 patches the same two names, and the new test follows that existing idiom.",
+  "review_run_id": "r-20261109T235229980601-review-of-held-worktree-fallback-resolves-each-row-once-2bfb95821960",
+  "reviewed_base_sha": "cb8059587df43f6432190a6fa67ad49f42284579",
+  "reviewed_head_sha": "2bfb95821960937f489a8265e93ee25b80682120",
+  "reviewed_run_id": "r-20261109T231953776182-held-worktree-fallback-resolves-each-row-once",
+  "rubric": {
+    "durability": "answered",
+    "evidence": "answered",
+    "fit": "answered",
+    "goal_fidelity": "answered",
+    "reuse": "answered",
+    "scope_discipline": "answered"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [
+    "tests/test_held_worktree_fallback_resolves_each_row_once.py:383 asserts the value the test itself installed as the stub, so it carries no information about the derivation."
+  ],
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_fallback_resolves_each_row_once.py tests/test_held_worktree_records_match_each_record_once.py tests/test_held_worktrees_read_run_files.py tests/test_the_held_worktree_read_is_bounded.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T231953776182-held-worktree-fallback-resolves-each-row-once/logs/after-suite.log",
+      "revision": "c6bbfcc7378e13b5d31291ca8581c570f623617c"
+    },
+    "baseline_suite": {
+      "command": ".venv/bin/python -m pytest -p no:cacheprovider -q tests/test_held_worktree_records_match_each_record_once.py tests/test_held_worktrees_read_run_files.py tests/test_the_held_worktree_read_is_bounded.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261109T231953776182-held-worktree-fallback-resolves-each-row-once/logs/baseline-suite.log",
+      "revision": "cb8059587df43f6432190a6fa67ad49f42284579"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T00:28:04.252065+00:00",
+  "total": 111
+}
