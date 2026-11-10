@@ -1,0 +1,37 @@
+<section id="station-tick-reads-only-what-changed-ledger-window">
+  <h2>The station sweep reads recent ledger payloads</h2>
+  <p>The coordinator census on 10 November found 58% of station samples in
+  <code>compose_owed_plan_reviews → plan_authoring_runs → ledger.read_records → load → _indexed_data</code>,
+  decoding a 510 MB ledger of 7,696 run documents. The measured live station read about
+  1,290 MiB/min and used about 108% of one core over 63 s with 49 live pointers.
+  The census summary, raw profile and I/O log are preserved under <code>logs/</code> in
+  <code>r-20261110T144727201340-station-tick-reads-only-what-changed</code>.</p>
+  <p>Commit <code>fabcdc60bc1d699369a550104f93435a86c1a6d7</code> adds a latest-activity
+  timestamp and its index to the existing local ledger cache. The plan-authoring sweep supplies
+  its existing inclusive time window before payloads are fetched or decoded. Live pointers
+  and ledger rows share the timestamp derivation. Cold cache construction still reads the
+  full history; subsequent refreshes read changed documents and selected payloads.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Changed</th></tr></thead>
+    <tbody>
+      <tr><td>Dominant input in the five-run fixture</td><td colspan="2">11,000,725 bytes</td></tr>
+      <tr><td>Second-tick ledger reads after one small row is added</td><td>11,075,805 bytes</td><td>53,469 bytes</td></tr>
+      <tr><td>Armed focused gate</td><td>54 passed</td><td>62 passed</td></tr>
+      <tr><td>Measured second-tick wall time</td><td>887.6 ms</td><td>485.5 ms</td></tr>
+      <tr><td>Measured second-tick CPU time</td><td>129.8 ms</td><td>29.9 ms</td></tr>
+    </tbody>
+  </table>
+  <p>The byte instrument is <code>strace</code> over kernel <code>read</code> and
+  <code>pread64</code> calls, so SQLite reads count beside Python reads. The fixture runs
+  complete station ticks with a synchronous, non-launching authoring sweep and replaces
+  obligation publication to isolate that sweep. Every returned classification equals a
+  fresh <code>_watch_snapshot</code> verdict. The trace must also name both tick markers and a known 4,096-byte control read. The negative control fails the byte-bound
+  test at base. Additional cases cover aggregate and per-run timestamps, an exact boundary,
+  long runs completing recently, rewritten records, independent window bounds within a reuse
+  region, last-good and uncached fallbacks, and the refusal of conflicting expired copies. The final focused gate also preserves full-history promotion order when only expired per-run documents accompany recent aggregate rows; its reproduction is retained in <code>ordering-reproduction.log</code>.</p>
+  <p>Matched 368-file importer comparison: base 107 failed, 3578 passed, 4 skipped, 4 warnings, 15 errors in 1646.42s (0:27:26); head 106 failed, 3579 passed, 4 skipped, 4 warnings, 15 errors in 1591.92s (0:26:31). Added failing test ids: 0. The final promotion-order follow-up is covered by its focused gate but not by these broad arms. The supplementary six-file population passed 21 tests at base and 28 at head. Both full arms use six workers, separate controller basetemps and a 60-second per-test bound. Earlier interrupted probes are not admitted. The coordinator owns the post-landing
+  live window; the overall 20 MB/min and 5% CPU bounds are not claimed by this fragment.</p>
+  <p>The quantitative receipts are <code>negative-control-final.log</code>, <code>after-suite-ordering.log</code>,
+  <code>baseline-suite-resumed.log</code> and <code>after-suite-final.log</code> and <code>after-suite-committed.log</code> in the assigned run directory.
+  The initial worker-fenced census was interrupted and is explicitly not accepted as live evidence.</p>
+</section>

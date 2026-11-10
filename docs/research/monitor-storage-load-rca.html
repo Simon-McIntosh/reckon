@@ -407,6 +407,40 @@
     38.923 s inclusive, with project discovery nested in that work at 24.375 s. These are cumulative
     times, so they must not be added. The remaining live cost is in queued ordering and project
     discovery, outside this review-entry repair's assigned paths.</p>
+    <h2 id="station-ledger-window">The plan-review sweep decodes the full ledger</h2>
+    <p>A coordinator-side census on 2026-11-10 at 15:03–15:05Z, outside the worker fence,
+    measured station pid 3622219 on <code>98dci4-clu-2023</code> with 49 live pointers.
+    The station read 1,354 MiB in 63 s, about 1,290 MiB/min, and consumed 67.9 CPU seconds,
+    about 108% of one core. Of the profile samples, 58% followed
+    <code>compose_owed_plan_reviews → plan_authoring_runs → ledger.read_records → load → _indexed_data</code>.
+    The ledger held 7,696 run documents totalling 510 MB. The authoring reader discarded
+    rows outside <code>PLAN_REVIEW_BURST_SECONDS</code> only after every payload had been decoded.
+    The raw profile, I/O receipt and summary are in the run directory's <code>logs/</code>
+    for <code>r-20261110T144727201340-station-tick-reads-only-what-changed</code>.</p>
+    <p>The ledger index now stores the newest usable creation, dispatch, launch or completion
+    timestamp as an indexed scalar. The authoring reader passes its inclusive activity bound
+    into <code>ledger.read_records</code> and <code>load</code>; the index selects rows before
+    fetching payloads. The same timestamp function selects live pointers and committed rows,
+    preserving the treatment of recently completed long runs. A cold index still reads the
+    complete history once, and the existing file-identity checks still refresh changed records
+    and refuse conflicting aggregate and per-run copies.</p>
+    <table>
+      <thead><tr><th>Fixture measure</th><th>Base</th><th>Recent-row selection</th></tr></thead>
+      <tbody>
+        <tr><td>Five large ledger inputs</td><td colspan="2">11,000,725 bytes</td></tr>
+        <tr><td>Ledger reads on the second station tick after adding a small row</td>
+          <td>11,075,805 bytes</td><td>53,469 bytes</td></tr>
+        <tr><td>Classification equivalence</td><td colspan="2">Every stored verdict equals a fresh classification</td></tr>
+      </tbody>
+    </table>
+    <p>The fixture counts kernel <code>read</code> and <code>pread64</code> calls by path through
+    <code>strace</code>, including SQLite reads. It runs complete station ticks with a synchronous
+    non-launching plan-authoring sweep; obligation publication is replaced for this isolated
+    fixture. The byte-bound test fails at base and passes with the repair. This isolates the
+    dominant ledger read; it does not establish the live station's post-landing cost.
+    The coordinator owns that subsequent 60 s live window and the overall 20 MB/min and
+    5% CPU verdict. No after-window result is claimed here.</p>
+    <p>The importer comparison for the ledger-window repair recorded an unmet broad verification gate. Its receipts and limitations are recorded in the <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#station-tick-reads-only-what-changed-ledger-window">landing evidence</a>; the live after-window remains coordinator-owned.</p>
   </main>
 </body>
 </html>
