@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="42">
+<meta name="plan-version" content="43">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -94,6 +94,9 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261110T173756784516-review-of-a-batch-entry-is-refused-at-queue-time-for-the-node-contract-5c29da3b3ce7" data-who="reckon-build" data-when="2026-11-10T18:01:56.329Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T150554869217 at base c8e0018c20..head 5c29da3b3c (two commits, tests and evidence only); scores 17/12/20/15/18/19, three non-blocking findings on record evidence and arm methodology, and added_failure_count 2 derived from the run's own baseline_suite and after_suite.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract" data-who="reckon-build" data-when="2026-11-10T17:12:34Z">
+    <div class="r-comment-body"><p>§2&#x27;s composition already lands: node.validate_node judges the whole contract and both dispatch_plan.plan_dispatch and dispatch.queue_requests call it, so a batch entry missing negative_control while declaring a test write path is refused in its own row with no pointer written and its valid sibling stored; this node adds tests/test_a_batch_entry_is_checked_when_queued.py, sharing the contract fixture with tests/test_every_path_meets_the_node_contract.py (3 passed at head; the arm over the 168 files importing the three dispatch modules adds no failure beyond two timing-bound ids that pass alone at both revisions), and changes no product source.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T100310177452-name-the-caller-that-moved-a-live-successors-worktree-to-the" data-who="reckon-build" data-when="2026-11-07T10:39:58.697Z">
     <div class="r-comment-body"><p>Established that the live worktree of run r-20261106T224214853358-edge-window-settle was moved to `_trash/edge-window-settle-20261106T225026473243Z` at 22:50:26Z by `_remove_worktree` (reckon/crew/routing.py:2284) called from `_create_worktree` (reckon/crew/routing.py:2240) during a second launch of the same run id, because `_live_pointer_worktrees` skips the pointer whose run id equals `LAUNCH_RUN_ID` (reckon/crew/routing.py:1092), and that the same call's fleet `create` then made a new inode at the same path; the predecessor never held a worktree and there was no 23:50Z restore — 23:50 local time is 22:50:26Z. The report is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md.</p></div>
