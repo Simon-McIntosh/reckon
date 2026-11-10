@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion_records.py:_arm_measured_nothing",
+    "reckon/crew/promotion_records.py:_arm_missing_fields",
+    "reckon/crew/promotion_records.py:_evaluate_suite_delta",
+    "reckon/crew/recovery_repair_dispatch.py:_scoped_suite_command caller",
+    "reckon/crew/dispatch.py:dispatch"
+  ],
+  "completed_at": "2026-11-10T03:56:29.227Z",
+  "dispatched_at": "2026-11-10T03:48:41Z",
+  "findings": [
+    {
+      "file": "tests/test_a_census_test_runs_in_every_product_gate.py",
+      "line": 166,
+      "severity": "non-blocking",
+      "text": "The assertion compares the delta's added_failure_ids against STAGED_WRITER_FAILURE, the same constant the test fed into the after-arm observation on line 158, so it would also hold for a delta evaluator that simply echoed its input; the test's dependence on the new census code comes from the arm-command check that returns None at base, not from this line.",
+      "what": "Echo-shaped assertion: both sides trace to the value the test itself supplied."
+    },
+    {
+      "file": "tests/test_a_census_test_runs_in_every_product_gate.py",
+      "line": 183,
+      "severity": "non-blocking",
+      "text": "`assert delta[\"added_failure_ids\"] == []` is computed from two observations the test built with the identical id list, so it asserts that a set difference over one value is empty rather than that any census behaviour holds.",
+      "what": "Echo-shaped assertion over inputs the test supplies on both arms."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 550,
+      "severity": "non-blocking",
+      "text": "_writes_product_source repeats the record->node->write_paths->repo->_repository_relative_scope traversal already written in _node_test_files at line 500; extracting that traversal would keep the two classifications of one write scope from drifting apart.",
+      "what": "Write-scope traversal duplicated between two helpers in the same module."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the change against reckon/crew/promotion_records.py:633,667,669,704 and reckon/crew/recovery_repair_dispatch.py:1085, which resolve the scoped command for promotion and repair dispatch respectively, plus reckon/crew/dispatch.py:2915 where the worker's command is resolved and recorded.",
+    "diff": "Read the single commit 8381066b against base 6b6c15a8 commit by commit: flight.yaml gains census_tests, the generated schema and _flight_schema.py carry it, promotion_records.py resolves it into _scoped_suite_command behind a product-source test, dispatch.py resolves the same list onto the run pointer, docs/state/reckon/flight.yaml declares tests/test_staged_write_inventory.py, and the 184-line test file covers cases (a)-(d).",
+    "done_when": "The done_when names tests/test_a_census_test_runs_in_every_product_gate.py and requires case (a) red at base, green at head, red under the negative control, plus zero added importer failures and ruff clean by delta; gate-base.log, gate-head.log, negative-control.log, the two importer logs and the manifest's ruff line each assert one of those measures.",
+    "goal": "Read the goal ('Run each project-declared census test in the scoped gate of every node that writes product source') against reckon/crew/promotion_records.py:610 and reckon/crew/dispatch.py:2921; the landed change does what it states.",
+    "manifest": "Read the delivered manifest; it states status complete, commit 8381066b, the gate command, the head arm 5 passed (EXIT=0), the base arm 3 failed (EXIT=1, case (a) among them), the negative control 3 failed, and the two importer arms' 205/8 and 543/13, each reconciling with the log of that name.",
+    "write_paths": "Read the six declared write paths against the eight-file diff; docs/evidence/fragments/the-suite-is-green-at-head/a-census-test-runs-in-every-product-gate.html and the figures directory were declared in the prompt's FENCE \u2014 SCOPE, and reckon/crew/dispatch.py was granted in resume-1-advice.txt, so nothing in the diff is outside an authorised path."
+  },
+  "justifications": {
+    "durability": "tests/test_a_census_test_runs_in_every_product_gate.py:83 fails if the census is dropped from the resolution (it is red in both gate-base.log and negative-control.log), but the two case (d) assertions at lines 166 and 183 compare against failure ids the test itself fed into the observation, so they are echo-shaped and their dependence on the new code runs only through the arm-command check.",
+    "evidence": "The gate named in the manifest, tests/test_a_census_test_runs_in_every_product_gate.py, is recorded at gate-head.log (5 passed, EXIT=0 at 8381066b) and gate-base.log (3 failed, EXIT=1 with case (a) red), and the negative-control.log records the census dropped from the resolution with case (a) red; the importer arms' summaries reconcile with the manifest (205/8 and 543/13 at each arm), though importers-head.log ran at revision 6b6c15a8 with the change uncommitted rather than at 8381066b.",
+    "fit": "The new helpers in reckon/crew/promotion_records.py:535-574 follow the surrounding module's docstring and naming idiom, and no added symbol carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:610 appends the project's declared census tests to the scoped command for any node whose write paths leave docs/, and reckon/crew/dispatch.py:2921 resolves that same string onto the run pointer so the worker and promotion read one command.",
+    "reuse": "Searched reckon/ for an existing whole-tree/census gate mechanism and for a docs-vs-product write-path classifier (grep for 'census', '_writes_product', 'startswith(\"docs/\")') and found no owner, so _writes_product_source is a first definition; it does restate the record->write_paths->relative traversal already written in _node_test_files at reckon/crew/promotion_records.py:500.",
+    "scope_discipline": "Every path in the diff is either a declared write path or reckon/crew/dispatch.py, which the coordinator granted explicitly in resume-1-advice.txt:1 ('reckon/crew/dispatch.py is granted to this run'), and the diff carries no change the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to run each project-declared census test in the scoped gate of every node that writes product source; reckon/crew/promotion_records.py:610 appends those tests and reckon/crew/dispatch.py:2921 records the same resolved string.\nVERDICT done_when: the done_when is measured by tests/test_a_census_test_runs_in_every_product_gate.py, and gate-head.log (5 passed, EXIT=0), gate-base.log (3 failed, EXIT=1, case (a) red), negative-control.log (3 failed, case (a) red) and the two importer logs record each arm it names.\nVERDICT write_paths: the diff touches eight files; six are declared write paths, two more were declared in the prompt's FENCE \u2014 SCOPE, and reckon/crew/dispatch.py carries an explicit grant in resume-1-advice.txt, so no landed path is unauthorised.\nVERDICT manifest: read; it records status complete, commit 8381066b, the gate command, both arms' results and the ruff delta, and its figures reconcile with logs/summaries of the same name.\nVERDICT diff: read commit by commit against 6b6c15a8; one commit, 318 insertions across schema, generated schema, promotion_records.py, dispatch.py, the project flight file, the test file and one evidence fragment.\nCALL_SITES: reckon/crew/promotion_records.py:_arm_measured_nothing, reckon/crew/promotion_records.py:_arm_missing_fields, reckon/crew/promotion_records.py:_evaluate_suite_delta, reckon/crew/recovery_repair_dispatch.py:1087, reckon/crew/dispatch.py:2915\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:610 appends the declared census tests for any node whose write paths leave docs/, and reckon/crew/dispatch.py:2921 records the identical resolved command, so worker and promotion read one string.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records 5 passed with EXIT=0 at 8381066b and gate-base.log records 3 failed with EXIT=1 including case (a), though importers-head.log ran at revision 6b6c15a8 with the change uncommitted rather than at the recorded head.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the only path outside the declared list is reckon/crew/dispatch.py, granted in resume-1-advice.txt:1 before the change was kept.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_census_test_runs_in_every_product_gate.py:83 reddens when the census is dropped, but the case (d) assertions at lines 166 and 183 compare against ids the test itself supplied.\nSCORE fit: 17\nJUSTIFICATION fit: the added helpers at reckon/crew/promotion_records.py:535-574 follow the module's docstring and naming idiom with no plan or ticket label.\nSCORE reuse: 17\nJUSTIFICATION reuse: no owner for a whole-tree census gate or a product-source classifier exists in reckon/, which the search confirmed; _writes_product_source does restate the traversal in _node_test_files at reckon/crew/promotion_records.py:500.\nFINDING tests/test_a_census_test_runs_in_every_product_gate.py:166 non-blocking: the assertion compares against the same constant the test fed into the after arm, so it would hold for an echoing evaluator.\nFINDING tests/test_a_census_test_runs_in_every_product_gate.py:183 non-blocking: an empty set difference over identical inputs is asserted, which measures no census behaviour.\nFINDING reckon/crew/promotion_records.py:550 non-blocking: the write-scope traversal is repeated from _node_test_files at line 500 and could drift.",
+  "review_run_id": "r-20261110T034350586560-review-of-a-census-test-runs-in-every-product-gate-8381066b2986",
+  "reviewed_base_sha": "6b6c15a8e6974e08a97694dcbfa7bc54edb28487",
+  "reviewed_head_sha": "8381066b298649217555fe34d187fe5f453fdaab",
+  "reviewed_run_id": "r-20261110T020321759177-a-census-test-runs-in-every-product-gate",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T04:07:17.367389+00:00",
+  "total": 103
+}
