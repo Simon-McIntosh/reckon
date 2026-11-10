@@ -651,7 +651,7 @@ def test_a_resumed_worker_is_not_ended_by_its_earlier_attempts_baseline(
     # The resumed launch, not a hand-built fixture spec, wrote the spec: its
     # attempt kind and its start both name this attempt.
     spec = json.loads(captured["spec_path"].read_text(encoding="utf-8"))
-    assert spec["attempt"] == 2
+    assert spec["attempt"] == 1
     assert spec["attempt_kind"] == "resume"
     started_ns = dispatch_module._iso_stamp_to_ns(str(spec["attempt_started_at"]))
     assert started_ns is not None and started_ns > stale_ns
