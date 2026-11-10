@@ -905,6 +905,7 @@ _WRITE_EFFECT_KINDS = (
     "evidence_appends",
     "section_field_edits",
     "section_dependency_edits",
+    "descope_reason_edits",
     "plan_meta_removals",
     "declaration_removals",
     "section_moves",
@@ -1590,6 +1591,7 @@ def _write_state_locked(
     evidence_appends = _consume_write_effects("evidence_appends", data)
     section_field_edits = _consume_write_effects("section_field_edits", data)
     section_dependency_edits = _consume_write_effects("section_dependency_edits", data)
+    descope_reason_edits = _consume_write_effects("descope_reason_edits", data)
     meta_removals = _consume_write_effects("plan_meta_removals", data)
     declaration_removals = _consume_write_effects("declaration_removals", data)
     section_moves = _consume_write_effects("section_moves", data)
@@ -1682,6 +1684,13 @@ def _write_state_locked(
             # already on the page rather than through the state dict.
             source_text = _store_section_ops.apply_section_dependency_edits(
                 source_text, section_dependency_edits
+            )
+        if descope_reason_edits:
+            # The reasons map is a head meta too, rewritten from the mapping
+            # already on the page so a write lands its own sections and leaves
+            # its siblings' reasons alone.
+            source_text = _apply_descope_reason_edits(
+                source_text, descope_reason_edits
             )
         if meta_removals:
             source_text = _store_section_ops.apply_meta_removals(
@@ -2969,12 +2978,20 @@ def _carry_descope_reason(
     declaration: Any,
     reason: str | None,
 ) -> None:
-    """Put the reason on the section's typed record.
+    """Put the reason on the section's typed record, or in the reasons map.
 
-    The record is what the page carries and what a read parses, so the reason
-    lives there rather than in a map beside the declarations. A declaration that
-    is not ``descoped`` carries no reason, so any reason the section held before
-    is cleared rather than left behind contradicting the declaration.
+    The record is what the page carries and what a read parses, so a section
+    that has one keeps its reason there. A plan can declare a section it
+    carries no record for — a plan whose headings are bare ``<h2>`` elements
+    and whose work is a declarations map — and there is no record to hold the
+    reason, so it goes in the ``plan-descope-reasons`` map the read parses out
+    beside the declarations. Without that store no descope could be written on
+    such a plan at all, which is what left the refusal naming a remedy that
+    could not run.
+
+    A declaration that is not ``descoped`` carries no reason, so any reason the
+    section held before is cleared from whichever store held it rather than
+    left behind contradicting the declaration.
 
     A move records its successor on the record as a link, but only once the
     write knows which checkout it is resolving against — the successor is a
@@ -2989,16 +3006,63 @@ def _carry_descope_reason(
             )
     else:
         reason = None
+    carried = False
     sections = working.get("sections")
-    if not isinstance(sections, list):
-        return
-    for section in sections:
-        if isinstance(section, dict) and section.get("id") == section_id:
-            if reason is None:
-                section.pop("descope_reason", None)
-            else:
-                section["descope_reason"] = reason
-            break
+    if isinstance(sections, list):
+        for section in sections:
+            if isinstance(section, dict) and section.get("id") == section_id:
+                if reason is None:
+                    section.pop("descope_reason", None)
+                else:
+                    section["descope_reason"] = reason
+                carried = True
+                break
+    existing = working.get("descope_reasons")
+    reasons = dict(existing) if isinstance(existing, Mapping) else {}
+    if reason is None or carried:
+        reasons.pop(section_id, None)
+    else:
+        reasons[section_id] = reason
+    if reasons or isinstance(existing, Mapping):
+        working["descope_reasons"] = reasons
+    # The map is also queued as a document edit: the write path schema-validates
+    # the state dict and drops any key the typed contract does not carry, so a
+    # map held only in the dict would guard the batch and then be lost on the
+    # way to disk.
+    _queue_write_effect(
+        "descope_reason_edits",
+        working,
+        {"section": section_id, "reason": reasons.get(section_id) or ""},
+    )
+
+
+def _apply_descope_reason_edits(
+    source_text: str, requests: list[dict[str, str]]
+) -> str:
+    """Rewrite the ``plan-descope-reasons`` meta from queued edits.
+
+    Each request sets one section's reason, or removes the section's entry when
+    the reason is empty. The mapping is read back from the document, so an edit
+    lands on the reasons already on the page rather than replacing its
+    siblings. An empty mapping removes the meta entirely, which the read parses
+    as no descope reasons at all.
+    """
+    from reckon import _plan_html
+
+    if not requests:
+        return source_text
+    mapping = _plan_html.descope_reasons(source_text)
+    for request in requests:
+        section = str(request["section"])
+        reason = str(request.get("reason") or "").strip()
+        if reason:
+            mapping[section] = reason
+        else:
+            mapping.pop(section, None)
+    if not mapping:
+        return _plan_html._remove_meta(source_text, _plan_html.DESCOPE_REASONS_META)
+    content = json.dumps(mapping, ensure_ascii=True, separators=(",", ":"))
+    return _plan_html._set_meta(source_text, _plan_html.DESCOPE_REASONS_META, content)
 
 
 def _require_descope_reasons(state: Mapping[str, Any]) -> None:
@@ -3016,6 +3080,13 @@ def _require_descope_reasons(state: Mapping[str, Any]) -> None:
         for record in state.get("sections") or []
         if isinstance(record, Mapping)
     }
+    # The record is consulted first and the reasons map second: a plan without
+    # section records has no other store, and a plan with them keeps the reason
+    # where it has always lived.
+    stored_reasons = state.get("descope_reasons")
+    if isinstance(stored_reasons, Mapping):
+        for section, reason in stored_reasons.items():
+            reasons.setdefault(str(section), str(reason or "").strip())
     missing = sorted(
         str(section)
         for section, classification in declarations.items()
@@ -3558,23 +3629,47 @@ def _apply_set(working: dict, op: dict, is_index: bool, warnings: list[str]) -> 
         # the map alone left the records contradicting it, and the plan refused
         # the file that write produced on the way back in.
         if isinstance(value, dict):
-            # A reason is part of the descoped declaration, and the whole map
-            # carries no place for one, so a descoped entry is written through
-            # the dotted form that does rather than stored unreasoned.
-            unreasoned = sorted(
-                str(section)
-                for section, declaration in value.items()
-                if isinstance(declaration, str) and declaration == "descoped"
-            )
-            if unreasoned:
-                raise OpError(
-                    "a descoped section must state why it was dropped; the whole "
-                    f"map carries no reason for {', '.join(unreasoned)} — set "
-                    "section_declarations.<id> to "
-                    '{"status": "descoped", "reason": "<why>"} instead'
+            # Each entry is normalised through the same split the dotted form
+            # uses, so a reasoned value is accepted here and the stored map
+            # stays a map of strings. A plain string entry carries no reason,
+            # and ``_carry_descope_reason`` refuses a descoped one — naming the
+            # reasoned form the dotted write accepts.
+            from reckon._schema import SECTION_DECLARATION_ENUM
+
+            normalised: dict[str, Any] = {}
+            for declared_id, declared_value in value.items():
+                declared_section = str(declared_id)
+                declaration, reason, moved_to = _descoped_declaration_value(
+                    declared_section, declared_value
                 )
-            for declared_id, declared_status in value.items():
-                _move_section_record(working, declared_id, declared_status)
+                if declaration not in SECTION_DECLARATION_ENUM:
+                    raise OpError(
+                        "section declaration must be one of "
+                        f"{SECTION_DECLARATION_ENUM}; got {declared_value!r}"
+                    )
+                normalised[declared_section] = declaration
+                _move_section_record(working, declared_section, declaration)
+                _carry_descope_reason(working, declared_section, declaration, reason)
+                if moved_to is not None:
+                    from reckon._schema import parse_plan_ref
+
+                    ref = parse_plan_ref(moved_to)
+                    if ref is None or not ref.stage:
+                        raise OpError(
+                            f"section_declarations.{declared_section}.moved_to: "
+                            f"{moved_to!r} does not name a section; expected "
+                            "[project:]slug#section"
+                        )
+                    _queue_write_effect(
+                        "section_moves",
+                        working,
+                        {
+                            "section": declared_section,
+                            "moved_to": moved_to,
+                            "reason": reason or "",
+                        },
+                    )
+            value = normalised
         working[head] = value
         return
     if head == "decisions" and len(parts) >= 3:
