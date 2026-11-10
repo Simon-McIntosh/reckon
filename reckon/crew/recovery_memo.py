@@ -10,6 +10,7 @@ from contextvars import ContextVar
 from pathlib import Path
 from typing import Any, Iterator, Mapping, Sequence
 
+from reckon import file_memo
 from reckon._timestamps import parse_utc
 from reckon.crew import runs
 from reckon.crew import review as review_module
@@ -185,8 +186,7 @@ def _write_classification_memo(
     Every reader of the live fleet shares these files, so the write lands
     through a rename: a reader either sees the previous memo or this one, never
     half of either. A memo that cannot be written is not an error — it costs
-    the next reader a recomputation, which is the state the fleet was in before
-    the memo existed.
+    the next reader a recomputation.
     """
     path = _classification_memo_path(record)
     if path is None:
@@ -359,10 +359,10 @@ def _own_review_record_exists(record: Mapping[str, Any]) -> bool:
     if not project or not run_id:
         return False
     directory = review_module.review_store_root() / project
-    if (directory / f"{run_id}.json").is_file():
+    if _record_exists(directory / f"{run_id}.json"):
         return True
     try:
-        return any(directory.glob(f"{run_id}.at-*.json"))
+        return bool(_store_paths(directory, f"{run_id}.at-*.json"))
     except OSError:
         return False
 
@@ -419,7 +419,12 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
                 identities[str(path)] = _file_identity(path)
                 committed_record_exists = True
     directory = review_module.review_store_root() / project
-    identities[str(directory)] = _directory_identity(directory)
+    snapshot = _tick_store(directory)
+    # A tick knows every candidate's identity. Another run's atomic write
+    # therefore cannot invalidate this run merely by moving the shared directory.
+    identities[str(directory)] = (
+        "tick-snapshot" if snapshot is not None else _directory_identity(directory)
+    )
     # A run whose record is committed is answered from the committed tree before
     # any staging file is consulted, so its own record exists and no store-wide
     # staging search runs — the same settling the staging check makes alone.
@@ -434,10 +439,38 @@ def _review_input_identities(record: Mapping[str, Any]) -> dict[str, str]:
     )
     candidates = [directory / f"{run_id}.json"]
     with contextlib.suppress(OSError):
-        candidates.extend(sorted(directory.glob(f"{run_id}.at-*.json")))
-    if not own_record_exists:
+        candidates.extend(sorted(_store_paths(directory, f"{run_id}.at-*.json")))
+    if snapshot is not None or not own_record_exists:
         candidates.extend(_misfiled_review_candidates(record))
     for path in candidates:
+        identities[str(path)] = _record_identity(path)
+    return identities
+
+
+def _review_annotation_identities(record: Mapping[str, Any]) -> dict[str, str]:
+    """The manifest and gate logs used to annotate this run's stored review."""
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return {}
+    directory = runs.run_dir(run_id)
+    manifest = directory / review_module._MANIFEST_FILE_NAME
+    signature = _file_identity(manifest)
+    identities = {str(manifest): signature}
+    try:
+        text = file_memo.memoized_key(
+            "review_annotation_manifest",
+            (str(manifest), signature),
+            lambda: manifest.read_text(encoding="utf-8", errors="replace"),
+        )
+    except OSError:
+        return identities
+    for field in (review_module._BASE_LOG_FIELD, review_module._HEAD_LOG_FIELD):
+        named = review_module._gate_log_path(text, field)
+        if not named:
+            continue
+        path = Path(named)
+        if not path.is_absolute():
+            path = directory / path
         identities[str(path)] = _file_identity(path)
     return identities
 
@@ -467,7 +500,8 @@ def _classification_input_tick() -> Iterator[None]:
     """Share each run's file identities only for the duration of one tick."""
     token = _TICK_CLASSIFICATION_INPUTS.set({})
     try:
-        yield
+        with review_store_tick():
+            yield
     finally:
         _TICK_CLASSIFICATION_INPUTS.reset(token)
 
@@ -498,6 +532,7 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
         record_path = directory / name
         identities[str(record_path)] = _file_identity(record_path)
     identities.update(_review_input_identities(record))
+    identities.update(_review_annotation_identities(record))
     # A review is chosen against the revision the run's tree carries now, so the
     # head is part of the key even though no reader of the review calls it a
     # file: a tree that gained a commit between two classifications moves the
@@ -769,4 +804,12 @@ from .recovery_wait import (  # noqa: E402
 )
 from .recovery_watch import (  # noqa: E402
     _watch_verdict,
+)
+
+from .review_records import (  # noqa: E402
+    _record_exists,
+    _record_identity,
+    _store_paths,
+    _tick_store,
+    review_store_tick,
 )

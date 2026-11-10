@@ -15,8 +15,7 @@ its schema constants and revision helpers with it, so those names are imported
 from there rather than restated. The import sits at the foot of this module
 because :mod:`reckon.crew.review` re-exports this family: each module imports
 the names it needs once the other has finished defining them, which breaks the
-cycle without either module owning a copy of what the other defines. No
-behaviour changes here; the move leaves the store exactly as it was written.
+cycle without either module owning a copy of what the other defines.
 """
 
 from __future__ import annotations
@@ -29,10 +28,96 @@ from collections.abc import Iterable, Iterator, Mapping
 from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
+from fnmatch import fnmatchcase
 from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+
+# Each producer tick freezes the store's names and per-file identities once.
+# Parsed bytes use the shared bounded memo; the next tick revalidates every
+# file, including rewrites that leave the directory identity unchanged.
+_TICK_REVIEW_STORES: ContextVar[dict[Path, dict[Path, os.stat_result]] | None] = (
+    ContextVar("tick_review_stores", default=None)
+)
+_TICK_REVIEW_INDEXES: ContextVar[dict[Path, Any] | None] = ContextVar(
+    "tick_review_indexes", default=None
+)
+
+
+@contextmanager
+def review_store_tick() -> Iterator[None]:
+    """Share one enumeration per store among all review readers in a tick."""
+    stores_token = _TICK_REVIEW_STORES.set({})
+    indexes_token = _TICK_REVIEW_INDEXES.set({})
+    try:
+        yield
+    finally:
+        _TICK_REVIEW_INDEXES.reset(indexes_token)
+        _TICK_REVIEW_STORES.reset(stores_token)
+
+
+def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
+    stores = _TICK_REVIEW_STORES.get()
+    if stores is None:
+        return None
+    if directory not in stores:
+        files = {}
+        try:
+            with os.scandir(directory) as entries:
+                for entry in entries:
+                    if not entry.name.endswith(".json"):
+                        continue
+                    try:
+                        info = entry.stat()
+                    except OSError:
+                        continue
+                    if stat.S_ISREG(info.st_mode):
+                        files[directory / entry.name] = info
+        except OSError:
+            pass
+        stores[directory] = files
+    return stores[directory]
+
+
+def _store_paths(directory: Path, pattern: str) -> list[Path]:
+    files = _tick_store(directory)
+    if files is None:
+        return list(directory.glob(pattern))
+    return [path for path in files if fnmatchcase(path.name, pattern)]
+
+
+def _record_stat(path: Path) -> os.stat_result:
+    files = _tick_store(path.parent)
+    if files is None:
+        return path.stat()
+    if path not in files:
+        raise FileNotFoundError(path)
+    return files[path]
+
+
+def _record_exists(path: Path) -> bool:
+    try:
+        return stat.S_ISREG(_record_stat(path).st_mode)
+    except OSError:
+        return False
+
+
+def _record_identity(path: Path) -> str:
+    try:
+        return ":".join(map(str, file_memo.signature_from_stat(_record_stat(path))))
+    except OSError:
+        return "absent"
+
+
+def _record_file(path: Path) -> Any:
+    def read() -> Any:
+        return json.loads(path.read_text(encoding="utf-8"))
+
+    if _TICK_REVIEW_STORES.get() is None:
+        return read()
+    identity = file_memo.signature_from_stat(_record_stat(path))
+    return file_memo.memoized_key("tick_review_record", (str(path), identity), read)
 
 
 # A disposition or an answer is written back to whichever copy of a record the
@@ -84,7 +169,7 @@ def _staging_copies_of_record(
     ):
         path = entry["path"]
         try:
-            stored = json.loads(path.read_text(encoding="utf-8"))
+            stored = _record_file(path)
         except (OSError, json.JSONDecodeError):
             continue
         if (
@@ -108,7 +193,7 @@ def _committed_record_at(path: str | Path) -> Mapping[str, Any] | None:
     record to preserve.
     """
     try:
-        stored = json.loads(Path(path).read_text(encoding="utf-8"))
+        stored = _record_file(Path(path))
     except (OSError, json.JSONDecodeError):
         return None
     return stored if isinstance(stored, Mapping) else None
@@ -487,8 +572,8 @@ def _select_stored_record(
     records: list[tuple[Path, Any, int]] = []
     for path in paths:
         try:
-            record = json.loads(path.read_text(encoding="utf-8"))
-            mtime_ns = path.stat().st_mtime_ns
+            record = _record_file(path)
+            mtime_ns = _record_stat(path).st_mtime_ns
         except (OSError, ValueError) as error:
             _note_skipped_record(path, error, into=skipped)
             continue
@@ -661,7 +746,9 @@ def stored_record(
     if committed is not None:
         run_directory = committed / _review.COMMITTED_RUN_DIRNAME / reviewed_run_id
         committed_paths = (
-            sorted(run_directory.glob("*.json")) if run_directory.is_dir() else []
+            sorted(_store_paths(run_directory, "*.json"))
+            if run_directory.is_dir()
+            else []
         )
         if committed_paths:
             committed_selected = _select_stored_record(
@@ -689,8 +776,8 @@ def stored_record(
         _review.review_path(project, reviewed_run_id, base_dir, rubric=rubric)
     ]
     if directory.is_dir():
-        candidates.extend(directory.glob(f"{reviewed_run_id}*.at-*.json"))
-    existing = {path.resolve(): path for path in candidates if path.is_file()}
+        candidates.extend(_store_paths(directory, f"{reviewed_run_id}*.at-*.json"))
+    existing = {path.resolve(): path for path in candidates if _record_exists(path)}
     if existing:
         selected = _select_stored_record(
             list(existing.values()),
@@ -815,7 +902,7 @@ def stored_records_for_run(
             continue
         seen.add(key)
         try:
-            record = json.loads(path.read_text(encoding="utf-8"))
+            record = _record_file(path)
         except (OSError, json.JSONDecodeError) as error:
             _note_skipped_record(path, error, into=skipped)
             continue
@@ -1018,7 +1105,7 @@ def _filed_match(
             continue
         path = entry["path"]
         try:
-            record = json.loads(path.read_text(encoding="utf-8"))
+            record = _record_file(path)
         except (OSError, json.JSONDecodeError) as error:
             _note_skipped_record(path, error, into=skipped)
             continue
@@ -1252,7 +1339,7 @@ def _index_entry(path: Path, info: os.stat_result) -> dict[str, Any] | None:
     if _review._INCOMPLETE_RECORD_MARK in path.name:
         return None
     try:
-        record = json.loads(path.read_text(encoding="utf-8"))
+        record = _record_file(path)
     except (OSError, json.JSONDecodeError):
         return None
     if not isinstance(record, Mapping):
@@ -1311,9 +1398,9 @@ def _build_store_entries(directory: Path) -> list[dict[str, Any]]:
     left out rather than named.
     """
     entries: list[dict[str, Any]] = []
-    for path in sorted(directory.glob("*.json")):
+    for path in sorted(_store_paths(directory, "*.json")):
         try:
-            info = path.stat()
+            info = _record_stat(path)
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
@@ -1353,12 +1440,12 @@ def _update_store_entries(
     held: dict[str, dict[str, Any]] = {entry["name"]: entry for entry in previous}
     kept: dict[str, dict[str, Any]] = {}
     try:
-        candidates = sorted(directory.glob("*.json"))
+        candidates = sorted(_store_paths(directory, "*.json"))
     except OSError:
         candidates = []
     for path in candidates:
         try:
-            info = path.stat()
+            info = _record_stat(path)
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
@@ -1490,6 +1577,11 @@ def _store_indexes(
     all of them. The updated index is persisted for the next process on the
     node.
     """
+    tick_indexes = _TICK_REVIEW_INDEXES.get()
+    if tick_indexes is not None:
+        if directory not in tick_indexes:
+            tick_indexes[directory] = _build_store_indexes(directory)
+        return tick_indexes[directory]
     identity = _store_directory_identity(directory)
     if identity is None:
         _STORE_INDEXES.pop(directory, None)
@@ -1530,7 +1622,7 @@ def _revalidated_entries(entries: Iterable[dict[str, Any]]) -> list[dict[str, An
     for entry in entries:
         path = entry["path"]
         try:
-            info = path.stat()
+            info = _record_stat(path)
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
@@ -1556,6 +1648,8 @@ def _refresh_store_entries(
     record rewritten in place to name a run the index has no entry for at all.
     Every later miss answers from the refreshed index.
     """
+    if _TICK_REVIEW_STORES.get() is not None:
+        return _store_index(directory)
     cached = _STORE_INDEXES.get(directory)
     if cached is None:
         return _store_index(directory)
@@ -1670,7 +1764,7 @@ def record_for_review_run(
     for entry in sorted(entries, key=lambda item: item["mtime_ns"], reverse=True):
         path = entry["path"]
         try:
-            record = json.loads(path.read_text(encoding="utf-8"))
+            record = _record_file(path)
         except (OSError, json.JSONDecodeError):
             continue
         if not isinstance(record, Mapping):
@@ -1770,7 +1864,7 @@ def _committed_records_for_run(
     if not run_directory.is_dir():
         return []
     records: list[tuple[Path, dict[str, Any]]] = []
-    for path in sorted(run_directory.glob("*.json")):
+    for path in sorted(_store_paths(run_directory, "*.json")):
         record = _committed_record_at(path)
         if record is None:
             continue
