@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="746">
+<meta name="plan-version" content="747">
 <meta name="plan-modified" content="2026-11-10">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1463,6 +1463,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s120" data-id="c-run-r-20261110T170153582091-review-of-a-stale-code-producer-is-not-reloading-forever-94e4e3dd5ad2" data-who="reckon-build" data-when="2026-11-10T17:16:27.277Z">
     <div class="r-comment-body"><p>review of r-20261110T160537503484-a-stale-code-producer-is-not-reloading-forever at head 94e4e3dd5a from base 523a1c9e: parsed, six dimensions scored 16-20, zero added failures, two non-blocking findings</p></div>
+</div>
+<div class="r-comment" data-section="s120" data-id="c-run-r-20261110T160537503484-a-stale-code-producer-is-not-reloading-forever" data-who="reckon-build" data-when="2026-11-10T16:53:42.609Z">
+    <div class="r-comment-body"><p>the stale-code arm of reload_in_progress is bounded by the reload window, so a producer left on older code past 65s reads as the stale-code not-fresh line instead of &quot;producer reloading&quot;; node tests 59 passed at head, negative control 2 failed / 1 passed</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-s13-already-landed" data-who="reckon-build" data-when="2026-10-13T06:05:00Z">
     <div class="r-comment-body"><p>§13 was already built when it was folded here: commit <code>68361d4ee</code> (2026-10-07, "fix(crew): remove the session host FIFO when the host stops") added <code>_remove_fifo</code> to <code>reckon/crew/session_host.py</code>, called on the stop path, with <code>TERM</code> and <code>HUP</code> handlers at the entry point, and the section's tests pass on main. Its old plan's declaration was stale, so it is declared done here rather than rebuilt.</p></div>
