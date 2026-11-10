@@ -1,0 +1,116 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "fails_if": "Wrong canonical result, more than one git query, or omission of persistent short-answer writes; the full SHA comes from the fixture git rev-parse, independently of the resolver.",
+      "lines": "45,47,48"
+    },
+    {
+      "fails_if": "A missing citation returns a nonempty answer, misses are queried repeatedly, or a miss is persisted across processes.",
+      "lines": "55-57"
+    },
+    {
+      "fails_if": "The missing citation resolves unexpectedly or a HEAD change does not trigger the second query; the separate twenty-miss test establishes that a stable HEAD does cache.",
+      "lines": "63,65,66"
+    },
+    {
+      "fails_if": "The strict result is wrong or strict reads use the populated cache rather than making twenty git calls.",
+      "lines": "71,74,75"
+    },
+    {
+      "fails_if": "A ref is cached or persisted, does not resolve to the independently read initial SHA, or returns the stale SHA after the independently verified branch movement.",
+      "lines": "81-84,87,88"
+    },
+    {
+      "fails_if": "The stored answer is not reused after clearing process memory or either returned identity differs from git rev-parse.",
+      "lines": "93,95,96"
+    },
+    {
+      "fails_if": "A nonmatching hex branch is wrongly memoized, its canonical identity is wrong, or it is persisted.",
+      "lines": "104-106"
+    },
+    {
+      "fails_if": "A timeout is cached, returns a nonempty answer, or the strict timeout does not raise CrewError with instrument-fault wording and make its own query.",
+      "lines": "113,114,115-117"
+    }
+  ],
+  "assertion_independence": "No assertion compares a resolver echo to the same unverified input: short-input calls assert the full identity independently read with git; missing results use independently absent prefixes; call-count assertions observe actual wrapped subprocess calls.",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:_canonical_commits:359",
+    "reckon/crew/promotion_scope.py:_descendant_commit:351"
+  ],
+  "completed_at": "2026-11-10T22:24:37Z",
+  "dispatched_at": "2026-11-10T22:05:28Z",
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read c012ec2bd8b1c9f6615b803ab97bbe6710580124 and 89a468f8f573ab0749e0f51854cca8ca8301800c against 22697b29934dee5b724647f478d773059c92483d; the first changes the resolver and adds eight tests, and the second adds only the scoped evidence fragment.",
+    "done_when": "The measure in prompt.txt:120-135 is supported by armed-base.log (51 passed), armed-head.log (59 passed), base-with-new-test.log (3 failed, 5 passed), negative-control.log (1 failed, 1 passed), and thirteen compatibility log pairs with identical six failure IDs and 638 passes per arm.",
+    "goal": "The goal in the reviewed run's prompt.txt:38 is met by reckon/crew/recovery_review_subject.py:214-328, which retains matching hex abbreviations in the existing cache and store while keeping strict queries live.",
+    "manifest": "The reviewed run's manifest.md names both delivered commits and the gate receipts, and its baseline_suite and after_suite match the corresponding logs with completed summaries and EXIT=0.",
+    "write_paths": "The five grants in prompt.txt:80-85 cover all three changed paths; recovery_watch.py and the figures grant were unused."
+  },
+  "justifications": {
+    "durability": "tests/test_a_short_commit_citation_is_resolved_once.py:43-117 checks independent git identities and observed call counts, and restoring full-revision-only eligibility demonstrably fails line 47 while preserving the strict test.",
+    "evidence": "The reviewed run's armed-base.log and armed-head.log record completed 51/59-pass arms with EXIT=0, negative-control.log records the intended cache failure with strict passing, and delivery-identity.log ties the final source and test bytes to the measured implementation.",
+    "fit": "reckon/crew/recovery_review_subject.py:204-328 extends its existing bounded cache and follows the existing lazy store import, while the tests reuse tests/helpers/git.py:11 and both lint and format logs are clean by delta.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:214-328 retains only matching hexadecimal answers, scopes misses to HEAD identity, and bypasses cached reads for strict callers as the goal requires.",
+    "reuse": "Capability searches for commit-answer caching and HEAD identity locate the existing owners reckon/crew/recovery_watch.py:241-260 and reckon/git_head.py:82-107, both reused by the modified resolver without a new production definition or parallel mechanism.",
+    "scope_discipline": "The diff changes only reckon/crew/recovery_review_subject.py, tests/test_a_short_commit_citation_is_resolved_once.py, and the evidence fragment declared in prompt.txt:80-85."
+  },
+  "limitations": [
+    "The live plan asks for a post-landing 20-second follower trace; integration, follower reload and that observation remain coordinator work, explicitly deferred in the evidence fragment:17.",
+    "A fetched object without HEAD movement does not invalidate an in-process miss, an explicitly accepted live-plan constraint.",
+    "The compatibility logs carry six matching pre-existing failures on both revisions; none was triaged or repaired by this review."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal in the reviewed run's prompt.txt:38 is met by reckon/crew/recovery_review_subject.py:214-328, which retains matching hex abbreviations in the existing cache and store while keeping strict queries live.\nVERDICT done_when: The measure in prompt.txt:120-135 is supported by armed-base.log (51 passed), armed-head.log (59 passed), base-with-new-test.log (3 failed, 5 passed), negative-control.log (1 failed, 1 passed), and thirteen compatibility log pairs with identical six failure IDs and 638 passes per arm.\nVERDICT write_paths: The five grants in prompt.txt:80-85 cover all three changed paths; recovery_watch.py and the figures grant were unused.\nVERDICT manifest: The reviewed run's manifest.md names both delivered commits and the gate receipts, and its baseline_suite and after_suite match the corresponding logs with completed summaries and EXIT=0.\nVERDICT diff: Read c012ec2bd8b1c9f6615b803ab97bbe6710580124 and 89a468f8f573ab0749e0f51854cca8ca8301800c against 22697b29934dee5b724647f478d773059c92483d; the first changes the resolver and adds eight tests, and the second adds only the scoped evidence fragment.\nCALL_SITES: reckon/crew/recovery_review_subject.py:_canonical_commits:359, reckon/crew/promotion_scope.py:_descendant_commit:351\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:214-328 retains only matching hexadecimal answers, scopes misses to HEAD identity, and bypasses cached reads for strict callers as the goal requires.\nSCORE evidence: 20\nJUSTIFICATION evidence: The reviewed run's armed-base.log and armed-head.log record completed 51/59-pass arms with EXIT=0, negative-control.log records the intended cache failure with strict passing, and delivery-identity.log ties the final source and test bytes to the measured implementation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only reckon/crew/recovery_review_subject.py, tests/test_a_short_commit_citation_is_resolved_once.py, and the evidence fragment declared in prompt.txt:80-85.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_short_commit_citation_is_resolved_once.py:43-117 checks independent git identities and observed call counts, and restoring full-revision-only eligibility demonstrably fails line 47 while preserving the strict test.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_subject.py:204-328 extends its existing bounded cache and follows the existing lazy store import, while the tests reuse tests/helpers/git.py:11 and both lint and format logs are clean by delta.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for commit-answer caching and HEAD identity locate the existing owners reckon/crew/recovery_watch.py:241-260 and reckon/git_head.py:82-107, both reused by the modified resolver without a new production definition or parallel mechanism.\n",
+  "reproduction_quote": "reproduction.log: E AssertionError: assert 20 == 1; negative-control.log repeats the same intended line-47 failure with 1 failed, 1 passed, 6 deselected and EXIT=1.",
+  "review_run_id": "r-20261110T215630705621-review-of-a-short-commit-citation-is-resolved-once-89a468f8f573",
+  "reviewed_base_sha": "22697b29934dee5b724647f478d773059c92483d",
+  "reviewed_commits": [
+    "c012ec2bd8b1c9f6615b803ab97bbe6710580124",
+    "89a468f8f573ab0749e0f51854cca8ca8301800c"
+  ],
+  "reviewed_head_sha": "89a468f8f573ab0749e0f51854cca8ca8301800c",
+  "reviewed_run_id": "r-20261110T204950334380-a-short-commit-citation-is-resolved-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_short_commit_citation_is_resolved_once.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T204950334380-a-short-commit-citation-is-resolved-once/armed-head.log",
+      "observed_failure_ids": [],
+      "revision": "c012ec2bd8b1c9f6615b803ab97bbe6710580124"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T204950334380-a-short-commit-citation-is-resolved-once/armed-base.log",
+      "observed_failure_ids": [],
+      "revision": "22697b29934dee5b724647f478d773059c92483d"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:12:25.600179+00:00",
+  "total": 120
+}
