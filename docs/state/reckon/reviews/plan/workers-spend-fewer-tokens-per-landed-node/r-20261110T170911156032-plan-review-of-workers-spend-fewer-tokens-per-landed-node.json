@@ -1,0 +1,56 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T17:18:16.089Z",
+  "dispatched_at": "2026-11-10T17:11:26Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:78",
+      "id": "reasoning-1",
+      "reason": "without the write site named, the node can land the behaviour and still leave \u00a78's query with no field to read, and \u00a78 has no way to detect that.",
+      "text": "\u00a74 names its two read sites precisely (the seeder at `_worker_fence.py:317` and the argv in `_ClaudeDialect`) but the third mechanism it depends on \u2014 writing `anchored_edit` plus its reason onto the run record \u2014 names no writer, while \u00a78's entire population split is taken from that field; the nearest carrier is the launched-worker record at `reckon/crew/dispatch_launch.py:2938`, which records `\"fenced\"` the same way and is the site the node would have to find unaided",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:100",
+      "id": "reasoning-2",
+      "reason": "the node is asked to build and gate a feature whose contract may be recorded as unsettled, and \u00a77's done-when tests no resume case, so the gap would land as untested code rather than as a blocker.",
+      "text": "\u00a77's deliverable lists `resume` among what it builds on what \u00a76 settled, but \u00a76's done-when makes only three items mandatory (event-stream format, one endpoint prompt, the per-run switches) and explicitly allows the remaining two \u2014 of which resume is one \u2014 to be \"answered or marked unsettled with the reason\", so \u00a77 is licensed to proceed on a contract that may not describe resume at all",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "420b1937991513f8cc9309cb335e719fd9b8b56d",
+  "plan_fingerprint": "6ee4e6f679a42c2f91bea417d35af54a9696315990cb5c2b51ce17ee2f276f0d",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T170911156032-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "3005e717e4f78b9f2fa7b5ed9d93dbceef407475",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_seed_worker_mcp_settings` is at `reckon/_worker_fence.py:317` with its call at :272 and the guard at :268-272, the seeding call is in `reckon/_backends.py` near line 2383 under `adopts_harness_home = fence`, `fenced_write_roots` and `_ClaudeDialect`/`_CliveDialect`/`_DIALECTS` all exist, and extensionless hrefs resolve as `<path>.html`.",
+    "done_when": "pass \u2014 each changed unit now names a negative control that must fail if its guard is removed (s4 unconditional disallow list; s6 `blocked` when a mandatory item is unsettled; s7 unrecognised-fixture refusal; s8 parity split that withholds a verdict when noise exceeds the threshold).",
+    "evidence_paths": "pass \u2014 s6's note lands under `~/.config/reckon/crew/reports/reckon/`, s8's record under `docs/evidence/archive/` (both present in the tree); no gate path sits in a scratchpad or node-local temp.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the symbols the sections add (`anchored_edit`, `omp-local`), and the codex fixture is named by its stream shape rather than by a plan item.",
+    "reasoning": "two findings \u2014 s4 records `anchored_edit` on the run record without naming the code path that writes it, and s7 requires resume while s6 lets it be left unsettled.",
+    "single_goal": "pass \u2014 s6 is an investigation and s7 an integration, each with one deliverable and one verdict.",
+    "wiring": "pass \u2014 `plan-section-depends-on` gives s7 on s6 and s8 on s4,s5,s7; s4/s5 on s3; every target exists and `plan-informs` names `a-live-worker-can-be-reached`, which resolves at `docs/plans/a-live-worker-can-be-reached.html`."
+  },
+  "section_digests": {
+    "_document": "ac39042a1d4e13e871350c4b74dc8f2d3d91bc6da2b7abd9bfb6f3bb2f8a7754",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "dd01f87ba5679294bc19905a1cf7697dd537b753b178d06792cf59772740e821",
+    "s4": "928d34f47118f6f50f530ac1cff68525263a6f2755feff5536eb410c5dd05efe",
+    "s5": "19bf891776e13d4fca6bfcb6a80d143e134222c956bae0fe89b7900f540a10bc",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "19547b1dc2336cf70af1c8b7af5c61c6fe5b9359c3289317d96b45ad0198e295",
+    "s8": "105b4637be4a038c2b71ac086feb22e482452b2e03667ba909b095c64a8df426"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T17:30:55.634883+00:00",
+  "total": null
+}
