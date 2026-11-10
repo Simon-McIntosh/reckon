@@ -61,7 +61,7 @@ from reckon.crew.routing import (
     record_names_worktree,
 )
 from reckon.crew.run_paths import crew_home
-from reckon.git_head import _git_directory, _head_identity
+from reckon.git_head import _common_git_directory, _git_directory, _head_identity
 from reckon.mcp_crew_actions import CREW_WRITE_ACTIONS
 from reckon.velocity import run_git
 
@@ -2183,8 +2183,11 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     refuses or fails: every run stays a candidate and the per-run documents are
     read for themselves, so a reader that cannot be reached costs a read rather
     than a duty.
+    Source identities key the answer across calls, including per-run files,
+    live pointers, the common Git registry and the registered paths' parents.
+    An unchanged call reuses the answer without listing or checking held paths.
     The whole call runs inside :func:`reckon.file_memo.read_only_region`, so a
-    document is stat'ed and decoded once for the call and handed on unshared.
+    fresh derivation shares each document as a read-only view.
     Records are filed into one index of the trees they name, so an inspected
     tree is one lookup rather than a comparison against every record, and the
     row the merged ledger's own order puts last holds the tree. A tree no
@@ -2196,16 +2199,16 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     if docs_dir is None:
         return {}
     repository = docs_dir.parent.resolve()
-    key = (project, str(repository), _held_records_signature(project, repository))
-    if key[2] is None:
-        with file_memo.read_only_region():
+    with file_memo.read_only_region():
+        key = (project, str(repository), _held_records_signature(project, repository))
+        if key[2] is None:
             return _held_worktree_records_read(project, repository)
-    held = file_memo.memoized_key(
-        "obligation_held_records",
-        key,
-        lambda: _held_records_read_uncached(project, repository),
-    )
-    return {path: record for path, record in held.items() if path.is_dir()}
+        return file_memo.memoized(
+            "obligation_held_records",
+            repository,
+            lambda: _held_records_read_uncached(project, repository),
+            variant=key,
+        )
 
 
 def _held_records_read_uncached(
@@ -2216,44 +2219,117 @@ def _held_records_read_uncached(
         return _held_worktree_records_read(project, repository)
 
 
-def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] | None:
-    """The files a held-worktree derivation reads, as one change token.
+def _held_input_signature(path: Path) -> tuple[int, ...] | None:
+    """A source identity; absence is stable, other read errors forfeit reuse."""
+    try:
+        return file_memo.file_signature(path)
+    except FileNotFoundError:
+        return None
 
-    The records come from the merged ledger, the registered worktrees and the
-    live worktree claims, so all three carry a signature: the ledger file's
-    stat identity, git's worktree registry, and the worktree paths named by
-    live pointers. A tick whose three are unchanged would read the same records, so it is served the
-    ones the previous tick read instead of walking the ledger and running git
-    again. ``None`` means one of them could not be stat'ed, so the caller reads
-    fresh rather than risk a stale answer.
+
+def _held_directory_signature(directory: Path) -> tuple[Any, ...]:
+    """Reuse a directory's listing, checking its files for in-place writes."""
+    stamp = _held_input_signature(directory)
+    paths = (
+        file_memo.memoized(
+            "obligation_held_directory",
+            directory,
+            lambda: tuple(sorted(directory.glob("*.json"))),
+        )
+        if stamp is not None
+        else ()
+    )
+    return (
+        str(directory),
+        stamp,
+        tuple((str(path), _held_input_signature(path)) for path in paths),
+    )
+
+
+def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] | None:
+    """The ledger, registered paths and live claims that determine held trees.
+
+    Only source identities are checked on a warm call. Directory listings are
+    reused while their stamps stand; per-file identities still detect an
+    in-place record or pointer write. Parent stamps detect a vanished worktree
+    without restating every held directory. Unreadable inputs forfeit reuse.
     """
     root = _ledger_read_root(project, repository)
+    aggregate = ledger.ledger_path(project, root)
     try:
-        ledger_signature = file_memo.file_signature(ledger.ledger_path(project, root))
+        registry_signature = _worktree_registry_signature(repository)
+        registered = _held_registered_worktrees(
+            repository, signature=registry_signature
+        )
+        parents = tuple(
+            (str(path), _held_input_signature(path))
+            for path in sorted({tree.parent for tree in registered})
+        )
+        held = _VIEW_LIVE_POINTERS.get()
+        snapshot = held.get(project) if held is not None else None
+        live_signature = (
+            tuple(
+                sorted(
+                    (
+                        str(pointer.get("run_id") or ""),
+                        str(pointer.get("worktree") or ""),
+                    )
+                    for pointer in snapshot
+                )
+            )
+            if snapshot is not None
+            else _held_directory_signature(runs.live_dir())
+        )
+        return (
+            str(aggregate),
+            _held_input_signature(aggregate),
+            _held_directory_signature(aggregate.parent / "runs"),
+            registry_signature,
+            parents,
+            live_signature,
+        )
     except OSError:
         return None
-    registry_signature = _worktree_registry_signature(repository)
-    live_signature = tuple(
-        sorted(
-            (str(pointer.get("run_id") or ""), str(pointer.get("worktree") or ""))
-            for pointer in _live_pointers(project)
-            if pointer.get("worktree")
+
+
+def _worktree_registry_signature(repository: Path) -> tuple[Any, ...]:
+    """The common Git registry, including a linked checkout's shared registry."""
+    git_dir = _git_directory(repository)
+    if git_dir is None:
+        raise OSError(f"cannot resolve the worktree registry for {repository}")
+    registry = _common_git_directory(git_dir) / "worktrees"
+    stamp = _held_input_signature(registry)
+    entries = (
+        file_memo.memoized(
+            "obligation_held_registry_entries",
+            registry,
+            lambda: tuple(sorted(registry.glob("*/gitdir"))),
         )
+        if stamp is not None
+        else ()
     )
-    return (ledger_signature, registry_signature, live_signature)
+    return (
+        str(registry),
+        stamp,
+        tuple((str(path), _held_input_signature(path)) for path in entries),
+    )
 
 
-def _worktree_registry_signature(repository: Path) -> tuple[int, ...] | None:
-    """Git's worktree registry, as a stat identity, wherever the git dir lives."""
-    for candidate in (
-        repository / ".git" / "worktrees",
-        repository / ".git",
-    ):
+def _held_registered_worktrees(
+    repository: Path, *, signature: tuple[Any, ...] | None = None
+) -> list[Path]:
+    """List Git's worktrees once per registry change, using the shared memo."""
+    if signature is None:
         try:
-            return file_memo.file_signature(candidate)
+            signature = _worktree_registry_signature(repository)
         except OSError:
-            continue
-    return None
+            return _registered_worktrees(repository)
+    return file_memo.memoized(
+        "obligation_held_registered",
+        repository,
+        lambda: _registered_worktrees(repository),
+        variant=signature,
+    )
 
 
 def _held_worktree_records_read(
@@ -2262,7 +2338,7 @@ def _held_worktree_records_read(
     """The held-tree records, inside the read-only region the caller opened."""
     registered = {
         path
-        for path in _registered_worktrees(repository)
+        for path in _held_registered_worktrees(repository)
         if path != repository and path.is_dir()
     }
     occupied = _live_worktrees(project)
