@@ -54,8 +54,8 @@ TOOLS = ("srun", "sbatch", "salloc")
 # the canonical file does and names neither route, so a route that appears in
 # the composed digest is one the digest added.
 FLEET_BODY = (
-    "A session whose shell has SLURM_JOB_ID set is already on compute. It runs\n"
-    "its heavy gates directly and never submits them to a debug partition.\n"
+    "The fleet node runs coordination and focused checks.\n"
+    "Heavy gates run as jobs of their own on a separate partition.\n"
 )
 
 # The declaration this file pins, captured once at import. A route changed

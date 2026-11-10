@@ -119,7 +119,10 @@ DROPPED_BLOCKS: tuple[str, ...] = (
 # cannot be edited from here; a rule that refuses a nested launch without
 # naming a route out sends a worker back into the refusal it just read, so the
 # digest itself states both routes.
-FLEET_COMPUTE_HEADER = "### On the fleet allocation, run heavy work in place"
+FLEET_COMPUTE_HEADER = (
+    "### The fleet node is for coordination; heavy work goes to a partition"
+    " (binding, lead directive 2026-11-10)"
+)
 
 
 def compute_routes_sentence() -> str:
@@ -269,7 +272,7 @@ SECTION_MAP: dict[str, tuple[str, ...]] = {
         "## Runtime Model Routing",
         "## IMAS Data Access",
         "## Compute Infrastructure (SDCC) — never heavy work on the login node (binding)",
-        "### On the fleet allocation, run heavy work in place",
+        FLEET_COMPUTE_HEADER,
         "## Killing Processes On A Shared Login Node (binding)",
         "## Test Visibility",
     ),
@@ -278,7 +281,7 @@ SECTION_MAP: dict[str, tuple[str, ...]] = {
         "## Bug and Failure Ownership",
         *_CORE,
         "## Compute Infrastructure (SDCC) — never heavy work on the login node (binding)",
-        "### On the fleet allocation, run heavy work in place",
+        FLEET_COMPUTE_HEADER,
     ),
 }
 
