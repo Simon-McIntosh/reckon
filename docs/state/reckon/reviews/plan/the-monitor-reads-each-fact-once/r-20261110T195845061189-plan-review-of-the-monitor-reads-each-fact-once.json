@@ -1,0 +1,104 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T20:18:18.170Z",
+  "dispatched_at": "2026-11-10T20:04:48Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "reasoning-1",
+      "reason": "a worker briefed with this deliverable would add a memo that is already there, see no measurable fall in the read rate, and have no way to close the cost the section exists to remove.",
+      "text": "\u00a723's Why says `_held_worktree_records` is \"recomputed on every tick for every session\", but it is already memoised by exactly the key \u00a723's Deliverable prescribes: `obligations.py:2199-2208` builds `key = (project, repository, _held_records_signature(...))` and serves the result through `file_memo.memoized_key`, with `_held_records_signature` (`obligations.py:2221-2250`) covering the ledger file stamp, git's worktree registry and the `(run_id, worktree)` set of live pointers; that memo is in the profiled tree (`git cat-file -p b3fb5d5693:reckon/crew/obligations.py` shows `memoized_key` at the same function) and landed in `258296b3c9 perf(crew): memoise the obligations a steady tick rebuilds` on 7 November, before the profile was taken; measured at this revision, two back-to-back calls read for 17.65 s then 0.16 s with the read function entered once, so the work is not \"recomputed on every tick\" and \u00a723 as written would change nothing; the profile samples (93 of the station's 243 samples, 23% of the file's 397) sit inside `_held_worktree_records_read` \u2014 `_run_namings > ledger.runs > read_records` in 15 of the 24 matching stacks \u2014 which is a cache MISS path, so the real lever is what moves `_held_records_signature` between ticks (the live-pointer set and the ledger stamp) and the whole-ledger walk each miss performs, not the absence of a key; \"for every session\" is also wrong, since `obligation_snapshot.py:1326` calls it once per project per tick",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:570",
+      "id": "reasoning-2",
+      "reason": "the deliverable points the worker at a cache that exists and at a key change that increases rebuilds, so the node would ship no cost reduction and could not be reviewed against the section's premise.",
+      "text": "\u00a724's Deliverable is largely the code already running: `_roadmap_priority_keys` (`queue_order.py:38-99`) keeps `_PRIORITY_KEYS[cache_key] = (signature, project_keys)` and serves it when `cached[0] == _named_plan_signature(docs_dir, slugs)`, a per-plan-file stat identity, and that cache is in the profiled tree and landed in `de7a481688 perf(queue): reuse discovery roadmap for ranking` on 5 November; measured at this revision, two consecutive `queued_placements`-shaped calls with no plan change call `build_roadmap` once (8.58 s then 0.00 s), which is precisely the head assertion \u00a724 states; the one clause \u00a724 adds to that key \u2014 the sprint index \u2014 is not in `_named_plan_signature`, and adding it makes the key MORE sensitive, so the section as written cannot reduce the rebuilds its own profile counts (60 of the file's 397 samples, 15%, matching the figure)",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "done_when-1",
+      "reason": "a done-when whose base arm is already green cannot fail, so the node's whole measure rests on a suite that passes on the unfixed code.",
+      "text": "\u00a723's negative control, \"at the base revision the unchanged second refresh repeats the work, and the head assertion fails there\", is false as measured: on this revision a second `_held_worktree_records` call with nothing moved returns from `file_memo.memoized_key` in 0.16 s against 17.65 s and does not enter `_held_worktree_records_read` again, so a synthetic crew home with a steady token passes the head assertion at base and the gate cannot show the guard fires",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:570",
+      "id": "done_when-2",
+      "reason": "the section's measure is satisfied before the change, so a green head arm on the delivered node would show nothing about the work.",
+      "text": "\u00a724's negative control, \"at the base revision both calls build the roadmap\", is false as measured: warming `_PRIORITY_KEYS` at this revision makes the second call build the roadmap zero times (8.58 s then 0.00 s, `build_roadmap` entered once in total), so the head assertion \"two consecutive calls with no plan change call `build_roadmap` once\" already holds at base and the negative control cannot fail",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "evidence_paths-1",
+      "reason": "the landed evidence for each section would sit wherever the coordinator happened to run it, which is the scratchpad the plan's other sections were changed to avoid.",
+      "text": "\u00a723 and \u00a724 (:570) end with \"After landing, the coordinator re-measures the station's read rate and CPU over 60 s against the figures above\" and name no durable path for that sample, where \u00a720, \u00a721 and \u00a722 all say the sample is logged \"in this node's run directory\"; a reader of the landed record therefore has no path to open for the post-landing figures the section is judged by",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:565",
+      "id": "wiring-1",
+      "reason": "a section a dispatcher cannot reach is work the plan declares and never starts, which is how the same gap was left on \u00a720 and \u00a721 before those sections were given followups.",
+      "text": "`_document` declares `s23` (:565) and `s24` (:569) `implementable`, but no followup carries `/reckon-build the-monitor-reads-each-fact-once \u00a723` or `\u00a724`: the open followups are f-tmref-004 (\u00a77) and f-tmref-008 (\u00a722), so the invocation chain ends on \u00a722 and both new sections have no entry point",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "cb5dcf17a3be6c8a022f5c9391ec843c67adb509",
+  "plan_fingerprint": "e66eb57e955c7398036ed0078d35f3ca926e43c9766b7fd71b8fcbd27daca3d8",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 152,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T195845061189-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "7366ad1fb5c75778ae2494fa5fae32cc96d0b54f",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `station-io-after-landing.log` and `station-profile-after-landing-40s.raw` both exist under the cited run's `logs/`, tree `b3fb5d5693` resolves, and every frame named in the two Why paragraphs (`_held_worktree_records`, `_held_worktrees_by_session`, `_roadmap_priority_keys`, `admission_order_details`, `queued_placements`, `build_roadmap`) resolves to a real definition on the cited call path.",
+    "done_when": "a finding \u2014 both new sections' negative controls assert that the base revision repeats work it already caches, and both were measured satisfying the head assertion at base.",
+    "evidence_paths": "a finding \u2014 \u00a723 and \u00a724 log the pre-landing figures to durable paths but name no durable path for the post-landing coordinator sample.",
+    "naming": "pass \u2014 `test_held_worktrees_are_read_once_per_change.py` and `test_queue_order_rebuilds_the_roadmap_only_on_change.py` name the behaviour they measure, with no plan label, section number, ticket or version tag in a path or symbol.",
+    "reasoning": "a finding \u2014 both sections name as their root cause an absent cache that the profiled tree already has, and the mechanism each deliverable prescribes is the code already running there.",
+    "single_goal": "pass \u2014 \u00a723 names one deliverable (held-worktree records served from a change key) and \u00a724 names one (roadmap priority keys served from a change key); neither carries a second closable deliverable.",
+    "wiring": "a finding \u2014 `_document` adds `s23` and `s24` as `implementable` but the only open followups are f-tmref-004 (\u00a77) and f-tmref-008 (\u00a722), so neither new section has a build entry point."
+  },
+  "section_digests": {
+    "_document": "cb762553bbc0198ec280ae63d0faccabb421aae3dd1f3403c9cf4349ac514253",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "0676af008c925e764e25a15c3b346f4d9933d9986bc5eaf70246bfa19e4cc069",
+    "s24": "85a18ef55d569f03e925e428bf4669970207dcfc58f0fcf16c4c0eef0b341a8d",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T21:09:12.146215+00:00",
+  "total": null
+}
