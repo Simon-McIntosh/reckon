@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-live-worker-can-be-reached">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s5&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s7&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s6&quot;],&quot;s8&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s5&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -61,7 +61,7 @@
     <p>Two design consequences follow, and they are written into §3: a bare hash that is unique in the file is a legitimate anchor and must be accepted, and every malformed anchor is answered with a refusal that states the format rather than an exception. The steering prototypes run in the same pass belong to <a href="/reckon/plans/a-live-worker-can-be-reached.html">a-live-worker-can-be-reached</a>. Every run in this table, its script and its quoted output is recorded in <a href="/reckon/research/worker-steering-and-anchored-edit-prototypes.html">Worker steering and anchored edit prototypes</a>.</p>
 
     <h2 id="s3">§3 — A line-anchored edit tool ships with reckon</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> A new module <code>reckon/anchored_edit.py</code>, an MCP stdio server built on the <code>mcp</code> package reckon already depends on, plus a console script <code>reckon-anchored-edit</code> declared in <code>pyproject.toml</code> so a worker's harness can start it by name. Tests in <code>tests/test_anchored_edit.py</code>. The prototype at §2 is the starting shape; the module is product code and owes what the prototype skipped:</p>
     <ul>
       <li><strong>Anchors.</strong> <code>N:HHH</code>, or a bare <code>HHH</code> when exactly one line in the file carries that hash. An ambiguous bare hash, a malformed anchor, or a line number out of range is a refusal naming the accepted format, never an exception.</li>
@@ -135,6 +135,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T192355232896-anchored-edit-tool" data-who="reckon-build" data-when="2026-11-10T20:29:12Z">
     <div class="r-comment-body"><p>Added reckon/anchored_edit.py, an MCP stdio server serving read_anchored and edit_anchored with all anchors verified and overlaps refused before any write, every path confined through links to the repeated --root arguments, and atomic publication through the shared writer preserving mode, line endings and the final newline; console script reckon-anchored-edit declared; 23 tests pass, both declared negative controls fail as specified, and the after arm is 74 passed against a 51-passed baseline.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-close-s3" data-who="reckon-build" data-when="2026-11-10T21:45:00Z">
+    <div class="r-comment-body"><p>§3 landed: <code>reckon/anchored_edit.py</code> and the <code>reckon-anchored-edit</code> script (head <code>27ed13983a3d</code>); 23 tests, both negative controls fail as required, review 110/120. §4 and §5 are unblocked. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s3-anchored-edit-tool">evidence</a></p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261110T183909287106-omp-headless-contract" data-who="reckon-build" data-when="2026-11-10T19:15:14.782Z">
     <div class="r-comment-body"><p>The note at ~/.config/reckon/crew/reports/reckon/omp-headless-contract.md settles the event-stream format with a recorded 4-line fixture candidate carrying one tool call, one tool result and a token-usage record; one prompt completed EXIT=0 against the local endpoint through models.yml (provider local, deepseek-v4.1-flash, input 5558 / output 10); and the per-run switches for task, browser, desktop tools and project MCP, the project-MCP one proved by a controlled experiment. Resume and the home directory are settled too, so all five questions the section asks are answered.</p></div>
