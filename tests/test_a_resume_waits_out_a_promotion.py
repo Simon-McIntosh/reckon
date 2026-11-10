@@ -17,9 +17,14 @@ would catch it.
 The cases drive ``_resume`` with a launcher seam, so no worker is started and
 there is nothing left running. The promotion arm holds the two locks exactly as
 ``promotion.py`` does, in its order, and the deadlock arm starts one of each
-together against a five-second bound. The refusal is bounded too: a resume
-whose run a real promotion holds over both its writes must answer promptly,
-not queue behind the pointer lock the promotion is holding.
+together against a five-second bound. Which side reaches the locks first is
+the scheduler's to decide, so that case asserts only what holds either way —
+both threads finish inside the bound, and the resume either proceeds or refuses
+with the promotion's refusal — while the outcome in which a resume proceeds is
+covered by its own case, where the promotion has finished before it starts.
+The refusal is bounded too: a resume whose run a real promotion holds over both
+its writes must answer promptly, not queue behind the pointer lock the
+promotion is holding.
 
 The declared mutation is the base behaviour: a resume that takes only the run's
 pointer lock proceeds while the promotion lock is held.
@@ -47,6 +52,9 @@ PROMOTION_LOCK = f"promotion-{RUN_ID}"
 DEADLOCK_BUDGET_SECONDS = 5.0
 REFUSAL_BUDGET_SECONDS = 2.0
 ROUNDS = 25
+# Resolved at import so the base arm, which has no refusal class, still runs and
+# fails on the behaviour rather than on an attribute that did not exist yet.
+PROMOTION_REFUSAL = getattr(resumption, "PromotionInProgressError", CrewError)
 
 
 def _launcher(pid: int) -> Callable[..., int]:
@@ -176,8 +184,7 @@ def test_a_refusal_does_not_wait_for_the_promotions_pointer_lock(
 
     assert not waited, "the refusal queued behind the promotion's pointer lock"
     assert len(outcome) == 1, outcome
-    refusal_type = getattr(resumption, "PromotionInProgressError", CrewError)
-    assert isinstance(outcome[0], refusal_type), outcome
+    assert isinstance(outcome[0], PROMOTION_REFUSAL), outcome
 
 
 def test_a_resume_proceeds_with_no_promotion_in_progress(
@@ -193,6 +200,26 @@ def test_a_resume_proceeds_with_no_promotion_in_progress(
     assert resumption.launch_in_flight(current) is False, current
 
 
+def test_a_resume_proceeds_once_the_promotion_has_finished(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The refusal lasts only as long as the promotion does.
+
+    A promotion's critical section is run to completion before the resume
+    starts, so the resume outcome is determined rather than raced: it must
+    proceed, as the concurrent case allows but cannot require.
+    """
+    _fixture(tmp_path, monkeypatch)
+
+    with promotion._promotion_lock(RUN_ID), runs._pointer_lock(RUN_ID):
+        pass
+
+    launched = _resume(RUN_ID, 424242)
+
+    assert launched["pid"] == 424242, launched
+    assert resumption.launch_in_flight(runs.read_pointer(RUN_ID)) is False
+
+
 def test_a_promotion_and_a_resume_started_together_never_deadlock(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -205,10 +232,9 @@ def test_a_promotion_and_a_resume_started_together_never_deadlock(
     """
     _fixture(tmp_path, monkeypatch)
     stuck: list[str] = []
-    outcomes: list[str] = []
     lock = threading.Lock()
 
-    def promotion_arm(barrier: threading.Barrier) -> None:
+    def promotion_arm(barrier: threading.Barrier, outcomes: list[str]) -> None:
         barrier.wait(timeout=DEADLOCK_BUDGET_SECONDS)
         try:
             with promotion._promotion_lock(RUN_ID), runs._pointer_lock(RUN_ID):
@@ -219,13 +245,15 @@ def test_a_promotion_and_a_resume_started_together_never_deadlock(
             with lock:
                 stuck.append(f"promotion: {exc!r}")
 
-    def resume_arm(barrier: threading.Barrier, round_number: int) -> None:
+    def resume_arm(
+        barrier: threading.Barrier, round_number: int, outcomes: list[str]
+    ) -> None:
         barrier.wait(timeout=DEADLOCK_BUDGET_SECONDS)
         try:
             _resume(RUN_ID, 424242 + round_number)
             with lock:
                 outcomes.append("resumed")
-        except CrewError:
+        except PROMOTION_REFUSAL:
             with lock:
                 outcomes.append("refused")
         except BaseException as exc:  # noqa: BLE001 - reported, not swallowed
@@ -234,10 +262,15 @@ def test_a_promotion_and_a_resume_started_together_never_deadlock(
 
     for round_number in range(ROUNDS):
         round_barrier = threading.Barrier(2)
+        outcomes: list[str] = []
         threads = [
-            threading.Thread(target=promotion_arm, args=(round_barrier,), daemon=True),
             threading.Thread(
-                target=resume_arm, args=(round_barrier, round_number), daemon=True
+                target=promotion_arm, args=(round_barrier, outcomes), daemon=True
+            ),
+            threading.Thread(
+                target=resume_arm,
+                args=(round_barrier, round_number, outcomes),
+                daemon=True,
             ),
         ]
         started = time.monotonic()
@@ -252,6 +285,15 @@ def test_a_promotion_and_a_resume_started_together_never_deadlock(
         # returns from the joins, while an ordinary scheduling delay between
         # rounds costs nothing that would look like a deadlock.
         assert elapsed < DEADLOCK_BUDGET_SECONDS, (round_number, elapsed)
+        # Which side reaches the locks first is the scheduler's to decide, so
+        # what is asserted is what holds either way: the promotion completes,
+        # and the resume either proceeds or refuses with the promotion's own
+        # refusal. It must never block, which the join above already reports.
+        assert "promoted" in outcomes, (round_number, outcomes)
+        resume_outcomes = [item for item in outcomes if item != "promoted"]
+        assert resume_outcomes in (["resumed"], ["refused"]), (
+            round_number,
+            outcomes,
+        )
 
     assert not stuck, stuck
-    assert "resumed" in outcomes and "promoted" in outcomes, outcomes
