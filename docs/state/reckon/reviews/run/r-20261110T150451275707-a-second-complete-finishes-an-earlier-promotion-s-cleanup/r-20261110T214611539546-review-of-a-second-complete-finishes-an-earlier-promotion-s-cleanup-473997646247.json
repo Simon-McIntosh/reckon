@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own two arms: round4-base-suite.log reads '58 passed in 55.50s' EXIT=0 at revision 9260a0096d and round4-head-suite.log reads '59 passed in 78.17s' EXIT=0 at revision 8f8a96a1b4, each with failure_ids [] and completed true in the manifest's baseline_suite and after_suite. The one-case gain is the new aggregate-only crew.complete case at tests/test_a_second_complete_finishes_cleanup.py:221; no failure id appears on either arm, so the round adds no failure. Both logs name their revision, tree, resolved module and command on their header lines and end with a bare EXIT= line, and the base arm names its own scratch tree and module path under /tmp/reckon-crew-scratch, so it measured the base revision rather than the worktree under test.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/promotion.py:1254",
+    "reckon/crew/promotion.py:1259",
+    "reckon/crew/promotion.py:1801",
+    "reckon/crew/promotion.py:1862",
+    "reckon/crew/promotion_scope.py:1451",
+    "reckon/crew/promotion_scope.py:1488"
+  ],
+  "completed_at": "2026-11-10T22:08:22.212Z",
+  "dispatched_at": "2026-11-10T21:52:28Z",
+  "findings": [
+    {
+      "file": "tests/test_a_failed_landing_says_whether_its_row_survived.py",
+      "line": 164,
+      "severity": "non-blocking",
+      "text": "The round's gate covers two files, tests/test_a_second_complete_finishes_cleanup.py and tests/test_staged_write_inventory.py, and the second of those does not import reckon.crew.promotion_scope at all, while the node's done_when asks that 'the test files importing reckon.crew.promotion_scope add no failure against the base revision' - 16 such files at this revision. The two that assert the changed helper's answer directly, this line and tests/test_receipt_names_the_rolled_back_row.py:193, were last measured at the round-1 cohort revision 9d89b980 against base db774d6c, not at the reviewed head. It does not block, because the delta is confined to the unreadable=False caller and the default-policy answer is provably identical for every input, but the recorded gate does not re-establish the done_when's own breadth at 4739976462."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read both commits against 9260a0096d: 8f8a96a1b4 replaces the three-way ledger answer in reckon/crew/promotion_scope.py:2324-2331 with an early True on an aggregate hit and rewrites the docstring, renames the unit case to match, and adds the aggregate-only crew.complete case; 4739976462 is docs-only, adding a paragraph and four table rows to the fragment.",
+    "done_when": "The done_when asks the test file for the three cases plus a restored-refusal negative control, no added failures across the files importing promotion_scope, and no ruff findings; round4-head-suite.log (59 passed, EXIT=0, revision 8f8a96a1b4) against round4-base-suite.log (58 passed, EXIT=0, revision 9260a0096d) records the first and a one-case gain, and round4-negative-control-aggregate-only.log reddens the two named cases, but the added-failure breadth and the ruff claim are not re-measured at the head.",
+    "goal": "The node's goal is 'A second complete finishes an earlier promotion's cleanup'; the delta at reckon/crew/promotion_scope.py:2324 answers True the moment the aggregate names the run, so the differing-narrative branch at :1451 returns the finished_cleanup receipt instead of raising for a row that exists only in the aggregate.",
+    "manifest": "Read in full; it records status complete, a commit list ending 4739976462, both suite arms with revisions, commands and log paths, the negative_control_log path and a note naming the three mutations, and one acted-disposition line per earlier review finding.",
+    "write_paths": "The node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the landing fragment granted at its scope path; the round touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "round4-negative-control-aggregate-only.log reddens test_a_row_the_aggregate_carries_alone_is_proof and test_an_aggregate_only_row_finishes_a_differing_narrative (2 failed, EXIT=1) when the unproven answer is restored, so the guard fails on its own defect; the third added assertion, tests/test_a_second_complete_finishes_cleanup.py:218, exercises the default policy and is identical before and after the change, so it documents but does not guard this round.",
+    "evidence": "round4-head-suite.log and round4-base-suite.log each carry a '# revision:' line and end with a bare EXIT= line, and round4-negative-control-aggregate-only.log names both failing ids, but the manifest's ruff claim at its artifacts line cites no log and the done_when's 16-file breadth is not re-run at this head.",
+    "fit": "reckon/crew/promotion_scope.py:2298 keeps the keyword-only unreadable parameter and the module's docstring voice, and neither new identifier carries a plan label, ticket id or version suffix.",
+    "goal_fidelity": "reckon/crew/promotion_scope.py:2324 returns True on an aggregate hit, which is the shape the goal names, and the crew.complete case at tests/test_a_second_complete_finishes_cleanup.py:221 drives it end to end.",
+    "reuse": "The delta adds no definition at all: it edits the body of the existing _ledger_holds_row at reckon/crew/promotion_scope.py:2298, whose owner the previous round established, so no capability is forked and the test imports its fixture from tests/test_a_run_can_always_be_reconciled.py rather than rebuilding it.",
+    "scope_discipline": "git diff --stat 9260a0096d 4739976462 touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and the granted landing fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is 'A second complete finishes an earlier promotion's cleanup'; the delta at reckon/crew/promotion_scope.py:2324 answers True the moment the aggregate names the run, so the differing-narrative branch at :1451 returns the finished_cleanup receipt instead of raising for a row that exists only in the aggregate.\nVERDICT done_when: the done_when asks the test file for the three cases plus a restored-refusal negative control, no added failures across the files importing promotion_scope, and no ruff findings; round4-head-suite.log (59 passed, EXIT=0, revision 8f8a96a1b4) against round4-base-suite.log (58 passed, EXIT=0, revision 9260a0096d) records the first and a one-case gain, and round4-negative-control-aggregate-only.log reddens the two named cases, but the added-failure breadth and the ruff claim are not re-measured at the head.\nVERDICT write_paths: the node declares reckon/crew/promotion_scope.py and tests/test_a_second_complete_finishes_cleanup.py, with the landing fragment granted at its scope path; the round touches exactly those three and nothing else.\nVERDICT manifest: read in full; it records status complete, a commit list ending 4739976462, both suite arms with revisions, commands and log paths, the negative_control_log path and a note naming the three mutations, and one acted-disposition line per earlier review finding.\nVERDICT diff: read both commits against 9260a0096d: 8f8a96a1b4 replaces the three-way ledger answer in reckon/crew/promotion_scope.py:2324-2331 with an early True on an aggregate hit and rewrites the docstring, renames the unit case to match, and adds the aggregate-only crew.complete case; 4739976462 is docs-only, adding a paragraph and four table rows to the fragment.\nCALL_SITES: reckon/crew/promotion.py:1254, reckon/crew/promotion.py:1259, reckon/crew/promotion.py:1801, reckon/crew/promotion.py:1862, reckon/crew/promotion_scope.py:1451, reckon/crew/promotion_scope.py:1488\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_scope.py:2324 returns True on an aggregate hit, which is the shape the goal names, and the crew.complete case at tests/test_a_second_complete_finishes_cleanup.py:221 drives it end to end.\nSCORE evidence: 15\nJUSTIFICATION evidence: round4-head-suite.log and round4-base-suite.log each carry a '# revision:' line and end with a bare EXIT= line, and round4-negative-control-aggregate-only.log names both failing ids, but the manifest's ruff claim at its artifacts line cites no log and the done_when's 16-file breadth is not re-run at this head.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9260a0096d 4739976462 touches only reckon/crew/promotion_scope.py, tests/test_a_second_complete_finishes_cleanup.py and the granted landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: round4-negative-control-aggregate-only.log reddens test_a_row_the_aggregate_carries_alone_is_proof and test_an_aggregate_only_row_finishes_a_differing_narrative (2 failed, EXIT=1) when the unproven answer is restored, so the guard fails on its own defect; the third added assertion, tests/test_a_second_complete_finishes_cleanup.py:218, exercises the default policy and is identical before and after the change, so it documents but does not guard this round.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/promotion_scope.py:2298 keeps the keyword-only unreadable parameter and the module's docstring voice, and neither new identifier carries a plan label, ticket id or version suffix.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no definition at all: it edits the body of the existing _ledger_holds_row at reckon/crew/promotion_scope.py:2298, whose owner the previous round established, so no capability is forked and the test imports its fixture from tests/test_a_run_can_always_be_reconciled.py rather than rebuilding it.\nFINDING tests/test_a_failed_landing_says_whether_its_row_survived.py:164 non-blocking: the round's gate covers two files, tests/test_a_second_complete_finishes_cleanup.py and tests/test_staged_write_inventory.py, and the second of those does not import reckon.crew.promotion_scope at all, while the node's done_when asks that 'the test files importing reckon.crew.promotion_scope add no failure against the base revision' - 16 such files at this revision. The two that assert the changed helper's answer directly, this line and tests/test_receipt_names_the_rolled_back_row.py:193, were last measured at the round-1 cohort revision 9d89b980 against base db774d6c, not at the reviewed head. It does not block, because the delta is confined to the unreadable=False caller and the default-policy answer is provably identical for every input, but the recorded gate does not re-establish the done_when's own breadth at 4739976462.",
+  "review_run_id": "r-20261110T214611539546-review-of-a-second-complete-finishes-an-earlier-promotion-s-cleanup-473997646247",
+  "reviewed_base_sha": "9260a0096d672ae560f07a6b26d50a2cb3c16870",
+  "reviewed_head_sha": "47399764624785eae8f34f74f5abb8d288a534f9",
+  "reviewed_run_id": "r-20261110T150451275707-a-second-complete-finishes-an-earlier-promotion-s-cleanup",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:28:34.354681+00:00",
+  "total": 110
+}
