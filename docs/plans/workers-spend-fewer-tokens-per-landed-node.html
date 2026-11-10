@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-live-worker-can-be-reached">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s5&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s7&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s6&quot;],&quot;s8&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s5&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s7&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;}">
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
+<meta name="plan-version" content="7">
 <meta name="plan-modified" content="2026-11-10">
 </head>
 <body>
@@ -85,7 +85,7 @@
     <p><strong>Done when</strong> tests show the codex argv with and without the key (byte-identical to the base revision's without it), the stream parser separating anchored-tool calls from <code>file_change</code> items on the recorded stream at <code>docs/research/fixtures/codex-anchored-edit-stream.jsonl</code> (the codex prototype run of 2026-11-10, copied into the test fixtures; it holds one <code>read_anchored</code> and three <code>edit_anchored</code> <code>mcp_tool_call</code> items, one of them failed), the prompt instruction present only when the launch recorded the flag, and the flag on the run record. <strong>Negative control:</strong> the parser test must fail if anchored-tool calls are counted as <code>file_change</code>. No <code>config.toml</code> is written, the user's or the run home's.</p>
 
     <h2 id="s6">§6 — Find the headless contract oh-my-pi offers a worker</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
     <p><strong>Deliverable.</strong> An investigation, not an integration. The coordinator installs a pinned oh-my-pi into an isolated prefix before dispatch (version 18.13.2, published 27 October, the newest release at least two weeks old on the day this was written, with the bun it requires); the node reads that install and answers, each with a command and its output recorded:</p>
     <ul>
       <li>Which non-interactive mode emits a machine-readable event stream (<code>omp -p</code> with a JSON output mode, or <code>omp --mode rpc</code>), and what one tool call, one tool result, one final message and a token-usage record look like in it.</li>
@@ -132,6 +132,9 @@
   <section data-reckon="comments" id="comments" class="r-comments">
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261110T183909287106-omp-headless-contract" data-who="reckon-build" data-when="2026-11-10T19:15:14.782Z">
     <div class="r-comment-body"><p>The note at ~/.config/reckon/crew/reports/reckon/omp-headless-contract.md settles the event-stream format with a recorded 4-line fixture candidate carrying one tool call, one tool result and a token-usage record; one prompt completed EXIT=0 against the local endpoint through models.yml (provider local, deepseek-v4.1-flash, input 5558 / output 10); and the per-run switches for task, browser, desktop tools and project MCP, the project-MCP one proved by a controlled experiment. Resume and the home directory are settled too, so all five questions the section asks are answered.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-close-s6" data-who="reckon-build" data-when="2026-11-10T19:40:00Z">
+    <div class="r-comment-body"><p>§6 landed: run <code>r-20261110T183909287106-omp-headless-contract</code> settled the stream format, the endpoint, the switches, resume and the home directory; §7 must relocate <code>HOME</code>, not only <code>PI_CODING_AGENT_DIR</code>. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s6-omp-headless-contract">evidence</a></p></div>
 </div>
 </section>
 </main>

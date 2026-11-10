@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node-landed">
+  <meta name="plan-title" content="Workers Spend Fewer Tokens Per Landed Node — landed record">
+  <meta name="plan-summary" content="Landing record for Workers Spend Fewer Tokens Per Landed Node: evidence appended by section.">
+  <meta name="plan-evidence-for" content="workers-spend-fewer-tokens-per-landed-node">
+  <title>Workers Spend Fewer Tokens Per Landed Node — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Workers Spend Fewer Tokens Per Landed Node — landed record</h1>
+  <p>Landing record for Workers Spend Fewer Tokens Per Landed Node: evidence appended by section.</p>
+
+
+   <section id="s6-omp-headless-contract" data-evidence-origin="append">
+    <h2>§6 — the oh-my-pi headless contract</h2>
+    <p>Investigation run <code>r-20261110T183909287106-omp-headless-contract</code> (local lane, DeepSeek V4.1 Flash) settled all five questions against oh-my-pi 18.13.2 with bun 1.3.14 at <code>~/.local/share/omp-pilot</code>; the note with every command and its output is at <code>~/.config/reckon/crew/reports/reckon/omp-headless-contract.md</code>.</p><ul><li><strong>Event stream:</strong> <code>omp -p --mode=json</code> emits JSONL (session, agent_start, turn_start, message_*, tool_execution_start/end, turn_end, agent_end). Three parser traps: the first usage record of each assistant message is all zeros, so only the last <code>message_end</code> of a turn and <code>agent_end</code> carry real totals; non-JSON prose lines are interleaved; a resumed stream replays only the new turn. A thinking-only final message exits 1 while still reaching <code>agent_end</code>, so a parser keys on <code>agent_end</code>, not the exit code. Stdin must be closed or <code>-p</code> hangs reading piped input.</li><li><strong>Local endpoint:</strong> a <code>models.yml</code> under <code>$PI_CODING_AGENT_DIR</code> with an <code>openai-completions</code> provider at <code>http://98dci4-gpu-0003:18802/v1</code>, model <code>deepseek-v4.1-flash</code>; one prompt completed (input 5,558, output 10 tokens).</li><li><strong>Per-run switches</strong> via a <code>--config</code> overlay: <code>mcp.enableProjectConfig=false</code> (proved by a controlled marker server: 1 trace hit with it true, 0 with it false), <code>task.maxRecursionDepth=0</code>, <code>browser.enabled</code>, <code>computer.enabled</code>, <code>web_search.enabled</code> and <code>fetch.enabled</code> false; the <code>--tools=</code> allowlist is the harder gate. A user-scope MCP server from <code>~/.claude.json</code> is not suppressed and costs one failed connection per run.</li><li><strong>Resume</strong> works by session id prefix from a second process.</li><li><strong>Home:</strong> <code>PI_CODING_AGENT_DIR</code> relocates only the agent store and <code>models.yml</code>, leaving logs in the operator's <code>~/.omp/logs</code>; only a <code>HOME</code> redirect (or <code>--profile</code>) isolates every write. The fence's <code>_HARNESS_HOME</code> entry must therefore relocate <code>HOME</code>.</li></ul>
+  </section>
+
+</main>
+</body>
+</html>
