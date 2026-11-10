@@ -433,6 +433,11 @@ class LaunchPlan:
     # resolving the flight layers again, so a directory a project layer declares
     # reaches the worker's own PATH on every attempt and not only at pre-flight.
     backend_search_path: tuple[str, ...] = ()
+    # The brief this launch carries, whatever channel carries it. A dialect that
+    # takes the prompt on stdin repeats it in ``stdin_text``; one that puts it on
+    # the command line carries it only here, and the run's ``prompt.txt`` is
+    # written from this so an argv-prompt run still records what it was told.
+    prompt: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -2840,6 +2845,16 @@ def launch_plan(
             ),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        # Relocating HOME also hides the operator's ~/.gitconfig, and git then
+        # synthesises an identity from the account's GECOS field: a worker's
+        # commits would carry a name and address nobody configured. Naming the
+        # global config explicitly restores it through one environment variable
+        # the fence already mounts read-only, so no path is made writable.
+        if _HARNESS_HOME[dialect.name][0] == "HOME":
+            operator = Path(fence_home) if fence_home is not None else Path.home()
+            operator_config = operator / ".gitconfig"
+            if operator_config.is_file():
+                environment.setdefault("GIT_CONFIG_GLOBAL", str(operator_config))
     # The dialect composes its own sandbox before the fence wraps the launch,
     # and codex prepares each root it is told writable — so a fenced run is
     # handed only the roots the fence actually keeps writable, or a sealed
@@ -2923,6 +2938,7 @@ def launch_plan(
         resumed_session=resume_session,
         fence_waiver=fence_waiver,
         backend_search_path=backend_search_directories(backend),
+        prompt=prompt,
     )
 
 

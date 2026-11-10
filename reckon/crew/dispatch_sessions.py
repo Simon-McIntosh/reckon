@@ -1956,7 +1956,9 @@ def change_lane(
     # its figures is the listing of that run's figures. An in-harness attempt
     # composes no plan and writes the prompt it holds uncomposed, as before.
     prompt_path.write_text(
-        target_plan.stdin_text if target_plan is not None else prompt,
+        (target_plan.stdin_text or target_plan.prompt)
+        if target_plan is not None
+        else prompt,
         encoding="utf-8",
     )
     # The move relaunches a worker over the same manifest path, so a done word

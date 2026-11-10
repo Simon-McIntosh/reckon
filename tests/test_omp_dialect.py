@@ -23,6 +23,8 @@ the obvious way, so both are held here:
 from __future__ import annotations
 
 import json
+import os
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -59,6 +61,30 @@ def _plan(**kwargs: object):
     )
 
 
+def _usage(input_tokens: int, output_tokens: int, *, reason: str = "stop") -> dict:
+    return {
+        "input": input_tokens,
+        "output": output_tokens,
+        "cacheRead": 0,
+        "cacheWrite": 0,
+        "totalTokens": input_tokens + output_tokens,
+        "stopReason": reason,
+    }
+
+
+def _assistant_end(usage: dict, *, text: str = "settled") -> str:
+    return json.dumps(
+        {
+            "type": "message_end",
+            "message": {
+                "role": "assistant",
+                "content": [{"type": "text", "text": text}],
+                "usage": usage,
+            },
+        }
+    )
+
+
 # ── The dialect is registered and translates its command ────────────────────
 
 
@@ -92,6 +118,30 @@ def test_the_prompt_rides_on_argv_and_no_stdin_text_is_fed() -> None:
 def test_the_run_uses_the_machine_readable_mode() -> None:
     plan = _plan(fence=False)
     assert plan.argv[:3] == ["omp", "-p", "--mode=json"]
+
+
+def test_the_brief_is_still_recorded_in_the_runs_prompt_file() -> None:
+    """The launch rewrites prompt.txt from the plan, not from the stdin field.
+
+    Writing the stdin field alone emptied ``prompt.txt`` for every dialect that
+    puts its brief on the command line, so the run kept no record of what the
+    worker was told and a lane change had no text to restate.
+    """
+    from reckon.crew.dispatch import _prompt_file_text
+
+    plan = _plan()
+    assert plan.stdin_text == ""
+    assert plan.prompt == "the brief"
+    assert _prompt_file_text(plan) == "the brief"
+
+    stdin_plan = _backends.launch_plan(
+        backend_name="probe",
+        backend={"launch": "cli", "command": "claude"},
+        prompt="the brief",
+        worktree="/wt",
+    )
+    assert stdin_plan.stdin_text == "the brief"
+    assert _prompt_file_text(stdin_plan) == "the brief"
 
 
 def test_the_config_overlay_turns_off_every_worker_that_must_not_fan_out(
@@ -219,6 +269,76 @@ def test_the_run_home_is_relocated_through_home(tmp_path: Path) -> None:
     assert (run / "omp-home").is_dir()
 
 
+def test_a_run_that_relocates_home_keeps_the_operators_git_identity(
+    tmp_path: Path,
+) -> None:
+    """HOME carries the harness tree and, with it, the operator's gitconfig.
+
+    Relocating HOME is the only way to move oh-my-pi's log directory, and it
+    also hides ``~/.gitconfig``: git then synthesises an identity from the
+    account's GECOS field, so a worker's commits carry a name and address
+    nobody configured. The plan names the global config instead, through a
+    variable the fence already mounts read-only, so nothing is made writable.
+    """
+    home = tmp_path / "operator-home"
+    home.mkdir()
+    config = home / ".gitconfig"
+    config.write_text(
+        "[user]\n\tname = Operator Name\n\temail = operator@example.test\n",
+        encoding="utf-8",
+    )
+    run = tmp_path / "run"
+    run.mkdir()
+    plan = _backends.launch_plan(
+        backend_name="probe",
+        backend=OMP,
+        prompt="p",
+        worktree=str(tmp_path),
+        manifest_path=str(run / "manifest.md"),
+        fence_home=str(home),
+    )
+
+    assert plan.environment["HOME"] == str(run / "omp-home")
+    assert plan.environment["GIT_CONFIG_GLOBAL"] == str(config)
+
+    # The claim that matters is that git resolves it, not that a variable is set.
+    identity = subprocess.run(
+        ["git", "var", "GIT_AUTHOR_IDENT"],
+        cwd=str(tmp_path),
+        env={
+            "HOME": plan.environment["HOME"],
+            "GIT_CONFIG_GLOBAL": plan.environment["GIT_CONFIG_GLOBAL"],
+            "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
+        },
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert identity.returncode == 0, identity.stderr
+    assert "Operator Name <operator@example.test>" in identity.stdout
+
+
+def test_a_dialect_that_keeps_the_operator_home_is_not_handed_a_git_config(
+    tmp_path: Path,
+) -> None:
+    """Only a relocated HOME needs the variable; every other dialect keeps its own."""
+    home = tmp_path / "operator-home"
+    home.mkdir()
+    (home / ".gitconfig").write_text("[user]\n\tname = Unused\n")
+    run = tmp_path / "run"
+    run.mkdir()
+    plan = _backends.launch_plan(
+        backend_name="probe",
+        backend={"launch": "cli", "command": "claude"},
+        prompt="p",
+        worktree=str(tmp_path),
+        manifest_path=str(run / "manifest.md"),
+        fence_home=str(home),
+    )
+
+    assert "GIT_CONFIG_GLOBAL" not in plan.environment
+
+
 def test_a_dialect_with_no_declared_home_is_not_invented_one(tmp_path: Path) -> None:
     """The declared entry is what makes the home exist at all."""
     assert _worker_fence.harness_home("claude", tmp_path) is not None
@@ -244,7 +364,31 @@ def test_the_recorded_stream_reports_the_token_totals_it_recorded() -> None:
 
 
 def test_the_placeholder_cannot_replace_the_measured_totals() -> None:
-    """Read the tail first, then the head: the totals must survive."""
+    """A later turn's placeholder must not overwrite an earlier measurement.
+
+    Reading only the tail then the head exercises the carry, not the fold: the
+    zero record arrives *before* the totals, so an implementation that assigned
+    the last usage record over the running total would still be green because
+    the last record it saw was the measured one. This stream puts the
+    placeholder after the measurement, which is what the harness does on every
+    turn after the first, so an assignment reports a run that spent nothing.
+    """
+    stream = [
+        _assistant_end(_usage(32722, 18)),
+        json.dumps({"type": "turn_start"}),
+        _assistant_end(_usage(0, 0, reason="toolUse"), text="thinking"),
+        json.dumps({"type": "agent_end", "messages": [], "usage": _usage(32722, 18)}),
+    ]
+
+    tokens = _observe(stream).budget["tokens"]
+
+    assert tokens is not None, "a later placeholder erased the measured totals"
+    assert tokens["input_tokens"] == 32722
+    assert tokens["output_tokens"] == 18
+
+
+def test_a_tail_read_before_the_head_carries_the_totals_with_it() -> None:
+    """The incremental reader seeds the next fold with what it has seen."""
     lines = _lines()
     head = [line for line in lines[:7] if line.startswith("{")]
     tail = lines[7:]
