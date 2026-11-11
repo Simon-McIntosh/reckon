@@ -73,11 +73,13 @@ LIVE_WORK_KEY = "live-work"
 # warning per run is what makes the defect visible; the rest are noise.
 _WARNED_DUTY_READ_FAILURES: set[str] = set()
 
-# The duty kinds whose evidence is a stored review of a run's own head. Such a
-# duty is keyed on that head, so one that cannot resolve it names a review no
-# dispatch could satisfy; it is still reported to the coordinator, but it does
-# not hold a pane open against work nothing can complete.
-_REVIEW_DUTY_KINDS = frozenset({"review-missing", "review-ready"})
+# The one duty kind whose evidence is a review keyed on the run's own head. A
+# duty that cannot resolve that head names a review no dispatch could satisfy:
+# it is still reported to the coordinator, but it does not hold a pane open
+# against work nothing can complete. No other kind is exempt on that ground --
+# a promotion is actionable whatever the tree reads, and the duty for a run
+# whose review tier is ``none`` carries no head at all.
+_HEAD_KEYED_DUTY_KIND = "review-missing"
 
 
 def _warn_duty_read_failure(run_id: str, error: BaseException) -> None:
@@ -211,7 +213,12 @@ def run_owes_its_coordinator(
     for item in items:
         if str(item.get("run_id") or "") != run_id:
             continue
-        if str(item.get("kind") or "") in _REVIEW_DUTY_KINDS and not str(
+        # Only a missing review is keyed on the head: with no head resolvable
+        # there is nothing a dispatch could attach to, so holding the pane
+        # would hold it forever. A ready review is a promotion the coordinator
+        # can take whatever the tree reads, and the tier-none duty carries no
+        # head at all, so neither is exempt on this ground.
+        if str(item.get("kind") or "") == _HEAD_KEYED_DUTY_KIND and not str(
             item.get("head") or ""
         ):
             continue

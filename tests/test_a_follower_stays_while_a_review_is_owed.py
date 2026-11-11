@@ -437,12 +437,15 @@ def test_a_stored_review_that_is_not_promoted_keeps_the_pane(
             arming.end()
 
 
-def test_a_delivery_that_owes_no_review_settles(home: Path, tmp_path: Path) -> None:
-    """An evidence-only delivery owes no review, so the pane drains.
+def test_an_evidence_only_delivery_settles_once_it_is_promoted(
+    home: Path, tmp_path: Path
+) -> None:
+    """An evidence-only delivery owes a promotion, then drains.
 
-    The tier rule exempts a run that changes no runtime or test source; the
-    merged-head gate checks it instead. Counting every delivered run would hold
-    the pane open for a review nothing will ever dispatch.
+    The tier rule exempts a run that changes no runtime or test source: no
+    review is composed and the merged-head gate checks it instead. It still
+    owes its coordinator a promotion, so the pane holds until that lands, and
+    the exemption ends the review duty rather than the session's work.
     """
     with runs._project_watch_claim(PROJECT, "1h") as (acquired, _seat):
         assert acquired
@@ -459,9 +462,15 @@ def test_a_delivery_that_owes_no_review_settles(home: Path, tmp_path: Path) -> N
             _deliver(home, RUN, changed_paths=EVIDENCE_PATH)
             _publish(store, [_read_pointer(RUN)])
             _advance_past_grace(arming)
+            time.sleep(0.2)
+            assert not arming.settles(), (
+                "the pane settled over a promotion the coordinator still owes"
+            )
+            _promote(home)
+            _publish(store, [])
             _wait_for_settle(
                 arming,
-                description="the pane to settle over an evidence-only delivery",
+                description="the pane to settle once the delivery is promoted",
             )
         finally:
             arming.end()

@@ -151,6 +151,36 @@ def test_a_run_whose_landing_was_refused_keeps_its_pane(home: Path) -> None:
     assert _populations([pointer]) == (True, False, [SESSION])
 
 
+def test_a_delivered_docs_only_run_keeps_its_pane_until_promoted(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run that changes no runtime source still owes its promotion.
+
+    Its review tier is ``none``, so no review is composed and the obligation it
+    raises is a promotion carrying no head. That is a duty the coordinator can
+    act on whatever the tree reads, so it holds the pane; the exemption for an
+    unresolvable head applies only to a review keyed on that head.
+    """
+    from reckon import review_tiers
+
+    monkeypatch.setattr(
+        obligations,
+        "_review_tier_for_duty",
+        lambda *_args, **_kwargs: review_tiers.NONE,
+    )
+    pointer = _pointer(home, "r-docs-only")
+    items = station_subscriber.terminal_run_duty_items(
+        pointer,
+        now=obligations._utc_now(),
+        grace=900,
+        live_pointers=[pointer],
+    )
+    assert [item["kind"] for item in items] == ["review-ready"]
+    assert "head" not in items[0]
+    assert _populations([pointer]) == (True, False, [SESSION])
+    assert _populations([]) == (False, False, [])
+
+
 def test_a_run_owing_a_repair_keeps_its_pane(home: Path) -> None:
     """A stored review with an undisposed blocking finding owes a repair."""
     run_id = "r-repair"

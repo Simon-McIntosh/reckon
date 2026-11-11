@@ -6,12 +6,15 @@
   terminal run's own duties through the obligations module's own helpers and kind
   tables, and <code>run_owes_its_coordinator</code> holds the session live while
   any of those duties carries that run's own <code>run_id</code>. A promotion owed
-  by a delivered review, a promotable run, a refused landing, an owed repair and a
-  run that ended <code>needs-help</code> therefore keep their coordinator's pane;
-  a project-wide notice with an empty <code>run_id</code> keeps nothing.</p>
+  by a delivered review, a promotable run, a refused landing, an owed repair, a
+  run that ended <code>needs-help</code> and a delivered run whose review tier is
+  <code>none</code> therefore keep their coordinator's pane; a project-wide notice
+  with an empty <code>run_id</code> keeps nothing. The one exemption is a review
+  keyed on a head that will not resolve: no dispatch could satisfy it, so the
+  obligations list it but the pane does not hold for it. A duty carrying no head
+  at all is a promotion, which is actionable whatever the tree reads.</p>
   <p id="a-run-owing-its-coordinator-keeps-the-pane-measure"><strong>Measure.</strong>
-  <code>tests/test_a_run_owing_its_coordinator_keeps_the_pane.py</code> — 8 passed,
+  <code>tests/test_a_run_owing_its_coordinator_keeps_the_pane.py</code> — 9 passed,
   <code>EXIT=0</code>. The declared negative control, restoring the review-only
-  gate, fails 4 of the 5 keep-live cases and leaves only the review-owing one
-  passing, which is the case that rule was written for.</p>
+  gate, fails the keep-live cases that rule did not cover.</p>
 </section>
