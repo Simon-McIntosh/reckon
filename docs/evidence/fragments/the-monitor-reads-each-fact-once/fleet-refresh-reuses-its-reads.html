@@ -1,0 +1,22 @@
+<section id="fleet-refresh-reuses-its-reads">
+  <h3 id="fleet-refresh-reuses-its-reads-result">Read reuse already holds at the assigned base</h3>
+  <p>At base <code>ff70ae551df3e399c8ce7dff21e21347239064e7</code>, a real
+  <code>fleet_state</code> derivation over 60 live pointers, six growing worker streams,
+  60 committed review records and four held worktrees reads held records and loads
+  the ledger once on its first refresh and zero times on its second refresh.
+  The held-record input key stays equal between those refreshes. The test patches
+  every loaded binding of the held-record reader, Git worktree listing and ledger
+  loader; it also counts filesystem listings inside held-record discovery.</p>
+  <p>The new regression test confirms that a new landed ledger row changes the
+  holding run on the next refresh, and that removing a worktree directory removes
+  its duty without pruning Git's registry. No product source change was justified
+  by this reproduction. The declared negative control expects this assertion to
+  fail at base, but the base run passes. That requirement remains unmet.</p>
+  <p>Evidence is retained in the run directory
+  <code>r-20261111T033651310546-fleet-refresh-reuses-its-reads</code>:
+  <code>negative-control-base.log</code> contains the passing base trace;
+  <code>baseline-suite.log</code> and <code>head-suite.log</code> contain the
+  matched armed gate results submitted to <code>all_debug</code>: 51 passed in 11.90s
+  at base and 52 passed in 14.31s with the regression test, zero added failures.
+  Ruff check and format check pass on the new test.</p>
+</section>
