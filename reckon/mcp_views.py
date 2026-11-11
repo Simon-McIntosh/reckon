@@ -4013,6 +4013,7 @@ CREW_VIEWS: tuple[str, ...] = (
     "models",
     "velocity",
     "scores",
+    "review-need",
     "plan-review",
     "findings",
 )
@@ -4884,6 +4885,18 @@ def serve_crew_view(
                 "version": version,
                 "path": str(ledger_module.ledger_path(project, checkout_path)),
                 "runs": runs,
+            }
+        if view == "review-need":
+            # The shadow records what each further code review was predicted to
+            # find and what it found. Nothing is skipped on it, so this view is
+            # the whole of what a decision to skip would rest on.
+            from reckon.crew import review_need as review_need_module
+
+            return {
+                "ok": True,
+                "project": project,
+                "view": view,
+                **review_need_module.shadow_view(project),
             }
         if view == "scores":
             # The committed rows are the only input: the reader is
