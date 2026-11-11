@@ -1,0 +1,109 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own arms: baseline_suite records 51 passed EXIT=0 with failure_ids [] at bc6d7fd9, after_suite records 53 passed EXIT=0 with failure_ids [] at 8af116bc20.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The widen is refused while the round's worker is live, which is the base behaviour: removing the `and not _live_repair_round(pointer)` clause at reckon/crew/claims.py:131-137 makes the CLI exit non-zero.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 246
+    },
+    {
+      "condition_to_fail": "The widen is accepted but the path is not recorded as added, so the run's claim does not move.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 252
+    },
+    {
+      "condition_to_fail": "The recorded widen does not reach the next attempt's fence composition, so the composed argv carries no writable bind for the widened directory; logs/negative-control.log:17 records this failing under the declared mutation.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 260
+    },
+    {
+      "condition_to_fail": "The admission is too broad: if live_repair_round returned True for a run with no open repair round, the widen would exit 0.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 277
+    },
+    {
+      "condition_to_fail": "The refusal survives but stops naming the live-worker reason, so a coordinator cannot tell it from a scope conflict.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 278
+    },
+    {
+      "condition_to_fail": "The widen is refused with an error yet still writes the path onto the pointer, leaving a claim no worker was fenced for.",
+      "file": "tests/test_a_running_repair_round_takes_scope_and_advice.py",
+      "line": 279
+    }
+  ],
+  "base_log_revision": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1707 (crew widen reaching widen_claim)",
+    "reckon/crew/recovery_repair_dispatch.py:706",
+    "reckon/crew/dispatch_sessions.py:1362"
+  ],
+  "completed_at": "2026-11-11T12:32:39.573Z",
+  "dispatched_at": "2026-11-11T12:23:01Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt/logs/head-widen-accepted.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: The revision header names bc6d7fd9 (the base) while the tree the command ran in is the fix commit d3ec9d07, and manifest.md:32 repeats the misstatement, so the reproduction pair reads as one revision both refusing and accepting, against the done-when's requirement that every log start with its own revision."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt/manifest.md",
+      "line": "26",
+      "severity": "non-blocking",
+      "text": "non-blocking: The done-when's 'ruff check and ruff format --check add no findings on the staged paths' clause has no recorded result in the manifest or the logs; running both in the reviewed worktree at 8af116bc20 is clean, so the property holds, but the run records no evidence for the clause it was gated on."
+    },
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 1150,
+      "severity": "non-blocking",
+      "text": "non-blocking: The `_attempt_kind(record, attempt) == \"resume\"` clause is unguarded, because collapsing live_repair_round to _repair_round_opened alone leaves both new tests green; the distinction its docstring states, a round that has ended under some other live attempt keeping its claim fixed, would regress silently."
+    }
+  ],
+  "head_log_revision": "8af116bc206d86c588a9460536e0df12ffdd3745",
+  "item_aggregate": 6,
+  "item_aggregate_note": "all six checklist items answered; five VERDICT lines plus the CALL_SITES line",
+  "item_verdicts": {
+    "diff": "Read commit by commit against bc6d7fd9: d3ec9d07 adds live_repair_round (reckon/crew/resumption.py:1135-1150) and the gate that consults it (reckon/crew/claims.py:71-82, 131-137), and 8af116bc20 adds only the evidence fragment; no other production file changes.",
+    "done_when": "The done-when at docs/plans/the-crew-does-its-own-bookkeeping.html:179 names four artifacts; tests/test_a_running_repair_round_takes_scope_and_advice.py:246-263 reads the composed launch rather than the pointer, logs/negative-control.log:8-17 shows the bind assertion reddening under the declared mutation, and logs/base-importing.log/logs/after-importing.log carry byte-identical failure and error id sets; the ruff clause is the one part the run records no result for.",
+    "goal": "The plan deliverable at docs/plans/the-crew-does-its-own-bookkeeping.html:179 requires a crew widen issued while a repair round is live to be recorded and the round's next attempt fenced with the widened path; reckon/crew/claims.py:131-137 admits it through reckon/crew/resumption.py:1135 and the path lands on node.write_paths, which dispatch_sessions.py:1362 feeds to the fence.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt/manifest.md: it reports status complete, 51 passed at the base arm and 53 at the head arm (EXIT=0 both), the two importing arms, the negative-control log, the reproduction pair and commits d3ec9d07f3/8af116bc20, and records no ruff result.",
+    "write_paths": "The manifest declares reckon/crew/claims.py, reckon/crew/dispatch_sessions.py, reckon/crew/resumption.py, the new test and the evidence fragment; the diff from bc6d7fd9 to 8af116bc20 changes four of those five and leaves dispatch_sessions.py untouched, which is correct because dispatch_sessions.py:1362 already composes the fence from node.write_paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_running_repair_round_takes_scope_and_advice.py:260 reddens when the widened path is dropped from the composed launch (shown at logs/negative-control.log:17) and :277 reddens if the admission widens, but no test covers a live attempt that is not the round's resume, so reckon/crew/resumption.py:1150 is unguarded.",
+    "evidence": "logs/after-suite.log and logs/negative-control.log carry the measure and its falsification, but logs/head-widen-accepted.log:1 stamps the base revision on a head-tree run and no result is recorded for the done-when's ruff clause.",
+    "fit": "The deferred import at reckon/crew/claims.py:75-82 follows the established cross-module idiom (reckon/crew/dispatch_sessions.py:1317) and both new names, live_repair_round and _live_repair_round, state what they measure with no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/claims.py:131-137 records the widen while the round's attempt is live and reckon/crew/dispatch_sessions.py:1362 composes the next attempt from the widened node.write_paths, which is exactly the deliverable at docs/plans/the-crew-does-its-own-bookkeeping.html:179.",
+    "reuse": "reckon/crew/resumption.py:1135-1150 composes the existing _repair_round_opened (:1123), _live_attempt_number (:1027) and _attempt_kind (:1071) rather than re-deriving them, and a search over reckon/crew for a predicate answering 'the live attempt is a repair round's resume' found no other owner.",
+    "scope_discipline": "Every path in the bc6d7fd9..8af116bc20 diff (reckon/crew/claims.py, reckon/crew/resumption.py, tests/test_a_running_repair_round_takes_scope_and_advice.py, the evidence fragment) is one of the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The plan deliverable at docs/plans/the-crew-does-its-own-bookkeeping.html:179 requires a crew widen issued while a repair round is live to be recorded and the round's next attempt fenced with the widened path; reckon/crew/claims.py:131-137 admits it through reckon/crew/resumption.py:1135 and the path lands on node.write_paths, which reckon/crew/dispatch_sessions.py:1362 feeds to the fence.\nVERDICT done_when: The done-when names a base-revision refusal log, a new test reading the composed launch, the unchanged refusal outside a round, a negative control and the importing arms; tests/test_a_running_repair_round_takes_scope_and_advice.py:246-263 reads the composed launch, logs/negative-control.log:17 shows the bind assertion reddening under the declared mutation, and logs/base-importing.log/logs/after-importing.log carry byte-identical failure id sets, while the ruff clause records no result.\nVERDICT write_paths: The manifest declares five write paths; the diff from bc6d7fd9 to 8af116bc20 changes reckon/crew/claims.py, reckon/crew/resumption.py, tests/test_a_running_repair_round_takes_scope_and_advice.py and the evidence fragment, all inside them, and leaves reckon/crew/dispatch_sessions.py untouched because dispatch_sessions.py:1362 already composes the fence from node.write_paths.\nVERDICT manifest: Read; it reports status complete, 51 passed at the base arm and 53 at the head arm with EXIT=0 both, the two importing arms with identical failure and error id sets on all_debug at -n 4, the negative-control log and the reproduction pair, and records no ruff result for the done-when's ruff clause.\nVERDICT diff: Read commit by commit against bc6d7fd9: d3ec9d07 adds live_repair_round at reckon/crew/resumption.py:1135-1150 and the gate consulting it at reckon/crew/claims.py:71-82 and 131-137, and 8af116bc20 adds only the evidence fragment; no other production file changes.\nCALL_SITES: reckon/crew_run_commands.py:1707, reckon/crew/recovery_repair_dispatch.py:706, reckon/crew/dispatch_sessions.py:1362\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/claims.py:131-137 records the widen while the round's attempt is live and reckon/crew/dispatch_sessions.py:1362 composes the next attempt from the widened node.write_paths, which is the deliverable at docs/plans/the-crew-does-its-own-bookkeeping.html:179.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-suite.log and logs/negative-control.log carry the measure and its falsification, but logs/head-widen-accepted.log:1 stamps the base revision on a head-tree run and no result is recorded for the done-when's ruff clause.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in the bc6d7fd9..8af116bc20 diff is one of the write paths declared in the manifest, and nothing the goal does not imply is carried.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_running_repair_round_takes_scope_and_advice.py:260 reddens when the widened path is dropped from the composed launch (logs/negative-control.log:17) and :277 reddens if the admission widens, but no test covers a live attempt that is not the round's resume, leaving reckon/crew/resumption.py:1150 unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: The deferred import at reckon/crew/claims.py:75-82 follows the idiom at reckon/crew/dispatch_sessions.py:1317, and live_repair_round and _live_repair_round are named for what they measure with no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/resumption.py:1135-1150 composes the existing _repair_round_opened (:1123), _live_attempt_number (:1027) and _attempt_kind (:1071) rather than re-deriving them, and a search over reckon/crew found no other owner of this predicate.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt/logs/head-widen-accepted.log:1 non-blocking: The revision header names bc6d7fd9 (the base) while the tree the command ran in is the fix commit d3ec9d07, and manifest.md:32 repeats the misstatement, so the reproduction pair reads as one revision both refusing and accepting against the done-when's requirement that every log start with its own revision.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt/manifest.md:26 non-blocking: The done-when's ruff check and ruff format --check clause has no recorded result; both are clean in the reviewed worktree at 8af116bc20, so the property holds but the run records no evidence for the clause it was gated on.\nFINDING reckon/crew/resumption.py:1150 non-blocking: The _attempt_kind check is unguarded, because collapsing live_repair_round to _repair_round_opened alone leaves both new tests green, so the docstring's distinction between a running round's resume and some other live attempt would regress silently.\n",
+  "review_run_id": "r-20261111T122127453937-review-of-a-widen-reaches-a-running-repair-round-s-next-attempt-8af116bc206d",
+  "reviewed_base_sha": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "reviewed_commits": [
+    "d3ec9d07f387c7a1aa84d6ce900c8dbd9bc4806f",
+    "8af116bc206d86c588a9460536e0df12ffdd3745"
+  ],
+  "reviewed_head_sha": "8af116bc206d86c588a9460536e0df12ffdd3745",
+  "reviewed_run_id": "r-20261111T115244704590-a-widen-reaches-a-running-repair-round-s-next-attempt",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T13:00:00Z",
+  "total": 109
+}
