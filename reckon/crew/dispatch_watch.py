@@ -31,6 +31,7 @@ from reckon.crew.refusals import (
 )
 from reckon.crew.runs import (
     WATCH_LOG_ENV,
+    WATCH_SEAT_LOST_EXIT,
     _process_start_time,
     _write_json,
     watch_lock_path,
@@ -242,7 +243,8 @@ def _watch_executable() -> str:
 # a path only the arming process held would reach the watcher on the route that
 # does not need it and be missing on the fleet route that does. Both routes are
 # covered once the supervisor exports it, whichever process runs the argv.
-_WATCH_PRODUCER_SUPERVISOR = """
+_WATCH_PRODUCER_SUPERVISOR = (
+    """
 import os
 import signal
 import subprocess
@@ -263,6 +265,8 @@ os.environ[sys.argv[1]] = sys.argv[2]
 first_delay = float(sys.argv[3])
 cap = float(sys.argv[4])
 steady_seconds = float(sys.argv[5])
+project = sys.argv[6]
+module_root = sys.argv[7]
 delay = first_delay
 crashes = 0
 producer = None
@@ -274,15 +278,28 @@ def stop(signum, _frame):
     if producer is not None and producer.poll() is None:
         producer.send_signal(signum)
 
+def seat_held_elsewhere(child_pid):
+    # Asked of the module rather than reimplemented here: which producer owns a
+    # project's seat, and whether that producer is still alive, is one answer
+    # defined in one place. An unreadable answer reads as "no other producer",
+    # which is the state that may be restarted.
+    sys.path.insert(0, module_root)
+    try:
+        from reckon.crew.dispatch_watch import watch_seat_held_elsewhere
+        return watch_seat_held_elsewhere(project, exclude_pid=child_pid)
+    except Exception:
+        return False
+
 for signum in (signal.SIGTERM, signal.SIGHUP, signal.SIGINT):
     signal.signal(signum, stop)
 
 while True:
     if stopping is not None:
         raise SystemExit(128 + stopping)
-    producer = subprocess.Popen(sys.argv[6:], stdin=subprocess.DEVNULL,
+    producer = subprocess.Popen(sys.argv[8:], stdin=subprocess.DEVNULL,
                                 stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
                                 close_fds=True)
+    child_pid = producer.pid
     started = time.monotonic()
     if stopping is not None and producer.poll() is None:
         producer.send_signal(stopping)
@@ -291,6 +308,11 @@ while True:
     producer = None
     if stopping is not None:
         raise SystemExit(128 + stopping)
+    if status == __SEAT_LOST_EXIT__ and seat_held_elsewhere(child_pid):
+        # Another live producer owns the project's seat. This one did not lose
+        # the seat by failing to renew it, it was taken, and starting it again
+        # would contest the seat the fleet already holds.
+        raise SystemExit(status)
     if not (1 <= status <= 127 or status < 0):
         raise SystemExit(status)
     if ran_seconds >= steady_seconds:
@@ -304,9 +326,37 @@ while True:
         raise SystemExit(status)
     time.sleep(delay)
     delay = min(delay * 2, cap)
-""".replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES)).replace(
-    "__IDENTITY_PREFIX__", repr(SESSION_IDENTITY_ENV_PREFIX)
+""".replace("__IDENTITY_NAMES__", repr(SESSION_IDENTITY_ENV_NAMES))
+    .replace("__IDENTITY_PREFIX__", repr(SESSION_IDENTITY_ENV_PREFIX))
+    .replace("__SEAT_LOST_EXIT__", repr(WATCH_SEAT_LOST_EXIT))
 )
+
+
+def watch_seat_held_elsewhere(project: str, *, exclude_pid: int | None = None) -> bool:
+    """Whether a producer other than ``exclude_pid`` holds the project's seat.
+
+    A record naming another host's producer is taken at its word: that pid is
+    not in this host's table, and the lease is the only evidence available. A
+    record naming this host must name a process that is still running, because
+    the record a producer leaves behind is the commonest thing here — the
+    registration outlives the process that wrote it, and reading that as a
+    live holder would decline every restart the seat actually needs.
+    """
+    from reckon.crew.host_lease import local_host
+
+    state = watch_state(project)
+    if not state["watcher_live"]:
+        return False
+    watcher = state["watcher"] or {}
+    holder_pid = watcher.get("pid")
+    if holder_pid is None:
+        return False
+    if exclude_pid is not None and str(holder_pid) == str(exclude_pid):
+        return False
+    holder_host = str(watcher.get("host") or "")
+    if holder_host and holder_host != local_host():
+        return True
+    return _process_start_time(holder_pid) is not None
 
 
 def _watch_producer_argv(project: str) -> list[str]:
@@ -326,6 +376,8 @@ def _watch_producer_argv(project: str) -> list[str]:
         str(FIRST_BACKOFF_SECONDS),
         str(BACKOFF_CAP_SECONDS),
         str(STEADY_RUN_SECONDS),
+        project,
+        str(Path(__file__).resolve().parents[2]),
         _watch_executable(),
         "crew",
         "watch",
