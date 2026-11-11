@@ -6,11 +6,13 @@ recorded, so a promotion's ledger read cost one remote stat per run. On a shared
 filesystem that is paid in D-state waits — a promotion was measured spending its
 minutes in ``stat`` beneath ``_run_snapshot``.
 
-A per-project write-generation file stands in for the walk. Every ledger write
-path bumps it, and a read whose generation still matches the one its index
-recorded reuses the stamps the index already holds. A read whose generation
-differs, or whose generation file is absent, walks the documents exactly as it
-did before, so a ledger this code has never written stays correct.
+A per-project write generation stands in for the walk. It is the store's own
+file under the crew home, keyed by the project alone, so every process agrees
+on it whichever index directory it resolves. Every ledger write path bumps it,
+and a read whose generation still matches the one its index recorded reuses the
+stamps the index already holds. A read whose generation differs, or whose index
+recorded none, walks the documents exactly as it did before, so a ledger this
+code has never written stays correct.
 
 These tests measure the claim at two populations, drive every write path and
 check the next read sees the row it wrote, and prove both rebuild conditions
@@ -21,13 +23,22 @@ from __future__ import annotations
 
 import contextlib
 import json
+import subprocess
 from pathlib import Path
 
 import pytest
 
-from reckon import ledger
+from reckon import _store, ledger
 
 PROJECT = "demo"
+
+
+@pytest.fixture(autouse=True)
+def _config_home_inside_the_case(tmp_path, monkeypatch):
+    """Keep the generation file — which lives under the config home — in the case."""
+    home = tmp_path / "config-home"
+    home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(home))
 
 
 def _run_record(index: int, **extra: object) -> dict[str, object]:
@@ -96,13 +107,12 @@ def test_a_warm_read_makes_the_same_stat_calls_at_every_population(tmp_path):
 def test_a_run_file_write_bumps_the_generation_and_the_next_read_sees_it(tmp_path):
     root = _build(tmp_path / "repo", 2)
     ledger.load(PROJECT, root)
-    before = ledger.ledger_generation(PROJECT, root)
-    assert before is not None, "a run file write recorded no generation"
+    before = ledger.ledger_generation(PROJECT)
 
     ledger.write_run_file(PROJECT, _run_record(0, gate="failed"), root)
 
-    after = ledger.ledger_generation(PROJECT, root)
-    assert after is not None and after != before
+    after = ledger.ledger_generation(PROJECT)
+    assert after != before
     data, _version = ledger.load(PROJECT, root)
     gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
     assert gates[_run_record(0)["run_id"]] == "failed"
@@ -111,13 +121,13 @@ def test_a_run_file_write_bumps_the_generation_and_the_next_read_sees_it(tmp_pat
 def test_an_appended_run_bumps_the_generation_and_the_next_read_sees_it(tmp_path):
     root = _build(tmp_path / "repo", 2)
     ledger.load(PROJECT, root)
-    before = ledger.ledger_generation(PROJECT, root)
+    before = ledger.ledger_generation(PROJECT)
 
     fresh = _run_record(99, node="another-node")
     ledger.append_run(PROJECT, fresh, root=root, allow_create=True)
 
-    after = ledger.ledger_generation(PROJECT, root)
-    assert after is not None and after != before
+    after = ledger.ledger_generation(PROJECT)
+    assert after != before
     data, _version = ledger.load(PROJECT, root)
     assert fresh["run_id"] in {row["run_id"] for row in data["runs"]}
 
@@ -127,7 +137,7 @@ def test_an_aggregate_write_bumps_the_generation_and_the_next_read_sees_it(
 ):
     root = _build(tmp_path / "repo", 2)
     _data, version = ledger.load(PROJECT, root)
-    before = ledger.ledger_generation(PROJECT, root)
+    before = ledger.ledger_generation(PROJECT)
 
     ledger.write(
         PROJECT,
@@ -136,8 +146,8 @@ def test_an_aggregate_write_bumps_the_generation_and_the_next_read_sees_it(
         root,
     )
 
-    after = ledger.ledger_generation(PROJECT, root)
-    assert after is not None and after != before
+    after = ledger.ledger_generation(PROJECT)
+    assert after != before
     data, _version = ledger.load(PROJECT, root)
     assert [member["id"] for member in data["members"]] == ["new-member"]
     assert len(data["runs"]) == 2, "the roster write disturbed the run documents"
@@ -147,15 +157,18 @@ def test_a_rolled_back_run_file_bumps_the_generation(tmp_path):
     """A restore puts a document back, so it must invalidate the stamps too."""
     root = _build(tmp_path / "repo", 2)
     ledger.load(PROJECT, root)
-    before = ledger.ledger_generation(PROJECT, root)
     target = ledger.run_path(PROJECT, str(_run_record(0)["run_id"]), root)
     prior = target.read_text(encoding="utf-8")
     ledger.write_run_file(PROJECT, _run_record(0, gate="failed"), root)
 
+    # Read the generation immediately before the restore: the write above moved
+    # it too, and a value captured before that write could not attribute the
+    # change to the restore.
+    before = ledger.ledger_generation(PROJECT)
     ledger._restore_run_files([(target, prior)], PROJECT, root)
+    after = ledger.ledger_generation(PROJECT)
 
-    after = ledger.ledger_generation(PROJECT, root)
-    assert after is not None and after != before
+    assert after != before
     data, _version = ledger.load(PROJECT, root)
     gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
     assert gates[_run_record(0)["run_id"]] == "passed"
@@ -165,7 +178,7 @@ def test_with_no_generation_file_a_read_rebuilds_and_finds_the_change(tmp_path):
     """An absent generation is read as "walk": the edit it never saw is returned."""
     root = _build(tmp_path / "repo", 20)
     ledger.load(PROJECT, root)
-    ledger.ledger_generation_path(PROJECT, root).unlink()
+    ledger.ledger_generation_path(PROJECT).unlink()
 
     target = ledger.run_path(PROJECT, str(_run_record(3)["run_id"]), root)
     changed = json.loads(target.read_text(encoding="utf-8"))
@@ -195,6 +208,83 @@ def test_a_document_added_without_a_bump_is_still_seen(tmp_path):
 
     data, _version = ledger.load(PROJECT, root)
     assert added["run_id"] in {row["run_id"] for row in data["runs"]}
+
+
+def test_a_write_is_seen_through_another_index_directory(tmp_path, monkeypatch):
+    """One generation per project, not one per index directory.
+
+    The index directory falls back to the user cache when the configured one
+    cannot be written, so two processes — or two configurations — can publish
+    indexes in different directories. They must agree on the generation: a
+    writer publishing through one leaves the other's index unchanged, and only
+    a shared key tells the reader to walk its documents again.
+    """
+    root = _build(tmp_path / "repo", 3)
+    run_id = str(_run_record(0)["run_id"])
+
+    monkeypatch.setattr(ledger, "_index_directory", lambda: tmp_path / "configured")
+    configured_index = ledger._run_index_path(PROJECT, root)
+    configured_generation_path = ledger.ledger_generation_path(PROJECT)
+    ledger.load(PROJECT, root)
+
+    monkeypatch.setattr(ledger, "_index_directory", lambda: tmp_path / "fallback")
+    fallback_index = ledger._run_index_path(PROJECT, root)
+    ledger.load(PROJECT, root)
+    assert fallback_index != configured_index, "the two configurations share an index"
+    assert ledger.ledger_generation_path(PROJECT) == configured_generation_path, (
+        "the generation file moves with the index directory, so the two "
+        "configurations cannot see each other's writes"
+    )
+
+    ledger.write_run_file(PROJECT, _run_record(0, gate="failed"), root)
+
+    monkeypatch.setattr(ledger, "_index_directory", lambda: tmp_path / "configured")
+    data, _version = ledger.load(PROJECT, root)
+    gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
+    assert gates[run_id] == "failed", "the write from the other directory was missed"
+
+
+def _seed_aggregate(root: Path, rows: list[dict[str, object]]) -> None:
+    path = root / "docs" / "state" / PROJECT / "crew.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _store._write_json_envelope(
+        path,
+        PROJECT,
+        ledger.LEDGER_SLUG,
+        {"members": [], "runs": rows, "holds": []},
+        0,
+    )
+
+
+def test_a_run_split_is_seen_by_the_next_read(tmp_path):
+    """The split writes documents and bumps once, so the next read sees them."""
+    root = tmp_path / "repo"
+    rows = [_run_record(index) for index in range(3)]
+    _seed_aggregate(root, rows)
+    for command in (
+        ["init", "-q"],
+        ["add", "docs"],
+        [
+            "-c",
+            "user.name=test",
+            "-c",
+            "user.email=test@example.invalid",
+            "commit",
+            "-qm",
+            "seed",
+        ],
+    ):
+        subprocess.run(["git", "-C", str(root), *command], check=True)
+
+    data, _version = ledger.load(PROJECT, root)
+    assert len(data["runs"]) == 3, "the seeded aggregate was not read"
+
+    entry = ledger._split_project_runs(PROJECT, root / "docs", dry_run=False)
+    assert entry["written"] == 3, entry
+
+    data, _version = ledger.load(PROJECT, root)
+    gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
+    assert gates == {str(row["run_id"]): "passed" for row in rows}
 
 
 @pytest.mark.parametrize("count", [20, 200])
