@@ -1,0 +1,43 @@
+<article class="r-evidence-fragment" id="attribute-a-promotions-time-by-stage">
+  <h2 id="attribute-a-promotions-time-by-stage-title">Attribute a promotion's time by stage (partial)</h2>
+  <p id="attribute-a-promotions-time-by-stage-outcome">
+    A no-code promotion (<code>crew complete --gate not-run</code>) was profiled
+    from process start with <code>py-spy record --format raw</code> at two
+    populations of the store it actually reads &mdash; the committed ledger, at
+    the live 7&nbsp;787 run documents and at one twentieth of that &mdash; with
+    the node at load 70&ndash;102, and its filesystem calls counted with
+    <code>strace -f -c -e trace=%file</code>. A first round at 300 and
+   22&nbsp;304 seeded run <em>directories</em> showed that population is not the
+    driver. The implement-landing verb is still unprofiled, so the plan's
+    both-verbs measure is unmet.
+  </p>
+  <table id="attribute-a-promotions-time-by-stage-stages">
+    <caption>
+      Deepest reckon frame under <code>_complete_locked</code>. 59.5&nbsp;% of
+      the command's main-thread samples are inside the promotion body at the
+      full ledger (62.6&nbsp;% at one twentieth); the rest is import.
+    </caption>
+    <thead>
+      <tr><th>stage</th><th>7&nbsp;787 ledger rows</th><th>389 ledger rows</th><th>reading</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>_index_payload</code></td><td>49.8&nbsp;%</td><td>7.1&nbsp;%</td><td>linear in ledger rows &mdash; the only stage that grows</td></tr>
+      <tr><td>plan-body parse (<code>_authored_child_count</code>, <code>read_state</code>, <code>_comment_elements</code>, <code>_structural_spans</code>)</td><td>23.1&nbsp;%</td><td>71.1&nbsp;%</td><td>flat in rows; a fixed ~7&nbsp;s per landing</td></tr>
+      <tr><td><code>_migrate_runs</code></td><td>3.0&nbsp;%</td><td>2.9&nbsp;%</td><td>per-call fixed cost</td></tr>
+      <tr><td><code>_run_snapshot</code></td><td>2.7&nbsp;%</td><td>absent</td><td>appears only with ledger history; §64's subject</td></tr>
+      <tr><td>wall clock</td><td>54&nbsp;s</td><td>23&nbsp;s</td><td>&times;2.3 for &times;20 rows</td></tr>
+      <tr><td>filesystem calls</td><td>163&nbsp;532</td><td>37&nbsp;403</td><td>&times;4.4 for &times;20 rows</td></tr>
+    </tbody>
+  </table>
+  <p id="attribute-a-promotions-time-by-stage-findings">
+    Three findings carry into proposals. Reading the ledger index to append one
+    row is the whole of the promotion's growth, and at 7&nbsp;787 rows it is
+    half the promotion. The plan-body parse is a constant that dominates a small
+    ledger and would dominate nothing once the index read is bounded. And
+    40.5&nbsp;% of the command's main-thread samples sit outside
+    <code>_complete_locked</code>, in interpreter start-up and module import
+    &mdash; the fixed cost a profiler attached late cannot see, and why the
+    plan's three late samples each caught a different stage. Five proposed
+    sections, each with write paths and a done-when, are in the run note.
+  </p>
+</article>
