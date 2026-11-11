@@ -1,0 +1,80 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T14:49:14.070Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:15:47.110770+00:00"
+    },
+    "goal_fidelity": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:15:20.757317+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:16:38.716746+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T14:38:31Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:13:38.080358+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:14:03.489027+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:14:36.602669+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+      "recorded_at": "2026-11-11T15:14:59.242369+00:00"
+    }
+  },
+  "findings": [
+    {
+      "severity": "blocking",
+      "text": "reckon/crew_follow_commands.py:2804 blocking: the guard compares a counter bucket against a raw state word. _follow_pane_word (line 2720) maps a snapshot row's classification through ticker._bucket_of, which returns the counter label ('waiting' for 'queued', 'halted' for 'stalled', 'working' for 'dispatched'), while the delivered record holds the raw to_state note_delivered writes and the pane draws through _display_state ('queued', 'stalled', 'dispatched'). Any state whose bucket label differs from its own word therefore reads as moved and is dropped from the frame. Reproduced at 91b0f26ee1 against a temporary crew home holding one queued run: _follow_live_snapshot_rows returns [{'state': 'queued'}], _follow_pane_word('queued') returns 'waiting', the owner ticker._display_state('queued') returns 'queued', and _follow_resume_output with the record production writes ({'r-q': 'queued'}) returns '' \u2014 a blank pane, the exact defect this node exists to remove \u2014 while the invented record {'r-q': 'waiting'} returns the frame."
+    },
+    {
+      "severity": "blocking",
+      "text": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:172 blocking: the case's expected delivered record is built by calling follow_module._follow_pane_word over the same _follow_live_snapshot_rows derivation the guard compares against, so both sides of the comparison move together and the suite is green whatever word production records. Writing the round-trip through runs.write_delivered/read_delivered changes the storage, not the independence. This is the tautology the preceding review recorded as non-blocking at the same line, and it is what lets the blocking finding above pass a green gate: substituting the production word 'queued' for the queued run reddens test_a_pipe_rearm_shows_the_sessions_live_work, as the reproduction above shows, and no case supplies it."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "reckon/crew_follow_commands.py:2720 non-blocking: _follow_pane_word re-derives a capability the repository already owns. reckon/crew/ticker.py:_pane_word (line 1432) and ticker._display_state are the declared derivation of 'the word the pane draws', and reckon/crew_follow_commands.py:_follow_gap_rows (line 1390) with _replayed_row_repeats_the_pane (line 1350) already answers which owned runs moved since the pane last drew them, on that same word and against the same stored record. The addition duplicates both rather than extending either, and answers the question with a counter bucket instead."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "manifest of r-20261111T115637922884-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor, evidence_inputs: the stated rule is inverted against the landed code. It says 'a run already shown at its current word is left out of the frame, a run the pane has not shown is named'; the guard at crew_follow_commands.py:2801 selects exactly the opposite set. A reader auditing the repair against its own recorded rule would conclude the wrong behaviour was intended."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261111T143414075228-review-of-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-91b0f26ee1b1",
+  "reviewed_base_sha": "9c2928cbb9597a3e7fdec218d4a452dbf27fe5e2",
+  "reviewed_head_sha": "91b0f26ee1b178ad799a9141b14a4334df39fdf3",
+  "reviewed_run_id": "r-20261111T115637922884-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+  "scores": {
+    "durability": 7,
+    "evidence": 11,
+    "fit": 12,
+    "goal_fidelity": 8,
+    "reuse": 4,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:26:12.793706+00:00",
+  "total": 60
+}
