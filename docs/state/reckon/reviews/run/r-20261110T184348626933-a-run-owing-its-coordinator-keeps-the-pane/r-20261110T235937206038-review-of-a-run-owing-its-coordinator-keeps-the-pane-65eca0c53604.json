@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T00:19:45.317Z",
+  "dispatched_at": "2026-11-11T00:02:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "214",
+      "severity": "blocking",
+      "text": "the headless-review-duty skip covers review-ready as well as review-missing, but a tier-none run's duty is built at reckon/crew/obligations.py:1900-1914 by _live_item, which never sets head, so a delivered docs-only run awaiting promotion reads as no work and its session's pane settles for the whole pre-grace window while the obligations view still lists that same review-ready promotion; dea3224b0c held this case, so 1407b3eed3 regresses it."
+    },
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "145",
+      "severity": "non-blocking",
+      "text": "the scoring exemption condition is restated here rather than shared with the owner's branch at reckon/crew/obligations.py:3126-3139, so a change to the view's exemption drifts from the pane's copy and the two readers this module's docstring promises cannot disagree."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the done_when's clause over the test files importing reckon.crew.station_subscriber or reckon.crew.session_host is measured over two files (tests/test_a_follower_stays_while_a_review_is_owed.py and tests/test_session_host.py) of the 22 test files an AST scan finds importing those modules, and no ruff result is recorded for the staged paths."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is \"A run that owes its coordinator an action keeps the pane\"; reckon/crew/station_subscriber.py:97-227 extends the pane's duty reader with the view's two scoring exemptions and a headless-review exemption, and tests/test_a_follower_stays_while_a_review_is_owed.py:334-400 now settles the pane on promotion rather than on the stored review.\nVERDICT done_when: the done_when asks for the five keep-live cases, a promoted-case settle, the SessionHost re-arm case, a negative control, no added failures against the base revision over the test files importing station_subscriber or session_host, and clean ruff on the staged paths; arms-base.log (28 passed, EXIT=0 at 86493937b5) and arms-head.log (37 passed, EXIT=0 at 1407b3eed3 with the test edits that are exactly 65eca0c53) record the first four, but the two files measured are 2 of the 22 test files that import the changed modules by AST, and no ruff result is recorded.\nVERDICT write_paths: the node declared reckon/crew/station_subscriber.py and tests/test_a_run_owing_its_coordinator_keeps_the_pane.py and was granted tests/test_a_follower_stays_while_a_review_is_owed.py; git diff --stat dea3224b0c..65eca0c536 changes exactly those three files, all inside the declared and granted scope.\nVERDICT manifest: the manifest records both arms, their logs and the negative control, names the two commits, and explains why tests/test_session_host.py was not edited; its after_suite revision is 1407b3eed3 rather than the head 65eca0c53, which holds because 65eca0c53 is exactly the uncommitted test edits the head arm measured (git diff --stat 1407b3eed3..65eca0c53 shows only tests/test_a_follower_stays_while_a_review_is_owed.py).\nVERDICT diff: read commit by commit from dea3224b0c: 1407b3eed3 deletes delivered_run_owes_review, applies the view's reviews_in_flight and refused-delivered-review exemptions in terminal_run_duty_items (reckon/crew/station_subscriber.py:137-153), adds the headless review-duty skip at :209-216, and publishes the pass snapshot through obligations._VIEW_LIVE_POINTERS at :300-335; 65eca0c53 changes only the two settle cases and adds the stored-but-unpromoted case.\nCALL_SITES: reckon/crew/station.py:524 (live_work_populations), reckon/crew/station_subscriber.py:266 (population_has_live_work -> live_work_populations), reckon/crew_follow_commands.py:605 (population_has_live_work), reckon/crew/session_host.py:420 (population_has_live_work)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:209-216 settles the pane over a review-ready duty that carries no head, which is the duty a tier-none delivered run raises at reckon/crew/obligations.py:1900-1914, so one class of owed promotion no longer keeps the pane.\nSCORE evidence: 13\nJUSTIFICATION evidence: arms-base.log and arms-head.log record 28 and 37 passed at EXIT=0 over two test files that do reach the change, but the done_when's importing-test-files clause is measured over 2 of 22 such files and ruff on the staged paths is unrecorded.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat dea3224b0c..65eca0c536 touches only reckon/crew/station_subscriber.py, tests/test_a_follower_stays_while_a_review_is_owed.py and tests/test_a_run_owing_its_coordinator_keeps_the_pane.py.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_run_owing_its_coordinator_keeps_the_pane.py:246-260 asserts the pane and the obligations view name the same owing run ids against the view's own output, which reddens if the reviews_in_flight exemption is removed, but no case covers the tier-none review-ready duty the headless skip drops.\nSCORE fit: 17\nJUSTIFICATION fit: the added constant and branches at reckon/crew/station_subscriber.py:80 and :137-153 follow the module's idiom of local obligations imports, mapping reads and private-helper reuse, with no plan label, ticket id or attribution.\nSCORE reuse: 13\nJUSTIFICATION reuse: the change reuses obligations._live_review_runs, _refused_delivered_review and the _VIEW_LIVE_POINTERS publication, but restates the view's scoring exemption condition at reckon/crew/station_subscriber.py:145-151 instead of sharing the owner's branch at reckon/crew/obligations.py:3126-3139.\nFINDING reckon/crew/station_subscriber.py:214 blocking: the headless-review-duty skip covers review-ready as well as review-missing, but a tier-none run's duty is built at reckon/crew/obligations.py:1900-1914 by _live_item, which never sets head, so a delivered docs-only run awaiting promotion reads as no work and its session's pane settles for the whole pre-grace window while the obligations view still lists that same review-ready promotion; dea3224b0c held this case, so 1407b3eed3 regresses it.\nFINDING reckon/crew/station_subscriber.py:145 non-blocking: the scoring exemption condition is restated here rather than shared with the owner's branch at reckon/crew/obligations.py:3126-3139, so a change to the view's exemption drifts from the pane's copy and the two readers this module's docstring promises cannot disagree.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md:21 non-blocking: the done_when's clause over the test files importing reckon.crew.station_subscriber or reckon.crew.session_host is measured over two files (tests/test_a_follower_stays_while_a_review_is_owed.py and tests/test_session_host.py) of the 22 test files an AST scan finds importing those modules, and no ruff result is recorded for the staged paths.\n",
+  "review_run_id": "r-20261110T235937206038-review-of-a-run-owing-its-coordinator-keeps-the-pane-65eca0c53604",
+  "reviewed_base_sha": "dea3224b0c7b5d3e5f9d692887c86575f4a4ce21",
+  "reviewed_head_sha": "65eca0c53604a108117a5ea23ae828a230e3f9e6",
+  "reviewed_run_id": "r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane",
+  "scores": {
+    "durability": 14,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:35:24.298297+00:00",
+  "total": 90
+}
