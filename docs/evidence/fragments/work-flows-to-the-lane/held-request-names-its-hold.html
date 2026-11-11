@@ -33,7 +33,7 @@
     <ul>
       <li id="held-request-names-its-hold-case-decision">A section held by an open decision and declaring no wait: the dispatch answer carries <code>hold: ["decision:route"]</code> and a reason naming it, the pointer's recorded hold carries the same, and the reason no longer claims an upstream is missing.</li>
       <li id="held-request-names-its-hold-case-gate">A section held by a gate whose verdict is empty: the answer and the recorded hold carry <code>gate:ship</code>.</li>
-      <li id="held-request-names-its-hold-case-wait">A section that does declare a wait: the answer still names that wait's ref and keeps the wording about waits, which is the case it describes.</li>
+      <li id="held-request-names-its-hold-case-wait">A section that does declare a wait: the answer still names that wait's ref and keeps the wording about waits, which is the case it describes, and the hold is recorded under its own verdict, <code>held-on-waits</code>, rather than as <code>held-on-readiness</code>.</li>
       <li id="held-request-names-its-hold-case-verdict">An admission pass over a decision-held request records a <code>held-on-readiness</code> verdict row carrying the same names, where before the pass recorded nothing for a request that never reached the queue it launches from.</li>
       <li id="held-request-names-its-hold-case-pass">A dispatched readiness hold survives the pass that re-reads waits, so the first admission pass no longer releases a decision-held request to launch.</li>
     </ul>

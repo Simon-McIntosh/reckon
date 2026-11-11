@@ -2410,11 +2410,12 @@ def _record_readiness_verdicts(
             cache=readonly,
         )
         allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        verdict = section_hold_verdict(hold)
         row = _verdict_row(
             pointer,
             allowance=allowance,
             allowance_source=source,
-            verdict="held-on-readiness",
+            verdict=verdict,
             detail=hold["detail"],
         )
         row["reason"] = hold["reason"]
@@ -2423,7 +2424,7 @@ def _record_readiness_verdicts(
         _record_pass_hold(
             pointer,
             {
-                "verdict": "held-on-readiness",
+                "verdict": verdict,
                 "reason": hold["reason"],
                 "detail": hold["detail"],
                 "hold": list(hold["names"]),
@@ -3831,6 +3832,23 @@ def section_hold(
             + ", and its waits have not landed"
         )
     return {"names": names, "detail": ", ".join(names), "reason": reason}
+
+
+def section_hold_verdict(hold: Mapping[str, Any]) -> str:
+    """The verdict a hold is recorded under.
+
+    A hold naming an authored blocker on the section is a readiness hold: the
+    work is waiting on something its plan has to settle. A hold whose every
+    name is a wait the section declares is waiting on an upstream, which is a
+    different thing for a reader to act on, so it is recorded as its own
+    verdict rather than as readiness.
+    """
+    kinds = {
+        str(name).split(":", 1)[0] for name in hold.get("names") or () if str(name)
+    }
+    if kinds & set(SECTION_HOLD_KINDS):
+        return "held-on-readiness"
+    return "held-on-waits"
 
 
 def record_section_hold(

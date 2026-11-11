@@ -148,6 +148,7 @@ def test_a_dispatch_held_by_an_open_decision_names_the_decision(
 
     pointer = _queued(repo)
     recorded = queue_admission.recorded_pass_hold(pointer)
+    assert recorded.get("verdict") == "held-on-readiness", recorded
     assert f"decision:{DECISION}" in recorded.get("hold", ()), recorded
     assert DECISION in str(recorded.get("reason") or ""), recorded
     assert "waits have not landed" not in str(recorded.get("reason") or "")
@@ -175,6 +176,8 @@ def test_a_dispatch_held_by_a_declared_wait_names_that_wait(repo: Path) -> None:
 
     assert held.queued["hold"] == [GATE_PLAN_SECTION], held.queued
     assert held.queued["reason"] == "this section's waits have not landed"
+    recorded = queue_admission.recorded_pass_hold(_queued(repo))
+    assert recorded.get("verdict") == "held-on-waits", recorded
 
 
 def test_the_admission_verdict_row_of_the_decision_case_names_it(repo: Path) -> None:

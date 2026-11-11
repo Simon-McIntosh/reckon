@@ -2354,7 +2354,7 @@ def dispatch(
         queue_admission.record_section_hold(
             str(queued["run_id"]),
             hold,
-            verdict="held-on-readiness",
+            verdict=queue_admission.section_hold_verdict(hold),
         )
         held = LaneHeld({"detail": hold["detail"], "reason": hold["reason"]})
         held.queued = {
