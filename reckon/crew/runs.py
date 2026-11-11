@@ -1648,12 +1648,16 @@ class _SharedWritePaths(frozenset[str]):
         normalized = _repository_relative_scope(path, self.repo)
         if normalized is None or self.exclusive_pattern(normalized):
             return False
-        absolute = self.repo / normalized
-        if absolute.is_dir():
-            return False
         if super().__contains__(normalized):
             return True
-        if not any(_scope_contains(root, normalized) for root in self.roots):
+        absolute = self.repo / normalized
+        under_root = any(_scope_contains(root, normalized) for root in self.roots)
+        if absolute.is_dir():
+            # A directory claim under a shared root shares as the files beneath
+            # it do: the worktree isolates the edits and the merge reconciles
+            # them. An exclusive region was refused above.
+            return under_root
+        if not under_root:
             return False
         # An absent suffixless path names a directory, matching dispatch's
         # directory-claim interpretation; existing extensionless files are files.
@@ -1721,8 +1725,10 @@ def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
     """Read the project's one file-sharing policy for every claim comparison.
 
     ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
-    repository-relative roots shareable, with ``exclusive_patterns`` taking
-    precedence over both declarations. Directory claims remain exclusive.
+    repository-relative roots shareable, and a directory under such a root
+    shares as the files beneath it do, because the worktree isolates the edits and
+    the merge reconciles them. ``exclusive_patterns`` takes precedence over both
+    declarations, so a claim that is, contains, or sits under one still fences.
     Missing or malformed declarations share nothing.
     """
     if not project:

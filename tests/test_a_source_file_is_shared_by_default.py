@@ -208,9 +208,12 @@ def test_root_membership_respects_file_and_directory_boundaries(
     assert SOURCE in shared
     assert "pkg/extensionless" in shared
     assert "pkg/future.py" in shared
-    assert "pkg" not in shared
+    # A directory under a shared root shares as the files beneath it do, so a
+    # claim on it admits a peer; an absent suffixless path is still read as a
+    # directory claim rather than a file, and is not itself a shared file.
+    assert "pkg" in shared
+    assert "pkg/directory.py" in shared
     assert "pkg/future-directory" not in shared
-    assert "pkg/directory.py" not in shared
     assert "pkg-other/source.py" not in shared
     assert "../outside.py" not in shared
 

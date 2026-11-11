@@ -37,6 +37,8 @@ HOLDER_PATHS = [
 ]
 #: The request's declared scope, as recorded for the held request.
 REQUEST_PATHS = ["reckon/crew/picker/lane_context.py"]
+#: The holder's package directory, claimed on its own by two peers.
+DIRECTORY = "reckon/crew/picker"
 
 
 @pytest.fixture()
@@ -154,6 +156,55 @@ def _launch_refusal(
     return ""
 
 
+def _claims(repo: Path, paths: list[str]) -> list[_RepositoryScopeClaim]:
+    """The holder's claims, as the launch check and the conflict report read them."""
+    return [
+        _RepositoryScopeClaim(
+            project=PROJECT,
+            repository=repo.resolve(),
+            run_id="r-holder",
+            node_id="r-holder",
+            path=path,
+            absolute_path=(repo / path).resolve(),
+            declared_path=path,
+            registered_at="2026-11-11T08:02:03Z",
+            launched=True,
+            binding=True,
+        )
+        for path in paths
+    ]
+
+
+def _conflict_rows(
+    repo: Path, holder_paths: list[str], request_paths: list[str]
+) -> list[dict[str, Any]]:
+    """The dispatch conflict report's answer for the same pair."""
+    node = crew.TaskNode(
+        id="r-request",
+        plan="plan-a",
+        section="dispatch",
+        goal="edit one declared file",
+        done_when="the conflict report agrees with admission",
+        write_paths=list(request_paths),
+        spec_level="exact",
+        time_budget="20m",
+    )
+    return dispatch_claims._live_conflict_rows(
+        node,
+        project=PROJECT,
+        repo=repo.resolve(),
+        authority={"repositories": [repo.resolve()]},
+        claims=_claims(repo, holder_paths),
+    )
+
+
+def test_two_claims_on_one_shared_directory_share(repository: Path) -> None:
+    shared = runs._shared_write_paths(PROJECT, repository)
+
+    assert DIRECTORY in shared
+    assert runs._claim_paths_share(shared, DIRECTORY, DIRECTORY)
+
+
 def test_the_reproduced_pair_is_admitted(repository: Path) -> None:
     hold = _hold(repository, HOLDER_PATHS, REQUEST_PATHS)
 
@@ -164,6 +215,14 @@ def test_the_reproduced_pair_passes_the_launch_check(repository: Path) -> None:
     refusal = _launch_refusal(repository, HOLDER_PATHS, REQUEST_PATHS)
 
     assert refusal == "", refusal
+
+
+def test_the_conflict_report_agrees_with_admission(repository: Path) -> None:
+    assert _conflict_rows(repository, HOLDER_PATHS, REQUEST_PATHS) == []
+
+    reported = _conflict_rows(repository, [EXCLUSIVE], [EXCLUSIVE])
+
+    assert [row["claimed_path"] for row in reported] == [EXCLUSIVE], reported
 
 
 def test_the_same_pair_is_held_by_an_exclusive_pattern(repository: Path) -> None:
