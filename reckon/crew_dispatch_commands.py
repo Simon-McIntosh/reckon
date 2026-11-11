@@ -1194,6 +1194,16 @@ def _queue_dispatch_batch(
     metavar="REQUEST-ID",
     help="Wait for a queued request to land; repeat for each request.",
 )
+@click.option(
+    "--waits-only-after",
+    is_flag=True,
+    help=(
+        "Wait on the --after requests alone. The section's declared waits, "
+        "the plan's depends_on and the section's gates are not inherited, so "
+        "a node filed under a section is not parked behind the section's own "
+        "upstream. Refused without at least one --after."
+    ),
+)
 @click.option("--role", default="implement", show_default=True, help="Routing role.")
 @click.option(
     "--backend",
@@ -1493,6 +1503,7 @@ def crew_dispatch(
     brief_path,
     section,
     after_requests,
+    waits_only_after,
     role,
     backend,
     model_name,
@@ -1551,6 +1562,14 @@ def crew_dispatch(
     ``launch`` kind.
     """
     crew_module, flight_module = _crew_modules()
+    if waits_only_after and not after_requests:
+        # Refused before anything is read or written, so the flag can never
+        # make a request wait on nothing by accident: a request waiting only
+        # on refs it does not name waits on nothing at all.
+        raise click.UsageError(
+            "--waits-only-after needs at least one --after request; without "
+            "one the request waits on nothing"
+        )
     if batch_path and dry_run:
         # A batch queues each entry as it reads it, so a dry run of a batch
         # would store real requests. Refused before anything is read or written.
@@ -1676,6 +1695,7 @@ def crew_dispatch(
         plan=plan_slug,
         section=section,
         after=list(after_requests),
+        waits_only_after=waits_only_after,
         brief=str(brief_path) if brief_path else "",
         role=role,
         spec_level=spec_level or "",
