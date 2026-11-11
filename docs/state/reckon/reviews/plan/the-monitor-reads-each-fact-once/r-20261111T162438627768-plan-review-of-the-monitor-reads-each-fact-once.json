@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:36:34.556Z",
+  "dispatched_at": "2026-11-11T16:26:47Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:585",
+      "id": "wiring-1",
+      "reason": "without the build line the section cannot be dispatched from the plan's own chain, the same gap earlier rounds closed for \u00a723/\u00a724 and \u00a725/\u00a726.",
+      "text": "`s28` is declared `implementable`, but the plan's followup chain carries no `/reckon-build the-monitor-reads-each-fact-once \u00a728` prompt, so the section has no entry point in the plan it belongs to",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:636",
+      "id": "wiring-2",
+      "reason": "resolving the two followups with their landing outcomes changes what the plan asks a reader to do next.",
+      "text": "`f-tmref-009` (\u00a723) and `f-tmref-010` (:641, \u00a724) are still `open` with build prompts for sections the declarations call `done` and whose closing comments record their landing heads, so a coordinator reading the chain re-dispatches completed sections",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:586",
+      "id": "done_when-1",
+      "reason": "naming the block (a station dispatch claim, a lane hold, an undisposed finding) fixes what the case constructs and whether the obligation must name a stage or the command that lifts the block.",
+      "text": "the second case \"blocks dispatch outright and asserts the overdue obligation names the held stage and a dispatch command\", but the plan never says what blocks dispatch, and where dispatch itself is refused the held stage is not what held the review, so the case either cannot pass or passes by naming a stage that did not cause the delay",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:586",
+      "id": "reasoning-1",
+      "reason": "the module set belongs to the node brief, where it can be corrected against the code; stated in the plan it binds every later reader to a guess.",
+      "text": "\u00a728 closes with \"Write paths: `reckon/crew/station.py`, `reckon/crew/obligations.py` and the new test\", a reuse map fixed in plan text that no other section of this plan carries",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "89f2f7316d3aff67410caa21d3599693fc00a5ea",
+  "plan_fingerprint": "74aa0388937270228a3609e8f177af07ec47b8e6bce054bf5e9350f7b18c3c7a",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 177,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T162438627768-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "5836969da49d8c9e83468e46e3d9e5b7a539cb64",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the quoted review-missing text resolves at `reckon/crew/obligations.py:771`, the slow-station note and its `per-project-refresh` stage at `reckon/hooks/coordinator_obligations.py:1162` and `reckon/crew/obligation_snapshot.py:337-343`, the 120 s window as `DEFAULT_SWEEP_SECONDS = 120.0` (`reckon/crew/resumption.py:389`), \u00a710's reflex claim at `reckon/crew/station.py:429`, and the cited review run `r-20261111T142315190626-review-of-west-iron-saturation-5f489043bdf1` exists on disk.",
+    "done_when": "a finding \u2014 \u00a728's second case asserts that the overdue obligation \"names the held stage\" in a scenario where dispatch is \"blocked outright\", and the plan never says what blocks it, so the assertion does not follow from the deliverable's \"its obligation names what held it\".",
+    "evidence_paths": "pass \u2014 \u00a728 puts every log under the run directory with its revision, its literal command and an `EXIT=` tail, matching \u00a725\u2013\u00a727.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach the change, and the `\u00a728 \u2014` heading prefix matches \u00a71\u2013\u00a718.",
+    "reasoning": "a finding \u2014 \u00a728 states its reuse map in plan text (\"Write paths: `reckon/crew/station.py`, `reckon/crew/obligations.py` and the new test\"), which no other section of this plan does and which the node brief owns.",
+    "single_goal": "pass \u2014 \u00a728's two clauses (dispatch inside the window under a slow tick; an actionable overdue obligation) are one failure seen from two sides and are proven by the two cases of one gate.",
+    "wiring": "a finding \u2014 `_document` declares `s28` implementable (docs/plans/the-monitor-reads-each-fact-once.html:24, :585) but no followup carries `/reckon-build the-monitor-reads-each-fact-once \u00a728`, and `f-tmref-009`/`f-tmref-010` stay open for \u00a723 and \u00a724, which the same declaration calls done."
+  },
+  "section_digests": {
+    "_document": "598d5335d7e762ccfad21d47b51738d7736baaf88bf89b4f5edb0f3186c3d011",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "ce4454f3c9fd9356582443bc11b1d6980ef0c9bb099f07d5ebe7c06aa04c6a8d",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:57:31.320836+00:00",
+  "total": null
+}
