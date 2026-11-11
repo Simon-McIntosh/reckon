@@ -64,6 +64,26 @@
   (<code>3 failed</code>, <code>EXIT=1</code>) because the 200-document count
   climbs back above the 20-document one.</p>
 
+  <p><strong>Writers outside the ledger.</strong> A warm read answers from the
+  index only when the generation matches, so a row moved by anything other than
+  a ledger write path would be served stale. The production surface was
+  searched and none exists: every writer of
+  <code>docs/state/&lt;project&gt;/runs/*.json</code> reaches the file through
+  <code>ledger.write_run_file</code> or <code>ledger.write</code> — the crew run
+  commands, routing, the promotion record, gate and release paths, and the
+  duration-backfill and figure scripts. The one direct write into a runs
+  directory outside the ledger writes a synthetic row under
+  <code>tempfile.mkdtemp()</code> inside a census control script, never a real
+  ledger. The search, with its commands and output, is in
+  <code>writer-search.log</code>.</p>
+
+  <p>Two existing tests had made their point by rewriting a run document in
+  place, outside every write path. Both now amend their row with
+  <code>write_run_file</code> and keep their assertions that the next read
+  answers from the new record: a released worktree, and a retention recorded
+  after the index was published, are each seen by the next bounded read. The
+  pair passes (<code>10 passed</code>).</p>
+
   <p><strong>Scope retained.</strong> The driving followup stays open and no
   terminal status is set. Logs under
   <code>~/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/</code>.</p>
