@@ -919,6 +919,12 @@ def refresh_run_time_profile(
             if "index_age_seconds" in headers:
                 data, _version = ledger.load(project, use_index=False)
                 profile = run_time_profile(project, now=moment, rows=data["runs"])
+            else:
+                # The header read can recover a briefly refused index. Its
+                # current projections must replace the earlier stale reading.
+                inputs = _indexed_profile_inputs(project)
+                if inputs is not None:
+                    profile = run_time_profile(project, now=moment, rows=inputs["rows"])
     profile["persisted_at"] = moment.isoformat()
     after = _profile_stamp(project, moment)
     if (

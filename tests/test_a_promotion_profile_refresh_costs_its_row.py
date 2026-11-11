@@ -338,3 +338,30 @@ def test_fold_inputs_do_not_overwrite_another_projects_served_profile(history):
     before = other.read_bytes()
     lane_context.refresh_run_time_profile(PROJECT, now=NOW)
     assert other.read_bytes() == before
+
+
+def test_an_index_recovery_refreshes_the_profile_without_a_raw_scan(
+    history, monkeypatch
+):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    with monkeypatch.context() as patch:
+        patch.setattr(ledger, "_index_record_written_document", lambda *a: None)
+        ledger.append_run(PROJECT, _row(50))
+    indexed = ledger._indexed_data
+    attempts = []
+
+    def briefly_refused(*args, **kwargs):
+        attempts.append(kwargs)
+        if len(attempts) == 1:
+            raise OSError("fixture index writer is briefly busy")
+        return indexed(*args, **kwargs)
+
+    monkeypatch.setattr(ledger, "_indexed_data", briefly_refused)
+    load = Mock(wraps=ledger.load)
+    monkeypatch.setattr(ledger, "load", load)
+    actual = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    assert len(attempts) >= 2
+    assert actual["rows"] == 51
+    assert not any(
+        call.kwargs.get("use_index") is False for call in load.call_args_list
+    )
