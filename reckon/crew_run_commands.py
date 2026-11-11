@@ -136,7 +136,9 @@ def _session_delivery_refusal(params: Mapping[str, Any]) -> str | None:
 
     An answer or an accepted edit stores a record and launches nothing, and a
     preview writes nothing at all, so neither is judged: the refusal is about a
-    composition that would be written.
+    composition that would be written. So is a command carrying an answer's own
+    flags without an answer to attach them to — the verb refuses that command
+    by naming the flag, and a delivery refusal here would replace that answer.
     """
     from reckon.crew import plan_review
 
@@ -145,6 +147,10 @@ def _session_delivery_refusal(params: Mapping[str, Any]) -> str | None:
     if str(params.get("answer") or "").strip():
         return None
     if str(params.get("accept_edits") or "").strip():
+        return None
+    if params.get("acted") or params.get("declined") is not None:
+        return None
+    if any(str(params.get(key) or "").strip() for key in ("note", "review_run")):
         return None
     project = str(params.get("project") or "").strip()
     if not project:

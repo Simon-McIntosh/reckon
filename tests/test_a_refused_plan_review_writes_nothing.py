@@ -13,6 +13,10 @@ a follower registered and shows the composition and the dispatch are reached,
 so the guard refuses a session that would hear nothing rather than refusing
 every session.
 
+Only a review launched as a command is judged: the dispatch that launches an
+in-harness review judges the project's producer alone, so no follower
+condition applies to it and the guard must not invent one.
+
 Declared negative control: with the delivery check moved after the composition,
 the composed directory is written and then discarded by the dispatch refusal,
 and the unchanged-report-directory assertion fails because composing creates
@@ -60,6 +64,22 @@ CONFIG = {
     "fences": {"time_budget": "20m", "needs_help_after_failures": 2},
 }
 
+# The same review launched as a command of its own, which is the launch whose
+# delivery the dispatch judges and whose refusal the guard answers. It differs
+# from CONFIG only in that field, so a case naming one launch measures the
+# launch rather than the rest of the configuration.
+CONFIG_CLI = {
+    **CONFIG,
+    "backends": {
+        "worker": {**CONFIG["backends"]["worker"], "launch": "cli"},
+    },
+}
+
+
+def _launched(config):
+    """A ``flight.resolve`` answering this configuration."""
+    return lambda *_args, **_kwargs: SimpleNamespace(config=config)
+
 
 PLAN_HTML = "".join(
     [
@@ -85,7 +105,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("RECKON_VELOCITY_CACHE", str(home / "cache" / "velocity"))
     monkeypatch.setattr(
-        flight, "resolve", lambda **_kwargs: SimpleNamespace(config=CONFIG)
+        flight, "resolve", _launched(CONFIG)
     )
     repo = tmp_path / "repo"
     plans = repo / "docs" / "plans"
@@ -122,6 +142,7 @@ def test_a_review_without_a_follower_is_refused_before_it_writes(
     project, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     _home, repo = project
+    monkeypatch.setattr(flight, "resolve", _launched(CONFIG_CLI))
     composed: list = []
     real_composer = review_dispatch._review_dispatch_fields
 
@@ -140,6 +161,68 @@ def test_a_review_without_a_follower_is_refused_before_it_writes(
         "a refused review must leave the plan's report directory as it found it"
     )
     assert composed == [], "the brief composer ran before the session was judged"
+
+
+def test_the_guard_admits_a_session_with_a_registered_follower(
+    project, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The other arm of the same question: a follower at the pane is no refusal."""
+    monkeypatch.setattr(flight, "resolve", _launched(CONFIG_CLI))
+
+    assert plan_review.session_delivery_refusal(PROJECT, SESSION), (
+        "the fixture's session has no follower, so the guard must refuse it"
+    )
+    with runs.follower_claim(PROJECT, SESSION, delivery="stream") as claim:
+        assert claim[0], f"the session's follower was not registered: {claim[1]}"
+        assert plan_review.session_delivery_refusal(PROJECT, SESSION) is None
+
+
+def test_a_malformed_command_meets_its_own_refusal_first(
+    project, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A command the verb refuses by naming a flag is never answered as deaf.
+
+    The delivery refusal is about a review that would be composed; a command
+    carrying an answer's own flag without an answer is refused by the verb,
+    which names the flag the caller has to add. Answering it with a follower
+    condition sends the caller to arm a follower for a command that would still
+    be refused.
+    """
+    _home, _repo = project
+    monkeypatch.setattr(flight, "resolve", _launched(CONFIG_CLI))
+
+    outcome = CliRunner().invoke(
+        dispatch_commands.crew,
+        [
+            "review",
+            "--project",
+            PROJECT,
+            "--plan",
+            PLAN_SLUG,
+            "--session",
+            SESSION,
+            "--note",
+            "a note belongs to an answer",
+        ],
+    )
+
+    assert outcome.exit_code == 1, outcome.output
+    assert "--answer" in outcome.output, outcome.output
+    assert "follower" not in outcome.output, outcome.output
+
+
+def test_an_in_harness_review_is_not_judged_for_a_follower(
+    project, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A launch with no delivery of its own is judged by the dispatch only.
+
+    The dispatch refuses a session delivery only for a review launched as a
+    command; an in-harness review has no follower to deliver to, so the guard
+    must answer nothing for it however many follower conditions are unmet.
+    """
+    monkeypatch.setattr(flight, "resolve", _launched(CONFIG))
+
+    assert plan_review.session_delivery_refusal(PROJECT, SESSION) is None
 
 
 def test_a_review_with_a_follower_composes_and_dispatches(

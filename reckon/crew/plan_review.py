@@ -3736,6 +3736,30 @@ def compose_burst_refusal(
     return None
 
 
+def _review_launch_kind(project: str) -> str:
+    """How a composed review of this project is launched, or empty if unknown.
+
+    The review role's backend names the launch, exactly as the dispatch reads
+    it, so a refusal answered before composition speaks for that launch. An
+    unreadable configuration answers empty: the review is then left to the verb,
+    which reports the configuration it could not resolve rather than a delivery
+    condition nobody measured.
+    """
+    from reckon import flight
+
+    try:
+        config = flight.resolve(project).config or {}
+    except (flight.FlightConfigError, OSError):  # the verb reports its own
+        return ""
+    backend_name = str(
+        ((config.get("roles") or {}).get("review") or {}).get("backend")
+        or config.get("default_backend")
+        or ""
+    )
+    backend = (config.get("backends") or {}).get(backend_name) or {}
+    return str(backend.get("launch") or "")
+
+
 def session_delivery_refusal(project: str, session: str) -> str | None:
     """The refusal a review of this session would meet once composed, or None.
 
@@ -3747,12 +3771,18 @@ def session_delivery_refusal(project: str, session: str) -> str | None:
     stops before the dispatch can discard it, and the next attempt reads a
     report that no run backs.
 
-    The conditions answered here are the session's own — no session named, no
-    follower registered for it, a registered follower that is not delivering.
-    The project's producer is a separate, project-global condition that
+    The conditions answered here are the session's own — no follower registered
+    for it, a registered follower that is not delivering. The project's producer
+    is a separate, project-global condition that
     :func:`_unmet_follower_conditions` also reports; it is judged where it is
     measured, at dispatch, so this refusal answers only for the session it is
     asked about.
+
+    A session is judged only where the dispatch judges it: a backend that does
+    not launch a command of its own — the calling harness's in-harness launch —
+    has no follower to deliver to, so its dispatch refuses only for the
+    project's producer and a review composed for it is not refused here. An
+    unnamed session is left to the verb, which names the missing flag.
 
     Returns the text of the refusal the dispatch would raise, built by the same
     chooser the dispatch uses, so a caller reads one wording whichever stage
@@ -3763,6 +3793,10 @@ def session_delivery_refusal(project: str, session: str) -> str | None:
         _unmet_follower_conditions,
     )
 
+    if not str(session or "").strip():
+        return None
+    if _review_launch_kind(project) != "cli":
+        return None
     watch = runs.watch_state(project, session=session)
     conditions = _unmet_follower_conditions(
         project,
