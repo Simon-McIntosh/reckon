@@ -153,6 +153,10 @@ def test_the_follower_waits_for_a_dispatch_before_it_reexecutes(
         checkout_trust, "tracked_reckon_tree_is_dirty", lambda *a, **k: (False, "")
     )
     reloader = cli._FollowerReloader("proj", None)
+    # The replacement's import proof runs a throwaway interpreter, which takes
+    # longer than the held dispatch is held. Answered as a proved image, the
+    # case turns on the wait and not on how fast this host imports.
+    monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
     at_exec = _recording_execve(monkeypatch)
 
     with _DispatchInFlight():
