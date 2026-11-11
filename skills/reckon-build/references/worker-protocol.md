@@ -27,7 +27,7 @@ A node is dispatchable only when all eight hold:
 | Fully specified | Every input is already in the live plan or in the node's fences. Nothing requires the worker to infer intent. |
 | Demonstrable | Done-when is a *measure* that emits evidence — a named test, a recorded command output, a numeric result against a stated bound. A subjective adjective ("clean", "robust", "better") fails this test. |
 | Closed | No decision from outside the node is needed. A required-but-unlocked decision means a decision node precedes it. |
-| Scoped | Exclusive write paths are enumerated and no concurrent node shares a path. This checks exclusivity, not sufficiency: it does not prove the named paths can carry the goal. |
+| Scoped | Write paths are enumerated, and no exclusive path — a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock, or a directory claim — is shared with a concurrent node; a source or test file may be. This checks exclusivity, not sufficiency: it does not prove the named paths can carry the goal. |
 | Bounded | The work fits the resolved time budget. If it cannot, split it — a budget is not a target to overrun. |
 | Independently verifiable | The orchestrator can audit completion from the manifest, `git show --stat` and the gate evidence, without reading the implementation. |
 | Spec level | The node declares one of `exact`, `guided` or `open`; a run without one cannot enter a calibration slice, so an undeclared node is refused, and a level outside that set is refused at dispatch too. |
@@ -62,7 +62,7 @@ truth that drifts between workers and between sessions.
 
 | Fence | Content |
 |---|---|
-| Scope | exclusive write paths; no two concurrent workers share a file |
+| Scope | the write paths this node may write; a source or test file may be shared with a concurrent node, whose edits meet at the merge |
 | Time | an explicit budget; at the deadline, write the checkpoint and finish only a bounded step the manifest named, by the hard stop |
 | Evidence | the gate's measure *is* the done-when, stated quantitatively |
 | Delivery | a named manifest path on disk; long output goes in the file and the reply is the path |

@@ -770,7 +770,11 @@ request. The set may include sections whose
 upstream has not landed. A coordinator chooses each section rather than loading a
 plan wholesale, so it queues work it knows needs doing and steers the queue as
 earlier results come back. Consult the plan's declared `plan-section-depends-on` waits and give
-each node its own exclusive write scope. A node waiting on an unlanded section
+each node its write paths. Two nodes may name one source file: they are
+dispatched together and their edits meet at the merge, and only an exclusive
+path — a plan document, a cumulative evidence record, generated state, a figure
+topic directory, a dependency lock, or a directory claim — is given to one node
+at a time. A node waiting on an unlanded section
 parks `awaiting-upstream`; admission releases it when that section lands, with
 no new coordinator dispatch. The queue orders only declared waits.
 

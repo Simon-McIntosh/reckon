@@ -145,10 +145,16 @@ live in a plan or brief.
 ## Shape the wave
 
 The unit of dispatch is the section's deliverable. A section is one node unless
-two of its write scopes must run in parallel; list exclusive write paths per
-item, use isolated worktrees by default, and never dispatch two workers that
-write the same file. Each node carries a brief citing the reuse map: the module
-to extend, the interface not to widen, the question the worker may not settle.
+two of its parts must run in parallel. List each node's write paths and dispatch
+it even when a peer names one of them: concurrent edits to one source file are
+dispatched in isolated worktrees, and they meet at the merge — a landing that
+conflicts is repaired in the worktree that produced it and re-integrated, never
+held back at dispatch. Exclusive scope remains only for a path a textual merge
+cannot reconcile: a plan document, a cumulative evidence record, generated
+state, a figure topic directory, a dependency lock, or a directory claim. Two
+live nodes never hold one of those. Each node carries a brief citing the reuse
+map: the module to extend, the interface not to widen, the question the worker
+may not settle.
 That reuse map stays in the brief. The plan states the endpoint and names no
 module, function or file to extend, so a plan that does is a review finding
 rather than something to implement.
@@ -208,9 +214,12 @@ it>`. Stating neither is reported with the admission findings beside the
 contract properties.
 
 Dispatch ensures one live producer before creating a worktree. Peer scopes come
-from live pointers in the same project and repository: dispatch refuses
-containing or contained path claims before creating a worktree and names the
-owning run. `--peer <other-node>=<their-paths>` is optional, to supplement peers
+from live pointers in the same project and repository, and a claim is compared
+only for the paths a textual merge cannot reconcile: a source or test file in
+common is dispatched, while a claim on an exclusive path — a plan document, a
+cumulative evidence record, generated state, a figure topic directory or a
+dependency lock — is refused before creating a worktree, naming the owning run.
+`--peer <other-node>=<their-paths>` is optional, to supplement peers
 with no live pointer yet. `--no-watch` is the explicit exception for a
 synchronous one-off; it records the arming command, the watcher liveness and the
 unattached session on the live run and its promoted ledger record. Use
@@ -242,7 +251,7 @@ worktree, a manifest, a gate and a ledger record.
 | `plan-unavailable` | 4 | Commit the plan before dispatching. |
 | `competence-refusal` | 5 | Route the node to a backend meeting the capability. |
 | `unreconciled-runs` | 6 | Reconcile each reported run, or set the waiver. |
-| `scope-conflict` | 7 | Wait for the owning run to release its path claim. |
+| `scope-conflict` | 7 | Only an exclusive path conflicts: a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock, or a directory claim. Wait for that path's owning run, or re-dispatch on another path; a source or test file never raises it, because concurrent edits meet at the merge. |
 | `watcher-required` | 8 | Arm the `attach_line`; use `--no-watch` only deliberately. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase. |
 | `queue-full` | 75 | The project holds `queue.max_requests` queued requests across its sessions; a dispatch past the bound is refused naming that bound. |
@@ -537,7 +546,7 @@ the next step: four lines, one per axis, at most two lines each.
 ```text
 Dispatching wave 2 — 3 workers
 WHAT   §3 dispatch primitive (impl-a) · §4 observation (impl-b) · §5 docs (impl-c)
-WHY    §3 unblocks §4 and §5; all three read the §2 contract; no shared files
+WHY    §3 unblocks §4 and §5; all three read the §2 contract; edits meet at the merge
 HOW    detached worktrees, scopes below, manifests on disk
 WHEN   ~20 min each; gate g-end-to-end closes the wave — §6 stays shut until it passes
 ```
