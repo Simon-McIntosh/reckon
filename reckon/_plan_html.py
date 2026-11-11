@@ -32,6 +32,7 @@ from dataclasses import dataclass
 from html.parser import HTMLParser
 from itertools import pairwise
 from pathlib import Path
+from typing import Any
 
 from bs4 import BeautifulSoup
 
@@ -846,6 +847,13 @@ OPEN_SECTION_DECLARATIONS = (
 #: The attribute a section record carries its descope reason in.
 DESCOPE_REASON_ATTRIBUTE = "data-descope-reason"
 
+#: The head meta a plan without section records carries its descope reasons in,
+#: as a JSON object mapping section identity to the reason it was dropped. A
+#: plan that carries no ``data-reckon="section"`` records has nowhere else to
+#: put the reason, and a descope without one is refused. Authored markup the
+#: state writer maintains, as ``plan-section-depends-on`` is.
+DESCOPE_REASONS_META = "plan-descope-reasons"
+
 #: The id prefix a section's closing record carries. The landing beat writes one
 #: comment per landed section under ``c-close-<section>`` in the same call as the
 #: tick, so the record is selected by that id rather than by position.
@@ -1308,6 +1316,98 @@ def _body_resident_comment_counts(html_text: str) -> Counter:
     return counts
 
 
+def _parse_descope_reasons(raw: str) -> tuple[dict[str, str] | None, str | None]:
+    """Parse the reasons meta content into a mapping, or a defect message."""
+    try:
+        reasons = json.loads(raw)
+    except (TypeError, ValueError):
+        reasons = None
+    if isinstance(reasons, dict) and all(
+        isinstance(section, str) and isinstance(reason, str)
+        for section, reason in reasons.items()
+    ):
+        return {
+            section: reason for section, reason in reasons.items() if reason.strip()
+        }, None
+    return None, (
+        f"{DESCOPE_REASONS_META}: must be a JSON object mapping section "
+        "identities to their descope reasons as strings"
+    )
+
+
+def descope_reasons(html_text: str) -> dict[str, str]:
+    """Return the plan's stored descope reasons, keyed by section identity.
+
+    A plan that carries section records keeps each reason on its record; this
+    map is the store for a plan that carries none, so a descoped section with
+    no record still says why it was dropped. Empty when the plan carries no
+    such meta.
+    """
+    raw = _meta_content(html_text, DESCOPE_REASONS_META)
+    if raw is None:
+        return {}
+    reasons, _defect = _parse_descope_reasons(raw)
+    return dict(reasons or {})
+
+
+def _meta_content(html_text: str, meta_name: str) -> str | None:
+    """Return a head meta's content, or ``None`` when the document has none."""
+    soup = BeautifulSoup(html_text or "", "html.parser")
+    for meta in soup.find_all("meta"):
+        if (meta.get("name") or "").strip().lower() == meta_name:
+            return meta.get("content", "")
+    return None
+
+
+def _read_keyed_meta(html_text: str, meta_name: str) -> dict[str, Any]:
+    """Return a JSON-object head meta's content as a mapping.
+
+    An absent, malformed or non-object value reads as an empty mapping: this is
+    the meta the writer maintains, and a caller about to rewrite it has nothing
+    to preserve from a value it cannot use.
+    """
+    raw = _meta_content(html_text, meta_name)
+    if not raw:
+        return {}
+    try:
+        value = json.loads(raw)
+    except (TypeError, ValueError):
+        return {}
+    return dict(value) if isinstance(value, dict) else {}
+
+
+def edit_keyed_meta(
+    html_text: str,
+    meta_name: str,
+    edits: list[tuple[str, Any]],
+    *,
+    mapping: dict[str, Any] | None = None,
+) -> str:
+    """Apply keyed edits to a head meta whose content is a JSON object.
+
+    Each edit sets one key's value, or removes the key when the value is
+    ``None``. The mapping is read back from the document first, so an edit lands
+    on the entries already on the page rather than replacing its siblings; a
+    caller that has already judged the existing content passes the mapping it
+    read. An empty result removes the meta entirely, which a read parses as no
+    mapping at all.
+    """
+    if mapping is None:
+        mapping = _read_keyed_meta(html_text, meta_name)
+    for key, value in edits:
+        if value is None:
+            mapping.pop(key, None)
+        else:
+            mapping[key] = value
+    if not mapping:
+        return _remove_meta(html_text, meta_name)
+    return _set_meta(
+        html_text,
+        meta_name,
+        json.dumps(mapping, ensure_ascii=True, separators=(",", ":")),
+    )
+
+
 def read_state(html_text: str) -> dict:
     """Parse a plan's semantic HTML into the canonical state dict."""
     soup = BeautifulSoup(html_text or "", "html.parser")
@@ -1364,6 +1464,13 @@ def read_state(html_text: str) -> dict:
                 "section_declarations: plan-section-declarations must be a JSON "
                 "object mapping section identities to classifications"
             )
+    raw_reasons = meta_values.get(DESCOPE_REASONS_META)
+    if raw_reasons is not None:
+        reasons, reason_defect = _parse_descope_reasons(raw_reasons)
+        if reason_defect is not None:
+            warnings.append(reason_defect)
+        else:
+            st["descope_reasons"] = reasons
     st["sections"] = _read_section_records(soup, st.get("section_declarations", {}))
     derived, source = derive_impl_with_source(
         st["sections"], st.get("section_declarations")
@@ -2310,6 +2417,16 @@ def write_state(
             "plan-section-declarations",
             json.dumps(declarations, ensure_ascii=True, separators=(",", ":")),
         )
+    if artifact_type == "plan" and "descope_reasons" in state:
+        reasons = state.get("descope_reasons") or {}
+        if reasons:
+            out = _set_meta(
+                out,
+                DESCOPE_REASONS_META,
+                json.dumps(dict(reasons), ensure_ascii=True, separators=(",", ":")),
+            )
+        else:
+            out = _remove_meta(out, DESCOPE_REASONS_META)
     if artifact_type == "plan" and "sections" in state:
         sections = PlanState.model_validate(
             {
