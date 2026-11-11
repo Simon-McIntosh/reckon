@@ -45,6 +45,18 @@ _HARNESS_HOME = {
     "omp": ("HOME", "omp-home", ".omp"),
 }
 
+# The variable each harness reads its agent store from, where that store sits
+# inside the harness home rather than at the home itself. oh-my-pi resolves
+# ``models.yml`` as ``<agent store>/models.yml`` and its home as
+# ``<HOME>/.omp``, so a run whose ``HOME`` is relocated reads the store under
+# ``<home>/.omp/agent`` while the fence mirrors the operator's files relative
+# to the home it owns — which lands ``models.yml`` at ``<home>/agent/models.yml``.
+# Naming the store variable points the harness at the seeded copy; relocating
+# ``HOME`` alone leaves it reading an empty store and refusing the model.
+_HARNESS_AGENT_STORE = {
+    "omp": ("PI_CODING_AGENT_DIR", "agent"),
+}
+
 # The codex credential bound read-only into a run's codex home. Bound rather
 # than copied: a credential written under the run directory would be writable
 # by the worker, so the login the operator refreshes elsewhere could be
@@ -189,6 +201,20 @@ def harness_home(dialect_name: str, run_directory: str | Path) -> Path | None:
     if not directory.is_absolute():
         return None
     return directory / declared[1]
+
+
+def harness_agent_store(dialect_name: str, home: Path) -> dict[str, str]:
+    """Return the environment entries pointing a dialect at its seeded store.
+
+    ``home`` is the run home :func:`harness_home` resolved. A dialect that
+    keeps its agent store at the home itself needs no entry, and none is
+    invented for it — the home variable already names the place its files
+    were seeded.
+    """
+    declared = _HARNESS_AGENT_STORE.get(dialect_name)
+    if declared is None:
+        return {}
+    return {declared[0]: str(Path(home) / declared[1])}
 
 
 def seed_harness_home(
