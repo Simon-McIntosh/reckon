@@ -607,22 +607,89 @@ def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     return None
 
 
+def _newest_cited_commit(record: Mapping[str, Any], tree: Path | None) -> str:
+    """The newest commit the manifest cites by ancestry, or empty.
+
+    A manifest's ``commits:`` field is a citation list, not an ordered history:
+    a worker may write it newest-first, oldest-first or in the order the work
+    landed. Reading its last entry as the head therefore picks the oldest commit
+    of a newest-first list, so the candidates are compared by ancestry instead,
+    which holds whatever order they were written in. An entry that does not
+    resolve to a commit in ``tree`` is left out rather than guessed, and git
+    answering nothing leaves the caller its other readers.
+    """
+    manifest = Path(str(record.get("manifest_path") or ""))
+    try:
+        data = parse_manifest(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    entries = data.get("commits") or []
+    if isinstance(entries, str):
+        entries = [entries]
+    if tree is None:
+        return ""
+    # Deferred: the review modules import this package's siblings, so the
+    # import is made where it is used rather than at load.
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    revisions: list[str] = []
+    for entry in entries:
+        resolved = _resolve_commit(tree, str(entry).strip(), cached=True)
+        if resolved and resolved not in revisions:
+            revisions.append(resolved)
+    if len(revisions) < 2:
+        return revisions[0] if revisions else ""
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tree),
+                "rev-list",
+                "--topo-order",
+                "--max-count=1",
+                *revisions,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = result.stdout.split()
+    if result.returncode != 0 or not lines:
+        return ""
+    return lines[0]
+
+
 def _run_head(record: Mapping[str, Any]) -> str:
     """The revision the run's work is delivered at, or empty when unreadable.
 
     An after arm is evidence about the tree the run delivers, so the revision it
-    must record is the run's head. The head a review of the run is about is the
-    same question, and ``_run_head_for_review`` already answers it: the
-    worktree's ``HEAD`` while that tree is readable, and the run's own record
-    once it has been reclaimed. An empty answer means no head could be read, and
-    the caller then holds no revision to compare against rather than refusing on
-    one.
+    must record is the run's head. While the worktree is readable its ``HEAD``
+    is that answer, and ``_run_head_for_review`` reads it. Once the worktree has
+    been reclaimed the manifest's citations are the only evidence left, and the
+    newest of them by ancestry is the head — the review path reads the last
+    entry instead, which is right only for a list written in landing order.
+    An empty answer means no head could be read, and the caller then holds no
+    revision to compare against rather than refusing on one.
     """
     # Deferred: the review modules import this package's siblings, so the
     # import is made where it is used rather than at load.
-    from reckon.crew.recovery_review_dispatch import _run_head_for_review
+    from reckon.crew.recovery_review_dispatch import (
+        _record_carried_head,
+        _run_head_for_review,
+        _worktree_reclaimed,
+    )
+    from reckon.crew.recovery_review_subject import _review_tree
 
-    return _run_head_for_review(record)
+    if not _worktree_reclaimed(record):
+        return _run_head_for_review(record)
+    newest = _newest_cited_commit(record, _review_tree(record))
+    if newest:
+        return newest
+    return _record_carried_head(record)
 
 
 def _arm_revision_mismatch(

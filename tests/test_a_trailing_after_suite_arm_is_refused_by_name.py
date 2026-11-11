@@ -166,3 +166,28 @@ def test_a_released_worktree_reads_its_head_from_the_cited_commits(
 
     assert raised.missing_fields == ["after_suite.revision_matches_head"]
     assert head in str(raised)
+
+
+def test_a_newest_first_citation_list_names_the_true_head(
+    tmp_path: Path, tree: tuple[Path, Path, str, str]
+) -> None:
+    """The cited commits carry no order, so the head is the newest by ancestry.
+
+    A worker may write ``commits:`` newest-first. Its last entry is then the
+    oldest commit the run cites, and a reader that takes that entry as the head
+    accepts an after arm measured at the base as if the run had ended at its
+    base.
+    """
+    worktree, repo, base, head = tree
+    record = _record(tmp_path, worktree, repo, base, base, base, commits=[head, base])
+    subprocess.run(
+        ["git", "-C", str(repo), "worktree", "remove", "--force", str(worktree)],
+        check=True,
+        capture_output=True,
+    )
+    assert not worktree.is_dir()
+
+    raised = _refusal(record)
+
+    assert raised.missing_fields == ["after_suite.revision_matches_head"]
+    assert head in str(raised)
