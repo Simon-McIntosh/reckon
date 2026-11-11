@@ -308,6 +308,7 @@ def queue_requests(
     """Validate a request batch, then use dispatch's queue writer for each."""
     from reckon.crew import queue_admission
     from reckon.crew.dispatch_admission import (
+        _require_write_paths_in_authority,
         admission_domain_findings,
         admission_refusals_and_warnings,
     )
@@ -333,6 +334,14 @@ def queue_requests(
         # binds.
         _lane_name, effective_backend = resolve_role_override(
             config, node.role, node.spec_level, lane
+        )
+        # The write-scope fence is judged here on the authority a launch
+        # resolves, so a batch entry whose path lies outside the repository and
+        # the delivery directories is refused while it is still a request. Left
+        # to the launch, that refusal would cost the queue position and reach
+        # nobody, and the entry could never run.
+        _require_write_paths_in_authority(
+            node, resolve_dispatch_authority(project, repo_root)
         )
         findings = admission_domain_findings(
             node, project=project, repository=repo_root
