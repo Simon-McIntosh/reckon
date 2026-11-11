@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T23:39:32.788Z",
+  "dispatched_at": "2026-11-10T23:22:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html",
+      "line": 28,
+      "severity": "non-blocking",
+      "summary": "The sixth (batch) case has no dispatch-base arm: gate-base-with-new-test.log at 434ec98ac carries five cases (4 failed, 1 passed), so the new case's behaviour at the base revision is unmeasured. The fragment's wording is accurate ('four of the five earlier ones fail at the dispatch base') but the increment's own base evidence is absent, leaving the field-set removal control as the only logged proof that the new case reddens."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 18fde7f932 adds test_a_batch_entry_keeps_the_flag_and_waits_on_its_own_ref (60 added lines), 03e38d5990 and 3735d84af5 update only the declared evidence fragment (the batch path paragraph and the importer-slice result), with no production code touched in the increment.",
+    "done_when": "The done-when names tests/test_a_node_waits_only_on_what_it_names.py covering every case section 31 lists; the file holds six cases at the head, the manifest records the armed suite at 57 passed against 51 at base, and this review re-ran the added case at the reviewed head with 1 passed in 3.41s.",
+    "goal": "The goal is that a request's waits are exactly what its own dispatch and section declare, with --waits-only-after limiting them to its --after refs; the increment closes the batch-entry path the previous review found untested, at tests/test_a_node_waits_only_on_what_it_names.py:276 driving dispatch_batch.queue_batch end to end.",
+    "manifest": "Read: it records seven commits, six passing cases with three logged negative controls, the armed suite pair (57 head against 51 base), the 10-file importer slice with 6 identical failure ids in both arms, and states plainly that the remaining 30 files of chunk 02 and chunk 03's head arm are outstanding rather than passed.",
+    "write_paths": "The declared write paths are reckon/crew_dispatch_commands.py, reckon/crew/dispatch_batch.py, reckon/crew/queue_admission.py, reckon/crew/node.py, the test file and the evidence fragment; git diff --stat c35c29708e39..3735d84af5 changes exactly the test and the fragment, both inside that set."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment closes the batch-entry gap the previous review recorded, adding tests/test_a_node_waits_only_on_what_it_names.py:276 which drives dispatch_batch.queue_batch end to end so the waits-only flag survives the entry file into the stored request.\nVERDICT done_when: the done-when names tests/test_a_node_waits_only_on_what_it_names.py; the file holds six cases at the head, the manifest records the armed suite as 57 passed at the head against 51 at base, and this review re-ran the added case at the reviewed head (1 passed in 3.41s, EXIT=0).\nVERDICT write_paths: the six declared paths are the four dispatch modules, the test and the evidence fragment; git diff --stat c35c29708e39..3735d84af5 touches exactly two of them, tests/test_a_node_waits_only_on_what_it_names.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html, and nothing else.\nVERDICT manifest: read; it records the six passing cases, three negative controls, the armed suite pair, and states honestly that 67 of the 140 importer files remain outstanding rather than passed, which the importer arm logs confirm (importers-head-02a.log EXIT=124 at 55 percent).\nVERDICT diff: read commit by commit; 18fde7f932 adds the batch case and its seed fixtures at tests/test_a_node_waits_only_on_what_it_names.py:276-333, while 03e38d5990 and 3735d84af5 change only docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html.\nCALL_SITES: reckon/crew/dispatch_batch.py:_entry_node, reckon/crew/dispatch_batch.py:queue_batch, reckon/crew/queue_admission.py:derive_wait_refs, reckon/crew/queue_admission.py:_rederive_waits\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_node_waits_only_on_what_it_names.py:319 asserts the stored request's waits are run:r-upstream alone through queue_batch, closing the batch entry path the previous review found unexercised.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite-head2.log records 57 passed with EXIT=0 at 18fde7f932 against baseline-suite-base.log's 51 at 434ec98ac, and negative-control-batch-entry-field.log fails the new case with EXIT=1, but the new case has no dispatch-base arm and the suite arm predates the two docs-only commits.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c35c29708e39..3735d84af5 changes only tests/test_a_node_waits_only_on_what_it_names.py and the declared evidence fragment, adding 90 lines and removing 10.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_node_waits_only_on_what_it_names.py:307 fails if _entry_node drops the field and :319 fails if the queue ignores the flag, both verified by reading the control which removes waits_only_after from BATCH_ENTRY_FIELDS and reddens the case.\nSCORE fit: 19\nJUSTIFICATION fit: the case follows the existing idiom of tests/test_a_batch_queues_the_chosen_sections.py:218 (queue_batch with config_for and repo_root) and adds no plan label or changelog prose to the test or the fragment.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production capability is added in this increment; the case exercises reckon/crew/dispatch_batch.py:458 _entry_node, the sole owner of batch entry-to-node conversion (git grep for _entry_node at the head finds no second converter), rather than re-implementing it.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html:28 non-blocking: the batch case has no dispatch-base arm, so its failure at 434ec98ac is unmeasured and the field-set removal control is the only logged proof it reddens; the fragment's wording is accurate but the increment's own base evidence is absent.\n",
+  "review_run_id": "r-20261110T231434381888-review-of-a-node-waits-only-on-what-it-names-3735d84af5a0",
+  "reviewed_base_sha": "c35c29708e395b43449494bbbd100133fcaf335b",
+  "reviewed_head_sha": "3735d84af5a0c298950807c534924260105c1962",
+  "reviewed_run_id": "r-20261110T165947769366-a-node-waits-only-on-what-it-names",
+  "rubric": "default",
+  "scope_note": "Increment review: only the commits gained since the previous review at c35c29708e39 were read (18fde7f932, 03e38d5990, 3735d84af5), which touch tests/test_a_node_waits_only_on_what_it_names.py and docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html and nothing else.",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:45:00+00:00",
+  "total": 113
+}
