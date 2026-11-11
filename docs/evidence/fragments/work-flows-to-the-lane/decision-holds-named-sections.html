@@ -23,13 +23,28 @@
   <p>The armed base check collected <code>tests/test_staged_write_inventory.py</code>
     and reported <strong>51 passed</strong>. The new test file covers the table
     at dispatch and admission, reader/schema/roadmap parity and reuse of the
-    cached verdict. The head gate at
-    <code>c24e6895846b0bc0555e2da6509df8dd98e171af</code> reported
-    <strong>58 passed, 3 failed</strong> on <code>all_debug</code>: the scoped-open
-    and both locked admission cases still observed zero launches. The preceding
-    head reported 57 passed and 4 failed; correcting the fixture's explicit
-    mount and state roots fixed the queue-state assertions but did not establish
-    launch evidence. The two-failure stop rule now holds this node. The declared
-    negative mutation and importer head arm remain unrun; no completed delta or
-    negative-control receipt is claimed.</p>
+    cached verdict. Admission's fixture supplies the existing hook-trust probe
+    and stubs the process launcher. It asserts exact launched run identities:
+    one for an open scoped decision, none for an open whole-plan decision and
+    both for either locked decision. The head gate at
+    <code>996742a06bfe4656a22b3fbecfc22cdc21fc587e</code> reported
+    <strong>61 passed</strong> on <code>all_debug</code>. Ignoring decision
+    sections produced <strong>3 failed, 7 passed</strong>: the unnamed dispatch,
+    admission and roadmap checks reject that mutation. Ruff check and format
+    check passed on all three changed Python paths.</p>
+  <p>The importer population was 334 files at base and 335 at head, with only
+    the new decision test added. Sequential <code>all_debug</code> arms with
+    four workers reported <strong>727 failed, 2283 passed, 6 errors</strong>
+    at base and <strong>722 failed, 2298 passed, 5 errors</strong> at head;
+    both skipped two tests. The raw head had two failure IDs absent from the
+    recorded base and eight base-only IDs. Paired controls of those two IDs
+    reported <strong>1 failed, 1 passed</strong> at base and
+    <strong>2 passed</strong> at head. The duplicate-row failure thus also
+    reproduces at base; the launcher-reaping failure did not persist in the
+    controls. These unstable outside-scope results remain explicit in the
+    manifest; the importer arm is not claimed green. An earlier extraction
+    lacked a Git index. Its three apparent additions passed paired controls
+    at both revisions; the final head extraction verified its index and clean
+    tracked status before testing. Full receipts and ID deltas are in the
+    run directory.</p>
 </section>
