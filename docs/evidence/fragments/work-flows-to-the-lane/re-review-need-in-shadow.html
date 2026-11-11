@@ -41,5 +41,11 @@
   control replaces the prediction write with a bare return and reddens five
   cases, naming the ledger-row assertion first. The view's counts are pinned at
   0.25 and 0.5 against four planted rows: two skipped at 0.25 (one blocking, one
-  clean) and three at 0.5 (two blocking, one clean).</p>
+  clean) and three at 0.5 (two blocking, one clean). Across the 112 test files
+  that import the changed modules, the same arm run at the base revision and at
+  the delivered one gives the same 55 failing and erroring ids — 52 failed,
+  1,154 passed, 3 errors each, both arms on <code>all_debug</code> from a
+  node-local copy — so the change adds no failure and repairs none. That
+  comparison is what caught the withdrawn view registration, which had added one
+  failure by itself.</p>
 </section>
