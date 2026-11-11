@@ -33,7 +33,24 @@
   "plan_slug": "a-worker-is-charged-to-a-job",
   "plan_version": 83,
   "project": "reckon",
-  "responses": {},
+  "response_events": [
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "done_when-1",
+      "reason": "Deliberate: \u00a712's code review rejected a test that read the operator's ~/.agents/AGENTS.md, under this repository's rule that a test reads no state outside it. So the test asserts against a pinned fixture, with a missing-heading negative control, and the live comparison against the canonical file is worker_digest --check, which the dotfiles hook runs on every edit and which passed after landing.",
+      "when": "2026-11-11T02:45:26.367114+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "Deliberate: \u00a712's code review rejected a test that read the operator's ~/.agents/AGENTS.md, under this repository's rule that a test reads no state outside it. So the test asserts against a pinned fixture, with a missing-heading negative control, and the live comparison against the canonical file is worker_digest --check, which the dotfiles hook runs on every edit and which passed after landing.",
+      "when": "2026-11-11T02:45:26.367114+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-worker-is-charged-to-a-job/r-20261111T022047997794-plan-review-of-a-worker-is-charged-to-a-job.json",
   "review_run_id": "r-20261111T022047997794-plan-review-of-a-worker-is-charged-to-a-job",
   "reviewed_blob_sha": "7d05f60d6ec0db8d3c8563be7ac986e58e55c992",
   "rubric": "content",
