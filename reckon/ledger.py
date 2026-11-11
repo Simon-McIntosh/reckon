@@ -47,7 +47,7 @@ import subprocess
 import sys
 import tempfile
 import time
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import UTC, datetime
@@ -2733,7 +2733,9 @@ def _commit_state_write(
     body: str,
     path: Path | Iterable[Path],
     what: str = "state",
-) -> None:
+    *,
+    sleep: Callable[[float], None] = time.sleep,
+) -> int:
     """Commit the requested state write(s) without sweeping other staged paths.
 
     ``path`` names one file, as most callers pass, or a set of files that must
@@ -2741,6 +2743,14 @@ def _commit_state_write(
     review record together, so the record lands in the commit the promotion
     already makes rather than adding one. Every path must resolve to the same
     checkout, and a refused set leaves nothing staged.
+
+    Both the add and the commit need the checkout's ``index.lock``, which a
+    peer committing in the same checkout holds for a moment. Each runs through
+    the merge's lock wait, so a transient hold is waited out rather than
+    refusing the state write; a failure with no lock behind it, or a lock that
+    outlasts the wait's attempts, raises as before, naming the lock in the
+    second case. Returns the number of retries the wait made, so a caller that
+    records a write which waited has the count.
 
     The commit is skipped while a merge is in progress: a commit made there
     would conclude the merge or fail on the conflicted index, and it is the
@@ -2763,38 +2773,60 @@ def _commit_state_write(
             f"{named} uncommitted",
             file=sys.stderr,
         )
-        return
+        return 0
+
+    from reckon.crew.merge import (  # deferred: the crew modules import this one
+        DEFAULT_ATTEMPTS,
+        _index_lock_held,
+        _run_waiting_out_a_held_index_lock,
+    )
 
     relative_args = [str(relative) for relative in relative_paths]
-    staged = subprocess.run(
-        ["git", "-C", str(checkout), "add", "--", *relative_args],
-        capture_output=True,
-        text=True,
-        check=False,
+
+    def stage(_attempt: int) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            ["git", "-C", str(checkout), "add", "--", *relative_args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    staged, stage_retries = _run_waiting_out_a_held_index_lock(
+        checkout, stage, sleep=sleep
     )
     if staged.returncode != 0:
+        if _index_lock_held(checkout):
+            raise LedgerError(
+                f"could not stage {what} write {named}: the checkout's "
+                f"index.lock stayed held for {DEFAULT_ATTEMPTS} attempts"
+            )
         raise LedgerError(
             f"could not stage {what} write {named}: "
             f"{staged.stderr.strip() or staged.stdout.strip()}"
         )
 
-    committed = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(checkout),
-            "commit",
-            "--only",
-            "-m",
-            subject,
-            "-m",
-            body,
-            "--",
-            *relative_args,
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
+    def commit(_attempt: int) -> subprocess.CompletedProcess[str]:
+        return subprocess.run(
+            [
+                "git",
+                "-C",
+                str(checkout),
+                "commit",
+                "--only",
+                "-m",
+                subject,
+                "-m",
+                body,
+                "--",
+                *relative_args,
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+    committed, commit_retries = _run_waiting_out_a_held_index_lock(
+        checkout, commit, sleep=sleep
     )
     if committed.returncode != 0:
         subprocess.run(
@@ -2803,10 +2835,16 @@ def _commit_state_write(
             text=True,
             check=False,
         )
+        if _index_lock_held(checkout):
+            raise LedgerError(
+                f"could not commit {what} write {named}: the checkout's "
+                f"index.lock stayed held for {DEFAULT_ATTEMPTS} attempts"
+            )
         raise LedgerError(
             f"could not commit {what} write {named}: "
             f"{committed.stderr.strip() or committed.stdout.strip()}"
         )
+    return stage_retries + commit_retries
 
 
 def register_member(
