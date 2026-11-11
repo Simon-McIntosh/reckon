@@ -136,10 +136,10 @@ def test_a_review_without_a_follower_is_refused_before_it_writes(
 
     assert outcome.exit_code == 1, outcome.output
     assert "no registered follower" in outcome.output, outcome.output
-    assert composed == [], "the brief composer ran before the session was judged"
     assert not _report_root().exists(), (
         "a refused review must leave the plan's report directory as it found it"
     )
+    assert composed == [], "the brief composer ran before the session was judged"
 
 
 def test_a_review_with_a_follower_composes_and_dispatches(
