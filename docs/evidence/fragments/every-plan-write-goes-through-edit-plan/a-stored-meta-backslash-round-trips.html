@@ -1,0 +1,39 @@
+<!-- Evidence anchor: a-stored-meta-backslash-round-trips -->
+
+<section id="a-stored-meta-backslash-round-trips-evidence">
+  <h2>A stored meta value carrying a backslash is written back verbatim</h2>
+
+  <p id="a-stored-meta-backslash-round-trips-defect">
+    <code>_set_meta</code> passed the new meta tag to <code>re.sub</code> as a replacement
+    <em>string</em>, which <code>re</code> reads as a template. A stored value carrying a
+    backslash is therefore parsed as a replacement escape: <code>\u00a7</code> (how the
+    JSON store spells a section sign) raises <code>re.PatternError: bad escape \u</code>,
+    and <code>\\</code> silently collapses to <em>one</em> backslash. The first write on a
+    plan inserts the tag and succeeds; the second write replaces it and raises, so the plan
+    could not be written, promoted against or closed until its meta was hand-edited.
+    Reproduction before the repair:
+    <code>_set_meta(head, "plan-descope-reasons", '{"s1":"r\u00a7"}')</code> against a document
+    already carrying that tag returned
+    <code>PatternError: bad escape \u at position 66</code>.
+  </p>
+
+  <p id="a-stored-meta-backslash-round-trips-repair">
+    The replacement is now a callable (<code>lambda _match: tag</code>), so the tag is
+    inserted as one verbatim string and no byte of it is reinterpreted. It is the only
+    <code>re.sub</code> in <code>reckon/_plan_html.py</code> whose replacement carried stored
+    or authored text: the others pass a literal <code>lambda</code> replacement, an empty
+    string, or a constant.
+  </p>
+
+  <p id="a-stored-meta-backslash-round-trips-measure">
+    <code>tests/test_plan_html_meta_roundtrip.py</code> holds two tests. One writes a plan
+    whose <code>plan-descope-reasons</code> holds <code>the section sign § is not ASCII</code>
+    twice in succession and asserts the second write succeeds, that the stored file carries
+    the escaped <code>\u00a7</code>, that the reason reads back unchanged and that the second
+    write is byte-identical to the first. The other writes
+    <code>C:\Users\u00a7\d</code>, <code>\u00a7</code> and <code>\d{2}\s</code> over an
+    existing tag and reads each back byte for byte. Negative control: with
+    <code>_set_meta</code> reverted to the template replacement, both tests fail with
+    <code>re.PatternError</code>. Ruff adds no finding on either staged path.
+  </p>
+</section>
