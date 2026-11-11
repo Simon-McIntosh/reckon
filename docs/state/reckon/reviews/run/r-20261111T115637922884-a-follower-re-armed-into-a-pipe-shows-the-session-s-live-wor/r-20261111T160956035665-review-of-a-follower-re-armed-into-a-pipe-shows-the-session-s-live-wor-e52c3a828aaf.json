@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T16:34:32.772Z",
+  "dispatched_at": "2026-11-11T16:11:50Z",
+  "findings": [
+    {
+      "severity": "blocking",
+      "text": "logs/importer-arm.log:1 blocking: the importer arm the manifest cites for 'the test files importing the changed modules add no failure' was run at 91b0f26ee1, the previous review's head, before the 147-line rewrite of the resume branch this round ships; the other large arms are older still (importers-arm.log at 91b0f26ee1's ancestor 58c31f8d48, replay-subset-arm.log at 9c2928cbb9), and the only arm at the landed head (logs/gate-pair.log, 16af22c4f6, e52c3a828a) covers the node test plus tests/test_follower_rearm_shows_nothing_twice.py only. The third repair advice asked for 'the importer arm at your final head' and the node's own done-when requires it, so the importing files' delta is unmeasured for the change that lands."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:131 non-blocking: the delivered record's stalled entry is written as 'halted', the word the pane draws, not the word production writes; note_delivered (reckon/crew_follow_commands.py:3278) records the row event's to_state, which for a stalled run is 'stalled'. Because every record word in the fixture is already a pane word, no case exercises the record-side mapping at reckon/crew_follow_commands.py:2737-2740: delete that mapping and all six cases stay green while a stalled or delivered run is drawn again on every re-arm. Writing 'stalled' at line 131 would make the assertion bite."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:121 non-blocking: the comment above DRAWN_WORDS names the states 'running' and 'abandoned', while the dict it introduces holds 'working' and 'halted'; a reader checking the fixture against its stated premise is told the wrong three words."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "reckon/crew_follow_commands.py:3377 non-blocking: the comment above the call site still says a pipe is handed the session's current work 'framed as state' so that 'a re-arm is never silent about what it owns', but the landed branch emits no frame and returns \"\" whenever the record already holds every owned run, which is the silent re-arm the section was opened to remove; the comment now describes the code this increment deleted."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor.html:5 non-blocking: plan \u00a7124's deliverable names a framed snapshot with a closing frame and a 'none' line, and a run set that unions the session's live-or-queued runs with the run-scoped duties its obligations view carries; the landed branch draws gap rows over live pointers only, so a delivered run owing a promotion with no live pointer no longer reaches the pane, and the pinned requirement and the code disagree until the section text is reworded or the duties are restored."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:169 non-blocking: _pane_run_ids is dead after the union assertion was deleted; it is the only remaining trace of the views-parity check the section's done-when names, and it now asserts nothing."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261111T160956035665-review-of-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-e52c3a828aaf",
+  "reviewed_base_sha": "91b0f26ee1b178ad799a9141b14a4334df39fdf3",
+  "reviewed_head_sha": "e52c3a828aaf1f2217338c878f2452ce1dc02bfc",
+  "reviewed_run_id": "r-20261111T115637922884-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+  "scores": {
+    "durability": 13,
+    "evidence": 12,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:41:04.016904+00:00",
+  "total": 91
+}
