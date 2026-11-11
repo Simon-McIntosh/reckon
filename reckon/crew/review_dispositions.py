@@ -606,10 +606,13 @@ def _write_disposition_against_finding(
     # The findings are enumerated through the same reader the findings surface
     # uses, so the index the caller sees printed is the index this writer keys
     # against; a second enumeration could count differently and answer the wrong
-    # finding.
-    from reckon.crew import repair as repair_module
+    # finding. ``repair.review_findings`` is deliberately not that reader: it
+    # drops an entry that states no claim, which renumbers every finding after
+    # it, while the surface and the disposition key both count the record's own
+    # findings.
+    from reckon.crew import findings as findings_module
 
-    findings = repair_module.review_findings(record)
+    findings = findings_module._record_findings(record)
     if finding_index >= len(findings):
         raise ValueError(
             f"run {reviewed_run_id!r} carries {len(findings)} findings; "

@@ -187,3 +187,39 @@ def test_a_hand_written_deferred_disposition_is_refused(tmp_path: Path) -> None:
             0,
             kind=review_dispositions.DEFERRED_DISPOSITION_KIND,
         )
+
+
+def test_a_claimless_entry_ahead_of_it_does_not_shift_the_deferral(stored) -> None:
+    """The deferral answers the finding's own index, not a filtered count.
+
+    A plan review keeps an entry that states no claim, so its findings sit at
+    the positions the findings surface numbers them by; an entry a reader drops
+    would renumber every finding after it. The guard and the writer both count
+    the record's own findings, so the deferral answers the row the coordinator
+    was shown rather than the one before it.
+    """
+    record = stored(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": "",
+            "review_run_id": "review-of-the-plan",
+            "status": "delivered",
+            "findings": [
+                {"anchor": "docs/plans/work-flows-to-the-lane.html#1", "text": ""},
+                {
+                    "anchor": "docs/plans/work-flows-to-the-lane.html#2",
+                    "text": "the section body repeats the deliverable",
+                    "type": "non-blocking",
+                },
+            ],
+        }
+    )
+
+    assert queue_landing._undisposed_finding_guard(record) == ""
+
+    assert review_dispositions.record_landed_deferrals(
+        PROJECT, RUN, record, reviewed_head_sha=HEAD
+    ) == [1]
+    assert set(record["finding_dispositions"]) == {"1"}, record["finding_dispositions"]
+    answered = [row for row in _open_rows(record) if row["text"]]
+    assert [row["disposition"] for row in answered] == [f"deferred:{RUN}"], answered
