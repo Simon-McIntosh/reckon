@@ -1,0 +1,39 @@
+<section id="crew-census-lists-and-stops-ownerless-implementation">
+  <h3>Recorded ownership determines the process census</h3>
+  <p><code>reckon crew census</code> lists local processes with a proven dead
+  recorded owner and explains which recorded processes it spares. It reads
+  follower registrations, producer lease registrations, live run pointers and
+  explicit owner stamps. It reports each process's age, state, wait channel and
+  working directory, and identifies sessions with duplicate followers.</p>
+  <p><code>--apply</code> prints the target list before signalling, then rechecks
+  process identity and ownership for every listed pid. Signals use a pidfd, with
+  SIGTERM followed by bounded SIGKILL escalation when necessary. Each stopped,
+  spared or refused target is printed. A renewed producer lease, live owner,
+  unknown ownership, foreign-host record, unverified process identity and the
+  census's own ancestry are preserved. Live pointers remain unchanged.</p>
+  <table>
+    <caption>Verification receipts for the product commit</caption>
+    <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
+    <tbody>
+      <tr><td>Defect reproduction at baseline</td><td>The CLI reports
+      <code>Error: No such command 'census'.</code>, exit 2.</td></tr>
+      <tr><td>Armed baseline gate</td><td>56 passed in 25.59 s; exit 0.</td></tr>
+      <tr><td>Armed product gate</td><td>76 passed in 14.10 s; exit 0.
+      Twenty planted-process cases added; zero added failures.</td></tr>
+      <tr><td>Importer baseline on all_debug</td><td>214 passed in 28.50 s;
+      exit 0.</td></tr>
+      <tr><td>Importer product on all_debug</td><td>215 passed in 26.87 s;
+      exit 0; zero added failures.</td></tr>
+      <tr><td>Owner-liveness mutation</td><td>Removing the selection check lists
+      live-owned stubs: 4 failed, 16 deselected in 1.36 s; exit 1.
+      Every ownership source fails independently.</td></tr>
+      <tr><td>Test applied to baseline source</td><td>Collection fails because
+      the census module is absent; exit 2.</td></tr>
+    </tbody>
+  </table>
+  <p>Product commit: <code>b9381df2b962fbd0fab2c3a8fcddca17c4f4dc56</code>.
+  Gate logs and the delivery manifest are retained in run
+  <code>r-20261111T210250166348-crew-census-lists-and-stops-ownerless</code>.
+  These measurements cover this node's isolated change. No production process
+  sweep or plan-state transition was performed.</p>
+</section>
