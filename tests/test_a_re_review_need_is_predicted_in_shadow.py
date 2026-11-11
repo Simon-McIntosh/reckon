@@ -12,15 +12,28 @@ Everything here runs against a temporary crew home and a stubbed Jev, so nothing
 reaches the live service and no real run's review state is touched.
 """
 
+# ruff: noqa: F811 - the imported fixture is also a test parameter.
+
 from __future__ import annotations
 
+import importlib
+import os
 import subprocess
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery_review_dispatch, review, review_need
+from reckon import mcp_views
+from reckon._mcp_tools import CrewArgs
+from reckon.crew import recovery_review_dispatch, review, review_need, runs
 from reckon.crew.picker import client
+from tests.test_scoring_dispatches_its_review import (
+    CONFIG,
+    VALID_REVIEW,
+    _release_armed_producer,
+    _scoring_pointer,
+    isolated_project,  # noqa: F401 - the fixture is also a test parameter
+)
 
 PROJECT = "probe"
 RUN_ID = "r-probed-run"
@@ -316,7 +329,7 @@ def test_the_view_counts_what_two_thresholds_would_have_skipped(crew_home):
     assert high["kept"] == 1
     assert view["totals"]["blocking"] == 2
     assert view["totals"]["clean"] == 2
-    assert view["rows_needed"] == review_need.SHADOW_ROWS_FOR_DECISION - 4
+    assert view["rows_needed"] == 96
 
 
 def test_an_unmeasured_row_is_counted_as_pending_never_as_clean(crew_home):
@@ -334,3 +347,188 @@ def test_an_unmeasured_row_is_counted_as_pending_never_as_clean(crew_home):
     assert view["thresholds"]["0.50"]["skipped_clean"] == 0
     assert view["thresholds"]["0.50"]["skipped_pending"] == 1
     assert view["totals"]["awaiting_outcome"] == 1
+
+
+# ── An earlier revision that cannot be read is unmeasured, not a zero ───────
+
+
+def test_a_re_review_whose_earlier_revision_cannot_be_read_is_unmeasured(
+    crew_home, reviewed_run, monkeypatch
+):
+    """A diff git cannot produce must not reach the tally as a confident skip.
+
+    The judge reads an empty change as nothing having changed, so passing the
+    failure through as an empty diff would record a probability of zero — the
+    one value a threshold can never learn anything from, and one that reads as
+    a clean prediction. The row is written unavailable with the reason instead.
+    """
+    review.store_review(
+        {
+            "project": PROJECT,
+            "reviewed_run_id": RUN_ID,
+            "review_run_id": "r-the-first-review",
+            "status": "parsed",
+            "scores": {
+                "correctness": 4,
+                "design": 4,
+                "tests": 4,
+                "clarity": 4,
+                "scope": 4,
+                "safety": 4,
+            },
+            "findings": [],
+            "reviewed_base_sha": "0" * 40,
+            "reviewed_head_sha": "0" * 40,
+        }
+    )
+    stub = _stub(monkeypatch, StubJev(probability=0.9))
+
+    written = recovery_review_dispatch.record_re_review_prediction(
+        reviewed_run["record"], _fields(reviewed_run), REVIEW_RUN_ID
+    )
+
+    assert written is not None
+    row = review_need.recorded_rows(PROJECT)[0]
+    assert row["available"] is False
+    assert row["probability"] is None
+    assert row["reason"]
+    assert "revision" in row["reason"]
+    # The judge was never asked, because there was no measured change to ask it.
+    assert stub.requests == []
+
+
+# ── The counts are reachable through the crew view ──────────────────────────
+
+
+def test_the_view_is_reachable_as_a_crew_view(crew_home):
+    """The counts must be readable outside this test, through the surface."""
+    _plant(PROJECT, 1, 0.10, "blocking")
+
+    assert "review-need" in mcp_views.crew_view_names()
+    assert "review-need" in CrewArgs.model_fields["view"].annotation.__args__
+    served = mcp_views.serve_crew_view("review-need", project=PROJECT)
+    assert served["ok"] is True
+    assert served["totals"]["blocking"] == 1
+
+
+# ── The reflex itself writes the row, and completes it ──────────────────────
+# Both assertions go through dispatch_review_for_run: a test that called the
+# recorders directly would keep passing after the reflex stopped calling them.
+# Only the lane launch is stubbed, because whether a backend binary answers on
+# this host is not what these two lines decide.
+
+
+def _stub_lane_launch(monkeypatch, review_run_id: str) -> str:
+    """Stand in for the launch, so the reflex runs and no worker is spawned."""
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+
+    def launch(**kwargs):
+        return {"run_id": review_run_id, "dispatched": True}
+
+    monkeypatch.setattr(dispatch_module, "dispatch", launch)
+    return review_run_id
+
+
+def _reviewed_repo_with_a_later_commit(isolated_project, monkeypatch):
+    """The fixture repository, reviewed at its first commit and moved since."""
+    config_home, repo = isolated_project
+    reviewed_head = _git(repo, "rev-parse", "HEAD")
+    review.store_review(
+        {
+            "project": "sample",
+            "reviewed_run_id": "r-second-review",
+            "review_run_id": "r-the-first-review",
+            "status": "parsed",
+            "scores": {
+                "correctness": 0,
+                "design": 0,
+                "tests": 0,
+                "clarity": 0,
+                "scope": 0,
+                "safety": 0,
+            },
+            "findings": [],
+            "reviewed_base_sha": reviewed_head,
+            "reviewed_head_sha": reviewed_head,
+        }
+    )
+    (repo / "work.py").write_text("value = 2\n", encoding="utf-8")
+    _git(repo, "add", "work.py")
+    _git(repo, "commit", "-qm", "the change since the review")
+    head = _git(repo, "rev-parse", "HEAD")
+    stub = _stub(monkeypatch, StubJev(probability=0.66))
+    record = _scoring_pointer(config_home, repo, "r-second-review")
+    return config_home, repo, record, reviewed_head, head, stub
+
+
+@pytest.mark.arms_watch_producer
+def test_the_reflex_records_the_prediction_it_dispatches_on(
+    isolated_project, monkeypatch
+):
+    _config_home, _repo, record, reviewed_head, head, stub = (
+        _reviewed_repo_with_a_later_commit(isolated_project, monkeypatch)
+    )
+    _stub_lane_launch(monkeypatch, "r-stub-review-run")
+
+    try:
+        with runs.follower_claim("sample", "session-orchestrating", delivery="stream"):
+            report = recovery_review_dispatch.dispatch_review_for_run(
+                record, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+            )
+    finally:
+        _release_armed_producer()
+
+    assert report["dispatched"] is True, report
+    assert report["review_run_id"] == "r-stub-review-run"
+    rows = review_need.recorded_rows("sample")
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["review_run_id"] == "r-stub-review-run"
+    assert row["reviewed_run_id"] == "r-second-review"
+    assert row["available"] is True
+    assert row["probability"] == pytest.approx(0.66)
+    assert row["inputs"]["previous_reviewed_head"] == reviewed_head
+    assert row["inputs"]["head"] == head
+    assert row["inputs"]["paths"] == ["work.py"]
+    assert stub.requests, "the judge was never asked"
+
+
+@pytest.mark.arms_watch_producer
+def test_the_reflex_completes_the_row_when_the_review_is_stored(
+    isolated_project, monkeypatch
+):
+    _config_home, _repo, record, reviewed_head, head, _stub_jev = (
+        _reviewed_repo_with_a_later_commit(isolated_project, monkeypatch)
+    )
+    review_run_id = _stub_lane_launch(monkeypatch, "r-stub-review-run")
+
+    try:
+        with runs.follower_claim("sample", "session-orchestrating", delivery="stream"):
+            report = recovery_review_dispatch.dispatch_review_for_run(
+                record, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+            )
+            assert report["dispatched"] is True, report
+            parsed = review.parse_review(VALID_REVIEW)
+            review.store_review(
+                {
+                    "project": "sample",
+                    "reviewed_run_id": "r-second-review",
+                    "review_run_id": review_run_id,
+                    "findings": [],
+                    "reviewed_base_sha": reviewed_head,
+                    "reviewed_head_sha": head,
+                    **parsed,
+                }
+            )
+            pointer = runs.read_pointer("r-second-review")
+            second = recovery_review_dispatch.dispatch_review_for_run(
+                pointer, config=CONFIG, launcher=lambda *a, **k: os.getpid()
+            )
+    finally:
+        _release_armed_producer()
+
+    assert second["dispatched"] is False
+    assert second["review_status"] == "present"
+    row = review_need.recorded_rows("sample")[0]
+    assert row["review_run_id"] == review_run_id
+    assert row["outcome"]["verdict"] == "clean"

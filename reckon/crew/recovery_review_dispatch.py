@@ -1352,8 +1352,24 @@ def re_review_prediction(
         return None
     tree = _review_tree(record)
     prior_head = review_described_head(prior, tree=tree)
-    paths = _changed_paths_between(tree, prior_head, head) if prior_head else None
-    diff = (_diff_between(tree, prior_head, head) or "") if prior_head else ""
+    # A re-review that cannot be read is recorded as unmeasured, never as a low
+    # probability: an empty diff here would reach the judge as "unchanged" and
+    # come back as a confident zero, which is the one value the tally must not
+    # invent. The reason travels with the row so the tally can say why.
+    unmeasured = ""
+    paths: list[str] | None = None
+    diff = ""
+    if not prior_head:
+        unmeasured = "the earlier review names no resolvable revision"
+    elif tree is None:
+        unmeasured = "the run's tree is not readable"
+    else:
+        measured = _diff_between(tree, prior_head, head)
+        if measured is None:
+            unmeasured = "git cannot diff the earlier review's revision from this head"
+        else:
+            diff = measured
+            paths = _changed_paths_between(tree, prior_head, head)
     node = record.get("node") or {}
     goal = str(node.get("goal") or "")
     done_when = str(node.get("done_when") or "")
@@ -1366,11 +1382,15 @@ def re_review_prediction(
         "findings": findings,
         "blocking_findings": _blocking_findings(prior),
     }
-    verdict = review_need.predict_blocking(
-        goal=goal,
-        done_when=done_when,
-        diff=diff,
-        prior=prior_summary,
+    verdict = (
+        review_need.Verdict(None, None, "unjudged", unmeasured)
+        if unmeasured
+        else review_need.predict_blocking(
+            goal=goal,
+            done_when=done_when,
+            diff=diff,
+            prior=prior_summary,
+        )
     )
     return {
         "verdict": verdict,

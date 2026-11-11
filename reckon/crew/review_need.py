@@ -310,8 +310,9 @@ def judge(
 # Every further code review is judged before it is dispatched and the judgement
 # is recorded with what it was given, then the review's own outcome is recorded
 # beside it once the review is stored. Nothing is skipped on the judgement: it
-# is an observation of what a threshold would have cost, and the lead decides
-# from the recorded rows whether any re-review is ever skipped.
+# is an observation of what a threshold would have cost, and a threshold becomes
+# a skip rule only once enough judged rows with outcomes exist to show what it
+# would have dropped.
 SHADOW_ROOT_NAME = "review-need-rows"
 
 
@@ -352,7 +353,9 @@ def predict_blocking(
 #: below one of them would have been skipped had that threshold been in force.
 SHADOW_THRESHOLDS: tuple[float, ...] = (0.25, 0.5)
 
-#: The number of judged re-reviews the lead's decision needs before it is taken.
+#: The number of judged re-reviews carrying an outcome at which a threshold may
+#: be read as a skip rule. Below it the counts describe too few reviews for the
+#: cost of a skip to be distinguishable from the run of luck around it.
 SHADOW_ROWS_FOR_DECISION = 100
 
 _SAFE_ROW_ID = re.compile(r"[^A-Za-z0-9._-]+")
