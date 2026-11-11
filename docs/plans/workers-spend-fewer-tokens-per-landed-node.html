@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -205,6 +205,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-s8-arms-ready" data-who="reckon-build" data-when="2026-11-11T05:35:00Z">
     <div class="r-comment-body"><p>All three treatment arms exist (§4, §5, §7). Routing recipe for the population, so every coordinator dispatches the same arm definitions: local baseline <code>--backend clive</code>; local anchored <code>--backend clive --set backends.clive.anchored_edit=true</code>; local omp <code>--backend omp-local</code>; codex baseline <code>--backend codex</code>; codex anchored <code>--backend codex --set backends.codex.anchored_edit=true</code>. Each dispatch names its arm in <code>--comment</code> (for example <code>pilot-arm: clive-anchored</code>), and the split is read from the run record's <code>anchored_edit</code> field and backend, never from the comment. Before the measurement node: record <code>docs/research/fixtures/codex-refused-patch-stream.jsonl</code>.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-s8-codex-fixture" data-who="reckon-build" data-when="2026-11-11T08:05:00Z">
+    <div class="r-comment-body"><p>The codex positive control's fixture is recorded at <code>docs/research/fixtures/codex-refused-patch-stream.jsonl</code> (codex-cli 0.167, a headless run told to call <code>apply_patch</code> once with a patch whose context is absent from the file). It shows why §1's census found zero codex edit failures: <strong>a refused <code>apply_patch</code> is not an item in <code>codex exec --json</code> at all</strong>. The stream holds only <code>thread.started</code>, two <code>agent_message</code> items and <code>turn.completed</code>; the refusal (<q>apply_patch verification failed: Failed to find context 'def average(values):' …</q>) appears only in the model's own message text. A first attempt, told not to read the file, never called the tool and simply predicted the refusal. So codex edit failures can be counted only from message text, which is model-dependent; the measurement node reports the codex edit-failure rate as a lower bound read from that text, and leans on input per landed node and the anchored-tool share for the codex arms.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261111T055936143272-review-of-armed-suite-collectible-tests-fcec1e7f5b06" data-who="reckon-build" data-when="2026-11-11T06:13:03.643Z">
     <div class="r-comment-body"><p>review of armed-suite-collectible-tests stored at the reviewed run's review-records directory as both the run-named record and its .at-fcec1e7f sibling; scored goal_fidelity 19, evidence 13, scope_discipline 20, durability 18, fit 19, reuse 20, with two non-blocking findings (truncated after-arm log, one co-moving assertion)</p></div>
