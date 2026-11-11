@@ -84,15 +84,15 @@
   unclaimed, run the hook once, and see the listing empty with the message named in the receipts.</p>
 
   <h3 id="worker-inbox-hook-reconciled">Reconciling the seeding contract</h3>
-  <p>Every seeded Claude home now carries one more <code>PostToolUse</code> entry, so four files
-  that asserted the seeded hooks equal the operator's own were updated — without loosening what
-  each one checks. Each keeps the comparison over the operator's groups <em>exact</em> and names
-  the one addition beside it, because a looser comparison would stop seeing a change in any other
-  group, which is the property those cases exist to protect. The byte-for-byte equality with the
-  operator's file is replaced by that group equality plus the operator's file still being compared
-  unchanged, since the seed now writes a document that is not identical to it. Each
-  is a consequence of this section's requirement rather than a defect in it, and none belongs to
-  a concurrent node.</p>
+  <p>Every seeded Claude home now carries one more <code>PostToolUse</code> entry, so the three
+  test files that asserted the seeded hooks equal the operator's own were updated — without
+  loosening what each one checks. Each keeps the comparison over the operator's groups
+  <em>exact</em> and names the one addition beside it, because a looser comparison would stop
+  seeing a change in any other group, which is the property those cases exist to protect. The
+  byte-for-byte equality with the operator's file is replaced by that group equality plus the
+  operator's file still being compared unchanged, since the seed now writes a document that is not
+  identical to it. Every one of those edits is a consequence of this section's requirement rather
+  than a defect in it, and none belongs to a concurrent node.</p>
   <p>Two integration points remain outside it, and both are named so a reader does not mistake
   "the check exists" for "the check is enforced": promotion-time enforcement of the manifest's
   messages field would live in <code>reckon/crew/reports.py</code> — the check implemented here
