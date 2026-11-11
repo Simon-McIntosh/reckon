@@ -81,10 +81,10 @@
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_wait_releases_when_its_upstream_lands.py
   tests/test_staged_write_inventory.py</code> reports
-  <code>56 passed</code>, <code>EXIT=0</code> at the head, run on the
+  <code>57 passed</code>, <code>EXIT=0</code> at the head, run on the
   <code>all_debug</code> partition. The base arm of the same template, resolved
   over the base tree where the new file does not exist, reports
-  <code>51 passed</code>, <code>EXIT=0</code>: the five added tests are the
+  <code>51 passed</code>, <code>EXIT=0</code>: the six added tests are the
   only difference and no base failure is added.
 
   <p><strong>Cases.</strong> The first test drives the whole sequence: a
@@ -116,11 +116,12 @@
   resolves elsewhere fails at the component that decides rather than as a phase
   assertion further down.
 
-  <p><strong>Fresh trees.</strong> Two runs of the gate command in a tree of
-  their own — the head revision, and the revision whose failure this round
-  reported — report <code>56 passed</code>, <code>EXIT=0</code>, the second
-  with the host's real mounts registry exported and the fixture's config home
-  unset, which is the hostile case the pinning exists for. A literal
+  <p><strong>Fresh trees.</strong> Runs of the gate command in a tree of their
+  own report <code>57 passed</code>, <code>EXIT=0</code> at the head, and
+  <code>56 passed</code>, <code>EXIT=0</code> at the revision whose failure was
+  reported, the latter with the host's real mounts registry exported and the
+  fixture's config home unset, which is the hostile case the pinning exists for.
+  A literal
   <code>git worktree add</code> cannot be created from this worker: the main
   checkout's <code>.git</code> is read-only here
   (<code>git worktree add</code> fails with
@@ -130,20 +131,22 @@
   <code>.venv</code> symlinked in — log <code>fresh-tree-head.log</code>, and
   <code>repro-224-hostile.log</code> beside it. The one read whose answer could
   depend on which tree is asking was the ledger index, and it is gone: the guard
-  reads the run documents directly.
+  reads the run rows through an index keyed on the write generation.
 
   <p><strong>Negative control.</strong> With
   <code>_section_run_unlanded</code> made to answer <code>False</code> — the
-  declaration alone releasing — the same five tests report
-  <code>4 failed, 1 passed</code>, <code>EXIT=1</code>, failing every case that
+  declaration alone releasing — the same six tests report
+  <code>5 failed, 1 passed</code>, <code>EXIT=1</code>, failing every case that
   holds. The guard is load-bearing: without it the first case releases before
   the merge, which is the defect the section reports.
 
   <p><strong>The ledger branch is the one that decides.</strong> A second
   control removes only the <code>_unloaded_sections</code> branch and runs the
-  same five tests: <code>1 failed, 4 passed</code>, <code>EXIT=1</code>, and the
-  failure is the first case at the point where the pointer has been removed and
-  the promotion has recorded its revision. The branch production takes is
+  same six tests: <code>2 failed, 4 passed</code>, <code>EXIT=1</code>. Both
+  failures are the cases that hold through the promotion — the one that drives
+  the sequence and the one that warms the index before it — and both fail at the
+  point where the pointer has been removed and the promotion has recorded its
+  revision. The branch production takes is
   therefore exercised by the test rather than merely present beside it.
 
   <p><strong>Regression.</strong> Six queue tests carrying dependency waits,
