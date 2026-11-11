@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T07:08:33.741Z",
+  "dispatched_at": "2026-11-11T07:02:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:190",
+      "id": "reasoning-1",
+      "reason": "the fix is a plan-state write (\u00a79's landed record and its body reconciled), and until it happens \u00a711's premise is an unattributed claim and \u00a79 still reads as unstarted work to anyone reading the roadmap.",
+      "text": "\u00a711 opens \"The codex delivery node (\u00a79) proved the mechanism: \u2026 a headless codex run claimed an inbox message, wrote one receipt and quoted the codeword\", but \u00a79's section element (plan.html:181) still declares `data-status=\"implementable\"` with no landed summary, and \u00a79's body (plan.html:182) still says \"the prototype never got a codex hook to run (every attempt stopped at trust), so this section's node is the first to verify it\" \u2014 the plan now states two incompatible things about the same measurement",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:29",
+      "id": "wiring-1",
+      "reason": "as declared, the queue will release \u00a79 as soon as \u00a78 is done, and its node will reach a live check that `crew tell` refuses for every codex run, so the run blocks on a dependency the plan never named.",
+      "text": "`plan-section-depends-on` gained no entry for the new \u00a711, and \u00a711 closes \"Once this lands, the coordinator dispatches \u00a79's live check\", which means \u00a79's done-when cannot be satisfied before \u00a711 lands, yet \u00a79 declares only `a-live-worker-can-be-reached#s8`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:190",
+      "id": "reasoning-2",
+      "reason": "the deliverable already replaces that refusal with a per-dialect predicate, so an implementer reaches the same code; only the description of the current refusal is loose.",
+      "text": "\u00a711's Why says `crew tell` \"still refuses every live run whose home lacks the hook in `settings.json`, which is every codex run\", but the code refuses a codex run one branch earlier, at the dialect test (`reckon/crew_run_commands.py:2554`, \"inbox hook is registered in Claude-dialect run homes only\"), before the settings check at :2564 is ever reached",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fa2ad2203730a7c1cd630a9f953419206aa12cd5",
+  "plan_fingerprint": "9898bf7211f6853b9771fbe0c910843e1b40cf7186f4bfdf0602b6292a5c0289",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 37,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T070038853710-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "53a8c7d4fd651601515ff00d31e2ade6bd1a5afe",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew_run_commands.py` (`crew_tell` at :2499), `reckon/mcp_views.py` (`_unclaimed_message` at :4362, `run_inbox_messages` at :4325) and `reckon/hooks/worker_inbox.py` (`receipts` at :235, `park_unreadable` at :253) all exist, and \u00a711's `\u00a79` resolves to the `id=\"s9\"` heading.",
+    "done_when": "pass \u2014 \u00a710's done-when names a mutation that must flip its separation test (failure receipts merged back into delivered), and \u00a711's names one that must flip its missing-trust refusal (codex branch accepting any codex run); both are measurements that can fail.",
+    "evidence_paths": "pass \u2014 neither changed section names a scratchpad or node-local path; the gate is the repository's own suite under the run's record, and \u00a711 names no temporary location to fault.",
+    "naming": "pass \u2014 \u00a711 and \u00a710 name only existing modules, symbols and the `crew tell` verb; no plan label, stage name or ticket number reaches code.",
+    "reasoning": "a finding \u2014 \u00a711's Why asserts as established that \u00a79's node proved codex delivery, while \u00a79's own section record still reads `data-status=\"implementable\"` with no landed summary and its body still says the prototype never got a codex hook to run and that \u00a79's node is the first to verify it.",
+    "single_goal": "pass \u2014 \u00a710 carries one goal (the run view reports failed/unreadable as such) with three manifestations of it, and \u00a711 carries one (per-dialect reachability in `crew tell`).",
+    "wiring": "a finding \u2014 `_document` (plan.html:29) declares `plan-section-depends-on` as `{s9:[s8]}` only, so the new \u00a711 declares no dependency, and the s9 side of the pair \u00a711 creates (s9's live check needs `crew tell` to accept codex) is undeclared too."
+  },
+  "section_digests": {
+    "_document": "146de7833dd6a5422ab5378c912cfe601e4336447db999d51b396c46714b3837",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s10": "cb57497929cb5c6194adc69e42bbe2054f24cc4d2848d8c35892fa1a7604ac6a",
+    "s11": "f1bac1b14220b92cc4c81a7284292889b6839bed80915e08448c6a4a05925c7a",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "370dc84ad6d12da660f0a9c95ec0239ccceac16de70baee83c48a62778a2b195",
+    "s9": "e0c6bf5420ee6806431bd196fb5326b4c7fb5dbc39f600c729eb12a10b7b86cf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:17:50.809390+00:00",
+  "total": null
+}
