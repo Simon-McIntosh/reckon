@@ -22,30 +22,32 @@
   exists, because a review the lane held was never dispatched and a row for it
   would put a guess about nothing into the population.</p>
 
-  <p><strong>The view.</strong> <code>review_need.shadow_view(project)</code>
-  reports, over the recorded rows, how many blocking re-reviews and how many
-  clean ones each threshold would have skipped, and how many judged rows with an
-  outcome still stand between the record and the hundred the lead's decision
-  needs. A row whose outcome has not arrived is counted as pending and never as
-  clean, so an unmeasured row cannot flatter a threshold. It is not reachable as
-  a crew view: the dispatcher's registry is paired with the crew tool's argument
-  model, and declaring the view there needs <code>reckon/_mcp_tools.py</code>,
-  outside this run's write paths. The counts are the deliverable and they are
-  tested; wiring them onto a surface is one line in each of those two files.</p>
+  <p><strong>The view.</strong> <code>crew view review-need</code> reports, over
+  the recorded rows, how many blocking re-reviews and how many clean ones each
+  threshold would have skipped, and how many judged rows with an outcome still
+  stand between the record and the hundred that a threshold needs before it can
+  be read as a skip rule. A row whose outcome has not arrived is counted as
+  pending and never as clean, so an unmeasured row cannot flatter a threshold.
+  The view is declared in <code>reckon/mcp_views.py</code> and in the crew tool's
+  argument model, which a parity test holds together, and its counts are served by
+  <code>review_need.shadow_view</code>.</p>
+
+  <p><strong>A row is never guessed.</strong> When the earlier review names no
+  resolvable revision, or git cannot diff the two revisions, the row is written
+  unavailable with that reason. Passing an empty change to the judge instead
+  would come back as a probability of zero, which reads to every threshold as a
+  confident clean skip — the one number the tally must never invent.</p>
 
   <h3 id="re-review-need-in-shadow-measured">Measured</h3>
 
   <p>Gate: <code>tests/test_a_re_review_need_is_predicted_in_shadow.py
-  tests/test_staged_write_inventory.py</code> — 59 passed, EXIT=0, against a base
-  the node's new file is absent from (51 passed there, EXIT=0). The negative
-  control replaces the prediction write with a bare return and reddens five
-  cases, naming the ledger-row assertion first. The view's counts are pinned at
-  0.25 and 0.5 against four planted rows: two skipped at 0.25 (one blocking, one
-  clean) and three at 0.5 (two blocking, one clean). Across the 112 test files
-  that import the changed modules, the same arm run at the base revision and at
-  the delivered one gives the same 55 failing and erroring ids — 52 failed,
-  1,154 passed, 3 errors each, both arms on <code>all_debug</code> from a
-  node-local copy — so the change adds no failure and repairs none. That
-  comparison is what caught the withdrawn view registration, which had added one
-  failure by itself.</p>
+  tests/test_staged_write_inventory.py</code>, run on <code>all_debug</code> at
+  the base revision and at the delivered head, the command resolved at each arm's
+  own tree. The negative control replaces the prediction write with a bare return
+  and reddens five cases, naming the ledger-row assertion first. Two further
+  controls remove one production wiring line each — the prediction written after
+  a dispatch, and the outcome written when a review is stored — and each reddens
+  the test that drives that line through the reflex. The view's counts are pinned
+  at 0.25 and 0.5 against four planted rows: two skipped at 0.25 (one blocking,
+  one clean) and three at 0.5 (two blocking, one clean).</p>
 </section>
