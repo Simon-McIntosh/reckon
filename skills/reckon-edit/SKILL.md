@@ -505,13 +505,13 @@ Copyable landing-beat examples, one per op:
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2-data-prep",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
   {"op": "set", "path": "section_declarations.s2", "value": "done"},
   {"op": "append", "target": "comments", "section": "s2",
    "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
-     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2-data-prep\">evidence</a></p>"}}
 ]
 ```
 

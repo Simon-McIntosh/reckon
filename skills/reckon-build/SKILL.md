@@ -383,13 +383,13 @@ and records the result, and `reckon crew suite waive --project <project>
 <!-- landing-beat-examples -->
 ```json
 [
-  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2",
+  {"op": "append_evidence", "plan": "my-plan", "anchor": "s2-data-prep",
    "title": "§2 — data prep pipeline landed",
    "body": "<p>Built <code>src/data_prep.py</code>; 11,237 shots in 3h12m; eval MAE 0.04.</p>"},
   {"op": "set", "path": "section_declarations.s2", "value": "done"},
   {"op": "append", "target": "comments", "section": "s2",
    "item": {"id": "c-close-s2", "who": "reckon-build", "when": "2026-06-24T00:00:00Z",
-     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2\">evidence</a></p>"}}
+     "body": "<p>§2 landed: built <code>src/data_prep.py</code> (commit <code>abc1234</code>); 11,237 shots encoded in 3h12m; eval MAE 0.04. <a href=\"/my-project/evidence/archive/my-plan-landed.html#s2-data-prep\">evidence</a></p>"}}
 ]
 ```
 
@@ -411,6 +411,13 @@ independent evidence. Read the obligations view,
 `crew(view="obligations", session=<session>)`, as part of this and work it to
 empty, or acknowledge each item with `reckon crew ack`, before the turn ends; a
 non-terminal in-flight run with no process is not a completed fleet.
+
+A live worker that needs one more instruction before it ends takes it through
+`reckon crew tell --run <id> "<message>"`, which writes the message into the
+run's inbox for delivery at its next tool call; the reply reports
+`queued_for_next_tool_call`, and only the run's own receipt shows it arrived.
+A message to a run that has ended is refused, naming the channel that reaches
+a stopped worker instead.
 
 ### 5b. Read what the worker produced
 
