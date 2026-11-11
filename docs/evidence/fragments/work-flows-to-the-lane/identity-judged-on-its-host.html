@@ -1,0 +1,66 @@
+<section id="identity-judged-on-its-host-landing">
+  <h2>An execution identity is judged on the host that published it</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/dispatch_claims.py</code>
+  wrote <code>claims/exec-&lt;pid&gt;.identity</code> as a bare token, so both
+  readers of that file — the identity sweep and the dispatch-claim reclaim —
+  judged the recorded pid with the reading node's kernel. The claims directory
+  sits under a crew home every login and compute node shares, and a pid is
+  meaningful only on the node that issued it, so a sweep run here found a live
+  holder on another node dead, removed its identity, and left a later dispatch
+  free to reclaim a claim that holder still held.</p>
+
+  <p>The file now carries the publishing host above its token. Two readers
+  parse it through one pair of helpers, <code>parse_exec_identity</code> and
+  <code>read_exec_identity</code>, so the format cannot drift between the writer
+  and the sweep.</p>
+
+  <p><strong>The sweep.</strong> <code>sweep_exec_identities</code> in
+  <code>reckon/crew/gc.py</code> removes a file whose host is the one running
+  the sweep and whose process is gone or reused there, as before. A file naming
+  another host is kept while it is inside
+  <code>EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS</code> and removed beyond it;
+  a file whose age cannot be read is kept. The bound is a day: the only process
+  that publishes an identity is a dispatch composing a launch while it holds a
+  claim, and the admission pass releases a launch that outlives its token, so a
+  foreign file older than that names a holder that has gone. A file written
+  before the host was recorded carries the token alone, reads as unknown host,
+  and is judged on local evidence exactly as before.</p>
+
+  <p><strong>The reclaim decision.</strong> <code>_claim_holder_is_alive</code>
+  reads the holder's identity file before it touches the kernel, and a holder
+  whose identity names another host counts as present: this kernel cannot show
+  a pid issued elsewhere gone, and reclaiming on that evidence would leave two
+  dispatches holding one path. The token comparison that distinguishes a
+  re-executed holder is unchanged, and now compares the token half of both
+  sides.</p>
+
+  <table id="identity-judged-on-its-host-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both arms
+    ran on <code>all_debug</code>, one at a time, no <code>-n</code>.</caption>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base suite (new test copied in, and the staged-write inventory)</td>
+        <td><code>a4ca8b6c</code> as a detached worktree</td>
+        <td>3 failed, 52 passed, <code>EXIT=1</code> — the three arms that need
+        the host field, and no others</td></tr>
+      <tr><td>after suite (same two files)</td>
+        <td>worktree head <code>2b6a3006</code></td>
+        <td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: the host field ignored in the sweep</td>
+        <td><code>2b6a3006</code> with the declared mutation</td>
+        <td><code>test_an_other_hosts_file_inside_the_bound_is_kept</code>
+        FAILED, 1 failed, 3 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>The base arm's failures are the ones this node removes.</strong>
+  All three name behaviour the base revision cannot have: keeping a foreign
+  host's file inside the bound, removing it beyond the bound, and refusing to
+  reclaim a claim held from another host. The fourth arm, a file naming this
+  host and a dead pid, passes at the base revision as well, because local
+  judgement there is already correct and this change leaves it untouched. The
+  counts in this table are the summary lines of the arm logs the run directory
+  holds.</p>
+</section>
