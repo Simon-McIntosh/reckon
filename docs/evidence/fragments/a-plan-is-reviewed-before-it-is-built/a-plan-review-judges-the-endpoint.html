@@ -22,9 +22,33 @@ clauses above, including that the base rubric's method checks are absent. Gate a
 base arm over the same resolved files, the new test absent from that tree: 79
 passed, <code>EXIT=0</code> (<code>gate-base.log</code>), both on
 <code>all_debug</code> with <code>-n 4</code>, one arm at a time.
-<code>tests/test_skill_contracts.py</code> adds no failure: 4 failed at base and
-the same 4 at head (<code>skill-contracts-base.log</code>). Ruff check and ruff
+<code>tests/test_skill_contracts.py</code> adds no failure: 4 failed and 77 passed
+on both arms, with the same four ids at each (<code>skill-contracts-base.log</code>,
+<code>skill-contracts-head.log</code>), so
+<code>tests/test_plan_review_prompt.py</code> passes at head. Ruff check and ruff
 format --check are clean on the staged Python paths.</p>
+
+<p id="a-plan-review-judges-the-endpoint-population">The importer population — the
+222 test files that import <code>reckon.crew.review</code> — ran on
+<code>all_debug</code>, one arm at a time at <code>-n 4</code>: 58 failed and 1846
+passed at head against 57 failed and 1840 passed at base
+(<code>importers-head.log</code>, <code>importers-base.log</code>); the seven
+cases this node's new test file adds and the one intermittent failure below
+account for the difference. 57 failure ids are shared. The one id at
+head alone, <code>tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>,
+is a promotion-time <q>pointer changed while promotion ran</q> race, and a crossover
+measurement places it on this node's rubric text rather than on its code: head
+trees fail intermittently (7 of 21 runs), while base (<code>e0e37167</code>, 15
+runs), <code>origin/main</code> (6 runs) and a head tree carrying the base
+revision's two rubric prompts (6 runs) did not fail once, and a base tree
+carrying only the head prompts failed twice in six. The race is in the promotion
+pointer check, outside this node's write scope; the longer rubric shifts the
+timing of brief composition enough to expose it. Logs:
+<code>importers-head.log</code>, <code>importers-base.log</code>,
+<code>crew-repeat.log</code>, <code>crew-repeat-base.log</code>,
+<code>crew-pair.log</code>, <code>crew-fresh.log</code>,
+<code>crew-main.log</code>, <code>crew-attrib.log</code>,
+<code>crew-attrib2.log</code>.</p>
 
 <p id="a-plan-review-judges-the-endpoint-control">Negative control: restoring the
 base revision's rubric text makes the content and design assertions fail — 4
@@ -47,12 +71,11 @@ does not name the rule to restore. Logs:
 <code>fixture-review-endpoint-fixture.log</code> under the run directory, each
 headed by its revision and command and ending in <code>EXIT=</code>.</p>
 
-<p id="a-plan-review-judges-the-endpoint-outside">Outside this node's scope: one
-test asserting the removed reasoning clause still stands —
-<code>tests/test_plan_review_prompt.py::test_reasoning_check_names_the_real_path_caller</code>
-requires the base rubric's <q>does each section's mechanism produce its
-done-when</q> and <q>with the caller named</q> strings, which this change removes
-by design. It is the only remaining red case (5 failed → 4 failed apart from it
-across the related set) and needs replacing with a case that asserts the endpoint
-checks.</p>
+<p id="a-plan-review-judges-the-endpoint-prompt-contract">The prompt-contract case
+that asserted the removed reasoning clauses is rewritten rather than dropped:
+<code>test_reasoning_check_asks_about_the_endpoint</code> asserts the three checks
+the content rubric now carries — the root cause matches the cited evidence, the
+endpoint is reachable and checkable, and a section prescribing implementation is
+a finding — and asserts the three method clauses absent. No other case in
+<code>tests/test_plan_review_prompt.py</code> changed.</p>
 </section>
