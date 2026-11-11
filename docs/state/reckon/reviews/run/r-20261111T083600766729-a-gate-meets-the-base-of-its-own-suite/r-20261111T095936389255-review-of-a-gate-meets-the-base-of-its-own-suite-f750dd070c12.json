@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:661 (_require_gate_log_agrees)",
+    "reckon/crew/promotion.py:669 (_require_verdict_matches_exit_status)",
+    "reckon/crew/promotion_evidence.py:1765 (_red_base_uncovered_ids via _require_verdict_matches_exit_status)",
+    "reckon/crew/promotion_evidence.py:1769 (_arm_without_completion)"
+  ],
+  "completed_at": "2026-11-11T10:14:23.722Z",
+  "dispatched_at": "2026-11-11T10:06:42Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "a docstring count; the five cases are in the file and named by their tests",
+      "recorded_at": "2026-11-11T10:31:45.710586+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a repeated read of one gate log per candidate pair, a cost on runs recording several pairs, not a correctness defect",
+      "recorded_at": "2026-11-11T10:32:07.630020+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_gate_meets_the_base_of_its_own_suite.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the module docstring enumerates three cases while the file now holds five (digest-only head arm, receipt against the selected pair's head), so a reader of the file is told half of what it guards."
+    },
+    {
+      "file": "reckon/crew/promotion_evidence.py",
+      "line": "1482",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_head_arm_cites_gate` calls `_gate_cited_log_text`, which reads the whole cited log, once per candidate pair inside `_suite_pair_for_gate`'s loop (promotion_evidence.py:1547), and `_head_arm_log_failure_ids` reads it again, so a run recording several pairs reads one gate log several times."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read commit by commit (96d0f89a9b, f750dd070c) against 200bdad1a4; the deletion of `_same_cited_log`/`_DEFAULT_SUITE_PAIR` in favour of `_head_arm_cites_gate`/`_gate_cited_log_text`, and the receipt reading the selected pair's head.",
+    "done_when": "the done_when names tests/test_a_gate_meets_the_base_of_its_own_suite.py plus zero added on the importing test files and ruff; the manifest records gate-base.log \"51 passed\" EXIT=0 and gate-head.log \"56 passed\" EXIT=0, importing arms 53/58 EXIT=0, and three negative-control logs each ending EXIT=1.",
+    "goal": "the node's goal is \"A gate compares each suite arm with the base of its own suite\"; promotion_evidence.py:1513 `_suite_pair_for_gate` selects the pair whose head arm cites the gate's own log, now through the module's existing `_arm_describes_the_cited_log` rule at promotion_evidence.py:1162, and falls back to the default pair.",
+    "manifest": "read; status complete, gate arms 51/56 and importing arms 53/58 with EXIT=0, three controls at EXIT=1, and an outside_scope entry naming the checker-side gap; its after_suite arm is recorded at 96d0f89a9b, one docs-only commit behind the run head.",
+    "write_paths": "the manifest declares promotion_evidence.py, the node test and the evidence fragment; the whole delta 200bdad1a4..f750dd070c touches those three and nothing else."
+  },
+  "justifications": {
+    "durability": "logs/negative-control-digest.log reddens only test_a_digest_only_head_arm_selects_its_own_pair and logs/negative-control-receipt.log only test_a_receipt_is_compared_with_the_selected_pairs_head, so each new assertion fails on the regression it guards.",
+    "evidence": "logs/gate-head.log ends \"56 passed\" EXIT=0 at 96d0f89a9b and logs/gate-base.log ends \"51 passed\" EXIT=0 at bfbef86cc3, each header naming its tree and literal command, and the three control logs each carry their own EXIT=1.",
+    "fit": "tests/test_a_gate_meets_the_base_of_its_own_suite.py:1-11 still describes three cases while the file now holds five, an under-described docstring in a file the change extended.",
+    "goal_fidelity": "promotion_evidence.py:1513 `_suite_pair_for_gate` now matches every recorded pair's head by promotion_evidence.py:1162, closing the digest-only shape that previously fell back to the wrong base.",
+    "reuse": "`_same_cited_log` and `_DEFAULT_SUITE_PAIR` are gone; promotion_evidence.py:1467 delegates the arm-to-log match to the module's owner at promotion_evidence.py:1162 rather than restating it.",
+    "scope_discipline": "`git diff --stat 200bdad1a4..f750dd070c` names only promotion_evidence.py, the node test and the evidence fragment, the three declared paths."
+  },
+  "plan": {
+    "project": "reckon",
+    "section": "s13",
+    "slug": "a-promotion-reads-the-evidence-it-is-given"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"A gate compares each suite arm with the base of its own suite\"; reckon/crew/promotion_evidence.py:1513 `_suite_pair_for_gate` selects the pair whose head arm cites the gate's own log, now through the module's existing `_arm_describes_the_cited_log` rule at promotion_evidence.py:1162, and falls back to the default pair.\nVERDICT done_when: the done_when names tests/test_a_gate_meets_the_base_of_its_own_suite.py plus zero added on the importing test files and ruff; the manifest records gate-base.log \"51 passed\" EXIT=0 and gate-head.log \"56 passed\" EXIT=0, importing arms \"53 passed\"/\"58 passed\" EXIT=0, and three negative-control logs each ending EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/promotion_evidence.py, tests/test_a_gate_meets_the_base_of_its_own_suite.py and the evidence fragment; the whole delta 200bdad1a4..f750dd070c touches those three paths and nothing else.\nVERDICT manifest: read; it records status complete, the gate arms 51/56 and importing arms 53/58 with EXIT=0, three controls at EXIT=1 with their failing ids, and an outside_scope entry naming the checker-side arm validation; its after_suite arm is recorded at 96d0f89a9b, one docs-only commit behind the run head f750dd070c.\nVERDICT diff: read commit by commit (96d0f89a9b, f750dd070c) against 200bdad1a4; the source change deletes `_same_cited_log` and `_DEFAULT_SUITE_PAIR`, adds `_head_arm_cites_gate`/`_gate_cited_log_text` delegating to `_arm_describes_the_cited_log`, and makes the receipt comparison read the selected pair's head arm and name it in the refusal.\nCALL_SITES: reckon/crew/promotion.py:661 (_require_gate_log_agrees), reckon/crew/promotion.py:669 (_require_verdict_matches_exit_status), reckon/crew/promotion_evidence.py:1765 (_red_base_uncovered_ids via _require_verdict_matches_exit_status), reckon/crew/promotion_evidence.py:1769 (_arm_without_completion)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion_evidence.py:1513 `_suite_pair_for_gate` now matches every recorded pair's head by promotion_evidence.py:1162, closing the digest-only shape that previously fell back to the wrong base.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/gate-head.log ends \"56 passed\" EXIT=0 at 96d0f89a9b and logs/gate-base.log ends \"51 passed\" EXIT=0 at bfbef86cc3, each header naming its tree and literal command, and the three control logs each carry their own EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 200bdad1a4..f750dd070c` names only promotion_evidence.py, the node test and the evidence fragment, the three declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/negative-control-digest.log reddens only test_a_digest_only_head_arm_selects_its_own_pair and logs/negative-control-receipt.log only test_a_receipt_is_compared_with_the_selected_pairs_head, so each new assertion fails on the regression it guards.\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_a_gate_meets_the_base_of_its_own_suite.py:1-11 still describes three cases while the file now holds five, an under-described docstring in a file the change extended.\nSCORE reuse: 19\nJUSTIFICATION reuse: `_same_cited_log` and `_DEFAULT_SUITE_PAIR` are gone; promotion_evidence.py:1467 delegates the arm-to-log match to the module's owner at promotion_evidence.py:1162 rather than restating it.\nFINDING tests/test_a_gate_meets_the_base_of_its_own_suite.py:1 non-blocking: the module docstring enumerates three cases while the file now holds five (digest-only head arm, receipt against the selected pair's head), so a reader of the file is told half of what it guards.\nFINDING reckon/crew/promotion_evidence.py:1482 non-blocking: `_head_arm_cites_gate` calls `_gate_cited_log_text`, which reads the whole cited log, once per candidate pair inside `_suite_pair_for_gate`'s loop (promotion_evidence.py:1547), and `_head_arm_log_failure_ids` reads it again, so a run recording several pairs reads one gate log several times.",
+  "review_run_id": "r-20261111T095936389255-review-of-a-gate-meets-the-base-of-its-own-suite-f750dd070c12",
+  "reviewed_base_sha": "200bdad1a4b839547cacaa85dd44e2251695ecb5",
+  "reviewed_head_sha": "f750dd070c12863b7efecea68e60e5e3ba9953b1",
+  "reviewed_run_id": "r-20261111T083600766729-a-gate-meets-the-base-of-its-own-suite",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:57:22.409853+00:00",
+  "total": 113
+}
