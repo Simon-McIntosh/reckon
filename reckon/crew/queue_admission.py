@@ -3416,9 +3416,10 @@ def _section_run_unlanded(
     rows = _ledger_run_rows(project, cache)
     promoted: dict[str, str] = {}
     for row in rows or ():
+        run_id = str(row.get("run_id") or "")
         revision = str(row.get("promoted_revision") or "").strip()
-        if revision and identifies(row):
-            promoted[str(row.get("run_id") or "")] = revision
+        if run_id and revision and not _discarded(run_id) and identifies(row):
+            promoted[run_id] = revision
 
     # The runs of this section that may still land, each with the revision it
     # records. A delivered run carries none until a promotion writes it.
