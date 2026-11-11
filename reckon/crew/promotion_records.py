@@ -480,6 +480,121 @@ def _normalized_command(value: Any) -> str:
     return " ".join(str(value or "").split())
 
 
+def _command_words(value: Any) -> list[str]:
+    """Split a recorded command into words, best-effort.
+
+    A worker records a command as the shell string it ran, so quoting has to be
+    honoured for two spellings of one command to meet. An unparsable string is
+    split on whitespace rather than refused: the comparison that follows still
+    distinguishes it from a command that parses.
+    """
+    text = str(value or "")
+    try:
+        return shlex.split(text)
+    except ValueError:
+        return text.split()
+
+
+def _is_environment_assignment(word: str) -> bool:
+    """Whether a word is a leading ``NAME=value`` environment assignment."""
+    name, separator, _ = word.partition("=")
+    return bool(separator) and name.isidentifier()
+
+
+def _leading_cd_tree(words: Sequence[str]) -> tuple[list[str], str | None]:
+    """Drop a leading ``cd <tree> &&`` and name the tree it changed into.
+
+    A worker commonly runs its arm from the arm's own tree, recording the
+    ``cd`` it used. The tree itself does not change what the arm runs, so it is
+    removed from the comparison and returned, because a relative interpreter or
+    test path is resolved against it.
+    """
+    if len(words) >= 3 and words[0] == "cd" and words[2] == "&&":
+        return list(words[3:]), words[1]
+    return list(words), None
+
+
+def _resolved_interpreter(word: str, tree: Path | None) -> str:
+    """One spelling for one interpreter, whether relative or absolute.
+
+    ``.venv/bin/python`` is the spelling the armed template carries and a
+    worker commonly records the absolute path of the same executable. Resolved
+    against the arm's own tree, both reach the one file the environment's
+    interpreter is, so they compare equal. Two different environments stay two
+    different paths and still refuse.
+    """
+    path = Path(word).expanduser()
+    if not path.is_absolute():
+        if tree is None:
+            return word
+        path = Path(tree) / path
+    try:
+        return str(path.resolve())
+    except OSError:
+        return str(path)
+
+
+def _canonical_suite_command(value: Any, tree: Path | None) -> tuple[str, ...]:
+    """The words a command runs, in a form two spellings of it share.
+
+    A suite arm matches when it runs the same thing, not when it prints the
+    same string. Three differences change the spelling without changing the
+    run: the test files may be named in another order, the interpreter may be
+    absolute where the template is relative, and the arm may change into its
+    own tree first. Test files are compared as a set and the interpreter as one
+    resolved path; every other word, including each flag, is compared in place.
+    """
+    words, changed_into = _leading_cd_tree(_command_words(value))
+    interpreter = next(
+        (
+            index
+            for index, word in enumerate(words)
+            if not _is_environment_assignment(word)
+            and Path(word).name.startswith("python")
+        ),
+        None,
+    )
+    if interpreter is not None:
+        anchor = Path(changed_into).expanduser() if changed_into is not None else tree
+        words[interpreter] = _resolved_interpreter(words[interpreter], anchor)
+    test_files = sorted(
+        word
+        for word in words
+        if not word.startswith("-") and is_collectible_test_path(word)
+    )
+    others = [
+        word
+        for word in words
+        if word.startswith("-") or not is_collectible_test_path(word)
+    ]
+    return tuple(others + test_files)
+
+
+def _same_tree(first: str | Path | None, second: str | Path | None) -> bool:
+    """Whether two spellings name one tree, ignoring a symlinked home."""
+    if first is None or second is None:
+        return True
+    try:
+        return Path(first).expanduser().resolve() == Path(second).expanduser().resolve()
+    except OSError:
+        return str(first) == str(second)
+
+
+def _arm_command_matches(
+    arm_command: str, armed_commands: Sequence[str], tree: Path | None
+) -> bool:
+    """Whether an arm's command runs what one of the armed commands runs.
+
+    The one tree difference that is accepted is a ``cd`` into the arm's own
+    tree; a ``cd`` anywhere else runs another tree's tests, so it refuses.
+    """
+    _, changed_into = _leading_cd_tree(_command_words(arm_command))
+    if changed_into is not None and not _same_tree(changed_into, tree):
+        return False
+    registered = {_canonical_suite_command(armed, tree) for armed in armed_commands}
+    return _canonical_suite_command(arm_command, tree or changed_into) in registered
+
+
 SCOPED_SUITE_PLACEHOLDER = "{node_test_files}"
 
 
@@ -744,6 +859,12 @@ def _arm_missing_fields(
     template over the node's whole declared scope is accepted too, because a
     run dispatched before that rule recorded that spelling and its pair is
     still evidence about the files its tree holds.
+
+    The comparison is by what the command runs rather than by how it is
+    spelled: the test files as a set in either order, the interpreter resolved
+    to one path whether written relative or absolute, and a leading ``cd`` into
+    the arm's own tree allowed. A different test file, flag or interpreter is
+    still a different suite.
     """
     declared = " ".join(str(record.get("suite_command") or "").split())
     if SCOPED_SUITE_PLACEHOLDER not in declared:
@@ -751,8 +872,8 @@ def _arm_missing_fields(
         # the one command as written.
         missing: list[str] = []
         arm_command = str(observation.get("command") or "").strip()
-        if arm_command and _normalized_command(arm_command) != _normalized_command(
-            declared
+        if arm_command and not _arm_command_matches(
+            arm_command, [declared], _scope_tree(record)
         ):
             missing.append(f"{arm_name}.command_matches_suite_command")
         missing.extend(_arm_collected_nothing(observation, arm_name))
@@ -762,13 +883,15 @@ def _arm_missing_fields(
             return [f"{arm_name}.command_names_no_file"]
         return []
     revision = str(observation.get("revision") or "").strip()
-    accepted = {
-        _normalized_command(_scoped_suite_command(record, revision=revision or None))
-    }
-    accepted.add(_normalized_command(_scoped_suite_command(record)))
+    accepted = [
+        _scoped_suite_command(record, revision=revision or None),
+        _scoped_suite_command(record),
+    ]
     arm_command = str(observation.get("command") or "").strip()
     missing: list[str] = []
-    if arm_command and _normalized_command(arm_command) not in accepted:
+    if arm_command and not _arm_command_matches(
+        arm_command, accepted, _scope_tree(record)
+    ):
         missing.append(f"{arm_name}.command_matches_suite_command")
     missing.extend(_arm_collected_nothing(observation, arm_name))
     return missing
