@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="35">
+<meta name="plan-version" content="36">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -171,6 +171,9 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261111T200729034046-review-of-launched-run-owes-no-queued-duty-b99ca93fa084" data-who="reckon-build" data-when="2026-11-11T20:21:44.422Z">
     <div class="r-comment-body"><p>§16 review of r-20261111T185852834144: b99ca93fa084 against base 2e4cf597da81 scores goal_fidelity 17, evidence 15, scope_discipline 19, durability 17, fit 16, reuse 14, with three non-blocking findings and no added test failures.</p></div>
 </div>
+<div class="r-comment" data-section="s16" data-id="c-run-r-20261111T185852834144-launched-run-owes-no-queued-duty" data-who="reckon-build" data-when="2026-11-11T21:25:03Z">
+    <div class="r-comment-body"><p>§16 — the read-time settlement now compares a queued duty against the phase of its run&#x27;s live pointer, so a launched run owes no queued duty while a still-queued request keeps its own; focused gate 3 passed, head arm 59 passed against a base arm of 56 passed.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261111T164818688660-review-of-identity-published-with-its-claim-90617f00b961" data-who="reckon-build" data-when="2026-11-11T17:06:15.755Z">
     <div class="r-comment-body"><p>Reviewed 90617f00b9 against d5df5102: goal, done_when, write paths, manifest, diff and four production call sites read; scores goal_fidelity 17, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 5; five non-blocking findings, the strongest being that gc.py:537 re-implements process_liveness.py:12 without its zombie rule and gc.py:517 duplicates its /proc parsing, and that tests/test_a_reexec_never_orphans_a_dispatch.py:51 fails at head so the merged suite needs a paired node.</p></div>
 </div>
@@ -223,7 +226,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261111T185408798633-re-review-reads-what-changed at head 2160ffdd scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 17, reuse 20, with added_failure_count 0 derived from the run's own baseline-suite (51 passed, EXIT=0 at 3f096bce) and after-suite (55 passed, EXIT=0 at f4b12ee2) arms and one non-blocking finding at reckon/crew/recovery_review_subject.py:559.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261111T185408798633-re-review-reads-what-changed" data-who="reckon-build" data-when="2026-11-11T21:24:51Z">
-    <div class="r-comment-body"><p>A run&#x27;s second or later review is now briefed from what changed: reckon/crew/recovery_review_subject.py names the previously reviewed head, the commits since it, each earlier finding with its disposition, and asks for every earlier blocking finding whether the new head resolves it; measured by 4 new tests in a temporary repository, node gate 55 passed exit 0 at f4b12ee2 against 51 passed exit 0 at base 3f096bce, and the declared negative control fails the previously-reviewed-head assertion.</p></div>
+    <div class="r-comment-body"><p>A run's second or later review is now briefed from what changed: reckon/crew/recovery_review_subject.py names the previously reviewed head, the commits since it, each earlier finding with its disposition, and asks for every earlier blocking finding whether the new head resolves it; measured by 4 new tests in a temporary repository, node gate 55 passed exit 0 at f4b12ee2 against 51 passed exit 0 at base 3f096bce, and the declared negative control fails the previously-reviewed-head assertion.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261111T203346637638-review-of-re-review-need-in-shadow-da305d74a3c1" data-who="reckon-build" data-when="2026-11-11T20:51:44.324Z">
     <div class="r-comment-body"><p>the review of r-20261111T203346637638 records a parsed record for run r-20261111T185601723958 at reviewed_base_sha 8c5c7ad581829874b7f7bf463fdd5f61bfc7e48d and reviewed_head_sha da305d74a3c13365c388ae28750962505253aa1c, scoring all six dimensions between 0 and 20 (goal_fidelity 16, evidence 14, scope_discipline 18, durability 12, fit 15, reuse 16, total 91), carrying added_failure_count 0 with an empty added_failure_ids derived from the reviewed run's own baseline_suite and after_suite gate logs (51 passed EXIT=0 and 59 passed EXIT=0, zero FAILED or ERROR lines in either), and emitting 5 verdicts, 6 scores, 6 justifications, a CALL_SITES line naming two production call sites, and 6 non-blocking findings; the gate re-read both records through `crew check --review` and asserted the record shape at EXIT=0, and the negative control reddens both the tool check and the shape assertion at EXIT=1.</p></div>
