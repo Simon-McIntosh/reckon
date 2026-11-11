@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A slow station refresh does not hold the review reflex</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-slow-station-refresh-does-not-hold-the-review-reflex-landing" data-node="a-slow-station-refresh-does-not-hold-the-review-reflex" data-reckon="landing" data-when="2026-11-11">
+  <h2>The arm that decides a sweep is due now beats off the tick</h2>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-defect"><strong>The defect.</strong> The station ran the review reflex inside its own tick. Every sweep that reviews a delivered run was requested from the tick body, so a tick that spent minutes in its <code>per-project-refresh</code> stage armed no sweep for the whole of that stage, and a run delivered while the stage ran was reviewed only after it finished. The reflex's window is two minutes, so the stage alone was enough to miss it, and the coordinator saw the miss as an overdue review with nothing naming the cause.</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-change"><strong>What landed.</strong> <code>reckon/crew/station.py</code> gains <code>ReflexBeat</code>: a daemon thread started beside the heartbeat and the lease renewal, which reads the live pointers on its own cadence (<code>REFLEX_BEAT_SECONDS</code>, 30 s), groups them by project and requests a sweep per session. It detects movement from a cheap signature over each pointer — its run id, its phase, and the identity of its manifest file (mtime and size) — so a delivery is seen on the next beat rather than on the next tick, and an unchanged fleet requests nothing. <code>Station</code> constructs it with the clock and cadence the station already uses, and <code>run_station</code> starts it with the other threads and stops it in the same <code>finally</code>. The tick keeps its own sweep request, so the cadence a tick previously supplied still holds when the arm is quiet.</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-duty"><strong>What an overdue duty says.</strong> <code>reckon/crew/obligations.py</code> reads the station's own tick papertrail (<code>obligation_snapshot.read_station_answer</code>) when a review duty is past the window, and when a tick has been held in one stage for longer than that window it names the stage, how long the tick has run there, and the command that dispatches the review. Past the window with no held stage it keeps the earlier wording. The <code>inspect the follower</code> instruction is gone from the held case, because the coordinator cannot act on it: the pointer it was told to inspect carried no stage and no age.</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-gate"><strong>Gate.</strong> <code>tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py</code> runs the station through <code>run_station</code> with one tick, the entry point a real station takes, so the arm that decides a sweep is due is started and stopped by production code and not by the case. It parks that tick in its refresh stage with a gate the case controls, delivers a run into a temporary crew home while the tick is parked, and asserts the reflex reaches that run's review dispatch inside the window with the tick still unfinished. The second case builds a delivered run, writes a station store whose tick has sat 185 s in <code>per-project-refresh</code>, and asserts the overdue duty names that stage, its age (<code>3m 5s</code>) and the dispatch command, and no longer says <code>inspect the follower</code>.</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-negative"><strong>Negative controls.</strong> Two declared mutations are armed against the delivered code and both turn the first case red. The entry point stops starting the reflex's arm, so no sweep is requested outside the tick body: <strong>1 failed, 1 passed, EXIT=1</strong> (<code>logs/negative-control-no-start.log</code>, tree recorded as <code>449122a711c5+no-reflex-start</code>). The arm is constructed with no live pointers, so every sweep again comes only from the tick after its refresh stage completes and the delivered run is dispatched late: <strong>1 failed, EXIT=1</strong> (<code>logs/negative-control-window-8s.log</code>, tree recorded as <code>6388aa9aec4c+empty-pointer-list</code>). Both mutations are reverted in the delivered revision.</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-suite"><strong>The armed suite, both arms.</strong> Both arms ran on the <code>all_debug</code> partition, one at a time. The base arm ran over a tree extracted at <code>10afb2acb</code> and initialised as a repository, because the inventory case reads the tree through git, with <code> tests/test_staged_write_inventory.py</code> resolved over that revision: <strong>51 passed, EXIT=0</strong> (<code>logs/baseline-suite.log</code>); this node's file does not exist there. The head arm ran in this worktree at <code>449122a711c5</code>, the delivered test revision, over the same file plus this node's: <strong>53 passed, EXIT=0</strong> (<code>logs/after-suite.log</code>).</p>
+
+  <p id="a-slow-station-refresh-does-not-hold-the-review-reflex-importers"><strong>The importer arm.</strong> The fifteen test files that import <code>reckon/crew/station.py</code> ran on the same partition at this node's head (<code>449122a711c5</code>): <strong>4 failed, 86 passed, EXIT=1</strong> (<code>logs/importer-arm-station.log</code>). The same fourteen files that exist at the base revision ran over a tree extracted at <code>10afb2acb</code>: <strong>4 failed, 84 passed, EXIT=1</strong> (<code>logs/importer-arm-station-base.log</code>), with the same four ids — <code>test_a_sweep_review_reaches_its_session_on_the_next_publish</code>, <code>test_changed_session_runs_its_review_and_repair_on_the_next_requested_sweep</code>, <code>test_a_blocked_tick_keeps_a_fresh_beat_and_reads_slow</code> and <code>test_station_reloads_from_a_node_local_image</code> — failing in both arms and each reporting a worktree the repository does not register. The added-failure set is empty, and the head's two extra passes are this node's own cases.</p>
+</article>
+</body>
+</html>

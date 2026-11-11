@@ -751,8 +751,43 @@ def _reflex_review_window_seconds() -> int:
     return int(DEFAULT_SWEEP_SECONDS)
 
 
+def _station_slow_stage(
+    project: str, pointer: Mapping[str, Any], *, now: datetime
+) -> tuple[str, int] | None:
+    """The stage and age of a station tick the reflex is waiting behind.
+
+    A delivered run's review is armed by the station's tick, so a tick running
+    past the reflex's window in one stage is what holds the dispatch. The
+    reading is the one the pane's heading note prints, taken from the station's
+    own papertrail, so the duty and the note cannot name different work.
+    """
+    session = str(pointer.get("session") or "")
+    if not session:
+        return None
+    from reckon.crew import obligation_snapshot
+
+    try:
+        answer = obligation_snapshot.read_station_answer(project, session, now=now)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(answer, Mapping):
+        return None
+    stage = str(answer.get("tick_stage") or "")
+    tick_age = answer.get("tick_age_seconds")
+    if not stage or not isinstance(tick_age, int):
+        return None
+    if tick_age <= _reflex_review_window_seconds():
+        return None
+    return stage, tick_age
+
+
 def _reflex_review_command(
-    project: str, pointer: Mapping[str, Any], *, age: int
+    project: str,
+    pointer: Mapping[str, Any],
+    *,
+    age: int,
+    dispatch: str = "",
+    now: datetime | None = None,
 ) -> str:
     """The duty's next action while an armed reflex owns the dispatch.
 
@@ -761,10 +796,30 @@ def _reflex_review_command(
     review, so nothing is lost, but the loser shows as dispatched then
     withdrawn. Naming the reflex as the owner, with the window its cadence
     gives, is what leaves one actor dispatching a run's review.
+
+    Past the window the reflex has not made good on that promise, so the duty
+    names what held it. A station tick running long in one stage is the case a
+    coordinator can act on, because the arm that starts each sweep can wait
+    behind that stage: the duty carries the stage, its age and the dispatch
+    that starts the review now, rather than sending the coordinator to inspect
+    a follower whose pass has nothing wrong with it.
     """
     session = str(pointer.get("session") or "")
     window = _reflex_review_window_seconds()
     if age > window:
+        held = _station_slow_stage(
+            project, pointer, now=now if now is not None else _utc_now()
+        )
+        if held is not None:
+            stage, stage_age = held
+            overdue = (
+                f"review overdue by {age // 60}m {age % 60}s: the station's tick "
+                f"has run {stage_age // 60}m {stage_age % 60}s in its {stage} "
+                "stage, which holds the reflex's sweep"
+            )
+            if dispatch:
+                return f"{overdue}; dispatch the review now with: {dispatch}"
+            return f"{overdue}; dispatch the review for session {session!r} now"
         return (
             f"review overdue by {age // 60}m {age % 60}s: session {session!r} "
             "has an armed follower, but its reflex has not dispatched this "
@@ -1989,7 +2044,18 @@ def _review_duty_item(
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
             else:
-                item["next_command"] = _reflex_review_command(project, pointer, age=age)
+                # The row's own action is the dispatch this duty replaces only
+                # while the reflex still owns it inside the window; past the
+                # window it travels into the replacement so the coordinator is
+                # handed the command that starts the review rather than a
+                # follower to read.
+                item["next_command"] = _reflex_review_command(
+                    project,
+                    pointer,
+                    age=age,
+                    dispatch=str(item.get("next_command") or ""),
+                    now=now,
+                )
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
