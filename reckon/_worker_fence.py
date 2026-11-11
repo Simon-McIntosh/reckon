@@ -364,8 +364,12 @@ def _seed_anchored_edit(home: Path, roots: Iterable[str | Path]) -> None:
         **config.get("mcpServers", {}),
         "reckon-anchored-edit": {
             "type": "stdio",
-            "command": str(Path(sys.executable).with_name("reckon-anchored-edit")),
-            "args": [word for root in roots for word in ("--root", str(root))],
+            "command": sys.executable,
+            "args": [
+                "-m",
+                "reckon.anchored_edit",
+                *(word for root in roots for word in ("--root", str(root))),
+            ],
         },
     }
     _write_private_json(config_path, config)

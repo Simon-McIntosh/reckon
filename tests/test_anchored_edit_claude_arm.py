@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -130,8 +132,15 @@ def test_fresh_fenced_launch_registers_scoped_tools_and_records_treatment(
     plan = compose(command=command)
     config = json.loads((run / "harness" / ".claude.json").read_text())
     server = config["mcpServers"]["reckon-anchored-edit"]
-    assert Path(server["command"]).name == "reckon-anchored-edit"
-    assert server["args"] == ["--root", str(run), "--root", str(worktree)]
+    assert server["command"] == sys.executable
+    assert server["args"] == [
+        "-m",
+        "reckon.anchored_edit",
+        "--root",
+        str(run),
+        "--root",
+        str(worktree),
+    ]
     assert config["mcpServers"]["operator"] == {"command": "operator-server"}
     settings = json.loads((run / "harness" / "settings.json").read_text())
     assert settings["permissions"]["allow"] == [
@@ -242,3 +251,19 @@ def test_backend_schema_accepts_the_key_and_json_schema_agrees():
         "boolean",
         "null",
     ]
+
+
+def test_the_registered_server_command_can_start_without_a_console_script(launch_case):
+    compose, _, run, _ = launch_case
+    compose()
+    config = json.loads((run / "harness" / ".claude.json").read_text())
+    server = config["mcpServers"]["reckon-anchored-edit"]
+    result = subprocess.run(
+        [server["command"], *server["args"], "--help"],
+        capture_output=True,
+        text=True,
+        timeout=20,
+        check=False,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--root" in result.stdout
