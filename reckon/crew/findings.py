@@ -271,6 +271,40 @@ def parse_finding_disposition(rendered: str) -> dict[str, str]:
     return {"kind": kind, "target": target}
 
 
+def undisposed_finding_indexes(
+    record: Mapping[str, Any] | None, *, holding_landing: bool
+) -> tuple[int, ...]:
+    """The indexes of findings nobody has answered, split by what they withhold.
+
+    This is the one reading of the severities the landing rule makes.
+    ``holding_landing=True`` names the findings that refuse the landing: one
+    declaring the blocking severity, and one declaring none at all, since an
+    unreadable severity is a judgement the reviewer left unstated.
+    ``holding_landing=False`` names the rest — declared non-blocking and still
+    unanswered — which the landing carries forward as deferred work. The guard
+    that admits the run and the writer that records the deferral both read this
+    function, so the run lands exactly over the findings it defers.
+
+    The index is the finding's position in the record's own ``findings`` list,
+    the index :func:`finding_disposition` keys an answer against, so a disposition
+    written for a returned index answers the finding this function named. A fold
+    or an exemption is its author's decision and is left alone by both halves.
+    """
+    if not isinstance(record, Mapping):
+        return ()
+    selected: list[int] = []
+    for index, finding in enumerate(_record_findings(record)):
+        if not str(finding.get("text") or "").strip():
+            continue
+        if finding_disposition(record, index) != "open":
+            continue
+        severity = _review.declared_severity(finding)
+        blocks = severity is None or severity == _review.BLOCKING_FINDING_SEVERITY
+        if blocks is holding_landing:
+            selected.append(index)
+    return tuple(selected)
+
+
 def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str, Any]]:
     """One row per finding on a record, carrying the record's own identity.
 

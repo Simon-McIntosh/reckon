@@ -1334,25 +1334,25 @@ def _undisposed_finding_guard(review: Mapping[str, Any] | None) -> str:
     severity is a judgement the reviewer left unstated. A finding the reviewer
     declared non-blocking is carried forward unjudged — the landing records it
     as deferred once the run lands, and it stays open work from there — so it
-    does not hold the run. The severity is
-    :func:`reckon.crew.review.declared_severity`'s decision, the same reader the
-    repair reflex and the deferral writer use, so the guard cannot disagree with
-    either about one finding.
+    does not hold the run.
+
+    The split is the deferral writer's, not a second reading of the severities:
+    :func:`reckon.crew.findings.undisposed_finding_indexes` names both halves, so
+    the guard admits exactly the findings that writer records and refuses the
+    rest, and the index the refusal prints is the index the writer keys against.
     """
     from reckon.crew import findings as findings_module
     from reckon.crew import review as review_module
 
     if not isinstance(review, Mapping):
         return ""
+    findings = findings_module._record_findings(review)
     open_rows: list[str] = []
-    for index, finding in enumerate(findings_module._record_findings(review)):
-        if not str(finding.get("text") or "").strip():
-            continue
-        if findings_module.finding_disposition(review, index) != "open":
-            continue
+    for index in findings_module.undisposed_finding_indexes(
+        review, holding_landing=True
+    ):
+        finding = findings[index]
         severity = review_module.declared_severity(finding)
-        if severity is not None and severity != review_module.BLOCKING_FINDING_SEVERITY:
-            continue
         path = str(finding.get("path") or "").strip()
         line = str(finding.get("line") or "").strip()
         anchor = f"{path}:{line}" if path and line else path or f"finding {index}"

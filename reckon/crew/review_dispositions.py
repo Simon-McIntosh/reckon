@@ -551,13 +551,43 @@ def record_finding_disposition(
             f"got {finding_index!r}"
         )
     disposition = _build_disposition_entry(kind, node, reason)
+    return _write_disposition_against_finding(
+        project,
+        reviewed_run_id,
+        finding_index,
+        disposition,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+        rubric=rubric,
+    )
 
+
+def _write_disposition_against_finding(
+    project: str,
+    reviewed_run_id: str,
+    finding_index: int,
+    disposition: Mapping[str, Any],
+    *,
+    base_dir: str | Path | None = None,
+    reviewed_head_sha: str | None = None,
+    rubric: str | None = None,
+) -> Path:
+    """Store one already-built disposition entry against a finding, by index.
+
+    The single place a finding disposition reaches the store, whichever rule
+    built it: the verb a person calls builds its entry through
+    :func:`_build_disposition_entry`, and the landing rule builds the entry it
+    alone may write. Both then resolve the record, key the entry by index,
+    rewrite it, carry the answer to the delivered copies and commit — one path,
+    so a rule that writes a disposition cannot skip the copy a later reader
+    re-reads or commit a record the verb would have committed.
+    """
     if code_review_identity(reviewed_run_id):
         return _record_code_finding_disposition(
             project,
             reviewed_run_id,
             finding_index,
-            disposition,
+            dict(disposition),
             base_dir=base_dir,
         )
 
@@ -587,7 +617,7 @@ def record_finding_disposition(
         )
     dispositions = record.get(FINDING_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
-    merged[str(finding_index)] = disposition
+    merged[str(finding_index)] = dict(disposition)
     record[FINDING_DISPOSITIONS_KEY] = merged
 
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -595,36 +625,6 @@ def record_finding_disposition(
     _carry_answer_to_delivered_copies(reviewed_run_id, record, FINDING_DISPOSITIONS_KEY)
     commit_record_write(project, path)
     return path
-
-
-def deferred_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ...]:
-    """The indexes of findings a landing carries forward without judging them.
-
-    A finding qualifies when it declares a non-blocking severity and nobody has
-    answered it: a fold or an exemption is its author's decision and is left
-    alone, and a finding that declares nothing is not non-blocking at all — an
-    unreadable severity is a judgement the reviewer left unstated, so it holds
-    the finding as a blocking one would. The severity is
-    :func:`reckon.crew.review.declared_severity`'s decision, the same reader the
-    landing guard and the repair reflex use, so the rule that defers and the
-    guard that admits can never disagree about one finding.
-    """
-    from reckon.crew import findings as findings_module
-    from reckon.crew import review as review_module
-
-    if not isinstance(review, Mapping):
-        return ()
-    qualifying: list[int] = []
-    for index, finding in enumerate(findings_module._record_findings(review)):
-        if not str(finding.get("text") or "").strip():
-            continue
-        if findings_module.finding_disposition(review, index) != "open":
-            continue
-        severity = review_module.declared_severity(finding)
-        if severity is None or severity == review_module.BLOCKING_FINDING_SEVERITY:
-            continue
-        qualifying.append(index)
-    return tuple(qualifying)
 
 
 def record_landed_deferrals(
@@ -644,59 +644,52 @@ def record_landed_deferrals(
     it was deferred over and the rule that deferred it, which leaves the finding
     open work in the findings view until a fold or an exemption answers it.
 
-    The dispositions are read from the stored record rather than from the
-    mapping the caller holds — a review parsed in memory carries no
-    dispositions, and reading them there would report every finding unanswered
-    and overwrite the answers the store already holds. The record rewritten is
-    the one for the head this review read, so a deferral recorded against one
-    revision never speaks for another. The returned indexes are the findings
-    this call deferred.
+    The findings deferred here are the ones the landing guard admits the run
+    over: both read
+    :func:`reckon.crew.findings.undisposed_finding_indexes`, so the set recorded
+    cannot differ from the set the guard cleared. Each is stored through
+    :func:`_write_disposition_against_finding`, the write path the dispose verb
+    uses, so a deferral reaches the delivered copies and the record commit
+    rather than restating that path here.
+
+    The dispositions are read from the stored record rather than from the mapping
+    the caller holds — a review parsed in memory carries no dispositions, and
+    reading them there would report every finding unanswered and overwrite the
+    answers the store already holds. The record rewritten is the one for the head
+    this review read, so a deferral recorded against one revision never speaks
+    for another. The returned indexes are the findings this call deferred.
     """
     from reckon.crew import findings as findings_module
 
-    named = deferred_finding_indexes(review)
-    if not named:
-        return []
-    is_code_review = bool(code_review_identity(reviewed_run_id))
-    if is_code_review:
-        path, record = code_review_record_for_run(
-            project, reviewed_run_id, base_dir=base_dir
-        )
-    else:
-        path, record = stored_record(
-            project,
-            reviewed_run_id,
-            base_dir=base_dir,
-            reviewed_head_sha=reviewed_head_sha,
-        )
-    if record is None or path is None:
+    stored = stored_record_for_disposition(
+        project,
+        reviewed_run_id,
+        base_dir=base_dir,
+        reviewed_head_sha=reviewed_head_sha,
+    )
+    if stored is None:
         raise ValueError(
             f"no stored review for run {reviewed_run_id!r} in project "
             f"{project!r} to record a deferral against"
         )
-    answered = set(deferred_finding_indexes(record))
-    deferred = [index for index in named if index in answered]
-    if not deferred:
-        return []
-    dispositions = record.get(FINDING_DISPOSITIONS_KEY)
-    merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
-    recorded_at = datetime.now(UTC).isoformat()
+    deferred = list(
+        findings_module.undisposed_finding_indexes(stored, holding_landing=False)
+    )
+    entry = {
+        "kind": DEFERRED_DISPOSITION_KIND,
+        "run": reviewed_run_id,
+        "rule": DEFERRED_AT_LANDING_RULE,
+        "recorded_at": datetime.now(UTC).isoformat(),
+    }
     for index in deferred:
-        merged[str(index)] = {
-            "kind": findings_module.DEFERRED_DISPOSITION_KIND,
-            "run": reviewed_run_id,
-            "rule": DEFERRED_AT_LANDING_RULE,
-            "recorded_at": recorded_at,
-        }
-    record[FINDING_DISPOSITIONS_KEY] = merged
-
-    path.parent.mkdir(parents=True, exist_ok=True)
-    _write_record(path, record)
-    if not is_code_review:
-        _carry_answer_to_delivered_copies(
-            reviewed_run_id, record, FINDING_DISPOSITIONS_KEY
+        _write_disposition_against_finding(
+            project,
+            reviewed_run_id,
+            index,
+            entry,
+            base_dir=base_dir,
+            reviewed_head_sha=reviewed_head_sha,
         )
-    commit_record_write(project, path)
     return deferred
 
 
