@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/ledger.py:2485",
+    "reckon/ledger.py:2918",
+    "reckon/ledger.py:3886",
+    "reckon/crew/plan_review.py:2947",
+    "reckon/crew/review_records.py:421"
+  ],
+  "completed_at": "2026-11-11T00:21:53.265Z",
+  "dispatched_at": "2026-11-11T00:07:11Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires \"Ruff check and ruff format --check add no findings on the staged paths\" and the manifest's tests line and logs carry no ruff result at all, so one half of the measure is asserted by no recorded evidence (it is in fact clean: both commands were run and reported \"All checks passed\" and \"2 files already formatted\")."
+    },
+    {
+      "file": "logs/base-arm-failing-files.log",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header's module line names the head worktree's reckon/ledger.py as the module under test while its own cwd line, tree note and command all resolve the base-tree archive, so a reader checking that the base arm measured base code is given a path that contradicts the run."
+    },
+    {
+      "file": "logs/head-arm-half2.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the second half of the ledger-importing population arm ended at EXIT=124 without a summary line, so the \"adds no failure against the base revision\" claim rests on 52 of the 104 test files the worker enumerated."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 9f5c5bd09e57dfee5196e642efac79c1f36ef670; 7954d29123 changes reckon/ledger.py (both subprocess calls wrapped in closures run through the merge lock wait, a lock-outlasts refusal naming index.lock, a lock-free failure still raising at once, and an int return of the summed retries) and adds the three-case test, and 3a6bda78b2 adds only the evidence fragment.",
+    "done_when": "the done_when names three cases in a temporary repository, the negative control, the ledger-importing population arm, and ruff; tests/test_a_state_write_waits_out_a_held_index_lock.py supplies the three cases and logs/negative-control.log shows 2 failed 1 passed with the first case red, while the ruff half of the measure is recorded nowhere and the population arm completed only its first half (head-arm-half1.log 16 failed 352 passed, head-arm-half2.log EXIT=124).",
+    "goal": "the node's goal is \"A state write's commit waits out a held index lock\"; reckon/ledger.py:2785-2847 now runs both the `git add` and the `git commit` of `_commit_state_write` through `merge._run_waiting_out_a_held_index_lock`, so a transient hold is waited out on that helper's cadence and bound.",
+    "manifest": "read in full; it states the base reproduction with its quoted git error, both suite arms with exit statuses, the negative-control log and note, and records the second population half as an incomplete arm under outside_scope rather than claiming it.",
+    "write_paths": "the manifest declares reckon/ledger.py and tests/test_a_state_write_waits_out_a_held_index_lock.py; the diff changes only those two plus the landing fragment at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-state-write-waits-out-a-held-index-lock.html, which the dispatch's landing contract always permits."
+  },
+  "justifications": {
+    "durability": "tests/test_a_state_write_waits_out_a_held_index_lock.py:73 asserts retries == 1 and tests/test_a_state_write_waits_out_a_held_index_lock.py:97 asserts seven waits, and both would redden on the direct-call form the change replaced.",
+    "evidence": "the three cases and the negative control are logged with EXIT lines under the run directory, but the done_when's ruff clause has no recorded result and half of the ledger-importing population arm ended at EXIT=124 in logs/head-arm-half2.log.",
+    "fit": "reckon/ledger.py:2778 uses the module's existing deferred-import idiom and the test's file and function names follow tests/test_state_write_commits_a_set_of_paths.py with no plan or ticket label.",
+    "goal_fidelity": "reckon/ledger.py:2794 and reckon/ledger.py:2828 route the add and the commit through the lock wait, so the state write the goal names is the one that now waits.",
+    "reuse": "the only owner of a lock wait is reckon/crew/merge.py:570 `_run_waiting_out_a_held_index_lock`, which reckon/crew/promotion_scope.py:1884 already reuses, and the landed change extends that owner instead of duplicating it.",
+    "scope_discipline": "the diff touches only reckon/ledger.py, tests/test_a_state_write_waits_out_a_held_index_lock.py and the permitted landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"A state write's commit waits out a held index lock\"; reckon/ledger.py:2785-2847 now runs both the `git add` and the `git commit` of `_commit_state_write` through `merge._run_waiting_out_a_held_index_lock`, so a transient hold is waited out on that helper's cadence and bound.\nVERDICT done_when: the done_when names three cases in a temporary repository, the negative control, the ledger-importing population arm, and ruff; tests/test_a_state_write_waits_out_a_held_index_lock.py supplies the three cases and logs/negative-control.log shows 2 failed 1 passed with the first case red, while the ruff half of the measure is recorded nowhere and the population arm completed only its first half (head-arm-half1.log 16 failed 352 passed, head-arm-half2.log EXIT=124).\nVERDICT write_paths: the manifest declares reckon/ledger.py and tests/test_a_state_write_waits_out_a_held_index_lock.py; the diff changes only those two plus the landing fragment at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/a-state-write-waits-out-a-held-index-lock.html, which the dispatch's landing contract always permits.\nVERDICT manifest: read in full; it states the base reproduction with its quoted git error, both suite arms with exit statuses, the negative-control log and note, and records the second population half as an incomplete arm under outside_scope rather than claiming it.\nVERDICT diff: read commit by commit against base 9f5c5bd09e57dfee5196e642efac79c1f36ef670; 7954d29123 changes reckon/ledger.py (both subprocess calls wrapped in closures run through the merge lock wait, a lock-outlasts refusal naming index.lock, a lock-free failure still raising at once, and an int return of the summed retries) and adds the three-case test, and 3a6bda78b2 adds only the evidence fragment.\nCALL_SITES: reckon/ledger.py:2485, reckon/ledger.py:2918, reckon/ledger.py:3886, reckon/crew/plan_review.py:2947, reckon/crew/review_records.py:421\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:2794 and reckon/ledger.py:2828 route the add and the commit through the lock wait, so the state write the goal names is the one that now waits.\nSCORE evidence: 13\nJUSTIFICATION evidence: the three cases and the negative control are logged with EXIT lines under the run directory, but the done_when's ruff clause has no recorded result and half of the ledger-importing population arm ended at EXIT=124 in logs/head-arm-half2.log.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: the diff touches only reckon/ledger.py, tests/test_a_state_write_waits_out_a_held_index_lock.py and the permitted landing fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_state_write_waits_out_a_held_index_lock.py:73 asserts retries == 1 and tests/test_a_state_write_waits_out_a_held_index_lock.py:97 asserts seven waits, and both would redden on the direct-call form the change replaced.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:2778 uses the module's existing deferred-import idiom and the test's file and function names follow tests/test_state_write_commits_a_set_of_paths.py with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the only owner of a lock wait is reckon/crew/merge.py:570 `_run_waiting_out_a_held_index_lock`, which reckon/crew/promotion_scope.py:1884 already reuses, and the landed change extends that owner instead of duplicating it.\nFINDING manifest.md:15 non-blocking: the done_when requires \"Ruff check and ruff format --check add no findings on the staged paths\" and the manifest's tests line and logs carry no ruff result at all, so one half of the measure is asserted by no recorded evidence (it is in fact clean: both commands were run and reported \"All checks passed\" and \"2 files already formatted\").\nFINDING logs/base-arm-failing-files.log:2 non-blocking: the header's module line names the head worktree's reckon/ledger.py as the module under test while its own cwd line, tree note and command all resolve the base-tree archive, so a reader checking that the base arm measured base code is given a path that contradicts the run.\nFINDING logs/head-arm-half2.log:1 non-blocking: the second half of the ledger-importing population arm ended at EXIT=124 without a summary line, so the \"adds no failure against the base revision\" claim rests on 52 of the 104 test files the worker enumerated.",
+  "review_run_id": "r-20261111T000045844298-review-of-a-state-write-waits-out-a-held-index-lock-3a6bda78b2a9",
+  "reviewed_base_sha": "9f5c5bd09e57dfee5196e642efac79c1f36ef670",
+  "reviewed_head_sha": "3a6bda78b2a9bbc21b66f224a8955950cda72f3a",
+  "reviewed_run_id": "r-20261110T223427607605-a-state-write-waits-out-a-held-index-lock",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:33:44.160761+00:00",
+  "total": 105
+}
