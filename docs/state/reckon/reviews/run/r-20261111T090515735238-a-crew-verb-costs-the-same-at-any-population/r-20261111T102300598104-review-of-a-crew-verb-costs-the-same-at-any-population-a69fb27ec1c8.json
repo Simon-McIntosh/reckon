@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/promotion.py:1853 ledger.append_run",
+    "reckon/crew/promotion_release.py:637 ledger.write_run_file",
+    "reckon/crew_run_commands.py:1487 ledger.write_run_file",
+    "reckon/ledger.py:2456 write_run_file",
+    "reckon/ledger.py:3894 write_run_file"
+  ],
+  "completed_at": "2026-11-11T10:35:00.795Z",
+  "dispatched_at": "2026-11-11T10:25:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-verb-costs-the-same-at-any-population.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the base implement-landing counts 2464 and 2824, repeated at manifest.md line 18, do not appear in the cited gate-head.log, which records 3515 and 3875; the growth rate is identical at 2 stat per other run so the conclusion stands, but a reader cannot reconcile the quoted figure with the log it cites, so correct both to the log's own numbers."
+    },
+    {
+      "file": "tests/test_a_crew_verb_costs_the_same_at_any_population.py",
+      "line": "522",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section's done-when names a negative control that reintroduces the rollout lookup with no run_id into the promotion case so its 200-run count exceeds its 20-run count; this test measures that lookup directly at both populations outside the verb, so the promotion case itself is never shown to rise on that regression, and the base-revision arm covers a different walk."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T090515735238-a-crew-verb-costs-the-same-at-any-population/logs/gate.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T090515735238-a-crew-verb-costs-the-same-at-any-population/logs/baseline-arm.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified five production call sites of the two changed functions, the promotion path and the release path among them, and no test file is counted.",
+    "diff": "Read commit by commit from af2b3d53; 7eedfc77e9 adds the guard module and fragment, 9bf25a6ca2 adds _index_record_written_document and its two call points in reckon/ledger.py, a69fb27ec1 updates the fragment figures, 698 insertions and no deletions, all inside the granted paths.",
+    "done_when": "The done-when names three cases, 20 and 200 populations, equal stat/scandir/listdir/glob counts and a warm second invocation under two minutes; gate.log records 4 passed in 65.79s EXIT=0 at 9bf25a6ca2 and gate-head.log records the pre-change revision failing by exactly 2 stat per other run, but the done-when's named rollout-lookup control was substituted at tests/test_a_crew_verb_costs_the_same_at_any_population.py:522 rather than reinstated in the promotion case.",
+    "goal": "The goal is a crew verb whose cost does not grow with the run population; tests/test_a_crew_verb_costs_the_same_at_any_population.py:497 drives the three named verbs and reckon/ledger.py:1247 publishes the written document so the following read reuses its index.",
+    "manifest": "Read; it records commits 7eedfc77e9, 9bf25a6ca2 and a69fb27ec1, gate.log 4 passed EXIT=0, the ledger suite 14 passed EXIT=0, ruff clean and a two-arm importer population of 38 versus 39 failures, but its negative_control_note quotes an implement-landing base count of 2464 to 2824 that gate-head.log records as 3515 to 3875.",
+    "write_paths": "The dispatch fenced the node to the new test, the fragment and the figure directory; the coordinator's resume advice grants reckon/ledger.py and git diff af2b3d53..a69fb27e touches only reckon/ledger.py, the test and the fragment."
+  },
+  "justifications": {
+    "durability": "The guard fails at the pre-change revisions (gate-head.log, gate-fix.log) and passes at 9bf25a6ca2 with an unchanged test module, so removing reckon/ledger.py:1247 reddens it.",
+    "evidence": "gate.log ends 4 passed in 65.79s and EXIT=0 at 9bf25a6ca2 and gate-head.log shows the pre-change failure, but the fragment line 35 and manifest line 18 base figures do not reconcile with gate-head.log and the done-when's named control was substituted.",
+    "fit": "reckon/ledger.py:1247 follows the module's private-helper and sqlite idioms established at reckon/ledger.py:1756, and no symbol carries a plan label.",
+    "goal_fidelity": "reckon/ledger.py:1247 publishes the one document each of write_run_file and append_run touches, and arm-figures.log shows every case identical at 20 and 200.",
+    "reuse": "A search over reckon/ for a single-document index publisher found _index_append (run_store, a different store) and _indexed_data.update (the index's full-load path), and the addition extends that same index in place rather than forking a second, though it restates a few lines of the INSERT update performs at reckon/ledger.py:1909.",
+    "scope_discipline": "git diff --stat af2b3d53..a69fb27e changes only reckon/ledger.py, the new test and the fragment, all inside the granted paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is a crew verb whose cost does not grow with the run population; tests/test_a_crew_verb_costs_the_same_at_any_population.py:497 drives the three named verbs and reckon/ledger.py:1247 publishes the written document so the following read reuses its index.\nVERDICT done_when: The done-when names three cases, 20 and 200 populations, equal stat/scandir/listdir/glob counts and a warm second invocation under two minutes; gate.log records 4 passed in 65.79s EXIT=0 at 9bf25a6ca2 and gate-head.log records the pre-change revision failing by exactly 2 stat per other run, but the done-when's named rollout-lookup control was substituted at tests/test_a_crew_verb_costs_the_same_at_any_population.py:522 rather than reinstated in the promotion case.\nVERDICT write_paths: The dispatch fenced the node to the new test, the fragment and the figure directory; the coordinator's resume advice grants reckon/ledger.py and git diff af2b3d53..a69fb27e touches only reckon/ledger.py, the test and the fragment.\nVERDICT manifest: Read; it records commits 7eedfc77e9, 9bf25a6ca2 and a69fb27ec1, gate.log 4 passed EXIT=0, the ledger suite 14 passed EXIT=0, ruff clean and a two-arm importer population of 38 versus 39 failures, but its negative_control_note quotes an implement-landing base count of 2464 to 2824 that gate-head.log records as 3515 to 3875.\nVERDICT diff: Read commit by commit from af2b3d53; 7eedfc77e9 adds the guard module and fragment, 9bf25a6ca2 adds _index_record_written_document and its two call points in reckon/ledger.py, a69fb27ec1 updates the fragment figures, 698 insertions and no deletions, all inside the granted paths.\nCALL_SITES: reckon/crew/promotion.py:1853, reckon/crew/promotion_release.py:637, reckon/crew_run_commands.py:1487, reckon/ledger.py:2456, reckon/ledger.py:3894\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1247 publishes the one document each of write_run_file and append_run touches, and arm-figures.log shows every case identical at 20 and 200.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate.log ends 4 passed in 65.79s and EXIT=0 at 9bf25a6ca2 and gate-head.log shows the pre-change failure, but the fragment line 35 and manifest line 18 base figures do not reconcile with gate-head.log and the done-when's named control was substituted.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat af2b3d53..a69fb27e changes only reckon/ledger.py, the new test and the fragment, all inside the granted paths.\nSCORE durability: 18\nJUSTIFICATION durability: The guard fails at the pre-change revisions (gate-head.log, gate-fix.log) and passes at 9bf25a6ca2 with an unchanged test module, so removing reckon/ledger.py:1247 reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/ledger.py:1247 follows the module's private-helper and sqlite idioms established at reckon/ledger.py:1756, and no symbol carries a plan label.\nSCORE reuse: 17\nJUSTIFICATION reuse: A search over reckon/ for a single-document index publisher found _index_append (run_store, a different store) and _indexed_data.update (the index's full-load path), and the addition extends that same index in place rather than forking a second, though it restates a few lines of the INSERT update performs at reckon/ledger.py:1909.\nFINDING docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-verb-costs-the-same-at-any-population.html:35 non-blocking: the base implement-landing counts 2464 and 2824, repeated at manifest.md line 18, do not appear in the cited gate-head.log, which records 3515 and 3875; the growth rate is identical at 2 stat per other run so the conclusion stands, but a reader cannot reconcile the quoted figure with the log it cites, so correct both to the log's own numbers.\nFINDING tests/test_a_crew_verb_costs_the_same_at_any_population.py:522 non-blocking: the section's done-when names a negative control that reintroduces the rollout lookup with no run_id into the promotion case so its 200-run count exceeds its 20-run count; this test measures that lookup directly at both populations outside the verb, so the promotion case itself is never shown to rise on that regression, and the base-revision arm covers a different walk.\n",
+  "review_run_id": "r-20261111T102300598104-review-of-a-crew-verb-costs-the-same-at-any-population-a69fb27ec1c8",
+  "reviewed_base_sha": "af2b3d53cb339b219e43e5051ad7d20d0735bd5c",
+  "reviewed_head_sha": "a69fb27ec1c83325ca6c8c2fc0f31f065e88751b",
+  "reviewed_run_id": "r-20261111T090515735238-a-crew-verb-costs-the-same-at-any-population",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:33:45.261741+00:00",
+  "total": 106
+}
