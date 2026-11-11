@@ -1,0 +1,46 @@
+<section id="identity-published-with-its-claim-landing">
+  <h2>An execution identity exists only while its claim does</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/dispatch_claims.py</code>
+  published <code>claims/exec-&lt;pid&gt;.identity</code> from a module-level
+  call, so every process that imported the module left a file behind whether or
+  not it ever dispatched anything. The publish now happens only on the path that
+  takes a node dispatch claim (<code>_retain_exec_identity</code>), and the file
+  is removed with the last claim that process gives back
+  (<code>_retire_exec_identity</code>). Claims still inside a refusal or a failed
+  record write retire it too, so a refused dispatch also leaves nothing.</p>
+
+  <p><strong>The sweep.</strong> <code>reckon/crew/gc.py</code> hosts
+  <code>sweep_exec_identities(apply=...)</code>, reachable as
+  <code>python -m reckon.crew.gc --sweep-exec-identities [--apply]</code>. An
+  identity file belongs to a live execution only while its pid is running and
+  the process now wearing that pid began before the file was written; a freed
+  pid, or a pid reused by a later process, leaves a file nothing else removes.
+  Each removal is named on stderr and reported in the returned JSON.</p>
+
+  <p><strong>Reclaim decision unchanged.</strong> A live holder is still refused
+  and a holder whose identity file no longer matches its claim record is still
+  reclaimed, because both read the same file this node only stopped writing at
+  import.</p>
+
+  <table id="identity-published-with-its-claim-arms">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base suite (node's two files)</td>
+        <td><code>d5df5102</code> extracted to scratch, new test copied in</td>
+        <td>6 failed, 50 passed, 2 setup errors (no git in the extraction), <code>EXIT=1</code></td></tr>
+      <tr><td>after suite (node's two files)</td>
+        <td>worktree head</td>
+        <td>58 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: import-time publish restored</td>
+        <td>worktree head with the declared mutation</td>
+        <td><code>test_importing_the_module_publishes_no_identity</code> FAILED, 1 failed, 6 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Added failures: none.</strong> The base arm's six failures are the
+  behaviours this node creates; the two setup errors are the extraction's own
+  lack of a git repository, recorded as scaffolding.</p>
+</section>
