@@ -83,11 +83,11 @@ def test_reasoning_check_asks_about_the_endpoint() -> None:
 
     Three checks are pinned here: the root cause must match the cited evidence,
     the endpoint must be reachable and checkable, and a section that prescribes
-    implementation must be raised as a finding. The two questions that judge a
+    implementation must be raised as a finding. The three questions that judge a
     stated method instead — whether a named mechanism produces the done-when,
-    and whether its production caller is named, and whether claims are cited —
-    are asserted absent, because a brief carrying them asks the author to write
-    the implementation into the plan.
+    whether its production caller is named, and whether claims are cited — are
+    asserted absent, because a brief carrying them asks the author to write the
+    implementation into the plan.
     """
     text = review_module.load_plan_review_prompt()
     assert "does the stated root cause match the cited evidence" in text
