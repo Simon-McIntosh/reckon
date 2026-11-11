@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T15:19:23.404Z",
+  "dispatched_at": "2026-11-11T15:12:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:165",
+      "id": "done_when-1",
+      "reason": "without an assertion on the coordinator half (that the excerpt does not carry \"The orchestrator merges sequentially\"), the gate cannot fail on the one clause the deliverable explicitly requires.",
+      "text": "s7's done-when asserts only that the digest contains the concurrent-edit line and lacks \"one exclusive write scope\", but in the current global rules the bullet runs from \"- One worker, one worktree.\" straight into \"The orchestrator merges sequentially:\" followed by the merge-tree pre-check, conflict resolution and merged-head gate, and reckon/crew/worker_digest.py:216-220 takes the excerpt as a start-anchor..end-anchor span whose end anchor (\"`git show --stat` against the declared scope.\") now sits inside that coordinator list; so the natural minimal re-anchor edit carries the coordinator's merge duties into every worker digest and still passes both assertions",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:161",
+      "id": "done_when-2",
+      "reason": "reckon/crew/runs.py:1673-1687 currently returns an empty set for an undeclared project, so the section removes the blanket exclusivity these paths rely on and the untested classes are the ones where a concurrent claim destroys a peer's record or breaks the lock.",
+      "text": "s6's Deliverable names five exclusive classes for an undeclared project (a plan, a cumulative evidence record, generated state, a figure topic directory, a dependency lock) but its done-when exercises two (a plan file and a figure topic directory), so a worker can omit the cumulative-evidence-record, generated-state and dependency-lock exclusions and still pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:161",
+      "id": "reasoning-1",
+      "reason": "the only thing separating the two readings today is s2's own landed test case, which a s6 worker reading a red gate in another section's file can reasonably take for a pre-existing failure, so the plan should say which of the two cases it means and gate both.",
+      "text": "s6 says \"a project that declares no write-sharing policy\" shares its source files while s2's landed contract says \"a project that declares no roots behaves exactly as now\", and the same manifest with an empty shared_roots list reads as both, so a worker implementing s6 can make an empty-roots declaration share source files and contradict s2",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:169",
+      "id": "done_when-3",
+      "reason": "AGENTS.md points coordinators at that reference as the canonical dispatch contract to embed in worker prompts, so an ungated reference re-teaches the rule the section exists to retire while the gate stays green.",
+      "text": "s8 declares skills/reckon-build/references/sprint-orchestration.md as a write path, and that file still teaches the retired rule at line 773 (\"give each node its own exclusive write scope\"), but the done-when's new case asserts only that \"the skill\" carries no instruction keeping two workers off one source file, which reads as skills/reckon-build/SKILL.md alone, so the reference can keep the prohibition ungated",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "f15cd2abf115edd8119e665e2d0fbae873af6642",
+  "plan_fingerprint": "c1729ee99a523cbe9c7fb2eb1a88cd36a00698d0fba098488db8bab01d142537",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 27,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T150835253887-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "afdfd6d461a26ee8d5858b3da429860b2086fce0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every cited path resolves: reckon/crew/worker_digest.py, reckon/crew/runs.py, tests/test_worker_digest.py, tests/test_skill_contracts.py, skills/reckon-build/SKILL.md and its references/sprint-orchestration.md exist, nova's tests/test_magnetisation.py exists, and dotfiles 60f17ba resolves to \"docs(agents): allow concurrent file edits across worktrees\".",
+    "done_when": "a finding \u2014 s7's two assertions cannot see the half of its deliverable that says the excerpt carries the rule \"without the coordinator's merge duties\", and the minimal re-anchor edit violates that clause while passing both.",
+    "evidence_paths": "pass \u2014 s6, s7 and s8 each put their gate logs under the run directory with a revision-and-command header and a closing EXIT= line, and the two fixture-backed cases commit the fixture rather than reading the live file.",
+    "naming": "pass \u2014 the new test filenames name the behaviour they assert, and no plan label, section id or ticket number reaches a symbol, filename or comment in the declared write paths.",
+    "reasoning": "a finding \u2014 s6's \"a project that declares no write-sharing policy\" is not distinguished from s2's landed \"a project that declares no roots\", so the two readable cases are separated only by a test in another section's file.",
+    "single_goal": "pass \u2014 s6 delivers one rule (an undeclared project admits concurrent file claims), s7 one (the digest regenerates and carries the worker rule), s8 one (the build skill teaches the ruling).",
+    "wiring": "pass \u2014 s6, s7 and s8 declare no depends-on, which is right: each edits a file already on main from s2's landed change or stands alone, and no declared relationship points at the wrong node."
+  },
+  "section_digests": {
+    "_document": "64f7f67e64cee414aaf885ff6e547fdba7487785f530b0a84b1844e016209020",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "a6642a202318ee0624b279d14405c5acc144268495e971b7a776a6685f35061b",
+    "s7": "b459d3367a111662de684287c2c02aedb4cdea7b3a6b2f328ded299c41b1eac7",
+    "s8": "e9a13341dbecc3d584f7f2c225945b07e5fdef6a919eec7fe6bfff9167583055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:36:43.556370+00:00",
+  "total": null
+}
