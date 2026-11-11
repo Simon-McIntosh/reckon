@@ -28,7 +28,8 @@ from unittest import mock
 import pytest
 from click.testing import CliRunner
 
-from reckon import _plan_html, cli as cli_module, ledger
+from reckon import _plan_html, ledger
+from reckon import cli as cli_module
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -260,9 +261,7 @@ def test_a_promotion_decodes_each_index_key_once_before_its_append(
     # promotion that made no read key at all would pass every check below.
     assert counter.before_append, "no index decode was recorded before the append"
     assert sum(counter.before_append.values()) >= 1
-    repeated = {
-        key: count for key, count in counter.before_append.items() if count > 1
-    }
+    repeated = {key: count for key, count in counter.before_append.items() if count > 1}
     assert repeated == {}, (
         "a read key was decoded more than once before the append: "
         f"{repeated} of {counter.before_append}"
@@ -308,8 +307,12 @@ def measure_before_append_decodes(workspace: Path) -> dict:
                 os.environ[key] = value
     return {
         "rows": ROW_COUNT,
-        "before_append": {str(key): count for key, count in counter.before_append.items()},
-        "after_append": {str(key): count for key, count in counter.after_append.items()},
+        "before_append": {
+            str(key): count for key, count in counter.before_append.items()
+        },
+        "after_append": {
+            str(key): count for key, count in counter.after_append.items()
+        },
         "max_before_append": max(counter.before_append.values(), default=0),
         "row_after_append": RUN_ID
         in {

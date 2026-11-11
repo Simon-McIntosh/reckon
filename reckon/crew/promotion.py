@@ -1354,7 +1354,9 @@ def _complete_locked(
         # keeps the existing live-process behaviour, and nothing waits on a process
         # this promotion is not going to end.
         ended_writer = _end_live_writer_for_settle(record)
-        stream = _promotion_terminal_observation(record, settle_even_if_alive=ended_writer)
+        stream = _promotion_terminal_observation(
+            record, settle_even_if_alive=ended_writer
+        )
         if completed_at:
             finished = _assume_utc_if_naive(completed_at)
             completion_source = "provided"
@@ -1502,7 +1504,9 @@ def _complete_locked(
         worker_exit = _promoted_worker_exit(run_id)
         # The revision this promotion asserts landed, resolved while the run's tree
         # is still present. A shadow asserts no code, so it records none.
-        promoted_revision = "" if shadow else _run_promoted_revision(record, commit_list)
+        promoted_revision = (
+            "" if shadow else _run_promoted_revision(record, commit_list)
+        )
         # The six-line clone detector reports each function this run added or
         # modified whose normalised window duplicates another function already in
         # reckon/ or tests/ at the promoted revision. It is a review signal: a
@@ -1511,7 +1515,9 @@ def _complete_locked(
         # rather than the empty list, so the two never read alike. Neither fails
         # the promotion.
         if shadow:
-            clone_matches: Any = ledger.unmeasured_clone_report("shadow run lands no code")
+            clone_matches: Any = ledger.unmeasured_clone_report(
+                "shadow run lands no code"
+            )
         elif not (commit_list and promoted_revision):
             clone_matches = ledger.unmeasured_clone_report(
                 "the run asserted no revision pair to compare"
@@ -1525,7 +1531,9 @@ def _complete_locked(
             clone_matches = (
                 measured
                 if measured is not None
-                else ledger.unmeasured_clone_report("the revision pair could not be read")
+                else ledger.unmeasured_clone_report(
+                    "the revision pair could not be read"
+                )
             )
         # A brief run carries the digest and stored path of the brief it read in
         # place of a plan section, so a promoted row still points at the exact text
@@ -1605,7 +1613,9 @@ def _complete_locked(
             spec_level=str(node.get("spec_level") or ""),
             member_id=str(record.get("member") or ""),
             backend=str(
-                record.get("backend") or (record.get("agent") or {}).get("backend") or ""
+                record.get("backend")
+                or (record.get("agent") or {}).get("backend")
+                or ""
             ),
             agent=record.get("agent") or {},
             dispatched_at=str(record.get("created_at") or ""),
@@ -1800,7 +1810,9 @@ def _complete_locked(
         # answer from the object store, never from the shadow's own patch.
         if shadow:
             run.update(
-                _shadow_control_marks(record, ledger_data["runs"], tree, run.get("lineage"))
+                _shadow_control_marks(
+                    record, ledger_data["runs"], tree, run.get("lineage")
+                )
             )
         # A terminal run's stream is immutable, so its two figures are computed once
         # here, from the run's own stream, and recorded on the row; a later derive
