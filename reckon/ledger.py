@@ -1177,16 +1177,20 @@ def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
 
 
 # The write generation, and the two index metadata members that stand in for
-# the per-document stat walk. One file per project ledger, beside it, so a
-# writer that can write the ledger can always write the generation.
-_GENERATION_NAME = "crew.generation"
+# the per-document stat walk. The generation is a sidecar of the index it
+# invalidates, keyed by the same ledger path hash, so it lives where the index
+# lives — the disposable cache — rather than inside the checkout that owns the
+# ledger, where a marker no write commits would leave every session's tree
+# dirty.
+_GENERATION_SUFFIX = ".generation"
 _GENERATION_MEMBER = "generation"
 _RUNS_DIRECTORY_MEMBER = "runs_directory"
 
 
 def ledger_generation_path(project: str, root: str | Path | None = None) -> Path:
-    """The write-generation file that stands beside one project's ledger."""
-    return ledger_path(project, root).parent / _GENERATION_NAME
+    """The write-generation file that stands beside the index it invalidates."""
+    index = _run_index_path(project, root)
+    return index.with_name(index.name + _GENERATION_SUFFIX)
 
 
 def ledger_generation(project: str, root: str | Path | None = None) -> str | None:

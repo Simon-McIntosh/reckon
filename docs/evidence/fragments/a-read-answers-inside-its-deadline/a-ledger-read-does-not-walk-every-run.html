@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A read answers inside its deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s64">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <title>A ledger read does not walk every run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-ledger-read-does-not-walk-every-run-landing">
+  <h2>A warm ledger read makes a constant number of stat calls</h2>
+
+  <p><strong>Reproduced at the base revision.</strong> A counting wrapper over
+  <code>Path.stat</code> around a warm <code>ledger.load</code>, over a
+  temporary project ledger whose documents were written through
+  <code>ledger.write_run_file</code>, measured <strong>21 stat calls at 20 run
+  documents and 201 at 200</strong> at
+  <code>acfbdab8c1bb3d0ac8027ed85658a8344f82621a</code> — one remote stat per
+  document, under <code>_run_snapshot</code>, and the +1 that is the aggregate.
+  That is the promotion path the plan records waiting in D state on GPFS.</p>
+
+  <p><strong>Change.</strong> The index's cache key is no longer the
+  per-document walk. A project's write generation now stands in a file beside
+  the index it invalidates, keyed by the same ledger path hash and written
+  atomically — in the disposable cache, not inside the checkout that owns the
+  ledger, because a marker no write commits would otherwise leave every
+  session's tree dirty. Every ledger write path bumps it once its own files
+  are in place:
+  <code>write_run_file</code>, <code>append_run</code>, <code>_write_state</code>
+  (hence <code>write</code>, the hold and repair paths),
+  <code>_commit_run_split</code> and <code>_restore_run_files</code>. A read
+  whose generation and run-directory identity both still match what its index
+  recorded reuses the stamps the index holds and walks nothing. A read whose
+  generation differs, or whose generation file is absent, walks the documents
+  exactly as it did before, so a ledger this code has never written reads
+  correctly and an index published before the key existed refreshes on its
+  next read. The run directory's own identity is compared beside the
+  generation, so a document added or removed by a writer that predates the
+  generation is still noticed.</p>
+
+  <p><strong>Measured.</strong> The same probe at the head commit:
+  <strong>2 stat calls at 20 documents and 2 at 200</strong> — the aggregate and
+  the run directory, both constant.
+  <code>tests/test_a_ledger_read_does_not_walk_every_run.py</code> asserts that
+  equality and, as a positive control, that each warm read still returns every
+  row (20 and 200). It drives each write path — <code>write_run_file</code>,
+  <code>append_run</code>, <code>write</code>, <code>_restore_run_files</code> —
+  and asserts the generation moves and the next read returns the written row.
+  It deletes the generation file, edits a document outside every write path,
+  and asserts the read returns the edit, which is the rebuild condition
+  observed rather than assumed. The declared negative control, restoring the
+  per-document walk, was executed and logged: the warm-count case reds
+  (<code>3 failed</code>, <code>EXIT=1</code>) because the 200-document count
+  climbs back above the 20-document one.</p>
+
+  <p><strong>Scope retained.</strong> The driving followup stays open and no
+  terminal status is set. Logs under
+  <code>~/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/</code>.</p>
+</section>
+</main>
+</body>
+</html>
