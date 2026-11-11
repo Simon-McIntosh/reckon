@@ -230,6 +230,29 @@ def test_a_seeding_launch_instructs_the_anchored_tools(launch_case, command):
     )
 
 
+def test_a_prompt_already_instructed_keeps_one_copy(launch_case):
+    """A lane change composes from the prompt file, which already carries one.
+
+    The launch that follows appends its own instruction, so the block present
+    is removed first: the worker is told once, and the rest of the prompt is
+    left as it was written.
+    """
+    compose, _, _, _ = launch_case
+    from reckon.crew.prompts import (
+        ANCHORED_EDIT_CLAUDE_INSTRUCTION,
+        ANCHORED_EDIT_HEADING,
+    )
+
+    already = (
+        f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+    plan = compose(prompt=already)
+    assert plan.anchored_edit is True
+    assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
+    assert plan.prompt.startswith("node prompt\n\n")
+    assert plan.prompt.rstrip().endswith(ANCHORED_EDIT_CLAUDE_INSTRUCTION)
+
+
 @pytest.mark.parametrize(
     "reason", ["unfenced", "resumed", "operator-settings", "no-flight-config"]
 )
