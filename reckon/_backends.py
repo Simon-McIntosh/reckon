@@ -119,6 +119,7 @@ from reckon._worker_fence import (  # noqa: F401
     fence_capability_problem,
     fence_unprotected_paths,
     fence_writable_roots,
+    harness_agent_store,
     harness_home,
     observe_codex_login,
     protected_checkouts,
@@ -2876,6 +2877,11 @@ def launch_plan(
             ),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        # A harness that keeps its agent store below its home needs the store
+        # variable too: the seed mirrors the operator's files relative to the
+        # home the run owns, and a harness resolving its store from the
+        # relocated home would look one directory deeper and find nothing.
+        environment.update(harness_agent_store(dialect.name, harness))
         # Relocating HOME also hides the operator's ~/.gitconfig, and git then
         # synthesises an identity from the account's GECOS field: a worker's
         # commits would carry a name and address nobody configured. Naming the
