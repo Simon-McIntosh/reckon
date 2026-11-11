@@ -2317,15 +2317,33 @@ def dispatch(
     validated_refs: list[str] = []
     wait_projects: dict[str, str] = {}
     waiting: list[str] = []
+    wait_readiness_cache = readiness_cache if readiness_cache is not None else {}
     if stored_request and not member_refuses:
         validated_refs, wait_projects, waiting = queue_admission.dispatch_waits(
             node,
             repo_root=repo_root,
             project=project,
             run_id=str((existing or {}).get("run_id") or run_id),
-            readiness_cache=readiness_cache,
+            readiness_cache=wait_readiness_cache,
         )
     if waiting:
+        blockers = queue_admission.dispatch_wait_blockers(
+            node,
+            repo_root=repo_root,
+            project=project,
+            refs=waiting,
+            readiness_cache=wait_readiness_cache,
+        )
+        decisions = [
+            str(blocker["id"])
+            for blocker in blockers
+            if blocker.get("kind") == "decision" and blocker.get("id")
+        ]
+        reason = (
+            "held by decision: " + ", ".join(decisions)
+            if decisions
+            else "this section's waits have not landed"
+        )
         queued, position, phase = _queue_validated_waits(
             _queued_request_record(
                 run_id=run_id,
@@ -2347,8 +2365,8 @@ def dispatch(
         )
         held = LaneHeld(
             {
-                "detail": "waiting on " + ", ".join(waiting),
-                "reason": "this section's waits have not landed",
+                "detail": reason if decisions else "waiting on " + ", ".join(waiting),
+                "reason": reason,
             }
         )
         held.queued = {
@@ -2359,7 +2377,8 @@ def dispatch(
             # the pointer does not carry.
             "phase": phase,
             "waits": list(validated_refs),
-            "reason": "this section's waits have not landed",
+            "reason": reason,
+            "blockers": blockers,
         }
         if held_selection is not None:
             # The hold that offered the local lane is kept in the outcome
