@@ -1,0 +1,104 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T22:22:05.344Z",
+  "dispatched_at": "2026-11-10T22:05:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "done_when-1",
+      "reason": "the node's only negative control is false at base, so its gate would pass on unchanged code and measure nothing.",
+      "text": "\u00a723's negative control, \"a churn of an input that does not change the answer (a pointer rewrite with the same worktree)\", does not reproduce at base: `_held_records_signature` (`reckon/crew/obligations.py:2236-2242`) keys the live pointers on exactly `(run_id, worktree)`, so a rewrite carrying the same worktree leaves `live_signature`, `registry_signature` and `ledger_signature` all unchanged and `file_memo.memoized_key` (`:2203-2207`) serves the previous answer \u2014 the base refresh does not repeat the work, so the head assertion cannot fail there. If instead the rewrite changes `run_id`, the answer can change, so it is not the control the plan describes.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "done_when-2",
+      "reason": "the worker either narrows the assertion to the work inside `_held_worktree_records_read` or discards the pointer read from the key, and the plan currently forces neither choice.",
+      "text": "\u00a723's head clause, \"a second refresh with no change performs none of the underlying listing or stat work\", cannot hold even at head as the deliverable is written: every call recomputes the key, and `_held_records_signature` reads the live pointers through `_live_pointers` \u2192 `runs.list_live` (a directory listing plus one read per pointer) while `_held_worktree_records` also stats each held path at `obligations.py:2208`; a key built on \"the pointers that name them\" therefore cannot avoid either.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:570",
+      "id": "done_when-3",
+      "reason": "the control names the one edit the base already ignores, so the gate's failure mode at base is unreachable and the measure cannot discriminate.",
+      "text": "\u00a724's negative control, \"an edit to a plan with no queued request between the two calls makes the second rebuild the roadmap\", is false at base: `slugs` is built only from queued pointers (`reckon/crew/queue_order.py:56-60`) and `_named_plan_signature` stats only those plan files (`:23-35`), so an edit to a plan with no queued request leaves the signature identical and `_PRIORITY_KEYS` serves the cached keys (`:62-64`) \u2014 the base does not rebuild.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:570",
+      "id": "done_when-4",
+      "reason": "a worker implementing the deliverable fails its own head assertion, and one satisfying the assertion keeps rebuilding on every touch and delivers nothing.",
+      "text": "\u00a724's head assertion, \"touching a plan file makes the next call rebuild it\", contradicts its own deliverable, which requires that \"prose that does not change a section's state, waits or sprint\" not invalidate the keys: a touch that changes no semantic field must not rebuild at head, so the assertion fails at head for exactly the edit the section asks the worker to absorb.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:566",
+      "id": "reasoning-1",
+      "reason": "a worker following the deliverable narrows the wrong input and either keeps the per-tick miss or serves a stale held-tree answer after a release.",
+      "text": "\u00a723's Why and Deliverable name the wrong churn source and then drop the real one: the base key already excludes every pointer field except `run_id` and `worktree`, so \"churn in other pointer fields no longer misses the cache\" describes a property it already has, while the input that actually moves on most ticks is the merged ledger file's stat identity (`obligations.py:2232`), and the Deliverable's named inputs \u2014 \"the worktree trees and the pointers that name them\" \u2014 omit the ledger, whose content genuinely can change the answer when a promotion record releases a tree.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:570",
+      "id": "reasoning-2",
+      "reason": "the worker given this text implements a clause that is already true and is left to invent the real change, including its cost, which the plan should name.",
+      "text": "\u00a724's Deliverable leads with \"an edit to a plan with no queued request \u2026 does not invalidate them\", a property the base already holds, and never states the mechanism its own measure needs \u2014 keying on parsed section state rather than the file's stat identity \u2014 nor the per-tick plan parse that key implies.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ad6bf3b1b768f87aa71255ac84ab8b7e0a1f61b1",
+  "plan_fingerprint": "ddb6797adddb4aeed002c9cd5d01ee17847946a3dfc498d70262ad97854c750d",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 156,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T215532536040-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "d15a908f35208849decf6dd9685f3ab620a72d3d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 both cited log paths resolve and the two percentage figures quoted in the Why paragraphs reproduce from the profile.",
+    "done_when": "a finding \u2014 \u00a723's negative control names a pointer rewrite the base key already ignores (:566), and \u00a724's names an unrelated plan the base signature never reads (:570); \u00a723's head clause and \u00a724's head clause are both unsatisfiable as written.",
+    "evidence_paths": "pass \u2014 both cited logs (`station-io-after-landing.log`, `station-profile-after-landing-40s.raw`) exist under the \u00a713 run directory, and the paired followups record the post-landing sample in the node's run directory.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach a symbol or comment named by either unit.",
+    "reasoning": "a finding \u2014 \u00a723 names pointer-field churn as the miss source where the code's moving input is the ledger stat identity, and its deliverable drops the one input that can change the answer; \u00a724 states as new a property the base key already has.",
+    "single_goal": "pass \u2014 each unit states one deliverable, the narrowing of one cache key in one module.",
+    "wiring": "pass \u2014 `s23`/`s24` are declared `implementable` (:565, :569) and open followups `f-tmref-009` (:620) and `f-tmref-010` (:625) each carry the matching `/reckon-build \u2026 \u00a723` / `\u00a724` line; neither unit consumes another section's output, so no `depends-on` is missing."
+  },
+  "section_digests": {
+    "_document": "cb762553bbc0198ec280ae63d0faccabb421aae3dd1f3403c9cf4349ac514253",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:06:37.680410+00:00",
+  "total": null
+}
