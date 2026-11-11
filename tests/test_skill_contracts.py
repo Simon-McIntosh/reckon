@@ -827,6 +827,22 @@ MEMBER_REGISTRATION_INSTRUCTION = re.compile(
 )
 
 
+def _build_skill_read_set() -> list[Path]:
+    """Every file under skills/reckon-build/ an orchestrator session loads.
+
+    SKILL.md is loaded in full at the start of every session, and the
+    references are the files its pointers lead a session into, so an
+    instruction moved into a reference is still inside what a session reads.
+    Both whole-tree censuses below walk this one definition, so a read set
+    narrowed in one of them cannot pass with a scope the other does not share.
+    """
+    root = ROOT / "skills" / "reckon-build"
+    return [
+        root / "SKILL.md",
+        *(path for path in sorted((root / "references").rglob("*")) if path.is_file()),
+    ]
+
+
 def test_no_build_skill_file_instructs_member_registration() -> None:
     """The census reads every file in the fixed read set, not just SKILL.md.
 
@@ -839,15 +855,12 @@ def test_no_build_skill_file_instructs_member_registration() -> None:
     here rather than passing the census by matching nothing.
     """
     root = ROOT / "skills" / "reckon-build"
-    paths = [
-        root / "SKILL.md",
-        *(path for path in sorted((root / "references").rglob("*")) if path.is_file()),
-    ]
+    paths = _build_skill_read_set()
 
     # An absence check is only as wide as the set it reads, so the set is
-    # pinned: SKILL.md is loaded in full at the start of every session, and the
-    # references are the files its pointers lead a session into. Reading fewer
-    # files would report a clean census over material the session still loads.
+    # pinned: SKILL.md and the references its pointers lead a session into.
+    # Reading fewer files would report a clean census over material the
+    # session still loads.
     for required in (
         root / "SKILL.md",
         root / "references" / "sprint-orchestration.md",
@@ -873,6 +886,106 @@ def test_no_build_skill_file_instructs_member_registration() -> None:
             f"({match.group(0)!r}): every dispatch gets a disposable worker, "
             "and concurrency comes from the members a project already has"
         )
+
+
+# The retired allocation rule: keep two workers off one file, and give every
+# node its own exclusive write scope. The ruling it replaces dispatches
+# concurrent edits to one source file, which meet at the merge, so a skill still
+# teaching the claim holds a node the ruling says to dispatch. The pattern is
+# anchored on the mutual-exclusion claim rather than on the words "shared" or
+# "exclusive", because a skill must still be able to name a shared root, an
+# exclusive class and `shared-write-paths.json`.
+RETIRED_SHARED_FILE_CLAIM_PHRASES = (
+    "never dispatch two workers that write the same file",
+    "No two workers share a file.",
+    "no two concurrent workers share a file",
+    "no concurrent node shares a path",
+    "each node its own exclusive write scope",
+    "If two items share a file, serialise them",
+)
+SHARED_FILE_CLAIM = re.compile(
+    r"never dispatch two workers"
+    r"|no two (?:concurrent )?(?:workers|nodes) share"
+    r"|no concurrent node shares"
+    r"|own exclusive write scope"
+    r"|if two items share a file"
+    r"|exclusive (?:write )?scope is exclusive",
+    re.IGNORECASE,
+)
+
+# The exclusive classes a textual merge cannot reconcile, plus the directory
+# claim. A `scope-conflict` remedy that names none of them tells a coordinator
+# to wait on a claim for a source file, which is the rule this replaces.
+EXCLUSIVE_PATH_CLASSES = (
+    "plan document",
+    "cumulative evidence record",
+    "generated state",
+    "figure topic directory",
+    "dependency lock",
+    "directory claim",
+)
+
+# The two refusal tables that carry a `scope-conflict` remedy. Pinned so a file
+# that drops the row fails here rather than leaving the class check vacuous.
+SCOPE_CONFLICT_REMEDY_FILES = (
+    SKILLS_ROOT / "reckon-build" / "SKILL.md",
+    SKILLS_ROOT / "reckon-build" / "references" / "coordinator-reference.md",
+)
+
+
+def _scope_conflict_remedy(path: Path) -> str:
+    """The remedy cell of a file's `scope-conflict` refusal row, or ""."""
+    for line in path.read_text(encoding="utf-8", errors="replace").splitlines():
+        if line.startswith("| `scope-conflict` |"):
+            return normalized(line)
+    return ""
+
+
+def test_no_build_skill_file_keeps_two_workers_off_one_source_file() -> None:
+    """Concurrent edits to one source file are dispatched, not held apart.
+
+    The census reads the whole build-skill read set, because the retired rule
+    was taught in SKILL.md and in two references and a rewrite that leaves it
+    in any one of them still holds a node the ruling dispatches. The pattern is
+    pinned against each phrasing before the census runs, so a weakened pattern
+    fails loudly here rather than passing by matching nothing. The second half
+    reads the other direction of the same rule: the remedy a refused
+    `scope-conflict` sends a coordinator to names the classes that remain
+    exclusive, so a reader is never left waiting on a claim for a source file.
+    """
+    paths = _build_skill_read_set()
+    assert len(paths) > 1, "the census read set is empty or narrowed to nothing"
+
+    for phrase in RETIRED_SHARED_FILE_CLAIM_PHRASES:
+        assert SHARED_FILE_CLAIM.search(phrase), (
+            f"the census pattern no longer detects {phrase!r}, so the check "
+            "below would pass without testing for it"
+        )
+    offenders: list[str] = []
+    for path in paths:
+        text = normalized(path.read_text(encoding="utf-8", errors="replace"))
+        match = SHARED_FILE_CLAIM.search(text)
+        if match is not None:
+            offenders.append(f"{path.relative_to(ROOT)}: {match.group(0)!r}")
+    assert offenders == [], (
+        "the build skill keeps two workers off one source file:\n"
+        + "\n".join(offenders)
+        + "\nconcurrent edits to one source file are dispatched and meet at the "
+        "merge; only a path a textual merge cannot reconcile is exclusive"
+    )
+
+    for path in SCOPE_CONFLICT_REMEDY_FILES:
+        remedy = _scope_conflict_remedy(path)
+        assert remedy, (
+            f"{path.relative_to(ROOT)} carries no `scope-conflict` remedy row, "
+            "so the exclusive-class check would pass without reading it"
+        )
+        for path_class in EXCLUSIVE_PATH_CLASSES:
+            assert path_class in remedy, (
+                f"{path.relative_to(ROOT)}'s `scope-conflict` remedy does not "
+                f"name {path_class!r}: a coordinator is left to wait on a "
+                "claim without knowing which paths stay exclusive"
+            )
 
 
 def test_ship_has_one_advisory_fleet_size_table() -> None:

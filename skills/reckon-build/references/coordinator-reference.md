@@ -198,7 +198,7 @@ measured instances: `~/.agents/AGENTS.md`, *Name The Target*.
    silently treating them as schedule-ready.
 5. **Coordinators delegate every executable node, on all targets.** This includes a plan holding exactly one node, investigation, test execution, operational pipelines, and corrective repair. Inline is the reported exception of §All targets are coordinator-only, never the default for small work.
 6. **Verify every worker by reading what it produced, not by trusting its gate.** Run the cheap untrust checks of §5b first — manifest mtime against dispatch time, `commits:` against the worktree's `rev-parse HEAD`, a clean `status --porcelain`, `git show --stat <sha>` against declared scope, and the gate log actually existing and agreeing with the `tests:` line. Then read the diff by anomaly rather than sequentially, at a depth set by blast radius × mechanicalness. A passing gate the implementing worker wrote and ran against its own diff measures internal consistency, not correctness. Test execution is itself a worker node.
-7. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's exclusive write paths before sending a prompt. No two workers share a file.
+7. **Scope allocation precedes dispatch.** Use isolated worktrees by default; list each worker's write paths before sending a prompt. Two workers may name one source file: their edits meet at the merge, and a conflicting landing is repaired in its own worktree. Exclusive scope remains only for a path a textual merge cannot reconcile — a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock, or a directory claim — and no two live workers hold one of those.
 8. **The portable dispatch contract is mandatory.** `reckon crew dispatch`
    composes it. Read and embed the reference contract only when hand-composing a
    delegation Reckon did not prepare.
@@ -348,9 +348,15 @@ denominator; omitting it means the remainder is unknown, never zero.
 
 ### 3. Scope allocation
 
-List **exclusive write paths** per item. If two items share a file, serialise them or split it (`test_a.py` / `test_b.py`).
+List the **write paths** per item, and dispatch two items that name one source
+file rather than serialising them: their edits are made in separate worktrees and
+meet at the merge, which returns a conflict for repair when the two touch the
+same lines.
 
-**Never dispatch two workers that write the same file.**
+**Exclusive scope is for what a textual merge cannot reconcile**: a plan
+document, a cumulative evidence record, generated state, a figure topic
+directory, a dependency lock, and a directory claim. Give each of those to one
+live node at a time, and list it on that node alone.
 
 ### 3b. Pre-dispatch checklist — a node is well-formed BEFORE it is sent
 
@@ -369,8 +375,8 @@ All eight must hold:
       subjective adjective ("clean", "robust", "better") fails.
 - [ ] **Closed** — no decision from outside the node is needed; a
       required-but-unlocked decision means a decision node precedes it.
-- [ ] **Scoped** — exclusive write paths enumerated, none shared with a
-      concurrent node.
+- [ ] **Scoped** — write paths enumerated, and no exclusive path is shared with
+      a concurrent node; a source or test file may be.
 - [ ] **Bounded** — fits the resolved time budget. If it cannot, split it; a
       budget is not a target to overrun.
 - [ ] **Independently verifiable** — auditable from the manifest, `git show
@@ -405,7 +411,7 @@ repair the request, not as a worker failure:
 | `plan-unavailable` | 4 | Commit the plan before dispatching so its named section exists identically at the base revision. |
 | `competence-refusal` | 5 | Route the node to a backend meeting the reported capability requirements. |
 | `unreconciled-runs` | 6 | Run each reported reconciliation command, or use `--allow-unreconciled-runs` when the backlog must deliberately remain; the waiver is recorded on the new run. |
-| `scope-conflict` | 7 | Re-plan after the reported owning run releases its containing or contained path claim. |
+| `scope-conflict` | 7 | The refusal is for an exclusive path only — a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock, or a directory claim. Re-plan that path after the reported owning run releases it, or dispatch the node on another path; a source or test file in common with a peer run is dispatched and meets at the merge. |
 | `watcher-required` | 8 | No watcher this session can rely on — either the project has no live watcher process or this session has no delivering follower, and the refusal names which. Repair the first with `reckon crew watch --ensure --project P` and the second by arming the `attach_line`. Use `--no-watch` only for a synchronous one-off whose waiver belongs on the run. |
 | `member-in-flight` | 9 | Wait for the named run to reach a terminal phase, or dispatch to a different roster member. |
 
