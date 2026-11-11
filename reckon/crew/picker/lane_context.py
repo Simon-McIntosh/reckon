@@ -26,11 +26,13 @@ would let the router weigh a lane it never heard from.
 from __future__ import annotations
 
 import contextvars
+import json
 import os
 import re
+import sqlite3
 import time
 from collections.abc import Mapping, Sequence
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from statistics import median
@@ -47,6 +49,7 @@ from reckon.crew.run_time_profile import (
     _group_rows,
     _number,
     _size_class,
+    _size_table,
     local_lane_load,
     run_time_profile,
 )
@@ -795,49 +798,174 @@ def _cached_run_time_profile(
     return profile, _profile_age_s(profile, now)
 
 
+def _indexed_profile_inputs(
+    project: str, previous: Mapping[str, Any] | None = None
+) -> dict[str, Any] | None:
+    """Read appended picker inputs from a current index, preserving old samples.
+
+    The append writer publishes the document's projection, signature, directory
+    stamp and generation together. Those stamps must still match the source.
+    Retained signatures must be unchanged: a deletion, rewrite or aggregate move
+    requires a full build rather than folding a different history into a sample.
+    """
+
+    opened = ledger._open_current_index(project, None)
+    if opened is None:
+        return None
+    connection, meta = opened
+    try:
+        with closing(connection):
+            connection.execute("BEGIN")
+            aggregate = ledger.ledger_path(project)
+            generation = ledger.ledger_generation(project)
+            if (
+                generation is None
+                or meta.get(ledger._GENERATION_MEMBER) != generation
+                or meta.get(ledger._RUNS_DIRECTORY_MEMBER)
+                != json.dumps(ledger._file_identity(aggregate.parent / "runs"))
+            ):
+                return None
+            source = [
+                str(aggregate.resolve()),
+                ledger._RUN_INDEX_VERSION,
+                meta.get("stamp"),
+            ]
+            documents = dict(connection.execute("SELECT name, stamp FROM records"))
+            if previous is not None:
+                retained = previous["documents"]
+                if not isinstance(retained, Mapping) or not isinstance(
+                    previous["rows"], list
+                ):
+                    return None
+                if previous["source"] != source or any(
+                    documents.get(name) != stamp for name, stamp in retained.items()
+                ):
+                    return None
+                rows = list(previous["rows"])
+            else:
+                retained = {}
+                rows = [
+                    json.loads(row[0])
+                    for row in connection.execute(
+                        "SELECT picker FROM aggregate_rows ORDER BY ordinal"
+                    )
+                ]
+            for name in documents.keys() - retained.keys():
+                row = connection.execute(
+                    "SELECT picker FROM records WHERE name=? AND picker IS NOT NULL "
+                    "AND name NOT IN (SELECT run_id FROM aggregate_rows "
+                    "WHERE run_id IS NOT NULL)",
+                    (name,),
+                ).fetchone()
+                if row is not None:
+                    rows.append(json.loads(row[0]))
+            return {"source": source, "documents": documents, "rows": rows}
+    except (sqlite3.Error, OSError, ValueError, KeyError, TypeError):
+        return None
+
+
+def _profile_from_inputs(
+    project: str, rows: Sequence[Mapping[str, Any]], moment: datetime
+) -> dict[str, Any]:
+    """Apply the closed trailing window and the shared statistical reducers."""
+
+    since = moment - timedelta(days=14)
+    selected = [
+        ledger.normalize_identity(row)
+        for row in rows
+        if isinstance(row, Mapping)
+        and (completed := parse_utc(row.get("completed_at"))) is not None
+        and since <= completed <= moment
+    ]
+    return {
+        "project": project,
+        "days": 14,
+        "since": since.isoformat(),
+        "until": moment.isoformat(),
+        "rows": len(selected),
+        "groups": _group_rows(selected),
+        "size_buckets": _size_table(selected),
+    }
+
+
 def refresh_run_time_profile(
     project: str, *, now: datetime | None = None
 ) -> Mapping[str, Any] | None:
-    """Rebuild ``project``'s run-time profile and persist it under its stamp.
+    """Fold newly indexed rows into the stored profile, or build a missing base.
 
-    Building a profile is the read the pick no longer makes, so it moves to the
-    one moment a project's ledger content changes: the promotion that appends to
-    that project's ledger. Promotion calls this for the run's project after the
-    ledger append, so the profile a later pick serves was published by the
-    promotion that moved the ledger, and no pick pays for a rebuild.
-
-    The instant is recorded inside the value as ``persisted_at``, so a later read
-    can age it, and the value is stored through
-    :func:`reckon.capabilities.cached_pick_input_rekeyed` under the stamp the
-    build settled at. A project whose id cannot form a cache filename, or whose
-    ledger index yields no stamp, is not persisted, and a caller may call this
-    without it ever failing their work: a failed build or write leaves the
-    previous entry, and the caller's own result, unchanged.
+    Exact quantiles need the contributing samples, so the entry retains picker
+    inputs beside its tables. Only added documents are decoded on a fold; the
+    source and retained document signatures prove the stored sample is still its
+    base. Missing, mismatched or rewritten bases take one full build. All reads
+    finish before publishing the cache, and no ledger read region spans a write.
     """
 
     moment = now if now is not None else datetime.now(UTC)
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=UTC)
     try:
         filename = _profile_filename(project)
     except ValueError:
         return None
-    if _profile_stamp(project, moment) is None:
+    before = _profile_stamp(project, moment)
+    generation = ledger.ledger_generation(project)
+    if before is None:
         return None
-
-    def build() -> dict[str, Any]:
-        profile = dict(run_time_profile(project, now=moment))
-        profile["persisted_at"] = moment.isoformat()
-        return profile
-
-    value = capabilities.cached_pick_input_rekeyed(
-        project,
-        lambda: _profile_stamp(project, moment),
-        _profile_stamp_may_cache,
-        build,
-        root=_profile_cache_root(),
-        filename=filename,
+    path = capabilities.pick_input_cache_path(
+        project, root=_profile_cache_root(), filename=filename
     )
+    entry = capabilities._read_pick_entry(path)
+    value = entry.get("value") if entry else None
+    previous = value.get("fold_inputs") if isinstance(value, Mapping) else None
+    inputs = None
+    if (
+        isinstance(previous, Mapping)
+        and previous.get("stamp") == entry.get("key")
+        and previous.get("date") == moment.date().isoformat()
+    ):
+        inputs = _indexed_profile_inputs(project, previous)
+    folded = inputs is not None
+    if folded:
+        profile = _profile_from_inputs(project, inputs["rows"], moment)
+    else:
+        profile = dict(run_time_profile(project, now=moment))
+        inputs = _indexed_profile_inputs(project)
+        if inputs is None and ledger._ledger_holds_content(project, None):
+            # A refused index update can leave the last-good snapshot behind
+            # the append. Build from the authoritative files in that case.
+            data, _version = ledger.load(project, use_index=False)
+            profile = _profile_from_inputs(project, data["runs"], moment)
+    profile["persisted_at"] = moment.isoformat()
+    after = _profile_stamp(project, moment)
+    if (
+        after is not None
+        and ledger.ledger_generation(project) == generation
+        and (before == after if folded else _profile_stamp_may_cache(before, after))
+    ):
+        key = capabilities.pick_input_stamp_key(after)
+        if inputs is not None:
+            # Keep future samples until they enter the window, but discard
+            # expired samples; exact medians cannot be recovered from medians.
+            since = moment - timedelta(days=14)
+            inputs["rows"] = [
+                ledger.picker_record(row)
+                for row in inputs["rows"]
+                if isinstance(row, Mapping)
+                and (completed := parse_utc(row.get("completed_at"))) is not None
+                and completed >= since
+            ]
+            inputs.update(stamp=key, date=moment.date().isoformat())
+            profile["fold_inputs"] = inputs
+        capabilities._write_pick_entry(
+            path,
+            {
+                "version": capabilities.PICK_INPUT_CACHE_VERSION,
+                "key": key,
+                "value": profile,
+            },
+        )
     _PROFILE_CACHE.pop(project, None)
-    return value
+    return profile
 
 
 def _expected_wait(

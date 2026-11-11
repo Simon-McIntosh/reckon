@@ -54,6 +54,7 @@ def history(tmp_path, monkeypatch):
             }
         )
     )
+    ledger._bump_generation(PROJECT)
     lane_context._PROFILE_CACHE.clear()
     yield tmp_path / "profiles" / f"{PROJECT}.json"
     lane_context._PROFILE_CACHE.clear()
@@ -136,7 +137,7 @@ def test_an_unusable_stored_profile_gets_one_full_build(history, monkeypatch, da
     assert profile["rows"] == 51
 
 
-def test_folds_preserve_window_statistics_and_reject_rewritten_history(history):
+def test_folds_preserve_window_statistics(history):
     lane_context.refresh_run_time_profile(PROJECT, now=NOW)
     for index, row in enumerate(
         [
@@ -154,3 +155,44 @@ def test_folds_preserve_window_statistics_and_reject_rewritten_history(history):
     actual = lane_context.refresh_run_time_profile(PROJECT, now=later)
     expected = lane_context.run_time_profile(PROJECT, now=later)
     assert {key: actual[key] for key in expected} == expected
+
+
+@pytest.mark.parametrize("change", ["rewrite", "delete", "aggregate"])
+def test_changed_history_refuses_a_fold_and_builds_once(history, monkeypatch, change):
+    ledger.append_run(PROJECT, _row(50))
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    target = ledger.run_path(PROJECT, "run-50")
+    if change == "rewrite":
+        target.write_text(ledger.serialize_run(_row(50, wall_seconds=9999)))
+    elif change == "delete":
+        target.unlink()
+    else:
+        path = ledger.ledger_path(PROJECT)
+        envelope = json.loads(path.read_text())
+        envelope["data"]["runs"][0]["wall_seconds"] = 9999
+        path.write_text(json.dumps(envelope))
+    ledger._bump_generation(PROJECT)
+    build = Mock(wraps=lane_context.run_time_profile)
+    monkeypatch.setattr(lane_context, "run_time_profile", build)
+    actual = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    assert build.call_count == 1
+    expected = build(PROJECT, now=NOW)
+    assert {key: actual[key] for key in expected} == expected
+
+
+def test_a_generation_move_during_a_fold_does_not_publish_mixed_inputs(
+    history, monkeypatch
+):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    before = history.read_bytes()
+    ledger.append_run(PROJECT, _row(50))
+    real_inputs = lane_context._indexed_profile_inputs
+
+    def moved(*args, **kwargs):
+        inputs = real_inputs(*args, **kwargs)
+        ledger._bump_generation(PROJECT)
+        return inputs
+
+    monkeypatch.setattr(lane_context, "_indexed_profile_inputs", moved)
+    assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 51
+    assert history.read_bytes() == before
