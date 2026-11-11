@@ -13,6 +13,22 @@ not how many findings you emit. A review that names many cosmetic edges and
 misses the one wrong mechanism has failed; a review that names one defect which
 would have sent a node down the wrong path has succeeded.
 
+## The endpoint, never a method
+
+A plan describes the endpoint, never the implementation. A section states the
+records and figures it delivers, the quantity each holds, its tolerance, the
+independent reference it is compared against, and the negative control that must
+fail. It names no code path, no step sequence, no formula to implement, and no
+function to call or extend: the worker reads the code and runs it, and the plan
+fixes only what counts as done. **A section that prescribes implementation is a
+finding.** A mechanism written into a plan is a guess the reviewer would have to
+test against the code, and each wrong guess costs a review round.
+
+The reuse map — the module to extend, the interface not to widen — belongs to the
+node brief composed from this review, never to the plan. Do not ask the author to
+name a symbol, a file or a function in plan text, and do not judge a stated
+method: a section naming no implementation is the state this rule asks for.
+
 ## The rubric
 
 Score the plan against each item below and emit one verdict per item. Every item
@@ -31,9 +47,11 @@ is named by the slug in parentheses, because you must emit a verdict for each:
 4. **evidence_paths** (`evidence_paths`) — evidence and gate logs sit on durable
    paths a later reader can open, never in a session scratchpad, a node-local
    temporary directory, or a path that does not survive the run.
-5. **anchors_resolve** (`anchors_resolve`) — claims are cited, and every file,
-   section or commit an anchor names resolves. A pointer to something renamed or
-   deleted is worse than none. **Resolve an href the way the surface does**: a
+5. **anchors_resolve** (`anchors_resolve`) — every file, section or commit an
+   anchor names resolves. A reference is judged on resolution alone: the author
+   is not asked to cite a symbol, and a section citing none is not a finding. A
+   pointer to something renamed or deleted is worse than none. **Resolve an href
+   the way the surface does**: a
    link whose target names no file extension is resolved as `<path>.html` before
    you report it, because the docs surface fetches `/<project>/<href>.html`
    (`docs/ui/plan.jsx`). Do not emit a finding against an extensionless href that
@@ -43,14 +61,16 @@ is named by the slug in parentheses, because you must emit a verdict for each:
    that needs its tracker entry to be understood is a finding; state the
    mechanism instead.
 7. **reasoning** (`reasoning`) — the plan's reasoning holds under three checks,
-   and you must apply all three:
+   and you must apply all three. Each is a question about the endpoint; none asks
+   whether a stated method works:
    - **does the stated root cause match the cited evidence?** A plan that names a
      cause its own evidence does not support has argued past its data.
-   - **does each section's mechanism produce its done-when?** The mechanism
-     described must be capable of satisfying the measure the same section asserts.
-   - **does the mechanism run on the real code path, with the caller named?**
-     A mechanism that exists but is reached by no production caller does not run;
-     name the caller the plan relies on, or emit a finding.
+   - **is the endpoint reachable and checkable?** The records and figures the
+     section delivers must be obtainable from the system the plan describes, and
+     the measure the section names must be able to fail.
+   - **does the section prescribe implementation?** A code path, a step sequence,
+     a formula to implement, or a function to call or extend is a finding against
+     this item, however well the rest of the section reads.
 
 RUBRIC_ITEMS: wiring, done_when, single_goal, evidence_paths, anchors_resolve, naming, reasoning
 

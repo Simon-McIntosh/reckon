@@ -322,6 +322,11 @@ def claimless_findings(review: Mapping[str, Any]) -> list[tuple[int, Any]]:
 # schema to its prompt holds these two. The rubrics are advisory: a finding is
 # scored on whether it would have changed the plan, so the items are the checks
 # a reviewer owes an answer to, not scores.
+#
+# Both rubrics judge the endpoint a section delivers, never the implementation
+# that would reach it. A section that prescribes a code path, a step sequence, a
+# formula or a function to extend is a finding, and the reuse map the design
+# reviewer composes belongs to the node brief rather than to plan text.
 PLAN_REVIEW_ITEMS: tuple[str, ...] = (
     "wiring",
     "done_when",

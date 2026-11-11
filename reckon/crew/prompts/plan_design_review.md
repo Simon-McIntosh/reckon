@@ -11,31 +11,45 @@ The review is advisory. The author answers each finding by acting on it or by
 declining it with a one-line reason. Your findings are scored on whether they
 **would have changed the plan**.
 
+## The reuse map stays out of the plan
+
+The reuse map — the module to extend, the interface not to widen, the question
+the worker may not settle — belongs to the node brief composed from this review,
+never to plan text. A plan describes the endpoint: the records and figures it
+delivers, their quantity, tolerance, independent reference and negative control.
+**No finding asks the plan to name a module, a function or a file to extend**, and
+a plan that names none is not a finding. Name the owning file in your finding so
+the brief can carry it; judge the design the code would take, not the plan's
+account of it.
+
 ## The rubric
 
 Score the design against each item below and emit one verdict per item. Every
 one of the five items is named by the slug in parentheses, because you must emit
 a verdict for each:
 
-1. **reuse_search** (`reuse_search`) — the plan searched for existing machinery
-   before proposing new machinery. Search the codebases named by the plan for a
-   mechanism that already does what the plan is about to add. This is the reuse
-   map made unfailable by memory: a reviewer runs it whether or not the plan's
-   author did. A plan that adds a subsystem without citing what it searched is a
-   finding.
-2. **deep_module** (`deep_module`) — a new module hides substantial behaviour
-   behind an interface smaller than what it hides. A module that spreads its
+1. **reuse_search** (`reuse_search`) — the machinery the endpoint needs was
+   searched for before it was proposed. Search the codebases named by the plan
+   for a mechanism that already does the job, and put what you find in the
+   finding for the brief to carry. This is the reuse map made unfailable by
+   memory: a reviewer runs it whether or not the plan's author did. A plan is not
+   asked to cite what it searched, because the plan names no module.
+2. **deep_module** (`deep_module`) — the design hides substantial behaviour
+   behind an interface smaller than what it hides. A design that spreads its
    complexity across many small wrappers over the same machinery adds surface
-   without adding depth, and is a finding.
-3. **thin_wrapper** (`thin_wrapper`) — a plan that adds a thin layer over
+   without adding depth, and is a finding. Judge the design the brief would hand
+   a node; the plan is not asked to describe it.
+3. **thin_wrapper** (`thin_wrapper`) — a design that adds a thin layer over
    existing machinery must say why that machinery cannot be extended instead.
-   A wrapper with no such justification is a finding: the honest change is
-   usually an extension of the existing mechanism, not a parallel one.
+   The justification belongs to the brief. A wrapper with none is a finding: the
+   honest change is usually an extension of the existing mechanism, not a
+   parallel one.
 4. **duplicate_owner** (`duplicate_owner`) — a duplicate of shared
    infrastructure is a finding naming the owner to extend. Placement, path
    resolution, scheduler queries and state readers are the recurring duplicates;
-   when the plan re-implements one, emit a finding that names the mechanism and
-   the file that owns it, so the author can extend the owner rather than fork it.
+   when the design re-implements one, emit a finding that names the mechanism and
+   the file that owns it, so the node brief can extend the owner rather than fork
+   it. The owning file is named in the brief, never written into the plan.
 5. **interface_budget** (`interface_budget`) — cite the current week's four
    figures handed to you in the brief: `public_definitions`, `cli_options`,
    `mcp_views` and `refusal_families`. Hold every section that adds to any of
@@ -48,11 +62,11 @@ RUBRIC_ITEMS: reuse_search, deep_module, thin_wrapper, duplicate_owner, interfac
 
 ## What to read
 
-Read the plan's design sections, then read the code the design would extend or
-replace. For each mechanism the plan proposes, name the existing mechanism it
-most resembles and say whether the plan extends it, wraps it, or duplicates it.
-A claim about prior art is checked by opening the code, not by reading the plan's
-account of it.
+Read the plan's sections for the endpoint each one asks for, then read the code
+that endpoint would reach. For each mechanism the endpoint needs, name the
+existing mechanism it most resembles and say whether the work extends it, wraps
+it, or duplicates it, and where that mechanism lives. A claim about prior art is
+checked by opening the code, not by reading the plan's account of it.
 
 ## Every instance of a type, not the first
 
