@@ -1,0 +1,243 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "The emitted PostToolUse array is empty or has additional groups.",
+      "lines": [
+        77
+      ]
+    },
+    {
+      "fails_if": "The emitted group drops or changes the canonical inbox command; comparison to worker_inbox_group tests reuse of the existing owner, not correctness of that pre-existing owner.",
+      "lines": [
+        80
+      ]
+    },
+    {
+      "fails_if": "Production ignores or changes the independently supplied probe key/hash or trusts additional entries; fixture values are literal expectations, not values read back from emitted argv.",
+      "lines": [
+        81
+      ]
+    },
+    {
+      "fails_if": "The recorded dotted override implementation is reinstated instead of the inline hooks.state table.",
+      "lines": [
+        87
+      ]
+    },
+    {
+      "fails_if": "Production adds the forbidden hook-trust bypass flag.",
+      "lines": [
+        88
+      ]
+    },
+    {
+      "fails_if": "Composition writes, removes or modifies a file in the sentinel directory; actual operator-config preservation is additionally evidenced by the live gate before/after digests.",
+      "lines": [
+        89
+      ]
+    },
+    {
+      "fails_if": "Discovery uses a request other than hooks/list.",
+      "lines": [
+        90
+      ]
+    },
+    {
+      "fails_if": "The hook override moves after the resume subcommand.",
+      "lines": [
+        92
+      ]
+    },
+    {
+      "fails_if": "Another registered dialect probes or emits the Codex hook/trust flags.",
+      "lines": [
+        98,
+        99
+      ]
+    },
+    {
+      "fails_if": "Missing, error or empty metadata is accepted rather than refused with BackendError.",
+      "lines": [
+        111
+      ]
+    },
+    {
+      "fails_if": "Any parameterized unrelated source/event/handler/command, missing key or invalid hash is accepted.",
+      "lines": [
+        137
+      ]
+    },
+    {
+      "fails_if": "Preview composition probes or creates a file for the absent run.",
+      "lines": [
+        143,
+        144
+      ]
+    },
+    {
+      "fails_if": "The direct exec exits unsuccessfully.",
+      "lines": [
+        221
+      ]
+    },
+    {
+      "fails_if": "The stream lacks three completed commands or any completed command exits nonzero.",
+      "lines": [
+        231,
+        232
+      ]
+    },
+    {
+      "fails_if": "Composition or exec writes config.toml into the fresh scratch home.",
+      "lines": [
+        236
+      ]
+    },
+    {
+      "fails_if": "The hook fails to claim the trusted message, as observed in the recorded trust-drop control.",
+      "lines": [
+        238
+      ]
+    },
+    {
+      "fails_if": "Trusted delivery leaves the original message pending.",
+      "lines": [
+        239
+      ]
+    },
+    {
+      "fails_if": "The receipt is missing, duplicated or names another message; message.name is independent filesystem input, not an echo returned by the code under test.",
+      "lines": [
+        241
+      ]
+    },
+    {
+      "fails_if": "The trusted receipt reports failed delivery.",
+      "lines": [
+        242
+      ]
+    },
+    {
+      "fails_if": "The final answer omits the independently generated inbox-only codeword, including when trust is dropped.",
+      "lines": [
+        243
+      ]
+    },
+    {
+      "fails_if": "The untrusted run loses the pending message, claims it, writes any receipt or quotes the inbox-only codeword.",
+      "lines": [
+        245,
+        246,
+        247,
+        248
+      ]
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/_backends.py:launch_plan:3121",
+    "reckon/_backends.py:_CodexDialect.argv:1408",
+    "reckon/crew/dispatch_sessions.py:1345"
+  ],
+  "circular_assertions": [],
+  "completed_at": "2026-11-11T07:10:48Z",
+  "dispatched_at": "2026-11-11T07:04:03Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T062858537322-codex-inbox-trust/after-suite.log",
+      "summary": "66 passed, 2 skipped in 26.05s"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T062858537322-codex-inbox-trust/baseline.log",
+      "summary": "51 passed in 21.53s"
+    },
+    "note": "The after arm ran at d8bd57abe26920e328c7bf5fce38ce39e0171f5a; the subsequent reviewed head adds evidence HTML only.",
+    "parser_positive_control": {
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_codex_inbox_trust.py::test_headless_codex_claims_and_quotes_only_with_trust[trusted]"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T062858537322-codex-inbox-trust/negative-control.log"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read fc6561cb695974fc45aa720ddef0c7946842ff80, d8bd57abe26920e328c7bf5fce38ce39e0171f5a and 8e7c6981e88ec6d1bad66f9ffbb111ab4f670aab against 421bf28ad3c2121a5e536ca25f55efaecaef116c; the implementation adds hook discovery, the correction preserves dotted trust identities, and the final commit adds only evidence HTML.",
+    "done_when": "source prompt.txt requires dialect isolation, no config writes and paired headless delivery; after-suite.log records 66 passed and 2 skipped, live-inline-state.log records both live cases passing, and negative-control.log records the trusted claim assertion failing when trust is removed.",
+    "goal": "source prompt.txt names process-local Codex inbox hook and exact trust discovery; reckon/_backends.py:1408 and :1443 implement that deliverable through _CodexDialect and BudgetProbe.",
+    "manifest": "source manifest.md names all three commits and reconciles with baseline.log, after-suite.log, live-inline-state.log, negative-control.log and the trusted inbox receipt; its outstanding coordinator live check is explicitly outside this node.",
+    "write_paths": "source prompt.txt grants reckon/_backends.py, tests/test_codex_inbox_trust.py and the named evidence/figure paths; all three changed paths are inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_codex_inbox_trust.py:87 rejects the recorded dotted-key regression, :111 and :137 reject absent or unrelated metadata, and :238 through :248 distinguish real trusted delivery from an otherwise successful untrusted exec.",
+    "evidence": "tests/test_codex_inbox_trust.py:238 fails in negative-control.log while live-inline-state-gate/trusted/inbox/receipts.jsonl and both receipt-summary.json files independently establish the required 1/0 receipt contrast.",
+    "fit": "reckon/_backends.py:1443 follows the existing dialect-private flag composition pattern, names its mechanism without transient labels, and lint-final.log records unchanged pre-existing lint findings and clean formatting.",
+    "goal_fidelity": "reckon/_backends.py:1443 discovers the exact command identity and hash and :1497 emits inline process-local trust for both fresh and resumed argv.",
+    "reuse": "capability searches for hook registration, trust and app-server exchanges found reckon/hooks/install.py:172 and reckon/_backends.py:1781/:3251, which the new dialect method extends and calls rather than duplicating their mechanisms.",
+    "scope_discipline": "the three paths changed by the three reviewed commits exactly match the implementation, test and evidence fragment grants in source prompt.txt."
+  },
+  "limitations": [
+    "No full suite rerun: the review reads the source-run gate logs as instructed.",
+    "The later dispatched-worker crew tell check belongs to the coordinator and is not part of the source node done_when.",
+    "Review artifacts live outside the read-only worktree and require no repository commit."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt names process-local Codex inbox hook and exact trust discovery; reckon/_backends.py:1408 and :1443 implement that deliverable through _CodexDialect and BudgetProbe.\nVERDICT done_when: source prompt.txt requires dialect isolation, no config writes and paired headless delivery; after-suite.log records 66 passed and 2 skipped, live-inline-state.log records both live cases passing, and negative-control.log records the trusted claim assertion failing when trust is removed.\nVERDICT write_paths: source prompt.txt grants reckon/_backends.py, tests/test_codex_inbox_trust.py and the named evidence/figure paths; all three changed paths are inside those grants.\nVERDICT manifest: source manifest.md names all three commits and reconciles with baseline.log, after-suite.log, live-inline-state.log, negative-control.log and the trusted inbox receipt; its outstanding coordinator live check is explicitly outside this node.\nVERDICT diff: read fc6561cb695974fc45aa720ddef0c7946842ff80, d8bd57abe26920e328c7bf5fce38ce39e0171f5a and 8e7c6981e88ec6d1bad66f9ffbb111ab4f670aab against 421bf28ad3c2121a5e536ca25f55efaecaef116c; the implementation adds hook discovery, the correction preserves dotted trust identities, and the final commit adds only evidence HTML.\nCALL_SITES: reckon/_backends.py:launch_plan:3121, reckon/_backends.py:_CodexDialect.argv:1408, reckon/crew/dispatch_sessions.py:1345\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_backends.py:1443 discovers the exact command identity and hash and :1497 emits inline process-local trust for both fresh and resumed argv.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_codex_inbox_trust.py:238 fails in negative-control.log while live-inline-state-gate/trusted/inbox/receipts.jsonl and both receipt-summary.json files independently establish the required 1/0 receipt contrast.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths changed by the three reviewed commits exactly match the implementation, test and evidence fragment grants in source prompt.txt.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_codex_inbox_trust.py:87 rejects the recorded dotted-key regression, :111 and :137 reject absent or unrelated metadata, and :238 through :248 distinguish real trusted delivery from an otherwise successful untrusted exec.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_backends.py:1443 follows the existing dialect-private flag composition pattern, names its mechanism without transient labels, and lint-final.log records unchanged pre-existing lint findings and clean formatting.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for hook registration, trust and app-server exchanges found reckon/hooks/install.py:172 and reckon/_backends.py:1781/:3251, which the new dialect method extends and calls rather than duplicating their mechanisms.\n",
+  "reproduction": {
+    "corroboration": "composed-trust-probe.json reports trustStatus=untrusted; inline-state-probe.json reports trustStatus=trusted.",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T062858537322-codex-inbox-trust/negative-control.log",
+    "quote": "AssertionError: trusted run failed to claim the inbox message"
+  },
+  "reuse_review": {
+    "owners_opened": [
+      "reckon/hooks/install.py:172",
+      "reckon/_backends.py:1781",
+      "reckon/_backends.py:3251"
+    ],
+    "production_additions": {
+      "_CodexDialect._inbox_hook_flags": "Extends dialect-owned argv composition; reuses worker_inbox_group, budget_probe handshake and run_probe transport."
+    },
+    "search_terms": [
+      "worker_inbox_group",
+      "PostToolUse",
+      "trust",
+      "hooks/list",
+      "budget_probe",
+      "run_probe"
+    ],
+    "test_additions": {
+      "_argv": "Test-only wrapper around the existing dialect argv owner.",
+      "_overrides": "Test-only TOML decoding through standard-library tomllib.",
+      "hook_probe/answer": "Scoped fixture transport stub; uses pytest monkeypatch, no production capability fork.",
+      "test functions and nested answer": "Assertions and fixture mutation, not production capability implementations."
+    }
+  },
+  "review_run_id": "r-20261111T070104364521-review-of-codex-inbox-trust-8e7c6981e88e",
+  "reviewed_base_sha": "421bf28ad3c2121a5e536ca25f55efaecaef116c",
+  "reviewed_head_sha": "8e7c6981e88ec6d1bad66f9ffbb111ab4f670aab",
+  "reviewed_run_id": "r-20261111T062858537322-codex-inbox-trust",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:16:21.935875+00:00",
+  "total": 120
+}
