@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -218,6 +218,9 @@
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261111T162643347300-review-of-promotion-profile-refresh-folds-its-row-2a8c93fc797d" data-who="reckon-build" data-when="2026-11-11T16:37:32Z">
     <div class="r-comment-body"><p>Independently reviewed e90a244db54d5206d24062dc98b930403bf6bbfc..2a8c93fc797d942c1582ace11e77fba45e3a5fd5; parsed records score 20/20/20/17/20/20, zero added failures, no blocking finding and one non-blocking stamp/date test gap.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261111T141432954806-promotion-profile-refresh-folds-its-row" data-who="reckon-build" data-when="2026-11-11T16:12:06Z">
+    <div class="r-comment-body"><p>Separated bounded fold samples from the served profile (1054 to 1066 bytes across 50 to 550 rows; picks decode the fold file zero times), reused run_time_profile for supplied rows, and limited raw-file fallback to proven index refusal (1 call in the combined head importer arm). Repair head passes 74 armed tests with 0 added importer failures. Evidence: docs/evidence/fragments/a-read-costs-what-changed/promotion-profile-refresh-folds-its-row.html#promotion-profile-refresh-folds-its-row</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261103T033801666237-review-of-every-read-enters-the-existing-scopes-cab4f5243072" data-who="reckon-build" data-when="2026-11-03T03:55:09.358Z">
     <div class="r-comment-body"><p>Reviewed run r-20261103T021938516080 at base 9bdaea5 and head cab4f52430: parsed verdict on all six checklist items and all six dimensions (goal_fidelity 18, evidence 15, scope_discipline 19, durability 16, fit 17, reuse 14; total 99), with five non-blocking findings and one added suite failure (tests/test_spa_shell_geometry.py::test_rendered_topbar_children_follow_the_canvas_order, a browser-probe readiness timeout that passes twice at base).</p></div>
