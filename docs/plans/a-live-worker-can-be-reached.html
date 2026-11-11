@@ -21,7 +21,7 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
@@ -298,6 +298,9 @@ The document half and the guard are done; the inbox is what remains of the locke
 </div>
 <div class="r-comment" data-section="s11" data-id="c-20261111T160918000127" data-who="" data-when="">
     <div class="r-comment-body"><p>Landed at <code>5fb58b1f9e</code> (run <code>r-20261111T132445209820-crew-tell-reads-the-recorded-argv</code>, re-review 111, armed pair 64 to 68 passed). <code>crew tell</code> now reads a codex run's launch argv from its run directory through <code>_attempt_worker_records</code>, the canonical <code>worker.json</code> winning for the running attempt. The resumed landing left the declaration open; it is set done here against the done-when. The coordinator now dispatches the codex live check through the verb.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-20261111T162416526194" data-who="" data-when="">
+    <div class="r-comment-body"><p><strong>Live check passed through the verb.</strong> <code>reckon crew tell --run r-20261111T161759121859-codex-tell-live-check</code> (codex, sol61) accepted the run and queued the message at 16:22:53Z; the inbox hook wrote its receipt at 16:23:01Z on the worker's next tool call (<code>mcp__reckon__read_plan</code>, session <code>01a1cb6a-9abb-7c42-af54-9d8672a65cd8</code>), and the worker quoted the codeword KESTREL-MERIDIAN-9 verbatim in its manifest's <code>messages_received</code>. Evidence: the run directory's <code>inbox/receipts.jsonl</code> and <code>manifest.md</code>.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="guard-landed-and-verified" data-who="Simon McIntosh" data-when="2026-09-15">
     <div class="r-comment-body">The guard is merged and verified at the merged head: zero failures added against a twenty-failure base, identical failure ids either side by set difference, and 505 passing before against 518 after. None of the twenty pre-existing failures touches the hook, the CLI wiring or the guard tests. An independent review scored it 20 goal fidelity, 20 scope discipline, 19 evidence, 19 durability, 19 fit. The worker wrote the quiet half first and added, unprompted, a test that a live pointer launched on a different host is not matched — the pointer directory is shared across login nodes, so a pid from another host reads alive or dead by coincidence. The ledger row is still outstanding: promotion is refused by a defect in the gate's own log check, which greps a cited log for a shell diagnostic that the gate's own test file writes as fixture data. That is reproduced, owned elsewhere and has a repair in flight.</div>
