@@ -17,8 +17,8 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import plan_review, recovery, review
-from reckon.crew.node import PlanReviewMissingError
+from reckon.crew import plan_review, recovery, review, routing
+from reckon.crew.node import PlanReviewMissingError, TaskNode
 from tests.test_a_finding_blocks_its_own_section import (
     CONTENT_VERSION,
     PLAN,
@@ -116,6 +116,35 @@ def test_a_rereview_lists_its_finding_on_a_covered_unit_as_an_observation(rerevi
     assert plan_review.observation_findings(record) == [OUT_OF_SCOPE]
     assert plan_review.unanswered_findings(record) == [IN_SCOPE, OUT_OF_SCOPE]
     assert _gate(repo, UNTRACED) is None
+
+
+def test_a_rereview_gates_a_whole_plan_dispatch_on_its_own_unit(rereview):
+    """A dispatch reading the whole plan still counts only the round's unit.
+
+    The dispatch is not narrowed to a section here, so every unit the review
+    speaks about is in front of the gate. The observation is still not one of
+    them.
+    """
+    _home, repo, _path = rereview[0]
+
+    with pytest.raises(PlanReviewMissingError) as raised:
+        routing.require_plan_reviewed(
+            node=TaskNode(
+                id="build-whole-plan",
+                goal="Build the plan",
+                plan="fixture",
+                role="implement",
+            ),
+            project="sample",
+            repo=repo,
+            authority={"plan": {"docs": str(repo / "docs"), "source": "repository"}},
+            enforce=True,
+        )
+
+    refusal = str(raised.value)
+    assert "1 finding(s) unanswered" in refusal
+    assert IN_SCOPE in refusal
+    assert OUT_OF_SCOPE not in refusal
 
 
 def test_a_first_review_gates_on_every_finding(many_section_plan):
