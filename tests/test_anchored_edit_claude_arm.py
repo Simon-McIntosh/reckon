@@ -207,6 +207,76 @@ def test_fresh_fenced_launch_registers_scoped_tools_and_records_treatment(
     }
 
 
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_a_seeding_launch_instructs_the_anchored_tools(launch_case, command):
+    """The prompt a treated launch hands over names both tools and their route.
+
+    The instruction rides on the launch that seeded the server, so it is
+    read from the plan's own prompt rather than from the base signal prompt:
+    a dispatch-time line keyed on the flight key would also reach a launch
+    that seeded nothing.
+    """
+    compose, _, _, _ = launch_case
+    plan = compose(command=command)
+    assert plan.anchored_edit is True
+    assert plan.prompt.startswith("node prompt")
+    assert "read_anchored" in plan.prompt
+    assert "edit_anchored" in plan.prompt
+    # The harness defers MCP tools, so the worker must be told how to load them.
+    assert "ToolSearch" in plan.prompt
+    assert (
+        "select:mcp__reckon-anchored-edit__read_anchored,"
+        "mcp__reckon-anchored-edit__edit_anchored" in plan.prompt
+    )
+
+
+def test_a_prompt_already_instructed_keeps_one_copy(launch_case):
+    """A lane change composes from the prompt file, which already carries one.
+
+    The launch that follows appends its own instruction, so the block present
+    is removed first: the worker is told once, and the rest of the prompt is
+    left as it was written.
+    """
+    compose, _, _, _ = launch_case
+    from reckon.crew.prompts import (
+        ANCHORED_EDIT_CLAUDE_INSTRUCTION,
+        ANCHORED_EDIT_HEADING,
+    )
+
+    already = (
+        f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+    plan = compose(prompt=already)
+    assert plan.anchored_edit is True
+    assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
+    assert plan.prompt.startswith("node prompt\n\n")
+    assert plan.prompt.rstrip().endswith(ANCHORED_EDIT_CLAUDE_INSTRUCTION)
+
+
+@pytest.mark.parametrize(
+    "reason", ["unfenced", "resumed", "operator-settings", "no-flight-config"]
+)
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_a_launch_seeding_no_server_carries_no_instruction(
+    launch_case, reason, command
+):
+    """A launch with no anchored server is never told to use its tools."""
+    compose, _, run, _ = launch_case
+    options = {}
+    if reason == "unfenced":
+        options["fence"] = False
+    elif reason == "resumed":
+        options["resume_session"] = "recorded-session"
+    elif reason == "no-flight-config":
+        options["fence_config"] = None
+    else:
+        (run / "harness").mkdir()
+        (run / "harness" / "settings.json").write_text('{"operator":true}')
+    plan = compose(command=command, **options)
+    assert plan.anchored_edit is False
+    assert plan.prompt == "node prompt"
+
+
 @pytest.mark.parametrize(
     "reason", ["unfenced", "resumed", "operator-settings", "no-flight-config"]
 )

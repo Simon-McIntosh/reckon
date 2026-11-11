@@ -3107,6 +3107,16 @@ def launch_plan(
     launch_backend = dict(backend)
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
+    # A launch that seeded the anchored server names its tools in the worker's
+    # prompt. The launch step is the one place that knows what this launch
+    # actually seeded — an unfenced, resumed or operator-settings launch
+    # registers no server — so the instruction is composed here, from the
+    # resolved fact, rather than at dispatch where only the flight key is
+    # known. A prompt already carrying one keeps exactly one.
+    if anchored_edit:
+        from reckon.crew.prompts import with_anchored_edit_instruction
+
+        prompt = with_anchored_edit_instruction(prompt, launch_backend, at_launch=True)
     if anchored_edit and dialect.name == "codex":
         # The server confines every path to its own ``--root`` set, so it is
         # handed the same roots the worker is: the delivery roots that survive
