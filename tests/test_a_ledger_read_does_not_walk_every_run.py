@@ -224,6 +224,30 @@ def test_a_failed_advance_leaves_the_next_read_walking(tmp_path, monkeypatch):
     assert len(seen) >= 2, f"the read did not walk the documents: {len(seen)}"
 
 
+def test_a_write_survives_a_crew_home_that_refuses_the_advance(tmp_path, monkeypatch):
+    """A read-only crew home must not fail the ledger write, nor hide changes.
+
+    A fenced worker runs with its crew home mounted read-only, so the counter
+    cannot exist there and the advance cannot succeed. The write still lands and
+    the read walks, which is the correct answer; failing the write would take out
+    every ledger write in such a process to guard a counter it does not have.
+    """
+    root = _build(tmp_path / "repo", 2)
+    path = ledger.ledger_generation_path(PROJECT)
+    path.unlink()
+    directory = path.parent
+    directory.chmod(0o500)
+    try:
+        ledger.write_run_file(PROJECT, _run_record(0, gate="failed"), root)
+    finally:
+        directory.chmod(0o700)
+
+    assert ledger.ledger_generation(PROJECT) is None
+    data, _version = ledger.load(PROJECT, root)
+    gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
+    assert gates[_run_record(0)["run_id"]] == "failed"
+
+
 def test_a_ledger_no_write_has_touched_never_reuses_a_stale_index(tmp_path):
     """No counter means no key, so even a warm read goes back to the documents.
 
