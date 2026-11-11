@@ -21,7 +21,7 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
@@ -286,7 +286,10 @@ The document half and the guard are done; the inbox is what remains of the locke
     <div class="r-comment-body"><p>worker-inbox-hook reviewed at 4ee08ef744 — parsed record stored beside the run (review-records/r-20261111T012221589185-worker-inbox-hook.json and its .at-4ee08ef744 copy) scoring goal_fidelity 17, evidence 16, scope_discipline 17, durability 17, fit 19, reuse 19 over base cb1dcad073, with three non-blocking findings and 0 added failures</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261111T012221589185-worker-inbox-hook" data-who="reckon-build" data-when="2026-11-11T04:57:39Z">
-    <div class="r-comment-body"><p>worker-inbox-hook — a PostToolUse hook (reckon/hooks/worker_inbox.py) claims each run-inbox message by renaming it into inbox/claimed/, emits it as additionalContext and appends a receipt; an unreadable claimed message is moved to inbox/failed/ and receipted as failed; seed_harness_home merges exactly one PostToolUse entry into every Claude run home; `reckon crew tell` queues one message and refuses ended, unfenced, hookless and codex runs; the runs view lists a named run&#x27;s unclaimed and delivered messages and tolerates a message claimed mid-read; gate 114 passed EXIT=0 (base arm 49 passed with 2 scaffolding errors, 0 failures added)</p></div>
+    <div class="r-comment-body"><p>worker-inbox-hook — a PostToolUse hook (reckon/hooks/worker_inbox.py) claims each run-inbox message by renaming it into inbox/claimed/, emits it as additionalContext and appends a receipt; an unreadable claimed message is moved to inbox/failed/ and receipted as failed; seed_harness_home merges exactly one PostToolUse entry into every Claude run home; `reckon crew tell` queues one message and refuses ended, unfenced, hookless and codex runs; the runs view lists a named run's unclaimed and delivered messages and tolerates a message claimed mid-read; gate 114 passed EXIT=0 (base arm 49 passed with 2 scaffolding errors, 0 failures added)</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261111T055445137847-inbox-live-check" data-who="reckon-build" data-when="2026-11-11T06:09:50.719Z">
+    <div class="r-comment-body"><p>§8 live check passed — the coordinator&#x27;s message (codeword HERON-TIDE-7) was written into this run&#x27;s inbox after launch, claimed by the PostToolUse hook at the next tool call, delivered once as additionalContext with one matching receipt, and quoted verbatim in this manifest; the report at ~/.config/reckon/crew/reports/reckon/inbox-live-check.md describes every module under reckon/hooks/ with its harness event, matcher and emission, citing lines.</p></div>
 </div>
 </section>
 </main>
