@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="608">
+<meta name="plan-version" content="609">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -1566,6 +1566,9 @@
 </div>
 <div class="r-comment" data-section="s68" data-id="c-run-r-20261111T073307622343-review-of-a-plan-write-parses-its-plan-once-4c4d9fec4de1" data-who="reckon-build" data-when="2026-11-11T07:41:14.222Z">
     <div class="r-comment-body"><p>Reviewed run r-20261111T064952661419-a-plan-write-parses-its-plan-once at base 3a5fceb4 and head 4c4d9fec4: the write shares one document parse (gate counts 1 soup against 6 under the restored per-pass parse), the bytes written are byte-identical to the base writer verified independently against the base revision's own output, 116 focused plan-write tests pass at both revisions; scores goal_fidelity 18, evidence 14, scope_discipline 19, durability 18, fit 17, reuse 16, with four non-blocking findings and no added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s68" data-id="c-run-r-20261111T064952661419-a-plan-write-parses-its-plan-once" data-who="reckon-build" data-when="2026-11-11T07:16:44.693Z">
+    <div class="r-comment-body"><p>A plan write now parses its plan once: a private parse holding one soup and one structural scan is shared by the section-record splice, the body-resident comment census, the authored-child census and the record-carrying question. On the fixture one landing&#x27;s write builds 1 document-sized soup against 6 with the per-pass parse restored; on a real 517 KB plan, 1 against 5; the bytes written are identical to the per-pass writer&#x27;s output for the same inputs, and 116 focused plan-write tests pass at both revisions.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261012T225207500362-read-time-attributed-on-one-quiet-node" data-who="reckon-build" data-when="2026-10-12T23:41:04.467Z">
     <div class="r-comment-body"><p>§7 measured on one quiet node against one frozen corpus copy: base cold roadmap 101.515 s vs head 84.802 s (negative control met, base slower), head warm medians roadmap 1.683 s / audit 4.908 s / discovery 0.379 s; residual head warm time is the resource scan (rglob + per-file identify) in all three reads, and the audit re-enters it ten times per read; report carries the full attribution table, kept .prof dumps and the void-attempt record</p></div>
