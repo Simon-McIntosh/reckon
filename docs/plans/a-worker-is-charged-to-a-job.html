@@ -25,7 +25,7 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -1085,6 +1085,9 @@ placement path, not as a whole-suite run.</p>
 <div class="r-comment" data-section="s12" data-id="c-close-s12" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>Landed from r-20261110T201615063661 (head b38574a5db). The digest generator selects the fleet-node rule by its new heading, the role digests are regenerated, and a pinned repository fixture asserts every mapped heading exists. <code>worker_digest --check</code> reports all four role digests up to date, so the dotfiles hook passes again.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-s12-evidence-link" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>Evidence: <a href="/reckon/evidence/fragments/a-worker-is-charged-to-a-job/worker-digests-carry-partition-rule.html">the landed fragment for this section</a> (<code>docs/evidence/fragments/a-worker-is-charged-to-a-job/worker-digests-carry-partition-rule.html</code>).</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261110T235558799033-review-of-partition-sbatch-passes-the-fence-9c0d55869131" data-who="reckon-build" data-when="2026-11-11T00:14:42Z">
     <div class="r-comment-body"><p>Independent review at base 9f5c5bd09e57dfee5196e642efac79c1f36ef670 and head 9c0d55869131d589266211e64205070feafbc058 stored at both granted record paths; six dimensions scored (15,20,20,17,20,20), zero added suite failures, one blocking partition-option parsing finding; coordinator must obtain the parser repair and regression cases before landing.</p></div>
 </div>
@@ -1096,6 +1099,9 @@ placement path, not as a whole-suite run.</p>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-close-s13" data-who="reckon-build" data-when="">
     <div class="r-comment-body"><p>Landed from r-20261110T225809682241 (head a8536e9bf1). The nested-launch shim lets through an <code>sbatch</code> that names its partition. It parses sbatch's options by role, so another option's value (<code>--output --partition=...</code>, <code>--job-name -prigel</code>) never counts as a partition. An <code>sbatch</code> with no partition, and any <code>srun</code> inside the job, stay refused, and the refusal names <code>sbatch --partition</code> as the route. Armed tests: 190 passed at head. The second review found nothing.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-s13-evidence-link" data-who="reckon-build" data-when="">
+    <div class="r-comment-body"><p>Evidence: <a href="/reckon/evidence/fragments/a-worker-is-charged-to-a-job/partition-sbatch-passes-the-fence.html">the landed fragment for this section</a> (<code>docs/evidence/fragments/a-worker-is-charged-to-a-job/partition-sbatch-passes-the-fence.html</code>). The refusal keeps both routes, the explicit-partition sbatch and the RECKON_ALLOW_NESTED_LAUNCH=1 opt-in, as §9 requires.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260919T225816807113-awcj-one-record-level-liveness-read" data-who="reckon-ship" data-when="2026-09-19T23:36:23.805Z">
     <div class="r-comment-body"><p>every liveness decision about a run reads the record through one accessor in the runs module, the pid lookup lives in that one place, and a case asserts no module outside it handles a bare record pid; failure id sets are byte identical at base and head over a focused 116-file set, 78 either side, so no answer changed, and the accessor takes the caller probe as an optional argument because routing the modules through it had removed the name nine tests substitute</p></div>
