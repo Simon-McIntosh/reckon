@@ -193,9 +193,7 @@ def test_a_pipe_rearm_draws_the_runs_the_pane_has_not_drawn(
 def test_a_run_the_pane_drew_at_its_word_draws_nothing(
     fleet: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    runs.write_delivered(
-        PROJECT, SESSION, {**DRAWN_WORDS, RUN_AWAY: "working"}
-    )
+    runs.write_delivered(PROJECT, SESSION, {**DRAWN_WORDS, RUN_AWAY: "working"})
 
     assert _snapshot(monkeypatch) == ""
 
