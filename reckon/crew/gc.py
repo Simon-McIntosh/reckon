@@ -399,14 +399,19 @@ def _ledger_cache_roots() -> list[Path]:
     from reckon import _store
     from reckon import ledger as ledger_module
 
-    roots = {_store.cache_root("pick-input").resolve()}
-    if not os.environ.get("RECKON_PICK_CACHE"):
+    roots = {
+        _store.cache_root("pick-input").resolve(),
+        ledger_module._index_directory().resolve(),
+    }
+    if not os.environ.get(
+        "RECKON_PICK_CACHE"
+    ) and _store._config_home() == _store._config_home({}):
         roots.add(ledger_module._default_cache_root().resolve())
     return sorted(roots)
 
 
 def _orphan_ledger_indexes(
-    *, apply: bool, now: datetime | None
+    *, apply: bool, now: datetime | None, report_removals: bool = False
 ) -> list[dict[str, Any]]:
     """Offer missing-source ledger caches and aged caches carrying no source.
 
@@ -430,7 +435,8 @@ def _orphan_ledger_indexes(
                 recorded = ledger_module.recorded_ledger_path(index)
                 stat = index.stat()
                 if recorded is not None:
-                    if Path(recorded).exists():
+                    source = Path(recorded)
+                    if source.exists() or (source.parent / "runs").is_dir():
                         continue
                     reason = "recorded-checkout-gone"
                 else:
@@ -451,10 +457,11 @@ def _orphan_ledger_indexes(
                     and not _ledger_index_locked(index)
                     and index.stat() == stat
                 ):
-                    sys.stderr.write(
-                        f"removing ledger cache {index} ({stat.st_size} bytes)\n"
-                    )
-                    sys.stderr.flush()
+                    if report_removals:
+                        sys.stderr.write(
+                            f"removing ledger cache {index} ({stat.st_size} bytes)\n"
+                        )
+                        sys.stderr.flush()
                     index.unlink()
                     entry["removed"] = True
                 entries.append(entry)
@@ -1730,7 +1737,7 @@ def retention_sweep(
     _emit_phase("scratch", started, phase_seconds)
 
     started = time.perf_counter()
-    indexes = _orphan_ledger_indexes(apply=apply, now=moment)
+    indexes = _orphan_ledger_indexes(apply=apply, now=moment, report_removals=True)
     picker_views = _expired_picker_views(apply=apply, now=moment)
     caches_removed = [row for row in [*indexes, *picker_views] if row["removed"]]
     _emit_phase("cache", started, phase_seconds)

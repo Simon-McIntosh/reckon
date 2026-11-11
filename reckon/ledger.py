@@ -1258,6 +1258,8 @@ def _ledger_repository(
     """The common git directory, checkout and tree-relative ledger path."""
     source = ledger_path(project, root).resolve()
     for checkout in source.parents:
+        if not (checkout / ".git").exists():
+            continue
         git_dir = _git_directory(checkout)
         if git_dir is not None:
             return (

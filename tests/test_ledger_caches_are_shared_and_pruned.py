@@ -205,3 +205,14 @@ def test_retention_prunes_orphans_and_old_picker_views_but_keeps_fresh_and_held(
     gc.retention_sweep(apply=True, now=now, log=tmp_path / "retention.log")
     assert not held.exists()
     assert not held_index.exists()
+
+
+def test_a_cache_backed_only_by_run_documents_is_kept(repository):
+    repo, _trees = repository
+    ledger.ledger_path(PROJECT, repo).unlink()
+    expected = ledger.load(PROJECT, repo)
+    assert expected[0]["runs"] == [{"run_id": "sample", "node": "shared"}]
+    index = ledger._run_index_path(PROJECT, repo)
+    assert index.is_file()
+    assert not gc._orphan_ledger_indexes(apply=True, now=datetime.now(tz=UTC))
+    assert index.is_file()
