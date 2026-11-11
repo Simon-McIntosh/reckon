@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="run-store-retires-old-runs-after-cache">
+  <meta name="plan-evidence-for" content="reckon:crew-state-stays-bounded">
+  <meta name="plan-verifies" content="reckon:crew-state-stays-bounded#s12">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <title>Run history leaves the hot store | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="run-store-retires-old-runs-after-cache-implementation">
+  <h2>Completed history moves to a separate archive</h2>
+  <p><code>RunStore.retire</code> moves runs whose completion instant is more
+  than thirty days before the sweep into <code>run_store.archive.db</code>,
+  beside the configured hot store. One attached-database transaction copies
+  the durable payload and detail, records narrow membership, and removes both
+  hot rows. The sweep then runs <code>VACUUM main</code>. Every archived run
+  is printed and recorded through the retention sweep's existing rotating log.</p>
+  <p><code>gc._retire_run_store</code> extends the scheduled sweep after cache
+  pruning. It reuses the review resolver, committed-review check and queue wait
+  parser. Live pointers, live review subjects, outstanding review obligations
+  and explicit queued run dependencies keep their subject hot. Recent runs,
+  unknown completion times and projects without a resolved checkout also stay.</p>
+  <p>The narrow <code>retired_runs</code> membership table keeps imports and
+  membership refreshes from recreating archived rows. Historical keyed reads,
+  durable comparisons and node lookups recognize archived records. Warm
+  current-state reads query the hot tables without attaching the archive.
+  Ledger and velocity readers preserve their recorded measurements. Import
+  destination selection and retirement candidate selection acquire the SQLite
+  writer reservation before reading, preventing a racing import from
+  recreating a retired hot row.</p>
+</section>
+<section id="run-store-retires-old-runs-after-cache-measure">
+  <h2>Measured results on temporary stores</h2>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered source</th></tr></thead>
+    <tbody>
+      <tr><td>Scoped gate</td><td>51 passed in 8.59s</td><td>61 passed in 9.55s</td></tr>
+      <tr><td>Matched importer population</td><td>28 files; 49 failed, 534 passed</td><td>28 files; 49 failed, 534 passed; zero added failure ids</td></tr>
+      <tr><td>Run-retirement negative control</td><td>1 failed: a run ended 31 days ago remains hot</td><td>The same assertion passes</td></tr>
+      <tr><td>Hot store pages for 24 unneeded runs</td><td>165 pages before the sweep</td><td>19 pages afterward; both hot tables empty</td></tr>
+      <tr><td>Concurrent import interleaving</td><td>Reproduced a duplicate archive key after a racing import recreated the hot row</td><td>Importer and sweep serialize; no hot row recreated</td></tr>
+      <tr><td>Archive detail write refused</td><td>A trigger aborts the copy</td><td>Both hot tables remain intact; no archived run or membership marker commits</td></tr>
+      <tr><td>Scoped Ruff check and format check</td><td>No inherited findings on product paths</td><td>Zero findings; formatting passes</td></tr>
+    </tbody>
+  </table>
+  <p>The ten added cases cover live and owed reviews, live pointers, queued
+  dependencies, dry runs, recent and undated records, preserved detail and
+  measurements, current-state reads, repeated imports, changed ledger
+  membership, archive-copy rollback and concurrent imports. A committed review
+  releases a previously withheld run on the next sweep.</p>
+  <p>The exact-base negative control uses
+  <code>0b4fa450c2029cb3b948fffcb587422402f00dac</code> with the new retirement
+  assertion. Delivered product commits are
+  <code>9013cc4254ccfebef99b9f7cb5c1adaf1bfc47cf</code> and
+  <code>ef5580fcb620ed308fae662807def599e7e4741e</code>. Matched importer arms
+  ran in independent <code>all_debug</code> jobs, with final head measured by
+  job <code>1310277</code>. Each arm recorded its revision, command, imported
+  module path, working directory, summary and exit status. Node-local
+  extraction and test directories were removed at job exit.</p>
+  <p>Durable logs and receipts are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/</code>:
+  <code>suite-base.log</code>, <code>suite-head.log</code>,
+  <code>importers-base.log</code>, <code>importers-head.log</code>,
+  <code>negative-control-base.log</code>, <code>expanded-focused.log</code>,
+  <code>race-reproduction.log</code>, <code>race-and-phase-fix.log</code>,
+  <code>partition-receipts.json</code> and <code>importer-delta.json</code>.</p>
+</section>
+<section id="run-store-retires-old-runs-after-cache-live-measurement">
+  <h2>Live-store measurement remains with the coordinator</h2>
+  <p>No production store was swept by this worker. After landing, the
+  coordinator records the live store's size and row counts before and after
+  one sweep in this fragment, as the live section requires.</p>
+</section>
+</main>
+</body>
+</html>
