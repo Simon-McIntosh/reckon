@@ -37,9 +37,9 @@
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>base suite (dispatch-claim and inventory files)</td>
+      <tr><td>base suite (dispatch-claim, identity and inventory files)</td>
         <td><code>d5df5102</code> extracted to scratch, new test copied in</td>
-        <td>52 passed, 2 setup errors (no git in the extraction), <code>EXIT=1</code></td></tr>
+        <td>6 failed, 53 passed, 2 setup errors (no git in the extraction), <code>EXIT=1</code></td></tr>
       <tr><td>after suite (dispatch-claim, identity and inventory files)</td>
         <td><code>443958da</code>, worktree head</td>
         <td>61 passed, <code>EXIT=0</code></td></tr>
@@ -49,10 +49,11 @@
     </tbody>
   </table>
 
-  <p><strong>Added failures: none.</strong> The base arm records zero failures:
-  it runs the dispatch-claim and inventory files that exist at that revision, and
-  the two setup errors are the extraction's own lack of a git repository,
-  recorded as scaffolding. The behaviours this node creates are demonstrated by
-  the negative control, which fails the import assertion in both test files with
-  the base revision's import-time publish restored.</p>
+  <p><strong>Added failures: none.</strong> The base arm records six failures, and
+  they are the behaviours this node creates: the new test's import, take-and-
+  release, live-holder and sweep arms, none of which the base revision can
+  satisfy because it publishes the identity at import and hosts no sweep. Its
+  two setup errors are the extraction's own lack of a git repository, recorded
+  as scaffolding. The counts in this table are the summary lines of
+  <code>logs/base-arm.log</code> and <code>logs/head-arm.log</code>.</p>
 </section>
