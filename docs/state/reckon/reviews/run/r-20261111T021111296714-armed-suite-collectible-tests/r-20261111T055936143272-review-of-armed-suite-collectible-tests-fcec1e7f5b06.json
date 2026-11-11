@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:1468",
+    "reckon/crew/promotion_records.py:605",
+    "reckon/crew/promotion_records.py:660",
+    "reckon/crew/promotion_records.py:685",
+    "reckon/crew/promotion_records.py:719",
+    "reckon/crew/promotion_records.py:756",
+    "reckon/crew/queue_landing.py:1104",
+    "reckon/crew/recovery_repair_dispatch.py:1159"
+  ],
+  "completed_at": "2026-11-11T06:13:03.643Z",
+  "dispatched_at": "2026-11-11T06:03:41Z",
+  "evidence": {
+    "gate_rerun": {
+      "command": "PYTHONPATH=<scratch> /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_armed_suite_collectible_tests.py",
+      "module_file": "/tmp/reckon-crew-scratch/r-20261111T055936143272-review-of-armed-suite-collectible-tests-fcec1e7f5b06/review-check-I6os/reckon/__init__.py",
+      "result": "8 passed in 0.88s EXIT=0",
+      "revision": "fcec1e7f5b060f54ab0b12192054f8d32d80f9e8"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T021111296714-armed-suite-collectible-tests/after-arm.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "text": "the after arm's log holds only the two header lines and a partial '........' line, with no pytest summary and no bare EXIT= line, so the manifest's after_suite exit_status 0 and completed true are claimed rather than recorded; a reader rebuilding the armed pair from this log finds no result. An independent re-run of tests/test_armed_suite_collectible_tests.py at fcec1e7f in a scratch tree of the same revision gives 8 passed, so the substance holds and only the record is deficient."
+    },
+    {
+      "file": "tests/test_armed_suite_collectible_tests.py",
+      "line": 172,
+      "severity": "non-blocking",
+      "text": "assert resolved in body compares the string the test passed into _suite_gate_prompt_body with that function's own output, so the assertion holds even if the function echoes its argument and never states the collection rule; the independent guards in the same test are the literal phrase assertions on lines 169-171, and durability rests on those."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "One commit against b80df254 touches six files, 267 insertions and 12 deletions: a predicate, three consumer changes, one docstring sentence, a 172-line test file and an evidence fragment.",
+    "done_when": "The done_when names five test behaviours plus the ruff check; tests/test_armed_suite_collectible_tests.py covers each of the five and the manifest records 8 passed EXIT=0 and All checks passed.",
+    "goal": "The node's goal is to pass pytest only collectible test files in the armed suite command through one predicate; reckon/crew/node.py:1050 adds is_collectible_test_path and the diff wires it into all three named consumers.",
+    "manifest": "Read; it states 8 passed in the node gate, 51 in the base census arm, 27 in the related consumers, and 7 failed 1 passed under the declared mutation, and it names each log.",
+    "write_paths": "The declared scope is promotion_records.py, queue_landing.py, dispatch.py, node.py, the node test file, the evidence fragment and a figure directory; every path in the diff is inside that list and the figure directory gained nothing."
+  },
+  "plan_section": "s9",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to pass pytest only collectible test files through one predicate used by _node_test_files, _landing_test_files and _suite_gate_prompt_body; reckon/crew/node.py:1050 adds is_collectible_test_path and the diff routes all three consumers through it.\nVERDICT done_when: the done_when names a mixed scope yielding only tests/test_x.py, a fixture-only scope naming no node test file while the census survives, _landing_test_files naming nothing for a fixture-only delivery, is_test_path still true for the fixture, the armed and compared commands agreeing, and ruff adding no findings; tests/test_armed_suite_collectible_tests.py:72-173 asserts each of those and the manifest records every gate result.\nVERDICT write_paths: the declared scope is reckon/crew/promotion_records.py, reckon/crew/queue_landing.py, reckon/crew/dispatch.py, reckon/crew/node.py, tests/test_armed_suite_collectible_tests.py, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/armed-suite-collectible-tests.html and a figure directory; every changed path in the diff lies inside it.\nVERDICT manifest: read; it records the node gate at 8 passed, the base census arm at 51 passed, the related consumers at 27 passed, the declared mutation at 7 failed and 1 passed, and names each log, but its after_suite log is truncated.\nVERDICT diff: one commit fcec1e7f against base b80df254 changes six files with 267 insertions and 12 deletions, reviewed commit by commit; the production edits are a new predicate in reckon/crew/node.py:1050, _node_test_files in reckon/crew/promotion_records.py:526 switching to it, _landing_test_files in reckon/crew/queue_landing.py:988 switching to it, and one sentence of _suite_gate_prompt_body in reckon/crew/dispatch.py:1510.\nCALL_SITES: reckon/crew/dispatch.py:1468, reckon/crew/promotion_records.py:605, reckon/crew/promotion_records.py:660, reckon/crew/promotion_records.py:685, reckon/crew/promotion_records.py:719, reckon/crew/promotion_records.py:756, reckon/crew/queue_landing.py:1104, reckon/crew/recovery_repair_dispatch.py:1159\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/node.py:1050 defines the predicate and every consumer the goal names reads it, including reckon/crew/queue_landing.py:1008 and reckon/crew/dispatch.py:1513.\nSCORE evidence: 13\nJUSTIFICATION evidence: the node gate, base arm and negative control are recorded with EXIT lines, but the after arm at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T021111296714-armed-suite-collectible-tests/after-arm.log:2 carries no summary or EXIT= line, so its result is claimed rather than recorded.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all six changed paths in the diff lie inside the declared write paths, and the declared figure directory gained no file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_armed_suite_collectible_tests.py:77 fails naming tests/fixtures/data.jsonl when the narrowing is removed, as the negative-control log shows, though line 172 compares a value passed into the function with the function's own output.\nSCORE fit: 19\nJUSTIFICATION fit: the predicate sits beside is_test_path in reckon/crew/node.py:1050 with a docstring stating why two rules exist, and no added name or comment carries a plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/ and pyproject.toml for python_files and for a collectibility predicate found no owner; reckon/crew/node.py:1050 extends the module that already owns is_test_path rather than duplicating it.\n",
+  "review_run_id": "r-20261111T055936143272-review-of-armed-suite-collectible-tests-fcec1e7f5b06",
+  "reviewed_base_sha": "b80df2540127eb7a418f84003dd8c0d088251fed",
+  "reviewed_head_sha": "fcec1e7f5b060f54ab0b12192054f8d32d80f9e8",
+  "reviewed_node": "armed-suite-collectible-tests",
+  "reviewed_run_id": "r-20261111T021111296714-armed-suite-collectible-tests",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:22:17.614590+00:00",
+  "total": 109
+}
