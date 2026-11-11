@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/mcp_views.py:serve_crew_view (run_inbox_messages at mcp_views.py:4664)",
+    "reckon/hooks/install.py:settings_carry_worker_inbox (called from reckon/crew_run_commands.py:2563)",
+    "reckon/hooks/worker_inbox.py:deliver (PostToolUse entrypoint registered by reckon/hooks/install.py:172)",
+    "reckon/hooks/worker_inbox.py:manifest_message_finding (called from crew check --manifest)"
+  ],
+  "completed_at": "2026-11-11T05:31:36.023Z",
+  "dispatched_at": "2026-11-11T05:21:23Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 4358,
+      "severity": "non-blocking",
+      "summary": "the runs view reports failed receipts as delivered",
+      "text": "`delivered` hands back worker_inbox.receipts() unfiltered, and the same commit made that list carry failure receipts (worker_inbox.py:212 adds a `failed` key). A message the hook could not read therefore appears under a key the view, its docstring at mcp_views.py:4325 and the commit message all call delivered, which contradicts the rule this commit states \u2014 a failed receipt is not a delivery \u2014 and the manifest finding at worker_inbox.py:338 already filters the same list for that reason. A reader counting `delivered` overstates what reached the worker."
+    },
+    {
+      "file": "reckon/mcp_views.py",
+      "line": 4376,
+      "severity": "non-blocking",
+      "summary": "a broadly swallowed OSError hides a queued message from the view with no record",
+      "text": "`_unclaimed_message` swallows every OSError, not the FileNotFoundError its docstring describes. A waiting message that cannot be read for any other reason (a vanished run directory, a vanished message, an I/O or name error on GPFS) is dropped from the answer with no receipt and no count, so the view reports an empty inbox while a message is still queued \u2014 the silent loss the sibling repair in this same commit exists to prevent. Catching FileNotFoundError alone, or surfacing any other OSError in the entry, would keep the race tolerated and the real failure visible."
+    },
+    {
+      "file": "tests/test_worker_inbox.py",
+      "line": 373,
+      "severity": "non-blocking",
+      "summary": "the mid-read claim is asserted but the receipt the docstring promises is not",
+      "text": "The docstring states the delivered message's receipt appears in the same answer, but the case at tests/test_worker_inbox.py:395-396 asserts only that `unclaimed` is empty and `unclaimed_count` is zero. An implementation returning no `delivered` key at all, or an empty one, would pass, so the half of the claim that explains why the race is harmless is unguarded; asserting view[\"inbox\"][\"delivered\"][0][\"message\"] would make the docstring and the test agree."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: the single gained commit 4ee08ef744 changes six files, adding park_unreadable and the failed receipt, the view's _unclaimed_message tolerance, one shared hook-group recogniser, the config-home delegation, an independent literal inbox entry in the anchored-edit case, and two tests, net 227 insertions over 77 deletions.",
+    "done_when": "The done_when names delivery, concurrency, empty-inbox silence, seeding, the five crew tell refusals and the manifest finding; tests/test_worker_inbox.py:369 and tests/test_worker_inbox.py:392 extend the run-view and delivery clauses, and gate-after-repairs.log records that gate at 114 passed EXIT=0.",
+    "goal": "The node goal is delivery of a coordinator message at the worker's next tool call with crew tell as the writer; the gained commit at reckon/hooks/worker_inbox.py:253 keeps that channel's promise on its failure path rather than changing the goal.",
+    "manifest": "Read in full; it claims 114 passed EXIT=0 after, 49 passed with 2 scaffolding errors before at a3f4ba35, a red negative control at negative-control.log, and checkpoint text naming all five repairs, and each claim matches the log it cites.",
+    "write_paths": "Read the declared paths reckon/hooks/worker_inbox.py, reckon/hooks/install.py and tests/test_worker_inbox.py plus the review-repair grant covering reckon/mcp_views.py, tests/test_anchored_edit_claude_arm.py and the evidence fragment; all six files in the gained diff are inside them."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_inbox.py:392 reddens if park_unreadable is replaced by the old silent continue (no parked file, the claimed name still present, zero receipts), and tests/test_worker_inbox.py:395 reddens on the removed tolerance by raising FileNotFoundError, though that case never asserts the receipt its docstring promises.",
+    "evidence": "gate-after-repairs.log records 114 passed EXIT=0 and gate-base.log 49 passed with 2 scaffolding errors, but both ran at revision cb1dcad073 with the repairs only in the working tree, so the gate is not identified by the landed sha 4ee08ef744.",
+    "fit": "The helpers at reckon/hooks/worker_inbox.py:253 and reckon/mcp_views.py:4362 follow the surrounding claim/receipt idiom and carry no plan, stage, ticket or author reference in paths, symbols, comments or the commit message.",
+    "goal_fidelity": "The gained commit at reckon/hooks/worker_inbox.py:253 parks an unreadable claimed message and reckon/mcp_views.py:4362 tolerates a message claimed mid-read, so the delivery channel the node goal promises no longer loses or crashes on a message.",
+    "reuse": "install.py:198 collapses three recogniser copies into one helper, worker_inbox.py:66 delegates to reckon/_store.py:130 rather than keeping its own rule, and a repository search for an existing park or quarantine capability found none, so park_unreadable extends the claim-as-rename owner rather than forking it.",
+    "scope_discipline": "Every path in the gained diff (reckon/hooks/install.py, reckon/hooks/worker_inbox.py, reckon/mcp_views.py, tests/test_worker_inbox.py, tests/test_anchored_edit_claude_arm.py, the evidence fragment) is inside the node's declared or granted write paths, but install.py:198 and worker_inbox.py:66 carry a deduplication and a resolver delegation that the node goal does not itself imply."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T051737862994-review-of-worker-inbox-hook-4ee08ef744f0",
+  "reviewed_base_sha": "cb1dcad07315baab7716802d288f113522a8724f",
+  "reviewed_head_sha": "4ee08ef744f0858fef37cd259600ea5466bbbde4",
+  "reviewed_run_id": "r-20261111T012221589185-worker-inbox-hook",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T05:44:50.771708+00:00",
+  "total": 105
+}
