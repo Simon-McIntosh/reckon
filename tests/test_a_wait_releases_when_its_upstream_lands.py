@@ -229,7 +229,12 @@ def _deliver(repository: Path) -> str:
 
 
 def _promote(delivered: str) -> None:
-    """Write the ledger row a promotion records, without merging its head."""
+    """Promote the run as the real promotion does, without merging its head.
+
+    Promotion removes the live pointer and then records the revision, so from
+    then on the project ledger is the only record of the run's landing.
+    """
+    runs.pointer_path(UPSTREAM_RUN).unlink()
     ledger.run_path(PROJECT, UPSTREAM_RUN).parent.mkdir(parents=True, exist_ok=True)
     ledger.write_run_file(
         PROJECT,
@@ -310,6 +315,25 @@ def test_a_discarded_delivered_run_releases_the_wait(queue_repo: Path) -> None:
     _release()
     assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE, (
         "a discarded run no longer holds the section's waiters"
+    )
+
+
+def test_an_unreadable_ledger_holds_the_wait(
+    queue_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A promotion that cannot be read is unknown, not absent."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    _deliver(queue_repo)
+
+    def unreadable(*arguments, **keywords):
+        raise OSError("the ledger cannot be read")
+
+    monkeypatch.setattr(ledger, "load", unreadable)
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "an unreadable ledger holds the waiter rather than releasing it"
     )
 
 

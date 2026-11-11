@@ -3400,22 +3400,30 @@ def _section_run_unlanded(
     at all -- one completed by hand -- has nothing to hold and releases as the
     declaration says.
     """
+    from reckon._plan_html import section_record_id
+    from reckon.crew import runs as runs_module
     from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.promotion_scope import _revision_is_ancestor
+
+    wanted = section_record_id(section)
 
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
             node = {}
         plan = str(node.get("plan") or record.get("plan") or "")
-        held = normalize_section(
-            str(node.get("section") or record.get("section") or "")
-        )
-        return plan == slug and held == section
+        held = section_record_id(node.get("section") or record.get("section") or "")
+        return plan == slug and held == wanted
 
     rows = _ledger_run_rows(project, cache)
+    if rows is None:
+        # A ledger that cannot be read says nothing about what was promoted, so
+        # a landing is unknown rather than absent. Holding is the answer
+        # :func:`_request_state` gives a record it cannot find.
+        return True
+
     promoted: dict[str, str] = {}
-    for row in rows or ():
+    for row in rows:
         run_id = str(row.get("run_id") or "")
         revision = str(row.get("promoted_revision") or "").strip()
         if run_id and revision and not _discarded(run_id) and identifies(row):
@@ -3442,6 +3450,23 @@ def _section_run_unlanded(
     if not candidates and not promoted:
         return False
 
+    if promoted:
+        # A promotion removes the live pointer before it records the revision,
+        # so in production this is the branch that answers. The landed state of
+        # a promoted run is the queue's own: the drain names declared work with
+        # no live request and no reachable promotion, so a section it does not
+        # name has landed and one it does name is still waiting.
+        unloaded = runs_module._unloaded_sections(
+            project,
+            live,
+            [(slug, {"section_declarations": {section: "implementable"}})],
+        )
+        if any(section_record_id(name) == wanted for name in unloaded.get(slug) or ()):
+            return True
+
+    if not candidates:
+        return False
+
     checkout = project_mount_repository(project)
     if checkout is None:
         # A project with no registered checkout offers no HEAD to read, so a
@@ -3458,16 +3483,11 @@ def _section_run_unlanded(
             return False
 
     for run_id, candidate in candidates:
-        revision = candidate or promoted.pop(run_id, "")
+        revision = candidate or promoted.get(run_id, "")
         if revision:
             if not landed(revision):
                 return True
         elif _manifest_status(run_id) in RUN_DELIVERED_STATUSES:
-            return True
-    for run_id, revision in promoted.items():
-        if not run_id or _discarded(run_id):
-            continue
-        if not landed(revision):
             return True
     return False
 
