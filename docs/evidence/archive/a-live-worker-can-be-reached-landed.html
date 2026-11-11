@@ -162,6 +162,11 @@
     <p>Follow-ons recorded for whoever lands after: the plan &sect;4 inbox, and the &sect;5
     document corrections that make the written recovery order name these mechanisms.</p>
   </section>
+  <section id="s8-worker-inbox-hook" data-evidence-origin="append">
+    <h2>§8 — a message reaches a live worker at its next tool call</h2>
+    <p>Run <code>r-20261111T012221589185-worker-inbox-hook</code> (local lane), landed at reviewed head <code>4ee08ef744f0</code>. A <code>PostToolUse</code> inbox hook is registered in <code>seed_harness_home</code> for every fenced Claude-dialect run home; an atomic rename into <code>inbox/claimed/</code> delivers each message exactly once (three concurrent hooks deliver one); an unreadable message moves to <code>inbox/failed/</code> with a receipt rather than being lost; <code>reckon crew tell</code> writes to a live run whose home carries the hook and refuses otherwise, naming why; the runs view lists unclaimed messages. Reviews 88 then 105 of 120; armed arms base one pre-existing failure, head 114 passed.</p><p><strong>Live check</strong> (run <code>r-20261111T055445137847-inbox-live-check</code>, local lane, DeepSeek V4.1 Flash): after the worker started, <code>crew tell</code> queued the codeword <code>HERON-TIDE-7</code> at 06:03:02Z and reported <code>queued_for_next_tool_call</code>; the hook claimed it at the worker's next <code>Read</code> call in the same second and wrote one receipt; the worker quoted the message verbatim in its manifest's <code>messages_received</code>. This is the first message delivered to a running reckon worker.</p>
+  </section>
+
 </main>
 </body>
 </html>
