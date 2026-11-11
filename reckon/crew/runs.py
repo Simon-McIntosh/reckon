@@ -25,7 +25,7 @@ from contextvars import ContextVar as ContextVar
 from dataclasses import dataclass as dataclass, field as field
 from datetime import UTC as UTC, datetime as datetime, timedelta as timedelta
 from pathlib import Path as Path
-from typing import Any as Any, Self as Self
+from typing import Any as Any, NoReturn as NoReturn, Self as Self
 from reckon import __version__ as __version__
 from reckon._store import (
     _config_home as _config_home,
@@ -3859,17 +3859,61 @@ def drop_watch_seat(project: str, handle: Any) -> None:
         fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
 
 
+# The status a producer leaves with when it lost its seat rather than giving it
+# up. Exit 0 is the arming supervisor's signal that a stop was deliberate, and
+# a crash status is one it counts against the restart limit, so a seat lost to
+# a failed renewal or to a lapsed registration needs a third value of its own:
+# the supervisor restarts it, without reading it as either.
+WATCH_SEAT_LOST_EXIT = 75
+
+
+def watch_lease_lapsed(project: str) -> bool:
+    """Whether nobody renewed the producer's own lease for a full interval.
+
+    The producer writes the instant when it takes the seat; every live follower
+    pushes it forward on its wait pass. A registration with no instant at all is
+    not a lapsed one — the file may simply have gone missing, which a later
+    wake-up recreates — so only a recorded instant that has fallen behind ends
+    the seat.
+    """
+    renewed = watch_lease_renewed_at(project)
+    if renewed is None:
+        return False
+    return _utc_epoch_seconds() - renewed >= producer_lease_seconds()
+
+
+def exit_lost_watch_seat(project: str) -> NoReturn:
+    """Leave the process reporting a seat this producer lost, not gave up.
+
+    The line lands in the project's watch log, which the producer's stdout is
+    adopted into once it takes the seat, so a reader finds the reason beside the
+    seat rather than a process that simply vanished.
+    """
+    print(f"reckon crew watch stopped: seat lost for {project}", flush=True)
+    raise SystemExit(WATCH_SEAT_LOST_EXIT)
+
+
 def renew_watch_host_lease(project: str) -> bool:
-    """Keep the producer's claim fresh; stop when another host owns it.
+    """Keep the producer's claim fresh; leave when the seat is no longer ours.
 
     The seat owner's verdict on this producer is re-taken here. A producer can
     be reloaded onto a host that is not the fleet record's node after it took
     the seat, so the start-up answer alone leaves that one renewing a seat whose
     runs it cannot probe; the release gives the seat up and ends the process.
+
+    A producer that still holds its lease but can no longer renew it, or whose
+    own registration nobody renewed for a full interval, has lost the seat
+    rather than chosen to leave it, so it exits with
+    :data:`WATCH_SEAT_LOST_EXIT` and the supervisor knows it may start the
+    producer again.
     """
     release_seat_when_misplaced(project)
     lease = _WATCH_HOST_LEASES.get(project)
-    return lease is not None and lease.renew()
+    if lease is None:
+        return False
+    if not lease.renew() or watch_lease_lapsed(project):
+        exit_lost_watch_seat(project)
+    return True
 
 
 def prepare_watch_seat_reexec(project: str) -> int | None:

@@ -49,6 +49,10 @@ def watch_follow(project, **_kwargs):
                 return time.time() - 10
             runs.watch_lease_renewed_at = expired
             runs.producer_lease_seconds = lambda: 1
+            # Nobody renewed this producer's own lease for a full interval, so
+            # its renewal leaves the process with the lost-seat status rather
+            # than returning.
+            runs.renew_watch_host_lease(project)
             return
         while True:
             time.sleep(0.05)
@@ -143,7 +147,13 @@ def _arm(tmp_path: Path, monkeypatch, mode: str):
             str(log),
             "0.1" if fast else "0.3",
             "0.8" if fast else "1.2",
-            "0.4" if fast else "3.0",
+            # The steady-run bound is measured from the spawn, so it has to sit
+            # above the interpreter's own start-up: importing the CLI costs a
+            # couple of seconds on a loaded host, and a bound under that turns
+            # every short crash into a steady run and never reaches the limit.
+            "0.4" if fast else "8.0",
+            "sample",
+            str(Path(dispatch_watch.__file__).resolve().parents[2]),
             *child,
         ],
     )
@@ -202,22 +212,39 @@ def test_crashed_producer_reoccupies_the_seat(tmp_path, monkeypatch, mode):
         _stop_own_processes(supervisor, events)
 
 
-@pytest.mark.parametrize("stop", ["lease", "producer-term", "supervisor-term"])
+@pytest.mark.parametrize("stop", ["producer-term", "supervisor-term"])
 def test_deliberate_stop_is_not_restarted(tmp_path, monkeypatch, stop):
-    mode = "lease" if stop == "lease" else "hold"
-    supervisor, events, _log = _arm(tmp_path, monkeypatch, mode)
+    supervisor, events, _log = _arm(tmp_path, monkeypatch, "hold")
     try:
         _until(lambda: bool(_pids(events)), "producer never held the seat")
         if stop == "producer-term":
             os.kill(_pids(events)[0], signal.SIGTERM)
-        elif stop == "supervisor-term":
+        else:
             supervisor.send_signal(signal.SIGTERM)
         _until(lambda: supervisor.poll() is not None, "supervisor did not stop")
         assert len(_pids(events)) == 1
-        assert supervisor.returncode == (0 if stop == "lease" else 143)
-        if stop == "lease":
-            assert "lease-check" in (tmp_path / "times").read_text()
+        assert supervisor.returncode == 143
         assert not dispatch_watch.watch_state("sample")["watcher_live"]
+    finally:
+        _stop_own_processes(supervisor, events)
+
+
+def test_a_lapsed_lease_is_restarted(tmp_path, monkeypatch):
+    """A producer nobody renewed is started again, not left stopped.
+
+    The producer leaves when a full lease interval passes with no renewal, and
+    that stop is not one it chose: no other live producer holds the seat, so
+    the supervisor starts it again.
+    """
+    supervisor, events, _log = _arm(tmp_path, monkeypatch, "lease")
+    try:
+        _until(lambda: bool(_pids(events)), "producer never held the seat")
+        _until(
+            lambda: len(_pids(events)) >= 2,
+            "a lapsed lease was not restarted",
+        )
+        assert "lease-check" in (tmp_path / "times").read_text()
+        assert supervisor.poll() is None
     finally:
         _stop_own_processes(supervisor, events)
 
@@ -228,7 +255,7 @@ def test_repeated_crashes_reach_a_reported_limit(tmp_path, monkeypatch):
         _until(
             lambda: supervisor.poll() is not None,
             "restart limit was not reached",
-            timeout=20,
+            timeout=45,
         )
         assert len(_pids(events)) == 5
         assert supervisor.returncode == 1
