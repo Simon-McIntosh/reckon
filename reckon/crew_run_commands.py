@@ -1189,6 +1189,18 @@ def crew_check_manifest(run_id, pretty):
                     text, node, worktree=worktree, repository=repository
                 )["findings"]
             )
+            # A message a coordinator wrote is only delivered if the run's own
+            # inbox says so, and the worker's report is what reconciles the two:
+            # a receipt with no quoted message is a model that ignored its
+            # inbox, and no receipt with no statement is a channel nobody can
+            # tell from silence. Read here, where the writer can still fix it.
+            from reckon.hooks import worker_inbox
+
+            delivered_finding = worker_inbox.manifest_message_finding(
+                text, Path(manifest_path).expanduser().parent
+            )
+            if delivered_finding:
+                findings.append(delivered_finding)
     _emit(
         {
             "ok": not findings,
@@ -2475,6 +2487,105 @@ def crew_resume(
 
 
 crew_redispatch = tombstone_command("redispatch")
+
+
+@crew.command(name="tell")
+@click.option(
+    "--run",
+    "run_id",
+    required=True,
+    help="Live run that receives the message.",
+)
+@click.argument("message")
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_tell(run_id, message, pretty):
+    """Write one message into a live run's inbox, delivered at its next tool call.
+
+    The write is a queue, not a delivery: the run's inbox hook hands the message
+    to the model after its next tool call and records a receipt, and only that
+    receipt proves it arrived. So this reports ``queued_for_next_tool_call`` and
+    never a delivery.
+
+    A run that has ended is refused, naming the channel that reaches a stopped
+    worker. A run whose own harness home carries no inbox hook is refused too,
+    rather than reported queued: a message written where nothing reads it is
+    exactly the false clearance this channel exists to remove. The test is the
+    run home's settings file — the harness reads that, and nothing re-seeds the
+    home of a run already launched.
+    """
+    import json as _json
+
+    from reckon._worker_fence import harness_home
+    from reckon.crew import recovery_liveness
+    from reckon.crew.runs import read_pointer
+    from reckon.hooks import install, worker_inbox
+
+    if not message.strip():
+        raise click.UsageError("the message is empty; nothing would be delivered")
+    crew_module, _ = _crew_modules()
+    try:
+        record = read_pointer(run_id)
+    except crew_module.CrewError as exc:
+        raise click.ClickException(str(exc)) from exc
+    alive, _ = recovery_liveness.local_liveness(record)
+    if alive is False:
+        raise click.ClickException(
+            f"run {run_id} has ended, so nothing is running to read an inbox. "
+            "Continue the same session on the channel that reaches a stopped "
+            "worker:\n"
+            f"  reckon crew resume --run {run_id} --advice "
+            f"{_json.dumps(message)}"
+        )
+    dialect = str(record.get("dialect") or "")
+    manifest_path = str(record.get("manifest_path") or "")
+    if not manifest_path:
+        raise click.ClickException(
+            f"run {run_id} records no manifest path, so it names no run "
+            "directory to write an inbox into"
+        )
+    run_directory = Path(manifest_path).expanduser().parent
+    if record.get("fenced") is not True:
+        raise click.ClickException(
+            f"run {run_id} is not fenced (its record says fenced: "
+            f"{record.get('fenced')!r}), so it runs from the operator's own "
+            "harness home, which carries no inbox hook for this run; a message "
+            "written there would be read as queued and delivered to nobody"
+        )
+    if dialect != "claude":
+        raise click.ClickException(
+            f"run {run_id} is a {dialect or 'unknown'}-dialect run, and the "
+            "inbox hook is registered in Claude-dialect run homes only, so "
+            "there is no hook to deliver a message; write nothing and steer "
+            "the run another way"
+        )
+    home = harness_home(dialect, run_directory)
+    settings = None if home is None else home / "settings.json"
+    if settings is None or not install.settings_carry_worker_inbox(settings):
+        where = "no run home" if home is None else f"the run home {home}"
+        raise click.ClickException(
+            f"run {run_id} is live but {where} carries no PostToolUse entry "
+            f"for reckon's inbox hook ({install.WORKER_INBOX_SCRIPT_NAME}), so "
+            "nothing would deliver this message. Such a run was launched before "
+            "the hook was seeded, and a live run's home is never re-seeded; "
+            "queue the message for a run dispatched from now on, or steer this "
+            "one on its next turn"
+        )
+    written = worker_inbox.write_message(message, run_directory)
+    _emit(
+        {
+            "ok": True,
+            "run_id": run_id,
+            "status": "queued_for_next_tool_call",
+            "message_file": str(written),
+            "inbox": str(written.parent),
+            "receipts": str(written.parent / worker_inbox.RECEIPTS_NAME),
+            "delivery_proof": (
+                "the run's inbox hook appends a receipt after the tool call that "
+                "delivered this message; nothing else proves delivery"
+            ),
+        },
+        pretty,
+    )
 
 
 @crew.command(name="stop")
