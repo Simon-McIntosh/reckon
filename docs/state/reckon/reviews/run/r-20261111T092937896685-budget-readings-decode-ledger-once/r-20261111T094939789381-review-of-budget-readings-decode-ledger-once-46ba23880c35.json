@@ -1,0 +1,365 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No added assertion compares output to a variable derived from the same output; fixture literals specify independent expected identity, utilisation, provenance, opt-in state and load count.",
+  "assertion_review": [
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 47
+        },
+        {
+          "expression": "counted.call_count == 1",
+          "line": 48
+        },
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 49
+        },
+        {
+          "expression": "counted.call_count == 1",
+          "line": 50
+        }
+      ],
+      "fails_if": "The initial fixture reading changes from 25, a second unchanged read changes the answer, or either call count differs from one; restoring unconditional ledger.load makes the final assertion fail, as negative-control.log demonstrates.",
+      "lines": [
+        47,
+        48,
+        49,
+        50
+      ],
+      "test": "test_unchanged_ledger_loads_once"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).record_id == 'first'",
+          "line": 55
+        },
+        {
+          "expression": "reading.record_id == 'second'",
+          "line": 62
+        },
+        {
+          "expression": "reading.budget['utilisation_pct'] == 60",
+          "line": 63
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 64
+        }
+      ],
+      "fails_if": "The first row is missing, append invalidation is removed, the promoted row is not selected with utilisation 60, or the changed ledger is not loaded exactly once more.",
+      "lines": [
+        55,
+        62,
+        63,
+        64
+      ],
+      "test": "test_promoted_row_changes_the_next_answer"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).source == 'ledger'",
+          "line": 69
+        },
+        {
+          "expression": "reading.source == 'live-run'",
+          "line": 79
+        },
+        {
+          "expression": "reading.record_id == 'live'",
+          "line": 80
+        },
+        {
+          "expression": "reading.budget['utilisation_pct'] == 70",
+          "line": 81
+        },
+        {
+          "expression": "counted.call_count == 1",
+          "line": 82
+        }
+      ],
+      "fails_if": "The first answer is not historical, a new live pointer is cached away or loses precedence, its independent 70 reading is lost, or the live update reloads historical data.",
+      "lines": [
+        69,
+        79,
+        80,
+        81,
+        82
+      ],
+      "test": "test_live_pointer_is_read_without_loading_the_ledger"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "again.budget['utilisation_pct'] == 25",
+          "line": 91
+        },
+        {
+          "expression": "again.budget['windows']['five_hour']['utilisation'] == 0.25",
+          "line": 92
+        },
+        {
+          "expression": "counted.call_count == 1",
+          "line": 93
+        }
+      ],
+      "fails_if": "Replacing the shared memo deep copies with shared or shallow cached readings leaks scalar or nested mutations into the next answer, or bypassing the memo reloads the ledger.",
+      "lines": [
+        91,
+        92,
+        93
+      ],
+      "test": "test_mutating_a_returned_budget_leaves_the_next_read_unchanged"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 98
+        },
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 45",
+          "line": 102
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 103
+        }
+      ],
+      "fails_if": "Dropping generation from the cache key preserves the initial 25 after an in-place file rewrite plus generation bump, or the expected second load is absent.",
+      "lines": [
+        98,
+        102,
+        103
+      ],
+      "test": "test_generation_change_invalidates_an_in_place_edit"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 109
+        },
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 110
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 111
+        }
+      ],
+      "fails_if": "Caching under a missing generation prevents the required second ledger load, or either answer loses the known 25 reading.",
+      "lines": [
+        109,
+        110,
+        111
+      ],
+      "test": "test_a_missing_generation_does_not_cache_readings"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 116
+        },
+        {
+          "expression": "_latest(root, records=[_row(utilisation=80)]).budget['utilisation_pct'] == 80",
+          "line": 117
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 118
+        },
+        {
+          "expression": "counted.call_args.kwargs['headers_only']",
+          "line": 119
+        },
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 120
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 121
+        }
+      ],
+      "fails_if": "Applying the historical memo to explicit records returns 25 instead of 80, uses a full load instead of headers_only, or the following historical read stops using its cache.",
+      "lines": [
+        116,
+        117,
+        118,
+        119,
+        120,
+        121
+      ],
+      "test": "test_explicit_records_are_not_shadowed_by_the_cached_ledger"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "not _latest(root, config=config).surface_opt_in",
+          "line": 127
+        },
+        {
+          "expression": "_latest(root, config=config).surface_opt_in",
+          "line": 129
+        }
+      ],
+      "fails_if": "Omitting backend configuration from the key preserves surface_opt_in=False after the explicit setting changes to True.",
+      "lines": [
+        127,
+        129
+      ],
+      "test": "test_config_changes_are_reflected_in_readings"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "not budget.latest_recorded(PROJECT, root=root)",
+          "line": 139
+        },
+        {
+          "expression": "_latest(root).budget['utilisation_pct'] == 25",
+          "line": 140
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 141
+        }
+      ],
+      "fails_if": "Publishing an empty cache entry after LedgerError keeps the recovered result absent, swallowing the known recovered 25 answer or preventing a second load.",
+      "lines": [
+        139,
+        140,
+        141
+      ],
+      "test": "test_a_failed_load_does_not_cache_an_empty_answer"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).record_id == 'first'",
+          "line": 146
+        },
+        {
+          "expression": "_latest(root).record_id == 'external'",
+          "line": 152
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 153
+        }
+      ],
+      "fails_if": "Dropping the runs-directory identity misses an externally added row without a generation bump or fails to reload once.",
+      "lines": [
+        146,
+        152,
+        153
+      ],
+      "test": "test_a_run_added_without_a_generation_bump_is_seen"
+    },
+    {
+      "assertions": [
+        {
+          "expression": "_latest(root).record_id == 'first'",
+          "line": 158
+        },
+        {
+          "expression": "_latest(root).record_id == 'aggregate'",
+          "line": 165
+        },
+        {
+          "expression": "counted.call_count == 2",
+          "line": 166
+        }
+      ],
+      "fails_if": "Dropping aggregate identity retains first instead of the newer aggregate row or fails to reload once.",
+      "lines": [
+        158,
+        165,
+        166
+      ],
+      "test": "test_an_aggregate_change_without_a_generation_bump_is_seen"
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch_admission.py:388 _dispatch_lane_observation",
+    "reckon/crew/routing.py:481 _budget_verdict",
+    "reckon/budget.py:774 latest_recorded"
+  ],
+  "completed_at": "2026-11-11T10:05:36Z",
+  "dispatched_at": "2026-11-11T09:59:28Z",
+  "failure_delta_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_budget_readings_decode_the_ledger_once.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T092937896685-budget-readings-decode-ledger-once/head-armed.log",
+      "revision": "7e28042cefab3a6f0e4531b8ddd8a9a8532697ac"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T092937896685-budget-readings-decode-ledger-once/base-armed.log",
+      "revision": "d134a2d78d71787956140dd9f4054526db9d37a8"
+    }
+  },
+  "findings": [],
+  "gate_revision_note": "Recorded head gates ran at implementation commit 7e28042cefab3a6f0e4531b8ddd8a9a8532697ac; git diff to reviewed head changes only the six-line evidence fragment.",
+  "importer_delta": {
+    "added_failure_ids": [],
+    "base_failure_count": 22,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T092937896685-budget-readings-decode-ledger-once/base-importers.log",
+    "head_failure_count": 22,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T092937896685-budget-readings-decode-ledger-once/head-importers.log"
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read commits 7e28042cefab3a6f0e4531b8ddd8a9a8532697ac and 46ba23880c35fada2b65bb8d9450c113f47b7f9f against d134a2d78d71787956140dd9f4054526db9d37a8; the first changes budget.py and adds eleven tests, and the second only adds the evidence fragment.",
+    "done_when": "The source prompt.txt measure is covered by tests/test_budget_readings_decode_the_ledger_once.py:44-166, with head-armed.log recording 62 passed, matching importer logs recording zero added failures, and lint-and-naming.log recording clean checks.",
+    "goal": "The source prompt.txt goal is to memoise ledger-derived budget readings; reckon/budget.py:674-686 implements reuse by generation, source identities and backend configuration while retaining fresh live reads.",
+    "manifest": "The source manifest.md names both commits, the reproduced assert 2 == 1, completed base/head logs, matching importer failures and the coordinator-owned station re-profile, consistent with the inspected artifacts.",
+    "write_paths": "The source prompt.txt fence permits budget.py, the new test, the evidence fragment and a figure directory; all three changed files stay within those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_budget_readings_decode_the_ledger_once.py:44-166 independently checks load counts, changed row identities, live refresh, nested copy isolation and invalidation, with the repeated-load regression demonstrably failing at line 50 on base.",
+    "evidence": "negative-control.log records assert 2 == 1 at tests/test_budget_readings_decode_the_ledger_once.py:50, head-armed.log records 62 passed, and the completed all_debug importer logs have identical 22 failure identities.",
+    "fit": "reckon/budget.py:671-746 extracts its existing ledger conversion into a mechanism-named helper, preserves explicit-record and LedgerError behavior, and passes the recorded scoped Ruff lint and format checks.",
+    "goal_fidelity": "reckon/budget.py:675-686 caches only ledger-derived readings using the required source stamp, while live pointers at lines 600-662 remain outside that cache.",
+    "reuse": "The capability search found and opened reckon/file_memo.py:439 memoized_key and reckon/ledger.py:1464 index_state_stamp, both reused at reckon/budget.py:683-686; the added _ledger_readings helper moves the existing budget conversion within its owning module.",
+    "scope_discipline": "The three paths changed by the two inspected commits exactly match the permitted implementation, regression-test and fragment paths in the source prompt.txt fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt goal is to memoise ledger-derived budget readings; reckon/budget.py:674-686 implements reuse by generation, source identities and backend configuration while retaining fresh live reads.\nVERDICT done_when: The source prompt.txt measure is covered by tests/test_budget_readings_decode_the_ledger_once.py:44-166, with head-armed.log recording 62 passed, matching importer logs recording zero added failures, and lint-and-naming.log recording clean checks.\nVERDICT write_paths: The source prompt.txt fence permits budget.py, the new test, the evidence fragment and a figure directory; all three changed files stay within those paths.\nVERDICT manifest: The source manifest.md names both commits, the reproduced assert 2 == 1, completed base/head logs, matching importer failures and the coordinator-owned station re-profile, consistent with the inspected artifacts.\nVERDICT diff: Read commits 7e28042cefab3a6f0e4531b8ddd8a9a8532697ac and 46ba23880c35fada2b65bb8d9450c113f47b7f9f against d134a2d78d71787956140dd9f4054526db9d37a8; the first changes budget.py and adds eleven tests, and the second only adds the evidence fragment.\nCALL_SITES: reckon/crew/dispatch_admission.py:388 _dispatch_lane_observation, reckon/crew/routing.py:481 _budget_verdict, reckon/budget.py:774 latest_recorded\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/budget.py:675-686 caches only ledger-derived readings using the required source stamp, while live pointers at lines 600-662 remain outside that cache.\nSCORE evidence: 20\nJUSTIFICATION evidence: negative-control.log records assert 2 == 1 at tests/test_budget_readings_decode_the_ledger_once.py:50, head-armed.log records 62 passed, and the completed all_debug importer logs have identical 22 failure identities.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths changed by the two inspected commits exactly match the permitted implementation, regression-test and fragment paths in the source prompt.txt fence.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_budget_readings_decode_the_ledger_once.py:44-166 independently checks load counts, changed row identities, live refresh, nested copy isolation and invalidation, with the repeated-load regression demonstrably failing at line 50 on base.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/budget.py:671-746 extracts its existing ledger conversion into a mechanism-named helper, preserves explicit-record and LedgerError behavior, and passes the recorded scoped Ruff lint and format checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search found and opened reckon/file_memo.py:439 memoized_key and reckon/ledger.py:1464 index_state_stamp, both reused at reckon/budget.py:683-686; the added _ledger_readings helper moves the existing budget conversion within its owning module.\n",
+  "reuse_search": "Searched memoized_key/deepcopy and index_state_stamp/_indexed_data capabilities; opened shared owners in file_memo.py and ledger.py; _ledger_readings is the existing budget-owned conversion extracted in place and collect is only its memo callback.",
+  "review_run_id": "r-20261111T094939789381-review-of-budget-readings-decode-ledger-once-46ba23880c35",
+  "reviewed_base_sha": "d134a2d78d71787956140dd9f4054526db9d37a8",
+  "reviewed_head_sha": "46ba23880c35fada2b65bb8d9450c113f47b7f9f",
+  "reviewed_run_id": "r-20261111T092937896685-budget-readings-decode-ledger-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:09:59.187742+00:00",
+  "total": 120
+}

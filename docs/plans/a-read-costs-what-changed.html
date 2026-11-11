@@ -21,11 +21,11 @@
   <meta name="plan-informs" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-blocks" content="">
   <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;],&quot;s5&quot;:[&quot;a-read-costs-what-changed#s3&quot;],&quot;s9&quot;:[&quot;a-read-costs-what-changed#s5&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;descoped&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;descoped&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;implementable&quot;,&quot;s17&quot;:&quot;implementable&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -239,6 +239,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261111T094939789381-review-of-budget-readings-decode-ledger-once-46ba23880c35" data-who="reckon-build" data-when="2026-11-11T10:05:36Z">
+    <div class="r-comment-body"><p>Independent review found no defects; six dimensions scored 20/20, zero added armed or importer failures; coordinator owns integration and station re-profile.</p></div>
 </div>
 </section>
 </main>
