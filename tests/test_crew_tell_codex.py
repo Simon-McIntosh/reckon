@@ -104,24 +104,39 @@ def _codex_argv(*, hook: bool = True, trust: bool = True, worktree: str = "workt
     return words
 
 
-def _without_argv(record: dict) -> dict:
-    record.pop("argv", None)
-    return record
+def _worker_record(tmp_path: Path, argv, *, attempt: int = 1, latest: bool = True):
+    """Write the run directory's worker record the way a launch leaves it.
+
+    A launch records its argv here, never on the live pointer: the pointer is
+    rewritten on every state change and holds no argv field. ``latest`` writes the
+    canonical ``worker.json`` for the attempt running now; otherwise the record is
+    written as the immutable ``attempt-<n>-worker.json`` receipt a resume retires
+    it into.
+    """
+    run, _ = _run_dir(tmp_path)
+    name = "worker.json" if latest else f"attempt-{attempt}-worker.json"
+    payload = {"run_id": RUN_ID, "attempt": attempt}
+    if argv is not None:
+        payload["argv"] = argv
+    (run / name).write_text(json.dumps(payload))
 
 
-# ── codex runs: reachability is the recorded launch argv ─────────────────────
+# ── codex runs: reachability is the argv the run directory recorded ──────────
+
+
+def _live_codex_run(tmp_path: Path, argv, **worker) -> tuple[Path, dict]:
+    """A live codex run as a real launch leaves it: no argv on the pointer."""
+    run, manifest = _run_dir(tmp_path)
+    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest))
+    _worker_record(tmp_path, argv, **worker)
+    return run, record
 
 
 def test_crew_tell_writes_to_a_live_codex_run_carrying_both_overrides(
     tmp_path: Path, monkeypatch
 ):
-    run, manifest = _run_dir(tmp_path)
-    record = _record(
-        tmp_path,
-        dialect="codex",
-        manifest_path=str(manifest),
-        argv=_codex_argv(worktree=str(tmp_path)),
-    )
+    run, record = _live_codex_run(tmp_path, _codex_argv(worktree=str(tmp_path)))
+    assert "argv" not in record
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
 
     result = _tell()
@@ -134,16 +149,42 @@ def test_crew_tell_writes_to_a_live_codex_run_carrying_both_overrides(
     assert queued[0].read_text() == "steer left"
 
 
+def test_crew_tell_reads_the_latest_attempts_record(tmp_path: Path, monkeypatch):
+    """A resume retires the canonical record; the newest receipt is the launch."""
+    run, manifest = _run_dir(tmp_path)
+    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest))
+    _worker_record(tmp_path, _codex_argv(trust=False), attempt=1, latest=False)
+    _worker_record(
+        tmp_path, _codex_argv(worktree=str(tmp_path)), attempt=2, latest=False
+    )
+    monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
+
+    result = _tell()
+    assert result.exit_code == 0, result.output
+    assert len(worker_inbox.pending_messages(run)) == 1
+
+
+def test_crew_tell_accepts_a_hook_another_checkout_composed(
+    tmp_path: Path, monkeypatch
+):
+    """The override names its composing checkout, which need not be this one."""
+    argv = _codex_argv(worktree=str(tmp_path))
+    hook = next(word for word in argv if word.startswith("hooks.PostToolUse"))
+    argv[argv.index(hook)] = hook.replace(
+        str(Path(install.__file__).resolve().parent.parent), "/some/other/checkout"
+    )
+    run, record = _live_codex_run(tmp_path, argv)
+    monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
+
+    result = _tell()
+    assert result.exit_code == 0, result.output
+    assert len(worker_inbox.pending_messages(run)) == 1
+
+
 def test_crew_tell_refuses_a_codex_run_whose_argv_lacks_the_trust_override(
     tmp_path: Path, monkeypatch
 ):
-    run, manifest = _run_dir(tmp_path)
-    record = _record(
-        tmp_path,
-        dialect="codex",
-        manifest_path=str(manifest),
-        argv=_codex_argv(trust=False),
-    )
+    run, record = _live_codex_run(tmp_path, _codex_argv(trust=False))
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
 
     result = _tell()
@@ -156,13 +197,7 @@ def test_crew_tell_refuses_a_codex_run_whose_argv_lacks_the_trust_override(
 def test_crew_tell_refuses_a_codex_run_whose_argv_lacks_the_hook_override(
     tmp_path: Path, monkeypatch
 ):
-    run, manifest = _run_dir(tmp_path)
-    record = _record(
-        tmp_path,
-        dialect="codex",
-        manifest_path=str(manifest),
-        argv=_codex_argv(hook=False),
-    )
+    run, record = _live_codex_run(tmp_path, _codex_argv(hook=False))
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
 
     result = _tell()
@@ -178,25 +213,34 @@ def test_crew_tell_refuses_a_codex_run_whose_argv_lacks_the_hook_override(
         ["/usr/bin/codex", "exec", "--json", "-C", "worktree", "-"],
         # A different -c override for an unrelated setting.
         ["/usr/bin/codex", "exec", "--json", "-c", "model=gpt-5", "-"],
-        # No argv recorded at all.
+        # A record that names no argv at all.
         None,
     ],
 )
 def test_crew_tell_refuses_a_codex_run_launched_before_the_overrides_existed(
     tmp_path: Path, monkeypatch, argv
 ):
-    run, manifest = _run_dir(tmp_path)
-    record = _without_argv(
-        _record(tmp_path, dialect="codex", manifest_path=str(manifest))
-    )
-    if argv is not None:
-        record["argv"] = argv
+    run, record = _live_codex_run(tmp_path, argv)
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
 
     result = _tell()
     assert result.exit_code != 0, result.output
     assert "neither the inbox hook override nor its trust override" in result.output
     assert "queued_for_next_tool_call" not in result.output
+    assert worker_inbox.pending_messages(run) == []
+
+
+def test_crew_tell_refuses_a_codex_run_that_recorded_no_worker(
+    tmp_path: Path, monkeypatch
+):
+    """No worker record at all: the launch recorded nothing to read."""
+    run, manifest = _run_dir(tmp_path)
+    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest))
+    monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
+
+    result = _tell()
+    assert result.exit_code != 0, result.output
+    assert "neither the inbox hook override nor its trust override" in result.output
     assert worker_inbox.pending_messages(run) == []
 
 

@@ -1,3 +1,4 @@
+import json
 import os
 import time
 from collections.abc import Mapping
@@ -2519,6 +2520,48 @@ crew_redispatch = tombstone_command("redispatch")
 
 
 _CODEX_CONFIG_FLAGS = ("-c", "--config")
+_WORKER_RECORD_NAME = "worker.json"
+_ATTEMPT_WORKER_SUFFIX = "-worker.json"
+
+
+def _run_recorded_argv(run_directory: Path) -> Any:
+    """The launch argv the run directory records for the attempt running now.
+
+    A launch writes its argv to the run directory, not to the live pointer: the
+    pointer is rewritten on every state change and carries no argv field at all,
+    so a read from there answers ``None`` for every real run. The canonical
+    ``worker.json`` describes the attempt running now; a resume retires that
+    record into an ``attempt-<n>-worker.json`` receipt before its replacement
+    starts, so while that window is open the newest receipt is the only account
+    of what the run was launched with. A run directory holding no readable
+    record answers ``None``: nothing is known about the launch, which the caller
+    reports as an unreachable run rather than as a reachable one.
+    """
+    newest: tuple[int, Path] | None = None
+    canonical = run_directory / _WORKER_RECORD_NAME
+    if canonical.is_file():
+        newest = (0, canonical)
+    try:
+        receipts = list(run_directory.glob(f"attempt-*{_ATTEMPT_WORKER_SUFFIX}"))
+    except OSError:
+        receipts = []
+    for receipt in receipts:
+        number = receipt.name.removeprefix("attempt-").removesuffix(
+            _ATTEMPT_WORKER_SUFFIX
+        )
+        if not number.isdigit():
+            continue
+        if newest is None or int(number) > newest[0]:
+            newest = (int(number), receipt)
+    if newest is None:
+        return None
+    try:
+        record = json.loads(newest[1].read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    return record.get("argv")
 
 
 def _codex_config_overrides(argv: Any) -> list[str]:
@@ -2536,17 +2579,21 @@ def _codex_inbox_override_gap(argv: Any) -> str | None:
 
     A codex run receives the inbox hook as ``-c hooks.PostToolUse=...`` and the
     trust record for exactly that hook as ``-c hooks.state={...trusted_hash...}``,
-    both composed onto its launch argv. Delivery needs both, and the recorded
-    argv is the only evidence of what a live run was launched with: a run
-    launched before the overrides existed carries neither, whatever the flight
-    layer composes for a run dispatched today.
+    both composed onto its launch argv. Delivery needs both, and the argv the
+    run directory recorded is the only evidence of what a live run was launched
+    with: a run launched before the overrides existed carries neither, whatever
+    the flight layer composes for a run dispatched today.
     """
-    from reckon.hooks.install import worker_inbox_group
+    from reckon.hooks.install import WORKER_INBOX_SCRIPT_NAME
 
     overrides = _codex_config_overrides(argv)
-    hook_command = str(worker_inbox_group()["hooks"][0]["command"])
+    # The override names an interpreter and a script path from the checkout that
+    # composed it, so an equality test against this checkout's own composition
+    # would refuse every run launched from anywhere else. The script is the part
+    # that reads the inbox, and its name is checkout-independent.
     has_hook = any(
-        override.lstrip().startswith("hooks.PostToolUse") and hook_command in override
+        override.lstrip().startswith("hooks.PostToolUse")
+        and WORKER_INBOX_SCRIPT_NAME in override
         for override in overrides
     )
     has_trust = any(
@@ -2588,10 +2635,11 @@ def crew_tell(run_id, message, pretty):
     that dialect's harness actually reads. A Claude-dialect run is reached
     through the inbox hook in its own run home's settings file, and nothing
     re-seeds the home of a run already launched. A codex run is reached through
-    the hook and trust overrides composed onto its launch argv, so its recorded
-    argv is the test — a run launched before those overrides existed carries
-    none of them whatever the flight layer composes now. Every other dialect is
-    refused, naming why.
+    the hook and trust overrides composed onto its launch argv, so the argv its
+    run directory recorded for the attempt running now is the test: the live
+    pointer carries no argv field at all, and a run launched before those
+    overrides existed carries none of them whatever the flight layer composes
+    now. Every other dialect is refused, naming why.
     """
     import json as _json
 
@@ -2625,15 +2673,16 @@ def crew_tell(run_id, message, pretty):
         )
     run_directory = Path(manifest_path).expanduser().parent
     if dialect == "codex":
-        gap = _codex_inbox_override_gap(record.get("argv"))
+        gap = _codex_inbox_override_gap(_run_recorded_argv(run_directory))
         if gap is not None:
             raise click.ClickException(
                 f"run {run_id} is a codex-dialect run. The inbox hook is "
                 "registered in Claude-dialect run homes only; a codex run is "
                 "reached through the hook override and its trust override on "
-                "the argv it was launched with, and that argv carries "
-                f"{gap}. Such a run was launched before the overrides existed, "
-                "and a live run's argv is never recomposed; queue the message "
+                "the argv its run directory records for the attempt running "
+                f"now, and that argv carries {gap}. Such a run was launched "
+                "before the overrides existed, and a live run's argv is never "
+                "recomposed; queue the message "
                 "for a run dispatched from now on, or steer this one on its "
                 "next turn"
             )
