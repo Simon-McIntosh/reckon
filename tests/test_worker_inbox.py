@@ -279,6 +279,48 @@ def test_crew_tell_writes_into_a_live_fenced_claude_run(tmp_path: Path, monkeypa
     assert queued[0].read_text() == "steer left"
 
 
+def test_the_run_view_lists_a_message_until_a_tool_call_claims_it(
+    tmp_path: Path, monkeypatch
+):
+    """A coordinator reading one run sees what is still waiting to reach it.
+
+    The listing has to come from the run's own inbox, because that is what the
+    hook claims from: a view that reported its own idea of what was sent would
+    keep naming a delivered message as queued, which is the false confirmation
+    this delivery path exists to end.
+    """
+    from reckon.crew import query as query_module
+    from reckon.mcp_views import serve_crew_view
+
+    run, manifest, _ = _seeded_run(tmp_path)
+    home = _crew_home(tmp_path, _record(tmp_path, manifest_path=str(manifest)))
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setattr(
+        query_module, "runs_view", lambda *args, **kwargs: {"ok": True, "rows": []}
+    )
+
+    assert _tell("steer left").exit_code == 0
+    queued = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
+    assert queued["rows"] == []
+    assert queued["inbox"]["unclaimed_count"] == 1
+    assert queued["inbox"]["unclaimed"][0]["text"] == "steer left"
+    assert queued["inbox"]["delivered"] == []
+
+    _run_hook(
+        {"tool_name": "Bash", "tool_use_id": "toolu_1", "session_id": "s-1"},
+        manifest=manifest,
+        home=home,
+        cwd=run,
+    )
+
+    delivered = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
+    assert delivered["inbox"]["unclaimed"] == []
+    assert delivered["inbox"]["unclaimed_count"] == 0
+    assert [receipt["message"] for receipt in delivered["inbox"]["delivered"]] == [
+        queued["inbox"]["unclaimed"][0]["message"]
+    ]
+
+
 def test_crew_tell_refuses_an_ended_run_naming_resume(tmp_path: Path, monkeypatch):
     record = _record(tmp_path, pid=999_999_999)
     home = _crew_home(tmp_path, record)

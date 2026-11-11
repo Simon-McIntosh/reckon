@@ -4322,6 +4322,43 @@ def _fit_scopes(
     return render(kept, shortened)
 
 
+def run_inbox_messages(run_id: str) -> dict[str, Any] | None:
+    """One run's inbox, split into what is still waiting and what was delivered.
+
+    A message written by ``crew tell`` sits unclaimed until the run's next tool
+    call, so a coordinator looking at the run needs to know whether its
+    instruction is still queueing or already in front of the worker. Both halves
+    read the run's own directory: the same store the hook claims from, so this
+    answer cannot disagree with the delivery. ``None`` when the run has no live
+    pointer or no manifest to locate that directory from — an ended run's
+    directory is not what this view is for.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.hooks import worker_inbox
+
+    try:
+        pointer = runs_module.read_pointer(run_id)
+    except Exception:  # noqa: BLE001 - an unknown run is an absent inbox, not an error
+        return None
+    manifest_path = (pointer or {}).get("manifest_path")
+    if not manifest_path:
+        return None
+    run_directory = Path(manifest_path).expanduser().parent
+    pending = worker_inbox.pending_messages(run_directory)
+    return {
+        "unclaimed": [
+            {
+                "message": path.name,
+                "bytes": path.stat().st_size,
+                "text": path.read_text(encoding="utf-8", errors="replace"),
+            }
+            for path in pending
+        ],
+        "unclaimed_count": len(pending),
+        "delivered": worker_inbox.receipts(run_directory),
+    }
+
+
 def serve_crew_view(
     view: str = "summary",
     *,
@@ -4586,7 +4623,7 @@ def serve_crew_view(
                 cursor=cursor,
             )
         if view == "runs":
-            return crew_runs_view(
+            payload = crew_runs_view(
                 project,
                 run_id=run_id,
                 checkout_path=checkout_path,
@@ -4603,6 +4640,13 @@ def serve_crew_view(
                 fields=fields,
                 limit=limit,
             )
+            # A named run also answers what is still waiting to reach it, so a
+            # coordinator reading one run sees its queued message rather than
+            # having to open the inbox on disk to find out.
+            inbox = run_inbox_messages(run_id) if run_id else None
+            if inbox is not None:
+                payload = {**payload, "inbox": inbox}
+            return payload
         if view == "scopes":
             docs_dir = _docs_dir_for_project(project, checkout_path)
             if docs_dir is None:
