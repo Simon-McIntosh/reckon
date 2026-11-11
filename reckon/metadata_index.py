@@ -31,6 +31,7 @@ import json
 import logging
 import os
 import threading
+from collections import OrderedDict
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager
 from contextvars import ContextVar
@@ -333,6 +334,8 @@ def clear() -> None:
         _MODULE_SOURCE_DIGESTS.clear()
         for root in roots:
             _GENERATIONS[root] = _GENERATIONS.get(root, 0) + 1
+    with _PERSISTED_INDEX_LOCK:
+        _PERSISTED_INDEX_CACHE.clear()
 
 
 def invalidate_tree(docs_dir: Path) -> None:
@@ -1621,7 +1624,8 @@ def discovery_state(
             continue
         if entry.get("digest") == digest:
             fresh[relative] = dict(discovery)
-            entry["signature"] = signature
+            # Replace the entry so the shared persisted envelope stays read-only.
+            known[relative] = {**entry, "signature": signature}
             changed_signatures = True
     if changed_signatures:
         _store_persisted(
@@ -1883,6 +1887,61 @@ _PERSISTED_SCHEMA = "reckon.persisted-memo"
 _MODULE_SOURCE_DIGESTS: dict[tuple[str, tuple[int, ...]], str] = {}
 
 
+@dataclass(frozen=True)
+class _PersistedIndexPayload:
+    path: Path
+    signature: tuple[int, ...]
+    source_bytes: int
+    value: object
+
+
+# Large indexes share one immutable envelope per tree. Source-byte accounting
+# uses the stat already needed for invalidation, keeping hits independent of
+# payload size; the LRU bounds both the number and total source size retained.
+_MAX_PERSISTED_INDEXES = 32
+_MAX_PERSISTED_INDEX_BYTES = 128 * 1024 * 1024
+_PERSISTED_INDEX_LOCK = threading.Lock()
+_PERSISTED_INDEX_CACHE: OrderedDict[tuple[str, str], _PersistedIndexPayload] = (
+    OrderedDict()
+)
+
+
+def _read_index_envelope(path: Path, key: tuple[str, str]) -> object:
+    """Share a read-only envelope, replacing a tree's previous file revision."""
+
+    observed = path.stat()
+    signature = signature_from_stat(observed)
+    with _PERSISTED_INDEX_LOCK:
+        previous = _PERSISTED_INDEX_CACHE.get(key)
+        if (
+            previous is not None
+            and previous.path == path
+            and previous.signature == signature
+        ):
+            _PERSISTED_INDEX_CACHE.move_to_end(key)
+            return previous.value
+    raw = file_memo._read_only(json.loads(path.read_text(encoding="utf-8")))
+    if signature_from_stat(path.stat()) == signature:
+        with _PERSISTED_INDEX_LOCK:
+            # A later reader may have installed a newer envelope while this
+            # one decoded; it keeps that entry rather than overwriting it.
+            if _PERSISTED_INDEX_CACHE.get(key) is previous:
+                _PERSISTED_INDEX_CACHE.pop(key, None)
+                if observed.st_size <= _MAX_PERSISTED_INDEX_BYTES:
+                    _PERSISTED_INDEX_CACHE[key] = _PersistedIndexPayload(
+                        path, signature, observed.st_size, raw
+                    )
+                while (
+                    len(_PERSISTED_INDEX_CACHE) > _MAX_PERSISTED_INDEXES
+                    or sum(
+                        item.source_bytes for item in _PERSISTED_INDEX_CACHE.values()
+                    )
+                    > _MAX_PERSISTED_INDEX_BYTES
+                ):
+                    _PERSISTED_INDEX_CACHE.popitem(last=False)
+    return raw
+
+
 def _module_source_path(module: object) -> Path | None:
     source = getattr(module, "__file__", None)
     return Path(source) if source else None
@@ -1983,7 +2042,12 @@ def _module_source_stats(
     return {name: _module_source_identity(module) for name, module in producers.items()}
 
 
-def _read_persisted_memo(path: Path, producers: Mapping[str, object]) -> object:
+def _read_persisted_memo(
+    path: Path,
+    producers: Mapping[str, object],
+    *,
+    index_key: tuple[str, str] | None = None,
+) -> object:
     """Return a stored value whose producer sources still match, else absent.
 
     A stored entry carries each producer's source identity as well as its
@@ -1993,16 +2057,21 @@ def _read_persisted_memo(path: Path, producers: Mapping[str, object]) -> object:
     value by stat identity. A source that has moved is digested, and a value
     from older code is absent either way.
 
-    The decoded envelope is memoised by its file's stat identity; producer
-    digests are validated on every call against that payload.
+    Large index envelopes are shared read-only, with retention bounded per
+    tree and across trees. Other memo values receive independent mutable
+    copies. Producer digests are validated on every call against the payload.
     """
 
     try:
-        raw = file_memo.memoized(
-            "persisted_memo_payload",
-            path,
-            lambda: json.loads(path.read_text(encoding="utf-8")),
-            mutable=True,
+        raw = (
+            _read_index_envelope(path, index_key)
+            if index_key is not None
+            else file_memo.memoized(
+                "persisted_memo_payload",
+                path,
+                lambda: json.loads(path.read_text(encoding="utf-8")),
+                mutable=True,
+            )
         )
     except FileNotFoundError:
         return _PERSISTED_MISSING
@@ -2097,11 +2166,10 @@ def _persisted_payload(docs_dir: Path, project: str) -> Mapping:
     and rebuilt rather than served as a stale parse.
     """
 
-    held = persisted_memo(
-        "metadata-index",
-        _VERSION,
-        (project, str(Path(docs_dir).resolve())),
-        _discovery_producers(),
+    held = _read_persisted_memo(
+        _index_path(docs_dir, project),
+        {module.__name__: module for module in _discovery_producers()},
+        index_key=(project, str(Path(docs_dir).resolve())),
     )
     return held if isinstance(held, Mapping) else {}
 
