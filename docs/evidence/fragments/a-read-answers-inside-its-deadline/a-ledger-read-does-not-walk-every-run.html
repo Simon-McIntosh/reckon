@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A read answers inside its deadline">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s64">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <title>A ledger read does not walk every run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-ledger-read-does-not-walk-every-run-landing">
+  <h2>A warm ledger read makes a constant number of stat calls</h2>
+
+  <p><strong>Reproduced at the base revision.</strong> A counting wrapper over
+  <code>Path.stat</code> around a warm <code>ledger.load</code>, over a
+  temporary project ledger whose documents were written through
+  <code>ledger.write_run_file</code>, measured <strong>21 stat calls at 20 run
+  documents and 201 at 200</strong> at
+  <code>acfbdab8c1bb3d0ac8027ed85658a8344f82621a</code> — one remote stat per
+  document, under <code>_run_snapshot</code>, and the +1 that is the aggregate.
+  That is the promotion path the plan records waiting in D state on GPFS.</p>
+
+  <p><strong>Change.</strong> The index's cache key is no longer the
+  per-document walk. A project's write generation — the store's own file under
+  the crew home, already consumed by the roadmap snapshot and the coordinator
+  obligations — stands in for it. Keying it by the project alone matters: the
+  index directory falls back to the user cache when the configured one cannot
+  be written, so a token kept beside the index would give a writer and a reader
+  in different directories two different files, and the reader would serve
+  stale rows. Every ledger write path advances it once its own files are in
+  place: <code>write_run_file</code>, <code>append_run</code>,
+  <code>_write_state</code> (hence <code>write</code>, the hold and repair
+  paths), <code>_commit_run_split</code> and <code>_restore_run_files</code>. A
+  read whose generation and run-directory identity both still match what its
+  index recorded reuses the stamps the index holds and walks nothing. A read
+  whose generation differs, or whose index recorded none, walks the documents
+  exactly as it did before, so a ledger this code has never written reads
+  correctly and an index published before the key existed refreshes on its next
+  read. The run directory's own identity is compared beside the generation, so
+  a document added or removed by a writer that predates the generation is still
+  noticed.</p>
+
+  <p><strong>Measured.</strong> The same probe at the head commit
+  <code>3eca4c75</code>: <strong>2 stat calls at 20 documents and 2 at
+  200</strong> — the aggregate and the run directory, both constant. The reuse
+  needs the counter to be writable, and a fenced worker's crew home is mounted
+  read-only, so the probe points <code>RECKON_HOME</code> at scratch. Where the
+  counter cannot be written it does not exist either, so a read walks there:
+  the old cost, never a stale answer.
+  <code>tests/test_a_ledger_read_does_not_walk_every_run.py</code> asserts that
+  equality and, as a positive control, that each warm read still returns every
+  row (20 and 200). It drives each write path — <code>write_run_file</code>,
+  <code>append_run</code>, <code>write</code>, <code>_restore_run_files</code> —
+  and asserts the generation moves and the next read returns the written row.
+  It deletes the generation file, edits a document outside every write path,
+  and asserts the read returns the edit, which is the rebuild condition
+  observed rather than assumed. The declared negative control, restoring the
+  per-document walk, was executed and logged: the warm-count case reds
+  (<code>3 failed</code>, <code>EXIT=1</code>) because the 200-document count
+  climbs back above the 20-document one.</p>
+
+  <p><strong>Writers outside the ledger.</strong> A warm read answers from the
+  index only when the generation matches, so a row moved by anything other than
+  a ledger write path would be served stale. The production surface was
+  searched and none exists: every writer of
+  <code>docs/state/&lt;project&gt;/runs/*.json</code> reaches the file through
+  <code>ledger.write_run_file</code> or <code>ledger.write</code> — the crew run
+  commands, routing, the promotion record, gate and release paths, and the
+  duration-backfill and figure scripts. The one direct write into a runs
+  directory outside the ledger writes a synthetic row under
+  <code>tempfile.mkdtemp()</code> inside a census control script, never a real
+  ledger. The search, with its commands and output, is in
+  <code>writer-search.log</code>.</p>
+
+  <p>Two existing tests had made their point by rewriting a run document in
+  place, outside every write path. Both now amend their row with
+  <code>write_run_file</code> and keep their assertions that the next read
+  answers from the new record: a released worktree, and a retention recorded
+  after the index was published, are each seen by the next bounded read. The
+  pair passes (<code>10 passed</code>).</p>
+
+  <p><strong>The key is one file.</strong>
+  <code>test_a_write_is_seen_through_another_index_directory</code> publishes an
+  index under two directory configurations, asserts both resolve the same
+  generation path, writes through one and reads through the other, and requires
+  the new row. <code>test_a_run_split_is_seen_by_the_next_read</code> drives
+  <code>_split_project_runs</code> over a seeded aggregate and reads the rows
+  back through <code>load</code>. The rollback case reads the generation
+  immediately before the restore, so a bump from the write that preceded it
+  cannot satisfy the assertion.</p>
+
+  <p><strong>A bump that did not happen is not a write.</strong> The store's advance
+  suppresses a failure so a plan write is never failed by its cache key, which
+  for the ledger would leave the counter exactly where the index recorded it and
+  an in-place edit invisible. The ledger's bump therefore reads the counter
+  before and after the advance and removes it when it did not move — an absent
+  counter sends the next read back to the documents. The removal is attempted,
+  never required: requiring it failed every ledger write in this worker, whose
+  crew home is read-only, and where the counter cannot be written it does not
+  exist either. Two tests hold that down: a no-op advance with an
+  mtime-preserving edit, and a generation directory held read-only, where the
+  write lands and the read still sees it. Both mutations that remove the
+  mechanisms red their tests (<code>mutation.log</code>), and the split case
+  asserts the generation advanced, so removing that path's bump reddens it
+  too.</p>
+
+  <p><strong>An absent counter is not a key.</strong> A project no ledger write
+  has touched has no generation, and the store reads that absence as
+  <code>"none"</code>. Comparing that value let an index look fresh forever, so
+  a ledger whose documents were all written outside the write paths — a
+  fixture, a project this code has not written since the key existed — served
+  its first snapshot and never noticed an edit. Eight index and dispatch-speed
+  tests failed on exactly that shape when the key first moved to the store's
+  file. An absent counter now reads as no key: the read walks the documents,
+  which is what it did before the key existed, and
+  <code>test_a_ledger_no_write_has_touched_never_reuses_a_stale_index</code>
+  drives it with an in-place edit that preserves the document's mtime. So
+  correctness for a ledger this code has not written is the old behaviour, and
+  only a project a ledger write has bumped gets the constant-cost read.</p>
+
+  <p><strong>Population.</strong> The 287 tests that import
+  <code>reckon.ledger</code> ran on <code>all_debug</code>, one arm at a time at
+  <code>-n 4</code>, each over its own extracted tree. The base revision
+  <code>acfbdab8</code> failed 70 of them (<code>2941 passed</code>) and the head
+  <code>3eca4c75</code> failed 69 (<code>2956 passed</code>): <code>comm</code>
+  finds nothing the head failed that the base passed, and one test the base
+  failed — <code>test_a_promoted_run_replays_its_allowance_from_the_committed_row</code>
+  — passes at the head. An intermediate head, before the absent-counter fix,
+  failed 80 with ten head-only, all of them the out-of-band-write shape that
+  paragraph describes, and the fix removed every one. The two held-worktree
+  tests are green in both arms.</p>
+
+  <p><strong>Scope retained.</strong> The driving followup stays open and no
+  terminal status is set. Logs under
+  <code>~/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/</code>.</p>
+</section>
+</main>
+</body>
+</html>
