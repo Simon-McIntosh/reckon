@@ -40,6 +40,47 @@ pass on both staged Python paths, with zero added findings.</p>
 <code>after-importers.log</code>, <code>importer-comparison.json</code> and
 <code>ruff.log</code>. Each test log records its revision, command and terminal
 exit status; partition logs also name the imported module and working directory.</p>
+<h3 id="plan-review-record-decoded-once-persisted-payload">Persisted memo payloads decode once per change</h3>
+<p>The reviewed profile attributes 111 of the coverage chain's 124 JSON
+decoding samples to <code>metadata_index._read_persisted_memo</code>, while
+<code>_read_record</code> accounts for 3 of 880 total samples. The persisted
+reader now memoises only its decoded envelope through the existing stat-keyed
+file memo. Producer-source validation still runs on every call, after the
+cached payload is obtained; a changed producer digest still returns
+<code>_PERSISTED_MISSING</code>. The record-reader memo is retained. Extension
+commit: <code>fcc7cf781aff0b3e044fd7ed723294911158bd69</code>.</p>
+<table id="plan-review-record-decoded-once-persisted-measures">
+<thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+<tbody>
+<tr><td>Decodes for two unchanged persisted-memo reads</td><td>2</td><td>1</td></tr>
+<tr><td>Total decodes after an in-place memo rewrite</td><td>2</td><td>2; updated value returned</td></tr>
+<tr><td>Changed producer digest after warming the payload</td><td>Rejected; 2 digest checks, 2 decodes</td><td>Rejected; 2 digest checks, 1 decode</td></tr>
+<tr><td>Armed node suite, resumed base to head</td><td>55 passed in 11.35s</td><td>58 passed in 10.15s</td></tr>
+<tr><td>Combined importers, resumed base to head</td><td>71 failed, 987 passed in 332.43s</td><td>71 failed, 990 passed in 313.26s; zero added failures</td></tr>
+<tr><td>Combined importers, original node base to head</td><td>71 failed, 983 passed in 311.99s</td><td>71 failed, 990 passed; identical failure IDs</td></tr>
+</tbody>
+</table>
+<p id="plan-review-record-decoded-once-persisted-control">Before changing the
+persisted reader, the extended test at the resumed base
+<code>2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3</code> recorded
+<code>2 failed, 5 passed in 4.49s</code>, exit 1. Both failures showed the
+patched <code>metadata_index.json.loads</code> counter reaching
+<code>2</code> where the assertion required <code>1</code>. At the head all
+seven focused cases pass. The warm-payload test also makes the producer digest
+change and asserts the stored value is refused, proving validation still runs.</p>
+<p id="plan-review-record-decoded-once-persisted-receipts">The same run directory
+holds <code>retarget-negative-control.log</code>,
+<code>retarget-focused-head.log</code>, <code>retarget-baseline-suite.log</code>,
+<code>retarget-after-suite.log</code>, <code>retarget-baseline-importers.log</code>,
+<code>retarget-after-importers.log</code>, <code>retarget-importer-comparison.json</code>,
+<code>original-base-combined-importers.log</code>,
+<code>original-base-importer-comparison.json</code> and <code>retarget-ruff.log</code>.
+The importer arms ran on <code>all_debug</code> jobs <code>1310347</code>,
+<code>1310353</code> and <code>1310354</code>. Ruff lint and formatting checks
+are clean on all three Python paths. The original-base arm used an extracted
+snapshot and recorded its imported module paths and working directory before
+running; the other arms ran in the assigned worktree. The coordinator's
+post-landing station-sweep profile remains to be recorded here in the run directory.</p>
 </main>
 </body>
 </html>
