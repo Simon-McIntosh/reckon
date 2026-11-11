@@ -1992,10 +1992,18 @@ def _read_persisted_memo(path: Path, producers: Mapping[str, object]) -> object:
     rather than the file being hashed again — a restart revalidates its stored
     value by stat identity. A source that has moved is digested, and a value
     from older code is absent either way.
+
+    The decoded envelope is memoised by its file's stat identity; producer
+    digests are validated on every call against that payload.
     """
 
     try:
-        raw = json.loads(path.read_text(encoding="utf-8"))
+        raw = file_memo.memoized(
+            "persisted_memo_payload",
+            path,
+            lambda: json.loads(path.read_text(encoding="utf-8")),
+            mutable=True,
+        )
     except FileNotFoundError:
         return _PERSISTED_MISSING
     except (OSError, json.JSONDecodeError) as exc:
