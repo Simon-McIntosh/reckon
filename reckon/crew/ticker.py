@@ -278,6 +278,7 @@ LIMIT_RESET = "limit-reset"
 LIFT_STATES = frozenset({LIFT_GRANTED, LIFT_IN_FORCE, LIFT_ENDED, LIMIT_RESET})
 LIFT_STAGE = "lift"
 LIMIT_STAGE = "limit"
+SUBMISSION_STAGE = "submitted"
 
 # The words a coordinator's own gate run occupies. Spelled here for the reason
 # the lift words above are: the gate fold imports the recovery watch, which
@@ -1448,6 +1449,43 @@ def _pane_word(event: Mapping[str, Any]) -> str:
     return _display_state(entry)
 
 
+def is_submission_row(event: Mapping[str, Any]) -> bool:
+    """Whether the row is the admit pass announcing a submitted request.
+
+    The kind is named by the module that writes it, so the reader and the
+    writer cannot drift about which rows are these. The import is taken here
+    rather than at module import because the watch unit imports the run paths
+    and the fleet modules this renderer is read from.
+    """
+    from reckon.crew.watch_unit import SUBMISSION_EVENT
+
+    return str(event.get("event") or "") == SUBMISSION_EVENT
+
+
+def submission_clause(event: Mapping[str, Any]) -> str:
+    """What a submission row says: what started, and how to reach it.
+
+    The run leads, because it is the handle the coordinator acts with; the plan
+    section, the lane and the ``crew tell`` command follow in the order a
+    reader uses them. A piece the row does not carry is left out rather than
+    drawn empty, so a request queued without a section still reads as a
+    sentence.
+    """
+    run_id = str(event.get("run_id") or "")
+    plan = str(event.get("plan") or "")
+    section = str(event.get("section") or "")
+    lane = str(event.get("lane") or "")
+    tell = str(event.get("tell_command") or "")
+    parts = [f"run {run_id}" if run_id else ""]
+    if plan or section:
+        parts.append(f"{plan} §{section}".strip())
+    if lane:
+        parts.append(f"lane {lane}")
+    if tell:
+        parts.append(tell)
+    return " · ".join(part for part in parts if part)
+
+
 def stream_carries(event: Mapping[str, Any]) -> bool:
     """Whether this row is a line the Monitor stream carries.
 
@@ -1466,6 +1504,11 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
     the rule the follower's summary lines read before naming anything, stated
     once here so the stream and the summaries cannot disagree about what is news.
     """
+    if is_submission_row(event):
+        # The admit pass submitting a session's queued request: the coordinator
+        # can steer the worker from the moment it starts, which is the news the
+        # row exists to say and which no state transition carries.
+        return True
     if event.get("status_repair") and _pane_word(event) == "halted":
         # A transition into a halted word that a coordinator's own ``crew
         # repair --status`` caused: the coordinator wrote the word itself, so
@@ -2113,6 +2156,12 @@ class RowPolicy:
         ``_reported`` bookkeeping, which is what makes a later re-derivation of a
         withheld row silent.
         """
+        if is_submission_row(event):
+            # A submission row names no state, so no hold, departure or round
+            # trip speaks to it, and recording a word for its run would put a
+            # state the pane never drew into the memory the round-trip rule
+            # reads. It reaches the pane as it stands, once.
+            return [event]
         out = self._mark_carried(self._feed(event, now=now))
         self._note_shown(out)
         return out
@@ -3167,6 +3216,8 @@ class Ticker:
         carries no free text, and ends on its last cell with any trailing pad
         removed.
         """
+        if is_submission_row(event):
+            return self._submission_line(event)
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
         # project layer its dispatch would read rather than a project-less
@@ -3372,6 +3423,50 @@ class Ticker:
             (f"{self._job_cell(job, LIMIT_STAGE, group, ''):<{NODE}}", self.hue(group)),
             (" " * GAP, None),
             (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _submission_line(self, event: Mapping[str, Any]) -> str:
+        """One queued request submitted to a worker, as a clause naming it.
+
+        The row is the admit pass speaking, not a run changing state, so it
+        carries the stage word rather than a transition: the run in the job
+        cell, then the plan section, the lane and the ``crew tell`` command that
+        reaches the row's worker. The clause takes the room the transition
+        columns leave and is cut like any other cell, so a narrow pane drops the
+        tail of the command rather than wrapping the row.
+        """
+        spend = self._spend_cells(event, SUBMISSION_STAGE)
+        stats = self._stats(event)
+        run_id = str(event.get("run_id") or "")
+        node = str(event.get("node") or run_id)
+        job = _job_name(node, event.get("role"))
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{SUBMISSION_STAGE:<{ROLE}}", "dim"),
+            (" " * GAP, None),
+            (
+                f"{self._job_cell(job, SUBMISSION_STAGE, run_id, ''):<{NODE}}",
+                self.hue(node),
+            ),
+            (" " * GAP, None),
+            (elide(submission_clause(event), room), None),
             (" " * GAP, None),
             *spend,
             (" " * GAP, None),

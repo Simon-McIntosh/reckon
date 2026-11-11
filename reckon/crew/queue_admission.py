@@ -494,7 +494,35 @@ def _launch_queued(
         with contextlib.suppress(OSError):
             _join_admitted_plan_review(pointer, str(launched["run_id"]))
         _carry_section_rederivation(pointer, str(launched["run_id"]))
+        _announce_submission(pointer, launched, steering=steering, options=options)
     return launched
+
+
+def _announce_submission(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    steering: Path | None,
+    options: Mapping[str, Any],
+) -> None:
+    """Tell the coordinating session its request was submitted, in this pass.
+
+    The coordinator queued the request possibly hours earlier and cannot see
+    the moment it starts, so the row is written here rather than left to the
+    next tick's announcement. The advice is the text the worker was launched
+    with: its steering file where one exists, otherwise the comment the
+    request was queued with. A row that cannot be written costs the
+    announcement, never the launch that already happened.
+    """
+    from reckon.crew import watch_unit
+
+    advice = ""
+    if steering is not None:
+        with contextlib.suppress(OSError, ValueError):
+            advice = steering.read_text(encoding="utf-8")
+    if not advice:
+        advice = str(options.get("comment") or "")
+    watch_unit.announce_submission(pointer, launched, advice=advice)
 
 
 def _carry_section_rederivation(pointer: Mapping[str, Any], run_id: str) -> None:

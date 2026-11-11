@@ -442,6 +442,95 @@ def announce_seat_moved(project: str, verdict: Mapping[str, Any]) -> None:
         return
 
 
+#: The event name a submission row carries. Its own kind, so a reader never
+#: mistakes a session being told its request started for a run's state change:
+#: the run's states come from the producer's fold, and this row is the admit
+#: pass speaking about the request it just submitted.
+SUBMISSION_EVENT = "submission"
+
+
+def submission_row(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    advice: str = "",
+) -> dict[str, Any]:
+    """One watch row telling a session its queued request was submitted.
+
+    A coordinator queues many sections in one beat and the admit service
+    submits them as slots free, so the moment a request starts is news the
+    coordinator cannot see from the dispatch it made hours earlier. The row
+    names the run, the plan section, the lane and model it started on, the
+    advice it carried and the ``crew tell`` command that reaches the worker, so
+    the steering the coordinator has learned since queueing can be sent at
+    once rather than waiting for the next tick to announce the start.
+
+    The row is addressed to the request's own session, so a pane scoped to
+    another session never reads it. It states facts only: the sentence a person
+    reads is composed from them by whoever renders the row.
+    """
+    node = pointer.get("node")
+    node = node if isinstance(node, Mapping) else {}
+    launched_node = launched.get("node")
+    launched_node = launched_node if isinstance(launched_node, Mapping) else {}
+    agent = launched.get("agent")
+    agent = agent if isinstance(agent, Mapping) else {}
+    run_id = str(launched.get("run_id") or pointer.get("run_id") or "")
+    project = str(pointer.get("project") or launched.get("project") or "")
+    session = str(pointer.get("session") or launched.get("session") or "")
+    plan = str(node.get("plan") or launched_node.get("plan") or "")
+    section = str(node.get("section") or launched_node.get("section") or "")
+    lane = str(launched.get("lane") or pointer.get("backend") or "")
+    model = str(agent.get("model") or launched.get("model_key") or "")
+    effort = str(agent.get("effort") or "")
+    tell_command = f"reckon crew tell --run {run_id} '<message>'"
+    return {
+        "project": project,
+        "event": SUBMISSION_EVENT,
+        "kind": SUBMISSION_EVENT,
+        "observed_at": _utc_now(),
+        "run_id": run_id,
+        "node": str(node.get("id") or launched_node.get("id") or ""),
+        "session": session,
+        "plan": plan,
+        "section": section,
+        "lane": lane,
+        "model": model,
+        "effort": effort,
+        "advice": str(advice),
+        "tell_command": tell_command,
+        "detail": (
+            f"queued request submitted: run {run_id} "
+            f"({plan} §{section}) on lane {lane} model {model}; "
+            f"steer it with {tell_command}"
+        ),
+    }
+
+
+def announce_submission(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    advice: str = "",
+) -> None:
+    """Append the submission row to the project's watch stream.
+
+    The launch has already happened by the time this is called, so a stream
+    that cannot be written costs the announcement rather than the launch. A
+    request whose pointer names no session has no reader to address, so it
+    writes no row; the launch itself is unaffected.
+    """
+    from reckon.crew import runs
+
+    try:
+        row = submission_row(pointer, launched, advice=advice)
+        if not row["project"] or not row["run_id"] or not row["session"]:
+            return
+        runs._append_watch_lines(watch_stream_path(row["project"]), [row])
+    except Exception:  # noqa: BLE001 - a row that cannot be written never blocks a launch
+        return
+
+
 def release_seat_when_misplaced(
     project: str,
     *,
