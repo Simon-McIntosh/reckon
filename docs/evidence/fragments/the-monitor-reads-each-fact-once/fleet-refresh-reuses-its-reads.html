@@ -1,22 +1,44 @@
 <section id="fleet-refresh-reuses-its-reads">
-  <h3 id="fleet-refresh-reuses-its-reads-result">Read reuse already holds at the assigned base</h3>
-  <p>At base <code>ff70ae551df3e399c8ce7dff21e21347239064e7</code>, a real
-  <code>fleet_state</code> derivation over 60 live pointers, six growing worker streams,
-  60 committed review records and four held worktrees reads held records and loads
-  the ledger once on its first refresh and zero times on its second refresh.
-  The held-record input key stays equal between those refreshes. The test patches
-  every loaded binding of the held-record reader, Git worktree listing and ledger
-  loader; it also counts filesystem listings inside held-record discovery.</p>
-  <p>The new regression test confirms that a new landed ledger row changes the
-  holding run on the next refresh, and that removing a worktree directory removes
-  its duty without pruning Git's registry. No product source change was justified
-  by this reproduction. The declared negative control expects this assertion to
-  fail at base, but the base run passes. That requirement remains unmet.</p>
-  <p>Evidence is retained in the run directory
-  <code>r-20261111T033651310546-fleet-refresh-reuses-its-reads</code>:
-  <code>negative-control-base.log</code> contains the passing base trace;
-  <code>baseline-suite.log</code> and <code>head-suite.log</code> contain the
-  matched armed gate results submitted to <code>all_debug</code>: 51 passed in 11.90s
-  at base and 52 passed in 14.31s with the regression test, zero added failures.
-  Ruff check and format check pass on the new test.</p>
+  <h3 id="fleet-refresh-reuses-its-reads-result">Held-worktree discovery applies changed rows and registrations</h3>
+  <p>The fleet refresh retains its ledger naming buckets and held-tree answer.
+  A new or edited split-run document updates its own buckets; a removed document
+  removes its candidates. Git registrations are read through their changed
+  <code>gitdir</code> entries. Only trees whose candidates, registration, presence
+  or live occupancy changed are matched again. Equivalent ledger paths share
+  canonical source identities, and aggregate-only records retain their authored
+  order when the last split-only document disappears.</p>
+  <p>The fixture has 60 pointers, six growing worker streams, 60 committed review
+  records, 204 ledger documents and four held worktrees. A quiet second refresh
+  already passed at the assigned base. The additional input that reproduced the
+  live miss was an unrelated ledger append together with one registry removal
+  and one registry addition between refreshes.</p>
+  <table>
+    <thead><tr><th>Work after unrelated churn</th><th>Base</th><th>Incremental reader</th></tr></thead>
+    <tbody>
+      <tr><td>Full ledger loads</td><td>1</td><td>0</td></tr>
+      <tr><td>Whole-ledger naming derivations</td><td>1</td><td>0</td></tr>
+      <tr><td>Full Git worktree listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Changed document reads</td><td>1</td><td>1</td></tr>
+      <tr><td>Tree matches</td><td>6</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>The regression also checks a new holding row, an in-place row edit, row
+  deletion, a removed and restored worktree directory, and a newly registered tree
+  named by an older ledger row. Counters patch every loaded binding of the
+  measured readers, with first-refresh positive controls. The declared churn
+  negative control fails on the product base, retained in
+  <code>churn-negative-control-receipt.log</code> in run
+  <code>r-20261111T033651310546-fleet-refresh-reuses-its-reads</code>.</p>
+  <p>The armed gate passes 54 tests. Matched importer arms over 92 files ran on
+  <code>all_debug</code>: base has 55 failed and 651 passed in 80.40s; the final
+  implementation has 55 failed and 651 passed in 95.63s, with identical failure
+  IDs and zero added failures. Ruff check and format check pass on the changed
+  Python paths. Receipts are <code>baseline-suite.log</code>,
+  <code>final-armed-suite.log</code>, <code>base-importers.log</code>,
+  <code>head-final-importers.log</code> and <code>final-importer-delta.json</code>.</p>
+  <p>Per-file metadata is still validated to catch in-place edits. Rewriting the
+  aggregate JSON envelope rebuilds the naming index because that source has no
+  per-row change identities; split-run changes use the incremental path.
+  The coordinator's station read-rate and CPU measurement remains a separate
+  post-landing check.</p>
 </section>
