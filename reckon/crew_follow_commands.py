@@ -2726,7 +2726,12 @@ def _follow_live_snapshot_line(row: Mapping[str, str]) -> str:
     return f"{line}  {node}" if node else line
 
 
-def _follow_live_snapshot(project: str, session: str) -> str:
+def _follow_live_snapshot(
+    project: str,
+    session: str,
+    *,
+    rows: list[dict[str, str]] | None = None,
+) -> str:
     """The session's current work in one framed write, for a pipe reader.
 
     A re-arm into a pipe is handed no transition arrow: a pipe has no
@@ -2735,7 +2740,7 @@ def _follow_live_snapshot(project: str, session: str) -> str:
     session owns, framed so the rows read as state, and closing with the frame
     so an empty pane always means nothing is owned.
     """
-    rows = _follow_live_snapshot_rows(project, session)
+    rows = _follow_live_snapshot_rows(project, session) if rows is None else rows
     lines = [_FOLLOW_LIVE_FRAME.format(count=len(rows))]
     if rows:
         lines.extend(_follow_live_snapshot_line(row) for row in rows)
@@ -2752,12 +2757,16 @@ def _follow_resume_output(
     read_history: Callable[[], list[dict]],
     history_caps: tuple[int, ...] | None,
     dim: Callable[[str], str],
+    delivered: Mapping[str, str] | None = None,
 ) -> str:
     """What a re-arm writes into its pane: the history on a terminal, state on a pipe.
 
     The stored history stays terminal-only. A pipe is handed the framed live
-    snapshot instead, so a re-armed reader learns what the session owns rather
-    than nothing at all.
+    snapshot in place of nothing: a re-arm whose runs have all moved draws their
+    rows itself, and adding a state frame to those would draw the pane twice.
+    So the frame is written only when the replay will draw nothing — either the
+    session owns no run, or every run it owns already stands at the state the
+    pane last drew, which is the case the replay drops as a repeat.
     """
     if _follow_replay_visible():
         from reckon.crew import follow_checkpoint as history_module
@@ -2769,7 +2778,15 @@ def _follow_resume_output(
             max_seconds=(history_caps or (0, 0))[1],
         )
         return _follow_history_burst(restored, dim=dim)
-    return _follow_live_snapshot(project, session)
+    rows = _follow_live_snapshot_rows(project, session)
+    remembered = delivered or {}
+    if rows and any(
+        remembered.get(row["run_id"]) != row["state"] for row in rows
+    ):
+        # A row is already coming for a run that moved, so the pane is not
+        # blank and a state frame would be a second drawing of it.
+        return ""
+    return _follow_live_snapshot(project, session, rows=rows)
 
 
 
@@ -3410,6 +3427,7 @@ def crew_follow(
                         read_history=read_history,
                         history_caps=history_caps,
                         dim=replay_dim,
+                        delivered=delivered_states,
                     )
                     if text:
                         _echo_follow_line(text)

@@ -160,7 +160,20 @@ def fleet(repository: Path) -> Path:
     return home
 
 
-def _snapshot(monkeypatch: pytest.MonkeyPatch, *, terminal: bool = False) -> str:
+def _delivered_states() -> dict[str, str]:
+    """The states the pane drew last: every run standing where it already was."""
+    return {
+        row["run_id"]: row["state"]
+        for row in follow_module._follow_live_snapshot_rows(PROJECT, SESSION)
+    }
+
+
+def _snapshot(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    terminal: bool = False,
+    delivered: dict[str, str] | None = None,
+) -> str:
     """What the resume branch writes into a pipe (or a terminal)."""
     stream = _Stream(terminal=terminal)
     monkeypatch.setattr(sys, "stdout", stream)
@@ -170,6 +183,7 @@ def _snapshot(monkeypatch: pytest.MonkeyPatch, *, terminal: bool = False) -> str
         read_history=lambda: follow_checkpoint.read_history(PROJECT, SESSION),
         history_caps=(40, 3600.0),
         dim=str,
+        delivered=_delivered_states() if delivered is None else delivered,
     )
 
 
@@ -221,6 +235,21 @@ def test_a_pipe_rearm_shows_the_sessions_live_work(
 
     # A promoted run has left the live set and owes nothing, so it is absent.
     assert RUN_PROMOTED not in output
+
+
+def test_a_run_that_moved_is_drawn_by_its_own_row_not_the_frame(
+    fleet: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The frame stands in place of nothing, so a replay that draws is left alone.
+
+    A re-arm whose run has moved already draws that run's row. Writing the
+    state frame beside it would draw the pane twice, so the resume branch
+    writes nothing and the row stands alone.
+    """
+    delivered = _delivered_states()
+    delivered[RUN_QUEUED] = "working"
+
+    assert _snapshot(monkeypatch, delivered=delivered) == ""
 
 
 def test_the_snapshot_agrees_with_the_live_and_obligation_views(
