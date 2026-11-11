@@ -1,0 +1,17 @@
+<section id="promotion-profile-refresh-folds-its-row">
+  <h3>Promotion refreshes fold newly indexed inputs</h3>
+  <p>The stored profile retains picker samples and document signatures. A refresh reads only added projections from the current ledger index, checks the aggregate, schema, generation and retained signatures, and applies the shared group and size reducers. Exact quantiles and the closed trailing window are preserved, including future samples entering the window. Missing, mismatched or rewritten bases trigger a full build; a generation change during a fold prevents publication.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Full payload decodes after one append to 50 rows</td><td>51</td><td>0</td></tr>
+      <tr><td>Persisted rows after an indexed append</td><td>51</td><td>51</td></tr>
+      <tr><td>Rows when append indexing and refresh indexing are both refused</td><td>50</td><td>51</td></tr>
+      <tr><td>Armed regression and writer-inventory checks</td><td>51 passed</td><td>62 passed</td></tr>
+      <tr><td>Added importer failures against base</td><td>Reference arm</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p>The refused-refresh reproduction reaches <code>_last_good_index_data</code> because <code>ledger.load</code> catches the index writer's <code>OSError</code> or SQLite refusal. That snapshot contains the appended row when the append writer published its index update; otherwise its unchanged aggregate stamp still permits a snapshot missing that document. The refresh repairs this case from authoritative files. The base negative control reports <code>full_payload_decodes=51 rows=51</code> and <code>last_good_reads=1 rows=50</code>; both the decode and stale-row assertions fail.</p>
+  <p>Matched arms ran in separate <code>all_debug</code> jobs <code>1310619</code> and <code>1310627</code>, with four pytest workers for the importer population. The base has two failed and 185 passed; the repaired head has the same two failed identities and 196 passed. The initial head's additional custom-builder contract failure was repaired and its original log retained. Ruff check and format check are clean on both Python paths.</p>
+  <p>Source and tests are committed at <code>13815627d731579de31e969c793bf305ea172b4b</code>, <code>e9e7e6b97945aa25ac2005fda7ed9a7dc11f57ca</code> and <code>7313b107abafb3cdc612b25f92bd4e02043044dc</code>. Gate logs, imported-module paths, commands, revisions and the negative control are retained in the run manifest. Coordinator review, integration, plan-state writeback and the station re-profile remain coordinator-owned.</p>
+</section>
