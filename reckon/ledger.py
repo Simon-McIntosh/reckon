@@ -51,7 +51,6 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from contextvars import ContextVar
 from datetime import UTC, datetime
-from functools import lru_cache
 from pathlib import Path
 from typing import Any
 
@@ -244,14 +243,6 @@ class SuiteDeltaError(LedgerError):
         super().__init__(detail)
 
 
-@lru_cache(maxsize=8)
-def _identity_catalogue(path: str, stamp: tuple | None) -> Mapping[str, Any]:
-    """Cache only while the catalogue's file identity remains unchanged."""
-    from reckon import flight
-
-    return flight.read_layer_file(path)
-
-
 def resolve_name(
     name: str, *, lane: str | None = None
 ) -> tuple[str | None, str | None]:
@@ -267,7 +258,7 @@ def resolve_name(
     if not name:
         return None, None
     path = flight.model_catalogue_path()
-    catalogue = _identity_catalogue(str(path), _file_identity(path))
+    catalogue = flight.read_layer_file(path)
     lanes = catalogue.get("lanes") or {}
     aliases = catalogue.get("aliases") or {}
     matches: set[tuple[str, str]] = set()
