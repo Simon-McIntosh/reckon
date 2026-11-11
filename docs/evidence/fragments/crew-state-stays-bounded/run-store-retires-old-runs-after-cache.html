@@ -137,6 +137,26 @@
   <p>No production store was swept by this worker. After landing, the
   coordinator records the live store's size and row counts before and after
   one sweep in this fragment, as the live section requires.</p>
+  <table>
+    <thead><tr><th>reading</th><th>hot runs</th><th>archived runs</th><th>store file</th><th>pages</th><th>free pages</th><th>archive file</th></tr></thead>
+    <tbody>
+      <tr><td>before, 2026-11-11T09:40:56Z</td><td>21,609</td><td>0</td><td>793,309,184 B</td><td>193,679</td><td>0</td><td>absent</td></tr>
+      <tr><td>after, 2026-11-11T14:18:12Z</td><td>11,273</td><td>10,424</td><td>797,155,328 B</td><td>194,618</td><td>65,740</td><td>270,839,808 B</td></tr>
+    </tbody>
+  </table>
+  <p>The reading spans every hourly pass between the two times, so it covers
+  more than one sweep. No pass ran between the landing and 14:00Z, and the
+  batch bound suggests at least six passes ran after that. The archive holds
+  10,424 runs and the hot tables keep 11,273, so every run that ended more than
+  thirty days ago and that nothing still needs has left the hot tables. The
+  store file did not shrink: <code>auto_vacuum</code> reads 0, so the
+  incremental compaction has no pages to release. Instead, 65,740 pages (about
+  257 MiB, 34% of the file) are free, and later writes reuse them before the
+  file grows. Shrinking the file needs the one-time
+  <code>enable_incremental_vacuum</code> conversion. That conversion rewrites
+  the file, so it runs as a partition job. Readings:
+  <code>~/.config/reckon/crew/runs/r-20261111T042124785821-run-store-retires-old-runs-after-cache/logs/live-store-before-sweep.json</code>
+  and <code>live-store-after-sweeps.json</code> beside it.</p>
 </section>
 </main>
 </body>
