@@ -31,17 +31,34 @@ format --check are clean on the staged Python paths.</p>
 <p id="a-plan-review-judges-the-endpoint-population">The importer population — the
 222 test files that import <code>reckon.crew.review</code> — ran on
 <code>all_debug</code>, one arm at a time at <code>-n 4</code>: 58 failed and 1846
-passed at head against 57 failed and 1840 passed at base
-(<code>importers-head.log</code>, <code>importers-base.log</code>); the seven
-cases this node's new test file adds and the one intermittent failure below
-account for the difference. 57 failure ids are shared. The one id at
-head alone, <code>tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>,
-is a promotion-time <q>pointer changed while promotion ran</q> race, and a crossover
-measurement places it on this node's rubric text rather than on its code: head
-trees fail intermittently (7 of 21 runs), while base (<code>e0e37167</code>, 15
-runs), <code>origin/main</code> (6 runs) and a head tree carrying the base
-revision's two rubric prompts (6 runs) did not fail once, and a base tree
-carrying only the head prompts failed twice in six.</p>
+passed at the repaired head <code>0aa99a19</code> against 57 failed and 1840
+passed at base <code>e0e37167</code> (<code>importers-head-fixed.log</code>,
+<code>importers-base.log</code>). Compared with the pre-fix head arm at
+<code>09e74ff7</code> (also 58 failed and 1846 passed,
+<code>importers-head.log</code>),
+<code>tests/test_crew.py::test_no_watch_dispatch_records_the_override_on_pointer_and_ledger</code>
+no longer appears among the failures. The id present in this run and in neither
+the base arm nor the pre-fix head arm,
+<code>tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload</code>,
+passes 11 of 11 five times in isolation, so it is a parallel-run flake rather
+than a regression. The original flake was a promotion-time <q>pointer changed
+while promotion ran</q> race, and a crossover measurement placed it on this
+node's rubric text rather than on its code: head trees failed intermittently
+(7 of 21 runs), while base (<code>e0e37167</code>, 15 runs),
+<code>origin/main</code> (6 runs) and a head tree carrying the base revision's
+two rubric prompts (6 runs) did not fail once, and a base tree carrying only the
+head prompts failed twice in six.
+
+<p id="a-plan-review-judges-the-endpoint-repair">That race is now removed at its
+source. The case stubbed <code>crew._spawn</code>, which the dispatch path never
+reaches because <code>dispatch()</code> runs with no launcher and its launch step
+calls <code>_start_supervisor</code>; the stub now patches that seam, so no
+supervisor process is started, and the case ends by asserting that the test
+process has no child left — read through <code>/proc</code>, because a
+<code>ps</code> probe is itself a child while it runs. Twenty isolated runs at
+<code>0aa99a19</code> on <code>all_debug</code> passed with zero failures
+(<code>crew-fixed20.log</code>), against the seven failures in 21 runs measured at
+<code>09e74ff7</code> and none in 15 at base (<code>e0e37167</code>).</p>
 
 <p id="a-plan-review-judges-the-endpoint-mechanism">The mechanism is identified, and
 it is a defect in that test rather than in this node's change. The test means to
@@ -57,12 +74,8 @@ supervisor's write lands inside the <code>dispatch</code> → <code>complete</co
 window. The rubric's size moves the window because the brief is the worker's
 stdin. A three-second delay before the promotion check makes the collision
 certain and shows the single field that moves:
-<code>{"phase": ["starting", "working"]}</code>. The fix belongs in
-<code>tests/test_crew.py:1992</code> — thread a stub launcher or patch
-<code>reckon.crew.dispatch._start_supervisor</code> — which is outside this node's
-write paths, so the node stops blocked rather than editing that test to tolerate
-the race. Recorded in <code>mechanism.log</code> with <code>diag.log</code> beside
-it.</p>
+<code>{"phase": ["starting", "working"]}</code>. Recorded in
+<code>mechanism.log</code> with <code>diag.log</code> beside it.</p>
 
 <p id="a-plan-review-judges-the-endpoint-control">Negative control: restoring the
 base revision's rubric text makes the content and design assertions fail — 4
