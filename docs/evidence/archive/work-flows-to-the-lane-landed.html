@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane-landed">
+  <meta name="plan-title" content="Work Flows To The Lane — landed record">
+  <meta name="plan-summary" content="Landing record for Work Flows To The Lane: evidence appended by section.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <title>Work Flows To The Lane — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Work Flows To The Lane — landed record</h1>
+  <p>Landing record for Work Flows To The Lane: evidence appended by section.</p>
+
+
+   <section id="s2-identity-published-with-its-claim" data-evidence-origin="append">
+    <h2>§2 — an execution identity is published with its claim</h2>
+    <p>§2 landed at merge <code>20da47addf</code> (reviewed head <code>232f77ed</code>, run <code>r-20261111T154129120140-identity-published-with-its-claim</code>). Importing <code>reckon.crew.dispatch_claims</code> no longer writes an <code>exec-&lt;pid&gt;.identity</code> file: a process publishes one only when it takes a node dispatch claim, and it is removed with that process's last claim. <code>reckon.crew.gc</code> gained a sweep that removes identity files whose pid is gone or reused and prints each removal. The armed arms read 6 failed and 53 passed at base <code>d5df5102</code>, and 61 passed at the head. The declared mutation, restoring the import-time publish, failed <code>test_importing_the_module_publishes_no_identity</code> and <code>test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch</code> (<code>logs/negative-control.log</code>); the repair round's re-run kept only its exit line, so the landing recorded a negative-control waiver citing that log. The superseded import-time assertion in <code>tests/test_a_reexec_never_orphans_a_dispatch.py</code> now asserts the new rule.</p>
+  </section>
+
+</main>
+</body>
+</html>
