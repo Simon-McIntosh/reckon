@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T01:01:01.628Z",
+  "dispatched_at": "2026-11-11T00:49:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-delivered-plan-review-does-not-hold-the-gate.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "the page still records the head arm as 55 passed in 33.96s and the negative control at line 27 as 1 failed, 3 passed, while after-arm.log at 87e1d1fa records 58 passed and negative-control.log records 2 failed, 5 passed, so the landed evidence disagrees with the receipts it cites and lists neither compose-path case."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2129",
+      "severity": "non-blocking",
+      "text": "`_delivered_plan_review` calls `plan_review._stored_review_run_ids`, a private symbol in another module, so the dispatch path now depends on a plan_review internal; the delegation is the right reuse but the helper should be public, as the manifest itself records under outside_scope."
+    },
+    {
+      "file": "manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "carried over from the review at e53de2fa and unrepaired: the recorded baseline_suite arm runs tests/test_staged_write_inventory.py, which does not import reckon.crew.recovery_review_dispatch, so the recorded base/head pair cannot show the done_when's requirement that the importing test files add no failure against the base revision."
+    }
+  ],
+  "justifications": {
+    "durability": "negative-control.log shows tests/test_a_delivered_plan_review_does_not_hold_the_gate.py:190 and the reader case both failing when the any-live-pointer check is restored, so the added assertions redden on the regression they guard.",
+    "evidence": "after-arm.log at 87e1d1fa records 58 passed EXIT=0 and negative-control.log is a genuine red at the head test file (2 failed, 5 passed, EXIT=1), but the landed evidence page records the superseded 55-passed and 1-failed figures and the baseline_suite arm still runs a file outside the importing population.",
+    "fit": "the delegation at reckon/crew/recovery_review_dispatch.py:2129 sits in the module's existing idiom, but it reaches a private plan_review symbol across a module boundary.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2129 now asks the store's own run-id reader, and the one skip at recovery_review_dispatch.py:2169-2171 still opens the gate for a delivered review.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:2129 delegates to reckon/crew/plan_review.py:4829 `_stored_review_run_ids`, the owner of the stored-run-id set, replacing the prior duplicated walk rather than forking it.",
+    "scope_discipline": "commit 87e1d1fa changes only reckon/crew/recovery_review_dispatch.py, tests/test_a_delivered_plan_review_does_not_hold_the_gate.py and the evidence fragment, all inside the declared write paths, with no figure and no unrelated file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a delivered, unpromoted plan review no longer holds the next round's compose; the delta at reckon/crew/recovery_review_dispatch.py:2129 makes the delivered-review reader ask the store's own run-id set.\nVERDICT done_when: the section names tests/test_a_delivered_plan_review_does_not_hold_the_gate.py with three cases, a working-review refusal and an any-live-pointer negative control; the file carries seven cases and negative-control.log is a genuine red on the two delivered cases (2 failed, 5 passed, EXIT=1).\nVERDICT write_paths: read the section's two paths and the manifest's four; commit 87e1d1fa touches only reckon/crew/recovery_review_dispatch.py, tests/test_a_delivered_plan_review_does_not_hold_the_gate.py and the evidence fragment, all inside them.\nVERDICT manifest: read; it records the head arm 58 passed EXIT=0 at 87e1d1fa, base arm 51 passed EXIT=0, importing arm 338 passed EXIT=0 and negative control 2 failed 5 passed EXIT=1 with log paths, though its baseline_suite still runs a file outside the importing population.\nVERDICT diff: read the single commit 87e1d1fa against e53de2fa: the reader now delegates to plan_review._stored_review_run_ids, three compose-preview cases are added to the test, and one malformed evidence table row is removed, with nothing else changed.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2183, reckon/crew/recovery_review_dispatch.py:2206, reckon/crew/plan_review.py:4095, reckon/crew/obligations.py:1374, reckon/crew/recovery.py:253\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2129 now asks the store's own run-id reader, and the one skip at recovery_review_dispatch.py:2169-2171 still opens the gate for a delivered review.\nSCORE evidence: 14\nJUSTIFICATION evidence: after-arm.log at 87e1d1fa records 58 passed EXIT=0 and negative-control.log is a genuine red at the head test file (2 failed, 5 passed, EXIT=1), but the landed evidence page records the superseded 55-passed and 1-failed figures and the baseline_suite arm still runs a file outside the importing population.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: commit 87e1d1fa changes only reckon/crew/recovery_review_dispatch.py, tests/test_a_delivered_plan_review_does_not_hold_the_gate.py and the evidence fragment, all inside the declared write paths, with no figure and no unrelated file.\nSCORE durability: 18\nJUSTIFICATION durability: negative-control.log shows tests/test_a_delivered_plan_review_does_not_hold_the_gate.py:190 and the reader case both failing when the any-live-pointer check is restored, so the added assertions redden on the regression they guard.\nSCORE fit: 16\nJUSTIFICATION fit: the delegation at reckon/crew/recovery_review_dispatch.py:2129 sits in the module's existing idiom, but it reaches a private plan_review symbol across a module boundary.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:2129 delegates to reckon/crew/plan_review.py:4829 `_stored_review_run_ids`, the owner of the stored-run-id set, replacing the prior duplicated walk rather than forking it.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-delivered-plan-review-does-not-hold-the-gate.html:25 non-blocking: the page still records the head arm as 55 passed in 33.96s and the negative control at line 27 as 1 failed, 3 passed, while after-arm.log at 87e1d1fa records 58 passed and negative-control.log records 2 failed, 5 passed, so the landed evidence disagrees with the receipts it cites and lists neither compose-path case.\nFINDING reckon/crew/recovery_review_dispatch.py:2129 non-blocking: `_delivered_plan_review` calls `plan_review._stored_review_run_ids`, a private symbol in another module, so the dispatch path now depends on a plan_review internal; the delegation is the right reuse but the helper should be public, as the manifest itself records under outside_scope.\nFINDING manifest.md:15 non-blocking: carried over from the review at e53de2fa and unrepaired: the recorded baseline_suite arm runs tests/test_staged_write_inventory.py, which does not import reckon.crew.recovery_review_dispatch, so the recorded base/head pair cannot show the done_when's requirement that the importing test files add no failure against the base revision.\n",
+  "review_run_id": "r-20261111T004506405151-review-of-a-delivered-plan-review-does-not-hold-the-gate-87e1d1fa68d4",
+  "reviewed_base_sha": "e53de2fa43f0b8eed61766f7dc8730f8a82e5b10",
+  "reviewed_head_sha": "87e1d1fa68d4d859799a5a3d1893d9149ebda4b6",
+  "reviewed_run_id": "r-20261110T223706555689-a-delivered-plan-review-does-not-hold-the-gate",
+  "reviewer_run_id": "r-20261111T004506405151-review-of-a-delivered-plan-review-does-not-hold-the-gate-87e1d1fa68d4",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:16:40.327863+00:00",
+  "total": 106
+}
