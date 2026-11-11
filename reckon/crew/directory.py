@@ -47,20 +47,45 @@ _TRANSCRIPT_TAIL_SIZES = (256 * 1024, 1024 * 1024, 4 * 1024 * 1024)
 _WINDOWS_KEY = "model_windows"
 
 
-def _context_windows() -> tuple[tuple[str, int], ...]:
-    """The declared context window of each model, longest prefix first.
+def _context_windows(project: str | None) -> tuple[tuple[str, int], ...]:
+    """The resolved context window of each model, longest prefix first.
 
-    The windows are read from the model catalogue's ``model_windows`` table,
-    because a window is a routing fact rather than something this module
-    should hold. Longest prefix first, so a specific model id wins over the
-    family prefix it also starts with. An absent catalogue, which is what a
-    wheel install and an isolated test carry, declares no window: a row then
-    reads unmeasured rather than against a figure nothing supplied.
+    Every layer that may carry the table is read in the resolution's own
+    precedence — shipped defaults, catalogue, host, project — and each is
+    schema-validated before its entries are taken, so a host or project layer
+    that declares ``model_windows`` is read rather than silently dropped. The
+    table is read here rather than from the resolved config because the
+    catalogue layer's non-backend keys are not copied into that config. A tree
+    carrying none of them — a wheel install, or the isolated test that points
+    the catalogue at an absent file — leaves a row unmeasured rather than
+    against a figure nothing supplied.
+
+    Longest prefix first, so a specific model id wins over the family prefix
+    it also starts with.
     """
-    from reckon.flight import model_catalogue_path, read_layer_file
+    from reckon.flight import (
+        host_config_path,
+        model_catalogue_path,
+        project_config_path,
+        read_layer_file,
+        shipped_defaults_path,
+        validate_layer,
+    )
 
-    declared = read_layer_file(model_catalogue_path()).get(_WINDOWS_KEY)
-    if not isinstance(declared, Mapping):
+    sources: list[Path] = [shipped_defaults_path(), model_catalogue_path()]
+    sources.append(host_config_path())
+    if project and project != "*":
+        sources.append(project_config_path(project))
+    declared: dict[str, Any] = {}
+    for source in sources:
+        data = read_layer_file(source)
+        if not data:
+            continue
+        validate_layer(data, source)
+        layer = data.get(_WINDOWS_KEY)
+        if isinstance(layer, Mapping):
+            declared.update(layer)
+    if not declared:
         return ()
     windows: list[tuple[str, int]] = []
     for prefix, entry in declared.items():
@@ -73,11 +98,13 @@ def _context_windows() -> tuple[tuple[str, int], ...]:
     return tuple(sorted(windows, key=lambda item: len(item[0]), reverse=True))
 
 
-def _context_window(model: str | None) -> int | None:
+def _context_window(
+    model: str | None, windows: Sequence[tuple[str, int]]
+) -> int | None:
     """The context window a model id runs in, or ``None`` where none is declared."""
     if not model:
         return None
-    for prefix, window in _context_windows():
+    for prefix, window in windows:
         if model.startswith(prefix):
             return window
     return None
@@ -187,7 +214,11 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
     return latest
 
 
-def _context_use(session: str, transcript: Path | None) -> dict[str, Any]:
+def _context_use(
+    session: str,
+    transcript: Path | None,
+    windows: Sequence[tuple[str, int]],
+) -> dict[str, Any]:
     """The context one coordinator session had used at its last turn, and its window.
 
     A session with no transcript, and a transcript that records no charged
@@ -216,7 +247,7 @@ def _context_use(session: str, transcript: Path | None) -> dict[str, Any]:
         }
     used = int(request["tokens"]["input_tokens"])
     model = request["model"] or None
-    window = _context_window(model)
+    window = _context_window(model, windows)
     measured: dict[str, Any] = {
         "status": "measured",
         "used_tokens": used,
@@ -806,9 +837,12 @@ def directory(
     transcripts = _session_transcripts(
         str(row.get("session") or "") for row in coordinators
     )
+    windows = _context_windows(project)
     for coordinator in coordinators:
         session = str(coordinator.get("session") or "")
-        coordinator["context_use"] = _context_use(session, transcripts.get(session))
+        coordinator["context_use"] = _context_use(
+            session, transcripts.get(session), windows
+        )
 
     result: dict[str, Any] = {
         "ok": True,
