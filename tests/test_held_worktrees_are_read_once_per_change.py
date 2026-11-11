@@ -203,8 +203,9 @@ def test_changed_pointer_and_record_invalidate_the_answer(fleet):
     source = ledger.run_path(PROJECT, "held-run-1", fleet.repo)
     record = ledger.read_document(source)
     record["release"] = {"worktree_released": True}
-    # An in-place write leaves the parent directory unchanged.
-    source.write_text(ledger.serialize_run(record))
+    # A row rewrite goes through the ledger's write path, which bumps the
+    # generation the published index is keyed on.
+    ledger.write_run_file(PROJECT, record, fleet.repo, mode=None)
     assert fleet.refresh() == expected - {"held-run-0", "held-run-1"}
 
 
