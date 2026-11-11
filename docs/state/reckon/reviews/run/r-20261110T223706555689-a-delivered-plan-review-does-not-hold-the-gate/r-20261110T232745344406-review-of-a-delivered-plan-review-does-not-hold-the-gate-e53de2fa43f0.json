@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-10T23:55:40.842Z",
+  "dispatched_at": "2026-11-10T23:36:03Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2116",
+      "severity": "non-blocking",
+      "text": "the new `_delivered_plan_review` re-implements the stored-run-id set the repository already owns in `reckon/crew/plan_review.py:4829` `_stored_review_run_ids` (same `list_plan_reviews` walk, same `review_run_id` comparison); it calls the store's reader so it does not fork the store, but the two copies of the run-id comparison can drift and a public form of the existing helper would serve both."
+    },
+    {
+      "file": "tests/test_a_delivered_plan_review_does_not_hold_the_gate.py",
+      "line": "94",
+      "severity": "non-blocking",
+      "text": "all four assertions call `_standing_plan_review` directly and none drives the locked compose or the preview that the goal names, so a regression in a compose-side gate (the `fcntl.flock` protected check at reckon/crew/recovery_review_dispatch.py:2232, or a second refusal in `_dispatch_composed_review`) would not redden this file; the goal's 'lets a new review compose' is asserted only through the private reader."
+    },
+    {
+      "file": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-delivered-plan-review-does-not-hold-the-gate.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "the evidence table carries a malformed row `<tr><td></tr>` with no closing `</td>` and no cells, which renders as a broken empty row between the importing-test arm and the lint row."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T223706555689-a-delivered-plan-review-does-not-hold-the-gate/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the recorded `baseline_suite` arm runs tests/test_staged_write_inventory.py, which does not import `reckon.crew.recovery_review_dispatch` and is absent from the 45-file importing population the done-when names, so the recorded base/head pair cannot detect a regression in the changed module; the informative arm is importers-head.log, measured at the head only, where 0 failures make the added count conclusive."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_delivered_plan_review_does_not_hold_the_gate.py:94 fails when the skip is removed (negative-control.log showed exactly that) and the three refusal cases redden if the predicate answers True unconditionally, but no assertion covers the compose path the goal names.",
+    "evidence": "the new test's four cases, the genuine red negative control (negative-control.log, EXIT=1, exactly the first case failing) and the 338-passed importing arm at head are recorded, but the recorded baseline arm runs a file outside the named population so the base/head pair itself measures nothing the change touches.",
+    "fit": "the added reader sits in the module's own idiom beside `_resolved_review_config` at reckon/crew/recovery_review_dispatch.py:2113, names the mechanism rather than the plan, and carries no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2171-2174 skips a live plan-review pointer whose run id the store holds, and the three readers at recovery_review_dispatch.py:2210, recovery_review_dispatch.py:2233, reckon/crew/obligations.py:1374 and reckon/crew/plan_review.py:4095 all read that one function, so the gate opens together with no second path left shut.",
+    "reuse": "the addition builds on the store's public `plan_review.list_plan_reviews` rather than forking the store, but it re-writes the run-id set that `reckon/crew/plan_review.py:4829` `_stored_review_run_ids` already computes instead of delegating to it.",
+    "scope_discipline": "the diff 592a63d27..e53de2fa touches only the module and the new test at 1b6dd204, plus the evidence fragment the section permits, all inside the four declared write paths, with no figure written and no other file altered."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a delivered, unpromoted plan review no longer holds the next round's compose; reckon/crew/recovery_review_dispatch.py:2171-2174 skips such a pointer and every consumer reads that one function.\nVERDICT done_when: the done_when names tests/test_a_delivered_plan_review_does_not_hold_the_gate.py with three cases and an any-live-pointer negative control; the test carries four cases and negative-control.log is a genuine red with exactly the first case failing.\nVERDICT write_paths: read the section's declared paths and the manifest's; the diff is reckon/crew/recovery_review_dispatch.py, the new test and the evidence fragment, all inside them.\nVERDICT manifest: read; it states the head arm 55 passed EXIT=0, the base arm 51 passed EXIT=0, the importing arm 338 passed EXIT=0 and the negative control 1 failed 3 passed EXIT=1, each with its log path.\nVERDICT diff: read commit by commit against 592a63d27; 1b6dd204 adds the `_delivered_plan_review` reader and one skip (+29/-1) plus the 127-line test, and e53de2fa adds the evidence fragment, with nothing else changed.\nCALL_SITES: reckon/crew/obligations.py:1374, reckon/crew/plan_review.py:4095, reckon/crew/recovery_review_dispatch.py:2210, reckon/crew/recovery_review_dispatch.py:2233, reckon/crew/recovery.py:253\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2171-2174 skips a delivered pointer in the one reader that the locked dispatch, the preview and the obligations view all consult.\nSCORE evidence: 16\nJUSTIFICATION evidence: the negative control at negative-control.log is genuinely red (EXIT=1, the new file's first case) but the recorded baseline arm at manifest.md:15 runs a file outside the importing population the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in 592a63d27..e53de2fa is one of the four declared write paths, and no figure or unrelated file was written.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_delivered_plan_review_does_not_hold_the_gate.py:94 reddens when the skip is restored away, but no assertion reaches the compose path the goal names.\nSCORE fit: 18\nJUSTIFICATION fit: the new reader at reckon/crew/recovery_review_dispatch.py:2116 follows the module's own docstring idiom and carries no plan or ticket identifier.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:2116 repeats the run-id set that reckon/crew/plan_review.py:4829 `_stored_review_run_ids` already owns, though it does call the store's public listing rather than forking the store.\nFINDING reckon/crew/recovery_review_dispatch.py:2116 non-blocking: the new `_delivered_plan_review` re-implements the stored-run-id set owned by `plan_review._stored_review_run_ids` at reckon/crew/plan_review.py:4829 instead of delegating to it.\nFINDING tests/test_a_delivered_plan_review_does_not_hold_the_gate.py:94 non-blocking: the four assertions exercise the private reader only, so a regression in the boundary-checking compose or preview path would not redden this file.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-delivered-plan-review-does-not-hold-the-gate.html:28 non-blocking: a malformed table row `<tr><td></tr>` renders as a broken empty row in the evidence page.\nFINDING manifest.md:15 non-blocking: the baseline arm runs tests/test_staged_write_inventory.py, which does not import the changed module, so the recorded base/head pair cannot detect a regression in it.\n",
+  "review_run_id": "r-20261110T232745344406-review-of-a-delivered-plan-review-does-not-hold-the-gate-e53de2fa43f0",
+  "reviewed_base_sha": "592a63d27928d784b92810f15219ba92a16766ca",
+  "reviewed_head_sha": "e53de2fa43f0b8eed61766f7dc8730f8a82e5b10",
+  "reviewed_run_id": "r-20261110T223706555689-a-delivered-plan-review-does-not-hold-the-gate",
+  "reviewer_run_id": "r-20261110T232745344406-review-of-a-delivered-plan-review-does-not-hold-the-gate-e53de2fa43f0",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:06:09.724830+00:00",
+  "total": 103
+}
