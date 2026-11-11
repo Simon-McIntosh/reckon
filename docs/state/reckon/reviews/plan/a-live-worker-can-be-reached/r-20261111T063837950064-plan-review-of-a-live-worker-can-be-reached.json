@@ -1,0 +1,50 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T06:44:54.465Z",
+  "dispatched_at": "2026-11-11T06:40:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:186",
+      "id": "done_when-1",
+      "reason": "the plan names an assertion its named fixture cannot produce and leaves the choice between a fabricated receipt and a restructured test to the implementing node, so the done-when should say the race is driven through the hook's delivery path so the receipt is one the hook wrote.",
+      "text": "\u00a710's \"the race test asserts the delivered receipt appears\" cannot hold on the fixture it names: the test claims with `worker_inbox.claim()`, which is only `os.rename` (`reckon/hooks/worker_inbox.py:177-194`) and appends no receipt, so `delivered` is empty there even after the repair and a worker must either fabricate a receipt inside the test (making the assertion test its own fixture) or restructure the race through `deliver()`'s claim-and-receipt path, neither of which the section states",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3d2fb6c62a5e5ced837393e1e980baa08e068458",
+  "plan_fingerprint": "4b0b4db79c20b5b539c5709d63ed09aafa78c10c786dd8bfa37b150f1586811a",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T063837950064-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "82ffa38ce70af112a09fd3c4be26a96e51af6450",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 each cited target resolves: `reckon/mcp_views.py:4358` (`\"delivered\": worker_inbox.receipts(...)` unmatched filter) and `:4376` (`except OSError`) exist; the \"second review (105/120)\" matches the stored record `review-records/r-20261111T012221589185-worker-inbox-hook.at-4ee08ef744...json` (17+16+17+17+19+19); the new \u00a78 comment's `#s8-worker-inbox-hook` anchor exists at evidence line 165.",
+    "done_when": "a finding \u2014 \u00a710's third measure requires \"the race test asserts the delivered receipt appears\", but the race test it names (`test_the_run_view_tolerates_a_message_claimed_while_it_reads`, `tests/test_worker_inbox.py:365-397`) claims through `worker_inbox.claim()` directly, which is a bare rename and writes no receipt.",
+    "evidence_paths": "pass \u2014 \u00a710 cites no scratchpad or node-local path; the only durable artefact it depends on, \u00a78's landed record, sits at `docs/evidence/archive/a-live-worker-can-be-reached-landed.html#s8-worker-inbox-hook` and the live-check report it points to is on disk at `~/.config/reckon/crew/reports/reckon/inbox-live-check.md`.",
+    "naming": "pass \u2014 \u00a710 introduces no symbols, and the comments added to \u00a78 name run ids and a codeword as evidence data, not plan labels, tickets or changelog prose.",
+    "reasoning": "pass \u2014 all three cited review findings reproduce against the current code (unfiltered `receipts()` at `mcp_views.py:4358` against the filtered idiom at `worker_inbox.py:338`; the bare `except OSError` at `:4376`; the race test asserting only `unclaimed`), and the live-check manifest itself records the run view as unmeasured, so the section's premise holds.",
+    "single_goal": "pass \u2014 \u00a710's three edits (separate keys, narrow the swallowed `OSError`, assert the delivered half) are all one deliverable: the run view tells an undelivered message apart from a delivered one.",
+    "wiring": "pass \u2014 the only section dependency the plan declares is `s9 -> s8`, and \u00a78 is now `done` under `plan-section-declarations` (plan line 28), so the wait is satisfiable; \u00a710 introduces no new dependency because the run view it repairs (`run_inbox_messages`, `reckon/mcp_views.py:4325`, reached from `serve_crew_view` at `:4664`) is already landed."
+  },
+  "section_digests": {
+    "_document": "fa8a6c8f7f43cf73bc2283fba169dfc18dc1309fdd94589cd278227fc1cc51bf",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s10": "b73f74626c67f5f589e991bef489c5ce6bee7d679fb129f82084ac481efd5018",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "370dc84ad6d12da660f0a9c95ec0239ccceac16de70baee83c48a62778a2b195",
+    "s9": "e0c6bf5420ee6806431bd196fb5326b4c7fb5dbc39f600c729eb12a10b7b86cf"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:57:31.880294+00:00",
+  "total": null
+}
