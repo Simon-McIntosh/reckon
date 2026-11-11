@@ -1,0 +1,51 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T20:52:53.822Z",
+  "dispatched_at": "2026-11-11T20:43:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:121",
+      "id": "done_when-1",
+      "reason": "the control must be stated as the behaviour being removed (the non-seeding launch's strip), or a node whose correct fix lives at the call sites is blocked on a control that cannot fail, and its measure rests on a suite that would also pass on the unfixed code.",
+      "text": "\u00a711's negative control is \"with the untouched-prompt return restored for a launch that seeds no server, the first test fails\", which falsifies only a fix made inside `with_anchored_edit_instruction`; the fix must also reach the launch caller, since the caller never invokes the owner for a non-seeding launch (`reckon/_backends.py:3117`), so a node that strips at the call sites delivers the endpoint while the named return stays exactly as it is and the control passes vacuously \u2014 the node then cannot show its guard fires and would have to report a control it could not make fail",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "204efcb6d6f80b4e6fd8ca0c0f3f2cc6363ce3a7",
+  "plan_fingerprint": "d3423a1f4151ba572ae48a0633159286ce38b24474fe1ff1b09f59c94c0e9b6b",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 53,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T204016130396-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "75f41cac6febc15df38270ad57420cbdb99da6b6",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_anchored_edit_claude_arm.py` and `reckon/crew/prompts.py` both exist at the cited paths, and the cited run `r-20261111T171926056794-anchored-tools-reach-a-claude-worker` resolves in the plan's own comments block.",
+    "done_when": "a finding \u2014 \u00a711's negative control names an internal control-flow return rather than the behaviour, so a correct fix applied at the call sites leaves that return inert and the declared control cannot fail.",
+    "evidence_paths": "pass \u2014 the only artifact \u00a711 names is the in-repository test file `tests/test_anchored_edit_claude_arm.py`; no gate log is placed in a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 \u00a711 states a mechanism (a carried instruction surviving a lane change off an anchored backend) and introduces no plan labels, stage names, ticket numbers or version tags.",
+    "reasoning": "pass \u2014 the stated root cause matches both the cited evidence and the code: `with_anchored_edit_instruction` returns the prompt untouched at `reckon/crew/prompts.py:666-667` whenever `anchored_edit` is not true and strips only at :682, and the launch caller at `reckon/_backends.py:3117` calls it only inside `if anchored_edit:`, so a non-seeding launch keeps the carried block; the endpoint is obtainable and falsifiable through the named tests, and the section states no step sequence, formula or function to extend.",
+    "single_goal": "pass \u2014 \u00a711 delivers one endpoint (a prompt that already carries the anchored instruction loses it when the launch seeds no server, for either dialect), so one verdict closes it.",
+    "wiring": "pass \u2014 \u00a711 is declared in `plan-section-declarations` and needs no `plan-section-depends-on` entry: it repairs the instruction owner already in the tree (`reckon/crew/prompts.py:644-695`) rather than consuming unlanded output, the same ground on which the earlier \u00a710 edge was declined (its upstream \u00a74/\u00a75 are done)."
+  },
+  "section_digests": {
+    "_document": "5aea66e4506f58373d3646309b69fe75aada206bdc6486030472f3c4a1fb0d7b",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "57c0e4bc790984e6470018cb7d1d811c93595c29bd68880d123ca24701f03432",
+    "s11": "560b1e4b168599802543f34654c1ce9dd2b89b150d08be279ad8e831390722be",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "10538eab034fdd52bc7935fcce8b1472ca6742b4f998d60e331d0c3b1813f85a",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:09:38.485850+00:00",
+  "total": null
+}
