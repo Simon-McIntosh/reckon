@@ -1,0 +1,368 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "None of the added assertions is an unconditional echo of its supplied input: route membership and order must be produced by the index; missing, stale, cross-session or misordered outputs fail. The affected-key intersections share the production key helper but are reinforced by separate concrete route membership assertions.",
+  "assertion_review": [
+    {
+      "failure_condition": "Restore the private index in obligations: its first refresh makes no owner replace calls.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 281
+    },
+    {
+      "failure_condition": "Restore private replacement or rebuild all rows: one new document no longer produces exactly one shared-owner replacement.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 305
+    },
+    {
+      "failure_condition": "Restore private removal or rebuild on deletion: the observed shared-owner removal/replacement counts differ.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 319
+    },
+    {
+      "failure_condition": "Remove the owner replace API: callable(None) fails, as the recorded negative control demonstrates.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 380
+    },
+    {
+      "failure_condition": "Remove the owner remove API: callable(None) fails.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 383
+    },
+    {
+      "failure_condition": "Drop session-node filing or reverse insertion order: the first tree no longer returns first then second.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 393
+    },
+    {
+      "failure_condition": "Ignore the session qualifier: the other session unexpectedly receives records.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 394
+    },
+    {
+      "failure_condition": "Move a replaced record to the end or keep its stale value: the expected first/second ordered values differ.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 397
+    },
+    {
+      "failure_condition": "Return only new naming keys on replacement: the old first-session route is absent from affected keys.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 405
+    },
+    {
+      "failure_condition": "Return only previous naming keys: the new other-session route is absent from affected keys.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 406
+    },
+    {
+      "failure_condition": "Leave old bucket membership on replacement: the old tree still returns first.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 407
+    },
+    {
+      "failure_condition": "Fail to file the new session route: other_tree misses changed.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 408
+    },
+    {
+      "failure_condition": "Fail to file the retained path: retained_tree misses changed.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 409
+    },
+    {
+      "failure_condition": "Fail to delete route buckets: a removed record remains on the new-session or retained path.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 411
+    },
+    {
+      "failure_condition": "Remove unrelated filings along with first: second disappears from its original tree.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 412
+    },
+    {
+      "failure_condition": "Make removal a no-op: first_tree retains second.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 414
+    },
+    {
+      "failure_condition": "Make absent removal raise or invent affected keys: the empty result differs.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 415
+    },
+    {
+      "failure_condition": "Break append compatibility or insertion order: add no longer returns first then second.",
+      "file": "tests/test_fleet_state_reuses_its_reads_between_ticks.py",
+      "line": 419
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:185",
+    "reckon/crew/obligation_snapshot.py:1326",
+    "reckon/crew/obligations.py:2438",
+    "reckon/crew/routing.py:1329"
+  ],
+  "completed_at": "2026-11-11T06:12:04Z",
+  "dispatched_at": "2026-11-11T06:04:49Z",
+  "findings": [],
+  "gate_log_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/repair-head-armed.log",
+      "revision": "b53782e1db804abb58d8bd3235c03589cb0d7e82",
+      "summary": "55 passed in 18.68s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/baseline-suite.log",
+      "revision": "ff70ae551df3e399c8ce7dff21e21347239064e7",
+      "summary": "51 passed in 11.90s"
+    }
+  },
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_queued_request_is_checked_once.py::test_the_request_records_its_digests_at_queue_time",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_change_to_its_own_sections_waits_leaves_the_request_admissible",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_decision_change_holds_it_until_a_covering_review_is_stored",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_fresh_dispatch_is_stamped_like_the_queued_request",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_queued_request_records_the_digests_it_was_reviewed_against",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_an_edit_to_another_section_leaves_the_request_admissible",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_its_own_section_text_change_holds_it_until_a_covering_review",
+        "tests/test_a_run_wait_names_its_project.py::test_a_pointer_naming_no_project_is_released_by_the_reader",
+        "tests/test_a_run_wait_names_its_project.py::test_a_run_no_project_holds_raises_wait_unresolvable",
+        "tests/test_a_run_wait_names_its_project.py::test_an_open_upstream_still_reads_as_waiting",
+        "tests/test_a_run_wait_names_its_project.py::test_every_writer_leaves_every_run_ref_with_a_project",
+        "tests/test_a_run_wait_names_its_project.py::test_the_writer_records_the_project_of_a_ref_it_adds",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_request_without_a_stall_verdict_keeps_its_queued_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once",
+        "tests/test_a_stopped_run_ends_its_supervisor.py::test_the_supervisor_exits_within_the_bound_after_a_stop",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[annotate-admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[annotate-direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[restore-admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[restore-direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_refused_dispatch_cannot_restore_over_another_launch[admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_refused_dispatch_cannot_restore_over_another_launch[direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_publication_preserves_a_supervisors_newer_state",
+        "tests/test_a_successful_launch_is_recorded.py::test_the_spawn_republishes_the_full_record[admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_the_spawn_republishes_the_full_record[direct]",
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window",
+        "tests/test_every_removal_path_reads_the_wide_claim.py::test_no_removal_path_decides_liveness_from_the_phase_gated_claim",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once",
+        "tests/test_plan_edit_never_strands.py::test_a_blocked_upstream_keeps_its_waiter_waiting",
+        "tests/test_plan_edit_never_strands.py::test_a_discarded_upstream_blocks_its_waiter",
+        "tests/test_plan_edit_never_strands.py::test_a_hand_held_request_stays_held_through_the_releasing_pass",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_releases_a_waiting_request",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_rewrites_the_stored_refs_before_launch",
+        "tests/test_plan_edit_never_strands.py::test_a_widened_wait_sends_a_queued_request_back",
+        "tests/test_plan_edit_never_strands.py::test_an_after_ref_survives_the_same_pass",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_elsewhere_lets_its_neighbour_launch",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_holding_two_sections_reads_as_one_plan_row",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_review_carries_forward.py::test_a_data_file_relocation_carries_the_review_forward",
+        "tests/test_review_carries_forward.py::test_a_judge_that_cannot_answer_leaves_the_light_review",
+        "tests/test_review_carries_forward.py::test_a_review_that_raised_findings_is_never_judged",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_earns_a_light_review_of_that_commit",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_immaterial_carries_the_clean_review",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_material_earns_the_light_review",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_lane_with_no_room_or_a_live_claim_records_no_stall",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_recorded_stall_reaches_its_session_once_until_it_clears",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-behind-earlier-request]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-by-gate]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-for-allowance]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-claim]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-plan-review]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-retry-backoff]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-until-changed]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_the_pass_holds_on_this_pass_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_waiting_on_its_dependencies_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_stall_is_recorded_once_and_clears_on_a_later_verdict",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/repair-head-importers.log",
+      "revision": "b53782e1db804abb58d8bd3235c03589cb0d7e82",
+      "summary": "78 failed, 1578 passed, 8 warnings in 255.14s (0:04:15)"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_ids": [
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_finished_holder_owes_its_session_one_obligation",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_launch_refused_on_a_scope_conflict_records_the_holder",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_expires_when_its_holder_no_longer_claims_the_path",
+        "tests/test_a_held_request_records_what_holds_it.py::test_a_scope_conflict_replaces_a_stored_router_full_reason",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_attended_holder_keeps_the_duty_on_its_own_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_idle_holder_reaches_the_waiting_requests_session",
+        "tests/test_a_held_request_records_what_holds_it.py::test_an_unreconciled_runs_refusal_names_every_holding_run",
+        "tests/test_a_queued_request_is_checked_once.py::test_the_request_records_its_digests_at_queue_time",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_change_to_its_own_sections_waits_leaves_the_request_admissible",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_decision_change_holds_it_until_a_covering_review_is_stored",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_fresh_dispatch_is_stamped_like_the_queued_request",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_a_queued_request_records_the_digests_it_was_reviewed_against",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_an_edit_to_another_section_leaves_the_request_admissible",
+        "tests/test_a_queued_request_is_stamped_at_queue_time.py::test_its_own_section_text_change_holds_it_until_a_covering_review",
+        "tests/test_a_run_wait_names_its_project.py::test_a_pointer_naming_no_project_is_released_by_the_reader",
+        "tests/test_a_run_wait_names_its_project.py::test_a_run_no_project_holds_raises_wait_unresolvable",
+        "tests/test_a_run_wait_names_its_project.py::test_an_open_upstream_still_reads_as_waiting",
+        "tests/test_a_run_wait_names_its_project.py::test_every_writer_leaves_every_run_ref_with_a_project",
+        "tests/test_a_run_wait_names_its_project.py::test_the_writer_records_the_project_of_a_ref_it_adds",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_is_not_withdrawn_and_its_verdict_carries_forward",
+        "tests/test_a_running_review_finishes_across_a_resume.py::test_a_launched_review_over_a_source_move_earns_a_light_re_review",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_fresh_snapshot_build_carries_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_later_launch_verdict_clears_the_stalled_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_request_without_a_stall_verdict_keeps_its_queued_row",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_request_is_a_stalled_row_in_obligations",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_a_stalled_row_does_not_hold_the_hook_stop",
+        "tests/test_a_stalled_request_reaches_its_obligations.py::test_one_obligations_build_reads_the_verdict_log_once",
+        "tests/test_a_stopped_run_ends_its_supervisor.py::test_the_supervisor_exits_within_the_bound_after_a_stop",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[annotate-admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[annotate-direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[restore-admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_late_refusal_only_appends_history[restore-direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_refused_dispatch_cannot_restore_over_another_launch[admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_a_refused_dispatch_cannot_restore_over_another_launch[direct]",
+        "tests/test_a_successful_launch_is_recorded.py::test_publication_preserves_a_supervisors_newer_state",
+        "tests/test_a_successful_launch_is_recorded.py::test_the_spawn_republishes_the_full_record[admission]",
+        "tests/test_a_successful_launch_is_recorded.py::test_the_spawn_republishes_the_full_record[direct]",
+        "tests/test_a_worktree_release_is_whole.py::test_no_removal_site_still_deletes_with_git_worktree_remove",
+        "tests/test_coordinator_obligations_hook.py::test_each_held_worktree_keeps_its_own_run_scoped_line",
+        "tests/test_coordinator_obligations_hook.py::test_prompt_mode_injects_the_checklist_for_a_coordinating_session",
+        "tests/test_coordinator_obligations_hook.py::test_stop_mode_blocks_while_obligations_remain_and_your_own_continuation_stops_it",
+        "tests/test_coordinator_obligations_hook.py::test_the_ancestry_walk_resolves_a_session_when_the_harness_exports_no_pid",
+        "tests/test_crew_obligations.py::test_obligations_reads_scoring_without_observing_or_dispatching",
+        "tests/test_every_module_fits_a_worker_window.py::test_every_module_fits_a_worker_window",
+        "tests/test_every_removal_path_reads_the_wide_claim.py::test_no_removal_path_decides_liveness_from_the_phase_gated_claim",
+        "tests/test_obligations_hook_reads_the_snapshot.py::test_the_prompt_path_loads_no_derivation_module",
+        "tests/test_one_function_resolves_a_citation.py::test_only_the_shared_resolver_peels_a_revision_to_a_commit",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_assessment_renders_beside_the_declared_capability",
+        "tests/test_orchestrator_assessment_reaches_jev.py::test_rendered_state_is_build_states_mapping_encoded_once",
+        "tests/test_plan_edit_never_strands.py::test_a_blocked_upstream_keeps_its_waiter_waiting",
+        "tests/test_plan_edit_never_strands.py::test_a_discarded_upstream_blocks_its_waiter",
+        "tests/test_plan_edit_never_strands.py::test_a_hand_held_request_stays_held_through_the_releasing_pass",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_releases_a_waiting_request",
+        "tests/test_plan_edit_never_strands.py::test_a_narrowed_wait_rewrites_the_stored_refs_before_launch",
+        "tests/test_plan_edit_never_strands.py::test_a_widened_wait_sends_a_queued_request_back",
+        "tests/test_plan_edit_never_strands.py::test_an_after_ref_survives_the_same_pass",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_elsewhere_lets_its_neighbour_launch",
+        "tests/test_plan_edit_never_strands.py::test_an_edit_holding_two_sections_reads_as_one_plan_row",
+        "tests/test_queue_hold_release.py::test_hold_skips_the_head_and_release_launches_it_next",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_one_queued_run_reads_as_queued_on_every_surface",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_the_live_view_names_the_queued_runs_place",
+        "tests/test_queued_work_shows_where_held_work_shows.py::test_two_queued_runs_follow_the_admission_order",
+        "tests/test_review_carries_forward.py::test_a_data_file_relocation_carries_the_review_forward",
+        "tests/test_review_carries_forward.py::test_a_judge_that_cannot_answer_leaves_the_light_review",
+        "tests/test_review_carries_forward.py::test_a_review_that_raised_findings_is_never_judged",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_dispatches_a_light_scoped_review",
+        "tests/test_review_carries_forward.py::test_a_runtime_source_commit_earns_a_light_review_of_that_commit",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_immaterial_carries_the_clean_review",
+        "tests/test_review_carries_forward.py::test_a_source_move_judged_material_earns_the_light_review",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_lane_with_no_room_or_a_live_claim_records_no_stall",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_recorded_stall_reaches_its_session_once_until_it_clears",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-behind-earlier-request]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-by-gate]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-for-allowance]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-claim]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-plan-review]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-on-retry-backoff]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_a_pass_holds_is_never_stalled[held-until-changed]",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_the_pass_holds_on_this_pass_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_request_waiting_on_its_dependencies_is_never_stalled",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_a_stall_is_recorded_once_and_clears_on_a_later_verdict",
+        "tests/test_the_queue_reports_its_own_stalls.py::test_an_eleven_minute_wait_on_a_lane_with_room_records_one_stall"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/repair-base-importers.log",
+      "revision": "280608875cf205c157615e9b4be1f09013c0b076",
+      "summary": "82 failed, 1573 passed, 8 warnings in 262.87s (0:04:22)"
+    }
+  },
+  "item_verdicts": {
+    "diff": "Read b53782e1db804abb58d8bd3235c03589cb0d7e82 and af4f9abb4a44bab1b8473ca5cc390a88765ec86f against the prior reviewed head; the four-file delta replaces private buckets with the owner API, adds guards and updates the evidence fragment.",
+    "done_when": "Read prompt.txt:118 and resume-2-advice.txt; repair-base-armed.log and repair-head-armed.log record 54/55 passes, and the 216-file all_debug importer receipts record no added failing IDs.",
+    "goal": "Read prompt.txt:38 and the live section's deliverable; reckon/crew/obligations.py:2403 now delegates incremental naming to the shared owner while retaining the held-tree answer.",
+    "manifest": "Read manifest.md and its named raw gate logs; completed source-arm receipts reconcile at 51/55 passes and the repair comparison at 54/55 passes, with the implementation head explicitly named.",
+    "write_paths": "Read manifest.md:3 and the routing.py grant in resume-2-advice.txt; all four changed paths fall within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_fleet_state_reuses_its_reads_between_ticks.py:281,305,319 fail if obligations bypasses the shared owner, while lines 393-419 fail on lost routes, stale removals or changed filing order; sessionless matching is retained by inspection rather than a new direct assertion.",
+    "evidence": "repair-base-armed.log and repair-head-armed.log record 54 and 55 passes, reuse-owner-negative.log records the missing-owner-API refusal, and repair-partition-receipt.log confirms all_debug placement; the negative-control receipt lacks a revision header.",
+    "fit": "reckon/crew/routing.py:1192 extends the existing index with mechanism-named methods, and reckon/crew/obligations.py:2399 keeps only source membership and affected-tree state around that owner.",
+    "goal_fidelity": "reckon/crew/obligations.py:2412 delegates row replacement/removal to WorktreeRecordIndex and line 2551 preserves promotion ordering for incremental fleet refreshes.",
+    "reuse": "Capability searches for record naming, session/node buckets and affected-tree indices locate reckon/crew/routing.py:1192 as the owner; record_keys/worktree_keys/replace/remove extend it and obligations.py:2403 wraps it without retaining a second naming index.",
+    "scope_discipline": "The two commit diffs touch only reckon/crew/obligations.py, reckon/crew/routing.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and the declared fleet-refresh-reuses-its-reads.html fragment."
+  },
+  "limitations": [
+    "Review covers only commits after the prior reviewed head; original plan base-reproduction limitations remain as recorded in the earlier review.",
+    "Read-only review uses git objects at the reviewed head because assigned checkout HEAD d100b402a69789b5d6fefe9f42e46ed67fba74c1 differs from the source head.",
+    "The final docs-only commit follows the measured implementation revision b53782e1db804abb58d8bd3235c03589cb0d7e82.",
+    "Post-landing station read-rate/CPU measurement belongs to coordinator after integration."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and the live section's deliverable; reckon/crew/obligations.py:2403 now delegates incremental naming to the shared owner while retaining the held-tree answer.\nVERDICT done_when: Read prompt.txt:118 and resume-2-advice.txt; repair-base-armed.log and repair-head-armed.log record 54/55 passes, and the 216-file all_debug importer receipts record no added failing IDs.\nVERDICT write_paths: Read manifest.md:3 and the routing.py grant in resume-2-advice.txt; all four changed paths fall within that scope.\nVERDICT manifest: Read manifest.md and its named raw gate logs; completed source-arm receipts reconcile at 51/55 passes and the repair comparison at 54/55 passes, with the implementation head explicitly named.\nVERDICT diff: Read b53782e1db804abb58d8bd3235c03589cb0d7e82 and af4f9abb4a44bab1b8473ca5cc390a88765ec86f against the prior reviewed head; the four-file delta replaces private buckets with the owner API, adds guards and updates the evidence fragment.\nCALL_SITES: reckon/crew/station_obligations.py:185, reckon/crew/obligation_snapshot.py:1326, reckon/crew/obligations.py:2438, reckon/crew/routing.py:1329\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2412 delegates row replacement/removal to WorktreeRecordIndex and line 2551 preserves promotion ordering for incremental fleet refreshes.\nSCORE evidence: 19\nJUSTIFICATION evidence: repair-base-armed.log and repair-head-armed.log record 54 and 55 passes, reuse-owner-negative.log records the missing-owner-API refusal, and repair-partition-receipt.log confirms all_debug placement; the negative-control receipt lacks a revision header.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commit diffs touch only reckon/crew/obligations.py, reckon/crew/routing.py, tests/test_fleet_state_reuses_its_reads_between_ticks.py and the declared fleet-refresh-reuses-its-reads.html fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_fleet_state_reuses_its_reads_between_ticks.py:281,305,319 fail if obligations bypasses the shared owner, while lines 393-419 fail on lost routes, stale removals or changed filing order; sessionless matching is retained by inspection rather than a new direct assertion.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/routing.py:1192 extends the existing index with mechanism-named methods, and reckon/crew/obligations.py:2399 keeps only source membership and affected-tree state around that owner.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for record naming, session/node buckets and affected-tree indices locate reckon/crew/routing.py:1192 as the owner; record_keys/worktree_keys/replace/remove extend it and obligations.py:2403 wraps it without retaining a second naming index.",
+  "repair_armed_evidence": {
+    "after": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/repair-head-armed.log",
+      "revision": "b53782e1db804abb58d8bd3235c03589cb0d7e82",
+      "summary": "55 passed in 18.68s"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T033651310546-fleet-refresh-reuses-its-reads/repair-base-armed.log",
+      "revision": "280608875cf205c157615e9b4be1f09013c0b076",
+      "summary": "54 passed in 16.55s"
+    }
+  },
+  "reuse_search": "Capability searches for record naming, session/node buckets and affected-tree indices locate reckon/crew/routing.py:1192 as the owner; record_keys/worktree_keys/replace/remove extend it and obligations.py:2403 wraps it without retaining a second naming index.",
+  "review_run_id": "r-20261111T060127378886-review-of-fleet-refresh-reuses-its-reads-af4f9abb4a44",
+  "reviewed_base_sha": "280608875cf205c157615e9b4be1f09013c0b076",
+  "reviewed_commits": [
+    "b53782e1db804abb58d8bd3235c03589cb0d7e82",
+    "af4f9abb4a44bab1b8473ca5cc390a88765ec86f"
+  ],
+  "reviewed_head_sha": "af4f9abb4a44bab1b8473ca5cc390a88765ec86f",
+  "reviewed_run_id": "r-20261111T033651310546-fleet-refresh-reuses-its-reads",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:31:40.547902+00:00",
+  "total": 118
+}
