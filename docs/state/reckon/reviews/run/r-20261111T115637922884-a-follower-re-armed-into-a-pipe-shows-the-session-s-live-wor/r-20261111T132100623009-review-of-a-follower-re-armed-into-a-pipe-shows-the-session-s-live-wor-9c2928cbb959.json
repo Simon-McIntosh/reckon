@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T13:37:40.477Z",
+  "dispatched_at": "2026-11-11T13:22:22Z",
+  "findings": [
+    {
+      "severity": "blocking",
+      "text": "reckon/crew_follow_commands.py:2784 blocking: the guard compares two different state vocabularies. delivered_states is written by note_delivered (line 3319) from an event's to_state, which recovery_watch._watch_verdict sets from the pane word (\"working\", \"dispatched\"); _follow_live_snapshot_rows sets row[\"state\"] from project_live_rows' classification (\"running\"). Reproduced against a one-run session in a temporary config home: with the delivered map production writes, {'r1': 'working'}, _follow_resume_output returns '' for a live, never-re-announced working run, so the pipe re-arm draws nothing; with the word the node's test invents, {'r1': 'running'}, it returns the frame. The blank pane this node exists to remove therefore survives for the common case, because any working run reads as moved and withholds the frame."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "tests/test_a_rearmed_pipe_follower_shows_its_live_work.py:163 non-blocking: _delivered_states() builds the expected delivered map by calling _follow_live_snapshot_rows, the same derivation the guard compares against, so the two sides of the comparison move together and the suite is green whatever word production records. Supplying the production word 'working' in the delivered map reddens no case, which is how the blocking finding above reached a green gate."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "reckon/crew_follow_commands.py:2783 non-blocking: the guard re-derives a capability this file already owns \u2014 _follow_gap_rows (line 1390) with _replayed_row_repeats_the_pane (line 1350) already answers which owned runs moved since the pane last drew them, on the pane word and against the same stored record. Extending that owner would have inherited the correct vocabulary and the duty comparison beside it; the addition forks it on a classification word instead."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "reckon/crew_follow_commands.py:2783 non-blocking: any one moved run withholds the whole frame, so in a session holding one working run still at the state the pane last drew and one queued run that moved, the queued run's transition is drawn while the working run is absent from that re-arm. That is deliberate ('the frame stands in place of nothing') but means the pane under-reports the owned set on exactly the re-arms where most runs are steady."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261111T132100623009-review-of-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-9c2928cbb959",
+  "reviewed_base_sha": "42b22212d5abaecb3c32d45a363bc64270a02032",
+  "reviewed_head_sha": "9c2928cbb9597a3e7fdec218d4a452dbf27fe5e2",
+  "reviewed_run_id": "r-20261111T115637922884-a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor",
+  "scores": {
+    "durability": 8,
+    "evidence": 13,
+    "fit": 10,
+    "goal_fidelity": 6,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T13:47:18.776097+00:00",
+  "total": 60
+}
