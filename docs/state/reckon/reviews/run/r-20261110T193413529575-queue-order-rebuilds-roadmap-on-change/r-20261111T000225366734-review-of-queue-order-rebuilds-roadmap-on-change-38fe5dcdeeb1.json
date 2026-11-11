@@ -1,0 +1,140 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "The fixture guard fails when the selected editorial text is absent, preventing a silent no-op edit.",
+      "lines": "264"
+    },
+    {
+      "failure_condition": "Comparing placements before and after an editorial edit fails if the edit alters the observable placement or reason; this is prior output, not an input-derived expectation.",
+      "lines": "266"
+    },
+    {
+      "failure_condition": "Restoring full followup/decision inventory serialization makes each editorial edit cause a second independently counted build; workflow-editorial-negative.log records all three failures with [proj, proj] versus [proj].",
+      "lines": "267"
+    },
+    {
+      "failure_condition": "Omitting decision status from the priority key, or suppressing all invalidation, leaves only one counted build when a locked scoped decision opens.",
+      "lines": "287"
+    },
+    {
+      "failure_condition": "Rebuilding while still returning the old placement/readiness reason makes changed equal first, so the assertion fails.",
+      "lines": "288"
+    },
+    {
+      "failure_condition": "Returning a stale or wrongly derived cached answer after the decision edit differs from a computation after _PRIORITY_KEYS.clear; a shared deterministic builder defect could pass both, so this is cache equivalence evidence, not an independent roadmap oracle.",
+      "lines": "290"
+    }
+  ],
+  "assertion_input_tethers": "None of the added assertions compares output to a value the test supplied to that output; counts are observed events and equality compares prior output or a forced fresh invocation. The fresh-result check shares the roadmap implementation and has that stated limit.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_order.py:admission_order_details:293",
+    "reckon/crew/queue_order.py:_roadmap_priority_keys:186",
+    "reckon/crew/queue_admission.py:queued_placements:5138"
+  ],
+  "completed_at": "2026-11-11T00:21:20Z",
+  "dispatched_at": "2026-11-11T00:08:14Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: baf77cdef3778dad79eb663fa53792d965f1fd93; tree: /tmp/queue-importers-1309909-4yxz0g9c/after; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/partition-after-suite.log",
+      "revision": "baf77cdef3778dad79eb663fa53792d965f1fd93",
+      "summary": "69 passed in 8.25s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /tmp/queue-importers-1309909-4yxz0g9c/baseline; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/partition-baseline-suite.log",
+      "revision": "5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd",
+      "summary": "51 passed in 6.56s"
+    }
+  },
+  "findings": [],
+  "importer_delta_evidence": {
+    "added_failure_ids": [],
+    "after": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: baf77cdef3778dad79eb663fa53792d965f1fd93; tree: /tmp/queue-importers-1309909-4yxz0g9c/after; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/partition-after-importers.log",
+      "revision": "baf77cdef3778dad79eb663fa53792d965f1fd93",
+      "summary": "6 failed, 62 passed in 9.36s"
+    },
+    "baseline": {
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 6,
+      "failure_ids": [
+        "tests/test_a_queued_pointer_without_its_time_reads_no_place.py::test_the_live_view_lists_the_unplaceable_run_as_queued",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_further_implementation_is_still_refused_queue_full",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_queued_review_does_not_shrink_the_implementation_allowance",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_exempt_by_its_minted_node_id_alone",
+        "tests/test_a_review_passes_its_sessions_queue_cap.py::test_a_review_is_queued_when_the_session_holds_its_cap",
+        "tests/test_the_admission_pass_survives_a_pointer_without_its_time.py::test_the_pass_admits_the_placed_requests_and_names_the_unplaceable_one"
+      ],
+      "header": "# revision: 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; tree: /tmp/queue-importers-1309909-4yxz0g9c/baseline; command: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 tests/test_a_held_request_holds_nothing_behind_it.py tests/test_a_queued_pointer_without_its_time_reads_no_place.py tests/test_a_review_passes_its_sessions_queue_cap.py tests/test_an_admission_pass_finishes_in_ten_seconds.py tests/test_queue_order.py tests/test_queue_priority_order.py tests/test_queue_ranking_builds_no_coordinators.py tests/test_queue_weighted_fair_share.py tests/test_the_admission_pass_survives_a_pointer_without_its_time.py",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/partition-baseline-importers.log",
+      "revision": "5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd",
+      "summary": "6 failed, 62 passed in 9.84s"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_order.py:admission_order_details:293, reckon/crew/queue_order.py:_roadmap_priority_keys:186, reckon/crew/queue_admission.py:queued_placements:5138",
+    "diff": "Read baf77cdef3778dad79eb663fa53792d965f1fd93 and 38fe5dcdeeb1f929983a0aae42fc13797f891731 separately against prior reviewed head 2633d00a96d4004af347dc12b6ee9e02c88366ba; the former narrows workflow fingerprints and adds four cases, while the latter appends replacement evidence and preserves history.",
+    "done_when": "Read the live pointer node.done_when and live plan s24; partition-after-suite.log records 69 passes versus 51 baseline passes, the three editorial controls redden on the reviewed base, and partition importer logs have identical failure IDs; the older touch-rebuild sentence conflicts with the plan deliverable and retained touch-reuse test.",
+    "goal": "Read the source node goal in its live pointer and live plan s24; reckon/crew/queue_order.py:39-109 now excludes followup and decision editorial payloads while preserving readiness, waits, sprint and ranking state.",
+    "manifest": "Read manifest.md and the raw suite, importer, editorial-control, lint and scheduler receipts; their counts and separate all_debug job 1309909 provenance reconcile, with existing importer failures explicitly retained.",
+    "write_paths": "Read the live pointer node.write_paths and manifest.md:3; both gained commits change only the assigned queue_order module, focused test and evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:267 fails with two builds if complete workflow payloads return, and :287-290 fails when decision-state invalidation is lost, although one queued request does not demonstrate relative priority changes.",
+    "evidence": "partition-baseline-suite.log and partition-after-suite.log record 51 and 69 passes with EXIT=0, and partition-scheduler-receipt.log confirms separate all_debug job 1309909; the live s24 touch-rebuild wording remains inconsistent with its semantic deliverable.",
+    "fit": "reckon/crew/queue_order.py:39-109 keeps the existing lazy imports, descriptive naming and shared semantic readers, and workflow-lint.log records clean lint and format checks on both Python paths.",
+    "goal_fidelity": "reckon/crew/queue_order.py:47-109 projects explicit ordering inputs, and :73-80 excludes followup prose and reuses the roadmap decision-state owner without losing decision readiness.",
+    "reuse": "reckon/crew/queue_order.py:44,79-80 wraps reckon/roadmap.py:_decision_rows for readiness rather than duplicating it, and extends the existing queue projection built on plan_review._plan_inventory_item and _plan_html readers.",
+    "scope_discipline": "The 2633d00a96..38fe5dcdeeb1 diff contains only reckon/crew/queue_order.py, tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py and the declared cumulative evidence fragment."
+  },
+  "limitations": "Read-only incremental review; no test rerun or mutation. Reviewer worktree HEAD is 35c2e726e945a47f3f6e8b9501fe97688494067d, so all changed content and production owners were read with git show at reviewed_head_sha. Armed/importer baseline is original node base 5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd; admitted source-head measurement is baf77cdef3778dad79eb663fa53792d965f1fd93, and reviewed final commit changes evidence only. The exploratory workflow-editorial-head log carries the precommit HEAD label; partition-after-suite.log supplies committed-source provenance. Live station I/O/CPU measurement remains coordinator-owned.",
+  "prior_findings_resolution": "Both previously blocking findings answered: editorial controls now reproduce the three prior misses and pass at source head; replacement importer arms run in separate all_debug job 1309909, scheduler COMPLETED 0:0, scratch_removed=true.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source node goal in its live pointer and live plan s24; reckon/crew/queue_order.py:39-109 now excludes followup and decision editorial payloads while preserving readiness, waits, sprint and ranking state.\nVERDICT done_when: Read the live pointer node.done_when and live plan s24; partition-after-suite.log records 69 passes versus 51 baseline passes, the three editorial controls redden on the reviewed base, and partition importer logs have identical failure IDs; the older touch-rebuild sentence conflicts with the plan deliverable and retained touch-reuse test.\nVERDICT write_paths: Read the live pointer node.write_paths and manifest.md:3; both gained commits change only the assigned queue_order module, focused test and evidence fragment.\nVERDICT manifest: Read manifest.md and the raw suite, importer, editorial-control, lint and scheduler receipts; their counts and separate all_debug job 1309909 provenance reconcile, with existing importer failures explicitly retained.\nVERDICT diff: Read baf77cdef3778dad79eb663fa53792d965f1fd93 and 38fe5dcdeeb1f929983a0aae42fc13797f891731 separately against prior reviewed head 2633d00a96d4004af347dc12b6ee9e02c88366ba; the former narrows workflow fingerprints and adds four cases, while the latter appends replacement evidence and preserves history.\nCALL_SITES: reckon/crew/queue_order.py:admission_order_details:293, reckon/crew/queue_order.py:_roadmap_priority_keys:186, reckon/crew/queue_admission.py:queued_placements:5138\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_order.py:47-109 projects explicit ordering inputs, and :73-80 excludes followup prose and reuses the roadmap decision-state owner without losing decision readiness.\nSCORE evidence: 19\nJUSTIFICATION evidence: partition-baseline-suite.log and partition-after-suite.log record 51 and 69 passes with EXIT=0, and partition-scheduler-receipt.log confirms separate all_debug job 1309909; the live s24 touch-rebuild wording remains inconsistent with its semantic deliverable.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The 2633d00a96..38fe5dcdeeb1 diff contains only reckon/crew/queue_order.py, tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py and the declared cumulative evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_queue_order_rebuilds_the_roadmap_only_on_change.py:267 fails with two builds if complete workflow payloads return, and :287-290 fails when decision-state invalidation is lost, although one queued request does not demonstrate relative priority changes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/queue_order.py:39-109 keeps the existing lazy imports, descriptive naming and shared semantic readers, and workflow-lint.log records clean lint and format checks on both Python paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/queue_order.py:44,79-80 wraps reckon/roadmap.py:_decision_rows for readiness rather than duplicating it, and extends the existing queue projection built on plan_review._plan_inventory_item and _plan_html readers.\n",
+  "reuse_search": "Searched roadmap and queue modules by priority-state, workflow-state, fingerprint and decision-section capability; opened roadmap.py:_decision_rows, _plan_authored_state and _dispatchability, roadmap_ranking.py ranking inputs and plan_review.py:_plan_inventory_item at reviewed head. No new production definition is added: the existing queue fingerprint is extended, and decision semantics stay with the roadmap owner. The new test definitions extend the existing build-count and synthetic-project helpers.",
+  "review_run_id": "r-20261111T000225366734-review-of-queue-order-rebuilds-roadmap-on-change-38fe5dcdeeb1",
+  "reviewed_base_sha": "2633d00a96d4004af347dc12b6ee9e02c88366ba",
+  "reviewed_commits": [
+    "baf77cdef3778dad79eb663fa53792d965f1fd93",
+    "38fe5dcdeeb1f929983a0aae42fc13797f891731"
+  ],
+  "reviewed_head_sha": "38fe5dcdeeb1f929983a0aae42fc13797f891731",
+  "reviewed_run_id": "r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:42:58.554786+00:00",
+  "total": 118
+}
