@@ -1,0 +1,171 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [],
+  "assertion_review_method": "The reviewed delta adds no test assertion, definition, or runtime code; no earlier test is rescored or mutated.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-11T00:33:56Z",
+  "dispatched_at": "2026-11-11T00:22:30Z",
+  "failure_parser_positive_control": {
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/logs/importers-base-1309910-gate.log",
+    "observed_failure_count": 7,
+    "observed_failure_ids": [
+      "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+      "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+      "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+    ]
+  },
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_landing_measure_runs_on_its_partition.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/tmpdir-head-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "61 passed in 46.33s",
+      "revision": "9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/tmpdir-base-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "51 passed in 13.61s",
+      "revision": "4a4188d18d6bb0d9bfff213f54d392e30451ab32"
+    }
+  },
+  "gate_revision_note": "Armed suites predate this documentation-only delta; the partition head is dc8a413077e61f99908a5967ca80b68d45236160 and git diff confirms 471fd3dfa0624cb27692661b9b32ed84bdc75473 changes only the evidence HTML.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "Read commit 471fd3dfa0624cb27692661b9b32ed84bdc75473 against dc8a413077e61f99908a5967ca80b68d45236160; docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:37-39 and 114-164 append authoritative receipts and explicitly supersede the historical fleet readings, with no code or test change.",
+    "done_when": "Source prompt.txt:123 requires zero added importer failures with at most four workers and 60-second test bounds; logs/importers-base-1309910-gate.log and logs/importers-head-1309913-gate.log record those flags, completed summaries and the same seven failing IDs.",
+    "goal": "Source prompt.txt:38 requires separate partition jobs; docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-161 supplies the previously missing partition importer acceptance evidence without changing the reviewed implementation.",
+    "manifest": "Source manifest.md identifies both partition jobs, their logs and zero added failures, while its baseline_suite and after_suite resolve to completed 51-pass and 61-pass logs with EXIT=0.",
+    "write_paths": "Source prompt.txt:81-88 includes docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html, the only path changed by commit 471fd3dfa0624cb27692661b9b32ed84bdc75473."
+  },
+  "justifications": {
+    "durability": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:149-161 preserves independently checkable logs and exact failure-ID receipts, but this documentation-only delta adds no executable assertion that would fail if its evidence text later became inaccurate.",
+    "evidence": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:132-151 agrees with both completed gate logs, their pinned revision/module/cwd headers, seven explicit FAILED IDs each, cleanup receipts and scheduler accounting.",
+    "fit": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-164 appends a uniquely identified section and plain results table within the existing cumulative evidence document and retains previous readings as labelled history.",
+    "goal_fidelity": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-161 closes the preceding review's evidence defect using separate jobs 1309910 and 1309913 on clu-3141, independently confirmed by logs/importers-partition-accounting.log.",
+    "reuse": "docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-164 extends the existing evidence owner and adds no function, class, module or duplicate runtime capability requiring a capability-owner search.",
+    "scope_discipline": "The sole changed file docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html is explicitly granted by source prompt.txt:87 and contains only importer evidence required by the previous blocking finding."
+  },
+  "outside_scope": "The source manifest retains coordinator-owned project flight declarations and a real nova landing measure as outstanding live-plan work; seven shared baseline importer failures remain outside this review delta.",
+  "partition_importer_added_failure_ids": [],
+  "partition_importer_evidence": {
+    "base": {
+      "arm": "base",
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 --basetemp=/tmp/mcintos-importers-1309910-1EGuPl/pytest tests/test_a_base_that_cannot_collect_the_new_test_is_readable.py tests/test_a_conflicting_landing_is_repaired.py tests/test_a_delivered_run_reaches_a_landing_verdict.py tests/test_a_landing_measure_is_bounded_by_what_it_measures.py tests/test_a_landing_measures_the_tests_a_delivery_changed.py tests/test_a_landing_refusal_names_its_remedy.py tests/test_a_landing_survives_a_moving_main.py tests/test_a_refusal_is_judged_again_when_it_changes.py tests/test_a_run_a_review_does_not_block_lands.py tests/test_an_admission_pass_reads_each_project_once.py tests/test_every_failure_comparison_shares_one_rule.py tests/test_landing_runs_beside_admission.py tests/test_queue_landing.py tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py tests/test_the_lander_measures_the_population.py tests/test_the_lander_reads_a_figure_review_through_its_owner.py tests/test_the_lander_skips_a_run_landed_elsewhere.py tests/test_the_lander_waits_for_every_owed_review.py tests/test_the_landing_measure_runs_the_armed_command.py tests/test_the_landing_pass_measures_and_lands.py",
+      "completed": true,
+      "cpus": "8",
+      "cwd": "/tmp/mcintos-importers-1309910-1EGuPl/tree",
+      "elapsed_seconds": 24.033557131886482,
+      "exit_status": 1,
+      "failure_count": 7,
+      "failure_ids": [
+        "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "file_count": 20,
+      "job_id": "1309910",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/logs/importers-base-1309910-gate.log",
+      "module": "/tmp/mcintos-importers-1309910-1EGuPl/tree/reckon/crew/landing_measure.py",
+      "node": "98dci4-clu-3141.iter.org",
+      "observed_failure_ids": [
+        "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "partition": "all_debug",
+      "revision": "4a4188d18d6bb0d9bfff213f54d392e30451ab32",
+      "scheduler_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/logs/importers-1309910.log",
+      "summary": "7 failed, 163 passed in 22.90s",
+      "tmpdir": "/tmp/mcintos-importers-1309910-1EGuPl"
+    },
+    "head": {
+      "arm": "head",
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 --timeout=60 --basetemp=/tmp/mcintos-importers-1309913-n7XwS5/pytest tests/test_a_base_that_cannot_collect_the_new_test_is_readable.py tests/test_a_conflicting_landing_is_repaired.py tests/test_a_delivered_run_reaches_a_landing_verdict.py tests/test_a_landing_measure_is_bounded_by_what_it_measures.py tests/test_a_landing_measure_runs_on_its_partition.py tests/test_a_landing_measures_the_tests_a_delivery_changed.py tests/test_a_landing_refusal_names_its_remedy.py tests/test_a_landing_survives_a_moving_main.py tests/test_a_refusal_is_judged_again_when_it_changes.py tests/test_a_run_a_review_does_not_block_lands.py tests/test_an_admission_pass_reads_each_project_once.py tests/test_every_failure_comparison_shares_one_rule.py tests/test_landing_runs_beside_admission.py tests/test_queue_landing.py tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py tests/test_the_lander_measures_the_population.py tests/test_the_lander_reads_a_figure_review_through_its_owner.py tests/test_the_lander_skips_a_run_landed_elsewhere.py tests/test_the_lander_waits_for_every_owed_review.py tests/test_the_landing_measure_runs_the_armed_command.py tests/test_the_landing_pass_measures_and_lands.py",
+      "completed": true,
+      "cpus": "8",
+      "cwd": "/tmp/mcintos-importers-1309913-n7XwS5/tree",
+      "elapsed_seconds": 25.249016605317593,
+      "exit_status": 1,
+      "failure_count": 7,
+      "failure_ids": [
+        "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "file_count": 21,
+      "job_id": "1309913",
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/logs/importers-head-1309913-gate.log",
+      "module": "/tmp/mcintos-importers-1309913-n7XwS5/tree/reckon/crew/landing_measure.py",
+      "node": "98dci4-clu-3141.iter.org",
+      "observed_failure_ids": [
+        "tests/test_landing_runs_beside_admission.py::test_an_admission_pass_completes_while_a_landing_is_blocked",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_figure_review_with_an_undisposed_blocking_finding_holds_the_run",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_a_store_read_that_raises_records_its_error_apart_from_stale_head",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_an_unparsable_figure_record_is_recorded_as_unreadable",
+        "tests/test_the_lander_reads_a_figure_review_through_its_owner.py::test_the_awaiting_record_names_its_tier_under_its_own_key",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_a_run_owing_a_figure_review_is_not_landed_on_its_code_review",
+        "tests/test_the_lander_waits_for_every_owed_review.py::test_storing_the_owed_figure_review_lands_the_held_run"
+      ],
+      "partition": "all_debug",
+      "revision": "dc8a413077e61f99908a5967ca80b68d45236160",
+      "scheduler_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T181932611430-landing-measure-runs-on-its-partition/logs/importers-1309913.log",
+      "summary": "7 failed, 173 passed in 24.12s",
+      "tmpdir": "/tmp/mcintos-importers-1309913-n7XwS5"
+    }
+  },
+  "previous_blocking_finding_resolution": {
+    "quote": "The repair importer evidence was produced by direct subprocess.run calls inside fleet job 1291586 rather than a separate partition job",
+    "result": "Satisfied: separate all_debug jobs 1309910 and 1309913; source logs, accounting, provenance and terminal receipts inspected.",
+    "reviewed_head_sha": "dc8a413077e61f99908a5967ca80b68d45236160"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires separate partition jobs; docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-161 supplies the previously missing partition importer acceptance evidence without changing the reviewed implementation.\nVERDICT done_when: Source prompt.txt:123 requires zero added importer failures with at most four workers and 60-second test bounds; logs/importers-base-1309910-gate.log and logs/importers-head-1309913-gate.log record those flags, completed summaries and the same seven failing IDs.\nVERDICT write_paths: Source prompt.txt:81-88 includes docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html, the only path changed by commit 471fd3dfa0624cb27692661b9b32ed84bdc75473.\nVERDICT manifest: Source manifest.md identifies both partition jobs, their logs and zero added failures, while its baseline_suite and after_suite resolve to completed 51-pass and 61-pass logs with EXIT=0.\nVERDICT diff: Read commit 471fd3dfa0624cb27692661b9b32ed84bdc75473 against dc8a413077e61f99908a5967ca80b68d45236160; docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:37-39 and 114-164 append authoritative receipts and explicitly supersede the historical fleet readings, with no code or test change.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-161 closes the preceding review's evidence defect using separate jobs 1309910 and 1309913 on clu-3141, independently confirmed by logs/importers-partition-accounting.log.\nSCORE evidence: 20\nJUSTIFICATION evidence: docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:132-151 agrees with both completed gate logs, their pinned revision/module/cwd headers, seven explicit FAILED IDs each, cleanup receipts and scheduler accounting.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The sole changed file docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html is explicitly granted by source prompt.txt:87 and contains only importer evidence required by the previous blocking finding.\nSCORE durability: 18\nJUSTIFICATION durability: docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:149-161 preserves independently checkable logs and exact failure-ID receipts, but this documentation-only delta adds no executable assertion that would fail if its evidence text later became inaccurate.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-164 appends a uniquely identified section and plain results table within the existing cumulative evidence document and retains previous readings as labelled history.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/a-landing-is-on-main-when-it-says-so/landing-measure-runs-on-its-partition.html:114-164 extends the existing evidence owner and adds no function, class, module or duplicate runtime capability requiring a capability-owner search.\n",
+  "review_run_id": "r-20261111T001820895163-review-of-landing-measure-runs-on-its-partition-471fd3dfa062",
+  "reviewed_base_sha": "dc8a413077e61f99908a5967ca80b68d45236160",
+  "reviewed_head_sha": "471fd3dfa0624cb27692661b9b32ed84bdc75473",
+  "reviewed_run_id": "r-20261110T181932611430-landing-measure-runs-on-its-partition",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:48:46.235227+00:00",
+  "total": 118
+}
