@@ -3322,6 +3322,143 @@ def _gate_state(
     return SATISFIED
 
 
+def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
+    """One run's manifest status as that format's own reader parses it.
+
+    The reader is :func:`reckon.crew.reports.parse_manifest`, which reads a JSON
+    body as a JSON document. A status read as a ``status:`` line alone answers
+    empty for a JSON manifest -- a run that delivered reads as never having
+    delivered, and whatever waits on it is never released. A body no reader can
+    parse, or no manifest at all, is not evidence of delivery, so it answers
+    empty.
+    """
+    try:
+        manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
+        text = manifest.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        return str(parse_manifest(text, path=str(manifest)).get("status") or "")
+    except ManifestParseError as exc:
+        if issues is not None:
+            issues.append(f"{run_id}: refused manifest status or shape: {exc}")
+        return ""
+
+
+#: The readiness cache key under which one pass keeps the project's ledger rows.
+#: A pass resolves every waiting request against the same history, so reading it
+#: once per project rather than once per wait is what keeps a release tick from
+#: paying a ledger read per request.
+_SECTION_RUNS_CACHE_KEY = "section-runs"
+
+
+def _ledger_run_rows(
+    project: str, cache: dict[str, Any] | None
+) -> list[Mapping[str, Any]] | None:
+    """One project's committed run rows, or ``None`` when they cannot be read."""
+    from reckon import ledger
+
+    key = (_SECTION_RUNS_CACHE_KEY, project)
+    if cache is not None and key in cache:
+        return cache[key]
+    try:
+        data, _version = ledger.load(project)
+        rows: list[Mapping[str, Any]] | None = [
+            row for row in data.get("runs") or () if isinstance(row, Mapping)
+        ]
+    except Exception:  # noqa: BLE001 - an unreadable ledger proves no landing
+        rows = None
+    if cache is not None:
+        cache[key] = rows
+    return rows
+
+
+def _section_run_unlanded(
+    project: str,
+    slug: str,
+    section: str,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    cache: dict[str, Any] | None = None,
+) -> bool:
+    """Whether a run of one section has delivered or been promoted and not landed.
+
+    Marking a section done is committed just before its run is landed, so the
+    declaration alone does not say the section's code is in the registered
+    checkout's HEAD: between the two the section reads done while its revision
+    is still off HEAD, and anything released onto that base would run without
+    its upstream. A run therefore holds its section's waiters from delivery
+    until its promoted revision is an ancestor of HEAD -- the landed test the
+    queue already applies to a run ref, extended to cover a run that has
+    delivered and is not yet promoted.
+
+    A delivered run keeps its live pointer until promotion removes it, and a
+    promoted run reaches the project's ledger, so both records are read. A
+    discarded run will never land, so it holds nothing. A section with no run
+    at all -- one completed by hand -- has nothing to hold and releases as the
+    declaration says.
+    """
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.crew.promotion_scope import _revision_is_ancestor
+
+    checkout = project_mount_repository(project)
+    if checkout is None:
+        return False
+
+    def landed(revision: str) -> bool:
+        try:
+            return _revision_is_ancestor(checkout, revision, "HEAD")
+        except Exception:  # noqa: BLE001 - a broken probe proves no landing
+            return False
+
+    def identifies(record: Mapping[str, Any]) -> bool:
+        node = record.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        plan = str(node.get("plan") or record.get("plan") or "")
+        held = normalize_section(
+            str(node.get("section") or record.get("section") or "")
+        )
+        return plan == slug and held == section
+
+    rows = _ledger_run_rows(project, cache)
+    promoted: dict[str, str] = {}
+    for row in rows or ():
+        revision = str(row.get("promoted_revision") or "").strip()
+        if revision and identifies(row):
+            promoted[str(row.get("run_id") or "")] = revision
+
+    for pointer in live:
+        if not isinstance(pointer, Mapping):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or not identifies(pointer):
+            continue
+        if str(pointer.get("phase") or "") in (
+            BLOCKED_UPSTREAM_PHASE,
+            *DEAD_RUN_PHASES,
+        ):
+            continue
+        if _discarded(run_id):
+            continue
+        revision = str(pointer.get("promoted_revision") or "").strip()
+        revision = revision or promoted.pop(run_id, "")
+        if revision:
+            if landed(revision):
+                continue
+            return True
+        if _manifest_status(run_id) in RUN_DELIVERED_STATUSES:
+            return True
+    for run_id, revision in promoted.items():
+        if not run_id or _discarded(run_id):
+            continue
+        if not landed(revision):
+            return True
+    return False
+
+
 def _request_state(
     ref: str,
     *,
@@ -3341,25 +3478,7 @@ def _request_state(
             return ABANDONED
     if _discarded(run_id):
         return ABANDONED
-    try:
-        manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
-        text = manifest.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return PENDING
-    # The manifest's status is read by the reader that owns that format, which
-    # reads a JSON body as a JSON document. A status read here as a ``status:``
-    # line alone answers empty for a manifest written as JSON -- a run that
-    # delivered reads as never having delivered, and the request waiting on it
-    # is never released. A body no reader can parse is not evidence of delivery,
-    # so it stays pending.
-    from reckon.crew.reports import ManifestParseError, parse_manifest
-
-    try:
-        status = str(parse_manifest(text, path=str(manifest)).get("status") or "")
-    except ManifestParseError as exc:
-        if issues is not None:
-            issues.append(f"{run_id}: refused manifest status or shape: {exc}")
-        return PENDING
+    status = _manifest_status(run_id, issues=issues)
     if status in RUN_FAILED_STATUSES:
         return ABANDONED
     if status not in RUN_DELIVERED_STATUSES:
@@ -3423,6 +3542,7 @@ def _wait_state(
             project=project,
             docs_dir=docs_dir,
             cache=cache if cache is not None else {},
+            live=live,
         )
     if kind == "gate":
         return _gate_state(ref, rows=rows, inventory=inventory)
@@ -3471,6 +3591,7 @@ def _wait_state(
         rows=rows,
         inventory=inventory,
         dead_sections=dead_sections,
+        live=live,
         project=project,
         docs_dir=docs_dir,
         cache=cache,
@@ -3478,7 +3599,12 @@ def _wait_state(
 
 
 def _section_readiness_state(
-    ref: str, *, project: str, docs_dir: Path | None, cache: dict[str, Any]
+    ref: str,
+    *,
+    project: str,
+    docs_dir: Path | None,
+    cache: dict[str, Any],
+    live: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     from reckon._schema import parse_plan_ref
 
@@ -3497,6 +3623,14 @@ def _section_readiness_state(
         return PENDING
     status = _section_status(item, parsed.stage)
     if status == "done":
+        if _section_run_unlanded(
+            target_project,
+            parsed.slug,
+            normalize_section(parsed.stage),
+            live=live,
+            cache=cache,
+        ):
+            return PENDING
         return SATISFIED
     if status in {"descoped", "deferred", "failed", "blocked"}:
         return ABANDONED
@@ -3513,7 +3647,14 @@ def _section_readiness_state(
     return SATISFIED if verdict and verdict.get("ready") else PENDING
 
 
-def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> str:
+def _dispatch_nonrun_wait_state(
+    ref: str,
+    *,
+    project: str,
+    docs_dir: Path,
+    live: Sequence[Mapping[str, Any]] = (),
+    cache: dict[str, Any] | None = None,
+) -> str:
     """Read authored declarations without a portfolio scope-claim scan."""
     from reckon import _plan_html as plan_html_reader
     from reckon._schema import parse_plan_ref
@@ -3558,11 +3699,27 @@ def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> st
                     _plan_html(source_docs.parent, source.slug)
                 )
                 if _section_status(source_state, source.stage) == "done":
+                    if _section_run_unlanded(
+                        source.project or target_project,
+                        source.slug,
+                        normalize_section(source.stage),
+                        live=live,
+                        cache=cache,
+                    ):
+                        return PENDING
                     return SATISFIED
         return PENDING
     if parsed.stage:
         declaration = _section_status(state, parsed.stage)
         if declaration == "done":
+            if _section_run_unlanded(
+                target_project,
+                parsed.slug,
+                normalize_section(parsed.stage),
+                live=live,
+                cache=cache,
+            ):
+                return PENDING
             return SATISFIED
         if declaration in {"descoped", "deferred", "failed", "blocked"}:
             return ABANDONED
@@ -3638,7 +3795,11 @@ def dispatch_waits(
             for ref in refs
             if ref.startswith("readiness:")
             or _dispatch_nonrun_wait_state(
-                ref, project=owner_project, docs_dir=docs_dir
+                ref,
+                project=owner_project,
+                docs_dir=docs_dir,
+                live=live,
+                cache=readiness_cache,
             )
             != SATISFIED
         ]
@@ -3686,6 +3847,7 @@ def _ref_state(
     rows: Mapping[str, Mapping[str, Any]],
     inventory: Mapping[str, Mapping[str, Any]],
     dead_sections: set[tuple[str, str]],
+    live: Sequence[Mapping[str, Any]] = (),
     project: str = "",
     docs_dir: Path | None = None,
     cache: dict[str, Any] | None = None,
@@ -3697,8 +3859,8 @@ def _ref_state(
     parsed = parse_plan_ref(ref)
     if parsed is None:
         return PENDING
+    target_project = parsed.project or project
     if docs_dir is not None and cache is not None:
-        target_project = parsed.project or project
         target_docs = _docs_for_project(
             target_project, current_project=project, current_docs=docs_dir
         )
@@ -3723,6 +3885,8 @@ def _ref_state(
         return PENDING
     declaration = _section_status(item, section)
     if declaration == "done":
+        if _section_run_unlanded(target_project, slug, section, live=live, cache=cache):
+            return PENDING
         return SATISFIED
     if declaration in {"descoped", "deferred", "failed", "blocked"}:
         return ABANDONED
