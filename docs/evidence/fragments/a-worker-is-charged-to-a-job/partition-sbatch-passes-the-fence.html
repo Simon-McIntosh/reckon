@@ -33,4 +33,42 @@
   (<code>baseline-suite.log</code>, <code>after-suite.log</code>,
   <code>baseline-importers.log</code>, <code>after-importers.log</code>,
   <code>negative-control.log</code>, <code>lint.log</code>).</p>
+  <h3 id="partition-sbatch-passes-the-fence-option-roles">Option values and script arguments do not select a partition</h3>
+  <p>The reviewed scan forwarded both
+  <code>--output --partition=all_debug --wrap=true</code> and
+  <code>--job-name -prigel --wrap=true</code>, treating option values as options.
+  It also forwarded <code>job.sh --partition=all_debug</code>.
+  Reproduction against <code>9c0d55869131d589266211e64205070feafbc058</code>:
+  <strong>3 failed, 14 passed</strong>, exit 1, in
+  <code>repair-reproduction.log</code>.</p>
+  <p>The parser now consumes required values, accepts optional values only when
+  attached, handles short flag clusters, and stops at the script operand or
+  <code>--</code>. Unknown option roles are refused. Its role sets come from
+  <a href="https://github.com/SchedMD/slurm/blob/slurm-23-11-0-0rc1/src/common/slurm_opt.c">Slurm's option definitions</a>,
+  filtered by <code>slurm_option_table_create</code> for sbatch, matching the
+  installed scheduler build. All <strong>110 long options</strong> (87 required,
+  5 optional, 18 flags) and <strong>34 short options</strong> match that table.
+  The downloaded table and its digest are retained in
+  <code>sbatch-option-roles.json</code>; the comparison is retained in
+  <code>repair-option-table-check.log</code>.</p>
+  <p>The two reported counterexamples and script-operand case now return 97
+  without reaching a recording stub. Both <code>--partition all_debug</code>
+  and <code>-p all_debug</code> reach it with their arguments unchanged.
+  Independent literal cases exercise all 110 required-value option spellings
+  other than partition itself, using both partition-looking values and a real
+  partition after a consumed value. Attached and optional values, short flag
+  clusters, unknown options and repeated partition options are also checked.</p>
+  <p>Fresh gates on <code>all_debug</code>: repair base <strong>64 passed</strong>,
+  exit 0 (<code>repair-baseline-suite.log</code>, job 1309928); head
+  <strong>190 passed</strong>, exit 0 (<code>repair-after-suite.log</code>,
+  job 1309930). The eight existing importer files report <strong>1 failed,
+  54 passed</strong> in both arms, with identical failing ids and zero added
+  failures. An initial test expectation incorrectly treated the optional
+  <code>-k</code> value as a flag cluster; the corrected case separates the
+  tokens and separately asserts that an attached partition-looking value is
+  refused. Its first run is retained beside the passing log. Ruff check and
+  format check pass on both Python paths.</p>
+  <p>Parser and coverage: <code>4f0a07fd2f05f753ad9915dac1503c5ac17055ad</code>.
+  Optional-value case correction:
+  <code>065870ff1feea9df12531e01c2ee74d089e37ae2</code>.</p>
 </section>
