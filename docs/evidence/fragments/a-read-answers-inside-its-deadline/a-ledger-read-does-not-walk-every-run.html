@@ -50,9 +50,13 @@
   a document added or removed by a writer that predates the generation is still
   noticed.</p>
 
-  <p><strong>Measured.</strong> The same probe at the head commit:
-  <strong>2 stat calls at 20 documents and 2 at 200</strong> — the aggregate and
-  the run directory, both constant.
+  <p><strong>Measured.</strong> The same probe at the head commit
+  <code>3eca4c75</code>: <strong>2 stat calls at 20 documents and 2 at
+  200</strong> — the aggregate and the run directory, both constant. The reuse
+  needs the counter to be writable, and a fenced worker's crew home is mounted
+  read-only, so the probe points <code>RECKON_HOME</code> at scratch. Where the
+  counter cannot be written it does not exist either, so a read walks there:
+  the old cost, never a stale answer.
   <code>tests/test_a_ledger_read_does_not_walk_every_run.py</code> asserts that
   equality and, as a positive control, that each warm read still returns every
   row (20 and 200). It drives each write path — <code>write_run_file</code>,
@@ -94,6 +98,21 @@
   back through <code>load</code>. The rollback case reads the generation
   immediately before the restore, so a bump from the write that preceded it
   cannot satisfy the assertion.</p>
+
+  <p><strong>A bump that did not happen is not a write.</strong> The store's advance
+  suppresses a failure so a plan write is never failed by its cache key, which
+  for the ledger would leave the counter exactly where the index recorded it and
+  an in-place edit invisible. The ledger's bump therefore reads the counter
+  before and after the advance and removes it when it did not move — an absent
+  counter sends the next read back to the documents. The removal is attempted,
+  never required: requiring it failed every ledger write in this worker, whose
+  crew home is read-only, and where the counter cannot be written it does not
+  exist either. Two tests hold that down: a no-op advance with an
+  mtime-preserving edit, and a generation directory held read-only, where the
+  write lands and the read still sees it. Both mutations that remove the
+  mechanisms red their tests (<code>mutation.log</code>), and the split case
+  asserts the generation advanced, so removing that path's bump reddens it
+  too.</p>
 
   <p><strong>An absent counter is not a key.</strong> A project no ledger write
   has touched has no generation, and the store reads that absence as
