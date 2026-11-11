@@ -1,0 +1,74 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T14:09:01.598Z",
+  "dispatched_at": "2026-11-11T13:58:21Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "reasoning-1",
+      "reason": "the measurement node would pool the pre-fix runs, where the arm measured \"no edit tool\", into the treatment arm, so an adoption verdict could read \"do not adopt\" from an attenuated treatment rather than from the tool.",
+      "text": "\u00a710 records that the one run carrying the anchored treatment recorded `anchored_edit: true` and never had the tools, while \u00a78 (line 106) splits its treatment population on exactly that field and the new \u00a78\u2192\u00a710 dependency only orders the dispatch: nothing bounds the window, discards the runs already recorded `true`, or adds a fact that separates a treated-launch run from a broken-launch run",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:106",
+      "id": "reasoning-2",
+      "reason": "the population query the section's verdict rests on has nothing to split on in the store, so either \u00a74 must land the field in the store or \u00a78 must name the run directory or ledger as its read source.",
+      "text": "\u00a78 divides the arms on the run record's `anchored_edit` field and says every metric is \"read from the run store, never from prose\", but that field is in no run-store row: 0 of 11,265 `run_details` rows in `run_store.db` carry it (nor `fenced`, its sibling), the cited run's own `runs` row has a null `payload`, and the value exists only in the run directory's `worker.json`",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "reasoning-3",
+      "reason": "the plan offers \"make the server start faster\" as its second candidate remedy, asks the node to measure which works, and its live check would catch a wrong choice, so the unproven first candidate costs a round rather than a wrong landing.",
+      "text": "\u00a710 attributes the absent tools to the server's 5.5\u20136.3 s start, but its cited session-start record has every MCP server except `imas-dd` in `pending` (including the long-established `reckon` server), no later record reports whether `reckon-anchored-edit` ever connected, and the run's one `ToolSearch` result reports `total_deferred_tools: 39`, so deferral cannot be excluded as the mechanism",
+      "type": "reasoning",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "done_when-1",
+      "reason": "a node can close on an environment variable that changes nothing and the cost is paid in a coordinator-run dispatch; requiring a recorded local launch whose session-start record reaches `connected` before the remedy is chosen removes that failure mode.",
+      "text": "\u00a710's done-when accepts a test showing the launch environment \"carries the startup allowance\" as its node-local measure, while the deliverable itself says \"whichever the node measures to work\": nothing requires the node to record that the allowance made the server connect before the first turn, so the only measure that the tools are actually offered is the coordinator's live run, dispatched after the node lands",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "3c9a866c88c2bfe4b68b19f28828a6c376101cfd",
+  "plan_fingerprint": "d8c1b9fb0cb4f9538e9762235929cabe176efb02a500b9c9395509b79fbf6046",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 41,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T135611901888-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "f9f0d8022c418d157ae2608a0d6f6490b9520f85",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `compose_prompt` resolves at `reckon/crew/prompts.py:648`; \u00a74 and \u00a75 resolve within the plan; the cited run `r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4` exists and its session-start record reproduces the quoted `pending` status and the 42 offered tools; `reckon-anchored-edit` starts and answers `initialize` in 6.85 s from a cold process on this node.",
+    "done_when": "a finding \u2014 \u00a710's node-local measure is a launch-environment test that passes when a startup allowance is set, which is not evidence that the anchored tools reach the worker (s10:117).",
+    "evidence_paths": "pass \u2014 \u00a710's evidence is the live run's own durable run directory (stream and session-start record) plus a launch-environment test; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new section's only identifiers are lane and run names (`clive-anchored`, the run id), which are run-record facts, not plan labels, paths, comments or ticket numbers, and it carries no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a78's treatment population pools pre-fix and post-fix anchored runs that the record field cannot tell apart (s10:117 against s8:106); a further finding \u2014 \u00a78 splits the arms on a record field that no run-store row carries (s8:106, s8:107); \u00a710's own root-cause claim is reported below with a `no` verdict.",
+    "single_goal": "pass \u2014 the startup allowance and the prompt instruction are two means to one verdict, and the done-when closes on a single live run showing the tools connected and used.",
+    "wiring": "pass \u2014 the only wiring change is `s8` gaining `s10` in `plan-section-depends-on` (_document:22), which is correct: \u00a78's local-anchored arm cannot carry its treatment until \u00a710 makes the tools reach the worker; `s10` declares no upstream edge to \u00a74 and \u00a75, whose record field and prompt steering it consumes, but both are already `done` so no ordering is lost."
+  },
+  "section_digests": {
+    "_document": "8d9aad505e7936579e5e4d355f26468dc70508e02815f52d9cd1e07e6b0f49e9",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "76f09e19635393df1ad04c10e62f4d2a409c1a181ab4d0829722f906d1bf1d4e",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "d0356195785b475aec7d2b5c1f0da6195f6b54a14939c388a8bebaf1b3431050",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:17:24.402305+00:00",
+  "total": null
+}
