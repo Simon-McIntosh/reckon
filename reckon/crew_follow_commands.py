@@ -2666,6 +2666,7 @@ def _follow_live_state_rows(project: str, session: str) -> list[dict[str, str]]:
     ask whether the pane has already drawn it.
     """
     from reckon.crew import runs as runs_module
+    from reckon.crew import ticker as ticker_module
     from reckon.crew.query import project_live_rows
 
     pointers = [
@@ -2678,9 +2679,10 @@ def _follow_live_state_rows(project: str, session: str) -> list[dict[str, str]]:
         run_id = str(row.get("run_id") or "")
         if not run_id:
             continue
+        state = str(row.get("classification") or row.get("phase") or "")
         rows[run_id] = {
             "run_id": run_id,
-            "to_state": str(row.get("phase") or row.get("classification") or ""),
+            "to_state": ticker_module._display_state(state) or state,
             "node": str(row.get("node") or ""),
         }
     return [rows[run_id] for run_id in sorted(rows)]
@@ -2722,9 +2724,24 @@ def _follow_resume_output(
         return _follow_history_burst(restored, dim=dim)
     from reckon.crew import runs as runs_module
 
+    from reckon.crew import ticker as ticker_module
+
+    record = runs_module.read_delivered(project, session)
+    if not record.get("states"):
+        # A pane with no memory of its own rows has nothing to be shown the
+        # difference against, and its replay draws the fleet as it stands.
+        return ""
+    # The record can hold the state the producer wrote rather than the word the
+    # pane draws for it, so both halves are read on the pane's own word before
+    # they are compared; a word that is already one of the pane's maps to itself.
+    record = dict(record)
+    record["states"] = {
+        str(run_id): ticker_module._display_state(state) or str(state)
+        for run_id, state in dict(record.get("states") or {}).items()
+    }
     rows = _follow_gap_rows(
         _follow_live_state_rows(project, session),
-        runs_module.read_delivered(project, session),
+        record,
         session=session,
         observed=(),
         run_ids=(),

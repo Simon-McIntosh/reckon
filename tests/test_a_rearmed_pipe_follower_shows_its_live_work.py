@@ -118,14 +118,17 @@ def _write_pointer(
     )
 
 
-# The words the follower's own writer receives, as literal strings: 'working',
-# 'queued' and 'stalled' are the states three of the runs below stand in, and
+# The words the follower's own writer receives, as literal strings: 'running',
+# 'queued' and 'abandoned' are the states three of the runs below stand in, and
 # each is written here rather than derived, so the cases judge the resume
-# branch against production's vocabulary instead of against itself.
+# branch against production's vocabulary instead of against itself. 'queued'
+# and 'abandoned' are the pairs that matter: their counter buckets are
+# 'waiting' and 'halted', so a comparison that buckets the delivered word
+# before reading it cannot match these rows.
 DRAWN_WORDS = {
     RUN_WORKING: "working",
     RUN_QUEUED: "queued",
-    RUN_STALLED: "stalled",
+    RUN_STALLED: "halted",
 }
 
 
@@ -139,7 +142,7 @@ def fleet(repository: Path) -> Path:
     home = repository.parent / "config"
     _write_pointer(home, RUN_WORKING, phase="working", alive=True)
     _write_pointer(home, RUN_QUEUED, phase="queued")
-    _write_pointer(home, RUN_STALLED, phase="stalled")
+    _write_pointer(home, RUN_STALLED, phase="stalled", alive=False)
     _write_pointer(home, RUN_AWAY, phase="working", alive=True)
     runs.write_delivered(PROJECT, SESSION, DRAWN_WORDS)
     return home
@@ -205,7 +208,7 @@ def test_a_run_that_moved_is_drawn_again(
     runs.write_delivered(
         PROJECT,
         SESSION,
-        {RUN_WORKING: "working", RUN_QUEUED: "working", RUN_STALLED: "stalled"},
+        {RUN_WORKING: "working", RUN_QUEUED: "working", RUN_STALLED: "halted"},
     )
 
     output = _snapshot(monkeypatch)
