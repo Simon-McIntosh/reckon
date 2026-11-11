@@ -276,6 +276,12 @@ def observe(run_id: str, *, config: Mapping[str, Any] | None = None) -> dict[str
             record["exit_status"] = data["exit_status"]
             record["final_message"] = data["final_message"]
             record["throughput"] = data["throughput"]
+            # What the worker called, by shape: an anchored-edit arm is only
+            # comparable to its baseline if the run store records how much of
+            # the editing went through the tool rather than the harness's own
+            # file-change items.
+            if data["tools"]:
+                record["tools"] = data["tools"]
             observed_phase = "stopped" if stopped else data["phase"]
             if _stored_phase_survives(stored_phase, observed_phase):
                 # The run finished under the supervisor's terminal phase; a

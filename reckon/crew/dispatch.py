@@ -112,6 +112,7 @@ from reckon.crew.prompts import (
     compose_prompt as compose_prompt,
     domain_rules_block as domain_rules_block,
     time_fence_statement as time_fence_statement,
+    with_anchored_edit_instruction as _with_anchored_edit_instruction,
 )
 from reckon.crew.recovery import (
     REVIEW_NODE_PREFIX as REVIEW_NODE_PREFIX,
@@ -2987,6 +2988,11 @@ def dispatch(
             host_line=_worker_host_line(dispatch_host, directory),
             brief=_brief_text(node, project=project),
         )
+        # The anchored arm's other half is its instruction: the argv makes the
+        # tool callable and this is what makes the worker reach for it. Keyed
+        # on the resolved backend, so a lane that did not receive the server
+        # never reads an instruction naming a tool it does not have.
+        prompt = _with_anchored_edit_instruction(prompt, backend)
         if shadow_lineage:
             prompt += (
                 "\n\nSHADOW RUN — produce the named evidence without committing. "

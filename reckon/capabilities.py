@@ -413,6 +413,56 @@ def _tool_write_targets(block: Mapping[str, Any]) -> tuple[str, ...]:
     return tuple(targets)
 
 
+def _anchored_edit_target(item: Any) -> str:
+    """The file a successful anchored edit call wrote, or an empty string.
+
+    The anchored tool is the codex arm's edit path, and it arrives as an
+    ``mcp_tool_call`` item rather than a ``file_change``: the harness reports
+    the MCP exchange, not the write. A call that failed wrote nothing and must
+    not be read as the first write, or the input-to-first-write figure would be
+    cut at an edit that never landed.
+    """
+    if not isinstance(item, Mapping) or item.get("type") != "mcp_tool_call":
+        return ""
+    from reckon._backends import ANCHORED_EDIT_SERVER
+
+    if str(item.get("server") or "") != ANCHORED_EDIT_SERVER:
+        return ""
+    if str(item.get("tool") or "") != "edit_anchored":
+        return ""
+    if str(item.get("status") or "") != "completed" or item.get("error"):
+        return ""
+    if _anchored_edit_refused(item):
+        return ""
+    arguments = item.get("arguments")
+    path = arguments.get("path") if isinstance(arguments, Mapping) else None
+    return str(path) if path else ""
+
+
+def _anchored_edit_refused(item: Mapping[str, Any]) -> bool:
+    """Whether a completed anchored call reports that it wrote nothing.
+
+    The tool answers a stale anchor or an out-of-root path with a ``refused:``
+    result rather than an error, so the call completes with the file untouched:
+    the status alone cannot say whether the edit landed.
+    """
+    result = item.get("result")
+    if not isinstance(result, Mapping):
+        return False
+    structured = result.get("structured_content")
+    if isinstance(structured, Mapping) and isinstance(structured.get("result"), str):
+        return structured["result"].strip().lower().startswith("refused")
+    content = result.get("content")
+    if isinstance(content, list):
+        return any(
+            isinstance(block, Mapping)
+            and isinstance(block.get("text"), str)
+            and block["text"].strip().lower().startswith("refused")
+            for block in content
+        )
+    return False
+
+
 def _event_write_targets(event: Mapping[str, Any]) -> tuple[str, ...]:
     item = event.get("item")
     if isinstance(item, Mapping) and item.get("type") == "file_change":
@@ -423,6 +473,9 @@ def _event_write_targets(event: Mapping[str, Any]) -> tuple[str, ...]:
                 for change in changes
                 if isinstance(change, Mapping) and change.get("path")
             )
+    anchored = _anchored_edit_target(item)
+    if anchored:
+        return (anchored,)
 
     message = event.get("message")
     content = message.get("content") if isinstance(message, Mapping) else None
