@@ -1519,6 +1519,98 @@ def _spawn(
     )
 
 
+def _tree_head(worktree: str) -> str:
+    """The revision a tree's working checkout is at, or empty when unreadable.
+
+    Read through the repository's own commit resolver rather than a second
+    ``git rev-parse`` composed here: the resolver refuses a value that names no
+    commit, bounds the query so a tree on a stalled filesystem cannot hold the
+    caller open, and is what every other reader of a revision in this codebase
+    already goes through.
+    """
+    if not worktree:
+        return ""
+    tree = Path(worktree).expanduser()
+    if not tree.is_dir():
+        return ""
+    # Deferred: the resolver's module pulls in the review subject readers, which
+    # import this package's siblings, so the import is made where it is used.
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    return _resolve_commit(tree, "HEAD")
+
+
+def _revision_suite_block(record: Mapping[str, Any]) -> str:
+    """The two revisions a resumed run's suite arms must record, and each command.
+
+    A resumed worker is handed the template its dispatch stated, but the tree it
+    stands in has moved since: the run's head now holds the work the first
+    attempt delivered, so the command resolved at the head is not the one the
+    dispatch resolved at the base. A worker that re-resolves once and records
+    both arms with that one command leaves an arm at a revision promotion never
+    asked for, and the landing is refused for it — measured on 10 November, when
+    two implement runs recorded their arms at mid-run revisions and cost a
+    resume round each.
+
+    So the advice names both revisions and resolves the declaration separately
+    over each revision's own tree. An unarmed run owes no pair and is told
+    nothing, because a run that measures no suite must not be handed a command
+    it was never armed with.
+    """
+    declared = " ".join(str(record.get("suite_command") or "").split())
+    if not declared:
+        return ""
+    # Deferred: promotion_records reads the run record through this module's
+    # siblings, so the import is made where it is used rather than at load.
+    from reckon.crew.promotion_records import _scoped_suite_command
+
+    base = str(record.get("base_sha") or record.get("base") or "").strip()
+    head = _tree_head(str(record.get("worktree") or ""))
+    base_command = _scoped_suite_command(record, revision=base) if base else ""
+    head_command = _scoped_suite_command(record, revision=head) if head else ""
+    if not base_command:
+        base_command = str(record.get("suite_command_resolved") or declared)
+    if not head_command:
+        head_command = str(record.get("suite_command_resolved") or declared)
+    base_line = (
+        f"  Base revision: {base}. Record the baseline arm at this revision,\n"
+        "  with the command resolved over that revision's own tree:\n"
+        f"    {base_command}\n"
+        if base
+        else "  Base revision: not recorded on this run.\n"
+    )
+    head_line = (
+        f"  Run head now: {head}. Record the after arm at this revision once\n"
+        "  your work is complete, with the command resolved over this head:\n"
+        f"    {head_command}\n"
+        if head
+        else "  Run head now: unreadable, so resolve the command from the tree\n"
+        "  you are standing in before recording the after arm.\n"
+    )
+    return (
+        "\nFENCE — SUITE REVISIONS (the two revisions your arms must record)\n"
+        + base_line
+        + head_line
+        + "  The two commands differ when a test file in your write scope exists\n"
+        "  at one revision and not the other. Record each arm with the command\n"
+        "  resolved at its own revision: promotion compares each arm's command\n"
+        "  with the template resolved over that arm's own tree.\n"
+    )
+
+
+def _with_revision_suite_block(advice: str, record: Mapping[str, Any]) -> str:
+    """The advice a resumed worker reads, with the suite revisions appended.
+
+    Appended rather than prepended so the advice's own opening — which carries
+    the repair round's token — stays the first line a worker sees, and a
+    manifest quoting it still names the round it answered.
+    """
+    block = _revision_suite_block(record)
+    if not block:
+        return advice
+    return advice.rstrip("\n") + "\n" + block
+
+
 def _write_resume_prompt(advice_path: Path, *, plan: Any, advice: str) -> None:
     """Write the prompt the resumed worker reads from ``advice_path``.
 
@@ -1707,6 +1799,12 @@ def _resume(
         try:
             _LAUNCHES_IN_THIS_PROCESS.add(run_id)
             mark_resume_launching(run_id)
+            # The tree the resumed worker stands in has moved since its
+            # dispatch, so the two revisions its suite arms record are stated
+            # here, with the command resolved separately over each. Appended
+            # before the plan is built so the prompt the worker reads carries
+            # them whether the backend feeds its prompt on stdin or on argv.
+            advice = _with_revision_suite_block(advice, record)
             plan = resume_plan(run_id, advice, config=config)
             directory = run_dir(run_id)
             turn = len(list(directory.glob("resume-*.jsonl"))) + 1
