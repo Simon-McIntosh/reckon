@@ -24,7 +24,7 @@
   <title>A Re-exec Never Orphans A Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -121,6 +121,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261111T105739668666-review-of-ab-clive-anchored-a-reexec-never-orphans-s5-9365c52e30f4" data-who="reckon-build" data-when="2026-11-11T11:08:44.529Z">
     <div class="r-comment-body"><p>Review of ab-clive-anchored-a-reexec-never-orphans-s5 at 9365c52e30 (base 29a435db15): the three re-exec sites share one bounded wait and a process-wide in-flight register entered at the node claim and left at every release and spawn path; goal 19, evidence 17, scope 19, durability 15, fit 18, reuse 20, one non-blocking finding (nothing exercises the register's entry at the claim site).</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261111T075900526642-ab-clive-anchored-a-reexec-never-orphans-s5" data-who="reckon-build" data-when="2026-11-11T08:45:42.828Z">
+    <div class="r-comment-body"><p>A service waits for its in-flight dispatches before it re-executes: dispatch_claims keeps a process-wide register of dispatches between claim and worker, one bounded wait_for_dispatches_in_flight() serves the station, a follower and the admit service before each os.execve, and the bound logs what it abandons by node; gate 5/5 pass, base arm carries the same failing ids, four mutations each fail their own case.</p></div>
 </div>
 </section>
 </main>
