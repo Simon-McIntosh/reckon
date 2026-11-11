@@ -1,0 +1,60 @@
+<section id="a-gate-meets-the-base-of-its-own-suite-landing">
+  <h2>A gate meets the base of its own suite</h2>
+
+  <p><strong>What changed.</strong> A run that measured more than one suite
+  could record only the default pair
+  (<code>baseline_suite</code>/<code>after_suite</code>), so
+  <code>_red_base_uncovered_ids</code> compared every gate with that one base.
+  A gate on a second suite was therefore measured against the wrong suite's
+  inherited failures: every id the second suite inherits read as a failure the
+  head added, and the zero-added path was unreachable for that gate however red
+  the head's own suite was.
+
+  <p>A manifest may now record further pairs under <code>suite_pairs</code>, a
+  mapping from a pair name to its <code>base</code> and <code>head</code> arms,
+  each shaped like <code>baseline_suite</code>'s arm.
+  <code>_suite_pair_for_gate</code> selects the pair whose head arm cites the
+  gate's own log, comparing the two citations by resolved path so a relative
+  spelling on one side and an absolute one on the other still match one file.
+  The default pair stays the fallback: a gate that names no log, or whose log
+  matches no recorded head, is measured as before, and a manifest recording no
+  <code>suite_pairs</code> field is unchanged. The refusal beside a nonzero
+  exit now quotes the selected pair's own arm names
+  (<code>suite_pairs.UNIT.base</code>, <code>suite_pairs.UNIT.head</code>)
+  rather than the default pair's, so a reader is sent to the field the base
+  sits in.</p>
+
+  <p><strong>The guard.</strong> A new test,
+  <code>tests/test_a_gate_meets_the_base_of_its_own_suite.py</code>, drives the
+  admission through a temporary run record. Case one records a red default pair
+  and a second pair whose base and head both carry the same three ids; a gate
+  on the second pair's head log is measured zero added and the passing verdict
+  is admitted. Case two keeps the same gate and drops one id from the second
+  pair's base, and the comparison reports exactly that id, refusing the
+  verdict. Case three records no <code>suite_pairs</code> and shows the default
+  pair still measured as before.</p>
+
+  <h3 id="a-gate-meets-the-base-of-its-own-suite-measured">Measured</h3>
+
+  <p>Arms resolved over each tree's own contents, one arm at a time with
+  <code>-n 4</code> on the <code>all_debug</code> partition. Base arm at
+  <code>bfbef86cc3</code> (<code>tests/test_staged_write_inventory.py</code>
+  alone, the new test absent there):
+  <code>51 passed</code>, <code>EXIT=0</code>. Head arm at
+  <code>ca9452d23c</code> (the same file plus the new test):
+  <code>54 passed</code>, <code>EXIT=0</code> — zero added against the base.</p>
+
+  <p>The nine further test files importing <code>promotion_evidence</code> were
+  measured the same way: base <code>53 passed</code>,
+  <code>EXIT=0</code>; head <code>56 passed</code> (the same 53 plus the new
+  test's 3), <code>EXIT=0</code>.</p>
+
+  <p><strong>Negative control.</strong> Dropping the pair selection so the
+  comparison always reads <code>baseline_suite</code> makes case one report
+  the three inherited second-suite ids as added —
+  <code>tests/test_charge.py::test_charge</code>,
+  <code>tests/test_charge.py::test_discharge</code>,
+  <code>tests/test_charge.py::test_hold</code> — and the run fails with
+  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>. That is the defect this
+  change repairs, reproduced by reverting the selection.</p>
+</section>
