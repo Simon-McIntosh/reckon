@@ -365,8 +365,9 @@ def accept_clean_review(
     When a review run completes with a stored record that is complete and
     carries no blocking finding, the reviewed run is promoted without a
     coordinator, whatever its scores: the non-blocking findings it
-    does carry are recorded as exempted, the commits its manifest names must
-    already be ancestors of the repository's head, the run's own recorded gate
+    does carry are recorded as deferred, by the writer the landing path uses, the
+    commits its manifest names must already be ancestors of the repository's head,
+    the run's own recorded gate
     must already have passed, the gate is re-run against the repository's
     current head with the run merged, and on all of those passing the run is
     promoted with ``promoted_by: review-acceptance`` on its ledger row.
@@ -470,18 +471,26 @@ def accept_clean_review(
             "reason": str(refusal),
             "gate_report": report,
         }
-    # Read only once the promotion has happened: an exemption written before it
-    # would mark a finding exempted on a run the promotion then refused.
-    exempted: list[int] = []
-    exemption_refusal = ""
+    # Read only once the promotion has happened: a deferral written before it
+    # would mark a finding deferred on a run the promotion then refused.
+    #
+    # The findings are recorded as deferred, by the writer the landing pass
+    # uses, because a run promoted here and a run landed there are one run
+    # arriving by two paths. An exemption written here would close a finding
+    # that path leaves open work, so which path promoted a run would decide
+    # whether its unreviewed findings were still owed.
+    from reckon.crew import review_dispositions
+
+    deferred: list[int] = []
+    deferral_refusal = ""
     try:
-        exempted = record_landed_exemptions(
-            project, run_id, review, reviewed_head_sha=head or None
+        deferred = review_dispositions.record_landed_deferrals(
+            project, run_id, reviewed_head_sha=head or None
         )
     except (OSError, ValueError) as refusal:
-        exemption_refusal = (
+        deferral_refusal = (
             "the run was promoted but its review's non-blocking findings could "
-            f"not be recorded as exempted: {refusal}"
+            f"not be recorded as deferred: {refusal}"
         )
     return {
         "run_id": run_id,
@@ -490,9 +499,9 @@ def accept_clean_review(
         "review": {
             "total": review.get("total") if review else None,
             "blocking_findings": 0,
-            "exempted_findings": len(exempted),
+            "deferred_findings": len(deferred),
         },
-        **({"exemption_refusal": exemption_refusal} if exemption_refusal else {}),
+        **({"deferral_refusal": deferral_refusal} if deferral_refusal else {}),
         "gate_report": report,
         "ledger": {
             "path": str(result.get("ledger_path") or ""),
