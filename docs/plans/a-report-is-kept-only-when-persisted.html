@@ -25,7 +25,7 @@
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="4">
+<meta name="plan-version" content="5">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -94,11 +94,11 @@
   <li>a live run pointer names it.</li>
 </ul>
 <p><strong>What is never removed.</strong> The four folders reckon writes into are swept only by their own existing rules, never as one item: <code>briefs</code>, <code>plan-review</code>, <code>code-review</code> and <code>portfolio-review</code>.</p>
-<p><strong>Moved folders.</strong> An item that is a symlink to a folder moved off home is expired by removing the folder it points to, after checking that the target lies under that project's persist root or the move's staging root. The symlink is removed last. A symlink pointing anywhere else is reported and left alone.</p>
+<p><strong>Moved folders.</strong> An item that is a symlink to a folder moved off home is expired by removing the folder it points to, after checking that the target lies under that project's persist root or its staging root. The staging root is a second per-project flight setting beside the persist root, naming where moved working reports wait to expire. The symlink is removed last. A symlink pointing anywhere else, or at a project with neither root set, is reported and left alone.</p>
 <p><strong>Output.</strong> A dry run prints every candidate with its reason, its age and the rule that applies. <code>--apply</code> prints every removal.</p>
 <p><strong>Done when</strong> a new <code>tests/test_an_unpersisted_report_expires.py</code> shows, on a synthetic crew home with a mounted synthetic project:</p>
 <ul>
-  <li>An unreferenced item 31 days old is removed. A 29-day-old item attributed by folder name is kept until its plan closes, and is removed once it does. The same holds for a 29-day-old item attributed only through a ledger run's report path. A 29-day-old item that matches neither rule is kept whatever any plan's status.</li>
+  <li>An unreferenced item 31 days old is removed. A 29-day-old item attributed by folder name is kept until its plan closes, and is removed once it does. The same holds for a 29-day-old item attributed only through a ledger run's report path. A 29-day-old item that matches neither rule is kept whatever any plan's status. A 31-day-old item attributed to a plan that is still open is removed, because the 30-day ceiling applies whichever way the item is attributed.</li>
   <li>Each of these is kept at 90 days: a persisted item; an item whose own path is cited in a plan document; an item cited only through a file inside it; one item cited only from a research document, and another only from an evidence fragment; and an item named by a live pointer.</li>
   <li>None of the four reckon-written folders is removed at any age.</li>
   <li>An expired symlinked item has its target and its symlink removed. A symlink whose target lies outside the permitted roots is kept and reported.</li>
@@ -111,7 +111,7 @@
   <li>dropping the target-root check removes the outside target and fails the test.</li>
 </ul>
 <p>The test files that import <code>reckon.crew.gc</code> add no failure against the base revision, and the test asserts the real crew home is untouched.</p>
-<p>A host measure follows: one dry run over the real reports store, under a timeout on the fleet node, records the count and bytes it would expire per project. It is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>, the new test and that fragment.</p>
+<p>A host measure follows: one dry run over the real reports store, under a timeout on the fleet node, records the count and bytes it would expire per project. It is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>; <code>reckon/crew/routing.py</code>, where the pass that removes report trees runs; the flight schema, for the staging root; the new test; and that fragment.</p>
 
     <h2 id="s5">§5 — The SPA shows retained figures and offers the persist action</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
