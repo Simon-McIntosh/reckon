@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T13:44:17.743Z",
+  "dispatched_at": "2026-11-11T13:36:01Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-limit-reset-reaches-every-session/ab-clive-anchored-a-limit-reset-reaches-ever-s3.html",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "The done_when's suite clause names the test files importing reckon/hooks/coordinator_obligations.py or reckon/crew/obligations.py, but the recorded suite arm is tests/test_staged_write_inventory.py only, and the fragment at line 29 records that the 104 importing files were not run; the zero delta rests on an identity argument (base and head trees are the same bytes) rather than a measurement, which holds here only because the node changed no product source."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to build plan s3; the landed work is a single evidence fragment recording that the section's deliverable (reckon/hooks/coordinator_obligations.py:914 limit_reset_events, :1230 duty_digest reset ids, reckon/crew/obligations.py:3336 view limit_resets) was already on the tree at base aa40821475 via ac0958d9ae and gate df58276bf5, so the outcome holds even though the diff adds no product code.\nVERDICT done_when: the done_when's four behavioural cases (20-minute event named, 90-minute and other-session events not named, second prompt silent, obligations view lists the event) are asserted in tests/test_a_session_without_a_pane_learns_of_a_reset.py:166-251 and recorded as 4 passed EXIT=0 in logs/gate-reset-prompt-head.log; its suite clause was not measured (see FINDING).\nVERDICT write_paths: the declared code paths reckon/hooks/coordinator_obligations.py and reckon/crew/obligations.py were untouched, and the one file in the diff sits under the evidence-fragment path the run was granted in its own orientation write paths.\nVERDICT manifest: read; it records the gate as \"4 passed in 12.20s\" EXIT=0, the negative control as \"1 failed, 3 passed in 13.35s\" EXIT=1, both suite arms as \"51 passed\" EXIT=0, and names all four log paths.\nVERDICT diff: read commit by commit against base aa40821475; the single commit 40ac1f9069 adds one file, the 33-line evidence fragment, and changes no source, test or plan meta.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:914, reckon/hooks/coordinator_obligations.py:1230, reckon/crew/obligations.py:3336\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:914 and reckon/crew/obligations.py:3336 carry the deliverable the fragment at docs/evidence/fragments/a-limit-reset-reaches-every-session/ab-clive-anchored-a-limit-reset-reaches-ever-s3.html:3 records.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/gate-reset-prompt-head.log ends 4 passed / EXIT=0 and logs/negative-control-horizon-dropped.log ends 1 failed / EXIT=1 naming tests/test_a_session_without_a_pane_learns_of_a_reset.py as the red case, but the done_when's importing-files suite clause is argued rather than run at the fragment's line 27.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff is the single file docs/evidence/fragments/a-limit-reset-reaches-every-session/ab-clive-anchored-a-limit-reset-reaches-ever-s3.html, inside the fragment path the run's orientation write paths granted.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_session_without_a_pane_learns_of_a_reset.py:204 asserts exactly one reset line and reddens under the dropped horizon, as logs/negative-control-horizon-dropped.log shows, so the guard it protects is demonstrated by a failing run.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the sibling record's idiom in docs/evidence/fragments/a-limit-reset-reaches-every-session/a-session-without-a-pane-learns-of-a-reset-on-its-next.html:1 and introduces no plan-stage name in source or symbols.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; the behaviour it records is owned by reckon/crew/budget_reset.recent_resets and the horizon by reckon/crew/lift_watch.RESET_HORIZON, which tests/test_a_session_without_a_pane_learns_of_a_reset.py:343-350 pins equal, so nothing is forked.\nFINDING docs/evidence/fragments/a-limit-reset-reaches-every-session/ab-clive-anchored-a-limit-reset-reaches-ever-s3.html:27 non-blocking: the done_when's suite clause names the test files importing reckon/hooks/coordinator_obligations.py or reckon/crew/obligations.py, but the recorded arm is tests/test_staged_write_inventory.py only and line 29 records the 104 importing files were not run, so the zero delta rests on an identity argument rather than a measurement.\n",
+  "review_run_id": "r-20261111T133221621216-review-of-ab-clive-anchored-a-limit-reset-reaches-ever-s3-40ac1f90694f",
+  "reviewed_base_sha": "aa40821475f24f26115af61ea50fa5cd06cebd54",
+  "reviewed_head_sha": "40ac1f90694f79f2dd903540c1e3691f39202750",
+  "reviewed_run_id": "r-20261111T074901833566-ab-clive-anchored-a-limit-reset-reaches-ever-s3",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:01:48.601182+00:00",
+  "total": 106
+}
