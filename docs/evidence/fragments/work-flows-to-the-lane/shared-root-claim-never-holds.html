@@ -19,10 +19,13 @@
   <code>_claim_paths_share</code> compares two overlapping claims through it, so
   the narrower path must be shared and the broader one must be a shareable
   region. Queue admission (<code>_claim_collision</code>), the dispatch
-  conflict report, and the launch refusal (<code>_raise_repository_scope_conflict</code>)
-  all now call the same predicate, so the queue, the conflict report and the
-  launch give one answer, and each of the three is asserted directly rather
-  than only through a dispatch. An exclusive pattern still fences, and so does a directory claim that
+  conflict report, the launch refusal
+  (<code>_raise_repository_scope_conflict</code>) and the queue-edit comparison
+  (<code>_live_claim_conflict</code>) all now call the same predicate, so admission,
+  the conflict report, the launch and an edit to a queued request give one
+  answer. Each of the four is asserted directly rather than only through a
+  dispatch, which matters here: every dispatch-based test aborts at this
+  workstation's backend launch. An exclusive pattern still fences, and so does a directory claim that
   is or contains one &mdash; for example a claim on <code>docs/figures/</code>
   still holds a request for a file inside it.</p>
 
@@ -50,15 +53,15 @@
       </tr>
       <tr>
         <td>head</td>
-        <td><code>d65d8390c9</code></td>
+        <td><code>fb7b4d5f94</code></td>
         <td><code>pytest tests/test_a_shared_root_claim_never_holds_a_request.py tests/test_a_source_file_is_shared_by_default.py tests/test_staged_write_inventory.py</code></td>
-        <td>12 failed, 57 passed &mdash; the same 12 backend failures, no added failure, and the four new tests pass</td>
+        <td>12 failed, 60 passed &mdash; the same 12 backend failures, no added failure, and every test in the node's file passes</td>
       </tr>
       <tr>
         <td>negative control</td>
-        <td><code>f5944f742b</code> with the head test file</td>
-        <td><code>pytest tests/test_a_shared_root_claim_never_holds_a_request.py::test_the_reproduced_pair_is_admitted</code></td>
-        <td>1 failed &mdash; the pair is held under the base comparison, so the test measures the change rather than passing on its own</td>
+        <td><code>fb7b4d5f94</code> with <code>queue_edit.py</code> reverted to <code>c0467bb557</code></td>
+        <td><code>pytest tests/test_a_shared_root_claim_never_holds_a_request.py::test_the_queue_edit_admits_the_reproduced_pair</code></td>
+        <td>1 failed &mdash; the queue edit refuses the pair under the old equality rule, so the assertion measures the change rather than passing on its own</td>
       </tr>
     </tbody>
   </table>
@@ -70,10 +73,8 @@
   workstation's backend, identical at base and head, and the delta is what the
   arm is judged on.</p>
 
-  <h3 id="shared-root-claim-never-holds-outside-scope">Still unfixed</h3>
-
-  <p><code>reckon/crew/queue_edit.py:262</code> carries the old equality rule for
-  the same comparison, so an edit to a queued request still reads a directory
-  claim as exclusive. It is outside this node's write scope and is recorded for
-  the coordinator rather than written here.</p>
+  <p><strong>The queue-edit comparison</strong> carried the old equality rule
+  until it was folded into this node: an edit that named a file under a held
+  directory claim was refused while admission would have launched it. It now
+  asks the same predicate, so all four claim sites agree.</p>
 </section>
