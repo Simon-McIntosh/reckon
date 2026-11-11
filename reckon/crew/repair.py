@@ -409,6 +409,18 @@ def round_node_id(prefix: str, source: str, head: str, *, rubric: str = "") -> s
     return f"{prefix}{source}"
 
 
+def _plan_review_node_prefix() -> str:
+    """The prefix a composed plan review underwrites, read at the use.
+
+    Imported here rather than at module load so this module stays importable
+    while the crew vocabulary is being built, which the review module's own
+    imports reach first.
+    """
+    from reckon.crew.recovery_vocabulary import PLAN_REVIEW_NODE_PREFIX
+
+    return PLAN_REVIEW_NODE_PREFIX
+
+
 def round_node_source(node_id: str, prefix: str) -> str:
     """Strip ``prefix`` and a trailing head or rubric suffix from a node id.
 
@@ -421,9 +433,12 @@ def round_node_source(node_id: str, prefix: str) -> str:
 
     A composed plan review names its rubric with no head before it, because a
     review reads a plan rather than a revision, so that suffix is stripped on
-    its own. One suffix goes: ``<source>-design-design`` is the design review of
-    a plan whose own slug ends in ``-design``, and a reader must keep the slug
-    the composer was given.
+    its own — but only under the plan-review prefix, which is the one grammar
+    that writes it. A review of a layout whose name ends in the same word
+    (``review-of-<source>-design``) carries it as part of its source and keeps
+    it. One suffix goes: ``<source>-design-design`` is the design review of a
+    plan whose own slug ends in ``-design``, and a reader keeps the slug the
+    composer was given.
     """
     text = str(node_id or "")
     if not text.startswith(prefix):
@@ -432,8 +447,10 @@ def round_node_source(node_id: str, prefix: str) -> str:
     rubric = _trailing_rubric_start(source)
     if rubric >= 0:
         source = source[:rubric]
-    elif source.endswith(PLAN_REVIEW_RUBRIC_SUFFIX) and len(source) > len(
-        PLAN_REVIEW_RUBRIC_SUFFIX
+    elif (
+        prefix == _plan_review_node_prefix()
+        and source.endswith(PLAN_REVIEW_RUBRIC_SUFFIX)
+        and len(source) > len(PLAN_REVIEW_RUBRIC_SUFFIX)
     ):
         source = source[: -len(PLAN_REVIEW_RUBRIC_SUFFIX)]
     cut = len(source) - (_ROUND_HEAD_DIGITS + 1)

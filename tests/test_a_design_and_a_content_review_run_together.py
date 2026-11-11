@@ -38,10 +38,19 @@ from types import SimpleNamespace
 
 import pytest
 
-from reckon import flight
+from reckon import _plan_html, flight
+from reckon.crew import plan_review as plan_review_module
 from reckon.crew import recovery, runs
+from reckon.crew import review as review_module
+from reckon.crew.promotion_checks import _resolve_promotion_outcome
 from reckon.crew.recovery_review_subject import PLAN_REVIEW_NODE_PREFIX
-from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX, round_node_source
+from reckon.crew.recovery_vocabulary import REVIEW_NODE_PREFIX
+from reckon.crew.repair import (
+    PLAN_REVIEW_RUBRIC_SUFFIX,
+    REPAIR_NODE_PREFIX,
+    round_node_source,
+)
+from tests.helpers.git import git as _git
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
@@ -202,6 +211,37 @@ def test_a_reader_of_the_existing_content_node_id_still_resolves_it() -> None:
     )
 
 
+def test_the_rubric_suffix_is_stripped_only_under_the_plan_review_prefix() -> None:
+    """The suffix is plan-review grammar, not a word every source loses.
+
+    A review of a layout whose name ends in the same word carries it as part of
+    its source, and a run review's source is a run id in which the word can
+    legitimately end the reviewed run's name. Stripping it there would send a
+    reader to a run or a layout that does not exist.
+    """
+    assert (
+        round_node_source(f"{REVIEW_NODE_PREFIX}layout-design", REVIEW_NODE_PREFIX)
+        == "layout-design"
+    )
+    assert (
+        round_node_source(f"{REPAIR_NODE_PREFIX}layout-design", REPAIR_NODE_PREFIX)
+        == "layout-design"
+    )
+
+
+def test_a_plan_whose_slug_ends_in_the_rubric_word_keeps_its_slug() -> None:
+    """A design review of such a plan resolves to the slug the composer was given.
+
+    The composer appends the suffix to the slug, so the design review of
+    ``layout-design`` is ``plan-review-of-layout-design-design`` and one suffix
+    comes off, leaving the plan's own name whole.
+    """
+    slug = f"layout{PLAN_REVIEW_RUBRIC_SUFFIX}"
+    node_id = f"{PLAN_REVIEW_NODE_PREFIX}{slug}{PLAN_REVIEW_RUBRIC_SUFFIX}"
+
+    assert round_node_source(node_id, PLAN_REVIEW_NODE_PREFIX) == slug
+
+
 # ── a second content review of the same plan is still refused ────────────────
 
 
@@ -249,3 +289,121 @@ def test_a_review_whose_rubric_cannot_be_read_still_stands(
     found = recovery._standing_plan_review(PROJECT, PLAN_SLUG, rubric="design")
 
     assert found == "r-unreadable-rubric-review", found
+
+
+# ── a delivered design review promotes and finds its report ──────────────────
+
+PROMOTION_PROJECT = "design-review-promotion"
+PROMOTION_COMPOSED_RUN = f"r-20261111T030000000000-plan-review-of-{PLAN_SLUG}"
+PROMOTION_CREW_RUN = f"r-20261111T030500000000-plan-review-of-{PLAN_SLUG}"
+PROMOTION_NODE = f"{PLAN_REVIEW_NODE_PREFIX}{PLAN_SLUG}{PLAN_REVIEW_RUBRIC_SUFFIX}"
+_REPORT_DASH = "—"
+
+
+def _promotion_repository(home: Path, tmp_path: Path) -> Path:
+    repo = tmp_path / "promotion-repo"
+    plan_path = repo / "docs" / "plans" / f"{PLAN_SLUG}.html"
+    plan_path.parent.mkdir(parents=True)
+    bare = (
+        "<!doctype html><html><head>"
+        f'<meta name="docs-project" content="{PROMOTION_PROJECT}">'
+        f"<title>{PLAN_SLUG}</title>"
+        '</head><body><main class="plan-doc"></main></body></html>\n'
+    )
+    plan_path.write_text(
+        _plan_html.write_state(
+            bare,
+            {
+                "type": "plan",
+                "slug": PLAN_SLUG,
+                "title": "Design review promotion target",
+                "status": "active",
+                "version": 0,
+                "comments": {},
+            },
+        ),
+        encoding="utf-8",
+    )
+    (repo / "docs" / "state" / "proj-placeholder").mkdir(parents=True, exist_ok=True)
+    for arguments in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+    ):
+        _git(repo, *arguments)
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    _git(repo, "add", "seed.txt", "docs")
+    _git(repo, "commit", "-q", "-m", "chore: seed repository")
+    (home / "mounts.json").write_text(
+        json.dumps({PROMOTION_PROJECT: str(repo / "docs")}), encoding="utf-8"
+    )
+    return repo
+
+
+def _deliver_design_review() -> Path:
+    directory = plan_review_module.review_report_directory(
+        PROMOTION_PROJECT, PLAN_SLUG, PROMOTION_COMPOSED_RUN
+    )
+    directory.mkdir(parents=True, exist_ok=True)
+    report_path = directory / "report.md"
+    report_path.write_text(
+        "".join(
+            f"RUBRIC {item}: passes\n"
+            for item in review_module.PLAN_DESIGN_REVIEW_ITEMS
+        )
+        + f"FINDING deep_module docs/plans/{PLAN_SLUG}.html:3 {_REPORT_DASH} the "
+        f"wiring is absent {_REPORT_DASH} WOULD_CHANGE_THE_PLAN: yes "
+        f"{_REPORT_DASH} REASON: the section is unreachable\n",
+        encoding="utf-8",
+    )
+    runs._write_json(
+        directory / review_module.REVIEW_DISPATCH_FILE_NAME,
+        {"run_id": PROMOTION_CREW_RUN},
+    )
+    plan_review_module.write_review_sidecar(
+        directory,
+        project=PROMOTION_PROJECT,
+        plan_slug=PLAN_SLUG,
+        plan_version=1,
+        reviewed_blob_sha="b" * 40,
+        document=f"<html><body>plan {PLAN_SLUG}</body></html>",
+        rubric="design",
+        report_path=report_path,
+        name="plan-review.json",
+    )
+    return report_path
+
+
+def test_a_delivered_design_review_promotes_and_finds_its_report(
+    isolated_reckon_home: Path, tmp_path: Path
+) -> None:
+    """Promotion resolves the plan from the design node id, then the report.
+
+    The design review's node id carries its rubric after the slug, so a reader
+    that slices the prefix off resolves the plan as ``fixture-design`` and finds
+    no report at all. The outcome is composed from the report only when the slug
+    is recovered through the function that owns the node-id grammar.
+    """
+    _promotion_repository(isolated_reckon_home, tmp_path)
+    report_path = _deliver_design_review()
+    record = {
+        "run_id": PROMOTION_CREW_RUN,
+        "project": PROMOTION_PROJECT,
+        "role": "review",
+        "launch": "in-harness",
+        "manifest_path": "",
+        "node": {
+            "id": PROMOTION_NODE,
+            "role": "review",
+            "plan": PLAN_SLUG,
+            "write_paths": [
+                str(report_path),
+                str(report_path.parent / "plan-review.json"),
+            ],
+        },
+    }
+
+    outcome = _resolve_promotion_outcome(PROMOTION_CREW_RUN, record, verdict="not-run")
+
+    assert "1 finding(s)" in outcome, outcome
+    assert "1 of which would change the plan" in outcome, outcome
