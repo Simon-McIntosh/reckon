@@ -84,10 +84,10 @@ def test_content_brief_judges_the_endpoint_not_a_stated_method(briefs) -> None:
     content = briefs["content"]
     assert "is the endpoint reachable and checkable" in content
     assert "does the section prescribe implementation" in content
-    # The base rubric's two method checks, which hard rule 9 removes: judging
-    # whether a stated mechanism produces the done-when, and requiring its
-    # caller to be named. A brief carrying either pulls the author back into
-    # writing the implementation it would have to justify.
+    # These two phrases are what judge a stated method rather than its endpoint:
+    # asking whether a named mechanism produces the done-when, and requiring the
+    # production caller behind it. A brief carrying either one asks the author to
+    # justify an implementation the plan is not to contain.
     assert "does each section's mechanism produce its done-when" not in content
     assert "with the caller named" not in content
 
@@ -96,8 +96,8 @@ def test_content_brief_does_not_ask_the_author_to_cite_a_symbol(briefs) -> None:
     content = briefs["content"]
     assert "not asked to cite a symbol" in content
     assert "judged on resolution alone" in content
-    # The base rubric opened this item by requiring claims to be cited, which is
-    # what earned plans their symbol anchors round after round.
+    # Requiring claims to be cited is what turns a plan into a list of symbol
+    # anchors: the check is that a reference resolves, not that one exists.
     assert "claims are cited" not in content
 
 
@@ -106,8 +106,8 @@ def test_design_brief_keeps_the_reuse_map_out_of_the_plan(briefs) -> None:
     assert "no finding asks the plan to name a module" in design
     assert "belongs to the node brief" in design
     assert "never to plan text" in design
-    # The base rubric made a plan that cited no searched module a finding, which
-    # is the demand that wrote module names into plan text.
+    # A rubric that makes a plan citing no searched module a finding is what writes
+    # module names into plan text; the check is that the demand is gone.
     assert (
         "a plan that adds a subsystem without citing what it searched is a finding"
         not in design

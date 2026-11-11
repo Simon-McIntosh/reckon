@@ -9,9 +9,9 @@ directions for both prompts.
 
 The focused cases hold the rubric clauses the pilot's runs turned into
 requirements: the anchor rule resolves an extensionless href the way the surface
-does before it reports a finding, the reasoning check names the caller the
-mechanism runs on, and the design-review prompt asks for every instance of one
-finding type under a single finding.
+does before it reports a finding, the reasoning check asks about the endpoint a
+section delivers rather than the method that reaches it, and the design-review
+prompt asks for every instance of one finding type under a single finding.
 """
 
 from __future__ import annotations
@@ -78,11 +78,24 @@ def test_anchor_rule_resolves_an_extensionless_href_before_reporting() -> None:
     assert "docs/ui/plan.jsx" in text
 
 
-def test_reasoning_check_names_the_real_path_caller() -> None:
+def test_reasoning_check_asks_about_the_endpoint() -> None:
+    """The reasoning item asks what the section delivers, never how it is built.
+
+    Three checks are pinned here: the root cause must match the cited evidence,
+    the endpoint must be reachable and checkable, and a section that prescribes
+    implementation must be raised as a finding. The two questions that judge a
+    stated method instead — whether a named mechanism produces the done-when,
+    and whether its production caller is named, and whether claims are cited —
+    are asserted absent, because a brief carrying them asks the author to write
+    the implementation into the plan.
+    """
     text = review_module.load_plan_review_prompt()
-    assert "does the mechanism run on the real code path, with the caller named" in text
     assert "does the stated root cause match the cited evidence" in text
-    assert "does each section's mechanism produce its done-when" in text
+    assert "is the endpoint reachable and checkable" in text
+    assert "does the section prescribe implementation" in text
+    assert "does each section's mechanism produce its done-when" not in text
+    assert "with the caller named" not in text
+    assert "claims are cited" not in text
 
 
 def test_design_review_prompt_asks_for_every_instance_of_a_finding() -> None:
