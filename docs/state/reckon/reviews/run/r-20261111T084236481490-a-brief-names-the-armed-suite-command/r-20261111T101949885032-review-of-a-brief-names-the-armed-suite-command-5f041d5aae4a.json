@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/dispatch.py:3022 dispatch",
+    "reckon/crew/resumption.py:1807 _resume",
+    "reckon/crew/resumption.py:1568 _revision_suite_block",
+    "reckon/crew/recovery_repair_dispatch.py:105 _repair_resume_advice"
+  ],
+  "completed_at": "2026-11-11T10:27:36.920Z",
+  "dispatched_at": "2026-11-11T10:21:33Z",
+  "findings": [
+    {
+      "file": "tests/test_a_brief_names_the_armed_suite_command.py",
+      "line": 114,
+      "severity": "non-blocking",
+      "text": "_composed_brief calls _suite_gate_prompt_body_for directly, so the wiring at reckon/crew/dispatch.py:3022 that hands it the real worktree payload is still unexercised; a call site passing a different mapping would not redden the case."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_brief_names_the_armed_suite_command.py:141 now fails if the helper stops reading worktree['base_sha'], but the case still calls the helper directly at line 114 rather than dispatch.",
+    "evidence": "arms/baseline.log ends 38 failed, 274 passed EXIT=1 and arms/after.log 38 failed, 276 passed EXIT=1 with the same 38 ids, and head-arm.log records 2 passed against base-arm.log 2 failed.",
+    "fit": "reckon/crew/resumption.py:1532 uses the same deferred-import idiom as the surrounding readers and introduces no forbidden name.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1491 reads the base revision from the worktree payload and reckon/crew/resumption.py:1535 resolves the advice's head through the resolved commit, which is the node's stated deliverable.",
+    "reuse": "reckon/crew/resumption.py:1535 now delegates to the shared commit resolver _resolve_commit at reckon/crew/recovery_review_subject.py:246 rather than composing a second git rev-parse.",
+    "scope_discipline": "the gained diff touches only the four declared paths and adds no behaviour the goal does not imply."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that briefs and resume or repair advice name the revisions and the armed suite command resolved at each; the gained commits move the brief's revision read into _suite_gate_prompt_body_for at reckon/crew/dispatch.py:1491 and route the advice's head through the shared resolver at reckon/crew/resumption.py:1535, both in 82f38877d2.\nVERDICT done_when: the done_when names tests/test_a_brief_names_the_armed_suite_command.py with each case first red at the base revision, no added failure in the importing test files at most -n 4 on all_debug, and ruff clean; the manifest records head-arm.log 2 passed and base-arm.log 2 failed, arms/baseline.log 38 failed/274 passed against arms/after.log 38 failed/276 passed, and ruff.log EXIT=0, and I re-derived 0 added failure ids from those two arm logs.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, reckon/crew/resumption.py, reckon/crew/recovery_repair_dispatch.py, tests/test_a_brief_names_the_armed_suite_command.py, the evidence fragment and the figures directory; the gained diff touches dispatch.py, resumption.py, the test and the evidence fragment, all inside that fence, and leaves recovery_repair_dispatch.py untouched.\nVERDICT manifest: read at manifest.md; it reports the repair round, names every gate log with a header revision and a bare EXIT= line, and its two importer arms carry the same 38 failure ids, which I re-derived from arms/baseline.log and arms/after.log and confirmed against arms/baseline.ids and arms/after.ids.\nVERDICT diff: read both commits against base 71c0eb5774; 82f38877d2 adds _suite_gate_prompt_body_for wrapping _suite_gate_prompt_body over the worktree payload at reckon/crew/dispatch.py:1491 and rewires dispatch at reckon/crew/dispatch.py:3022, rewrites _tree_head at reckon/crew/resumption.py:1522 to call _resolve_commit, and rewrites the first case to drive the payload; 5f041d5aae updates the evidence fragment for both.\nCALL_SITES: reckon/crew/dispatch.py:3022 dispatch, reckon/crew/resumption.py:1807 _resume, reckon/crew/resumption.py:1568 _revision_suite_block, reckon/crew/recovery_repair_dispatch.py:105 _repair_resume_advice\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1491 reads the base revision from the worktree payload and reckon/crew/resumption.py:1535 resolves the advice's head through the shared resolver, which is the node's stated deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: arms/baseline.log ends 38 failed, 274 passed EXIT=1 and arms/after.log 38 failed, 276 passed EXIT=1 with the same 38 ids, and head-arm.log records 2 passed against base-arm.log 2 failed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the gained diff touches only the four declared paths \u2014 dispatch.py, resumption.py, the test and the evidence fragment \u2014 and adds no behaviour the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_brief_names_the_armed_suite_command.py:141 now fails if the helper stops reading worktree[\"base_sha\"], but the case still calls _suite_gate_prompt_body_for directly at line 114 rather than dispatch, so the call site at reckon/crew/dispatch.py:3022 stays unexercised.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/resumption.py:1532 uses the same deferred-import idiom as the surrounding readers and introduces no forbidden name.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/resumption.py:1535 now delegates to the repository's shared commit resolver _resolve_commit at reckon/crew/recovery_review_subject.py:246 rather than composing a second git rev-parse.\nFINDING tests/test_a_brief_names_the_armed_suite_command.py:114 non-blocking: _composed_brief calls _suite_gate_prompt_body_for directly, so the wiring at reckon/crew/dispatch.py:3022 that hands it the real worktree payload is still unexercised; a call site passing a different mapping would not redden the case.",
+  "review_run_id": "r-20261111T101949885032-review-of-a-brief-names-the-armed-suite-command-5f041d5aae4a",
+  "reviewed_base_sha": "71c0eb5774a6e7ee79c6d601543cf52f54adb839",
+  "reviewed_head_sha": "5f041d5aae4af288a8a8d63071e8d61b30da2c9c",
+  "reviewed_run_id": "r-20261111T084236481490-a-brief-names-the-armed-suite-command",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:38:11.115203+00:00",
+  "total": 110
+}
