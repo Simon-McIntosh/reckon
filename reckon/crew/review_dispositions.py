@@ -35,6 +35,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
+from reckon.crew.findings import DEFERRED_DISPOSITION_KIND
 from reckon.crew.review import (
     DIMENSION_DISPOSITION_KINDS,
     DIMENSION_DISPOSITIONS_KEY,
@@ -45,6 +46,11 @@ from reckon.crew.review import (
     commit_record_write,
     stored_record,
 )
+
+#: The rule a landing records when it carries a finding forward unjudged. It
+#: names the mechanism rather than the caller, so a reader of the stored entry
+#: sees why the run landed over the finding rather than who landed it.
+DEFERRED_AT_LANDING_RULE = "landing-defers-non-blocking-findings"
 
 
 def _floor_value(entry: Any) -> int | None:
@@ -247,10 +253,20 @@ def _build_disposition_entry(
     stored entry that carries a reason no fold can name, or a node no exemption
     can stand behind, reads as recorded on both sides of a question the caller
     only half answered.
+
+    ``deferred`` is outside the closed set on purpose, and is refused by name
+    rather than as an unknown word: a deferral records that nobody judged the
+    finding, so only the landing rule may write one, through
+    :func:`record_landed_deferrals`, and never through a verb a person calls.
     """
     disposition_kind = str(kind or "").strip().lower()
     named_node = str(node or "").strip()
     recorded_reason = str(reason or "").strip()
+    if disposition_kind == DEFERRED_DISPOSITION_KIND:
+        raise ValueError(
+            "a deferred disposition is recorded only by the landing rule; "
+            "answer the finding with --kind folded or --kind exempted instead"
+        )
     if not dimension_disposition_valid(
         {"kind": disposition_kind, "node": named_node, "reason": recorded_reason}
     ):
@@ -579,6 +595,109 @@ def record_finding_disposition(
     _carry_answer_to_delivered_copies(reviewed_run_id, record, FINDING_DISPOSITIONS_KEY)
     commit_record_write(project, path)
     return path
+
+
+def deferred_finding_indexes(review: Mapping[str, Any] | None) -> tuple[int, ...]:
+    """The indexes of findings a landing carries forward without judging them.
+
+    A finding qualifies when it declares a non-blocking severity and nobody has
+    answered it: a fold or an exemption is its author's decision and is left
+    alone, and a finding that declares nothing is not non-blocking at all — an
+    unreadable severity is a judgement the reviewer left unstated, so it holds
+    the finding as a blocking one would. The severity is
+    :func:`reckon.crew.review.declared_severity`'s decision, the same reader the
+    landing guard and the repair reflex use, so the rule that defers and the
+    guard that admits can never disagree about one finding.
+    """
+    from reckon.crew import findings as findings_module
+    from reckon.crew import review as review_module
+
+    if not isinstance(review, Mapping):
+        return ()
+    qualifying: list[int] = []
+    for index, finding in enumerate(findings_module._record_findings(review)):
+        if not str(finding.get("text") or "").strip():
+            continue
+        if findings_module.finding_disposition(review, index) != "open":
+            continue
+        severity = review_module.declared_severity(finding)
+        if severity is None or severity == review_module.BLOCKING_FINDING_SEVERITY:
+            continue
+        qualifying.append(index)
+    return tuple(qualifying)
+
+
+def record_landed_deferrals(
+    project: str,
+    reviewed_run_id: str,
+    review: Mapping[str, Any],
+    *,
+    reviewed_head_sha: str | None = None,
+    base_dir: str | Path | None = None,
+) -> list[int]:
+    """Record each finding the landing carried forward as ``deferred``.
+
+    The landing pass admits a run whose review raises nothing blocking, so the
+    findings it raised must not vanish with the pointer that carried them. They
+    are not exempted either: an exemption is a judgement, and the pass makes
+    none. Each one still open is written as a ``deferred`` entry naming the run
+    it was deferred over and the rule that deferred it, which leaves the finding
+    open work in the findings view until a fold or an exemption answers it.
+
+    The dispositions are read from the stored record rather than from the
+    mapping the caller holds — a review parsed in memory carries no
+    dispositions, and reading them there would report every finding unanswered
+    and overwrite the answers the store already holds. The record rewritten is
+    the one for the head this review read, so a deferral recorded against one
+    revision never speaks for another. The returned indexes are the findings
+    this call deferred.
+    """
+    from reckon.crew import findings as findings_module
+
+    named = deferred_finding_indexes(review)
+    if not named:
+        return []
+    is_code_review = bool(code_review_identity(reviewed_run_id))
+    if is_code_review:
+        path, record = code_review_record_for_run(
+            project, reviewed_run_id, base_dir=base_dir
+        )
+    else:
+        path, record = stored_record(
+            project,
+            reviewed_run_id,
+            base_dir=base_dir,
+            reviewed_head_sha=reviewed_head_sha,
+        )
+    if record is None or path is None:
+        raise ValueError(
+            f"no stored review for run {reviewed_run_id!r} in project "
+            f"{project!r} to record a deferral against"
+        )
+    answered = set(deferred_finding_indexes(record))
+    deferred = [index for index in named if index in answered]
+    if not deferred:
+        return []
+    dispositions = record.get(FINDING_DISPOSITIONS_KEY)
+    merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    recorded_at = datetime.now(UTC).isoformat()
+    for index in deferred:
+        merged[str(index)] = {
+            "kind": findings_module.DEFERRED_DISPOSITION_KIND,
+            "run": reviewed_run_id,
+            "rule": DEFERRED_AT_LANDING_RULE,
+            "recorded_at": recorded_at,
+        }
+    record[FINDING_DISPOSITIONS_KEY] = merged
+
+    path.parent.mkdir(parents=True, exist_ok=True)
+    _write_record(path, record)
+    if not is_code_review:
+        _carry_answer_to_delivered_copies(
+            reviewed_run_id, record, FINDING_DISPOSITIONS_KEY
+        )
+    commit_record_write(project, path)
+    return deferred
 
 
 def dispose_commands(

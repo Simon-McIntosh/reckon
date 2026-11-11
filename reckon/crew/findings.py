@@ -23,7 +23,8 @@ Findings that declare a non-blocking severity are the ones most easily lost,
 so the reader pulls the record's findings whole — every severity, not only the
 blocking ones a repair is a candidate for. The finding's disposition is read
 from the record: ``open`` until a later writer records a fold or an exemption
-against it.
+against it, and ``deferred`` once a landing carried it forward without judging
+it — which leaves it open work all the same.
 """
 
 from __future__ import annotations
@@ -42,11 +43,26 @@ from reckon.crew import runs as _runs
 # The record field a per-finding disposition is written under, keyed by the
 # finding's index within its record — the same index the rows carry as
 # ``finding``. The value is a mapping with a ``kind`` of ``folded`` (naming the
-# node it went into) or ``exempted`` (naming the reason it is not being acted
-# on). The entry's presence is the disposition; a missing or unrecognised entry
-# leaves the finding ``open`` rather than reporting it as closed. The key is
-# declared once in :mod:`reckon.crew.review`, which writes the entry and is
-# imported here, so the writer and the reader can never disagree on it.
+# node it went into), ``exempted`` (naming the reason it is not being acted on)
+# or ``deferred`` (naming the run whose landing carried it forward). The entry's
+# presence is the disposition; a missing or unrecognised entry leaves the
+# finding ``open`` rather than reporting it as closed. The key is declared once
+# in :mod:`reckon.crew.review`, which writes the entry and is imported here, so
+# the writer and the reader can never disagree on it.
+
+#: The disposition kind the landing rule records for a finding it carried
+#: forward unjudged. It is written only by that rule, never by the dispose verb:
+#: a deferral says nobody decided, so a hand-written one would claim a decision
+#: the rule did not make on a finding nobody read.
+DEFERRED_DISPOSITION_KIND = "deferred"
+
+#: The kinds that answer a finding, and so end its life as open work.
+CLOSING_DISPOSITION_KINDS: frozenset[str] = frozenset({"folded", "exempted"})
+
+#: Every kind an entry may carry and still be read as a recorded disposition.
+RECORDED_DISPOSITION_KINDS: frozenset[str] = CLOSING_DISPOSITION_KINDS | {
+    DEFERRED_DISPOSITION_KIND
+}
 
 # The two scopes a row can carry. A repository path is one the record's own
 # checkout holds; every other path — an absolute report or manifest path, a
@@ -210,8 +226,14 @@ def finding_disposition(record: Mapping[str, Any], index: int) -> str:
 
     A fold renders ``folded:<node>``; an exemption renders ``exempted:<reason>``.
     A record carrying no disposition map, no entry for the index, or an entry
-    outside the closed set leaves the finding ``open`` — an unreadable entry is
-    a row someone meant to fill in, not a closed finding.
+    outside the set leaves the finding ``open`` — an unreadable entry is a row
+    someone meant to fill in, not a closed finding.
+
+    A deferred entry renders ``deferred:<run>``: the landing rule carried the
+    finding forward when it landed the run, naming the run it deferred over. The
+    finding is not closed by it — a deferral records that nobody judged the
+    finding, so it stays open work until a fold or an exemption answers it —
+    which is why :func:`parse_finding_disposition` reports it as open.
     """
     dispositions = record.get(_review.FINDING_DISPOSITIONS_KEY)
     if not isinstance(dispositions, Mapping):
@@ -226,6 +248,9 @@ def finding_disposition(record: Mapping[str, Any], index: int) -> str:
     if kind == "exempted":
         reason = str(entry.get("reason") or "").strip()
         return f"exempted:{reason}" if reason else "open"
+    if kind == DEFERRED_DISPOSITION_KIND:
+        run_id = str(entry.get("run") or "").strip()
+        return f"deferred:{run_id}" if run_id else "open"
     return "open"
 
 
@@ -233,15 +258,15 @@ def parse_finding_disposition(rendered: str) -> dict[str, str]:
     """Decode a rendered finding disposition into its kind and its target.
 
     :func:`finding_disposition` owns the encoding — a fold renders
-    ``folded:<node>`` and an exemption ``exempted:<reason>``. A caller that
-    counts dispositions by kind, or that needs the node a fold names, reads them
-    back through here rather than re-stating the prefixes. Anything that is not a
-    closed disposition, including ``open``, decodes to kind ``open`` with no
-    target.
+    ``folded:<node>``, an exemption ``exempted:<reason>`` and a landing deferral
+    ``deferred:<run>``. A caller that counts dispositions by kind, or that needs
+    the node a fold names, reads them back through here rather than re-stating
+    the prefixes. Anything that is not a recorded disposition, including
+    ``open``, decodes to kind ``open`` with no target.
     """
     kind, separator, target = str(rendered or "").partition(":")
     target = target.strip()
-    if not separator or not target or kind not in ("folded", "exempted"):
+    if not separator or not target or kind not in RECORDED_DISPOSITION_KINDS:
         return {"kind": "open", "target": ""}
     return {"kind": kind, "target": target}
 
@@ -256,11 +281,16 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
     index — and a dispose call can name the same finding.
 
     ``disposition`` and ``response`` answer two different questions and are kept
-    apart: a disposition is the fold or exemption a repair records against the
-    finding's index, and a response is the answer the answer verb records
-    against the finding's id. A row answers ``None`` for the second until one
-    has been recorded, rather than an empty answer, so a reader can tell an
-    unanswered finding from one answered with nothing.
+    apart: a disposition is the fold, exemption or landing deferral recorded
+    against the finding's index, and a response is the answer the answer verb
+    records against the finding's id. A row answers ``None`` for the second
+    until one has been recorded, rather than an empty answer, so a reader can
+    tell an unanswered finding from one answered with nothing.
+
+    ``open`` states whether the finding is still work somebody owes: a fold and
+    an exemption close it, a landing deferral does not — it records that the
+    rule carried the finding forward without judging it — so a deferred row is
+    listed with its disposition beside ``open: true``.
     """
     review_run_id = str(record.get("review_run_id") or "").strip()
     reviewed_run_id = str(record.get("reviewed_run_id") or "").strip()
@@ -279,6 +309,7 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
         raw_path = str(finding.get("path") or "").strip()
         relative = _runs._repository_relative_scope(raw_path, root)
         answer = answers.get(str(finding.get("id") or "").strip())
+        disposition = finding_disposition(record, index)
         rows.append(
             {
                 "path": relative if relative is not None else raw_path,
@@ -291,7 +322,9 @@ def _record_rows(record: Mapping[str, Any], root: Path | None) -> list[dict[str,
                 "review_run_id": review_run_id,
                 "reviewed_run_id": reviewed_run_id,
                 "reviewed_head_sha": reviewed_head_sha,
-                "disposition": finding_disposition(record, index),
+                "disposition": disposition,
+                "open": parse_finding_disposition(disposition)["kind"]
+                not in CLOSING_DISPOSITION_KINDS,
                 "response": dict(answer) if isinstance(answer, Mapping) else None,
             }
         )
