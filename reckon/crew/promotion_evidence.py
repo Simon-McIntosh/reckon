@@ -1431,6 +1431,88 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
     return review_module.gate_log_failure_ids(log_text)
 
 
+_DEFAULT_SUITE_PAIR = ("baseline_suite", "after_suite")
+
+
+def _same_cited_log(first: Any, second: Any) -> bool:
+    """Whether two cited log paths name one file.
+
+    A manifest and a gate citation are written by different hands, so one log
+    arrives spelled relatively on one side and absolutely on the other, or
+    through a home-relative form. Compared as text the two are different files
+    and the pair the gate belongs to never matches, so the comparison is made on
+    the resolved path. An empty citation names nothing and matches nothing.
+    """
+    left = str(first or "").strip()
+    right = str(second or "").strip()
+    if not left or not right:
+        return False
+    return os.path.realpath(os.path.expanduser(left)) == os.path.realpath(
+        os.path.expanduser(right)
+    )
+
+
+def _recorded_suite_pairs(
+    manifest: Mapping[str, Any] | None,
+) -> list[tuple[str, Any, Any]]:
+    """The further suite pairs a manifest records, as ``(name, base, head)``.
+
+    A run that measures more than one suite records each further pair under the
+    manifest's ``suite_pairs`` mapping from a pair name to its ``base`` and
+    ``head`` arms. An entry that is not a mapping carries no arms and is not a
+    pair, so it is skipped rather than read as one; a manifest recording no such
+    field yields no pairs at all.
+    """
+    if not isinstance(manifest, Mapping):
+        return []
+    recorded = manifest.get("suite_pairs")
+    if not isinstance(recorded, Mapping):
+        return []
+    pairs: list[tuple[str, Any, Any]] = []
+    for name, pair in recorded.items():
+        if not isinstance(pair, Mapping):
+            continue
+        pairs.append((str(name), pair.get("base"), pair.get("head")))
+    return pairs
+
+
+def _suite_pair_for_gate(
+    manifest: Mapping[str, Any] | None, gate_check: Mapping[str, Any] | None
+) -> tuple[Any, Any, str, str] | None:
+    """The suite pair a gate is measured against, as ``(base, head, base, head)``.
+
+    The last two entries are the arm names the refusal quotes, so a reader is
+    sent to the field the base sits in rather than to a default pair the run
+    never recorded. A gate belongs to the pair whose head arm cites the gate's
+    own log: a run may measure several suites, each with its own inherited
+    failures, and judging a second suite's gate against the default pair's base
+    reads every one of those inherited ids as added.
+
+    The default ``baseline_suite``/``after_suite`` pair is asked first and stays
+    the fallback, so a manifest that records no further pairs — and one whose
+    head arms cite other logs — is measured exactly as it was before the field
+    existed. A gate that names no log selects the default pair, because there is
+    nothing to match a recorded pair's head against.
+    """
+    if not isinstance(manifest, Mapping):
+        return None
+    base_name, head_name = _DEFAULT_SUITE_PAIR
+    gate_log = gate_check.get("log_path") if isinstance(gate_check, Mapping) else None
+    for name, base, head in [
+        (base_name, manifest.get(base_name), manifest.get(head_name)),
+        *_recorded_suite_pairs(manifest),
+    ]:
+        if (
+            gate_log
+            and isinstance(head, Mapping)
+            and _same_cited_log(head.get("log_path"), gate_log)
+        ):
+            if name in _DEFAULT_SUITE_PAIR:
+                return base, head, base_name, head_name
+            return base, head, f"suite_pairs.{name}.base", f"suite_pairs.{name}.head"
+    return manifest.get(base_name), manifest.get(head_name), base_name, head_name
+
+
 def _red_base_uncovered_ids(
     record: Mapping[str, Any], gate_check: Mapping[str, Any] | None
 ) -> set[str] | None:
@@ -1458,12 +1540,22 @@ def _red_base_uncovered_ids(
     that cannot be read each leave the delta unmeasured and report ``None``.
     The empty set means the comparison was made and found nothing uncovered,
     which is a different fact from a comparison that could not be made.
+
+    The pair compared with is the one the gate belongs to, read by
+    ``_suite_pair_for_gate``: a run that measured more than one suite records
+    each further pair under ``suite_pairs``, and a gate on a second suite judged
+    against the default pair's base reads that suite's inherited failures as
+    added. A gate whose log matches no recorded pair's head falls back to the
+    default pair, which is the behaviour a manifest recording no further pairs
+    keeps unchanged.
     """
     manifest = _fresh_manifest(record)
     if manifest is None:
         return None
-    baseline = manifest.get("baseline_suite")
-    after = manifest.get("after_suite")
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    if selected is None:
+        return None
+    baseline, after, _base_name, _head_name = selected
     if not isinstance(baseline, Mapping) or not isinstance(after, Mapping):
         return None
     for arm in (baseline, after):
@@ -1499,7 +1591,10 @@ def _zero_added_against_a_red_base(
     return _red_base_uncovered_ids(record, gate_check) == set()
 
 
-def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
+def _arm_without_completion(
+    manifest: Mapping[str, Any] | None,
+    gate_check: Mapping[str, Any] | None = None,
+) -> str | None:
     """Name the first recorded suite arm that does not declare its run complete.
 
     The refusal beside a nonzero exit status names the arm whose withheld
@@ -1507,11 +1602,18 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
     observation to finish and record. Only an arm the manifest actually
     records can be named: an arm that is absent is not an arm that omitted the
     key, and calling it uncompleted would state a fact its absence does not.
+
+    The arms named are those of the pair the gate is measured against, so a gate
+    on a further recorded pair names that pair's own arm rather than the
+    default pair's, which the run may have completed and left alone.
     """
     if manifest is None:
         return None
-    for name in ("baseline_suite", "after_suite"):
-        observation = manifest.get(name)
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    if selected is None:
+        return None
+    base, head, base_name, head_name = selected
+    for name, observation in ((base_name, base), (head_name, head)):
         if not isinstance(observation, Mapping):
             continue
         if observation.get("completed") is not True:
@@ -1522,20 +1624,39 @@ def _arm_without_completion(manifest: Mapping[str, Any] | None) -> str | None:
 _SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
 
 
-def _missing_suite_arms_clause(manifest: Mapping[str, Any] | None) -> str:
-    """Name the arm shapes a manifest recording no suite observation lacks.
+def _missing_suite_arms_clause(
+    manifest: Mapping[str, Any] | None,
+    gate_check: Mapping[str, Any] | None = None,
+) -> str:
+    """Name the arm shapes the pair a gate is measured against lacks.
 
     A passing verdict beside a nonzero exit can only be the delta verdict when
-    the run records both arms, and a manifest recording neither has no delta to
-    read: the refusal says so rather than leaving the reader to infer it from a
-    rule about arms that are not there. The shape each arm takes is read from
+    the run records both arms of the pair the gate belongs to, and a manifest
+    recording neither has no delta to read: the refusal says so rather than
+    leaving the reader to infer it from a rule about arms that are not there.
+    The shape each arm takes is read from
     ``ledger.suite_observation_missing_fields`` rather than restated, so a field
     added to the arm's contract is named here without a second edit.
+
+    A manifest that records further pairs whose head arms cite other logs is
+    named as such: the gate matched none of them, so the default pair is what it
+    would have been compared with, and saying only that the default arms are
+    absent would leave the recorded pairs looking unread.
     """
     if isinstance(manifest, Mapping) and any(
         manifest.get(name) is not None for name in _SUITE_ARM_NAMES
     ):
         return ""
+    recorded = _recorded_suite_pairs(manifest)
+    if recorded:
+        names = ", ".join(repr(name) for name, _base, _head in recorded)
+        return (
+            ", and the manifest records further suite pairs "
+            f"({names}) whose head arms cite no log this gate names, so the "
+            "default pair is the one this gate falls back to and the manifest "
+            "records neither a 'baseline_suite' nor an 'after_suite' arm to "
+            "read a delta against"
+        )
     shapes = "; then ".join(
         ", ".join(ledger_module.suite_observation_missing_fields({}, name=name))
         for name in _SUITE_ARM_NAMES
@@ -1610,8 +1731,8 @@ def _require_verdict_matches_exit_status(
     if uncovered == set():
         return
     fresh_manifest = _fresh_manifest(record)
-    incomplete = _arm_without_completion(fresh_manifest)
-    missing_arms = _missing_suite_arms_clause(fresh_manifest)
+    incomplete = _arm_without_completion(fresh_manifest, gate_check)
+    missing_arms = _missing_suite_arms_clause(fresh_manifest, gate_check)
     withheld = (
         ""
         if incomplete is None
