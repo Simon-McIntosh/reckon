@@ -30,6 +30,7 @@ from reckon import (
 from reckon.crew.dispatch_claims import (
     CLAIM_GRACE_OBSERVATIONS_NAME,
     CLAIM_GRACE_OBSERVATION_LIMIT,
+    _leave_dispatch_in_flight,
     read_claim,
 )
 from reckon._timestamps import (
@@ -133,6 +134,20 @@ def _launched_worker_record(
         "argv": list(plan.argv),
         "backend": plan.backend,
     }
+
+
+def _release_in_flight_dispatch(log_path: Path) -> None:
+    """Mark the dispatch whose stream this is as having reached its worker.
+
+    The stream path is ``<run dir>/<turn>.jsonl``, so the run it belongs to is
+    the directory's name. A launch outside a run directory — a lane probe —
+    names no dispatch and releases nothing. A service re-executing after this
+    point no longer has this dispatch to wait for: the worker exists, so
+    replacing the image orphans nothing.
+    """
+    run_id = Path(log_path).parent.name
+    if run_id and Path(log_path).parent == run_dir(run_id):
+        _leave_dispatch_in_flight(run_id)
 
 
 def _placement_job_state(
@@ -1910,7 +1925,9 @@ def _spawn_detached_worker(
     if exit_status is not None:
         if launched is not None:
             _record_launch_failure(launched, exit_status=exit_status)
+        _release_in_flight_dispatch(log_path)
         return process.pid
+    _release_in_flight_dispatch(log_path)
     with _LAUNCHED_WORKERS_LOCK:
         _LAUNCHED_WORKERS.add(process.pid)
         if launched is not None:
@@ -3261,6 +3278,7 @@ def _start_supervisor(
             if reservation is not None:
                 record_supervisor(reservation, pid)
             _confirm_supervisor_survived(pid, run_directory, run_id)
+            _leave_dispatch_in_flight(run_id)
             return pid
     argv = _supervisor_argv(spec_path=spec_path)
     try:
@@ -3271,6 +3289,7 @@ def _start_supervisor(
     if reservation is not None:
         record_supervisor(reservation, pid)
     _confirm_supervisor_survived(pid, run_directory, run_id)
+    _leave_dispatch_in_flight(run_id)
     return pid
 
 

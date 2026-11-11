@@ -502,6 +502,13 @@ class _FollowerReloader:
                     "reckon crew watch started its reload; awaiting replacement",
                     stream=self.stream,
                 )
+        # A dispatch this process is between claiming and launching would lose
+        # its thread to the replacement and leave its claim with no worker
+        # behind it, so the replacement waits for it, bounded, before taking
+        # the alarm down.
+        from reckon.crew import dispatch_claims
+
+        dispatch_claims.wait_for_dispatches_in_flight()
         # Ignoring the alarm before disarming drops one that became pending while
         # the import proof ran. The ignored disposition crosses exec until the
         # replacement installs its handler; a caught disposition would reset to
