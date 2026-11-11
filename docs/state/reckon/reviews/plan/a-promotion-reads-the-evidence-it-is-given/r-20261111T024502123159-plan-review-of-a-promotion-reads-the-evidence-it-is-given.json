@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:54:08.220Z",
+  "dispatched_at": "2026-11-11T02:47:18Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:21",
+      "id": "wiring-1",
+      "reason": "the standalone flag is what tells a coordinator this plan is independent; as written it invites dispatching \u00a715 in a wave where the section it waits on is still open, and the queue only holds a wait the plan declares.",
+      "text": "`plan-standalone` still reads \"no live plan waits on it and it waits on none\", but this plan's section dependencies now declare `s15` waiting on `workers-spend-fewer-tokens-per-landed-node#s9`, a section that is `implementable` and unlanded, so \u00a715 cannot be dispatched until that section lands",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:123",
+      "id": "done_when-1",
+      "reason": "a worker given this case will find it unsatisfiable on a real dispatch brief and must either weaken the case (a deviation the brief says to report) or compose a prompt no production caller composes, so the head-resolution half of the deliverable should ask the brief to name the base revision and its resolution and to instruct the head resolution, leaving the demonstrated head resolution to the resume advice where the head actually exists.",
+      "text": "\u00a715's first case requires that \"A composed implement brief names the base revision with the base resolution, and the head with the head resolution\", with the fixture adding a test file \"absent at the base revision, so the base and head resolutions differ\", but an implement brief is composed at dispatch on a freshly created worktree that sits at the dispatch base: `_resolved_suite_gate` resolves over that one tree (`reckon/crew/dispatch.py:2943\u20132949`) and `_compose_dispatch_prompt` takes only a `worktree` path, no revision pair (`reckon/crew/dispatch_claims.py:1245\u20131266`), so at composition time the head *is* the base and the two resolutions are the same string",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:123",
+      "id": "anchors_resolve-1",
+      "reason": "the same call path is named and the composer is one grep away, so the worker reaches the right code; only the citation is imprecise, and correcting it costs nothing for a worker who follows the chain.",
+      "text": "\u00a715's Why says the brief \"is reached from `_compose_dispatch_prompt` (`dispatch.py:2953\u20132971`)\", but that range is the call site inside the launcher; the function is defined at `reckon/crew/dispatch_claims.py:1245`, and a worker opening the cited lines sees a call, not the composer it must change",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:127",
+      "id": "reasoning-1",
+      "reason": "the refusal is only correct against the revision `crew complete` is actually promoting, so a worker who picks the worktree HEAD (or reads a key that does not exist) refuses or admits the wrong arms, which is the failure mode the section exists to remove.",
+      "text": "\u00a716 refuses when `after_suite.revision` \"is not the run's head\", but nothing in the section or the code says where that head is read: `_arm_missing_fields` receives `(record, arm_name, observation)` (`reckon/crew/promotion_records.py:686`), the promotion record's own shape carries `base_sha` and no head (`promotion_records.py:109\u2013121`), and the existing revision check beside it compares the baseline against `record[\"base_sha\"]` (`promotion_records.py:797\u2013805`) \u2014 the head could be the presented `--commit` head, the worktree HEAD, or the reviewed head, and the three disagree when a run is promoted with a presented head",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "5b4522056a34429eb4da2af45a2584501f81e79f",
+  "plan_fingerprint": "278372711a815af701e360ee72b9794af7ebe2380d9d36114ee235588cb509d2",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 82,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T024502123159-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "d08afe28d732802888862801a15901dbe482de39",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a715's new clause places `_compose_dispatch_prompt` at `dispatch.py:2953\u20132971`, which is its call site; the function is defined in `reckon/crew/dispatch_claims.py:1245`.",
+    "done_when": "a finding \u2014 \u00a715's first case asks a dispatch brief composed before the node writes to name a head resolution differing from the base's, which the dispatch path cannot produce.",
+    "evidence_paths": "pass \u2014 both sections put every log under the run directory, and \u00a716 additionally keeps the base-revision reproduction log there.",
+    "naming": "pass \u2014 \u00a716's title and mechanism sentences name the behaviour (`after_suite.revision` trailing the head), and no plan label, ticket number or version tag reaches the code it describes.",
+    "reasoning": "a finding \u2014 \u00a716 refuses \"not the run's head\" but never says where the head is read, and the promotion record carries no head.",
+    "single_goal": "pass \u2014 \u00a716 is one deliverable (the trailing-revision refusal and its message), split out of \u00a715, and \u00a715 is now only the brief and advice.",
+    "wiring": "a finding \u2014 `_document`'s `plan-standalone` says the plan \"waits on none\", while `plan-section-depends-on` now declares s15 waiting on `workers-spend-fewer-tokens-per-landed-node#s9`."
+  },
+  "section_digests": {
+    "_document": "b94061d71973e1c99882ffa91022766a6598f7d2cdad897aa5fb88f91f5cfadd",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "8b218cd4b5581229a9be728644a1c69bf0fe5723160b447572396fbe2ab9a17c",
+    "s16": "c11bd3191b84b1d6f453e055de6417a6c46da2f1d29b501ad1185556784ea1fa",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T03:15:41.329230+00:00",
+  "total": null
+}
