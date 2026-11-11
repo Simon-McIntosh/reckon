@@ -1,0 +1,161 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_count": 12,
+  "assertion_review": [
+    {
+      "failure_condition": "Fixture roots directly contain the worktree or an ancestor, masking omission in launch_plan; guards fixture representativeness.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        53,
+        54
+      ]
+    },
+    {
+      "failure_condition": "False or absent key adds Edit/MultiEdit disallow or changes baseline argv; four failures recorded under unconditional-disallow mutation. Root suffix shares the existing filter and does not independently test its policy.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        136
+      ]
+    },
+    {
+      "failure_condition": "Server registration omits worktree or a delivery root, changes module invocation, or fails to serialize the roots. Expected roots share the unmodified filter, so this is wiring coverage; reinstating omission still fails because expected roots explicitly include worktree.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        152
+      ]
+    },
+    {
+      "failure_condition": "Eligible launch fails to record enabled treatment.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        291
+      ]
+    },
+    {
+      "failure_condition": "Treatment argv lacks built-in edit restriction flag; existing test :164 verifies its exact contents.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        292
+      ]
+    },
+    {
+      "failure_condition": "Restoring old root computation refuses the source read; recorded reproduction fails here for both dialects.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        298
+      ]
+    },
+    {
+      "failure_condition": "Read does not return source content or anchored rendering; expected text comes from fixture bytes, not the tool output.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        299
+      ]
+    },
+    {
+      "failure_condition": "Edit through configured roots refuses the valid source replacement.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        304
+      ]
+    },
+    {
+      "failure_condition": "Successful response leaves original bytes or writes wrong content; independent filesystem read verifies persistence, despite expected replacement matching edit input.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        305
+      ]
+    },
+    {
+      "failure_condition": "Outside operator path is accepted, for example if server roots accidentally include fixture ancestor.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        309
+      ]
+    },
+    {
+      "failure_condition": "Outside refusal is caused by a different error rather than root confinement.",
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "lines": [
+        310
+      ]
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3324-3339",
+    "reckon/crew/dispatch_admission.py:_fence_write_roots",
+    "reckon/_backends.py:launch_plan",
+    "reckon/_worker_fence.py:_seed_anchored_edit",
+    "reckon/_worker_fence.py:fence_argv",
+    "reckon/anchored_edit.py:AnchoredEditor"
+  ],
+  "completed_at": "2026-11-11T02:54:22Z",
+  "dispatched_at": "2026-11-11T02:44:46Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "/home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_anchored_edit_claude_arm.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T220407285765-anchored-edit-claude-arm/worktree-root-committed-armed.log",
+      "revision": "782e0a1f54dc674f7d0410585e3ff00b4115a982",
+      "summary": "73 passed in 29.01s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T220407285765-anchored-edit-claude-arm/baseline-suite.log",
+      "revision": "e1c296ff16a4e6ba142b2e3248385ce24cd88997",
+      "summary": "51 passed in 22.64s"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read the single correction commit 782e0a1f54dc674f7d0410585e3ff00b4115a982 against previously reviewed afcff1e553f85e9bc191abe5d8a487eb63517f07; three files change, adding the worktree grant, production-derived fixture roots, behavioral regression coverage and cumulative evidence.",
+    "done_when": "baseline-suite.log records 51 passed and worktree-root-committed-armed.log records 73 passed at the correction head, both EXIT=0; worktree-root-reproduction.log shows two failures before repair and the committed negative control shows four failures.",
+    "goal": "dispatch-detail.json and resume-2-advice.txt require a usable Claude treatment arm; reckon/_backends.py:2865 now includes the separately granted worktree in server roots.",
+    "manifest": "manifest.md names correction commit 782e0a1f54dc674f7d0410585e3ff00b4115a982, its completed 73-pass after arm, the two-failure reproduction and the four-failure negative control, matching the opened logs.",
+    "write_paths": "the correction changes only reckon/_backends.py, tests/test_anchored_edit_claude_arm.py and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-claude-arm.html, all declared paths."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit_claude_arm.py:298 fails when the worktree grant is removed, as the two-failure reproduction confirms, and :305 independently checks edited file bytes; :151 shares the unmodified root-filter owner with production so it alone does not verify that owner's filtering policy.",
+    "evidence": "worktree-root-reproduction.log records both dialects refusing source.py before repair and worktree-root-committed-armed.log records 73 passed at 782e0a1f54dc674f7d0410585e3ff00b4115a982, while tests/test_anchored_edit_claude_arm.py:56 deliberately substitutes the filesystem launch wrapper rather than running a live worker.",
+    "fit": "reckon/_backends.py:2864 states the grant mechanism in the existing launch-composition seam and tests/test_anchored_edit_claude_arm.py:286 names the behavior without a transient task label.",
+    "goal_fidelity": "reckon/_backends.py:2865 adds the worktree to the existing root filter before registration, resolving the production omission identified by the preceding review.",
+    "reuse": "capability searches for root filtering and anchored source edits found reckon/_worker_fence.py:fence_writable_roots and reckon/anchored_edit.py:AnchoredEditor; reckon/_backends.py:2865 and the added regression invoke those existing owners and add no production definition.",
+    "scope_discipline": "the three correction paths match the declared scope and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-claude-arm.html:58 appends the correction without replacing the earlier evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json and resume-2-advice.txt require a usable Claude treatment arm; reckon/_backends.py:2865 now includes the separately granted worktree in server roots.\nVERDICT done_when: baseline-suite.log records 51 passed and worktree-root-committed-armed.log records 73 passed at the correction head, both EXIT=0; worktree-root-reproduction.log shows two failures before repair and the committed negative control shows four failures.\nVERDICT write_paths: the correction changes only reckon/_backends.py, tests/test_anchored_edit_claude_arm.py and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-claude-arm.html, all declared paths.\nVERDICT manifest: manifest.md names correction commit 782e0a1f54dc674f7d0410585e3ff00b4115a982, its completed 73-pass after arm, the two-failure reproduction and the four-failure negative control, matching the opened logs.\nVERDICT diff: read the single correction commit 782e0a1f54dc674f7d0410585e3ff00b4115a982 against previously reviewed afcff1e553f85e9bc191abe5d8a487eb63517f07; three files change, adding the worktree grant, production-derived fixture roots, behavioral regression coverage and cumulative evidence.\nCALL_SITES: reckon/crew/dispatch.py:3324-3339, reckon/crew/dispatch_admission.py:_fence_write_roots, reckon/_backends.py:launch_plan, reckon/_worker_fence.py:_seed_anchored_edit, reckon/_worker_fence.py:fence_argv, reckon/anchored_edit.py:AnchoredEditor\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2865 adds the worktree to the existing root filter before registration, resolving the production omission identified by the preceding review.\nSCORE evidence: 19\nJUSTIFICATION evidence: worktree-root-reproduction.log records both dialects refusing source.py before repair and worktree-root-committed-armed.log records 73 passed at 782e0a1f54dc674f7d0410585e3ff00b4115a982, while tests/test_anchored_edit_claude_arm.py:56 deliberately substitutes the filesystem launch wrapper rather than running a live worker.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three correction paths match the declared scope and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-claude-arm.html:58 appends the correction without replacing the earlier evidence.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_anchored_edit_claude_arm.py:298 fails when the worktree grant is removed, as the two-failure reproduction confirms, and :305 independently checks edited file bytes; :151 shares the unmodified root-filter owner with production so it alone does not verify that owner's filtering policy.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/_backends.py:2864 states the grant mechanism in the existing launch-composition seam and tests/test_anchored_edit_claude_arm.py:286 names the behavior without a transient task label.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for root filtering and anchored source edits found reckon/_worker_fence.py:fence_writable_roots and reckon/anchored_edit.py:AnchoredEditor; reckon/_backends.py:2865 and the added regression invoke those existing owners and add no production definition.\n",
+  "review_run_id": "r-20261111T024149054330-review-of-anchored-edit-claude-arm-782e0a1f54dc",
+  "review_scope_note": "Incremental review only: previous immutable review remains at its afcff1e553f85e9bc191abe5d8a487eb63517f07 path. Failure delta uses the reviewed run original baseline and committed after logs, not a new correction-only suite pair. No suite rerun or product mutation performed.",
+  "reviewed_base_sha": "afcff1e553f85e9bc191abe5d8a487eb63517f07",
+  "reviewed_commits": [
+    "782e0a1f54dc674f7d0410585e3ff00b4115a982"
+  ],
+  "reviewed_head_sha": "782e0a1f54dc674f7d0410585e3ff00b4115a982",
+  "reviewed_run_id": "r-20261110T220407285765-anchored-edit-claude-arm",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:59:05.242754+00:00",
+  "total": 118,
+  "verdict": "approved"
+}
