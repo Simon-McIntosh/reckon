@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="docs-project" content="reckon">
   <meta name="reckon-type" content="evidence">
-  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance-ab2-codex-anchored-s5-landed">
   <meta name="plan-evidence-for" content="a-gate-halts-only-on-substance">
   <meta name="plan-verifies" content="a-gate-halts-only-on-substance#s5">
   <title>Heavy compute budget floor verified | reckon</title>
@@ -24,9 +24,12 @@
           <tr><td>Floor removed in memory</td><td>2 failed, 3 passed in 5.43s; EXIT=1</td><td><code>negative-control.log</code></td></tr>
           <tr><td>All 13 direct importer test files, all_debug job 1310608, four workers</td><td>155 passed in 8.57s; EXIT=0</td><td><code>baseline-importers.log</code></td></tr>
           <tr><td>Dispatch-declared baseline suite</td><td>51 passed in 22.16s; EXIT=0</td><td><code>baseline-suite.log</code></td></tr>
+          <tr><td>Dispatch-declared head suite at <code>8190c620431d22c4c842dfc749c3ba855aee8990</code></td><td>51 passed in 25.64s; EXIT=0; zero added failures</td><td><code>head-suite.log</code></td></tr>
+          <tr><td>All 13 direct importer test files at that head, all_debug job 1310615, four workers</td><td>155 passed in 8.67s; EXIT=0; zero added failures</td><td><code>head-importers.log</code></td></tr>
         </tbody>
       </table>
       <p>The negative control replaces <code>node_budget</code> with the declared budget in its own Python process. Its probe prints <code>healthy H200 budget: 6h</code> and <code>floor removed H200 budget: 8m</code>; the no-budget fence assertion and the heavy-brief size assertion both fail, with the latter reporting <code>up_to_30m</code> instead of <code>over_60m</code>. The other three tests still pass.</p>
+      <p>The head arms used <code>/tmp/reckon-crew-scratch/r-20261111T130242583450-ab2-codex-anchored-a-gate-halts-s5</code> as <code>TMPDIR</code>. The fragment has its own unique evidence slug and passes <code>reckon audit-doc</code>. The product module and regression test are unchanged from the assigned base.</p>
       <p>Logs and the manifest are retained under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T130242583450-ab2-codex-anchored-a-gate-halts-s5/</code>. The manifest records head-arm results and the evidence commit. These are stubbed picker tests; no GPU job was launched. Plan state and section closure remain the coordinator's responsibility.</p>
     </section>
   </main>
