@@ -598,10 +598,12 @@ LAUNCH_IDENTITY_STEP = "identity-published"
 _EXEC_IDENTITY = secrets.token_hex(16)
 _PUBLISHED_EXEC_IDENTITY_PATHS: set[Path] = set()
 
-# How many claims of this execution the identity file exists for. Every
-# importing process would otherwise leave one behind, whether or not it ever
-# dispatches anything, and nothing ever removed them.
-_EXEC_IDENTITY_CLAIMS: dict[str, int] = {"held": 0}
+# How many claims each identity file of this execution exists for, keyed by
+# which file. Every importing process would otherwise leave one behind, whether
+# or not it ever dispatches anything, and nothing ever removed them. The key is
+# the path rather than the pid because one process can resolve more than one
+# crew home, and a claim of one home says nothing about another's file.
+_EXEC_IDENTITY_CLAIMS: dict[Path, int] = {}
 _EXEC_IDENTITY_LOCK = threading.Lock()
 
 
@@ -629,12 +631,12 @@ def _publish_exec_identity() -> str | None:
 
 def _retain_exec_identity() -> str | None:
     """Publish this execution's identity for a claim this process is taking."""
+    path = _exec_identity_path(os.getpid())
     with _EXEC_IDENTITY_LOCK:
-        _EXEC_IDENTITY_CLAIMS["held"] += 1
+        _EXEC_IDENTITY_CLAIMS[path] = _EXEC_IDENTITY_CLAIMS.get(path, 0) + 1
     identity = _publish_exec_identity()
     if identity is None:
-        with _EXEC_IDENTITY_LOCK:
-            _EXEC_IDENTITY_CLAIMS["held"] -= 1
+        _retire_exec_identity()
     return identity
 
 
@@ -646,12 +648,13 @@ def _retire_exec_identity() -> None:
     with the last claim means a process that took and released a claim leaves
     the crew home exactly as it found it.
     """
+    path = _exec_identity_path(os.getpid())
     with _EXEC_IDENTITY_LOCK:
-        if _EXEC_IDENTITY_CLAIMS["held"]:
-            _EXEC_IDENTITY_CLAIMS["held"] -= 1
-        if _EXEC_IDENTITY_CLAIMS["held"]:
+        remaining = max(0, _EXEC_IDENTITY_CLAIMS.get(path, 0) - 1)
+        if remaining:
+            _EXEC_IDENTITY_CLAIMS[path] = remaining
             return
-        path = _exec_identity_path(os.getpid())
+        _EXEC_IDENTITY_CLAIMS.pop(path, None)
         with contextlib.suppress(OSError):
             path.unlink(missing_ok=True)
             _PUBLISHED_EXEC_IDENTITY_PATHS.discard(path)
