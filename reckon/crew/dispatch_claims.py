@@ -594,9 +594,17 @@ LAUNCH_IDENTITY_STEP = "identity-published"
 
 # This value changes when an interpreter starts after exec, even when the
 # kernel keeps its pid and process start time. Publishing by pid lets a later
-# dispatch judge the holder using only the record it is trying to reclaim.
+# dispatch judge the holder using only the record it is already reclaiming.
 _EXEC_IDENTITY = secrets.token_hex(16)
 _PUBLISHED_EXEC_IDENTITY_PATHS: set[Path] = set()
+
+# How many claims each identity file of this execution exists for, keyed by
+# which file. Every importing process would otherwise leave one behind, whether
+# or not it ever dispatches anything, and nothing ever removed them. The key is
+# the path rather than the pid because one process can resolve more than one
+# crew home, and a claim of one home says nothing about another's file.
+_EXEC_IDENTITY_CLAIMS: dict[Path, int] = {}
+_EXEC_IDENTITY_LOCK = threading.Lock()
 
 
 def _exec_identity_path(pid: int) -> Path:
@@ -604,7 +612,7 @@ def _exec_identity_path(pid: int) -> Path:
 
 
 def _publish_exec_identity() -> str | None:
-    """Publish this execution's identity before its claims can be judged."""
+    """Publish this execution's identity so its claims can be judged."""
     path = _exec_identity_path(os.getpid())
     if path in _PUBLISHED_EXEC_IDENTITY_PATHS:
         return _EXEC_IDENTITY
@@ -621,7 +629,36 @@ def _publish_exec_identity() -> str | None:
     return _EXEC_IDENTITY
 
 
-_publish_exec_identity()
+def _retain_exec_identity() -> str | None:
+    """Publish this execution's identity for a claim this process is taking."""
+    path = _exec_identity_path(os.getpid())
+    with _EXEC_IDENTITY_LOCK:
+        _EXEC_IDENTITY_CLAIMS[path] = _EXEC_IDENTITY_CLAIMS.get(path, 0) + 1
+    identity = _publish_exec_identity()
+    if identity is None:
+        _retire_exec_identity()
+    return identity
+
+
+def _retire_exec_identity() -> None:
+    """Remove this execution's identity file once no claim of it remains.
+
+    The file answers one question — which execution of a pid holds a claim —
+    so it is meaningful only while this process still holds one. Removing it
+    with the last claim means a process that took and released a claim leaves
+    the crew home exactly as it found it.
+    """
+    path = _exec_identity_path(os.getpid())
+    with _EXEC_IDENTITY_LOCK:
+        remaining = max(0, _EXEC_IDENTITY_CLAIMS.get(path, 0) - 1)
+        if remaining:
+            _EXEC_IDENTITY_CLAIMS[path] = remaining
+            return
+        _EXEC_IDENTITY_CLAIMS.pop(path, None)
+        with contextlib.suppress(OSError):
+            path.unlink(missing_ok=True)
+            _PUBLISHED_EXEC_IDENTITY_PATHS.discard(path)
+
 
 # How long a refused dispatch re-reads the holder's record before naming it
 # without a run id. The holder writes its record immediately after the
@@ -779,6 +816,7 @@ class _NodeDispatchClaim:
         # A claim this process has given back is no longer a dispatch it owes a
         # worker, so a service re-executing afterwards has nothing to wait for.
         _leave_dispatch_in_flight(self.run_id)
+        _retire_exec_identity()
 
 
 # ── Dispatches between their claim and their worker ─────────────────────────
@@ -896,7 +934,7 @@ def _claim_node_dispatch(
         "process_start_time": _process_start_time(os.getpid()),
         "created_at": _utc_now(),
     }
-    exec_identity = _publish_exec_identity()
+    exec_identity = _retain_exec_identity()
     if exec_identity is not None:
         record["exec_identity"] = exec_identity
     reclaimed: dict[str, Any] | None = None
@@ -908,6 +946,7 @@ def _claim_node_dispatch(
             if _claim_holder_is_alive(holder) and not _empty_claim_is_stale(
                 path, holder
             ):
+                _retire_exec_identity()
                 raise CrewError(
                     format_refusal(
                         "D12",
@@ -940,9 +979,11 @@ def _claim_node_dispatch(
                 json.dump(record, handle)
         except BaseException:
             path.unlink(missing_ok=True)
+            _retire_exec_identity()
             raise
         _enter_dispatch_in_flight(run_id, node_id)
         return _NodeDispatchClaim(path, run_id, reclaimed=reclaimed)
+    _retire_exec_identity()
     raise CrewError(
         format_refusal(
             "D12",
