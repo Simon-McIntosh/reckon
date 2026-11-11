@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <meta name="evidence-commit" content="7adcfaa282759e61ae0ff2f0d44cdd53b24cbe25">
+  <title>crew tell reads a codex run's launch argv from the run directory</title>
+</head>
+<body>
+<section id="crew-tell-reads-the-recorded-argv">
+  <h2>A codex run's reachability is decided by the argv its launch recorded, not by the live pointer</h2>
+
+  <p><code>crew tell</code> decided a codex run's reachability from the live pointer's
+  <code>argv</code> field. No real run has one: the pointer is rewritten on every state change and
+  carries no argv at all, so the predicate answered <em>neither the inbox hook override nor its
+  trust override</em> for every codex run, and a coordinator could not reach a codex worker through
+  the verb even when the launch had composed both overrides.</p>
+
+  <h3 id="crew-tell-reads-the-recorded-argv-repro">The refusal, reproduced on the run it blocked</h3>
+  <p>Codex live check <code>r-20261111T132025827799-codex-inbox-live-check</code>. The pointer holds
+  no <code>argv</code> key; the run directory's <code>worker.json</code> holds a 283-word argv whose
+  indices 264 and 266 are <code>hooks.PostToolUse</code> and <code>hooks.state</code>. Reading the
+  pointer's argv answers <code>'neither the inbox hook override nor its trust override'</code>, so
+  the verb refused. Reading the run directory's argv answers <code>None</code>, the acceptance the
+  verb needed. The message the coordinator had to write by hand was
+  <code>inbox/claimed/20261111T132804524207Z-manual.md</code>, a name the verb's own
+  <code>message_name()</code> never produces; the hook claimed it at
+  <code>13:28:06Z</code> and its codeword <code>OSPREY-LANTERN-3</code> was quoted in that run's
+  report. Delivery worked, and only the verb's argv source was wrong.</p>
+
+  <h3 id="crew-tell-reads-the-recorded-argv-source">Where the launch records its argv</h3>
+  <p><code>_run_recorded_argv</code> takes the attempt the pointer names from the records the run
+  directory holds, discovered by <code>_attempt_worker_records</code>, the helper the resume path
+  already reads: the canonical <code>worker.json</code> is the attempt running now and its argv
+  answers, while an <code>attempt-&lt;n&gt;-worker.json</code> receipt describes an attempt since
+  retired. While a resume has retired the canonical record and not yet written the replacement,
+  the pointer's attempt is the newest receipt that exists. A run directory holding no readable
+  record answers <code>None</code>, so such a run is refused rather than reported queued.</p>
+
+  <h3 id="crew-tell-reads-the-recorded-argv-hook">The hook override is recognised across checkouts</h3>
+  <p>The override names an interpreter and a script path from the checkout that composed it. An
+  equality test against this checkout's own composition refused every run launched anywhere else,
+  including the run that produced the measurement above, so the hook is now identified by
+  <code>worker_inbox.py</code>, the part that reads the inbox.</p>
+
+  <h3 id="crew-tell-reads-the-recorded-argv-measure">Gate</h3>
+  <p>Head arm <code>logs/suite-head.log</code> at <code>28b27757f0</code>:
+  <strong>68 passed in 37.12s</strong>, <code>EXIT=0</code>. Baseline arm
+  <code>logs/suite-base.log</code> at <code>5fa38a0392</code>: <strong>62 passed, 2 errors in
+  6.26s</strong>, <code>EXIT=1</code>; both errors are the staged-write inventory calling
+  <code>git ls-tree</code> in the extraction, which carries no <code>.git</code> (scaffolding, not
+  code under test). Ruff on the two staged paths is clean in <code>logs/ruff.log</code>
+  (<code>EXIT=0</code>).</p>
+
+  <h3 id="crew-tell-reads-the-recorded-argv-negative-control">Negative control</h3>
+  <p>Declared mutation: read the argv from the pointer again. Applied, every case that reads the
+  run directory fails, including the canonical record winning beside a retired attempt:
+  <strong>4 failed, 13 deselected in 6.53s</strong>, <code>EXIT=1</code>
+  (<code>logs/negative-control.log</code>), the first failure carrying the refusal text
+  <em>that argv carries neither the inbox hook override nor its trust override</em>.</p>
+</section>
+</body>
+</html>
