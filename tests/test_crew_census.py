@@ -327,3 +327,34 @@ def test_signal_refusal_is_printed_and_exits_nonzero(processes, monkeypatch):
         "reason": "fixture signal refusal",
     }
     assert child.poll() is None
+
+
+@pytest.mark.parametrize("collision", ["foreign-host", "reused-pid"])
+def test_colliding_records_do_not_mask_local_ownership(processes, collision):
+    child = processes()
+    _registered(crew_home(), child, _dead_owner(processes), "follower", live=False)
+    path = _registered(crew_home(), child, os.getpid(), "producer", live=True)
+    record = json.loads(path.read_text())
+    if collision == "foreign-host":
+        record["host"] = "a-different-host"
+    else:
+        record["pid_start_time"] = "a-reused-pid"
+    _write(path, record)
+    report = census_module.census()
+    assert [row["pid"] for row in report["orphaned"]] == [child.pid]
+    assert report["orphaned"][0]["owner"]["kind"] == "follower"
+
+
+def test_conflicting_ownership_for_one_process_is_spared(processes):
+    child = processes()
+    owner = _dead_owner(processes)
+    _registered(crew_home(), child, owner, "follower", live=False)
+    _registered(crew_home(), child, owner, "producer", live=False)
+    report = census_module.census()
+    assert report["orphaned"] == []
+    assert (
+        report["spared"][0]["owner"]["unknown"]
+        == "multiple registrations claim this process identity"
+    )
+    assert census_module.apply_census(report) == []
+    assert child.poll() is None

@@ -88,7 +88,7 @@ def _ancestry() -> set[int]:
     return excluded
 
 
-def _ownership_records(home: Path) -> tuple[dict[int, dict], dict[str, dict]]:
+def _ownership_records(home: Path) -> tuple[dict[int, list[dict]], dict[str, dict]]:
     records = {}
     for pattern, kind in (
         ("watch/*.followers/*.lock", "follower"),
@@ -97,7 +97,9 @@ def _ownership_records(home: Path) -> tuple[dict[int, dict], dict[str, dict]]:
         for path in sorted(home.glob(pattern)):
             record = _read_json_file(path)
             if record and (pid := _integer(record.get("pid"))) is not None:
-                records[pid] = {**record, "kind": kind, "source": str(path)}
+                records.setdefault(pid, []).append(
+                    {**record, "kind": kind, "source": str(path)}
+                )
     pointers = {}
     for path in sorted((home / "live").glob("*.json")):
         record = _read_json_file(path)
@@ -108,12 +110,19 @@ def _ownership_records(home: Path) -> tuple[dict[int, dict], dict[str, dict]]:
 
 def _owner(
     process: Mapping[str, Any],
-    records: Mapping[int, dict],
+    records: Mapping[int, list[dict]],
     pointers: Mapping[str, dict],
 ) -> dict[str, Any] | None:
     pid = process["pid"]
     environment = process["environment"]
-    record = records.get(pid)
+    choices = records.get(pid, [])
+    matching = [
+        record
+        for record in choices
+        if record.get("host") == socket.gethostname()
+        and str(record.get("pid_start_time") or "") == process["start_time"]
+    ]
+    record = matching[0] if matching else next(iter(choices), None)
     if record:
         owner = {
             "kind": record["kind"],
@@ -121,6 +130,11 @@ def _owner(
             "session": record.get("session"),
             "project": record.get("project"),
         }
+        if len(matching) > 1:
+            return {
+                **owner,
+                "unknown": "multiple registrations claim this process identity",
+            }
         if record.get("host") != socket.gethostname():
             return {**owner, "unknown": "registration is not on this host"}
         if str(record.get("pid_start_time") or "") != process["start_time"]:
