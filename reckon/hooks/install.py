@@ -47,6 +47,7 @@ from __future__ import annotations
 import json
 import shlex
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
@@ -194,9 +195,23 @@ def build_worker_inbox_snippet(
     return {"hooks": {INBOX_EVENT: [worker_inbox_group(script_path)]}}
 
 
-def is_worker_inbox_group(group: Any) -> bool:
-    """Recognise a bare or interpreter-bound inbox hook group."""
+def _is_worker_hook_group(
+    group: Any,
+    *,
+    script_name: str,
+    matchers: Iterable[str] | None = None,
+) -> bool:
+    """Recognise a group that runs exactly one bare or bound worker hook.
+
+    ``matchers`` is the set of tool matchers the group may name, or None for an
+    event that carries no matcher at all — the inbox hook answers every tool
+    call, so its group names none. One recogniser serves every worker hook: the
+    three callers differ only in which script and matcher they accept, and
+    three copies of this body would let a fix to one drift from the others.
+    """
     if not isinstance(group, dict):
+        return False
+    if matchers is not None and group.get("matcher") not in matchers:
         return False
     hooks = group.get("hooks")
     if not isinstance(hooks, list) or len(hooks) != 1:
@@ -215,7 +230,12 @@ def is_worker_inbox_group(group: Any) -> bool:
         path = Path(command[0])
     else:
         return False
-    return path.name == WORKER_INBOX_SCRIPT_NAME and path.parent.name == "hooks"
+    return path.name == script_name and path.parent.name == "hooks"
+
+
+def is_worker_inbox_group(group: Any) -> bool:
+    """Recognise a bare or interpreter-bound inbox hook group."""
+    return _is_worker_hook_group(group, script_name=WORKER_INBOX_SCRIPT_NAME)
 
 
 def settings_carry_worker_inbox(settings_path: Path | str) -> bool:
@@ -559,52 +579,18 @@ def worker_walk_guard_groups(script_path: Path | str | None = None) -> list[dict
 
 def is_worker_walk_guard_group(group: Any) -> bool:
     """Recognise a bare or interpreter-bound worker walk guard group."""
-    if not isinstance(group, dict) or group.get("matcher") not in WALK_GUARD_MATCHERS:
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) == 2:
-        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
-            return False
-        path = Path(command[1])
-    elif len(command) == 1:
-        path = Path(command[0])
-    else:
-        return False
-    return path.name == WORKER_WALK_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
+    return _is_worker_hook_group(
+        group,
+        script_name=WORKER_WALK_GUARD_SCRIPT_NAME,
+        matchers=WALK_GUARD_MATCHERS,
+    )
 
 
 def is_worker_git_guard_group(group: Any) -> bool:
     """Recognise a bare or interpreter-bound worker git guard group."""
-    if not isinstance(group, dict) or group.get("matcher") != "Bash":
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) == 2:
-        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
-            return False
-        path = Path(command[1])
-    elif len(command) == 1:
-        path = Path(command[0])
-    else:
-        return False
-    return path.name == WORKER_GIT_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
+    return _is_worker_hook_group(
+        group, script_name=WORKER_GIT_GUARD_SCRIPT_NAME, matchers=("Bash",)
+    )
 
 
 def _print(payload: dict[str, Any], stream: IO[str] | None) -> None:

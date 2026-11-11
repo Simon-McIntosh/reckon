@@ -27,6 +27,7 @@ tool call of every worker carrying it.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import socket
@@ -45,6 +46,7 @@ HOOK_EVENT = "PostToolUse"
 # receipts are appended beside it, one JSON object per delivered message.
 INBOX_DIRNAME = "inbox"
 CLAIMED_DIRNAME = "claimed"
+FAILED_DIRNAME = "failed"
 RECEIPTS_NAME = "receipts.jsonl"
 MESSAGE_SUFFIX = ".md"
 
@@ -62,14 +64,16 @@ CONTEXT_HEADER = (
 
 
 def _config_home() -> Path:
-    """Resolve the reckon config home the way the reckon package does."""
-    env = os.environ.get("RECKON_HOME")
-    if env:
-        return Path(env).expanduser()
-    xdg = Path.home() / ".config" / "reckon"
-    if xdg.exists():
-        return xdg
-    return Path.home() / "docs-server"
+    """Resolve the reckon config home through the package's own resolver.
+
+    Imported here rather than at module scope because this hook is a fresh
+    process on every tool call and the store package's import costs about two
+    seconds; only a run that lost ``RECKON_MANIFEST`` reaches this fallback, so
+    the ordinary path never pays it.
+    """
+    from reckon._store import _config_home as resolve_config_home
+
+    return resolve_config_home()
 
 
 def _resolved(raw: Any) -> Path | None:
@@ -193,14 +197,17 @@ def append_receipt(
     name: str,
     payload: dict[str, Any],
     delivered_at: str | None = None,
+    failed: str | None = None,
 ) -> dict[str, Any]:
-    """Append the one record that proves this message was delivered.
+    """Append the one record that proves what became of this message.
 
     Delivery is proved by this line and by nothing else: the file leaving the
     inbox shows a claim, while the receipt names the message, the moment it was
-    handed to the model and the tool call it followed. It is appended with a
-    single write to a file opened for append, so concurrent hooks cannot
-    interleave one line with another.
+    handed to the model and the tool call it followed. A message the hook
+    claimed but could not read is recorded here too, with ``failed`` naming the
+    error, because a claimed message that leaves no record is the one outcome
+    nobody can see. It is appended with a single write to a file opened for
+    append, so concurrent hooks cannot interleave one line with another.
     """
     record = {
         "message": name,
@@ -210,6 +217,8 @@ def append_receipt(
         "tool_use_id": payload.get("tool_use_id"),
         "session_id": payload.get("session_id"),
     }
+    if failed is not None:
+        record["failed"] = failed
     inbox = Path(run_directory_path) / INBOX_DIRNAME
     inbox.mkdir(parents=True, exist_ok=True)
     line = json.dumps(record, sort_keys=True) + "\n"
@@ -241,6 +250,47 @@ def receipts(run_directory_path: Path) -> list[dict[str, Any]]:
     return records
 
 
+def park_unreadable(
+    run_directory_path: Path,
+    claimed_path: Path,
+    payload: dict[str, Any],
+    error: BaseException,
+) -> Path:
+    """Keep a claimed message the hook cannot read, and record the failure.
+
+    The claim already took the message out of the inbox, so leaving it there
+    would report a delivery that never happened and dropping it would destroy
+    the coordinator's instruction. It moves into ``inbox/failed/`` instead —
+    out of the claim path so no later tool call retries a file that will fail
+    the same way, and still on disk for a person to read — and the receipt
+    records that this message was not handed to the model.
+
+    The move is a hard link under the new name and the removal of the old one,
+    because the bytes may be exactly what could not be read: both names live in
+    the run directory, so the link is on one filesystem and the content is
+    never rewritten. A message that cannot be moved at all stays where it is,
+    and the receipt still records the failure.
+    """
+    failed = Path(run_directory_path) / INBOX_DIRNAME / FAILED_DIRNAME
+    parked = claimed_path
+    try:
+        failed.mkdir(parents=True, exist_ok=True)
+        parked = failed / claimed_path.name
+        os.link(claimed_path, parked)
+    except OSError:
+        parked = claimed_path
+    else:
+        with contextlib.suppress(OSError):
+            os.unlink(claimed_path)
+    append_receipt(
+        run_directory_path,
+        name=claimed_path.name,
+        payload=payload,
+        failed=f"{type(error).__name__}: {error}",
+    )
+    return parked
+
+
 def compose_context(delivered: list[tuple[str, str]]) -> str:
     """Render claimed messages as the context block the model reads."""
     blocks: list[str] = []
@@ -261,7 +311,8 @@ def deliver(payload: dict[str, Any]) -> dict[str, Any] | None:
             continue
         try:
             body = claimed.read_text(encoding="utf-8")
-        except OSError:
+        except OSError as exc:
+            park_unreadable(run, claimed, payload, exc)
             continue
         delivered.append((claimed.name, body))
         append_receipt(run, name=claimed.name, payload=payload)
@@ -284,7 +335,9 @@ def manifest_message_finding(text: str, run_directory_path: Path) -> str | None:
     reads as a model that ignored its inbox, and no receipt with no statement
     reads as a channel nobody can tell from silence.
     """
-    recorded = receipts(run_directory_path)
+    recorded = [
+        entry for entry in receipts(run_directory_path) if not entry.get("failed")
+    ]
     if not recorded:
         if _manifest_says_none(text):
             return None

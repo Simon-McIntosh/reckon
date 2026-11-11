@@ -236,6 +236,49 @@ def test_pending_messages_lists_what_no_tool_call_has_claimed(tmp_path: Path):
     assert worker_inbox.claim(written) is None
 
 
+def test_a_claimed_message_that_cannot_be_read_is_kept_and_recorded(
+    tmp_path: Path, monkeypatch
+):
+    """A read failure after the claim must not destroy the coordinator's words.
+
+    The claim has already taken the message out of the inbox, so a hook that
+    skipped an unreadable one would neither deliver it nor leave a record: the
+    instruction would be gone and the run would look as though it had been told
+    nothing. It is kept where a person can still read it, and the receipt says
+    it was not delivered.
+    """
+    run, manifest = _run_dir(tmp_path)
+    written = worker_inbox.write_message("codeword: pelican", run)
+    monkeypatch.setenv("RECKON_MANIFEST", str(manifest))
+    original_read_text = Path.read_text
+
+    def unreadable(self: Path, *args, **kwargs):
+        if self.parent.name == worker_inbox.CLAIMED_DIRNAME:
+            raise PermissionError(13, "Permission denied", str(self))
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+
+    assert worker_inbox.deliver({"tool_name": "Bash"}) is None
+
+    parked = run / "inbox" / worker_inbox.FAILED_DIRNAME / written.name
+    assert parked.read_text() == "codeword: pelican"
+    assert not (run / "inbox" / worker_inbox.CLAIMED_DIRNAME / written.name).exists()
+    recorded = _receipts(run)
+    assert len(recorded) == 1
+    assert recorded[0]["message"] == written.name
+    assert recorded[0]["failed"].startswith("PermissionError")
+
+    # A failed delivery is not a delivery: the manifest still owes `none`.
+    assert (
+        worker_inbox.manifest_message_finding(
+            f"{worker_inbox.MANIFEST_MESSAGES_KEY}: none\n", run
+        )
+        is None
+    )
+    assert worker_inbox.manifest_message_finding("", run) is not None
+
+
 # ── the writer refuses what it cannot deliver to ─────────────────────────────
 
 
@@ -319,6 +362,38 @@ def test_the_run_view_lists_a_message_until_a_tool_call_claims_it(
     assert [receipt["message"] for receipt in delivered["inbox"]["delivered"]] == [
         queued["inbox"]["unclaimed"][0]["message"]
     ]
+
+
+def test_the_run_view_tolerates_a_message_claimed_while_it_reads(
+    tmp_path: Path, monkeypatch
+):
+    """Listing and reading are two steps, and a claim can land between them.
+
+    The message is then delivered, not lost, and its receipt appears in the same
+    answer. Treating that race as an error would fail a coordinator's read of a
+    run whose delivery was working — the one moment it most needs to see.
+    """
+    from reckon.crew import query as query_module
+    from reckon.mcp_views import serve_crew_view
+
+    run, manifest, _ = _seeded_run(tmp_path)
+    home = _crew_home(tmp_path, _record(tmp_path, manifest_path=str(manifest)))
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setattr(
+        query_module, "runs_view", lambda *args, **kwargs: {"ok": True, "rows": []}
+    )
+    written = worker_inbox.write_message("steer left", run)
+    assert worker_inbox.claim(written) is not None
+    # The listing the view received from before the claim, naming a path that
+    # is no longer in the inbox.
+    monkeypatch.setattr(
+        worker_inbox, "pending_messages", lambda run_directory: [written]
+    )
+
+    view = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
+
+    assert view["inbox"]["unclaimed"] == []
+    assert view["inbox"]["unclaimed_count"] == 0
 
 
 def test_crew_tell_refuses_an_ended_run_naming_resume(tmp_path: Path, monkeypatch):

@@ -50,12 +50,15 @@
   <h3 id="worker-inbox-hook-writer">The writer refuses what it cannot deliver to</h3>
   <p><code>reckon crew tell --run &lt;id&gt; "&lt;message&gt;"</code> writes one message atomically to
   <code>&lt;run dir&gt;/inbox/</code> and reports <code>queued_for_next_tool_call</code>, never a
-  delivery: the receipt is the only proof. It refuses an ended run naming
-  <code>crew resume --advice</code>, and refuses a live run whose own home carries no
-  <code>PostToolUse</code> entry — <code>fenced: false</code>, a record with no <code>fenced</code>
-  key, a home seeded without the entry, and any non-Claude dialect. The test is the run home's
-  settings file, read through <code>install.settings_carry_worker_inbox</code>, not the record's
-  <code>fenced</code> flag, because a live run's home is never re-seeded.</p>
+  delivery: the receipt is the only proof. It refuses, in this order, an ended run (naming
+  <code>crew resume --advice</code>), a record naming no manifest path, a record whose
+  <code>fenced</code> flag is not <code>true</code> — explicitly <code>false</code>, or absent —
+  any non-Claude dialect, and a Claude run home whose <code>settings.json</code> carries no
+  <code>PostToolUse</code> entry. The first refusals are record reads: a run that was never fenced
+  has no delivery channel however its home looks. The settings file, read through
+  <code>install.settings_carry_worker_inbox</code>, is the last test and the one that catches a
+  fenced run whose home was seeded before the hook existed — a live run's home is never
+  re-seeded.</p>
   <p>The peer-send guard now names <code>crew tell</code> while the addressed worker is live and
   <code>crew resume</code> once it has stopped; <code>crew check --manifest</code> reports a run
   whose receipts record a delivery its manifest does not quote, and one that received nothing

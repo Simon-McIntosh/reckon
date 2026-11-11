@@ -14,7 +14,6 @@ from reckon._flight_schema import BackendConfig
 from reckon.anchored_edit import AnchoredEditor
 from reckon.crew import dispatch_launch, runs
 from reckon.crew.dispatch_admission import _fence_write_roots
-from reckon.hooks import install
 
 BASE_SETTINGS = (
     '{\n  "enableAllProjectMcpServers": false,\n'
@@ -24,6 +23,22 @@ BASE_MCP = (
     '{\n  "mcpServers": {\n    "operator": {\n'
     '      "command": "operator-server"\n    }\n  }\n}\n'
 )
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _inbox_group() -> dict:
+    """The PostToolUse group seeding adds, written out rather than built.
+
+    Composing this through the installer would assert the function under test
+    against itself: a change to the script name or the interpreter layout would
+    move both sides together and the case would still pass. The literal states
+    what a run home must contain — the checkout's interpreter running the hook
+    script from this repository — so the seeding must agree with it.
+    """
+    script = REPO_ROOT / "reckon" / "hooks" / "worker_inbox.py"
+    interpreter = REPO_ROOT / ".venv" / "bin" / "python"
+    return {"hooks": [{"type": "command", "command": f"{interpreter} {script}"}]}
 
 
 def _with_inbox_hook(document: dict, *, sorted_keys: bool = False) -> bytes:
@@ -40,7 +55,7 @@ def _with_inbox_hook(document: dict, *, sorted_keys: bool = False) -> bytes:
     merged = dict(document)
     merged["hooks"] = {
         **(merged.get("hooks") or {}),
-        install.INBOX_EVENT: [install.worker_inbox_group()],
+        "PostToolUse": [_inbox_group()],
     }
     return (json.dumps(merged, indent=2, sort_keys=sorted_keys) + "\n").encode()
 

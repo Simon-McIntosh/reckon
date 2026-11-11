@@ -4344,19 +4344,37 @@ def run_inbox_messages(run_id: str) -> dict[str, Any] | None:
     if not manifest_path:
         return None
     run_directory = Path(manifest_path).expanduser().parent
-    pending = worker_inbox.pending_messages(run_directory)
+    unclaimed = [
+        entry
+        for entry in (
+            _unclaimed_message(path)
+            for path in worker_inbox.pending_messages(run_directory)
+        )
+        if entry is not None
+    ]
     return {
-        "unclaimed": [
-            {
-                "message": path.name,
-                "bytes": path.stat().st_size,
-                "text": path.read_text(encoding="utf-8", errors="replace"),
-            }
-            for path in pending
-        ],
-        "unclaimed_count": len(pending),
+        "unclaimed": unclaimed,
+        "unclaimed_count": len(unclaimed),
         "delivered": worker_inbox.receipts(run_directory),
     }
+
+
+def _unclaimed_message(path: Path) -> dict[str, Any] | None:
+    """One waiting message as the view reports it, or None if it just went.
+
+    Listing and reading are two steps, and the hook's claim is a rename that can
+    land between them: the message is then delivered, not lost, and its receipt
+    appears in the same answer. Reporting the race as an error would fail a
+    coordinator's read of a run whose delivery was working.
+    """
+    try:
+        return {
+            "message": path.name,
+            "bytes": path.stat().st_size,
+            "text": path.read_text(encoding="utf-8", errors="replace"),
+        }
+    except OSError:
+        return None
 
 
 def serve_crew_view(
