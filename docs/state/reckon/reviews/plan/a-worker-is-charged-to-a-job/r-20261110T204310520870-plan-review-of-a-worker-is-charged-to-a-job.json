@@ -1,0 +1,78 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T20:59:09.384Z",
+  "dispatched_at": "2026-11-10T20:47:53Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:902",
+      "id": "anchors_resolve-1",
+      "reason": "the section exists to remove an `UnknownBlockError` caused by a heading that does not resolve, and a node that transcribes the heading from the plan reproduces that same error, so the plan should quote the canonical header verbatim in both places it names it.",
+      "text": "\u00a712 names the replacement heading as `### The fleet node is for coordination; heavy work goes to a partition`, but the canonical source's header is `### The fleet node is for coordination; heavy work goes to a partition (binding, lead directive 2026-11-10)` (`~/.agents/AGENTS.md:1132`); `block_map` keys blocks by the whole header line and `select_blocks` raises on an exact miss, so setting `FLEET_COMPUTE_HEADER` from the plan's text raises `UnknownBlockError: \"canonical source has no block '### The fleet node is for coordination; heavy work goes to a partition'\"` (verified in-process)",
+      "type": "anchors_resolve",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "30b83545e2f083e19d61a33dc4324d73f0b36a02",
+  "plan_fingerprint": "7e6b92bb91c959faa9a1deb971f5568629449daadc5ab2866d1ff37d99758ed3",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 74,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "ab25432c5697df8321ab25c72dba425c06fcb5df",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "The canonical heading carries the suffix '(binding, lead directive 2026-11-10)'. \u00a712's repair round selects the block by that full heading line, and its fixture pins it, as the worker reads the live file.",
+      "reason": "",
+      "when": "2026-11-10T22:38:43.281008+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "ab25432c5697df8321ab25c72dba425c06fcb5df",
+      "commit_basis": "edit",
+      "note": "The canonical heading carries the suffix '(binding, lead directive 2026-11-10)'. \u00a712's repair round selects the block by that full heading line, and its fixture pins it, as the worker reads the live file.",
+      "reason": "",
+      "when": "2026-11-10T22:38:43.281008+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-worker-is-charged-to-a-job.v74.json",
+  "review_run_id": "r-20261110T204310520870-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "9a961c3ce41d06acaae124c576203a5c81cb46eb",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the new canonical heading is quoted twice at `docs/plans/a-worker-is-charged-to-a-job.html:902` without its parenthetical suffix, and `select_blocks` matches header lines exactly, so the quoted form does not resolve.",
+    "done_when": "pass \u2014 the done-when is measurable (`worker_digest --check`, digest content, a base-versus-head failure delta, ruff) and names a negative control, the old heading, which I ran: mapping `### On the fleet allocation, run heavy work in place` raises `UnknownBlockError`.",
+    "evidence_paths": "pass \u2014 the section writes no gate to a scratch path; its outputs are the committed `reckon/crew/digests/*.md` artefacts and the run's own manifest.",
+    "naming": "pass \u2014 the section introduces no plan label, stage name or ticket number new to the plan, and its heading names the mechanism.",
+    "reasoning": "pass \u2014 the stated cause reproduces (`python -m reckon.crew.worker_digest --check` raises `UnknownBlockError: \"canonical source has no block '### On the fleet allocation, run heavy work in place'\"`), and the mechanism produces the done-when: repointing the constant and the SECTION_MAP entries and regenerating yields implement 11,336 estimated tokens (under the 15,000 bound), test 10,011, both carrying the new heading and `sbatch` and neither carrying the old heading, with the regeneration diff confined to the fleet block and the source digest.",
+    "single_goal": "pass \u2014 s12 carries one deliverable, the digests read the partition rule, and every clause of its done-when measures that one thing.",
+    "wiring": "pass \u2014 s12 is declared `implementable` in `plan-section-declarations` with a matching `data-reckon=\"section\"` element, and it needs no `depends-on`: the block it selects lives in the canonical `~/.agents/AGENTS.md`, not in another plan section."
+  },
+  "section_digests": {
+    "_document": "9fd50640108bf0075bef6e3a3c8157ff46d6c44356cb004b314e8dc9001bcc3d",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s10": "bb83ceb5fa0455b401cc70e106fd1c709dee32357bc8258f635417008f72fa53",
+    "s11": "d23b69334fa91ffaab10aec58a8416d929b5898bc2bd8b4c324d01f346577319",
+    "s12": "272c546674036473a21e022ca02374bfc561d00a2e867500263fefd3198cd89a",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-10T22:38:34.975516+00:00",
+  "total": null
+}
