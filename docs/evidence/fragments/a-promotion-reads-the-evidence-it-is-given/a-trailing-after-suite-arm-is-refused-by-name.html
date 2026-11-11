@@ -6,10 +6,12 @@
   revision. A run that measured halfway through its own work and then committed
   again therefore promoted an after arm about a tree nobody ships, and the
   refusal it did get named neither the revision recorded nor the one required.
-  The run's head is now read once by the delta reader — the run worktree's
-  <code>HEAD</code> while it survives, otherwise the newest commit its manifest
-  cites, read through <code>git rev-list --topo-order</code> — and passed into
-  <code>_arm_missing_fields</code>. An after arm recorded at any other revision
+  The run's head is now read once by the delta reader, through the review
+  path's own resolvers — <code>_run_head_for_review</code> for the head (the
+  worktree's <code>HEAD</code> while it survives, otherwise the carried head by
+  ancestry) and <code>_review_tree</code> for the tree that revision resolves in
+  — rather than by a second reader that could disagree with a review of the
+  same run. It is passed into <code>_arm_missing_fields</code>. An after arm recorded at any other revision
   is refused as <code>after_suite.revision_matches_head</code>, and the message
   names the revision recorded, the run's head, and the armed command resolved at
   that head to rerun.</p>
@@ -18,16 +20,18 @@
   <code>after_suite.revision</code> is the base while the worktree head has
   moved past it, the base revision accepted the pair:</p>
 
-  <pre><code>ACCEPTED: {"added_failure_ids": [], "status": "clean", ...,
- "after_suite": {"revision": "dae2725811d3b2f667848155f4466b3402b596bf", ...}}</code></pre>
+  <pre><code>base=dfff17c38b480efa931216d1ce72317badbcad3e
+head=322c9f084606d02f7edc5ee1634f4c00139111de
+after_suite.revision=dfff17c38b480efa931216d1ce72317badbcad3e (trails the head)
+ACCEPTED: {"added_failure_ids": [], ..., "status": "clean", ...}</code></pre>
 
-  <p>(excerpt; the full line is in the log) with the run's head at
-  <code>ab28456cd03e</code>. The same probe at the
-  head refuses: <code>missing after_suite.revision_matches_head. The after arm
-  was recorded at dae2725811d3 …, which is not the run's head ab28456cd03e:
-  re-run the armed command at that head and record the after arm at the head's
-  revision: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-  tests/test_alpha.py</code>.</p>
+  <p>(excerpt; the full line is in <code>base-revision-trailing-arm.log</code>,
+  whose header names the revision of the code it imported,
+  <code>0ce01d29a8ad44e784545b4b47348f48de1ec811</code>). The same probe run at
+  the head, importing <code>269f61739fe3</code>, refuses and names both
+  revisions and the command to rerun at the head:</p>
+
+  <pre><code>REFUSED SuiteDeltaError: armed promotion requires complete baseline and after suite evidence; missing after_suite.revision_matches_head. The after arm was recorded at b5560ca23d17d7305f95e85a844bfc609635bbee, which is not the run's head f2451935c7040a75f7cc824a2f5c71e340fd98ae: re-run the armed command at that head and record the after arm at the head's revision: PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_alpha.py</code></pre>
 
   <h3 id="a-trailing-after-suite-arm-is-refused-by-name-measured">Measured</h3>
 
@@ -35,9 +39,9 @@
   drives the promotion's own delta reader over a scratch repository whose
   worktree head has moved past its base. Three cases: an after arm at the base
   is refused naming both revisions and the head's command; an after arm at the
-  head is not refused on revision; and with the linked worktree released the
-  head is read from the newest cited commit, so the same trailing arm is still
-  refused. All three pass at the head.</p>
+  head is not refused on revision; and with the linked worktree released, so
+  that <code>_run_head_for_review</code> falls back to the head the record
+  carries, the same trailing arm is still refused. All three pass at the head.</p>
 
   <p>The node's suite pair, each arm resolved over its own tree: the base arm at
   <code>0ce01d29a8</code> names only the census test and reports
@@ -68,7 +72,8 @@
   <code>ruff format --check</code> report no finding on either staged path.</p>
 
   <p><strong>Logs.</strong> <code>base-revision-trailing-arm.log</code>,
-  <code>baseline-node-arm.log</code>, <code>head-node-arm.log</code>,
+  <code>head-trailing-arm.log</code>, <code>baseline-node-arm.log</code>,
+  <code>head-node-arm.log</code>,
   <code>baseline-importer-arm.log</code>, <code>head-importer-arm.log</code> and
   <code>negative-control-trailing-arm.log</code> under the run directory, each
   opening with its revision and literal command and ending in
