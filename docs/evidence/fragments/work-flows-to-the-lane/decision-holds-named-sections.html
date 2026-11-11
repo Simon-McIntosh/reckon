@@ -23,8 +23,13 @@
   <p>The armed base check collected <code>tests/test_staged_write_inventory.py</code>
     and reported <strong>51 passed</strong>. The new test file covers the table
     at dispatch and admission, reader/schema/roadmap parity and reuse of the
-    cached verdict. The run manifest carries the final head, importer delta and
-    the negative-control receipt, produced on <code>all_debug</code>. The
-    declared mutation discards decision sections so the independent dispatch
-    is held; the scoped-open check must fail against that mutation.</p>
+    cached verdict. The head gate at
+    <code>c24e6895846b0bc0555e2da6509df8dd98e171af</code> reported
+    <strong>58 passed, 3 failed</strong> on <code>all_debug</code>: the scoped-open
+    and both locked admission cases still observed zero launches. The preceding
+    head reported 57 passed and 4 failed; correcting the fixture's explicit
+    mount and state roots fixed the queue-state assertions but did not establish
+    launch evidence. The two-failure stop rule now holds this node. The declared
+    negative mutation and importer head arm remain unrun; no completed delta or
+    negative-control receipt is claimed.</p>
 </section>
