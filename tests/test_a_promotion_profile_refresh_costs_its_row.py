@@ -206,7 +206,7 @@ def test_a_generation_move_during_a_fold_does_not_publish_mixed_inputs(
 
 
 def _fold_path(history):
-    return history.with_name(f"{PROJECT}-fold-inputs.json")
+    return history.with_name(f".{PROJECT}-fold-inputs.json")
 
 
 def test_picks_never_decode_the_fold_inputs(history, monkeypatch):
@@ -323,3 +323,18 @@ def test_fold_inputs_must_match_the_served_stamp_and_date(history, monkeypatch, 
     monkeypatch.setattr(lane_context, "run_time_profile", build)
     assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 50
     assert build.call_count == 1
+
+
+def test_fold_inputs_do_not_overwrite_another_projects_served_profile(history):
+    other = history.with_name(f"{PROJECT}-fold-inputs.json")
+    capabilities._write_pick_entry(
+        other,
+        {
+            "version": capabilities.PICK_INPUT_CACHE_VERSION,
+            "key": "other-project",
+            "value": {"rows": 7, "persisted_at": NOW.isoformat()},
+        },
+    )
+    before = other.read_bytes()
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    assert other.read_bytes() == before

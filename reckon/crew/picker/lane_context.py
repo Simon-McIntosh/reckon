@@ -889,7 +889,7 @@ def refresh_run_time_profile(
     path = capabilities.pick_input_cache_path(
         project, root=_profile_cache_root(), filename=filename
     )
-    inputs_path = path.with_name(f"{project}-fold-inputs.json")
+    inputs_path = path.with_name(f".{project}-fold-inputs.json")
     entry = capabilities._read_pick_entry(path)
     inputs_entry = capabilities._read_pick_entry(inputs_path)
     previous = inputs_entry.get("value") if inputs_entry else None
