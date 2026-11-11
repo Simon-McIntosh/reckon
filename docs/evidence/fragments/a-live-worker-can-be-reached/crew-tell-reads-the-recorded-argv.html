@@ -9,7 +9,7 @@
   <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s11">
   <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-11">
-  <meta name="evidence-commit" content="2be5e33abc774d2798131a890d6d447f3451dd83">
+  <meta name="evidence-commit" content="7adcfaa282759e61ae0ff2f0d44cdd53b24cbe25">
   <title>crew tell reads a codex run's launch argv from the run directory</title>
 </head>
 <body>
@@ -35,11 +35,13 @@
   report. Delivery worked, and only the verb's argv source was wrong.</p>
 
   <h3 id="crew-tell-reads-the-recorded-argv-source">Where the launch records its argv</h3>
-  <p><code>_run_recorded_argv</code> reads the run directory's canonical <code>worker.json</code> for
-  the attempt running now, falling back to the newest <code>attempt-&lt;n&gt;-worker.json</code>
-  receipt, which is the only account of the launch while a resume has retired the canonical record
-  and not yet written the replacement. A run directory holding no readable record answers
-  <code>None</code>, so such a run is refused rather than reported queued.</p>
+  <p><code>_run_recorded_argv</code> takes the attempt the pointer names from the records the run
+  directory holds, discovered by <code>_attempt_worker_records</code>, the helper the resume path
+  already reads: the canonical <code>worker.json</code> is the attempt running now and its argv
+  answers, while an <code>attempt-&lt;n&gt;-worker.json</code> receipt describes an attempt since
+  retired. While a resume has retired the canonical record and not yet written the replacement,
+  the pointer's attempt is the newest receipt that exists. A run directory holding no readable
+  record answers <code>None</code>, so such a run is refused rather than reported queued.</p>
 
   <h3 id="crew-tell-reads-the-recorded-argv-hook">The hook override is recognised across checkouts</h3>
   <p>The override names an interpreter and a script path from the checkout that composed it. An
@@ -48,17 +50,18 @@
   <code>worker_inbox.py</code>, the part that reads the inbox.</p>
 
   <h3 id="crew-tell-reads-the-recorded-argv-measure">Gate</h3>
-  <p>Head arm <code>logs/suite-head.log</code> at <code>2be5e33abc</code>:
-  <strong>67 passed in 28.94s</strong>, <code>EXIT=0</code>. Baseline arm
+  <p>Head arm <code>logs/suite-head.log</code> at <code>7adcfaa282</code>:
+  <strong>68 passed in 39.73s</strong>, <code>EXIT=0</code>. Baseline arm
   <code>logs/suite-base.log</code> at <code>5fa38a0392</code>: <strong>62 passed, 2 errors in
   6.26s</strong>, <code>EXIT=1</code>; both errors are the staged-write inventory calling
   <code>git ls-tree</code> in the extraction, which carries no <code>.git</code> (scaffolding, not
-  code under test).</p>
+  code under test). Ruff on the two staged paths is clean in <code>logs/ruff.log</code>
+  (<code>EXIT=0</code>).</p>
 
   <h3 id="crew-tell-reads-the-recorded-argv-negative-control">Negative control</h3>
-  <p>Declared mutation: read the argv from the pointer again. Applied, the real-launch-shape case
-  fails by refusing a run whose <code>worker.json</code> carries both overrides:
-  <strong>3 failed, 13 deselected in 7.10s</strong>, <code>EXIT=1</code>
+  <p>Declared mutation: read the argv from the pointer again. Applied, every case that reads the
+  run directory fails, including the canonical record winning beside a retired attempt:
+  <strong>4 failed, 13 deselected in 6.53s</strong>, <code>EXIT=1</code>
   (<code>logs/negative-control.log</code>), the first failure carrying the refusal text
   <em>that argv carries neither the inbox hook override nor its trust override</em>.</p>
 </section>
