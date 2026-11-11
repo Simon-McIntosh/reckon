@@ -2187,6 +2187,15 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     kept beside it under ``manifest.md.asdelivered``, and the reason is recorded
     in the run directory. A manifest with no top-level status line, or a status
     outside the terminal vocabulary, is refused rather than half-repaired.
+
+    The live pointer's phase moves with the status. The phase is what the live
+    view reads to say where a run stands, and the manifest is what the
+    classifier reads to say what it produced; a repair that rewrote one and left
+    the other named a run the two readers disagreed about — the view read the
+    replaced word while the reflex read the verdict. The phase is set to the
+    verdict rather than reconciled with the phase it replaced, because the
+    verdict is the run's state now and the word it held described the record the
+    coordinator has just corrected.
     """
     verdict = str(status).strip().lower()
     if verdict not in REPAIRABLE_STATUSES:
@@ -2208,6 +2217,12 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         raise CrewError(
             f"the manifest at {manifest} carries no top-level status line to repair"
         )
+    # The pointer is read before anything is written, so a pointer this repair
+    # cannot read refuses while both records still say what they said rather
+    # than leaving the manifest corrected and the pointer stale.
+    pointer_present = pointer_path(run_id).is_file()
+    if pointer_present:
+        previous_phase = str(read_pointer(run_id).get("phase") or "")
     # The as-delivered copy is written before the rewrite and never overwritten,
     # so it always holds the worker's own file and a repair that repeats or
     # fails still leaves the delivery recoverable beside it.
@@ -2215,6 +2230,10 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
     if not as_delivered.exists():
         as_delivered.write_text(original, encoding="utf-8")
     write_atomically(manifest, lambda handle: handle.write(rewritten), fsync=False)
+    moved_phase: str | None = None
+    if pointer_present:
+        pointer = _mutate_pointer(run_id, lambda record: {**record, "phase": verdict})
+        moved_phase = str(pointer.get("phase") or "")
     record = {
         "run_id": run_id,
         "status": verdict,
@@ -2222,6 +2241,8 @@ def repair_manifest_status(run_id: str, status: str, reason: str) -> dict[str, A
         "previous_status": previous,
         "previous_manifest": str(as_delivered),
         "manifest": str(manifest),
+        "previous_phase": previous_phase if pointer_present else None,
+        "pointer_phase": moved_phase,
         "repaired_at": _utc_now(),
     }
     _write_json(run_dir(run_id) / STATUS_REPAIR_RECORD_NAME, record)
