@@ -1098,3 +1098,51 @@ def test_a_shadow_row_says_so_end_to_end_rather_than_by_identifier(
     assert "\x1b[38;5;" in primary
     assert "\x1b[38;5;" not in shadow
     assert "\x1b[2m" in shadow
+
+
+def _submission_event(**overrides) -> dict:
+    event = {
+        "project": "proj",
+        "event": "submission",
+        "observed_at": "2026-11-11T16:20:00Z",
+        "run_id": "r-first",
+        "node": "first-node",
+        "session": "coordinator-a",
+        "plan": "plan-a",
+        "section": "dispatch",
+        "lane": "local-lane",
+        "model": "local-model",
+        "advice": "steer left",
+        "tell_command": "reckon crew tell --run r-first '<message>'",
+        "working": 2,
+        "blocked": 2,
+        "unpromoted": 0,
+    }
+    event.update(overrides)
+    return event
+
+
+def test_a_session_is_told_on_its_pane_when_its_request_is_submitted() -> None:
+    """The admit pass's row is news the pane prints, in the pass that wrote it.
+
+    A submission row names no state word, so the holds that decide a transition
+    have nothing to judge it by; the policy must deliver it as it stands rather
+    than read it as observer context and drop it. The line it prints names the
+    run, the plan section, the lane and the ``crew tell`` command that reaches
+    the worker, which is what the coordinator acts on.
+    """
+    event = _submission_event()
+
+    delivered = ticker_module.PaneRowPath(own_session="coordinator-a").feed(
+        event, now=0.0
+    )
+
+    assert delivered == [event]
+    assert ticker_module.stream_carries(event)
+    line = recovery.format_watch_transition(event)
+    assert "\n" not in line
+    assert ticker_module.SUBMISSION_STAGE in line
+    assert "run r-first" in line
+    assert "plan-a §dispatch" in line
+    assert "lane local-lane" in line
+    assert "reckon crew tell --run r-first" in line
