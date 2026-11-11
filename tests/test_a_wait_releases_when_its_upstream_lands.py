@@ -15,7 +15,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import shutil
 import subprocess
+import tempfile
 from pathlib import Path
 
 import pytest
@@ -104,13 +106,54 @@ def _rewrite_declarations(repository: Path, change: dict[str, str]) -> None:
     _git(repository, "commit", "-q", "-m", "chore: declare the section done")
 
 
+def _outside_any_work_tree(path: Path) -> bool:
+    """Whether no git work tree contains ``path``."""
+    resolved = path.resolve()
+    return not any(
+        (parent / ".git").exists() for parent in (resolved, *resolved.parents)
+    )
+
+
 @pytest.fixture()
-def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
+def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+    """A checkout, a config home and a ledger, all this fixture's own."""
+    # The ledger resolves the work tree above its own path and reads a project's
+    # runs through that tree's checkout, so a fixture laid out beneath one has
+    # its reads answered from the repository rather than from the fixture while
+    # its writes still land here. A test run whose temp directory sits inside the
+    # tree under test -- a basetemp beneath the checkout, which a suite run from
+    # an archived tree does -- is exactly that case, so the fixture moves to a
+    # directory clear of every work tree when it has to.
+    root = (
+        tmp_path
+        if _outside_any_work_tree(tmp_path)
+        else Path(tempfile.mkdtemp(prefix="reckon-section-wait-"))
+    )
+    home = tmp_path / "home"
+    home.mkdir()
+    # Nothing the ledger, the queue or the mounts registry resolves may reach the
+    # invoking user's home: a live configuration there would answer for a fixture
+    # checkout it knows nothing about.
+    monkeypatch.setenv("HOME", str(home))
+    for variable, leaf in (
+        ("XDG_CONFIG_HOME", "config"),
+        ("XDG_DATA_HOME", "data"),
+        ("XDG_STATE_HOME", "state"),
+    ):
+        (home / leaf).mkdir()
+        monkeypatch.setenv(variable, str(home / leaf))
+    # The cache keeps its own directory inside the suite's temp path, which is
+    # where the session fixture requires every cache resolution to stay.
+    cache = tmp_path / "cache"
+    cache.mkdir()
+    monkeypatch.setenv("XDG_CACHE_HOME", str(cache))
+    monkeypatch.setenv("RECKON_PICK_CACHE", str(cache / "pick-input"))
+    config_home = root / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(config_home / "state"))
 
-    repository = tmp_path / "checkout"
+    repository = root / "checkout"
     state = repository / "docs" / "state" / PROJECT
     state.mkdir(parents=True)
     (state / "index.json").write_text(
@@ -135,9 +178,6 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # unnamed: the guard would read the host repository's HEAD instead of the
     # one built here.
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
-    # The cache home is pinned too: a lookup that resolved through the invoking
-    # checkout would answer from a tree this fixture never built.
-    monkeypatch.setenv("XDG_CACHE_HOME", str(config_home / "cache"))
     from reckon.crew.dispatch_sections import project_mount_repository
 
     resolved = project_mount_repository(PROJECT)
@@ -154,7 +194,20 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         f"{ledger.ledger_path(PROJECT)}, outside the fixture's config home; a "
         "cached index or a stale home would answer from another tree"
     )
-    return repository
+    # A ledger write and the read that follows it must land on the same file.
+    # The assertion above names the write path only; this round trip proves the
+    # read path too, on a project name of its own so the probe row cannot stand
+    # in for one of the test's own.
+    probe = "fixture-probe"
+    ledger.run_path(probe, "probe").parent.mkdir(parents=True, exist_ok=True)
+    ledger.write_run_file(probe, {"run_id": "probe", "project": probe})
+    assert [row["run_id"] for row in ledger.load(probe)[0]["runs"]] == ["probe"], (
+        "the ledger read back is not the ledger just written; a read that "
+        "resolves through another work tree answers empty"
+    )
+    yield repository
+    if root != tmp_path:
+        shutil.rmtree(root, ignore_errors=True)
 
 
 def _config_for():
