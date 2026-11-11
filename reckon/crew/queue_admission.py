@@ -995,6 +995,12 @@ def _reexec_into_current_code() -> None:
     launcher = (
         f"import sys; sys.path.insert(0, {root!r}); from reckon.cli import main; main()"
     )
+    # An admission pass runs on this service's threads, and one between taking a
+    # node's dispatch claim and starting its worker would be cut off by the
+    # replacement, leaving that claim with no worker behind it. Wait, bounded.
+    from reckon.crew import dispatch_claims
+
+    dispatch_claims.wait_for_dispatches_in_flight()
     os.execve(  # noqa: S606 - replacement preserves descriptors and stdout.
         sys.executable,
         [sys.executable, "-c", launcher, *sys.argv[1:]],

@@ -10,6 +10,8 @@ import secrets
 import shutil
 import socket
 import sqlite3
+import sys
+import threading
 import time
 from dataclasses import (
     dataclass,
@@ -774,6 +776,92 @@ class _NodeDispatchClaim:
     def release(self) -> None:
         """Give the path up, so the node can be dispatched again."""
         self.path.unlink(missing_ok=True)
+        # A claim this process has given back is no longer a dispatch it owes a
+        # worker, so a service re-executing afterwards has nothing to wait for.
+        _leave_dispatch_in_flight(self.run_id)
+
+
+# ── Dispatches between their claim and their worker ─────────────────────────
+#
+# A service that replaces its own image with ``os.execve`` ends every thread at
+# once, and a dispatch thread found between taking the node claim and starting
+# the worker leaves that claim behind with no worker to justify it. The span is
+# short but it is not instantaneous — the worktree is cut and the prompt
+# composed inside it — so the services wait it out before replacing themselves.
+#
+# The wait is bounded rather than indefinite: a dispatch that never reaches its
+# worker must not be able to hold a service's reload open for ever. Whatever is
+# still in flight at the bound is left behind deliberately, and logged by node
+# so the claim a later dispatch reclaims can be traced to the reload that
+# abandoned it.
+#
+# This register is process-wide and does not cross an exec, which is the point:
+# after the replacement starts, nothing is in flight from this image, because
+# the image that held the dispatches has gone.
+
+#: How long a service about to replace its image waits for its dispatches.
+#: A test patches this to a small value rather than waiting out a bound that
+#: exists for a stuck dispatch, not for a healthy one.
+REEXEC_DISPATCH_WAIT_SECONDS = 60.0
+
+_DISPATCHES_IN_FLIGHT: dict[str, str] = {}
+_DISPATCHES_IN_FLIGHT_LOCK = threading.Lock()
+_DISPATCHES_IN_FLIGHT_IDLE = threading.Condition(_DISPATCHES_IN_FLIGHT_LOCK)
+
+
+def _enter_dispatch_in_flight(run_id: str, node_id: str) -> None:
+    """Record that this process owes one run a worker.
+
+    Entered once the node dispatch claim is this process's, so the register
+    names exactly the dispatches a re-exec would orphan.
+    """
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        _DISPATCHES_IN_FLIGHT[run_id] = node_id
+
+
+def _leave_dispatch_in_flight(run_id: str) -> None:
+    """Record that the run's worker has been started, or its launch given up."""
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        if _DISPATCHES_IN_FLIGHT.pop(run_id, None) is not None:
+            _DISPATCHES_IN_FLIGHT_IDLE.notify_all()
+
+
+def dispatches_in_flight() -> dict[str, str]:
+    """The dispatches this process still owes a worker, keyed by run id."""
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        return dict(_DISPATCHES_IN_FLIGHT)
+
+
+def wait_for_dispatches_in_flight() -> tuple[tuple[str, str], ...]:
+    """Wait, bounded, until no dispatch is between its claim and its worker.
+
+    Every service that replaces its own image calls this immediately before
+    ``os.execve``, so the one wait serves the station, a follower and the admit
+    service alike. The bound is :data:`REEXEC_DISPATCH_WAIT_SECONDS`; anything
+    still in flight when it expires is logged by node and returned, so the
+    caller can re-exec knowing exactly which dispatches it left half-launched.
+    The register is deliberately left standing: a dispatch abandoned here is
+    still in flight for the next attempt, and a later wait should wait for it
+    rather than read the image's own forgetfulness as progress.
+    """
+    with _DISPATCHES_IN_FLIGHT_LOCK:
+        deadline = time.monotonic() + REEXEC_DISPATCH_WAIT_SECONDS
+        while _DISPATCHES_IN_FLIGHT:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                break
+            _DISPATCHES_IN_FLIGHT_IDLE.wait(remaining)
+        abandoned = tuple(sorted(_DISPATCHES_IN_FLIGHT.items()))
+    for run_id, node_id in abandoned:
+        print(
+            "reckon: re-executing with the dispatch of node "
+            f"{node_id!r} for run {run_id!r} still in flight after "
+            f"{REEXEC_DISPATCH_WAIT_SECONDS:g}s; its claim is left for the "
+            "next dispatch to reclaim",
+            file=sys.stderr,
+            flush=True,
+        )
+    return abandoned
 
 
 def _claim_node_dispatch(
@@ -853,6 +941,7 @@ def _claim_node_dispatch(
         except BaseException:
             path.unlink(missing_ok=True)
             raise
+        _enter_dispatch_in_flight(run_id, node_id)
         return _NodeDispatchClaim(path, run_id, reclaimed=reclaimed)
     raise CrewError(
         format_refusal(
@@ -1048,6 +1137,10 @@ def _claim_released_on_refusal(run_id: str, published: bool) -> Iterator[None]:
     except Exception:
         if published:
             _release_launch_claim(run_id)
+        # A refusal means no worker will be started for this run, so the
+        # dispatch this process was holding open has ended rather than been
+        # abandoned; a re-exec from here leaves nothing behind to wait for.
+        _leave_dispatch_in_flight(run_id)
         raise
 
 

@@ -1,0 +1,86 @@
+<section id="ab-clive-anchored-a-reexec-never-orphans-s5-landing">
+  <h2>A service waits for its in-flight dispatches before it re-executes</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/dispatch_claims.py</code> keeps a
+  process-wide register of the dispatches it owes a worker: <code>run_id</code> to
+  node id. It is entered where a node dispatch claim becomes this process's
+  (<code>_claim_node_dispatch</code>), and left where that claim is given up
+  (<code>_claim_released_on_refusal</code>, <code>_NodeDispatchClaim.release</code>) or
+  where the launch reaches a process (<code>_start_supervisor</code>, the seam every
+  fresh dispatch, resumption and review launch passes through, and
+  <code>_spawn_detached_worker</code> for the in-process launches and probes). One
+  bounded wait, <code>wait_for_dispatches_in_flight()</code>, serves the station
+  (<code>StationReloader.poll</code>), a follower
+  (<code>_FollowerReloader</code>) and the admit service
+  (<code>_reexec_into_current_code</code>) immediately before each
+  <code>os.execve</code>; none of them keeps a wait of its own. The bound is the
+  module constant <code>REEXEC_DISPATCH_WAIT_SECONDS</code>, which the test patches,
+  because a dispatch that never reaches its worker must not hold a reload open for
+  ever. What the bound gives up on is logged by node on stderr, so a claim a later
+  dispatch reclaims can be traced to the reload that left it.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_reexec_waits_for_its_dispatches.py</code> (5 cases, a
+  stubbed <code>os.execve</code>), run one arm at a time with <code>-n 4</code>, each
+  in a log whose first line names its revision, tree and command, and whose last line
+  reads <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>after (this change)</td><td><code>f53d0a8f25</code></td>
+        <td>62 passed, <strong>3 failed</strong>, exit 1 — every failing id is one the
+        base source also fails</td></tr>
+      <tr><td>base (<code>29a435db15</code>, new test absent)</td>
+        <td><code>29a435db15</code></td>
+        <td>58 passed, <strong>2 failed</strong>, exit 1 — the same two ids</td></tr>
+      <tr><td>base, the third failing file alone</td>
+        <td><code>29a435db15</code></td>
+        <td>7 passed, <strong>1 failed</strong>, exit 1 — the same id again</td></tr>
+      <tr><td>control: station execs without the wait</td><td>mutated head</td>
+        <td>1 failed, exit 1</td></tr>
+      <tr><td>control: follower execs without the wait</td><td>mutated head</td>
+        <td>1 failed, exit 1</td></tr>
+      <tr><td>control: admit service execs without the wait</td><td>mutated head</td>
+        <td>1 failed, exit 1</td></tr>
+      <tr><td>control: the bound's log line dropped</td><td>mutated head</td>
+        <td>1 failed, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <ul>
+    <li><strong>Three failures, none added.</strong>
+    <code>test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image</code>
+    fails on a <code>FileExistsError</code> against a reload-tree directory left in the
+    node-local fleet runtime root, and
+    <code>test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path</code>
+    fails on a queue-time manifest-path validation. Both fail identically with the
+    prechange source: the base arm collected the same two ids over a scratch tree
+    extracted from <code>29a435db15</code>.
+    <code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>
+    waited out its 60 s marker bound in one arm and passed in another, so it was
+    measured on its own at both revisions: it fails identically over the
+    <code>29a435db15</code> source (7 passed, 1 failed), which is what makes it the base
+    source's and not this change's.</li>
+
+    <li><strong>The three service cases each fail only under their own mutation.</strong>
+    With the wait removed from one service, that service's case reads
+    <code>the station exec'd with [{'r-in-flight': 'node-waiting'}] in flight</code> —
+    the dispatch the register was seeded with, recorded at the stubbed
+    <code>os.execve</code>. The other two services stay green, so each case is pinned to
+    the call site it names rather than to a shared helper.</li>
+
+    <li><strong>The bound is bounded and named.</strong> With the log line dropped, the
+    abandonment still happens and the case fails on
+    <code>assert 'node-stuck' in ''</code>: the waited-out dispatch is returned but
+    nothing reaches the service's log. The companion case shows a wait with nothing in
+    flight logs nothing at all, so the line is a report of abandonment rather than a
+    reload banner.</li>
+
+    <li><strong>The register is an instrument, and the test says so.</strong> Every
+    service case seeds the register and asserts the seed was read back before the reload
+    runs, so a register that never held anything could not make the cases pass
+    vacuously.</li>
+  </ul>
+</section>

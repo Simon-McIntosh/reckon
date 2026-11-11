@@ -17,6 +17,7 @@ from typing import Any
 
 from reckon import checkout_trust, flight
 from reckon.crew import (
+    dispatch_claims,
     follower_reload,
     obligation_snapshot,
     recovery,
@@ -392,6 +393,10 @@ class StationReloader:
         environment = follower_reload.image_reexec_environment(
             self.source_root, current, pin
         )
+        # The sweep thread may be between taking a node's dispatch claim and
+        # starting its worker, and replacing the image would end that thread
+        # and leave the claim with no worker behind it. Wait for it, bounded.
+        dispatch_claims.wait_for_dispatches_in_flight()
         try:
             os.execve(  # noqa: S606 - replacement keeps this station's pid
                 sys.executable,
