@@ -1550,6 +1550,17 @@ def _attempt_record_for(run_id: str) -> Path:
     return run_dir(run_id) / ATTEMPT_RECORD_NAME
 
 
+def _prompt_file_text(plan: _backends.LaunchPlan) -> str:
+    """The brief a launched run's ``prompt.txt`` holds, whichever channel carries it.
+
+    A dialect that feeds the prompt on stdin carries it in ``stdin_text``; one
+    that puts it on the command line carries it only on the plan. Writing the
+    stdin field alone therefore emptied ``prompt.txt`` for every argv-prompt
+    run, losing the record of what the worker was told.
+    """
+    return plan.stdin_text or plan.prompt
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -3354,11 +3365,12 @@ def dispatch(
                 # the plan is where the prompt is composed: a lane that names
                 # its figures adds each figure's path to the text it carries.
                 # The file written above holds the prompt before that
-                # composition, so it is rewritten here from the composed text —
-                # the text every dialect carries, since every dialect takes its
-                # prompt on stdin. A fresh figure review on such a lane is then
-                # handed its image paths by the file it actually reads.
-                prompt_path.write_text(plan.stdin_text, encoding="utf-8")
+                # composition, so it is rewritten here from the composed text.
+                # A dialect that takes its prompt on stdin carries it in
+                # stdin_text; one that puts it on the command line carries it
+                # nowhere else, so the plan's own prompt is the copy that keeps
+                # the run's prompt.txt holding the brief it was dispatched with.
+                prompt_path.write_text(_prompt_file_text(plan), encoding="utf-8")
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
                 raise CrewError(format_refusal("D22", str(exc))) from exc
             placement = flight.placement_for(backend)

@@ -35,6 +35,13 @@ class BackendError(Exception):
 _HARNESS_HOME = {
     "claude": ("CLAUDE_CONFIG_DIR", "harness", ".claude"),
     "codex": ("CODEX_HOME", "codex-home", ".codex"),
+    # oh-my-pi's root is `path.join(os.homedir(), ".omp")` and it resolves its
+    # log directory from that root rather than from its agent-store variable.
+    # Redirecting the store variables alone therefore leaves every run
+    # appending a log file to the operator's `~/.omp/logs`; only `HOME` moves
+    # the whole tree, which is why the variable named here is `HOME` and the
+    # folder is the one the harness builds beneath it.
+    "omp": ("HOME", "omp-home", ".omp"),
 }
 
 # The codex credential bound read-only into a run's codex home. Bound rather

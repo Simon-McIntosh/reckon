@@ -433,6 +433,11 @@ class LaunchPlan:
     # resolving the flight layers again, so a directory a project layer declares
     # reaches the worker's own PATH on every attempt and not only at pre-flight.
     backend_search_path: tuple[str, ...] = ()
+    # The brief this launch carries, whatever channel carries it. A dialect that
+    # takes the prompt on stdin repeats it in ``stdin_text``; one that puts it on
+    # the command line carries it only here, and the run's ``prompt.txt`` is
+    # written from this so an argv-prompt run still records what it was told.
+    prompt: str = ""
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
@@ -1131,10 +1136,12 @@ class Dialect:
     # clive lane authenticates against its own server — so no credential bind
     # is composed for it.
     subscription_login = False
-    # Whether the harness needs its prompt on stdin. Both probed harnesses do,
-    # and for the same reason: a prompt passed as an argument can be swallowed
+    # Whether the harness needs its prompt on stdin. The two prompt-on-stdin
+    # harnesses share a reason: a prompt passed as an argument can be swallowed
     # by a preceding variadic option, which fails as "no input provided" with
-    # the prompt sitting in the argument list.
+    # the prompt sitting in the argument list. A dialect that puts the prompt
+    # on argv instead sets this False and is handed no stdin text, so the
+    # process inherits an already-closed stdin.
     stdin_prompt = True
 
     def argv(
@@ -1148,7 +1155,18 @@ class Dialect:
         final_message_path: str | None,
         resume_session: str | None,
         images: Sequence[str] = (),
+        prompt: str = "",
+        run_directory: str | None = None,
     ) -> list[str]:
+        """Compose this dialect's command line.
+
+        ``prompt`` is supplied only to a dialect whose harness takes the brief
+        as an argument rather than on stdin. ``run_directory`` is the run the
+        launch belongs to, or None for a composition with no run of its own
+        yet — a preview or an availability probe. A dialect that needs either
+        reads it here and ignores the other; a dialect that needs neither
+        accepts both and uses neither.
+        """
         raise NotImplementedError
 
     def _lane(self, command: str) -> str:
@@ -1334,6 +1352,8 @@ class _CodexDialect(Dialect):
         final_message_path: str | None,
         resume_session: str | None,
         images: Sequence[str] = (),
+        prompt: str = "",
+        run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
         argv += self._sandbox_flags(backend.get("sandbox"))
@@ -1687,6 +1707,427 @@ class _CodexDialect(Dialect):
         return budget
 
 
+# The tool names a headless oh-my-pi worker may be offered. `--tools` is an
+# allowlist — the harness builds its tool set by filtering the requested names,
+# so a name absent from this list is never presented — which makes it the hard
+# gate behind the config overlay below. Subagent fan-out (`task`), the browser,
+# desktop control and the two network tools are deliberately absent: a worker
+# that fans out inside itself runs agents the run ledger never sees. A
+# tool-call-based anchored edit is likewise absent, because the anchored edit
+# being measured is the harness's own and an external one beside it would
+# answer the measurement twice.
+OMP_WORKER_TOOLS = "read,bash,edit,write,grep,glob,todo"
+
+# The values this harness accepts for `--thinking`. An effort declared in a
+# vocabulary it does not speak is not mapped onto the nearest one here: the
+# harness's own configured default then stands, which is the honest reading of
+# an effort this dialect cannot express.
+_OMP_THINKING_LEVELS = frozenset({"low", "high", "max"})
+
+# The per-run config overlay a crew worker is launched with. Every key turns off
+# one thing a supervised worker must not do: project MCP discovery (a checkout's
+# own servers, each paying a launch that fails in a third of worktrees), subagent
+# fan-out at depth 0 (the `task` tool is offered only at a depth below the
+# maximum, so depth 0 with a maximum of 0 never offers it), the browser, desktop
+# control, and the two network tools. Measured as a controlled experiment in the
+# headless contract note: with project MCP enabled a deliberately unloadable
+# project server is discovered and traces an error; with it disabled the same
+# server is never discovered and the run's trace log names it zero times.
+OMP_WORKER_OVERLAY = """\
+mcp:
+  enableProjectConfig: false
+task:
+  maxRecursionDepth: 0
+browser:
+  enabled: false
+computer:
+  enabled: false
+web_search:
+  enabled: false
+fetch:
+  enabled: false
+"""
+
+# The event types this dialect's stream uses. A stream carrying none of them
+# while carrying another dialect's is refused rather than folded, because a
+# fold of the wrong vocabulary reports a complete run that spent no tokens and
+# called no tools — the shape of a healthy run with nothing in it.
+_OMP_EVENT_TYPES = frozenset(
+    {
+        "session",
+        "notice",
+        "agent_start",
+        "turn_start",
+        "message_start",
+        "message_update",
+        "message_end",
+        "tool_execution_start",
+        "tool_execution_end",
+        "turn_end",
+        "agent_end",
+    }
+)
+
+# The event types only another dialect emits, mapped to the dialect they name.
+# Used solely to say which vocabulary a refused stream was actually in.
+_FOREIGN_EVENT_TYPES = {
+    "thread.started": "codex",
+    "turn.completed": "codex",
+    "turn.failed": "codex",
+    "item.completed": "codex",
+    "stream.error": "codex",
+    "system": "claude",
+    "assistant": "claude",
+    "result": "claude",
+}
+
+# The stop reasons that mean the turn did not finish well. `stop` and `toolUse`
+# are both healthy — a message ending in a tool request is a turn continuing,
+# not a turn that failed — and are therefore absent.
+_OMP_FAILED_STOP_REASONS = frozenset({"error", "aborted", "length"})
+
+
+def omp_overlay_path(run_directory: str | None) -> Path:
+    """Write the worker overlay and return the path the argv will name.
+
+    The content is the same for every worker, so the file is written where a
+    reader can find it beside the run it belongs to. A composition with no run
+    directory — a preview, or an availability probe against a lane — has no run
+    to write into, so it uses one file per operator under the node's temp root;
+    the content is constant, so concurrent launches share it and no launch reads
+    another run's switches.
+    """
+    if run_directory and Path(run_directory).is_dir():
+        path = Path(run_directory) / "omp-worker-overlay.yml"
+    else:
+        path = (
+            Path(tempfile.gettempdir())
+            / f"reckon-omp-{os.getuid()}"
+            / "worker-overlay.yml"
+        )
+    if not path.exists() or path.read_text(encoding="utf-8") != OMP_WORKER_OVERLAY:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        # Renamed into place rather than truncated in place: the temp-root copy
+        # is shared by every launch that has no run of its own, so a second
+        # launch must never read a half-written overlay.
+        from reckon._store import write_atomically
+
+        write_atomically(
+            path,
+            lambda handle: handle.write(OMP_WORKER_OVERLAY.encode("utf-8")),
+            binary=True,
+        )
+    return path
+
+
+class _OmpDialect(Dialect):
+    """oh-my-pi: `-p --mode=json`, session ids, per-turn token totals.
+
+    The measured contract behind this translation is recorded at
+    ``~/.config/reckon/crew/reports/reckon/omp-headless-contract.md``. Three of
+    its findings shape the argv and three shape the parser, and each is a
+    silent failure if ignored:
+
+    * the prompt is a positional argument and the launch feeds no stdin, because
+      this harness reads a piped stdin as its prompt and blocks in
+      ``readPipedInput`` until the pipe closes, emitting nothing;
+    * its home is ``~/.omp``, which follows ``HOME`` and not the agent-store
+      variable, so the fence relocates ``HOME`` (see ``_HARNESS_HOME``);
+    * project MCP and the fan-out tools are turned off per run by a config
+      overlay, with a tool allowlist as the gate behind it.
+    """
+
+    name = "omp"
+    # The brief rides on argv, so the process is handed an already-closed
+    # stdin rather than prompt text — see the class docstring.
+    stdin_prompt = False
+
+    def argv(
+        self,
+        *,
+        command: str,
+        backend: Mapping[str, Any],
+        worktree: str,
+        working_directory: str,
+        writable_directories: Iterable[str] = (),
+        final_message_path: str | None,
+        resume_session: str | None,
+        images: Sequence[str] = (),
+        prompt: str = "",
+        run_directory: str | None = None,
+    ) -> list[str]:
+        # This harness has no attachment flag, so an attached figure is not
+        # handed over silently; it is refused by lane exactly as on any dialect
+        # that cannot carry one.
+        self._refuse_images(command, images)
+        del final_message_path, writable_directories
+        argv = [command, "-p", "--mode=json"]
+        model = backend.get("model")
+        if model:
+            argv += ["--model", str(model)]
+        effort = backend.get("effort")
+        if effort and str(effort) in _OMP_THINKING_LEVELS:
+            argv += ["--thinking", str(effort)]
+        # There is no sandbox flag to compose: this harness offers none of its
+        # own, so the fence's write grant is what confines a run. Approvals are
+        # skipped because nothing can answer a prompt in print mode, and an
+        # unanswered approval would stall the worker instead of refusing it.
+        argv += ["--auto-approve"]
+        if resume_session:
+            argv += ["--resume", str(resume_session)]
+        elif run_directory is None or not Path(run_directory).is_dir():
+            # A composition with no run of its own has no home to keep a
+            # transcript in, so it must not leave one in the operator's. A run
+            # that does have one keeps its session, which is what a later
+            # resume resolves by id.
+            argv += ["--no-session"]
+        argv.append(f"--config={omp_overlay_path(run_directory)}")
+        argv.append(f"--tools={OMP_WORKER_TOOLS}")
+        # The positional prompt goes last: this harness reads a value beginning
+        # with '-' as another flag, so the brief is the final word on the line.
+        argv.append(prompt)
+        return argv
+
+    def _sandbox_flags(self, tier: str | None) -> list[str]:
+        """Name no sandbox flag: this harness has none to name.
+
+        ``read-only`` and ``workspace-write`` are realised by the fence's write
+        grant, which admits only the computed roots, and ``worktree-full`` runs
+        unfenced with the worktree as the boundary. A flag invented here would
+        claim a confinement the harness does not implement.
+        """
+        del tier
+        return []
+
+    def observe(
+        self,
+        events: Iterable[Mapping[str, Any]],
+        *,
+        elapsed_seconds: float | None = None,
+        backend_name: str | None = None,
+        usable_input_window: int | None = None,
+        carry: Mapping[str, Any] | None = None,
+    ) -> Observation:
+        # This stream reports no context window to divide a utilisation by, so
+        # the supplied configured window is accepted and unused.
+        del usable_input_window
+        carried = carry if isinstance(carry, Mapping) else {}
+        obs = Observation(backend=self.name, budget=unknown_budget(""))
+        message: str | None = carried.get("message")
+        tokens: dict[str, int | float] = dict(carried.get("tokens") or {})
+        tool_calls = int(carried.get("tool_calls") or 0)
+        peak_input = int(carried.get("peak_input") or 0)
+        failure = carried.get("failure")
+        obs.events = int(carried.get("events") or 0)
+        obs.session_id = carried.get("session_id")
+        obs.terminal = bool(carried.get("terminal"))
+        obs.exit_status = carried.get("exit_status")
+        obs.detail = str(carried.get("detail") or "")
+        if carried.get("budget") is not None:
+            obs.budget = dict(carried["budget"])
+        _refuse_foreign_stream(events)
+        for event in events:
+            obs.events += 1
+            kind = event.get("type")
+            if kind == "session":
+                obs.session_id = event.get("id") or obs.session_id
+            elif kind == "tool_execution_start":
+                tool_calls += 1
+            elif kind == "message_end":
+                settled = event.get("message")
+                if not isinstance(settled, Mapping):
+                    continue
+                if str(settled.get("role") or "") != "assistant":
+                    continue
+                usage = settled.get("usage")
+                if isinstance(usage, Mapping):
+                    prompt_tokens = _omp_prompt_tokens(usage)
+                    peak_input = max(peak_input, prompt_tokens)
+                    _accumulate_usage(tokens, _omp_usage(usage))
+                    reason = usage.get("stopReason")
+                    if reason in _OMP_FAILED_STOP_REASONS:
+                        failure = _omp_stop_detail(reason)
+                message = _assistant_text(event) or message
+            elif kind == "agent_end":
+                # The terminal authority is this event, not the process exit
+                # status: a healthy run of this harness has been measured
+                # exiting 1 after a correct final message, so a verdict taken
+                # from the exit code alone inverts a healthy run.
+                obs.terminal = True
+                obs.exit_status = "error" if failure else "ok"
+        if failure:
+            obs.detail = str(failure)
+            refused = refusal_budget(obs.detail)
+            if refused is not None:
+                obs.budget = refused
+        obs.stream_state["fold"] = {
+            "events": obs.events,
+            "session_id": obs.session_id,
+            "terminal": obs.terminal,
+            "exit_status": obs.exit_status,
+            "detail": obs.detail,
+            "message": message,
+            "budget": obs.budget,
+            "tokens": tokens,
+            "tool_calls": tool_calls,
+            "peak_input": peak_input,
+            "failure": failure,
+        }
+        measured_usage = tokens or None
+        if measured_usage is not None:
+            measured_budget = unknown_budget(
+                "backend reports token usage but no headroom"
+            )
+            measured_budget["tokens"] = dict(sorted(measured_usage.items()))
+            # A refused turn keeps its refusal and gains the tokens spent
+            # reaching it; this harness publishes no headroom, so any other
+            # block is the unknown one and is replaced by the measured spend.
+            if obs.budget.get("refusal"):
+                obs.budget["tokens"] = measured_budget["tokens"]
+            else:
+                obs.budget = measured_budget
+        obs.final_message = message
+        obs.throughput = self._throughput(measured_usage, peak_input, elapsed_seconds)
+        obs.phase = _phase(obs)
+        return obs
+
+    def _throughput(
+        self,
+        usage: Mapping[str, Any] | None,
+        peak_input: int,
+        elapsed_seconds: float | None,
+    ) -> dict[str, Any]:
+        """Rate this harness's run, and report the widest prompt it carried.
+
+        The stream states each turn's consumption but not how long anything
+        took, so the span is the caller's. Peak input is reported because a run
+        approaching its window is visible there before it hits one.
+        """
+        generated = cumulative_input = cumulative_cached = None
+        if isinstance(usage, Mapping):
+            generated = _sum_tokens(usage, ("output_tokens",))
+            cumulative_cached = _sum_tokens(usage, ("cached_input_tokens",))
+            cumulative_input = _sum_tokens(
+                usage, ("input_tokens", "cached_input_tokens")
+            )
+        if elapsed_seconds is None:
+            detail = "tokens recorded, but no span was supplied to rate them"
+        elif generated is None:
+            detail = "the run has a span but no completed assistant turn to rate"
+        else:
+            detail = (
+                "rated against the caller's wall clock; this stream reports "
+                "tokens without a span"
+            )
+        return throughput_block(
+            generated_tokens=generated,
+            generation_seconds=None,
+            elapsed_seconds=elapsed_seconds,
+            peak_input_tokens=peak_input or None,
+            cumulative_input_tokens=cumulative_input,
+            cumulative_cached_input_tokens=cumulative_cached,
+            input_budget_tokens=None,
+            detail=detail,
+        )
+
+    def classify_stream_failure(
+        self,
+        events: Sequence[Mapping[str, Any]],
+        *,
+        process_exited: bool,
+        diff_present: bool,
+        manifest_present: bool,
+    ) -> str | None:
+        """Recognise a stream that started a run and ended before finishing it."""
+        kinds = [str(event.get("type") or "") for event in events]
+        started = "agent_start" in kinds
+        finished = "agent_end" in kinds
+        if (
+            process_exited
+            and started
+            and not finished
+            and not diff_present
+            and not manifest_present
+        ):
+            return "infrastructure-failure"
+        return None
+
+
+def _omp_usage(usage: Mapping[str, Any]) -> dict[str, int | float]:
+    """Name one omp usage record in this module's token vocabulary.
+
+    The harness counts a request's uncached input, its output and its cached
+    reads under its own keys. The cached read is carried as input because a
+    cached segment still occupies the window: counting only the uncached part
+    reports a two-token prompt for a request carrying a quarter of a million,
+    which is the same quiet understatement this module refuses elsewhere.
+
+    A record whose input and output are both zero is a streaming placeholder
+    rather than a measurement — the harness reports all zeros on the first
+    assistant message of every turn and the real totals on the last — so it is
+    not folded in. Folding it would be harmless; *replacing* an earlier total
+    with it would report a run that spent nothing.
+    """
+    returned: dict[str, int | float] = {}
+    input_tokens = optional_number(usage.get("input"))
+    output_tokens = optional_number(usage.get("output"))
+    cached = optional_number(usage.get("cacheRead"))
+    written = optional_number(usage.get("cacheWrite"))
+    if not input_tokens and not output_tokens:
+        return returned
+    if input_tokens is not None:
+        returned["input_tokens"] = int(input_tokens)
+    if output_tokens is not None:
+        returned["output_tokens"] = int(output_tokens)
+    if cached is not None:
+        returned["cached_input_tokens"] = int(cached)
+    if written is not None:
+        returned["cache_write_input_tokens"] = int(written)
+    return returned
+
+
+def _omp_prompt_tokens(usage: Mapping[str, Any]) -> int:
+    """Return one request's whole prompt size, cached segments included."""
+    measured = [
+        value
+        for key in ("input", "cacheRead", "cacheWrite")
+        if (value := optional_number(usage.get(key))) is not None
+    ]
+    return int(sum(measured)) if measured else 0
+
+
+def _omp_stop_detail(reason: Any) -> str:
+    """State why a turn ended badly, in terms a triager acts on."""
+    if reason == "length":
+        return "the turn hit the model's output limit and was truncated"
+    return f"the harness reported the turn stopped on {reason!r}"
+
+
+def _refuse_foreign_stream(events: Iterable[Mapping[str, Any]]) -> None:
+    """Refuse a stream written in another dialect's vocabulary.
+
+    A mis-routed stream is not a run with nothing in it: folding a codex
+    ``thread.started`` stream here produces a terminal-shaped record with zero
+    tokens and zero tool calls, which reads exactly like a healthy run that
+    spent nothing. Naming the vocabulary it was written in is what lets an
+    operator see the routing fault instead of an empty measurement.
+    """
+    kinds = {str(event.get("type") or "") for event in events}
+    if kinds & _OMP_EVENT_TYPES:
+        return
+    foreign = sorted(
+        {_FOREIGN_EVENT_TYPES[kind] for kind in kinds if kind in _FOREIGN_EVENT_TYPES}
+    )
+    if not foreign:
+        return
+    raise BackendError(
+        "the 'omp' dialect refused a stream in the "
+        f"{', '.join(foreign)} vocabulary: it carries none of omp's own events, "
+        "so folding it would report a run that spent no tokens and called no "
+        "tools"
+    )
+
+
 class _ClaudeDialect(Dialect):
     """Claude Code: `-p` stream-json, session ids, rate-limit headroom."""
 
@@ -1706,6 +2147,8 @@ class _ClaudeDialect(Dialect):
         final_message_path: str | None,
         resume_session: str | None,
         images: Sequence[str] = (),
+        prompt: str = "",
+        run_directory: str | None = None,
     ) -> list[str]:
         self._refuse_images(command, images)
         argv = [command, "-p", "--output-format", "stream-json", "--verbose"]
@@ -2138,6 +2581,10 @@ _DIALECTS: dict[str, Dialect] = {
     # and JSON-lines event stream are identical to claude's since it passes
     # all args through via `exec claude "${ARGS[@]}"`.
     "clive": _CliveDialect(),
+    # oh-my-pi speaks a vocabulary of its own in every direction: the flags, the
+    # JSON-lines stream and the home directory it writes are all its own, which
+    # is why it is a dialect rather than another wrapper over one.
+    _OmpDialect.name: _OmpDialect(),
 }
 
 
@@ -2398,6 +2845,16 @@ def launch_plan(
             ),
         )
         environment[_HARNESS_HOME[dialect.name][0]] = str(harness)
+        # Relocating HOME also hides the operator's ~/.gitconfig, and git then
+        # synthesises an identity from the account's GECOS field: a worker's
+        # commits would carry a name and address nobody configured. Naming the
+        # global config explicitly restores it through one environment variable
+        # the fence already mounts read-only, so no path is made writable.
+        if _HARNESS_HOME[dialect.name][0] == "HOME":
+            operator = Path(fence_home) if fence_home is not None else Path.home()
+            operator_config = operator / ".gitconfig"
+            if operator_config.is_file():
+                environment.setdefault("GIT_CONFIG_GLOBAL", str(operator_config))
     # The dialect composes its own sandbox before the fence wraps the launch,
     # and codex prepares each root it is told writable — so a fenced run is
     # handed only the roots the fence actually keeps writable, or a sealed
@@ -2441,6 +2898,8 @@ def launch_plan(
         final_message_path=final_path,
         resume_session=resume_session,
         images=() if named_in_prompt else attached,
+        prompt=prompt,
+        run_directory=None if run_directory is None else str(run_directory),
     )
     # Every dialect, every entry point — fresh dispatch, resume and redispatch
     # all build their argv here — so the fence is applied once and cannot be
@@ -2479,6 +2938,7 @@ def launch_plan(
         resumed_session=resume_session,
         fence_waiver=fence_waiver,
         backend_search_path=backend_search_directories(backend),
+        prompt=prompt,
     )
 
 
@@ -2620,11 +3080,17 @@ def _requests_tool(event: Mapping[str, Any]) -> bool:
     """Return whether this event asked the machine to run a tool.
 
     A stream that never names a tool call has no machine span to find, so the
-    check stays narrow: only an assistant turn carrying a ``tool_use`` content
-    block opens a gap this module reads as machine time. Everything else —
-    plain text, a system or result event — is generation or the round trip
-    around it.
+    check stays narrow: an assistant turn carrying a ``tool_use`` content block
+    or the omp stream's own ``tool_execution_start`` opens a gap this module
+    reads as machine time. Everything else — plain text, a system or result
+    event — is generation or the round trip around it.
     """
+    if event.get("type") == "tool_execution_start":
+        # oh-my-pi announces the machine's work in an event of its own rather
+        # than inside an assistant message, so a scan written only for the
+        # message shape finds no tool call in an omp stream at all and charges
+        # every second of tool wait to the model.
+        return True
     if event.get("type") != "assistant":
         return False
     message = event.get("message")
