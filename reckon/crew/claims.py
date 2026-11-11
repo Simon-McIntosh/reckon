@@ -68,6 +68,18 @@ def declared_claim_paths(run_id: str) -> tuple[str, ...]:
     return tuple(_declared_paths(read_pointer(run_id)))
 
 
+def _live_repair_round(pointer: Mapping[str, Any]) -> bool:
+    """Whether the run's live attempt is a repair round the reflex opened.
+
+    The predicate belongs to the module that classifies an attempt, so a widen
+    and a refusal name the same round. Imported here rather than at module load
+    because that module composes launches and this one is reached from them.
+    """
+    from reckon.crew.resumption import live_repair_round
+
+    return live_repair_round(pointer)
+
+
 def widen_claim(
     run_id: str,
     paths: Iterable[str],
@@ -83,7 +95,13 @@ def widen_claim(
     the boundary a widening would move. The exception is the run's own worker:
     it is the writer asking for its own boundary to move, so ``self_widen``
     admits it and records the grant, its reason and the fact that the worker
-    made it. Any other caller waits for the process to exit.
+    made it. A repair round's live attempt is the other exception: the reflex
+    started it as a turn of the reviewed run, its next attempt is fenced from
+    this same claim, and a coordinator watching the round is the one who knows
+    a path the finding needs. So the widen is recorded, and the round's next
+    attempt mounts the added paths; a worker already running keeps the mounts
+    it started with, because its sandbox was fixed when it began. Any other
+    caller waits for the process to exit.
 
     ``grant_source`` names a caller other than the worker that grants a path on
     the run's behalf, and its grant is recorded the same way with that source.
@@ -110,7 +128,11 @@ def widen_claim(
     added: list[str] = []
 
     def amend(pointer: dict[str, Any]) -> dict[str, Any]:
-        if record_process_liveness(pointer).alive is True and not self_widen:
+        if (
+            record_process_liveness(pointer).alive is True
+            and not self_widen
+            and not _live_repair_round(pointer)
+        ):
             raise ClaimAmendmentRefusedError(
                 run_id, "its worker is still running; wait for that process to exit"
             )

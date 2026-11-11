@@ -1132,6 +1132,24 @@ def _repair_round_opened(record: Mapping[str, Any]) -> bool:
     return bool(str(opened.get("round_id") or ""))
 
 
+def live_repair_round(record: Mapping[str, Any]) -> bool:
+    """Whether the attempt running now is a repair round the reflex opened.
+
+    A repair round continues the reviewed run rather than composing a second
+    node, so a path granted while it runs belongs on the same claim the round's
+    next attempt is fenced from. The round is live only while the attempt the
+    run's records hold running is the resume the reflex launched: a run whose
+    opened round has ended and whose worker is running some other attempt keeps
+    its claim fixed, exactly as any other live worker does.
+    """
+    if not _repair_round_opened(record):
+        return False
+    attempt = _live_attempt_number(record)
+    if attempt is None:
+        attempt = _recorded_attempt_number(record)
+    return _attempt_kind(record, attempt) == "resume"
+
+
 def _attempt_detail(
     record: Mapping[str, Any],
     attempt: int | None,
