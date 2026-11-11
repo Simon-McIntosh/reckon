@@ -1202,6 +1202,11 @@ CREW_VERBS_OUTSIDE_ORCHESTRATION = {
         "follower and supervises it; only the plugin runs it, and an "
         "orchestrator never invokes it"
     ),
+    ("crew", "station"): (
+        "the node-local ingest service; its batch step starts one station per "
+        "node and holds a lease so a second cannot run beside it, and an "
+        "orchestrator reads the rows it writes rather than starting it"
+    ),
     ("crew", "path"): (
         "prints one state path for a consumer repository to call; an "
         "orchestrator reads state through the crew views, never by path"
@@ -1371,6 +1376,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
         ("crew", "stop"): set(),
         ("crew", "supersede-review"): {"--project", "--run", "--reason"},
         ("crew", "suite"): set(),
+        ("crew", "tell"): {"--run"},
         ("crew", "verify-gate"): {"--project", "--run", "--checkout-path"},
         ("crew", "view"): {
             "--project",
