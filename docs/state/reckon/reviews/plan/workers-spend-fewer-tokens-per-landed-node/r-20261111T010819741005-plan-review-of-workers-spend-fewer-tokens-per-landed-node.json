@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T01:21:41.230Z",
+  "dispatched_at": "2026-11-11T01:11:20Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "reasoning-1",
+      "reason": "without naming `_suite_gate_prompt_body`, the node fixes the comparison side and leaves the instruction side able to produce the fixture, so the motivating case still refuses at landing.",
+      "text": "the section narrows `_node_test_files` so the fixture is dropped, but the sentence that tells the worker what `{node_test_files}` means is `_suite_gate_prompt_body` (`reckon/crew/dispatch.py:1510-1516`): \"`<node tests>` standing for the test files in this node's write scope that exist in the tree the command runs against\". That rule is unchanged and still yields the fixture, while `_arm_missing_fields` (`promotion_records.py:714-721`) compares the worker's recorded `command` only against the narrowed `_scoped_suite_command`. A node whose scope holds a fixture therefore reads a definition that contradicts the resolution shown beside it, and a worker that resolves the template by the stated rule records an arm command containing the fixture, which promotion refuses as `command_matches_suite_command` \u2014 the exact refusal this section exists to remove. The deliverable names neither the prompt site nor a test for it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "done_when-1",
+      "reason": "the bullet states a result the resolver cannot produce in this project, so the done-when either passes for the wrong reason or sends the node to reconcile a contradiction the plan created.",
+      "text": "the bullet \"a scope holding only a fixture under `tests/` yields a command naming no test file\" is not true of this repository. `_scoped_suite_command` (`promotion_records.py:601-612`) appends the project's declared census tests whenever `_writes_product_source` is true, and that predicate is `Path(path).parts[:1] != (\"docs\",)` (`promotion_records.py:564-566`) \u2014 true for `tests/fixtures/data.jsonl`. This repository declares `census_tests: [tests/test_staged_write_inventory.py]` (`docs/state/reckon/flight.yaml:130`), so the resolved command names that file and is armed, not empty. A node implementing the bullet literally either writes a test that passes only on a synthesised record carrying no census, or discovers a resolved command it did not expect",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "28c27d62acf8712f25fcbae137637c127488d6e3",
+  "plan_fingerprint": "5225fbb9f39328a5f5f4b5db4271c020d5d1af437f9418d2ec2c871c71072e56",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 18,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T010819741005-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "d7ca12beda8227899a610c3e680ae3585999ddbf",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `promotion_records.py:526`, `node.py:1018` and `queue_landing.py:996` all resolve to the functions claimed.",
+    "done_when": "a finding \u2014 the fixture-only bullet asserts a command \"naming no test file\", which this repository's declared census test makes false.",
+    "evidence_paths": "pass \u2014 the gate is a test file in the repository's own `tests/` tree; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the section names a mechanism (\"paths pytest collects as tests\"), not a plan label, and carries no ticket or version tag.",
+    "reasoning": "a finding \u2014 the narrowing is applied to the resolver but not to the prompt rule that tells the worker how to resolve the same placeholder, and that rule is what a fixture-writing node's arm command is built from.",
+    "single_goal": "pass \u2014 one deliverable: pass to pytest only the write paths pytest collects as tests.",
+    "wiring": "pass \u2014 s9 declares no upstream and no other section declares it, and the plan records that \u00a75 deliberately no longer depends on it."
+  },
+  "section_digests": {
+    "_document": "a9d507204defbfdeb314ce16077e5af01fcf91de1d69a8dc1e4462da50d23675",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "1c446ae4a199a19c6e7de97686d696708fd9dcc65c5e1093c5efc17872c3d288",
+    "s9": "ae345dfc11603c0749459d0438e7b8e7941da1f7d910d54547d0849e62ec0e52"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:27:57.629612+00:00",
+  "total": null
+}
