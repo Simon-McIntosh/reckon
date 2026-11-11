@@ -245,13 +245,15 @@ def _review_grace(project: str) -> int:
 
 def live_work_populations(
     pointers: Iterable[Mapping[str, Any]],
+    *,
+    include_terminal_duties: bool = True,
 ) -> tuple[bool, bool, list[str]]:
     """One fleet's reading: whether anything is live, unowned, and for whom.
 
     This is the one statement of the has-live-work rule. The station writes its
-    answer into the reading a pane settles by, and a pane with no station asks
-    the same rule of the pointers directly, so the two cannot disagree about
-    which run makes a population live.
+    answer into the reading a pane settles by. A stale station's follower
+    excludes terminal duties to judge pointer phases without the review walk;
+    its extended settle grace covers duties that only the station can see.
 
     A run that has not reached a terminal phase is work still owed a pane. A
     terminal run is too, while the obligations view raises a duty on that run
@@ -276,6 +278,10 @@ def live_work_populations(
         pointer
         for pointer in pointers
         if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE
+        and (
+            include_terminal_duties
+            or str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES
+        )
     ]
     # One read serves every pointer: the duties are asked of one snapshot of the
     # live directory and one ordering, so two runs in one pass cannot be judged

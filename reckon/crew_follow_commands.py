@@ -435,6 +435,10 @@ def _settle_grace_default() -> float:
 # drains and the grace measures the emptiness rather than the poll.
 FOLLOWER_SETTLE_SAMPLE_SECONDS = 1.0
 
+# A stale station must not turn every pane's fast poll into a fleet-wide read.
+# Keep the pointer-only fallback for one minute, also added to the stale grace.
+FOLLOWER_FALLBACK_SECONDS = 60.0
+
 
 FOLLOWER_RESUME_EVENT = "follower-resume"
 
@@ -1513,7 +1517,7 @@ def _follow_watch_lines(
     fleet-only vocabulary, because the end of the stream is the one fact about
     the follower a reader must act on.
     """
-    from reckon.crew import follow_checkpoint, runs
+    from reckon.crew import follow_checkpoint, runs, station_subscriber
     from reckon.flight import FlightConfigError
 
     selected_runs = tuple(run_ids)
@@ -1568,8 +1572,12 @@ def _follow_watch_lines(
     # asked to observe. A run of any other session is work this follower never
     # prints.
     settle_populations = (session, *sorted(observed_sessions - {None}))
+    fallback_at: float | None = None
+    fallback_reading: tuple[bool, bool, list[str]] = (False, False, [])
+    station_stale = False
 
     def _is_live(name: str | None) -> bool:
+        nonlocal fallback_at, fallback_reading, station_stale
         if subscriber is not None:
             # The station writes each project's has-live-work reading on its
             # tick, so a pane that reads the station judges its populations
@@ -1581,6 +1589,16 @@ def _follow_watch_lines(
             verdict = subscriber.live_work(name)
             if verdict is not None:
                 return verdict
+            station_stale = True
+            moment = clock()
+            if fallback_at is None or moment - fallback_at >= FOLLOWER_FALLBACK_SECONDS:
+                fallback_reading = station_subscriber.live_work_populations(
+                    runs._list_live_records(project=project),
+                    include_terminal_duties=False,
+                )
+                fallback_at = clock()
+            project_live, unowned, sessions = fallback_reading
+            return project_live if name is None else unowned or name in sessions
         return _population_has_live_work(project, session=name)
 
     # Resolved once per arming: an explicit interval from a caller that drives
@@ -1607,7 +1625,7 @@ def _follow_watch_lines(
         emptiness and keeps the pane.
         """
         nonlocal settled, saw_live, settle_empty_since
-        nonlocal settle_sampled_at
+        nonlocal settle_sampled_at, station_stale
         if not settle or settled:
             return
         moment = clock()
@@ -1620,6 +1638,7 @@ def _follow_watch_lines(
         if settle_sampled_at is not None and moment - settle_sampled_at < cadence:
             return
         settle_sampled_at = moment
+        station_stale = False
         # The population is the pane's own session plus the sessions it was
         # asked to observe, and nothing else: a peer session this follower does
         # not observe is work it never prints, so it must not hold the pane
@@ -1632,7 +1651,8 @@ def _follow_watch_lines(
             return
         if settle_empty_since is None:
             settle_empty_since = moment
-        if moment - settle_empty_since >= grace:
+        settle_grace = grace + FOLLOWER_FALLBACK_SECONDS if station_stale else grace
+        if moment - settle_empty_since >= settle_grace:
             settled = True
 
     def _check_consumer() -> None:
