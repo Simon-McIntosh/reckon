@@ -39,7 +39,6 @@ from reckon.crew.runs import (
     list_live,
     producer_lease_seconds,
     update_watch_registration,
-    watch_lease_renewed_at,
     watch_lock_path,
     watch_stream_path,
 )
@@ -3217,16 +3216,13 @@ def watch_ticker(
     lease_seconds = producer_lease_seconds()
 
     def _lease_remaining() -> float | None:
-        renewed = watch_lease_renewed_at(project)
-        if renewed is None:
-            return None
-        return lease_seconds - (_utc_seconds() - renewed)
+        return runs.watch_lease_remaining(project, lease_seconds=lease_seconds)
 
     def _wait(interval: float) -> bool:
-        """Sleep, bounded by the lease; report whether the seat has lapsed."""
-        remaining = _lease_remaining()
-        if remaining is not None and remaining <= 0:
+        """Sleep, bounded by the lease; report whether the seat has ended."""
+        if runs.end_lapsed_watch_seat(project):
             return True
+        remaining = _lease_remaining()
         if sleeper is not time.sleep:
             # A supplied sleeper may advance a simulated clock or return
             # immediately. Give it one bounded call per poll interval so a
@@ -3241,13 +3237,12 @@ def watch_ticker(
             )
             if not runs.renew_watch_host_lease(project):
                 return True
-            remaining = _lease_remaining()
-            return remaining is not None and remaining <= 0
+            return runs.end_lapsed_watch_seat(project)
         left = interval
         while True:
-            remaining = _lease_remaining()
-            if remaining is not None and remaining <= 0:
+            if runs.end_lapsed_watch_seat(project):
                 return True
+            remaining = _lease_remaining()
             step = min(left, LEASE_RENEW_SECONDS)
             if remaining is not None:
                 step = min(step, remaining)
@@ -3257,8 +3252,7 @@ def watch_ticker(
             left -= step
             if left <= 0:
                 break
-        remaining = _lease_remaining()
-        return remaining is not None and remaining <= 0
+        return runs.end_lapsed_watch_seat(project)
 
     with _watch_registration(project, stall_window, sleeper=sleeper) as (
         acquired,
@@ -3341,8 +3335,7 @@ def watch_ticker(
                     # one superseded by a replacement producer ends here.
                     if not _recreate_unlinked_registration(project, watcher):
                         return
-                    remaining = _lease_remaining()
-                    if remaining is not None and remaining <= 0:
+                    if runs.end_lapsed_watch_seat(project):
                         return
                     # Every stream the tick reads is counted, so the registration
                     # carries what this poll actually parsed. An unchanged fleet

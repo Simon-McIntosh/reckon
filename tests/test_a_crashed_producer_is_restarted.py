@@ -49,9 +49,11 @@ def watch_follow(project, **_kwargs):
                 return time.time() - 10
             runs.watch_lease_renewed_at = expired
             runs.producer_lease_seconds = lambda: 1
-            # Nobody renewed this producer's own lease for a full interval, so
-            # its renewal leaves the process with the lost-seat status rather
-            # than returning.
+            # The lapse is read against live work: only a live follower renews
+            # the registration, so a lapse behind a run still in flight is the
+            # seat lost, and its renewal leaves the process with that status
+            # rather than returning.
+            runs.watch_work_is_live = lambda _project: True
             runs.renew_watch_host_lease(project)
             return
         while True:

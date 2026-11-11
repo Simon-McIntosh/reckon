@@ -3867,19 +3867,44 @@ def drop_watch_seat(project: str, handle: Any) -> None:
 WATCH_SEAT_LOST_EXIT = 75
 
 
-def watch_lease_lapsed(project: str) -> bool:
-    """Whether nobody renewed the producer's own lease for a full interval.
+def watch_lease_remaining(
+    project: str, *, lease_seconds: float | None = None
+) -> float | None:
+    """Seconds left on the producer's own lease, or None with no instant recorded.
 
-    The producer writes the instant when it takes the seat; every live follower
-    pushes it forward on its wait pass. A registration with no instant at all is
-    not a lapsed one — the file may simply have gone missing, which a later
-    wake-up recreates — so only a recorded instant that has fallen behind ends
-    the seat.
+    The single lapse predicate: the producer's tick, its wait between polls and
+    the renewal itself all read this, so no two of them can disagree about when
+    a lease has fallen behind. ``lease_seconds`` lets a caller that captured the
+    interval when the seat was taken keep using it.
+
+    The producer writes the instant when it takes the seat, and every live
+    follower pushes it forward on its wait pass. A registration with no instant
+    at all is not a lapsed one — the file may simply have gone missing, which a
+    later wake-up recreates — so only a recorded instant that has fallen a full
+    interval behind ends the seat.
     """
     renewed = watch_lease_renewed_at(project)
     if renewed is None:
-        return False
-    return _utc_epoch_seconds() - renewed >= producer_lease_seconds()
+        return None
+    interval = producer_lease_seconds() if lease_seconds is None else lease_seconds
+    return interval - (_utc_epoch_seconds() - renewed)
+
+
+def watch_lease_lapsed(project: str) -> bool:
+    """Whether nobody renewed the producer's own lease for a full interval."""
+    remaining = watch_lease_remaining(project)
+    return remaining is not None and remaining <= 0
+
+
+def watch_work_is_live(project: str) -> bool:
+    """Whether the project still has a live run to serve.
+
+    Only a live follower renews the registration, so a lapse means one of two
+    opposite things: the work is still there and its renewal stopped, or the
+    work ended and nothing was left to renew. This reads the pointers rather
+    than the watch stream, because a burst of transitions is not work.
+    """
+    return bool(_list_live_records(project=project))
 
 
 def exit_lost_watch_seat(project: str) -> NoReturn:
@@ -3893,6 +3918,24 @@ def exit_lost_watch_seat(project: str) -> NoReturn:
     raise SystemExit(WATCH_SEAT_LOST_EXIT)
 
 
+def end_lapsed_watch_seat(project: str) -> bool:
+    """End the seat if its lease has lapsed, as a lost seat or as a drain.
+
+    Returns False while the lease stands. When it has lapsed with a live run
+    behind it, the work is still there and its renewal stopped, so this leaves
+    the process with :data:`WATCH_SEAT_LOST_EXIT` and the supervisor knows it
+    may start the producer again. With no live run nothing was renewing the
+    lease, so True lets the caller end the seat deliberately: exit 0 is the
+    supervisor's signal not to start it again, which is what keeps a quiet
+    project from being restarted once per interval.
+    """
+    if not watch_lease_lapsed(project):
+        return False
+    if watch_work_is_live(project):
+        exit_lost_watch_seat(project)
+    return True
+
+
 def renew_watch_host_lease(project: str) -> bool:
     """Keep the producer's claim fresh; leave when the seat is no longer ours.
 
@@ -3902,16 +3945,21 @@ def renew_watch_host_lease(project: str) -> bool:
     runs it cannot probe; the release gives the seat up and ends the process.
 
     A producer that still holds its lease but can no longer renew it, or whose
-    own registration nobody renewed for a full interval, has lost the seat
-    rather than chosen to leave it, so it exits with
+    own registration nobody renewed for a full interval while runs are live,
+    has lost the seat rather than chosen to leave it, so it exits with
     :data:`WATCH_SEAT_LOST_EXIT` and the supervisor knows it may start the
-    producer again.
+    producer again. The same lapse behind no live run is the ordinary drain:
+    nothing was renewing the lease because nothing was running, so the seat ends
+    deliberately and exit 0 keeps the supervisor from restarting it each
+    interval.
     """
     release_seat_when_misplaced(project)
     lease = _WATCH_HOST_LEASES.get(project)
     if lease is None:
         return False
     if not lease.renew() or watch_lease_lapsed(project):
+        if not watch_work_is_live(project):
+            return False
         exit_lost_watch_seat(project)
     return True
 

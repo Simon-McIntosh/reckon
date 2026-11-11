@@ -22,11 +22,13 @@ import pytest
 from reckon.crew import dispatch_watch, recovery_watch
 
 # Each mode is one way a producer can leave the seat. The first takes the seat
-# and then lets its own lease registration lapse, which is the state a host
-# without a service unit reaches when nothing renews the producer's lease; the
-# second gives the seat up as misplaced; the third never gets the seat because
-# a live producer already holds it; the fourth is overtaken by another producer
-# claiming the seat's lease at renewal time.
+# with work still live and then lets its own lease registration lapse, which is
+# the state a host without a service unit reaches when nothing renews the
+# producer's lease; the second gives the seat up as misplaced; the third never
+# gets the seat because a live producer already holds it; the fourth is
+# overtaken by another producer claiming the seat's lease at renewal time; the
+# fifth lapses with no run left to serve; the sixth lapses inside the producer's
+# own wait rather than at a renewal.
 _PRODUCER = """
 import json
 import os
@@ -43,6 +45,17 @@ def record():
     with events.open('a', encoding='utf-8') as output:
         output.write(str(os.getpid()) + '\\n')
 
+def live_work():
+    # A run of this project is still live, which is the only thing that renews
+    # a producer's lease registration.
+    directory = runs.live_dir()
+    directory.mkdir(parents=True, exist_ok=True)
+    (directory / 'r-live.json').write_text(
+        json.dumps({'run_id': 'r-live', 'node_id': 'n-live', 'project': project,
+                    'phase': 'running', 'launched_at': '2026-01-01T00:00:00+00:00'}),
+        encoding='utf-8',
+    )
+
 def hold_seat():
     with recovery_watch._watch_registration(project, '1m') as (acquired, _watcher):
         if not acquired:
@@ -50,7 +63,13 @@ def hold_seat():
             sys.exit(0)
         record()
         if mode == 'lapse':
+            live_work()
             # Nobody renewed this producer's lease for a whole interval.
+            runs.update_watch_registration(project, lease_renewed_at=0.0)
+            runs.renew_watch_host_lease(project)
+            return
+        if mode == 'idle':
+            # No run is left to serve, so nothing was renewing the lease.
             runs.update_watch_registration(project, lease_renewed_at=0.0)
             runs.renew_watch_host_lease(project)
             return
@@ -72,6 +91,7 @@ def hold_seat():
             )
             return
         if mode == 'stolen':
+            live_work()
             # Another producer claims the seat's lease while this one holds it.
             lease = watch_unit.watch_host_lease(project)
             lease.path.write_text(
@@ -83,7 +103,17 @@ def hold_seat():
             runs.renew_watch_host_lease(project)
             return
 
-hold_seat()
+if mode == 'wait':
+    # The wait case takes the seat through the ticker itself, so it runs no
+    # claim of its own: a second claim would find the seat taken and read as a
+    # producer that never started.
+    record()
+    live_work()
+    recovery_watch._refuse_unresolvable_watch = lambda *_a, **_k: None
+    for _event in recovery_watch.watch_ticker(project, poll_interval=0.2):
+        pass
+else:
+    hold_seat()
 """
 
 
@@ -212,6 +242,36 @@ def test_a_refused_start_is_not_restarted(tmp_path, monkeypatch):
             assert len(_pids(events)) == 1
         finally:
             _stop_own_processes(supervisor, events)
+
+
+def test_an_idle_project_is_not_restarted_each_interval(tmp_path, monkeypatch):
+    """With no run left to serve, the seat ends deliberately and stays ended."""
+    supervisor, events, _log = _arm(tmp_path, monkeypatch, "idle")
+    try:
+        _until(lambda: bool(_pids(events)), "the producer never started")
+        _until(lambda: supervisor.poll() is not None, "the supervisor did not stop")
+        assert supervisor.returncode == 0
+        # The lease is one second, so this covers two whole intervals: a
+        # producer restarted on the lapse would have started twice by now.
+        time.sleep(2.5)
+        assert len(_pids(events)) == 1
+    finally:
+        _stop_own_processes(supervisor, events)
+
+
+def test_a_lapse_seen_while_waiting_is_a_lost_seat(tmp_path, monkeypatch):
+    """A lapse between polls is a lost seat, so the producer comes back."""
+    supervisor, events, _log = _arm(tmp_path, monkeypatch, "wait")
+    try:
+        _until(lambda: bool(_pids(events)), "the producer never started")
+        _until(
+            lambda: len(_pids(events)) >= 2,
+            "the producer whose lease lapsed while it waited was not restarted",
+            timeout=30,
+        )
+        assert supervisor.poll() is None
+    finally:
+        _stop_own_processes(supervisor, events)
 
 
 def test_a_seat_taken_at_renewal_is_not_restarted(tmp_path, monkeypatch):

@@ -333,12 +333,30 @@ while True:
 
 
 def watch_seat_held_elsewhere(project: str, *, exclude_pid: int | None = None) -> bool:
-    """Whether a producer other than ``exclude_pid`` is live on the project's seat."""
+    """Whether a producer other than ``exclude_pid`` holds the project's seat.
+
+    A record naming another host's producer is taken at its word: that pid is
+    not in this host's table, and the lease is the only evidence available. A
+    record naming this host must name a process that is still running, because
+    the record a producer leaves behind is the commonest thing here — the
+    registration outlives the process that wrote it, and reading that as a
+    live holder would decline every restart the seat actually needs.
+    """
+    from reckon.crew.host_lease import local_host
+
     state = watch_state(project)
     if not state["watcher_live"]:
         return False
-    holder_pid = (state["watcher"] or {}).get("pid")
-    return not (exclude_pid is not None and str(holder_pid) == str(exclude_pid))
+    watcher = state["watcher"] or {}
+    holder_pid = watcher.get("pid")
+    if holder_pid is None:
+        return False
+    if exclude_pid is not None and str(holder_pid) == str(exclude_pid):
+        return False
+    holder_host = str(watcher.get("host") or "")
+    if holder_host and holder_host != local_host():
+        return True
+    return _process_start_time(holder_pid) is not None
 
 
 def _watch_producer_argv(project: str) -> list[str]:
