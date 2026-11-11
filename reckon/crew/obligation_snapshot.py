@@ -1035,19 +1035,59 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 # read its banner forbids.
 #
 # Every other kind is left alone, whatever its run's pointer state. A
-# ``worktree-held`` row is raised from the project's retained ledger records, a
-# queued or stalled row from the queue and the admission verdicts, and a review
-# the derivation finds missing, a hold, a refusal or a blocked row names state
-# the run's record still carries after its pointer is gone. A missing pointer
-# says nothing about any of them, and hiding one on a ``stat`` would be a
-# silent omission rather than a settlement.
+# ``worktree-held`` row is raised from the project's retained ledger records,
+# and a review the derivation finds missing, a hold, a refusal or a blocked row
+# names state the run's record still carries after its pointer is gone. A
+# missing pointer says nothing about any of them, and hiding one on a ``stat``
+# would be a silent omission rather than a settlement.
 LIVE_POINTER_DUTY_KINDS = frozenset(
     {"landing-refused", "review-ready", "promotable-stale"}
 )
 
+# The duty kinds that describe a run waiting in the queue, and so are owed only
+# while its pointer still reads ``queued``.
+#
+# A queued request's alive pointer carries the phase the duty is about: the
+# admission pass launches it by moving that pointer to ``starting`` and then
+# ``working``, and the row that named the queue survives in any answer
+# computed before the move. A station tick can serve such an answer for
+# minutes, so a coordinator obeying it re-dispatches a run that is already
+# working -- and the next command such a row publishes is exactly that
+# re-dispatch. The phase is read from the pointer when the answer is served,
+# one read per row, which settles it whatever the answer's age.
+QUEUED_POINTER_DUTY_KINDS = frozenset(
+    {"run-queued", "queued-awaiting-session", "queued-contract-refused"}
+)
+
+# A pointer file present but unreadable is not evidence that its run left the
+# phase, so the duty it raised stands.
+_UNREADABLE_POINTER = object()
+
+
+def _live_pointer_phase(run_id: str) -> Any:
+    """The phase a run's live pointer reads now, or a sentinel.
+
+    ``None`` means no live pointer remains, which for a queued duty is the
+    request leaving the queue by any route; :data:`_UNREADABLE_POINTER` means
+    one is there and cannot be parsed, so nothing here may conclude it moved.
+    """
+    try:
+        text = live_pointer_path(run_id).read_text(encoding="utf-8")
+    except FileNotFoundError:
+        return None
+    except OSError:
+        return _UNREADABLE_POINTER
+    try:
+        document = json.loads(text)
+    except ValueError:
+        return _UNREADABLE_POINTER
+    if not isinstance(document, Mapping):
+        return _UNREADABLE_POINTER
+    return str(document.get("phase") or "")
+
 
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
-    """A held payload minus the duties of runs that hold no live pointer now.
+    """A held payload minus the duties its runs have already moved past.
 
     A duty of one of :data:`LIVE_POINTER_DUTY_KINDS` names a held run through
     state only its live pointer carries or an action only its live pointer can
@@ -1057,28 +1097,47 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     as long as its tick runs, which is minutes. One ``stat`` per such duty
     answers it at read time.
 
+    A duty of one of :data:`QUEUED_POINTER_DUTY_KINDS` is owed only while its
+    :func:`_live_pointer_phase` still reads the phase the duty names, which for
+    every one of them is ``queued``. A run the pass launched, discarded or
+    stalled out has left that phase even though its pointer is alive, so the
+    row is dropped on the phase rather than on the pointer's existence.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
-    is a ledger record, a queue request or nothing at all, so a missing pointer
-    says nothing about it. That includes a duty that names no run. The summary
-    is recomputed so the header counts the rows actually shown.
+    is a ledger record, a review the derivation found missing or nothing at
+    all, so a missing pointer says nothing about it. That includes a duty that
+    names no run. The summary is recomputed so the header counts the rows
+    actually shown.
     """
     rows = payload.get("obligations")
     if not isinstance(rows, list):
         return dict(payload)
     kept: list[Any] = []
     dropped = False
+    phases: dict[str, Any] = {}
     for row in rows:
         if not isinstance(row, Mapping):
             kept.append(row)
             continue
         run_id = str(row.get("run_id") or "")
+        kind = str(row.get("kind") or "")
         if (
             run_id
-            and str(row.get("kind") or "") in LIVE_POINTER_DUTY_KINDS
+            and kind in LIVE_POINTER_DUTY_KINDS
             and not live_pointer_path(run_id).exists()
         ):
             dropped = True
             continue
+        if run_id and kind in QUEUED_POINTER_DUTY_KINDS:
+            if run_id not in phases:
+                phases[run_id] = _live_pointer_phase(run_id)
+            phase = phases[run_id]
+            if phase is None:
+                dropped = True
+                continue
+            if phase is not _UNREADABLE_POINTER and phase != "queued":
+                dropped = True
+                continue
         kept.append(row)
     if not dropped:
         return dict(payload)
