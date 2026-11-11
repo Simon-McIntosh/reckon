@@ -30,11 +30,14 @@
     <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
     <tbody>
       <tr><td>after (this change)</td><td><code>f53d0a8f25</code></td>
-        <td><strong>63 passed, 2 failed</strong>, exit 1 — the same two failures the
-        base arm carries</td></tr>
+        <td>62 passed, <strong>3 failed</strong>, exit 1 — every failing id is one the
+        base source also fails</td></tr>
       <tr><td>base (<code>29a435db15</code>, new test absent)</td>
         <td><code>29a435db15</code></td>
         <td>58 passed, <strong>2 failed</strong>, exit 1 — the same two ids</td></tr>
+      <tr><td>base, the third failing file alone</td>
+        <td><code>29a435db15</code></td>
+        <td>7 passed, <strong>1 failed</strong>, exit 1 — the same id again</td></tr>
       <tr><td>control: station execs without the wait</td><td>mutated head</td>
         <td>1 failed, exit 1</td></tr>
       <tr><td>control: follower execs without the wait</td><td>mutated head</td>
@@ -47,14 +50,19 @@
   </table>
 
   <ul>
-    <li><strong>Two failures, neither added.</strong>
+    <li><strong>Three failures, none added.</strong>
     <code>test_the_station_starts_where_workers_run.py::test_station_reloads_from_a_node_local_image</code>
     fails on a <code>FileExistsError</code> against a reload-tree directory left in the
     node-local fleet runtime root, and
     <code>test_waiting_claims_never_block_a_launch.py::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path</code>
     fails on a queue-time manifest-path validation. Both fail identically with the
     prechange source: the base arm collected the same two ids over a scratch tree
-    extracted from <code>29a435db15</code>.</li>
+    extracted from <code>29a435db15</code>.
+    <code>test_dispatch_returns_without_worker.py::test_a_discarded_run_is_not_recreated</code>
+    waited out its 60 s marker bound in one arm and passed in another, so it was
+    measured on its own at both revisions: it fails identically over the
+    <code>29a435db15</code> source (7 passed, 1 failed), which is what makes it the base
+    source's and not this change's.</li>
 
     <li><strong>The three service cases each fail only under their own mutation.</strong>
     With the wait removed from one service, that service's case reads
