@@ -945,6 +945,7 @@ def write_run_file(
         fsync=fsync,
     )
     _bump_generation(project)
+    _index_record_written_document(project, root, row, target)
     return target
 
 
@@ -1241,6 +1242,80 @@ def _bump_generation(project: str) -> None:
         return
     with contextlib.suppress(OSError):
         ledger_generation_path(project).unlink()
+
+
+def _index_record_written_document(
+    project: str,
+    root: str | Path | None,
+    record: Mapping[str, Any],
+    target: Path,
+) -> None:
+    """Publish one document this write touched into the index the next read reuses.
+
+    Completing a run appends its row and then amends it, and each of those
+    advances the write generation. Without this the read that follows cannot
+    match the generation its index recorded and falls back to walking every
+    document the project ever recorded — one remote stat per run, which is what
+    a completion was measured spending its minutes on.
+
+    The document this write touched is the only one it changes, so its row is
+    written here and the two stamps the reuse compares are recorded beside it.
+    Writes that touch no document, or that write many at once, still leave the
+    recorded stamps behind and send the next read back to the documents exactly
+    as before; so does a generation that could not be advanced, which reads as
+    absent here and is therefore never recorded.
+
+    The run directory's own identity is recorded only after checking that its
+    entries are the ones the index already holds plus this document. A peer that
+    wrote in between makes that check fail, and the stamps are then left alone,
+    so the next read walks and sees the peer's document.
+
+    Any failure is a miss, never an error: the read that follows walks, which is
+    the behaviour it had before this existed.
+    """
+    try:
+        path = _run_index_path(project, root)
+        if not path.exists():
+            return
+        runs_directory = ledger_path(project, root).parent / "runs"
+        stamp = _file_identity(target)
+        if stamp is None:
+            return
+        names = {
+            entry.name[: -len(".json")]
+            for entry in os.scandir(runs_directory)
+            if entry.name.endswith(".json")
+        }
+        with contextlib.closing(sqlite3.connect(path, timeout=0.2)) as connection:
+            indexed = {
+                name for (name,) in connection.execute("SELECT name FROM records")
+            }
+            if names != indexed | {target.stem}:
+                return
+            generation = ledger_generation(project)
+            runs_stamp = json.dumps(_file_identity(runs_directory))
+            with connection:
+                connection.execute(
+                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?)",
+                    (
+                        target.stem,
+                        json.dumps(stamp),
+                        run_activity_seconds(record),
+                        json.dumps(dict(record), sort_keys=True, separators=(",", ":")),
+                        json.dumps(picker_record(record), separators=(",", ":")),
+                    ),
+                )
+                if generation is not None:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                        (_GENERATION_MEMBER, generation),
+                    )
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                    (_RUNS_DIRECTORY_MEMBER, runs_stamp),
+                )
+    except (sqlite3.Error, OSError, ValueError, TypeError):
+        return
 
 
 def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any]]:
@@ -3317,6 +3392,7 @@ def append_run(
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
     _bump_generation(project)
+    _index_record_written_document(project, root, stored_record, target)
     store_outcome = _index_append(project, stored_record)
     return {
         "path": str(target),
