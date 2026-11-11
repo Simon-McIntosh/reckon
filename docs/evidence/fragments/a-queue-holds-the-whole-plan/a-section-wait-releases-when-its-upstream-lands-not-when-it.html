@@ -46,6 +46,14 @@
   at all, such as one completed by hand, releases its waiters at once, and a
   discarded run stops holding the moment its discard is recorded.
 
+  <p><strong>A landing that cannot be read is unknown, not absent.</strong> The
+  landed test reads the project's registered checkout, so a project no mount
+  names offers no HEAD to compare against. The guard holds the wait in that
+  case rather than releasing it, which is the answer the request-ref path
+  already gives a run whose project no mount names; the hold applies only once
+  a run of the section exists, so the release of the no-run case above is
+  unchanged.
+
   <p><strong>Cost.</strong> The ledger is read once per project per pass and
   kept in the readiness cache beside the plan rows, so a release tick pays one
   ledger read rather than one per waiting request.
@@ -58,25 +66,34 @@
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_wait_releases_when_its_upstream_lands.py
   tests/test_staged_write_inventory.py</code> reports
-  <code>54 passed</code>, <code>EXIT=0</code> at the head, run on the
+  <code>55 passed</code>, <code>EXIT=0</code> at the head, run on the
   <code>all_debug</code> partition. The base arm of the same template, resolved
   over the base tree where the new file does not exist, reports
-  <code>51 passed</code>, <code>EXIT=0</code>: the three added tests are the
+  <code>51 passed</code>, <code>EXIT=0</code>: the four added tests are the
   only difference and no base failure is added.
 
   <p><strong>Cases.</strong> The first test drives the whole sequence: a
   delivered run off HEAD holds its waiter through an admission pass and through
   the promotion's own release, and the waiter is released once the delivered
   head is merged into HEAD. The second discards the delivered run and shows the
-  waiter released. The third declares a section done with no run at all and
-  shows the waiter released at once.
+  waiter released. The third removes the project's registration once its run
+  has delivered and shows the waiter held. The fourth declares a section done
+  with no run at all and shows the waiter released at once.
+
+  <p><strong>The test owns the checkout it reads.</strong> The mounts registry
+  outranks the config home wherever both are consulted, so a host that exports
+  <code>RECKON_MOUNTS_PATH</code> would leave the fixture's repository unnamed
+  and the guard would read the host's HEAD. The fixture pins the registry at its
+  own <code>mounts.json</code> and asserts that the guard resolves the checkout
+  it built. The file therefore passes in any tree: a fresh tree of the head
+  revision, with the host registry exported, reports <code>4 passed</code>.
 
   <p><strong>Negative control.</strong> With
   <code>_section_run_unlanded</code> made to answer <code>False</code> — the
-  declaration alone releasing — the same three tests report
-  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>, failing the first and
-  second cases. The guard is load-bearing: without it the first case releases
-  before the merge, which is the defect the section reports.
+  declaration alone releasing — the same four tests report
+  <code>3 failed, 1 passed</code>, <code>EXIT=1</code>, failing the first,
+  second and third cases. The guard is load-bearing: without it the first case
+  releases before the merge, which is the defect the section reports.
 
   <p><strong>Regression.</strong> Six queue tests carrying dependency waits,
   discards, holds and the drain (<code>test_a_queued_request_waits_on_its_dependencies</code>,
