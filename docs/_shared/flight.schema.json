@@ -1205,6 +1205,16 @@
                     ],
                     "description": "Public model list and watched id prefixes for model notices."
                 },
+                "model_windows": {
+                    "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
+                    "items": {
+                        "$ref": "#/$defs/ModelWindow"
+                    },
+                    "type": [
+                        "array",
+                        "null"
+                    ]
+                },
                 "protected_paths": {
                     "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",
                     "items": {
@@ -2437,6 +2447,22 @@
             "title": "ModelWatchConfig",
             "type": "object"
         },
+        "ModelWindow": {
+            "additionalProperties": false,
+            "description": "One model-id prefix and the context window that model runs in, in tokens. The prefix is the map key, so a specific model id and its family can each be declared without this table naming a provider.",
+            "properties": {
+                "tokens": {
+                    "description": "A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "title": "ModelWindow",
+            "type": "object"
+        },
         "PickerMode": {
             "description": "Whether the recorded picker selection controls dispatch.",
             "enum": [
@@ -3308,6 +3334,16 @@
                 }
             ],
             "description": "Public model list and watched id prefixes for model notices."
+        },
+        "model_windows": {
+            "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
+            "items": {
+                "$ref": "#/$defs/ModelWindow"
+            },
+            "type": [
+                "array",
+                "null"
+            ]
         },
         "protected_paths": {
             "description": "Extra filesystem paths a host or project layer adds to the set a worker's fence seals read-only. The key is additive: the fence's shipped default set is today's built-in list \u2014 operator state, credentials, shared records and every main checkout, the worktree pool included \u2014 and a layer can add to it but never replace it, so a layer that omits a default here leaves that default protected rather than silently dropping it. Entries are home-relative or absolute and are resolved against the operator's home the same way the defaults are. The only way to remove a default is to name it under `unprotected_paths`.",

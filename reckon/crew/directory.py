@@ -40,27 +40,41 @@ _TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
 #: a forward scan gives.
 _TRANSCRIPT_TAIL_SIZES = (256 * 1024, 1024 * 1024, 4 * 1024 * 1024)
 
-#: The context window each harness model runs in, by model-id prefix, in tokens.
-#:
-#: The Claude 5 family's window is 1,000,000 tokens. The figure is bounded from
-#: below by this workstation's own transcripts: over 116 session transcripts the
-#: largest charged input was 967,427 tokens, on claude-opus-5-5, so the window is
-#: at least that and the family's published figure is what remains above it. A
-#: model absent from this table carries no window rather than a guessed one.
-_CONTEXT_WINDOWS = (
-    ("claude-fable-5", 1_000_000),
-    ("claude-opus-5", 1_000_000),
-    ("claude-sonnet-5", 1_000_000),
-    ("claude-haiku-5", 1_000_000),
-    ("claude-haiku-4", 1_000_000),
-)
+#: The catalogue key carrying each model's context window, keyed by model-id
+#: prefix and valued in tokens. Routing configuration rather than source: a
+#: checkout that carries no catalogue reports a session's window unmeasured
+#: rather than guessing one from a model id.
+_WINDOWS_KEY = "model_windows"
+
+
+def _context_windows() -> tuple[tuple[str, int], ...]:
+    """The declared context window of each model, longest prefix first.
+
+    The windows are read from the model catalogue's ``model_windows`` table,
+    because a window is a routing fact rather than something this module
+    should hold. Longest prefix first, so a specific model id wins over the
+    family prefix it also starts with. An absent catalogue, which is what a
+    wheel install and an isolated test carry, declares no window: a row then
+    reads unmeasured rather than against a figure nothing supplied.
+    """
+    from reckon.flight import model_catalogue_path, read_layer_file
+
+    declared = read_layer_file(model_catalogue_path()).get(_WINDOWS_KEY)
+    if not isinstance(declared, Mapping):
+        return ()
+    windows: list[tuple[str, int]] = []
+    for prefix, entry in declared.items():
+        tokens = entry.get("tokens") if isinstance(entry, Mapping) else None
+        if isinstance(tokens, int) and tokens > 0:
+            windows.append((str(prefix), tokens))
+    return tuple(sorted(windows, key=lambda item: len(item[0]), reverse=True))
 
 
 def _context_window(model: str | None) -> int | None:
     """The context window a model id runs in, or ``None`` where none is declared."""
     if not model:
         return None
-    for prefix, window in _CONTEXT_WINDOWS:
+    for prefix, window in _context_windows():
         if model.startswith(prefix):
             return window
     return None

@@ -96,12 +96,35 @@ def _pointer(home: Path, *, run_id: str, session: str, node: str) -> dict:
     return record
 
 
+#: The model-id prefixes a catalogue declares a window for. The board reads each
+#: model's window from the catalogue, and the suite points the catalogue at an
+#: absent file, so a fixture that expects a measured window supplies its own.
+_WINDOW_PREFIXES = (
+    "claude-fable-5",
+    "claude-opus-5",
+    "claude-sonnet-5",
+    "claude-haiku-5",
+    "claude-haiku-4",
+)
+
+
+def _catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Point the catalogue at a fixture declaring the models' context windows."""
+    path = tmp_path / "model-catalogue.yaml"
+    windows = "".join(
+        f"  {prefix}:\n    tokens: 1000000\n" for prefix in _WINDOW_PREFIXES
+    )
+    path.write_text(f"version: 1\nmodel_windows:\n{windows}", encoding="utf-8")
+    monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(path))
+
+
 def _seed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *, session: str) -> dict:
     home = tmp_path / "config"
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.delenv("RECKON_STATE_ROOT", raising=False)
     monkeypatch.setattr(directory_module, "_TRANSCRIPT_ROOT", tmp_path / "projects")
+    _catalogue(tmp_path, monkeypatch)
     return _pointer(home, run_id="run-live", session=session, node="build-the-coil")
 
 
