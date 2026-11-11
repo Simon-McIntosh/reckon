@@ -33,29 +33,30 @@
   fails cases 1 and 2 and passes case 3, exactly as declared. Log:
   <code>logs/negative-control.log</code>.
 
-  <p><strong>Measure.</strong> The armed suite is green at the head — 54 passed
-  — against a base arm that fails the two defect cases, so this node adds no
-  failure. Ruff reports no findings on the staged paths. Logs:
+  <p><strong>Measure.</strong> The armed suite covers the new test, the two files
+  whose fixtures it repaired, and the staged-write census. At the head it is
+  68 passed and 2 failed; both failures are red at the base arm as well, so
+  this node adds none, and the base arm's two defect cases are the delta it
+  clears. Ruff reports no findings. Logs:
   <code>logs/suite-after.log</code>, <code>logs/suite-baseline.log</code>,
   <code>logs/ruff.log</code>.
 
   <p><strong>Importer delta.</strong> Every test file importing
   <code>reckon.crew.queue_admission</code> was run at the head and at the base,
-  in five slices at <code>-n 4</code>, one arm at a time. The base arm collects
-  116 distinct failing ids and the head 119, and no failure is cleared. Three
-  are added, all of the same shape: a fixture stores a <code>run:</code> wait
-  its node never named in <code>after</code>. Logs:
-  <code>logs/importers-after-s0..s4.log</code> and
+  in five slices at <code>-n 4</code>, one arm at a time, and the two slices
+  that held the repaired fixtures were re-run after the repair. Both arms
+  collect 116 distinct failing ids, the sets are identical, and no failure is
+  added or cleared. Logs: <code>logs/importers-after-s0..s4.log</code> and
   <code>logs/importers-baseline-s0..s4.log</code>.
 
-  <p><strong>What it costs elsewhere.</strong> Three fixtures across two files
-  build a stored <code>run:</code> wait without naming it in
-  <code>after</code>, which is the state this section removes:
+  <p><strong>The fixtures that had to change.</strong> Three fixtures built a
+  stored <code>run:</code> wait their node never named in <code>after</code> —
   <code>test_a_failed_admitted_launch_keeps_the_waits_it_recorded</code> and
   <code>test_a_wait_naming_no_project_records_an_issue_and_an_obligation</code>
   in <code>tests/test_a_queued_launch_keeps_the_run_record.py</code>, and
   <code>test_accepted_delivery_lands_before_its_downstream_is_admitted</code>
-  in <code>tests/test_queue_landing.py</code>. Each needs the ref added to its
-  fixture node's <code>after</code>. Both files are outside this node's scope
-  and are reported there rather than edited here.</p>
+  in <code>tests/test_queue_landing.py</code>. Production cannot reach that
+  state: every stored <code>run:</code> wait is built from
+  <code>node.after</code>, and the plan editor writes no waits. Each fixture
+  now names the ref it waits on, and each keeps the behaviour it is named for.</p>
 </section>
