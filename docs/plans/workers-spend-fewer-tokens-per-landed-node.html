@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -177,7 +177,10 @@
     <div class="r-comment-body"><p>omp-agent-context: reckon/agent_context.py now declares a per-agent instruction layout, so an oh-my-pi launch resolves to ~/.omp/agent with an AGENTS.md entrypoint and both AGENTS.md and CLAUDE.md per directory; the base refused it with `unsupported agent: omp` and the head returns a 50,392-token standing-context figure, with codex and claude manifests byte-identical and an unknown agent still refused</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261111T032752853031-review-of-omp-models-path-3d615da8ddde" data-who="reckon-build" data-when="2026-11-11T03:41:03.398Z">
-    <div class="r-comment-body"><p>Independent review of r-20261111T020844111171-omp-models-path at 3d615da8ddde: parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 19 (total 114), added_failure_count 0, plus one non-blocking finding that the omp store subpath is a second literal copy of the flight declaration&#x27;s path fragment with no test tying the pair together.</p></div>
+    <div class="r-comment-body"><p>Independent review of r-20261111T020844111171-omp-models-path at 3d615da8ddde: parsed record scoring goal_fidelity 20, evidence 19, scope_discipline 20, durability 17, fit 19, reuse 19 (total 114), added_failure_count 0, plus one non-blocking finding that the omp store subpath is a second literal copy of the flight declaration's path fragment with no test tying the pair together.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261111T020844111171-omp-models-path" data-who="reckon-build" data-when="2026-11-11T03:25:02.289Z">
+    <div class="r-comment-body"><p>fix(omp): a fenced omp run now reads the models.yml the fence seeds — PI_CODING_AGENT_DIR=&lt;run home&gt;/agent is set beside HOME in the omp launch environment, from one table entry in reckon/_worker_fence.py applied by launch_plan; tests/test_omp_dialect.py grows from 24 to 26 tests (77 passed at the armed head arm, 73 passed + 2 scaffolding errors at base), and the declared negative control (store variable dropped) fails with KeyError: &#x27;PI_CODING_AGENT_DIR&#x27;, 1 failed 25 passed, and a live probe of the pinned omp 18.13.2 over one seeded run home completes a prompt (exit 0, &quot;ready&quot;) with the store variable and refuses the model (exit 1, &quot;Model ... not found&quot;) with HOME alone.</p></div>
 </div>
 </section>
 </main>
