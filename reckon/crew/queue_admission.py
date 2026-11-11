@@ -4316,22 +4316,28 @@ def _rederive_waits(
         tuple(node.after),
         node.waits_only_after,
     )
+    stored = section_waits_for(pointer)
     derived = None if cache is None else cache.get(key)
     if derived is None:
         derived = derive_wait_refs(node, repo_root=repo_root)
-        own = _own_readiness_ref(
-            node,
-            project=str(pointer.get("project") or "")
-            or _project_of_docs_dir(Path(repo_root) / "docs"),
-            docs_dir=Path(repo_root) / "docs",
-            cache=cache if cache is not None else {},
-            refs=derived,
-        )
-        if own and own not in derived:
-            derived = [*derived, own]
+        # The readiness ref is re-derived only for a request that carries one
+        # already. It is composed at queue time from the plan as it stood then,
+        # and a record that carries none was queued against a section under no
+        # authored hold; composing one here would add a wait the request never
+        # declared.
+        if any(ref.startswith(READINESS_REF_PREFIX) for ref in stored):
+            own = _own_readiness_ref(
+                node,
+                project=str(pointer.get("project") or "")
+                or _project_of_docs_dir(Path(repo_root) / "docs"),
+                docs_dir=Path(repo_root) / "docs",
+                cache=cache if cache is not None else {},
+                refs=derived,
+            )
+            if own and own not in derived:
+                derived = [*derived, own]
         if cache is not None:
             cache[key] = list(derived)
-    stored = section_waits_for(pointer)
     # ``derived`` is the whole of what the request waits on: derive_wait_refs
     # builds the request's own ``run:`` refs from the authored ``--after``, so
     # a stored ref the request never named is absent from it and is dropped

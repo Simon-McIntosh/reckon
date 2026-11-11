@@ -191,3 +191,25 @@ def test_the_admission_verdict_row_of_the_decision_case_names_it(repo: Path) -> 
     assert rows, result.get("verdicts")
     assert all(f"decision:{DECISION}" in row.get("hold", ()) for row in rows), rows
     assert any(DECISION in str(row.get("detail") or "") for row in rows), rows
+
+
+def _readiness_refs(pointer: dict[str, Any]) -> list[str]:
+    return [
+        ref
+        for ref in queue_admission.section_waits_for(pointer)
+        if ref.startswith(queue_admission.READINESS_REF_PREFIX)
+    ]
+
+
+def test_a_pass_keeps_the_readiness_hold_a_dispatch_composes(repo: Path) -> None:
+    """The pass re-reads waits; the ref the dispatch composed must survive it."""
+    _author(repo, DECISION_BLOCK, waits={})
+    _dispatch(repo)
+    assert _readiness_refs(_queued(repo)) == [
+        f"{queue_admission.READINESS_REF_PREFIX}{PROJECT}:{PLAN}#s2"
+    ]
+
+    result = _pass(repo)
+
+    assert not result.get("launched"), result.get("launched")
+    assert _readiness_refs(_queued(repo)), "the pass released a held request"
