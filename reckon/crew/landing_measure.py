@@ -916,6 +916,122 @@ def measure_run(
     )
 
 
+def arm_observation(
+    command: str, revision: str, arm: Arm, *, measured_by: str = "landing"
+) -> dict[str, Any]:
+    """One arm as the suite-observation record a run's manifest carries.
+
+    The shape is the one promotion already reads for ``baseline_suite`` and
+    ``after_suite``, so an arm the landing measured is judged by the same code
+    and the same refusal as an arm the run recorded.
+    """
+    return {
+        "revision": revision,
+        "command": command,
+        "exit_status": arm.exit_status,
+        "completed": arm.exit_status in (0, 1),
+        "failure_count": len(arm.failure_ids),
+        "failure_ids": list(arm.failure_ids),
+        "log_path": arm.log_path,
+        "measured_by": measured_by,
+    }
+
+
+def armed_observations(
+    *,
+    command: str,
+    tree: Path,
+    base_tree: Path,
+    base_sha: str,
+    head_sha: str,
+    logs_dir: Path,
+    test_files: Iterable[str] = (),
+    run=None,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    project: str = "",
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run the armed command at both revisions and return each as an observation.
+
+    A run whose recorded arms are missing, were recorded at another revision, or
+    name another command has not produced the evidence its own landing needs, so
+    the landing takes the reading itself: the armed command is what promotion
+    runs, and the arms it produces here are that evidence, taken at the base and
+    the head the landing needs rather than at whatever the run happened to
+    record. Each arm carries ``measured_by: landing`` so a later reader can tell
+    it from one the run recorded.
+
+    A configured measurement partition submits each arm as its own job, the same
+    way :func:`measure_run` does, so a mismatch costs a queue wait rather than a
+    suite run on the node the landing is executing on. The return value carries
+    ``unreadable`` instead of a pair when the command cannot be measured at all.
+    """
+    runner = run or _RUN
+    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    environment, argv = armed_argv(command, node_tests)
+    if not argv:
+        return {"unreadable": "the run armed no suite command"}
+    if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
+        return {
+            "unreadable": (
+                "the armed command measures the node's own test files, "
+                "and the node names none"
+            )
+        }
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve(project or None, checkout_path=str(tree)).config
+    landing = config.get("landing") or {}
+    partition = str(landing.get("measure_partition") or "")
+    if partition:
+        runner = _partition_runner(
+            runner,
+            repo=tree,
+            base_tree=base_tree,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            partition=partition,
+            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            test_files=node_tests,
+        )
+        runner.partitioned = True
+    _carry_missing_tests(base_tree, tree, node_tests)
+    logs = Path(logs_dir)
+    base_arm = _arm(
+        argv,
+        base_tree,
+        logs / "armed-baseline.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    head_arm = _arm(
+        argv,
+        tree,
+        logs / "armed-after.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    unreadable = ""
+    for name, arm in (("baseline", base_arm), ("after", head_arm)):
+        if not arm.readable and not unreadable:
+            unreadable = (
+                f"the measured {name} arm exceeded its {timeout:g}s bound"
+                if arm.timed_out
+                else f"the measured {name} arm did not run"
+            )
+    if unreadable:
+        return {"unreadable": unreadable}
+    return {
+        "baseline_suite": arm_observation(command, base_sha, base_arm),
+        "after_suite": arm_observation(command, head_sha, head_arm),
+    }
+
+
 def _fails(
     command: Sequence[str],
     test_id: str,
