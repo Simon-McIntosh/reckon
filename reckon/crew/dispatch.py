@@ -2331,7 +2331,7 @@ def dispatch(
             node,
             repo_root=repo_root,
             project=project,
-            refs=waiting,
+            refs=validated_refs,
             readiness_cache=wait_readiness_cache,
         )
         decisions = [

@@ -3690,7 +3690,11 @@ def dispatch_wait_blockers(
     if not any(ref.startswith("readiness:") for ref in refs):
         return []
     rows, _ = _readiness_rows(
-        project, Path(repo_root) / "docs", readiness_cache, node.plan, refs
+        project,
+        Path(repo_root) / "docs",
+        readiness_cache,
+        node.plan,
+        [ref for ref in refs if not ref.startswith("readiness:")],
     )
     verdict = next(
         (

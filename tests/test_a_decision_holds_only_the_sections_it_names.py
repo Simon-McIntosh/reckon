@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import importlib
-import json
 from pathlib import Path
 
 import pytest
@@ -110,7 +109,11 @@ def test_dispatch_holds_only_the_sections_the_open_decision_names(
             with pytest.raises(LaneHeld) as caught:
                 _dispatch(decision_repo, section)
             assert caught.value.queued["phase"] == "awaiting-upstream"
-            assert "transport" in json.dumps(caught.value.queued)
+            assert "transport" in caught.value.queued["reason"]
+            assert any(
+                row["kind"] == "decision" and row["id"] == "transport"
+                for row in caught.value.queued["blockers"]
+            )
         else:
             result = _dispatch(decision_repo, section)
             assert result.get("queued") is not True, result
@@ -179,3 +182,36 @@ def test_the_reader_schema_and_roadmap_report_the_named_sections(
         fixtures.PROJECT, decision_repo / "docs", fixtures.PLAN
     )
     assert readiness[fixtures.PLAN]["sections"] == row["section_verdicts"]
+
+
+def test_hold_details_reuse_the_verdict_that_supplied_the_wait(
+    decision_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _seed(decision_repo, ["s3"])
+    original = plan_review.section_readiness_rows
+    builds = []
+
+    def counting(*args, **kwargs):
+        builds.append((args, kwargs))
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(plan_review, "section_readiness_rows", counting)
+    node = _node(decision_repo, "s3")
+    cache = {}
+    refs, _, unmet = queue_admission.dispatch_waits(
+        node, repo_root=decision_repo, project=fixtures.PROJECT, readiness_cache=cache
+    )
+    assert unmet
+    assert builds
+    before = len(builds)
+    blockers = queue_admission.dispatch_wait_blockers(
+        node,
+        repo_root=decision_repo,
+        project=fixtures.PROJECT,
+        refs=refs,
+        readiness_cache=cache,
+    )
+    assert [(item["kind"], item["id"]) for item in blockers] == [
+        ("decision", "transport")
+    ]
+    assert len(builds) == before
