@@ -33,15 +33,16 @@
   <p>The three cases pass locally: <code>3 passed</code>, exit 0. The gate was
   run as two arms on the <code>all_debug</code> partition, one arm at a time
   with <code>-n 4</code>, the base arm over an extraction of
-  <code>d1d74874e6</code> and the after arm over the worktree at its head.
-  Over the twelve test files importing <code>reckon.crew.promotion_records</code>:
-  base <code>6 failed, 137 passed</code> and head <code>6 failed, 137 passed</code>
-  — the same six ids on both sides, so zero added. Over the promotion template's
-  own suite (<code>tests/test_a_default_gate_is_never_the_negative_control.py</code>
-  plus <code>tests/test_staged_write_inventory.py</code>): base
-  <code>52 passed, 2 errors</code>, head <code>54 passed</code>, exit 0 — the two
-  base errors are the staged-write fixture failing to resolve a repository in a
-  bare extraction, not a failure of the code under test.</p>
+  <code>0adda649f4</code> and the after arm over the worktree at
+  <code>53d2a3776b</code>. Over the twelve test files importing
+  <code>reckon.crew.promotion_records</code>: base <code>6 failed, 137 passed</code>
+  and head <code>6 failed, 137 passed</code> — the same six ids on both sides,
+  so zero added. Over the promotion template's own suite
+  (<code>tests/test_staged_write_inventory.py</code> at base, plus
+  <code>tests/test_a_default_gate_is_never_the_negative_control.py</code> at
+  head): base <code>49 passed, 2 errors</code>, head <code>54 passed</code>,
+  exit 0 — the two base errors are the staged-write fixture failing to resolve a
+  repository in a bare extraction, not a failure of the code under test.</p>
 
   <p><strong>Negative control.</strong> Restoring <code>test_logs[0]</code> as
   the default makes all three cases fail: <code>3 failed</code>, the first case
