@@ -1341,6 +1341,15 @@ class _ServiceState:
     lock_seen: bool = False
     lock_missing_reported: bool = False
     stamp_leave_reported: tuple[str, str] | None = None
+    # The lease held on the published image this copy was started from, while
+    # it runs from one. A published image is prunable the moment nothing holds
+    # it; the lease is what keeps the code a live service imports from being
+    # removed underneath it.
+    image_pin: int | None = None
+    uncompared_reported: bool = False
+    # The published image a replacement is started from, set by the decision
+    # that chose one and consumed by the start that follows it.
+    start_image: Path | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1421,23 +1430,55 @@ class DeclaredServices:
         """The checkout's code identity, or the unknown reading if none was taken."""
         return _stamp_or_unknown(self._code_stamp)
 
-    def _runs_recorded_code(self, name: str, pid: int, state: _ServiceState) -> bool:
-        """Whether a running copy may be adopted, or must be replaced.
+    def _committed_image(self, stamp: str) -> tuple[Path, int] | None:
+        """Publish the committed tree a replacement may run from, or None.
 
-        A copy whose record names the checkout's own code is adopted. One that
-        names other code is replaced, because a service that only reloads itself
-        between passes never reaches the supervisor's own restart, and a pass
-        that never ends never reaches that boundary at all. A copy recording no
-        stamp is replaced once, so its code is known from then on.
+        A checkout whose working tree carries uncommitted edits cannot be run
+        for its delivered code: those edits belong to whoever is making them,
+        and the code a service owes is the committed head's. The published
+        image is that head's content, named by the stamp compared here, so a
+        replacement started from it carries the committed code and none of the
+        working tree's edits.
+        """
+        from reckon import checkout_trust
 
-        The replacement is refused when the checkout cannot be trusted: a tree
-        that may not be loaded is no reason to disturb a copy that is running,
-        and the copy is left alone with the reason logged once per pair of
-        stamps.
+        try:
+            image, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+                _checkout_root(), stamp
+            )
+        except (OSError, RuntimeError, ValueError):
+            return None
+        return image, pin
+
+    def _code_decision(self, name: str, pid: int, state: _ServiceState) -> str:
+        """Whether a running copy is adopted, replaced, or left uncompared.
+
+        A copy whose record names the committed head's code is adopted, whatever
+        the working tree holds: uncommitted edits are not code this supervisor
+        delivers, so they never make a running copy stale. A copy on other code
+        is replaced, because a service that only reloads itself between passes
+        never reaches the supervisor's own restart, and a pass that never ends
+        never reaches that boundary at all. A copy recording no stamp is
+        replaced once, so its code is known from then on.
+
+        A replacement is refused when the committed head cannot be loaded for a
+        reason other than the working tree's edits -- a probe that could not
+        prove the tree imports -- since a refusal describes the committed tree
+        itself and no restart can fix that. A copy whose stamp cannot be read at
+        all is reported as uncompared rather than adopted, because nothing has
+        established that its code is current.
         """
         current = self._code_stamp_value()
         if current == _unknown_code_stamp():
-            return True
+            if not state.uncompared_reported:
+                state.uncompared_reported = True
+                log(
+                    f"declared service {name} (pid {pid}) runs code the "
+                    "supervisor cannot compare: the checkout's identity did "
+                    "not answer, so the copy is left running uncompared"
+                )
+            return "uncompared"
+        state.uncompared_reported = False
         recorded = recorded_service_stamp(self._runtime, name)
         if not recorded or recorded == _unknown_code_stamp():
             log(
@@ -1445,11 +1486,18 @@ class DeclaredServices:
                 f"restarting it so the code it runs is known "
                 f"(checkout reads {current})"
             )
-            return False
+            return "restart"
         if recorded == current:
-            return True
+            return "adopt"
         trust = self._checkout_trust()
-        if not trust.trusted:
+        if trust.trusted:
+            log(
+                f"declared service {name} (pid {pid}) runs code stamp {recorded} "
+                f"while the checkout reads {current}; restarting it on the "
+                "checkout's code"
+            )
+            return "restart"
+        if not getattr(trust, "dirty", False):
             if state.stamp_leave_reported != (recorded, current):
                 state.stamp_leave_reported = (recorded, current)
                 log(
@@ -1458,13 +1506,27 @@ class DeclaredServices:
                     f"checkout is not trusted ({trust.detail}), so the copy "
                     "is left running"
                 )
-            return True
+            return "adopt"
+        image = self._committed_image(current)
+        if image is None:
+            if state.stamp_leave_reported != (recorded, current):
+                state.stamp_leave_reported = (recorded, current)
+                log(
+                    f"declared service {name} (pid {pid}) runs code stamp "
+                    f"{recorded} while the committed head reads {current}; "
+                    "the head's own tree could not be published, so the copy "
+                    "is left running"
+                )
+            return "adopt"
+        state.image_pin = image[1]
+        state.start_image = image[0]
         log(
             f"declared service {name} (pid {pid}) runs code stamp {recorded} "
-            f"while the checkout reads {current}; restarting it on the "
-            "checkout's code"
+            f"while the checkout reads {current}; the working tree holds "
+            "uncommitted edits, which the replacement does not run, so it is "
+            "restarted from the committed tree"
         )
-        return False
+        return "restart"
 
     def _start_or_backoff_locked(self, name: str, argv: Sequence[str]) -> None:
         """Start a replacement, or schedule the retry a failed start needs.
@@ -1531,20 +1593,28 @@ class DeclaredServices:
                     lock_held(name, self._runtime)
                     or process_runs_service(pid, name, state.argv)
                 ):
-                    if not self._runs_recorded_code(name, pid, state):
+                    decision = self._code_decision(name, pid, state)
+                    if decision == "restart":
                         # The stop runs before the start so the copy's lock and
                         # lease are free: a replacement started beside them is
                         # refused, and a lease-holding service would wait out
                         # the stale window for nothing.
+                        replacement_argv = list(state.argv)
                         self._stop_locked(name)
-                        self._start_or_backoff_locked(name, state.argv)
+                        replacement = self._states.setdefault(
+                            name, _ServiceState(argv=replacement_argv)
+                        )
+                        replacement.start_image = state.start_image
+                        replacement.image_pin = state.image_pin
+                        self._start_or_backoff_locked(name, replacement_argv)
                         continue
                     state.pid = pid
                     state.owned = False
                     state.lock_seen = True
                     state.started_at = self._clock()
                     state.last_renewed = self._clock()
-                    log(f"declared service {name} already running as pid {pid}")
+                    if decision == "adopt":
+                        log(f"declared service {name} already running as pid {pid}")
                     continue
                 service_pid_path(self._runtime, name).unlink(missing_ok=True)
                 self._start_locked(name, state.argv)
@@ -1553,6 +1623,31 @@ class DeclaredServices:
         """Start one copy of a service through its lock-taking wrapper."""
         with self._guard:
             return self._start_locked(name, argv)
+
+    def _child_environ(self, image: Path | None) -> dict[str, str]:
+        """The environment a service copy is started with.
+
+        A copy started from a published image imports the package from that
+        image rather than from the checkout's working tree, so uncommitted
+        edits in the checkout are never code a service runs. The source root is
+        carried so the copy stamps itself with the committed head's identity
+        rather than with a content stamp of the image.
+        """
+        child = dict(self._environ)
+        if image is None:
+            return child
+        existing = child.get("PYTHONPATH", "")
+        child["PYTHONPATH"] = str(image) + (os.pathsep + existing if existing else "")
+        child["RECKON_FOLLOWER_SOURCE_ROOT"] = str(_checkout_root())
+        return child
+
+    def _release_image_pin(self, state: _ServiceState | None) -> None:
+        """Give up a copy's lease on the published image it ran from."""
+        if state is None or state.image_pin is None:
+            return
+        with suppress(OSError):
+            os.close(state.image_pin)
+        state.image_pin = None
 
     def _start_locked(self, name: str, argv: Sequence[str]) -> int | None:
         """Spawn the wrapper that takes the lock and becomes the service."""
@@ -1570,11 +1665,13 @@ class DeclaredServices:
             return None
         log_path = service_log_directory(self._environ) / f"{name}.log"
         log_path.parent.mkdir(parents=True, exist_ok=True)
+        state = self._states.get(name)
+        image = state.start_image if state is not None else None
         try:
             with open(log_path, "ab") as sink:
                 process = subprocess.Popen(
                     service_wrapper_argv(name, list(argv)),
-                    env=dict(self._environ),
+                    env=self._child_environ(image),
                     stdin=subprocess.DEVNULL,
                     stdout=sink,
                     stderr=sink,
@@ -1584,6 +1681,8 @@ class DeclaredServices:
             lease.release()
             log(f"declared service {name} could not start: {exc}")
             return None
+        if state is not None:
+            state.start_image = None
         if recorded_service_pid(self._runtime, name) != process.pid:
             write_service_pid(
                 self._runtime,
@@ -1591,7 +1690,7 @@ class DeclaredServices:
                 process.pid,
                 _lock_inode(self._runtime, name)
                 or recorded_service_lock_inode(self._runtime, name),
-                self._code_stamp_value(),
+                str(image.name) if image is not None else self._code_stamp_value(),
             )
         log(f"declared service {name} started as pid {process.pid}")
         state = self._states.get(name)
@@ -1634,6 +1733,7 @@ class DeclaredServices:
         end within the grace is killed, still by that pid and never by pattern.
         """
         state = self._states.pop(name, None)
+        self._release_image_pin(state)
         lease = self._leases.pop(name, None)
         pid_path = service_pid_path(self._runtime, name)
         pid = state.pid if state is not None else None
@@ -2492,6 +2592,7 @@ def serve(
     standby: bool = False,
     code_stamp: Callable[[], str] | None = None,
     moved_checkout: Callable[[str], Any] | None = None,
+    tree_dirty: Callable[[], bool] | None = None,
     clock: Callable[[], float] = time.monotonic,
 ) -> int:
     """Read requests from the FIFO until the batch step ends.
@@ -2510,6 +2611,16 @@ def serve(
 
     code_stamp = _source_code_stamp if code_stamp is None else code_stamp
     moved_checkout = _moved_checkout if moved_checkout is None else moved_checkout
+    if tree_dirty is None:
+
+        def tree_dirty() -> bool:
+            from reckon import checkout_trust
+
+            dirty, _detail = checkout_trust.tracked_reckon_tree_is_dirty(
+                _checkout_root()
+            )
+            return dirty
+
     environ = os.environ if environ is None else environ
     strip_inherited_variables(environ)
     apply_task_ceiling(environ)
@@ -2574,6 +2685,7 @@ def serve(
     try:
         pending = b""
         recorded_stamp = code_stamp()
+        serviced_stamp: str | None = None
         tested_at: float | None = None
         while True:
             _reap_finished_children()
@@ -2610,6 +2722,22 @@ def serve(
                     )
                     recorded_stamp = current_stamp
                     _reexec(exec_, standby=is_standby)
+                elif verdict.moved and tree_dirty():
+                    # The committed head carries code this image does not, and
+                    # the working tree holds edits that are not that code. This
+                    # image cannot be replaced in place without importing the
+                    # edits, but the declared services owe the committed head's
+                    # code: they are restarted from a published image of it,
+                    # with their own copy of this supervisor still running.
+                    if serviced_stamp != current_stamp:
+                        serviced_stamp = current_stamp
+                        log(
+                            f"code stamp moved from {recorded_stamp} to "
+                            f"{current_stamp}; the working tree holds "
+                            "uncommitted edits, so the declared services are "
+                            "restarted from the committed tree"
+                        )
+                    services.reload()
                 elif verdict.moved:
                     # The checkout carries code this image does not and may not
                     # be loaded, so neither this image nor a declared service it
