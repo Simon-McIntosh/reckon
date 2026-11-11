@@ -1,4 +1,3 @@
-import json
 import os
 import time
 from collections.abc import Mapping
@@ -2520,48 +2519,46 @@ crew_redispatch = tombstone_command("redispatch")
 
 
 _CODEX_CONFIG_FLAGS = ("-c", "--config")
-_WORKER_RECORD_NAME = "worker.json"
-_ATTEMPT_WORKER_SUFFIX = "-worker.json"
 
 
-def _run_recorded_argv(run_directory: Path) -> Any:
+def _run_recorded_argv(record: Mapping[str, Any]) -> Any:
     """The launch argv the run directory records for the attempt running now.
 
     A launch writes its argv to the run directory, not to the live pointer: the
     pointer is rewritten on every state change and carries no argv field at all,
-    so a read from there answers ``None`` for every real run. The canonical
-    ``worker.json`` describes the attempt running now; a resume retires that
-    record into an ``attempt-<n>-worker.json`` receipt before its replacement
-    starts, so while that window is open the newest receipt is the only account
-    of what the run was launched with. A run directory holding no readable
-    record answers ``None``: nothing is known about the launch, which the caller
-    reports as an unreachable run rather than as a reachable one.
+    so a read from there answers ``None`` for every real run. The record a run's
+    own directory holds for the attempt running now answers: the canonical
+    ``worker.json``, keyed by the attempt number it names, is that attempt, and
+    the ``attempt-<n>-worker.json`` receipts beside it describe attempts since
+    retired. A resume retires the canonical record into a receipt before its
+    replacement writes a new one, so the pointer's attempt number names the
+    record even when only the receipt is on disk yet. A run directory holding no
+    readable record answers ``None``: nothing is known about the launch, which
+    the caller reports as an unreachable run rather than as a reachable one.
     """
-    newest: tuple[int, Path] | None = None
-    canonical = run_directory / _WORKER_RECORD_NAME
-    if canonical.is_file():
-        newest = (0, canonical)
-    try:
-        receipts = list(run_directory.glob(f"attempt-*{_ATTEMPT_WORKER_SUFFIX}"))
-    except OSError:
-        receipts = []
-    for receipt in receipts:
-        number = receipt.name.removeprefix("attempt-").removesuffix(
-            _ATTEMPT_WORKER_SUFFIX
+    from reckon.crew.resumption import (
+        WORKER_RECORD_NAME,
+        _attempt_worker_records,
+        _read_record,
+    )
+    from reckon.crew.runs import run_dir
+
+    attempts = _attempt_worker_records(record)
+    # A record naming no attempt belongs to the run's first attempt, which is how
+    # every other reader of those records takes one.
+    number = record.get("attempt")
+    if not isinstance(number, int):
+        number = 1
+    payload = attempts.get(number)
+    if payload is None and attempts:
+        payload = attempts[max(attempts)]
+    if payload is None:
+        # The canonical record names no attempt number, so the mapping above
+        # cannot key it; it is still the record of the attempt running now.
+        payload = _read_record(
+            run_dir(str(record.get("run_id") or "")) / WORKER_RECORD_NAME
         )
-        if not number.isdigit():
-            continue
-        if newest is None or int(number) > newest[0]:
-            newest = (int(number), receipt)
-    if newest is None:
-        return None
-    try:
-        record = json.loads(newest[1].read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return None
-    if not isinstance(record, Mapping):
-        return None
-    return record.get("argv")
+    return None if payload is None else payload.get("argv")
 
 
 def _codex_config_overrides(argv: Any) -> list[str]:
@@ -2673,7 +2670,7 @@ def crew_tell(run_id, message, pretty):
         )
     run_directory = Path(manifest_path).expanduser().parent
     if dialect == "codex":
-        gap = _codex_inbox_override_gap(_run_recorded_argv(run_directory))
+        gap = _codex_inbox_override_gap(_run_recorded_argv(record))
         if gap is not None:
             raise click.ClickException(
                 f"run {run_id} is a codex-dialect run. The inbox hook is "

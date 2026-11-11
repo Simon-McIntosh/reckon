@@ -32,20 +32,21 @@ from reckon.hooks import install, worker_inbox
 RUN_ID = "r-20261111T120000000000-tell-codex"
 
 
-def _run_dir(tmp_path: Path) -> tuple[Path, Path]:
-    run = tmp_path / "runs" / RUN_ID
-    run.mkdir(parents=True, exist_ok=True)
-    manifest = run / "manifest.md"
-    manifest.write_text("status: in-progress\n")
-    return run, manifest
-
-
 def _crew_home(tmp_path: Path, record: dict) -> Path:
     home = tmp_path / "crew-home"
     live = home / "crew" / "live"
     live.mkdir(parents=True)
     (live / f"{RUN_ID}.json").write_text(json.dumps(record))
     return home
+
+
+def _run_dir(tmp_path: Path) -> tuple[Path, Path]:
+    """The run directory where the crew home resolves it, as a real run lives."""
+    run = tmp_path / "crew-home" / "crew" / "runs" / RUN_ID
+    run.mkdir(parents=True, exist_ok=True)
+    manifest = run / "manifest.md"
+    manifest.write_text("status: in-progress\n")
+    return run, manifest
 
 
 def _record(tmp_path: Path, **overrides) -> dict:
@@ -124,11 +125,19 @@ def _worker_record(tmp_path: Path, argv, *, attempt: int = 1, latest: bool = Tru
 # ── codex runs: reachability is the argv the run directory recorded ──────────
 
 
-def _live_codex_run(tmp_path: Path, argv, **worker) -> tuple[Path, dict]:
-    """A live codex run as a real launch leaves it: no argv on the pointer."""
+def _live_codex_run(
+    tmp_path: Path, argv, *, attempt: int = 1, latest: bool = True
+) -> tuple[Path, dict]:
+    """A live codex run as a real launch leaves it: no argv on the pointer.
+
+    The pointer names the attempt running now, as a real one does; the argv
+    lives only in the run directory's worker record for that attempt.
+    """
     run, manifest = _run_dir(tmp_path)
-    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest))
-    _worker_record(tmp_path, argv, **worker)
+    record = _record(
+        tmp_path, dialect="codex", manifest_path=str(manifest), attempt=attempt
+    )
+    _worker_record(tmp_path, argv, attempt=attempt, latest=latest)
     return run, record
 
 
@@ -152,10 +161,25 @@ def test_crew_tell_writes_to_a_live_codex_run_carrying_both_overrides(
 def test_crew_tell_reads_the_latest_attempts_record(tmp_path: Path, monkeypatch):
     """A resume retires the canonical record; the newest receipt is the launch."""
     run, manifest = _run_dir(tmp_path)
-    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest))
+    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest), attempt=2)
     _worker_record(tmp_path, _codex_argv(trust=False), attempt=1, latest=False)
     _worker_record(
         tmp_path, _codex_argv(worktree=str(tmp_path)), attempt=2, latest=False
+    )
+    monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
+
+    result = _tell()
+    assert result.exit_code == 0, result.output
+    assert len(worker_inbox.pending_messages(run)) == 1
+
+
+def test_the_canonical_record_wins_over_a_retired_attempt(tmp_path: Path, monkeypatch):
+    """The attempt running now is the canonical record, whatever a receipt holds."""
+    run, manifest = _run_dir(tmp_path)
+    record = _record(tmp_path, dialect="codex", manifest_path=str(manifest), attempt=2)
+    _worker_record(tmp_path, _codex_argv(trust=False), attempt=1, latest=False)
+    _worker_record(
+        tmp_path, _codex_argv(worktree=str(tmp_path)), attempt=2, latest=True
     )
     monkeypatch.setenv("RECKON_HOME", str(_crew_home(tmp_path, record)))
 
