@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;]}">
 </head>
@@ -228,10 +228,11 @@
     <div class="r-fu-body"><p>Bound the persisted memo store in <code>crew gc</code>; writes only <code>gc.py</code> and a new test.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §13</pre>
     </article>
-<article class="r-fu" data-id="f-tchhab-014" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §5" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tchhab-014" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10" data-recommends-skill="/reckon-build the-crew-home-has-a-bound §5" data-resolved-at="2026-11-11T04:48:46+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §5: reclaim the run and worktree population</h4>
     <div class="r-fu-body"><p>Authorised by the lead on 10 November; the crew home holds 22,350 run directories.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-crew-home-has-a-bound §5</pre>
+    <p class="r-fu-outcome">§5 is held, not built: the 10 November authorisation was for a reckon-only reclaim, and crew gc removes unledgered run directories across the shared run store whatever --project names. See c-hold-s5-scope.</p>
     </article>
 </section>
   
@@ -244,6 +245,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-hold-s5" data-who="reckon-build" data-when="2026-11-11T00:20:00Z">
     <div class="r-comment-body"><p>§5 is held again pending respecification, with the lead's authorisation still standing. Its third content review (<code>r-20261110T225036164306</code>) found that <code>reckon crew gc</code> without <code>--project</code> acts on every project's ledger. It also found that the same call removes run directories that no ledger knows, across the whole crew home. Running it as written would reach other projects' runs, beyond the reckon-only reclaim the lead approved. The queued node <code>r-20261110T212347313322</code> was dropped. §5 returns to implementable once its done-when is scoped to <code>--project reckon</code> and built on what <code>gc</code> actually prints and counts.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-hold-s5-scope" data-who="reckon-build" data-when="2026-11-11T04:46:00Z">
+    <div class="r-comment-body"><p>The return condition in <code>c-hold-s5</code> is not enough. A plan review on 11 November found that <code>crew gc</code> with <code>--project reckon</code> still removes unledgered run directories across the shared run store, because that pass has no project filter (<code>reckon/crew/gc.py:835-842</code>, <code>reckon/crew/routing.py:1969-1972</code>). §5 stays held until a reclaim whose removals are confined to one project's runs exists and is measured. The lead's authorisation covered reckon's runs only.</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261017T024854758850-review-of-a-single-run-gc-reads-its-own-run-directory-f95f0a792ccd" data-who="reckon-build" data-when="2026-10-17T02:57:23.880Z">
     <div class="r-comment-body"><p>review of run r-20261017T023056594694-a-single-run-gc-reads-its-own-run-directory at head f95f0a792: goal_fidelity 19, evidence 19, scope_discipline 19, durability 19, fit 19, reuse 20; one follow-on finding on the evidence fragment.</p></div>
