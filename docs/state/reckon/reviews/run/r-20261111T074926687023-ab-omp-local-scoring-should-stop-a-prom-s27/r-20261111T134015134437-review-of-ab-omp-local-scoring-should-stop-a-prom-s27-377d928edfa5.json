@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "derived from the reviewed run's own arms: logs/baseline-suite.log at revision 42c70d80c9 reports 51 passed EXIT=0 with an empty failure list, and logs/after-suite.log at revision 377d928edf reports 51 passed EXIT=0 with an empty failure list, so the set difference is empty.",
+  "call_sites": "reckon/crew/promotion_records.py:1099, reckon/crew/resumption.py:1587, reckon/crew/dispatch.py:1468, reckon/crew/recovery_repair_dispatch.py:1159",
+  "call_sites_note": "the change is a documentation fragment and adds no runtime identifier; the behaviour it describes is reached through the suite-delta arm comparison at reckon/crew/promotion_records.py:1099, the repair-brief resolution at reckon/crew/resumption.py:1587, the dispatch-time resolution at reckon/crew/dispatch.py:1468 and reckon/crew/recovery_repair_dispatch.py:1159.",
+  "completed_at": "2026-11-11T13:43:29.921Z",
+  "dispatched_at": "2026-11-11T13:42:25Z",
+  "durability_note": "the diff adds no assertion, being a documentation fragment. The guard the node rests on is tests/test_a_scoped_suite_names_only_present_files.py, added by an earlier commit, and logs/negative-control.log shows three of its five cases reddening (3 failed, 2 passed, EXIT=1) when the presence check is removed from _scoped_suite_command, so the guard is load-bearing. Only tests/test_a_scoped_suite_names_only_present_files.py:205-208 is independent of the value under test: the accepted-pair case at :240 builds its manifest observation from the same _scoped_suite_command output it later compares.",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html",
+      "line": 43,
+      "severity": "blocking",
+      "text": "the base-fail limb of the done_when is not measured: the gate named here runs at base 42c70d8 and reports 5 passed EXIT=0, so the record claims a measure the run never took, while the sibling fragment records the 5 failed EXIT=1 arm against the pre-rule module that the done_when asks for."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the fragment duplicates docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, which records the same verification of the same section and was reviewed at 4e719c9a3f, so two records now carry one measurement."
+    },
+    {
+      "file": "docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the filename carries the node and section identifier s27, which the repository forbids in filenames and which no sibling fragment in this directory uses."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit 377d928edf against base 42c70d80c9; it adds one 74-line fragment and changes no product or test file, and the source worktree at that head is clean, so the described mutation was reverted.",
+    "done_when": "the done_when requires tests/test_a_scoped_suite_names_only_present_files.py to fail at the base; logs/gate-head.log runs that file at base 42c70d8 and records 5 passed EXIT=0, so that limb is unmeasured and only the separate negative control (3 failed, EXIT=1) reddens.",
+    "goal": "the goal is \"Build scoring-should-stop-a-promotion s27 as the section specifies\"; the diff at 377d928edf adds only docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html and records that the per-tree resolution in reckon/crew/promotion_records.py already exists, so the node verified rather than built.",
+    "manifest": "read; it records status complete, gate 5 passed EXIT=0, negative control 3 failed EXIT=1, both suite arms 51 passed EXIT=0 with empty failure_ids, and lands only the fragment.",
+    "write_paths": "git diff --stat 42c70d80c9 377d928edf lists one path, docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html, inside the fence's granted fragment path; reckon/crew/promotion_records.py carries no net change."
+  },
+  "node": "ab-omp-local-scoring-should-stop-a-prom-s27",
+  "plan": "scoring-should-stop-a-promotion",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is \"Build scoring-should-stop-a-promotion s27 as the section specifies\"; the diff at 377d928edf adds only docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html and records that the per-tree resolution in reckon/crew/promotion_records.py already exists, so the node verified rather than built.\nVERDICT done_when: the done_when requires tests/test_a_scoped_suite_names_only_present_files.py to fail at the base; logs/gate-head.log runs that file at base 42c70d8 and records 5 passed EXIT=0, so that limb is unmeasured and only the separate negative control (3 failed, EXIT=1) reddens.\nVERDICT write_paths: git diff --stat 42c70d80c9 377d928edf lists one path, docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html, inside the fence's granted fragment path; reckon/crew/promotion_records.py carries no net change.\nVERDICT manifest: read; it records status complete, gate 5 passed EXIT=0, negative control 3 failed EXIT=1, both suite arms 51 passed EXIT=0 with empty failure_ids, and lands only the fragment.\nVERDICT diff: read the single commit 377d928edf against base 42c70d80c9; it adds one 74-line fragment and changes no product or test file, and the source worktree at that head is clean, so the described mutation was reverted.\nCALL_SITES: reckon/crew/promotion_records.py:1099, reckon/crew/resumption.py:1587, reckon/crew/dispatch.py:1468, reckon/crew/recovery_repair_dispatch.py:1159\nSCORE goal_fidelity: 13\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html:43 records the base already passing, so the goal's build is a verification of reckon/crew/promotion_records.py:1141's existing behaviour.\nSCORE evidence: 8\nJUSTIFICATION evidence: logs/gate-head.log reports 5 passed EXIT=0 at base 42c70d8 where the done_when requires a red base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in the fragment's commit, docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html, is inside the fence's granted write paths.\nSCORE durability: 12\nJUSTIFICATION durability: no assertion was added; durability rests on the pre-existing tests/test_a_scoped_suite_names_only_present_files.py:205-208, which the recorded mutation reddens.\nSCORE fit: 10\nJUSTIFICATION fit: the filename docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html carries the section identifier s27, against the sibling descriptive naming of the-scoped-suite-names-only-the-files-each-tree-holds.html.\nSCORE reuse: 14\nJUSTIFICATION reuse: the fragment restates docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, already reviewed at 4e719c9a3f, instead of extending the existing record.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html:43 blocking: the base-fail limb of the done_when is not measured: the gate named here runs at base 42c70d8 and reports 5 passed EXIT=0, so the record claims a measure the run never took, while the sibling fragment records the 5 failed EXIT=1 arm against the pre-rule module that the done_when asks for.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html:1 non-blocking: the fragment duplicates docs/evidence/fragments/scoring-should-stop-a-promotion/the-scoped-suite-names-only-the-files-each-tree-holds.html, which records the same verification of the same section and was reviewed at 4e719c9a3f, so two records now carry one measurement.\nFINDING docs/evidence/fragments/scoring-should-stop-a-promotion/ab-omp-local-scoring-should-stop-a-prom-s27.html:1 non-blocking: the filename carries the node and section identifier s27, which the repository forbids in filenames and which no sibling fragment in this directory uses.",
+  "reuse_note": "the diff adds no code definition, so no capability was forked: the per-tree resolution it describes is owned by _scoped_suite_command at reckon/crew/promotion_records.py:1141 and was not reimplemented. Search of docs/evidence/fragments for an existing record of this verification found the-scoped-suite-names-only-the-files-each-tree-holds.html, which this fragment restates rather than extends.",
+  "review_run_id": "r-20261111T134015134437-review-of-ab-omp-local-scoring-should-stop-a-prom-s27-377d928edfa5",
+  "reviewed_base_sha": "42c70d80c9ff9a24d6d57718c658c945fc2d5095",
+  "reviewed_head_sha": "377d928edfa59ce646bc6231c7ce385bd3ba9fa3",
+  "reviewed_run_id": "r-20261111T074926687023-ab-omp-local-scoring-should-stop-a-prom-s27",
+  "scores": {
+    "durability": 12,
+    "evidence": 8,
+    "fit": 10,
+    "goal_fidelity": 13,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:10:10.850191+00:00",
+  "total": 77
+}
