@@ -607,6 +607,44 @@ def time_fence_statement(
     )
 
 
+ANCHORED_EDIT_HEADING = "ANCHORED EDIT — steer edits through the anchored tool"
+
+ANCHORED_EDIT_INSTRUCTION = (
+    "Read files with read_anchored and change them with edit_anchored in "
+    "preference to apply_patch. Every line is shown as N:HHH|text, so an edit "
+    "is addressed by N:HHH, or by HHH alone when exactly one line carries that "
+    "hash. A stale anchor refuses the whole call and returns the region's "
+    "current lines; retry from those anchors instead of re-reading the file."
+)
+
+
+def with_anchored_edit_instruction(prompt: str, backend: Mapping[str, object]) -> str:
+    """Add the anchored edit steering line to a codex worker's prompt.
+
+    Codex cannot be told to stop using its own ``apply_patch``, so the argv
+    that offers the anchored server and this instruction are the two halves of
+    one treatment: the server makes the tool callable and the prompt is what
+    makes the worker reach for it. The line is stated only when the launch
+    actually carries the server, which for codex is exactly when the backend's
+    ``anchored_edit`` key is true — the ``-c`` overrides depend on nothing else.
+    """
+    if not isinstance(backend, Mapping) or backend.get("anchored_edit") is not True:
+        return prompt
+    from reckon import _backends
+
+    try:
+        dialect = _backends.dialect_for(backend)
+    except _backends.BackendError:
+        # A backend whose harness cannot be named composes no launch either;
+        # naming a tool it will not have would be the worse answer.
+        return prompt
+    if dialect.name != "codex":
+        return prompt
+    return (
+        f"{prompt.rstrip()}\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_INSTRUCTION}\n"
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,
