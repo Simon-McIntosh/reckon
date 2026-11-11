@@ -234,30 +234,36 @@ mechanism, create it there and use a qualified relationship from the consumer.
      evidence; decorative organization is unnecessary ink.
    - **Self-check before finishing:** "Could the lead read every label at a
      glance, and would it survive a black-and-white printout?" If not, fix it.
-9. **A section states its outcome and an independent check, not a mechanism
-   you have not run.** Write what the node must deliver and the measurement that
-   proves it: the quantity, the tolerance, the reference it is compared against,
-   and the negative control that must fail. Do not write the code path
-   ("halve the spectrum, multiply by the transfer, resynthesize") unless you have
-   run it and it reproduces the reference. A mechanism read off the source and
-   written into a plan is a guess, and the content review will test it against
-   the code. Each wrong guess costs a full review round, and every edit to fix
-   it reopens the gate. Measured on one plan: five consecutive review rounds,
-   each catching the previous round's restatement of an existing function, where
-   the outcome ("the per-instant terminal trace matches that function at its own
-   operating point within 2 %, fitted out of sample") would have needed none.
-   - **Call an owner, don't restate it.** When a section needs what an existing
-     function computes, require the node to call that function, extending its
-     signature if needed and pinning its default output to a fixture captured
-     before the change, rather than describing its internals.
+9. **A plan describes the endpoint, never the implementation.** A section
+   states what the node must deliver and the measurement that proves it: the
+   records and figures it writes, the quantity each holds, the tolerance, the
+   independent reference it is compared against, and the negative control that
+   must fail. It does not say how to compute any of it: no code path, no
+   sequence of steps, no formula the node is to implement, no function to call
+   or extend. The worker reads the code and runs it; the plan only fixes what
+   counts as done. A mechanism written into a plan is a guess the content review
+   will test against the code, each wrong guess costs a full review round, and
+   every edit to fix it reopens the gate. Measured on one plan: five consecutive
+   review rounds, each catching the previous round's restatement of an existing
+   function, where the endpoint ("the per-instant terminal trace matches that
+   function's output at its own operating point within 2 %, fitted out of
+   sample") needed none.
+   - **What a section may name.** The reference an outcome is measured
+     against (a record, a function's output at a stated point, a held design
+     value), the paths the node may write, and the records it reads as inputs.
+     Naming a reference is part of the endpoint; prescribing how to reach it is
+     not.
+   - **A relation the plan exists to state is an endpoint.** When the
+     deliverable is itself a set of equations or coefficients (a fitted
+     relation, a published table), state the form to be delivered and its
+     accuracy bound, not how to fit it.
    - **When a worker blocks with a diagnosis, record the decision, not a
-     recipe.** The worker has run the code; put the choice it asked for into the
-     plan (which quantity, which reference, which tolerance) and let it settle
-     the mechanism.
-   - **Answer review findings about implementation detail without editing.**
-     Decline them with "the worker settles the mechanism; the done-when checks
-     the outcome". Edit only for a finding that makes the outcome wrong or
-     unsatisfiable.
+     recipe.** The worker has run the code. Put the choice it asked for into the
+     plan as an endpoint (which quantity, which reference, which tolerance) and
+     let it settle the method.
+   - **Answer review findings about method without editing.** Decline them with
+     "the worker settles the method; the done-when checks the endpoint". Edit
+     only for a finding that makes an endpoint wrong, ambiguous or unsatisfiable.
 
 ## Authoring for faithful display (the SPA render contract)
 
@@ -700,8 +706,8 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --declin
 ```
 
 Edit the plan only for a finding you act on, and act only on one that makes
-an outcome wrong or unsatisfiable; a finding about how the node should
-implement something is declined with that reason (hard rule 9). An edit a
+an endpoint wrong, ambiguous or unsatisfiable; a finding about how the node
+should implement something is declined with that reason (hard rule 9). An edit a
 finding asked for is
 covered by that finding's review only while it leaves the section's done-when
 paragraph unchanged and stays under the change threshold, so an answering edit
