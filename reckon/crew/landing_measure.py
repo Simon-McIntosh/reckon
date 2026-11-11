@@ -37,6 +37,8 @@ from __future__ import annotations
 
 import ast
 import contextlib
+import hashlib
+import math
 import os
 import re
 import shlex
@@ -65,6 +67,9 @@ POPULATION_WORKERS = 8
 #: project with no measurement history is bounded by, and it is deliberately
 #: modest so an unreadable arm releases the landing worker promptly.
 DEFAULT_MEASURE_TIMEOUT_SECONDS = 600.0
+
+# mktemp creates a private directory beneath this node-local root.
+NODE_LOCAL_TEMP_ROOT = "/tmp"  # noqa: S108
 
 #: How many times a population's own measured seconds per file an arm's bound
 #: is. A bound of one multiple would time out an arm that simply repeated its
@@ -142,12 +147,14 @@ class Measurement:
     #: project's own history, so a stored measurement says which project's
     #: seconds per file it contributes to.
     project: str = ""
+    execution: str = "in-place"
 
     def as_dict(self) -> dict[str, Any]:
         return {
             "command": self.command,
             "head": self.head,
             "project": self.project,
+            "execution": self.execution,
             "suite": self.suite,
             "population": self.population,
             "isolated": self.isolated,
@@ -196,6 +203,7 @@ class Measurement:
             unreadable=str(record.get("unreadable") or ""),
             head=str(record.get("head") or ""),
             project=str(record.get("project") or ""),
+            execution=str(record.get("execution") or "in-place"),
         )
 
 
@@ -489,6 +497,9 @@ def _arm(
     # A command that declares no environment is run exactly as before: the
     # caller's own environment is inherited, unread and unrewritten.
     extra = {"env": {**os.environ, **environment}} if environment else {}
+    if getattr(run, "partitioned", False):
+        extra["arm_log_path"] = str(log_path)
+        extra["arm_environment"] = environment or {}
     started = time.monotonic()
     try:
         finished = run(
@@ -503,7 +514,9 @@ def _arm(
     except subprocess.TimeoutExpired as expired:
         elapsed = time.monotonic() - started
         partial = f"{expired.stdout or ''}{expired.stderr or ''}"
-        log_path.write_text(f"timed out after {timeout}s\n{partial}", encoding="utf-8")
+        mode = "a" if getattr(run, "partitioned", False) else "w"
+        with log_path.open(mode, encoding="utf-8") as stream:
+            stream.write(f"timed out after {timeout}s\n{partial}")
         return Arm(
             tuple(argv),
             None,
@@ -537,6 +550,168 @@ def _arm(
     )
 
 
+def _partition_runner(
+    runner,
+    *,
+    repo: Path,
+    base_tree: Path,
+    base_sha: str,
+    head_sha: str,
+    partition: str,
+    long_partition: str,
+    test_files: Iterable[str],
+):
+    """Submit each arm as an independent job with its own revision checkout."""
+    common = _git(
+        repo,
+        "rev-parse",
+        "--path-format=absolute",
+        "--git-common-dir",
+        timeout=DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    )
+    if common.returncode:
+        raise BaseCheckoutError("the shared git directory could not be read")
+    git_dir = Path(common.stdout.strip())
+    shared_repo = git_dir.parent
+    environment = (repo / ".venv").resolve()
+    carried = tuple(test_files)
+
+    def run(command, **options):
+        revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
+        timeout = options["timeout"]
+        selected = long_partition if timeout > 3600 else partition
+        seconds = max(1, math.ceil(timeout))
+        hours, remainder = divmod(seconds, 3600)
+        minutes, seconds = divmod(remainder, 60)
+        bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+        log = Path(options.pop("arm_log_path")).resolve()
+        scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
+        quote = shlex.quote
+        git = shlex.join(["git", "--git-dir", str(git_dir)])
+        carry = "\n".join(
+            f'if [ ! -e "$scratch/tree"/{quote(relative)} ]; then '
+            f"{git} archive {quote(head_sha)} -- {quote(relative)} | "
+            'tar -x -C "$scratch/tree"; fi'
+            for relative in carried
+        )
+        assignments = options.pop("arm_environment")
+        invocation = shlex.join(
+            ["env", *[f"{k}={v}" for k, v in assignments.items()], *command]
+        )
+        script = f"""set -euo pipefail
+scratch=
+trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\n" "$status"' EXIT
+export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+scratch=$(mktemp -d "{NODE_LOCAL_TEMP_ROOT}/$USER-landing-{scratch_id}-XXXXXX")
+export TMPDIR="$scratch"
+mkdir "$scratch/tree"
+{git} archive {quote(revision)} | tar -x -C "$scratch/tree"
+git init -q "$scratch/tree"
+printf '%s\n' {quote(str(git_dir / "objects"))} > "$scratch/tree/.git/objects/info/alternates"
+git -C "$scratch/tree" update-ref HEAD {quote(revision)}
+git -C "$scratch/tree" read-tree {quote(revision)}
+{carry}
+ln -s {quote(str(environment))} "$scratch/tree/.venv"
+cd "$scratch/tree"
+printf '# revision: %s\n# host: %s\n# tree: %s\n' {quote(revision)} "$(hostname)" "$PWD"
+printf '# command: %s\n' {quote(invocation)}
+set +e
+{invocation}
+status=$?
+exit "$status"
+"""
+        # The batch job owns the step: srun from the fleet itself would stay
+        # inside the fleet allocation even when it names a different partition.
+        step = (
+            shlex.join(
+                [
+                    "srun",
+                    f"--partition={selected}",
+                    f"--time={bound}",
+                    "--ntasks=1",
+                    "bash",
+                    "-c",
+                    script,
+                ]
+            )
+            + " > "
+            + quote(str(log))
+            + " 2>&1"
+        )
+        argv = [
+            "sbatch",
+            "--wait",
+            "--parsable",
+            f"--partition={selected}",
+            f"--time={bound}",
+            "--nodes=1",
+            "--ntasks=1",
+            f"--cpus-per-task={POPULATION_WORKERS}",
+            "--mem=32G",
+            f"--output={log}.scheduler",
+            f"--error={log}.scheduler",
+            f"--chdir={shared_repo}",
+            "--wrap",
+            step,
+        ]
+        env = {
+            k: v
+            for k, v in os.environ.items()
+            if not k.startswith(("SLURM_", "SBATCH_"))
+        }
+        env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+        env["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
+        log.write_text("")
+        try:
+            finished = runner(
+                argv,
+                cwd=str(shared_repo),
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=timeout + 120,
+                env=env,
+            )
+        except subprocess.TimeoutExpired as expired:
+            # sbatch --wait prints the id before waiting; cancel only that job.
+            output = expired.stdout or ""
+            if isinstance(output, bytes):
+                output = output.decode(errors="replace")
+            match = re.match(r"^(\d+)(?:;[^\n]+)?(?:\n|$)", output)
+            if match:
+                with log.open("a") as stream:
+                    stream.write(f"cancelling owned measurement job {match.group(1)}\n")
+                cancelled = runner(
+                    ["scancel", match.group(1)],
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                    timeout=30,
+                    env=env,
+                )
+                with log.open("a") as stream:
+                    stream.write(
+                        f"cancelled job {match.group(1)}: {cancelled.returncode}\n"
+                    )
+                    stream.write(f"{cancelled.stdout or ''}{cancelled.stderr or ''}")
+            raise
+        output = log.read_text() if log.exists() else ""
+        # Only the arm receipt can report a test exit. A failed submission or a
+        # job killed before its receipt is unreadable even if stdout looks green.
+        receipt = re.search(r"^EXIT=(\d+)\n?\Z", output, re.MULTILINE)
+        status = int(receipt.group(1)) if receipt else 3
+        if status != finished.returncode:
+            status = 3
+        return subprocess.CompletedProcess(
+            command,
+            status,
+            output or f"{finished.stdout or ''}{finished.stderr or ''}",
+            "",
+        )
+
+    return run
+
+
 def measure_run(
     *,
     command: str,
@@ -552,6 +727,7 @@ def measure_run(
     stored: Iterable[Mapping[str, Any]] = (),
     project: str = "",
     changed: Iterable[str] | None = None,
+    config: Mapping[str, Any] | None = None,
 ) -> Measurement:
     """Run the three readings for one delivered run and return the verdict.
 
@@ -567,6 +743,13 @@ def measure_run(
     selecting importers of the delivered change.
     """
     runner = run or _RUN
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve(project or None, checkout_path=str(tree)).config
+    landing = config.get("landing") or {}
+    partition = str(landing.get("measure_partition") or "")
+    execution = "slurm" if partition else "in-place"
     node_tests = [str(path).strip() for path in test_files if str(path).strip()]
     rate = median_seconds_per_file(stored)
 
@@ -595,6 +778,21 @@ def measure_run(
             head=head_sha,
             project=project,
         )
+    files = importer_population(
+        changed_paths(tree, base_sha, head_sha) if changed is None else changed, tree
+    )
+    if partition:
+        runner = _partition_runner(
+            runner,
+            repo=tree,
+            base_tree=base_tree,
+            base_sha=base_sha,
+            head_sha=head_sha,
+            partition=partition,
+            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            test_files=[*node_tests, *files],
+        )
+        runner.partitioned = True
     _carry_missing_tests(base_tree, tree, node_tests)
     logs = Path(logs_dir)
     suite_bound = bound(len(node_tests))
@@ -615,9 +813,6 @@ def measure_run(
         suite_bound,
         environment,
         file_count=len(node_tests),
-    )
-    files = importer_population(
-        changed_paths(tree, base_sha, head_sha) if changed is None else changed, tree
     )
     _carry_missing_tests(base_tree, tree, files)
     population_command = [*argv, *files, "-n", str(POPULATION_WORKERS)]
@@ -713,6 +908,7 @@ def measure_run(
         suite=suite,
         population=population,
         isolated=isolated,
+        execution=execution,
         real=real,
         unreadable=unreadable,
         head=head_sha,

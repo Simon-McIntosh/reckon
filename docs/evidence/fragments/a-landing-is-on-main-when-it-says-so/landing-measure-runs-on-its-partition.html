@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="landing-measure-runs-on-its-partition">
+  <meta name="plan-evidence-for" content="a-landing-is-on-main-when-it-says-so">
+  <title>Landing measure arms use the declared compute partition</title>
+</head>
+<body>
+<main class="plan-doc">
+  <section id="landing-measure-runs-on-its-partition-outcome">
+    <h2>Landing measure arms use the declared compute partition</h2>
+    <p>A project declaring <code>landing.measure_partition</code> submits each
+      suite, importer-population and isolated-repeat arm through
+      <code>sbatch --wait</code> as a separate job. Its <code>srun</code> step
+      names the partition and time bound and carries no <code>--overlap</code>.
+      Bounds over one hour select <code>landing.measure_long_partition</code>,
+      defaulting to <code>rigel</code>. Projects without a partition declaration
+      retain in-place execution, recorded as <code>execution: in-place</code>;
+      scheduled measurements record <code>execution: slurm</code>.</p>
+    <p>Each job archives its named revision from the shared Git object store
+      into its own node-local temporary tree, creates local Git metadata pinned
+      to that revision, links the common environment and carries any newly added
+      test files needed by the base arm. The job writes its revision, hostname,
+      tree, command and terminal receipt to the run directory on shared storage,
+      and removes its temporary tree on exit. A missing receipt or one disagreeing
+      with the scheduler result makes the arm unreadable. Timed-out submissions
+      cancel only their reported job ID.</p>
+    <p>The service-owned flight validator accepts the partition names and a
+      positive finite <code>landing.measure_timeout_seconds</code>, and rejects
+      malformed settings. The generated provider-neutral schemas are unchanged.</p>
+  </section>
+  <section id="landing-measure-runs-on-its-partition-measure">
+    <h3>Controls and armed suite</h3>
+    <p>The <a href="#landing-measure-runs-on-its-partition-partition-importers">partition-job importer measurements below</a>
+      supersede the earlier fleet-host importer readings in this record.
+      Those earlier readings remain as history.</p>
+    <table>
+      <thead><tr><th>Reading</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Declared-partition control at base
+          <code>4a4188d18d6bb0d9bfff213f54d392e30451ab32</code></td>
+          <td>1 failed: the ten recorded arms ran in place instead of through batch jobs.</td></tr>
+        <tr><td>Scheduler-result control at the initial implementation</td>
+          <td>1 failed: a failed scheduler was accepted against a success-shaped receipt.
+            The repaired reader refuses that arm.</td></tr>
+        <tr><td>Armed base suite</td><td>51 passed; EXIT=0.</td></tr>
+        <tr><td>Armed head suite at
+          <code>3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2</code></td>
+          <td>59 passed; EXIT=0, including all eight new controls.</td></tr>
+      </tbody>
+    </table>
+    <p>The importer population at base reports 8 failed, 162 passed; at
+      <code>3366a8ab28e7a16b0b66cb5ee3b54145c2f1a7d2</code> it reports
+      8 failed, 170 passed. The eight failing IDs are identical, so the
+      change adds zero failures. Arms ran sequentially with at most four
+      pytest workers and a 60-second per-test bound.</p>
+    <p>The controls record all ten scheduler launches, the actual srun argument
+      vector, normal and over-hour partitions, revision contents and scratch
+      cleanup, in-place compatibility, flight validation, missing or mismatched
+      receipts and cancellation by reported job ID. All changed Python paths
+      pass Ruff check and Ruff format --check with no findings.</p>
+  </section>
+  <section id="landing-measure-runs-on-its-partition-destination-scratch">
+    <h3>Scratch belongs to the destination node</h3>
+    <p>The reviewed implementation used the submitter's inherited
+      <code>TMPDIR</code> to place its checkout. The runtime control reproduced
+      this at <code>a62c222d2e4d59e3cc32c8daca8916d43cf9cad4</code>:
+      <code>mktemp</code> attempted the fixture's
+      <code>absent-on-destination/landing-arm-XXXXXX</code> path and reported
+      <code>No such file or directory</code>; the base arm was unreadable.
+      Both script-order controls also failed because no reset to
+      <code>/tmp</code> preceded scratch creation.</p>
+    <p>Commit <code>9fe450fc61ef95f0ddb6f8e0d6644cff70a7246d</code> sets the
+      submitted batch environment's <code>TMPDIR</code> to <code>/tmp</code>.
+      The job initializes its scratch variable and installs the cleanup and
+      exit-receipt trap before the first external command. It resets
+      <code>TMPDIR=/tmp</code>, calls <code>mktemp</code> with an explicit
+      <code>/tmp/$USER-landing-…-XXXXXX</code> template, and exports the private
+      directory as <code>TMPDIR</code> before creating the tree or calling Git.
+      The directory identity comes from the arm's durable log path; mktemp
+      supplies its exclusive random suffix.</p>
+    <p>The controls cover both an absent inherited directory and an existing
+      inherited directory. For every arm they require the trap and reset before
+      the first mktemp or Git call, the explicit node-local template, the private
+      directory export before checkout, and a batch environment free of the
+      inherited path. The shell-execution control maps the explicit
+      <code>/tmp</code> template into its fixture's simulated node filesystem,
+      records mktemp's actual arguments and environment, and verifies that the
+      suite's exported TMPDIR owns the checkout and is removed afterwards.
+      Its base/head content assertions remain; the redundant assertion that
+      every script merely contains a supplied SHA is removed.</p>
+    <table>
+      <thead><tr><th>Repair reading</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Runtime control before repair</td><td>1 failed; EXIT=1.</td></tr>
+        <tr><td>Absent/existing inherited-directory controls before repair</td>
+          <td>2 failed; EXIT=1.</td></tr>
+        <tr><td>Focused controls after repair</td><td>10 passed; EXIT=0.</td></tr>
+        <tr><td>Original base armed suite</td><td>51 passed; EXIT=0.</td></tr>
+        <tr><td>Repaired head armed suite</td><td>61 passed; EXIT=0.</td></tr>
+        <tr><td>Importer comparison</td>
+          <td>Base: 8 failed, 162 passed. Head: 8 failed, 172 passed.
+            Identical failing IDs; zero added failures.</td></tr>
+      </tbody>
+    </table>
+    <p>All suite and importer arms ran sequentially, with a 60-second per-test
+      bound and at most four pytest workers. Ruff check and format --check
+      report no findings on the changed Python paths. The repair logs and the
+      exact failure-ID comparison are retained in the run directory.</p>
+  </section>
+  <section id="landing-measure-runs-on-its-partition-partition-importers">
+    <h3>Authoritative importer arms run in separate partition jobs</h3>
+    <p>The importer measurements recorded before this section ran as subprocesses
+      inside fleet job <code>1291586</code> on <code>98dci4-clu-2023</code>.
+      They do not satisfy the partition-job evidence requirement. The two
+      measurements below replace them for importer acceptance; product source
+      and tests are unchanged from
+      <code>dc8a413077e61f99908a5967ca80b68d45236160</code>.</p>
+    <p>Each arm was submitted sequentially through
+      <code>RECKON_ALLOW_NESTED_LAUNCH=1 sbatch</code> with
+      <code>--partition=all_debug --time=00:59:00 --cpus-per-task=8 --mem=32G --wait</code>.
+      Scheduler accounting confirms separate job IDs, 8 CPUs, 32G memory and a
+      59-minute bound. Both ran on <code>98dci4-clu-3141</code>, away from
+      the fleet node.</p>
+    <table>
+      <thead><tr><th>Arm</th><th>Job</th><th>Node</th><th>Pytest result</th><th>Allocation elapsed</th></tr></thead>
+      <tbody>
+        <tr><td>Base</td><td>1309910</td><td>98dci4-clu-3141</td>
+          <td>7 failed, 163 passed in 22.90 s</td><td>29 s</td></tr>
+        <tr><td>Head</td><td>1309913</td><td>98dci4-clu-3141</td>
+          <td>7 failed, 173 passed in 24.12 s</td><td>30 s</td></tr>
+      </tbody>
+    </table>
+    <p>The base job archived
+      <code>4a4188d18d6bb0d9bfff213f54d392e30451ab32</code>; the head job
+      archived <code>dc8a413077e61f99908a5967ca80b68d45236160</code>.
+      Each created its private directory beneath its destination node's
+      <code>/tmp</code>, exported that directory as TMPDIR, constructed local
+      Git metadata backed by the shared object store, and linked the common
+      virtualenv. The job printed the actual imported module path and resolved
+      working directory from that tree before executing its revision-specific
+      importer population with <code>-n 4 --timeout=60</code> and an exclusive
+      basetemp. Both job logs confirm scratch removal before their terminal
+      exit receipt.</p>
+    <p>The completed receipts contain the same seven failing IDs, so the change
+      adds zero importer failures. Both jobs return exit 1 because pytest
+      reports those baseline failures; this is distinct from an incomplete job
+      or an infrastructure failure. The armed-command case that timed out in
+      the fleet measurements passes in both partition arms.</p>
+    <p>Primary job logs are <code>logs/importers-1309910.log</code> and
+      <code>logs/importers-1309913.log</code> beneath the run directory.
+      Revision, job ID, node, command, module binding, counts and failure IDs
+      are retained in the corresponding per-arm JSON receipts and gate logs.
+      <code>partition-importer-comparison.json</code> records the exact ID
+      comparison, and <code>logs/importers-partition-accounting.log</code>
+      records the scheduler's allocation and completion rows. The earlier
+      non-partition importer logs remain historical artifacts and are removed
+      from the manifest's active test-log list.</p>
+  </section>
+</main>
+</body>
+</html>

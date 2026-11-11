@@ -436,6 +436,7 @@ def _schema_view(data: Mapping[str, Any]) -> dict[str, Any]:
     cleaned.pop(SPRINT_RECENT_DAYS_KEY, None)
     cleaned.pop(WORKER_MCP_SERVERS_KEY, None)
     cleaned.pop(PICKER_RESERVED_LANES_KEY, None)
+    cleaned.pop("landing", None)
     review = cleaned.get(REVIEW_KEY)
     if isinstance(review, Mapping):
         cleaned[REVIEW_KEY] = {
@@ -1397,6 +1398,33 @@ def placement_scheduler_queries(
     return declared
 
 
+def _validate_landing(data: Mapping[str, Any], source: str | Path) -> None:
+    """Validate the scheduler settings owned by the landing service."""
+    if "landing" not in data:
+        return
+    landing = data["landing"]
+    if not isinstance(landing, Mapping):
+        raise FlightConfigError(source, "landing", "must be a mapping")
+    for key, value in landing.items():
+        if key in {"measure_partition", "measure_long_partition"}:
+            if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9_-]+", value):
+                raise FlightConfigError(
+                    source, f"landing.{key}", "must name a partition"
+                )
+        elif key == "measure_timeout_seconds":
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or value <= 0
+            ):
+                raise FlightConfigError(
+                    source, f"landing.{key}", "must be positive and finite"
+                )
+        else:
+            raise FlightConfigError(source, f"landing.{key}", UNKNOWN_KEY_CONSTRAINT)
+
+
 def validate_layer(
     data: Mapping[str, Any], source: str | Path, *, strict: bool = False
 ) -> list[str]:
@@ -1438,6 +1466,7 @@ def validate_layer(
             source, key_path, first.get("msg", "is invalid")
         ) from exc
 
+    _validate_landing(data, source)
     _validate_project_weights(data, source)
     _validate_harness_home_files(data, source)
     _validate_plan_review_gate(data, source)
