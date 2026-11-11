@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": null,
+  "added_failure_ids": [],
+  "added_failures_note": "Unmeasured: reviewed source prompt explicitly leaves the suite unarmed, and source manifest baseline_suite and after_suite are empty; no suite gate logs exist from which to derive a delta, so zero cannot be claimed.",
+  "after_suite": null,
+  "assertion_review": {
+    "incremental_diff_assertions": [],
+    "note": "No executable assertions added; no self-comparing assertion exists in the scoped diff. Reinstating the future-peer admission defect would not redden any test added by this commit."
+  },
+  "baseline_suite": null,
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/evidence.py:_fragment_body_bytes"
+  ],
+  "completed_at": "2026-11-10T20:48:15Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "parallel-nodes-on-one-module",
+      "recorded_at": "2026-11-10T21:04:05.989057+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-10T20:38:10Z",
+  "evidence_limits": [
+    "Plan MCP read returned storage-slow; live plan read directly from canonical docs/plans/concurrent-edits-meet-at-the-merge.html, version 22.",
+    "An exact current live-pointer read for service-runs-mains-code reports phase complete and a refused repair dispatch saying the head is already integrated; this later observation is not revision-bound evidence in the fragment and does not establish its historical measurement.",
+    "No suite rerun; source suite unarmed."
+  ],
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html",
+      "line": "15",
+      "severity": "blocking",
+      "text": "blocking: The expanded pair arm is declared measured with one open pair (service-runs-mains-code versus a-requeued-fleet-job-resumes-its-services), but neither the fragment nor its receipt establishes whether that head is already integrated or has a repair round, or verifies conflict-marker absence; measure_review_round.py:254-262 labels live pointers open before checking repair and :461-467 derives measured solely from pair count, so it cannot enforce the live plan rule that an unlanded head without a repair round or retained conflict markers fails the measure; record revision-bound integration/repair and marker evidence for the new pair and reflect the safety result separately from the count floor."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production composition call sites",
+    "diff": "Read commit 0f1922c343d2f4045775a3f7d59a8998b1359c9e against previously reviewed cb4bf1d30e229a6e66551b608180df726313e0f2; only docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html changes, with strict timing, refreshed pair inventory, directory exclusions and covered-hour exposure reporting.",
+    "done_when": "Read live plan s4 and source prompt.txt FENCE EVIDENCE; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:15-18 exceeds the five-pair floor but does not supply the open-head repair and conflict-marker checks required by the live plan.",
+    "goal": "Read source prompt.txt goal and resume-4-advice.txt; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 corrects the prior admission-timing overcount and reports the covered-hour hold arm unmeasured.",
+    "manifest": "Read source manifest.md and its published held/ledger receipts and receipt-generator-published.log; reported 12 pairs/15 overlaps and 1 covered-hour exposed run reconcile, while baseline_suite and after_suite are empty under the explicitly unarmed suite.",
+    "write_paths": "Read source prompt.txt scope and manifest.md:3; the sole new commit changes only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html."
+  },
+  "justifications": {
+    "durability": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:33 preserves receipts and command history, but this incremental commit adds no executable assertions or regression test that would fail if future peers were again counted at admission.",
+    "evidence": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 agrees with review-round-ledger-receipt.json fixed-cohort 2/3 and covered-hour 1/1, but :15 calls the pair arm measured without checking the open head or conflict markers.",
+    "fit": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:4-10 and :16-18 present categorical counts and outcomes as fragment tables consumed by reckon/evidence.py:640 and :687 without adding source identifiers or figures.",
+    "goal_fidelity": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 implements the requested predicate and same-hours denominator, while :15-18 leaves the newly added open pair short of the live plan safety evidence.",
+    "reuse": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html adds no function, class or module and continues using reckon/evidence.py:compose_landed_record and _fragment_body_bytes rather than introducing a parallel composition mechanism.",
+    "scope_discipline": "git diff --stat cb4bf1d30e229a6e66551b608180df726313e0f2 0f1922c343d2f4045775a3f7d59a8998b1359c9e names only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html."
+  },
+  "previous_findings_answered": [
+    "Prior fixed-cut 4 admissions/6 file exposures reproduced and corrected to 2/3 with peer_dispatch <= admission < peer_terminal.",
+    "Hold exposure uses only verdict-copy hours, excludes directory holders and reports one run below five as unmeasured."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt goal and resume-4-advice.txt; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 corrects the prior admission-timing overcount and reports the covered-hour hold arm unmeasured.\nVERDICT done_when: Read live plan s4 and source prompt.txt FENCE EVIDENCE; docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:15-18 exceeds the five-pair floor but does not supply the open-head repair and conflict-marker checks required by the live plan.\nVERDICT write_paths: Read source prompt.txt scope and manifest.md:3; the sole new commit changes only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html.\nVERDICT manifest: Read source manifest.md and its published held/ledger receipts and receipt-generator-published.log; reported 12 pairs/15 overlaps and 1 covered-hour exposed run reconcile, while baseline_suite and after_suite are empty under the explicitly unarmed suite.\nVERDICT diff: Read commit 0f1922c343d2f4045775a3f7d59a8998b1359c9e against previously reviewed cb4bf1d30e229a6e66551b608180df726313e0f2; only docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html changes, with strict timing, refreshed pair inventory, directory exclusions and covered-hour exposure reporting.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/evidence.py:_fragment_body_bytes\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 implements the requested predicate and same-hours denominator, while :15-18 leaves the newly added open pair short of the live plan safety evidence.\nSCORE evidence: 15\nJUSTIFICATION evidence: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:21-23 agrees with review-round-ledger-receipt.json fixed-cohort 2/3 and covered-hour 1/1, but :15 calls the pair arm measured without checking the open head or conflict markers.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat cb4bf1d30e229a6e66551b608180df726313e0f2 0f1922c343d2f4045775a3f7d59a8998b1359c9e names only the declared docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html.\nSCORE durability: 4\nJUSTIFICATION durability: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:33 preserves receipts and command history, but this incremental commit adds no executable assertions or regression test that would fail if future peers were again counted at admission.\nSCORE fit: 19\nJUSTIFICATION fit: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:4-10 and :16-18 present categorical counts and outcomes as fragment tables consumed by reckon/evidence.py:640 and :687 without adding source identifiers or figures.\nSCORE reuse: 20\nJUSTIFICATION reuse: docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html adds no function, class or module and continues using reckon/evidence.py:compose_landed_record and _fragment_body_bytes rather than introducing a parallel composition mechanism.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/parallel-nodes-on-one-module.html:15 blocking: The expanded pair arm is declared measured with one open pair (service-runs-mains-code versus a-requeued-fleet-job-resumes-its-services), but neither the fragment nor its receipt establishes whether that head is already integrated or has a repair round, or verifies conflict-marker absence; measure_review_round.py:254-262 labels live pointers open before checking repair and :461-467 derives measured solely from pair count, so it cannot enforce the live plan rule that an unlanded head without a repair round or retained conflict markers fails the measure; record revision-bound integration/repair and marker evidence for the new pair and reflect the safety result separately from the count floor.\n",
+  "review_run_id": "r-20261110T203026946286-review-of-parallel-nodes-on-one-module-0f1922c343d2",
+  "reviewed_base_sha": "cb4bf1d30e229a6e66551b608180df726313e0f2",
+  "reviewed_head_sha": "0f1922c343d2f4045775a3f7d59a8998b1359c9e",
+  "reviewed_run_id": "r-20261109T074919528432-parallel-nodes-on-one-module",
+  "scores": {
+    "durability": 4,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:19:50.259805+00:00",
+  "total": 96
+}
