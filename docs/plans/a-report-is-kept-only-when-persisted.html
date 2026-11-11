@@ -25,7 +25,7 @@
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="5">
+<meta name="plan-version" content="6">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -111,7 +111,7 @@
   <li>dropping the target-root check removes the outside target and fails the test.</li>
 </ul>
 <p>The test files that import <code>reckon.crew.gc</code> add no failure against the base revision, and the test asserts the real crew home is untouched.</p>
-<p>A host measure follows: one dry run over the real reports store, under a timeout on the fleet node, records the count and bytes it would expire per project. It is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>; <code>reckon/crew/routing.py</code>, where the pass that removes report trees runs; the flight schema, for the staging root; the new test; and that fragment.</p>
+<p>A host measure follows. The staging root is first set, in flight configuration, for the two projects whose folders §6 moved: <code>/work/projects/imas_gpu/crew-reports/imas-efit</code> for imas-efit and <code>/work/projects/imas_gpu/crew-reports/nova</code> for nova. These values are configuration, not code. One dry run over the real reports store then records, per project, the count and bytes it would expire. It must report none of the moved imas-efit or nova folders as outside the permitted roots. Each moved folder is either a candidate, or kept with a citation, persist or live-pointer reason. It is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>; <code>reckon/crew/routing.py</code>, where the pass that removes report trees runs; the flight schema, for the staging root; the new test; and that fragment.</p>
 
     <h2 id="s5">§5 — The SPA shows retained figures and offers the persist action</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
