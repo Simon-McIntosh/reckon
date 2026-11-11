@@ -81,6 +81,27 @@ def clear_pending(run_id: str) -> None:
         return
 
 
+def _settled_landing(
+    run_id: str, head: str, *, repository: Path | None = None, project: str = ""
+) -> str:
+    """Refuse repair after a discard or integration, retiring landed records."""
+    from reckon.crew import merge, promotion
+
+    disposition = "discarded" if promotion.discard_recorded(run_id) else ""
+    if not head:
+        return disposition
+    try:
+        repository = repository or merge.project_repository(project)
+        branch = merge._current_branch(repository)
+        landed = merge._is_ancestor(repository, head, branch)
+    except (merge.MergeError, OSError):
+        return disposition
+    if landed:
+        clear_pending(run_id)
+        return "already-landed"
+    return disposition
+
+
 #: The pointer fields that identify the attempt a landing mark belongs to.
 _ATTEMPT_FIELDS = ("attempt", "phase", "pid", "pid_start_time")
 
@@ -255,12 +276,17 @@ def finish_pending_landings(
         project = str(record.get("project") or "")
         if not run_id or not project or (only_run and run_id != only_run):
             continue
+        row = _promoted_row(project, run_id)
+        head = _reviewed_head(row) if row else ""
+        settled = _settled_landing(run_id, head, project=project)
+        if settled:
+            results.append({"run_id": run_id, "status": settled, "head": head})
+            continue
         if int(record.get("attempts") or 0) >= MAX_FINISH_ATTEMPTS and not record.get(
             "merge_conflict"
         ):
             results.append({"run_id": run_id, "status": "gave-up"})
             continue
-        row = _promoted_row(project, run_id)
         if row is None:
             age = moment - float(record.get("written_at") or moment)
             if run_id not in live and age > UNPROMOTED_RECORD_SECONDS:

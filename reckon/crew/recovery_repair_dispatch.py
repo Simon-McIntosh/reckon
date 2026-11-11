@@ -46,10 +46,17 @@ def dispatch_merge_repair(
     second worker, while a later delivery or primary creates a distinct round.
     The receipt is durable before launch, including when the lane refuses it.
     """
-    from reckon.crew import merge, resumption
+    from reckon.crew import merge, pending_landing, resumption
     from reckon.crew.dispatch import BudgetHold, LanePaused
 
     run_id = str(record.get("run_id") or "")
+    settled = pending_landing._settled_landing(
+        run_id, head, repository=Path(str(record.get("repo") or ""))
+    )
+    if settled:
+        receipt = {"status": "refused", "reason": settled, "head": head}
+        runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
+        return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
     round_id = f"{run_id}:merge:{primary}@{head}"
     advice = (
