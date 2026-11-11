@@ -150,14 +150,14 @@ def test_explicit_shared_paths_still_work_without_roots(repository: Path) -> Non
     assert _dispatch(repository, "joiner", SOURCE)["run_id"]
 
 
-def test_queue_edits_keep_a_directory_claim_exclusive(repository: Path) -> None:
-    owner = _dispatch(repository, "owner", "pkg")
+def test_queue_edits_admit_a_file_under_a_directory_claim(repository: Path) -> None:
+    _dispatch(repository, "owner", "pkg")
     request = _queue(repository, node_id="joiner", run_id="r-joiner")
+    request["node"]["write_paths"] = [SOURCE]
 
     refusal = queue_edit._live_claim_conflict(_node("joiner", SOURCE), request)
 
-    assert refusal is not None
-    assert refusal.run_id == owner["run_id"]
+    assert refusal is None, refusal
 
 
 def test_admission_admits_a_file_under_a_directory_claim(repository: Path) -> None:
