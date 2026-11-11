@@ -95,13 +95,30 @@
   immediately before the restore, so a bump from the write that preceded it
   cannot satisfy the assertion.</p>
 
+  <p><strong>An absent counter is not a key.</strong> A project no ledger write
+  has touched has no generation, and the store reads that absence as
+  <code>"none"</code>. Comparing that value let an index look fresh forever, so
+  a ledger whose documents were all written outside the write paths — a
+  fixture, a project this code has not written since the key existed — served
+  its first snapshot and never noticed an edit. Eight index and dispatch-speed
+  tests failed on exactly that shape when the key first moved to the store's
+  file. An absent counter now reads as no key: the read walks the documents,
+  which is what it did before the key existed, and
+  <code>test_a_ledger_no_write_has_touched_never_reuses_a_stale_index</code>
+  drives it with an in-place edit that preserves the document's mtime. So
+  correctness for a ledger this code has not written is the old behaviour, and
+  only a project a ledger write has bumped gets the constant-cost read.</p>
+
   <p><strong>Population.</strong> The 287 tests that import
   <code>reckon.ledger</code> ran on <code>all_debug</code>, one arm at a time at
   <code>-n 4</code>, each over its own extracted tree. The base revision
-  <code>acfbdab8</code> failed 70 and the head <code>b9659c74</code> failed 70,
-  with the base carrying one test that passes at head and the head carrying
-  none that the base passed — <strong>no added failure</strong>. The two
-  held-worktree tests are green in both arms.</p>
+  <code>acfbdab8</code> failed 70 of them (<code>2941 passed</code>) and the head
+  <code>fa88ae1a</code> failed the same 70 (<code>2953 passed</code>): the two
+  failure lists are identical under <code>comm</code>, so the head adds none and
+  repairs none. An intermediate head, before the absent-counter fix, failed 80 —
+  ten head-only, all of them the out-of-band-write shape that paragraph
+  describes — and the fix removed every one. The two held-worktree tests are
+  green in both arms.</p>
 
   <p><strong>Scope retained.</strong> The driving followup stays open and no
   terminal status is set. Logs under
