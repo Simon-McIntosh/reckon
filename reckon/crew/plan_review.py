@@ -3263,6 +3263,56 @@ def finding_unit(
     return finding_units(record, finding_id, plan_path=plan_path)[0]
 
 
+def _observation_ids(
+    record: Mapping[str, Any],
+    reviewed_text: Callable[[], str | None],
+    *,
+    plan_path: str | Path | None = None,
+) -> set[str]:
+    """The record's findings that fall on units this review did not trace.
+
+    A re-review is composed for the units an edit left uncovered, so a finding
+    it raises on a unit an earlier review already covers is about content the
+    round was not asked to judge: an observation rather than a finding. A
+    review that traced no unit read the whole plan, and every finding is then
+    its own. A finding on the document unit is never an observation, because
+    the document unit is about the plan as a whole, which every review reads.
+    A finding whose units cannot be read is left a finding, the conservative
+    direction.
+    """
+    traced = _traced_units(record)
+    if not traced:
+        return set()
+    observed: set[str] = set()
+    for finding_id in finding_ids(record):
+        finding = _finding_by_id(record, finding_id)
+        if finding is None:
+            continue
+        units = _finding_units(
+            record, finding, plan_path=plan_path, reviewed_text=reviewed_text
+        )
+        if DOCUMENT_UNIT in units or any(unit in traced for unit in units):
+            continue
+        observed.add(finding_id)
+    return observed
+
+
+def observation_findings(
+    record: Mapping[str, Any],
+    *,
+    plan_path: str | Path | None = None,
+) -> list[str]:
+    """The record's findings on the units this review was not composed for.
+
+    These are listed with the review and can be acted on or carried, but they
+    ask for no change to the content the round was asked to read, so the
+    dispatch gate does not count them as unanswered.
+    """
+    text = _memoised_reviewed_text(record, None, plan_path)
+    observed = _observation_ids(record, text, plan_path=plan_path)
+    return [finding_id for finding_id in finding_ids(record) if finding_id in observed]
+
+
 def unanswered_findings_by_unit(
     record: Mapping[str, Any],
     *,
@@ -3272,12 +3322,18 @@ def unanswered_findings_by_unit(
 
     A finding appears under each unit it blocks, so a finding naming two
     sections holds both and a finding naming none appears under the document
-    unit, which holds every section. The reviewed plan text is read at most
-    once however many line anchors the record carries.
+    unit, which holds every section. A finding the review raised on a unit it
+    did not trace is an observation (:func:`observation_findings`) and is
+    absent here: it did not ask for a change to the content under review, so
+    it holds nothing. The reviewed plan text is read at most once however many
+    line anchors the record carries.
     """
     text = _memoised_reviewed_text(record, None, plan_path)
+    observed = _observation_ids(record, text, plan_path=plan_path)
     grouped: dict[str, list[str]] = {}
     for finding_id in unanswered_findings(record):
+        if finding_id in observed:
+            continue
         finding = _finding_by_id(record, finding_id)
         units = (
             _finding_units(record, finding, plan_path=plan_path, reviewed_text=text)
