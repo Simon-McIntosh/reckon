@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="44">
+<meta name="plan-version" content="45">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -111,7 +111,10 @@
     <div class="r-comment-body"><p>A covering review is selected by the plan commits the reviews read rather than by the version integer they record, ancestry comes from the velocity module's own probe, and `--review-run` searches every stored review for the named finding before the absence of a covering review is reported; the gate over the new test is 4 passed at the head revision against 3 failed at the base, the negative control is red (2 failed, EXIT=1), and the 83 other plan_review-importing test files are unchanged at 8 failed / 733 passed with the base arm's failure ids.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T190130792868-review-of-an-answer-lands-on-its-review-562140fe1370" data-who="reckon-build" data-when="2026-11-11T19:24:05.765Z">
-    <div class="r-comment-body"><p>review recorded for r-20261111T182302260608-an-answer-lands-on-its-review at base 994610e0bc / head 562140fe13: does not hold the node, one non-blocking finding on the evidence fragment&#x27;s negative-control revision claim.</p></div>
+    <div class="r-comment-body"><p>review recorded for r-20261111T182302260608-an-answer-lands-on-its-review at base 994610e0bc / head 562140fe13: does not hold the node, one non-blocking finding on the evidence fragment's negative-control revision claim.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261111T182302260608-an-answer-lands-on-its-review" data-who="reckon-build" data-when="2026-11-11T18:50:44.880Z">
+    <div class="r-comment-body"><p>§4 verified at base 994610e0bc: the commit-order covering selector (_newest_by_plan_commit, _record_is_newer, _commit_is_ancestor), its two call sites and the named-review search were already in the tree, so this node added the one behaviour no test made happen — naming a review that does not raise the finding is refused, exits 1, and writes no response. Gate 56 passed at head 562140fe13 against 55 at base (the difference is this node&#x27;s test); population of 86 plan_review-importing files adds no failure (head 43 failed/707 passed vs base 47/702); negative control with the selector back on plan_version fails test_the_view_serves_the_review_at_the_newest_commit.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T172157481686-review-of-a-second-launch-of-a-run-never-releases-the-tree-its-first-b1cfbd7d302a" data-who="reckon-build" data-when="2026-11-07T17:47:13.289Z">
     <div class="r-comment-body"><p>A review, not a product change: run r-20261107T152305119816-a-second-launch-of-a-run-never-releases-the-tree-its-first at head b1cfbd7d302a against base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 scores goal_fidelity 19, evidence 12, scope_discipline 20, durability 18, fit 18, reuse 10, records one added failure (tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path) and three findings, one blocking because the plan's own no-added-failure clause is unmet at the landed head. Both records pass crew check --review (EXIT=0).</p></div>
