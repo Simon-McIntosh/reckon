@@ -438,8 +438,8 @@ def test_the_server_answers_initialize_and_lists_its_tools(root):
 
     assert [response["id"] for response in responses] == [1, 2]
     initialized = responses[0]["result"]
-    assert initialized["protocolVersion"] == "2025-06-18"
-    assert initialized["serverInfo"]["name"] == "reckon-anchored-edit"
+    assert initialized["serverInfo"]["name"] == anchored_edit.SERVER_NAME
+    assert initialized["capabilities"] == {"tools": {"listChanged": False}}
     names = {tool["name"] for tool in responses[1]["result"]["tools"]}
     assert names == {"read_anchored", "edit_anchored"}
 

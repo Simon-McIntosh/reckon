@@ -623,26 +623,6 @@ def serve(instream: TextIO, outstream: TextIO, roots: list[str]) -> None:
             return
 
 
-def build_server(roots: list[str] | list[Path] | tuple[Path, ...] = ()) -> Any:
-    """A FastMCP server serving the two tools, imported only when it is used."""
-    from mcp.server.fastmcp import FastMCP
-
-    editor = AnchoredEditor(roots)
-    server = FastMCP(SERVER_NAME, instructions=INSTRUCTIONS)
-
-    @server.tool()
-    def read_anchored(path: str, offset: int = 1, limit: int = DEFAULT_LIMIT) -> str:
-        """Read a file as anchorable lines (N:HHH|text)."""
-        return editor.read(path, offset=offset, limit=limit)
-
-    @server.tool()
-    def edit_anchored(path: str, edits: list[dict[str, Any]]) -> str:
-        """Apply anchored edits atomically; each edit has anchor, op and text."""
-        return editor.edit(path, edits)
-
-    return server
-
-
 def main(argv: list[str] | None = None) -> None:
     """Parse the roots and serve both tools over stdio."""
     parser = argparse.ArgumentParser(
