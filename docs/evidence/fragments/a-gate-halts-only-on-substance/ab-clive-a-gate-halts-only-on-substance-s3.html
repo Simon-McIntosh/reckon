@@ -1,0 +1,41 @@
+<section id="ab-clive-a-gate-halts-only-on-substance-s3-landing">
+  <h2>A brief may raise the time fence, and must say why</h2>
+
+  <p><strong>What this node found.</strong> §3's deliverable is already in this
+  tree. Commit <code>14aa929e17</code>, an ancestor of the node's base
+  <code>e14d057042</code>, adds <code>crew dispatch --over-fence REASON</code>
+  (declared in <code>reckon/crew_dispatch_commands.py</code>), stores the reason
+  on the node as <code>over_fence_reason</code>, and has the bounded check at
+  <code>reckon/crew/node.py:1508</code> admit an over-fence budget only when
+  that reason is non-blank. <code>TaskNode.as_dict()</code> reads the dataclass
+  field list, so the reason rides the run record and the ledger row, whose
+  <code>node_definition</code> column carries the whole node.</p>
+
+  <p><strong>What changed here.</strong> No product source. The feature and its
+  gate already satisfy the done-when, so this node verified the contract and
+  showed the guard firing rather than reimplementing a working check. In
+  particular the earlier node's reported gap — <code>_node_from_pointer</code>
+  in <code>reckon/crew/queue_admission.py</code> rebuilding a queued node
+  field by field and dropping the reason — has since been closed: that rebuild
+  now iterates <code>dataclasses.fields(TaskNode)</code>, so
+  <code>over_fence_reason</code> survives queueing and admission.</p>
+
+  <h3 id="ab-clive-a-gate-halts-only-on-substance-s3-measured">Measured</h3>
+
+  <table id="ab-clive-a-gate-halts-only-on-substance-s3-arms">
+    <caption>Every arm is a log whose header names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate</td><td>e14d057042 (base, unchanged by this node)</td><td>7 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>census suite</td><td>e14d057042</td><td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td><td>e14d057042 with the reason clause dropped from the bounded check</td><td>2 failed, 5 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control reddens exactly the two reason-bearing arms
+  (<code>test_an_over_fence_budget_with_a_reason_passes_the_bounded_check</code>
+  and <code>test_dispatch_carries_the_reason_onto_the_node</code>) and leaves
+  the in-fence and unnamed-refusal arms green, which is what distinguishes the
+  recorded reason from a check that never consulted it.</p>
+</section>
