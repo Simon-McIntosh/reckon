@@ -40,8 +40,13 @@ passed at base <code>e0e37167</code> (<code>importers-head-fixed.log</code>,
 no longer appears among the failures. The id present in this run and in neither
 the base arm nor the pre-fix head arm,
 <code>tests/test_the_station_reads_only_what_changed.py::test_a_cleared_memo_yields_the_same_payload</code>,
-passes 11 of 11 five times in isolation, so it is a parallel-run flake rather
-than a regression. The original flake was a promotion-time <q>pointer changed
+is not reproducible at either revision: as an isolated case it failed 0 of 10
+runs at head and 0 of 10 at base (<code>station-head.log</code>,
+<code>station-base.log</code>), and the whole file under the population's own
+<code>-n 4</code> failed 0 of 5 repeats at head and 0 of 5 at base
+(<code>station-parallel-head.log</code>,
+<code>station-parallel-base.log</code>). It is a cross-file parallel
+interference, not a regression this change introduces. The original flake was a promotion-time <q>pointer changed
 while promotion ran</q> race, and a crossover measurement placed it on this
 node's rubric text rather than on its code: head trees failed intermittently
 (7 of 21 runs), while base (<code>e0e37167</code>, 15 runs),
@@ -53,12 +58,16 @@ head prompts failed twice in six.</p>
 source. The case stubbed <code>crew._spawn</code>, which the dispatch path never
 reaches because <code>dispatch()</code> runs with no launcher and its launch step
 calls <code>_start_supervisor</code>; the stub now patches that seam, so no
-supervisor process is started, and the case ends by asserting that the test
-process has no child left — read through <code>/proc</code>, because a
-<code>ps</code> probe is itself a child while it runs. Twenty isolated runs at
+supervisor process is started, and the case ends by asserting that the dispatch
+added no child. The child list comes from
+<code>dispatch_launch._inherited_child_pids</code>, which the launch path already
+reads through the kernel, and the children present before the call are recorded
+so only what this dispatch started is checked. Twenty isolated runs at
 <code>0aa99a19</code> on <code>all_debug</code> passed with zero failures
 (<code>crew-fixed20.log</code>), against the seven failures in 21 runs measured at
-<code>09e74ff7</code> and none in 15 at base (<code>e0e37167</code>).</p>
+<code>09e74ff7</code> and none in 15 at base (<code>e0e37167</code>), and ten more
+passed after the assertion was rewritten to reuse the helper
+(<code>1b521bc9da</code>, <code>crew-helper10.log</code>).</p>
 
 <p id="a-plan-review-judges-the-endpoint-mechanism">The mechanism is identified, and
 it is a defect in that test rather than in this node's change. The test means to
