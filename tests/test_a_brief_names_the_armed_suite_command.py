@@ -102,10 +102,17 @@ def _node() -> TaskNode:
     )
 
 
-def _composed_brief(tmp_path: Path, base_revision: str) -> str:
-    """The implement brief a dispatch composes, with its suite fence."""
-    suite_body = dispatch_module._suite_gate_prompt_body(
-        SCOPED, BASE_COMMAND, base_revision=base_revision
+def _composed_brief(tmp_path: Path, worktree: dict) -> str:
+    """The implement brief a dispatch composes, from the worktree it just cut.
+
+    The fence body is composed from the worktree payload exactly as the
+    dispatch call site composes it, so the revision the brief names comes from
+    the launch's own record of which revision it cut the tree at. A test that
+    hands the body its own revision asserts only that the body can print a
+    string it was given, and stays green if the call site stops supplying it.
+    """
+    suite_body = dispatch_module._suite_gate_prompt_body_for(
+        SCOPED, BASE_COMMAND, worktree
     )
     return _compose_dispatch_prompt(
         node=_node(),
@@ -127,13 +134,20 @@ def test_the_implement_brief_names_the_base_revision_and_the_after_arm_rule(
 ) -> None:
     """Case 1: the brief names the base revision, its command, and the head rule."""
     base_revision = "0123456789abcdef0123456789abcdef01234567"
+    worktree = {"path": str(tmp_path), "base": "main", "base_sha": base_revision}
 
-    brief = _composed_brief(tmp_path, base_revision)
+    brief = _composed_brief(tmp_path, worktree)
 
     assert f"Base revision: {base_revision}" in brief
     assert BASE_COMMAND in brief
     assert "Record the after arm at the run's head" in brief
     assert "resolved over that head" in brief
+    # The revision comes from the worktree payload, not from anything the test
+    # passes the body directly: the same payload carrying no base_sha yields a
+    # brief naming no revision at all, which is what stops this case passing on
+    # a call site that never supplies one.
+    unbased = _composed_brief(tmp_path, {"path": str(tmp_path), "base_sha": ""})
+    assert "Base revision:" not in unbased
 
 
 def _git_tree(tmp_path: Path) -> tuple[Path, str, str]:

@@ -1488,6 +1488,25 @@ _SUITE_TEMPLATE_SPELLING = "<node tests>"
 REVIEW_FOLLOWS_RUN_ORIGIN = "review-follows-run"
 
 
+def _suite_gate_prompt_body_for(
+    declared: str | None, resolved: str, worktree: Mapping[str, Any]
+) -> str:
+    """The FENCE — SUITE body for the worktree a dispatch has just cut.
+
+    The base revision is read from the worktree payload the launch created
+    rather than passed in by the caller, so the one place that knows which
+    revision the tree was cut from is the one place the brief reads it. A
+    caller free to supply the revision is free to supply none, and the brief
+    then names no revision while still reading as composed — which is the
+    failure this indirection makes visible to a test that blanks the payload.
+    """
+    return _suite_gate_prompt_body(
+        declared,
+        resolved,
+        base_revision=str(worktree.get("base_sha") or worktree.get("base") or ""),
+    )
+
+
 def _suite_gate_prompt_body(
     declared: str | None, resolved: str, *, base_revision: str = ""
 ) -> str:
@@ -3000,12 +3019,8 @@ def dispatch(
             # and a worker given only the command cannot tell which revision to
             # record it at.
             suite_command=(
-                _suite_gate_prompt_body(
-                    suite_command,
-                    suite_command_resolved,
-                    base_revision=str(
-                        worktree.get("base_sha") or worktree.get("base") or ""
-                    ),
+                _suite_gate_prompt_body_for(
+                    suite_command, suite_command_resolved, worktree
                 )
                 if suite_command_resolved
                 else ""

@@ -1520,17 +1520,24 @@ def _spawn(
 
 
 def _tree_head(worktree: str) -> str:
-    """The revision a tree's working checkout is at, or empty when unreadable."""
-    if not worktree or not Path(worktree).expanduser().is_dir():
+    """The revision a tree's working checkout is at, or empty when unreadable.
+
+    Read through the repository's own commit resolver rather than a second
+    ``git rev-parse`` composed here: the resolver refuses a value that names no
+    commit, bounds the query so a tree on a stalled filesystem cannot hold the
+    caller open, and is what every other reader of a revision in this codebase
+    already goes through.
+    """
+    if not worktree:
         return ""
-    result = subprocess.run(
-        ["git", "-C", str(Path(worktree).expanduser()), "rev-parse", "HEAD"],
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=60,
-    )
-    return result.stdout.strip() if result.returncode == 0 else ""
+    tree = Path(worktree).expanduser()
+    if not tree.is_dir():
+        return ""
+    # Deferred: the resolver's module pulls in the review subject readers, which
+    # import this package's siblings, so the import is made where it is used.
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    return _resolve_commit(tree, "HEAD")
 
 
 def _revision_suite_block(record: Mapping[str, Any]) -> str:
