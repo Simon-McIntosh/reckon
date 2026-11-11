@@ -3470,14 +3470,21 @@ def committed_record_project(
 
 
 def repair_run_review(
-    reviewed_run_id: str,
+    run_id: str,
     record_path: str | Path,
     change: str,
     reason: str,
     *,
     project: str | None = None,
 ) -> dict[str, str]:
-    """Repair a delivered review's status or missing subject ids with provenance.
+    """Repair a delivered review's status, subject ids or mistyped run id.
+
+    ``run_id`` names the reviewed run, or the review run that wrote the record.
+    A review delivers into the reviewed run's review-records directory, so a
+    coordinator repairing a mistyped id holds the review run's id and the
+    record's own path: the location check accepts the directory of either run,
+    whichever id the caller names, and the record's own fields settle which run
+    it is about.
 
     The record may sit at either location a run review is stored in: the host
     review-records directory a live reviewer delivers into, or the project's
@@ -3491,6 +3498,12 @@ def repair_run_review(
     pointer and ledger row are both gone is still repairable from the record
     alone.
 
+    ``review_run_id`` may be rewritten only to an id that extends the stored
+    value: a record that dropped a suffix from its own id names a review that
+    never ran under the shortened name, and nothing else distinguishes that
+    typo from a record that names a different review entirely, so any other
+    replacement is refused.
+
     A committed record is a tracked file, so its rewrite is committed here as
     the other committed record writes are: an uncommitted write is visible only
     to the checkout that made it. The as-delivered copy is kept beside it under
@@ -3500,13 +3513,32 @@ def repair_run_review(
     from reckon.crew import runs
 
     source = Path(record_path).expanduser().resolve()
-    staging = run_review_record_directory(runs.run_dir(reviewed_run_id)).resolve()
-    in_staging = source.parent == staging and source.name.startswith(reviewed_run_id)
-    if not project and not in_staging and source.name.endswith(".json"):
-        project = committed_record_project(source, reviewed_run_id)
-    committed = (
-        committed_run_review_directory(project, reviewed_run_id) if project else None
+    original = source.read_bytes()
+    body = json.loads(original)
+    if not isinstance(body, dict):
+        raise TypeError("review record is not an object")
+    reviewed_run_id = str(body.get("reviewed_run_id") or "").strip()
+    stored_review_run_id = str(body.get("review_run_id") or "").strip()
+    replacement_review_run_id = (
+        change.partition("=")[2].strip() if change.startswith("review_run_id=") else ""
     )
+
+    def _stages(run: str) -> bool:
+        return (
+            bool(run)
+            and source.parent
+            == run_review_record_directory(runs.run_dir(run)).resolve()
+        )
+
+    in_staging = any(
+        _stages(name) and source.name.startswith(name)
+        for name in (run_id, reviewed_run_id)
+    )
+    if not project and not in_staging and source.name.endswith(".json"):
+        project = committed_record_project(source, run_id) or committed_record_project(
+            source, reviewed_run_id
+        )
+    committed = committed_run_review_directory(project, run_id) if project else None
     in_committed = (
         committed is not None
         and source.parent == committed.resolve()
@@ -3516,6 +3548,12 @@ def repair_run_review(
         raise ValueError(
             "record is outside the reviewed run's review-records directory"
         )
+    if reviewed_run_id and run_id not in (
+        reviewed_run_id,
+        stored_review_run_id,
+        replacement_review_run_id,
+    ):
+        raise ValueError("review record names a different reviewed run")
     explanation = reason.strip()
     if not explanation:
         raise ValueError("a review repair requires a non-empty --reason")
@@ -3525,17 +3563,27 @@ def repair_run_review(
             raise ValueError(
                 "status must be one of " + ", ".join(sorted(RECOGNISED_REVIEW_STATUSES))
             )
+    elif change.startswith("review_run_id="):
+        value = replacement_review_run_id
+        if (
+            not value
+            or not stored_review_run_id
+            or value == stored_review_run_id
+            or not value.startswith(stored_review_run_id)
+        ):
+            raise ValueError(
+                "review_run_id may only be repaired to an id that extends the "
+                "stored one"
+            )
     elif change != "subject":
-        raise ValueError("--set may only name status=<accepted value> or subject")
-    original = source.read_bytes()
-    body = json.loads(original)
-    if not isinstance(body, dict):
-        raise TypeError("review record is not an object")
-    if body.get("reviewed_run_id") and body["reviewed_run_id"] != reviewed_run_id:
-        raise ValueError("review record names a different reviewed run")
+        raise ValueError(
+            "--set may only name status=<accepted value>, review_run_id=<longer id> "
+            "or subject"
+        )
     updates: dict[str, Any] = {}
     if change == "subject":
-        reviewed = runs.read_pointer(reviewed_run_id)
+        subject_run = reviewed_run_id or run_id
+        reviewed = runs.read_pointer(subject_run)
         project = str(reviewed.get("project") or "")
         if not project:
             raise ValueError("reviewed run records no project")
@@ -3546,14 +3594,17 @@ def repair_run_review(
         ]
         if len(reviewers) != 1:
             raise ValueError("cannot identify exactly one review run for this record")
-        for key, value in (
+        for key, filled in (
             ("project", project),
-            ("reviewed_run_id", reviewed_run_id),
+            ("reviewed_run_id", subject_run),
             ("review_run_id", reviewers[0]["run_id"]),
         ):
             if not body.get(key):
-                body[key] = value
-                updates[key] = value
+                body[key] = filled
+                updates[key] = filled
+    elif change.startswith("review_run_id="):
+        body["review_run_id"] = value
+        updates["review_run_id"] = value
     else:
         body["status"] = value
         updates["status"] = value
