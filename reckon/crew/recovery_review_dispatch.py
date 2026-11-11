@@ -2118,17 +2118,15 @@ def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
 
     A plan review is stored as soon as its reviewer writes it, which happens
     before the run is promoted, so a record naming the run is the evidence that
-    the review has delivered. The store's reader skips a file it cannot parse,
-    so an unreadable record reads as absent here and the review keeps standing.
+    the review has delivered. The set of stored run ids is the store's own
+    reading of its records — the one the promotion and the delivery readers
+    share — so this asks the store rather than globbing it. That reader skips a
+    file it cannot parse, so an unreadable record reads as absent here and the
+    review keeps standing.
     """
     if not run_id:
         return False
-    return any(
-        str(record.get("review_run_id") or "").strip() == run_id
-        for record in plan_review.list_plan_reviews(
-            project=project, plan_slug=plan_slug
-        )
-    )
+    return run_id in plan_review._stored_review_run_ids(project, plan_slug)
 
 
 def _standing_plan_review(
