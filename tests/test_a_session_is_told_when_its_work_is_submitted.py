@@ -12,11 +12,11 @@ launches, and a pass that launches nothing writes no row.
 
 from __future__ import annotations
 
-import importlib
-import json
-import subprocess
 from datetime import UTC, datetime
+from importlib import import_module
+from json import dumps, loads
 from pathlib import Path
+from subprocess import run
 
 import pytest
 
@@ -45,7 +45,7 @@ CONFIG = {
 
 
 def _git(repository: Path, *arguments: str) -> None:
-    subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
+    run(["git", *arguments], cwd=repository, check=True, capture_output=True)
 
 
 @pytest.fixture()
@@ -64,7 +64,7 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     state = repository / "docs" / "state" / PROJECT
     state.mkdir(parents=True)
     (state / "index.json").write_text(
-        json.dumps({"project": PROJECT, "data": {"_version": 0}}) + "\n",
+        dumps({"project": PROJECT, "data": {"_version": 0}}) + "\n",
         encoding="utf-8",
     )
     plan = repository / "docs" / "plans" / "plan-a.html"
@@ -90,7 +90,7 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     _git(repository, "add", "--", "skills")
     _git(repository, "commit", "-q", "-m", "chore: seed checkout")
     (config_home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
+        dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
     )
     return repository
 
@@ -98,7 +98,7 @@ def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _lane_document(tmp_path: Path, *, worker_slots: float) -> Path:
     lane = tmp_path / f"lane-{worker_slots}.json"
     lane.write_text(
-        json.dumps(
+        dumps(
             {
                 "headroom": 4,
                 "admission": {
@@ -115,7 +115,7 @@ def _lane_document(tmp_path: Path, *, worker_slots: float) -> Path:
 
 
 def _config_for(lane_document: Path):
-    config = json.loads(json.dumps(CONFIG))
+    config = loads(dumps(CONFIG))
     config["backends"]["clive"]["lane_document"] = str(lane_document)
 
     def resolve(_pointer):
@@ -188,7 +188,7 @@ def _stub_dispatch(**kwargs):
 
 
 def _stub_launch(monkeypatch: pytest.MonkeyPatch) -> None:
-    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    dispatch_module = import_module("reckon.crew.dispatch")
     monkeypatch.setattr(dispatch_module, "dispatch", _stub_dispatch)
 
 
