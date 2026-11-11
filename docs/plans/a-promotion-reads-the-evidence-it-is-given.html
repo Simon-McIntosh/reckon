@@ -22,7 +22,7 @@
   <title>A Promotion Reads the Evidence It Is Given | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s5&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s2&quot;],&quot;s7&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s4&quot;,&quot;a-promotion-reads-the-evidence-it-is-given#s5&quot;],&quot;s8&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s7&quot;],&quot;s9&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s6&quot;],&quot;s13&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s11&quot;],&quot;s14&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s12&quot;],&quot;s15&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s9&quot;],&quot;s16&quot;:[&quot;a-promotion-reads-the-evidence-it-is-given#s14&quot;]}">
 </head>
@@ -234,6 +234,12 @@
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name" data-who="reckon-build" data-when="2026-11-11T12:59:38Z">
     <div class="r-comment-body"><p>§16 landed: `_evaluate_suite_delta` reads the run's head — the worktree's HEAD through `_run_head_for_review` while it is readable, otherwise the newest of the manifest's cited commits by ancestry, resolved in `promotion_records.py` — and passes it to `_arm_missing_fields`, which refuses an after arm recorded at any other revision as `after_suite.revision_matches_head`, naming the revision recorded, the run's head and the armed command resolved at that head; measured at head dab333bd, suite pair 51 passed base / 55 passed after, importer delta 6 failed at both arms with zero added failure ids.</p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261111T174907658687-review-of-a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-0857fca3f201" data-who="reckon-build" data-when="2026-11-11T18:16:13.093Z">
+    <div class="r-comment-body"><p>Independent review of r-20261111T171622362138 at 0aac2c5f..0857fca3 parsed with scores goal_fidelity 19 / evidence 14 / scope_discipline 19 / durability 18 / fit 17 / reuse 20 and added_failure_count 0, on two non-blocking findings (a positional fallback contradicting its helper's docstring, and the done-when's ruff clause left unrecorded although both ruff commands pass at the head revision's staged paths).</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261111T171622362138-a-reclaimed-run-has-one-head-for-its-review-and-its-promotio" data-who="reckon-build" data-when="2026-11-11T17:40:35.901Z">
+    <div class="r-comment-body"><p>Review and promotion of a reclaimed run now read its head through one owner, _record_carried_head, which takes the newest cited commit by ancestry; the divergence reproduced at base (review named the oldest commit of a newest-first list, promotion the newest) and both now name the newest, with 53 passed at head against 51 at base on the armed suite and zero added failures across 62 importer test files.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T160323247988-review-of-match-bare-base-names-to-qualified-ids-7d46d059d6b8" data-who="reckon-build" data-when="2026-11-08T16:24:30.911Z">
     <div class="r-comment-body"><p>An independent review of run r-20261108T151148424611-match-bare-base-names-to-qualified-ids at head 7d46d059d6 from base 3bca1c369f is stored as parsed in the reviewed run's review-records directory and its revision-stamped twin, scoring goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 18, reuse 20 (total 114), with added_failure_count 0 and added_failure_ids [] and two non-blocking findings: a stale docstring pointer at promotion_evidence.py:1346 and the done_when's caller sweep measured over 5 of the 206 test files importing the changed modules.</p></div>
 </div>
@@ -299,9 +305,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261107T233819681056-release-the-merged-worktree" data-who="reckon-build" data-when="2026-11-08T06:39:07Z">
     <div class="r-comment-body"><p>crew merge now releases every held worktree whose HEAD the commit it landed carries, judged against the merge commit it wrote and read through obligations._held_worktree_records; the result names each released and each withheld tree, and a tree a ledger row retains for a recoverable session is withheld with its retention named; a release that raises is recorded as not judged and never refuses the landed merge. Gate tests/test_a_merge_releases_its_worktree.py: base 1b3663ce4f 4 failed / 1 passed, head 0acd2713 5 passed.</p></div>
-</div>
-<div class="r-comment" data-section="s17" data-id="c-run-r-20261111T174907658687-review-of-a-reclaimed-run-has-one-head-for-its-review-and-its-promotio-0857fca3f201" data-who="reckon-build" data-when="2026-11-11T18:16:13.093Z">
-    <div class="r-comment-body"><p>Independent review of r-20261111T171622362138 at 0aac2c5f..0857fca3 parsed with scores goal_fidelity 19 / evidence 14 / scope_discipline 19 / durability 18 / fit 17 / reuse 20 and added_failure_count 0, on two non-blocking findings (a positional fallback contradicting its helper&#x27;s docstring, and the done-when&#x27;s ruff clause left unrecorded although both ruff commands pass at the head revision&#x27;s staged paths).</p></div>
 </div>
 </section>
 </main>
