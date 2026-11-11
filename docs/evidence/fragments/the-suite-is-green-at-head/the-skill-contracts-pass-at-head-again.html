@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-suite-is-green-at-head">
+  <meta name="plan-title" content="The skill contracts pass at head again">
+  <meta name="plan-summary" content="The four red skill-contract tests pass at head: the landing example appends under its own anchor, crew station is exempted as a supervisor-launched service, crew tell is documented, and the model window table leaves source for the catalogue.">
+  <meta name="plan-evidence-for" content="reckon:the-suite-is-green-at-head">
+  <meta name="plan-verifies" content="reckon:the-suite-is-green-at-head#s69">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="skills,contracts,catalogue,window,tests,evidence">
+  <title>The skill contracts pass at head again | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-skill-contracts-pass-at-head-again" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="the-skill-contracts-pass-at-head-again-title">The skill contracts pass at head again</h2>
+  <p id="the-skill-contracts-pass-at-head-again-change"><strong>Change.</strong>
+  The four reds are cleared by bringing the documentation and the source into
+  line with the contract each test states, and no assertion in
+  <code>tests/test_skill_contracts.py</code> is removed or weakened. The
+  landing-beat example in <code>skills/reckon-build/SKILL.md</code> and
+  <code>skills/reckon-edit/SKILL.md</code> appended its evidence under
+  <code>s2</code>, which is the plan's own section id, so the landing record
+  refused it with <code>op_error</code>; it now appends under
+  <code>s2-data-prep</code> and its <code>evidence</code> link names that
+  fragment. <code>reckon crew station</code> joins <code>crew host</code> in the
+  exemption table, as the node-local ingest service the fleet supervisor's
+  batch step starts under a lease, which no orchestrator invokes. Fixing the
+  verb-coverage test exposed a second, previously hidden drift —
+  <code>reckon crew tell</code>, registered and never documented — so the build
+  skill now names it in the worker-verification step and the command table the
+  CLI-instruction check validates against carries its <code>--run</code> flag;
+  that second row is the one addition beyond the exemption row the section
+  allows. Finally the model-id context-window table left
+  <code>reckon/crew/directory.py</code> for the catalogue's new
+  <code>model_windows</code> slot (<code>reckon/schema/flight.yaml</code>,
+  regenerated into <code>reckon/_flight_schema.py</code> and
+  <code>docs/_shared/flight.schema.json</code>), declared in
+  <code>docs/state/reckon/model-catalogue.yaml</code>, and read through
+  <code>reckon.flight.model_catalogue_path()</code>: a checkout carrying no
+  catalogue reports a session's window unmeasured rather than guessing one.</p>
+  <p id="the-skill-contracts-pass-at-head-again-measure"><strong>Measure.</strong>
+  At base <code>bc6d7fd9</code> the file runs 4 failed / 68 passed
+  (<code>EXIT=1</code>); at head the same command runs 72 passed,
+  <code>EXIT=0</code>. The window check builds the directory view over a
+  fixture transcript for each of the five model prefixes the base window table
+  served, with a fixture catalogue the check supplies itself, and reports the
+  same <code>window_tokens</code> 1000000 and a numeric <code>fraction</code>
+  0.25004 for all five at base and at head. The importer arm — twenty test
+  files covering the changed modules, run <code>-n 4</code> on
+  <code>all_debug</code>, one arm at a time — moves 81 failing/erroring ids at
+  base to 75 at head with no id added at head, the four target ids among the
+  six that went green. The fence's own three-file template runs 4 failed plus
+  2 errors at base and 129 passed, <code>EXIT=0</code>, at head. Ruff check on
+  the staged Python paths goes from 43 findings at base to 39 at head, and
+  <code>ruff format --check</code> is unchanged: the one file it would reformat,
+  the generated <code>reckon/_flight_schema.py</code>, already would at base.</p>
+  <p id="the-skill-contracts-pass-at-head-again-control"><strong>Negative control.</strong>
+  Declared mutation: reverting the head's changes to every tracked path, in a
+  scratch extraction of the head revision, makes the same four fail again.
+  Applied and logged at <code>logs/negative-control.log</code>: the same four
+  ids fail, 4 failed / 68 passed, <code>EXIT=1</code>, against a head arm in
+  which all 129 pass.</p>
+</article>
+</body>
+</html>
