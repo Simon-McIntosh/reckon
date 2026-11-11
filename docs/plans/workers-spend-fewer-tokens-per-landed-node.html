@@ -20,11 +20,11 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-live-worker-can-be-reached">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s5&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;],&quot;s7&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s6&quot;],&quot;s8&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s5&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s7&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s10&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="46">
+<meta name="plan-version" content="47">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -221,6 +221,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-11T06:45:00Z">
     <div class="r-comment-body"><p>§9 landed at <code>fcec1e7f5b06</code>: a node writing a data fixture under <code>tests/</code> can now be promoted. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s9-armed-suite-collectible-tests">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261111T182732440494-review-of-anchored-tools-reach-a-claude-worker-8b20e22cf7f3" data-who="reckon-build" data-when="2026-11-11T18:37:49.041Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261111T171926056794-anchored-tools-reach-a-claude-worker at head 8b20e22cf7f3ce2e796d8b8a35361a145430b611 against base c560a4445193f06b58de30b990c3386e6d0c3734. There is exactly one commit and it lands the prompt half of the goal: a guarded append at reckon/_backends.py:3112 and an instruction constant plus helper at reckon/crew/prompts.py:648-695 that name read_anchored, edit_anchored, the anchor form and the ToolSearch query. The session-start half the same goal states — the anchored server reading connected at session start — is not shipped; probe-fixed.stream.jsonl still reports status pending and the repair lives in reckon/anchored_edit.py, outside the node&#x27;s write paths, which the manifest records under outside_scope and blockers. Scores: goal_fidelity 11, evidence 12, scope_discipline 18, durability 17, fit 17, reuse 10. Two non-blocking findings: prompts.py:662 duplicates the prompt-append framing owned by with_anchored_edit_instruction at prompts.py:621, and _backends.py:3115 appends the instruction without stripping one the incoming prompt already carries, where the figure listing three lines above is stripped for exactly that reason. Added-failure count 0, derived from gate-base.log (71 passed, 2 errors, exit 1, failure_ids []) and gate-head.log (83 passed, exit 0, failure_ids []).</p></div>
 </div>
 </section>
 </main>
