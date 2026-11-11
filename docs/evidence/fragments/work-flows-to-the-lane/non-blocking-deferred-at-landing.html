@@ -1,0 +1,59 @@
+<section id="non-blocking-deferred-at-landing" class="evidence-fragment">
+  <h2>§4 — A finding that does not block is deferred at landing, not held</h2>
+  <p>
+    The landing guard refused any finding without a disposition, whatever its
+    severity: <code>_undisposed_finding_guard</code> enumerated every finding
+    and refused the run for the first one still open. A review that raised two
+    non-blocking observations therefore held a delivered run for a coordinator
+    who had nothing to add. The pass did then write an exemption, but only after
+    the landing — and an exemption is a judgement the pass made rather than the
+    reviewer's, which is why the earlier rework removed it rather than relying
+    on it.
+  </p>
+  <p>
+    The guard now refuses only a finding that withholds the landing: one
+    declaring the blocking severity, and one declaring none at all, since an
+    unreadable severity is a judgement the reviewer left unstated. The severity
+    is <code>declared_severity</code>'s decision, the same reader the repair
+    reflex uses, so the guard, the repair reflex and the new deferral writer
+    cannot disagree about one finding.
+  </p>
+  <p>
+    Every other open finding is recorded once the landing has succeeded, as a
+    <code>deferred</code> disposition naming the run the rule deferred over and
+    the code path that deferred it. The writer is
+    <code>review_dispositions.record_landed_deferrals</code>; the dispose verb
+    refuses the kind by name, so a <code>deferred</code> entry always means the
+    rule acted rather than that somebody typed it. A deferral closes nothing: the
+    findings reader reports it beside <code>open: true</code>, and the row stays
+    open work until a fold or an exemption answers it.
+  </p>
+  <h3 id="non-blocking-deferred-at-landing-arms">What the measure shows</h3>
+  <table id="non-blocking-deferred-at-landing-table">
+    <thead>
+      <tr><th>Case</th><th>Outcome</th></tr>
+    </thead>
+    <tr>
+      <td>Two open non-blocking findings and one open follow-on finding</td>
+      <td>lands; all three read <code>deferred:&lt;run&gt;</code> with the
+        landing rule named, and are listed <code>open: true</code></td>
+    </tr>
+    <tr>
+      <td>One open blocking finding beside a non-blocking one</td>
+      <td>refused, naming that finding's anchor and severity and not the other</td>
+    </tr>
+    <tr>
+      <td>One finding with no stated severity</td>
+      <td>refused, naming it as <em>unstated severity</em></td>
+    </tr>
+    <tr>
+      <td>A hand-written <code>deferred</code> disposition</td>
+      <td>refused: only the landing rule may write the kind</td>
+    </tr>
+  </table>
+  <p>
+    Negative control: making the guard treat every severity as blocking turns the
+    first case red (<code>3 failed, 1 passed</code>, <code>EXIT=1</code>), so the
+    suite is measuring the deferral rather than passing on its own.
+  </p>
+</section>
