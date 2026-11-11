@@ -41,14 +41,28 @@ measurement places it on this node's rubric text rather than on its code: head
 trees fail intermittently (7 of 21 runs), while base (<code>e0e37167</code>, 15
 runs), <code>origin/main</code> (6 runs) and a head tree carrying the base
 revision's two rubric prompts (6 runs) did not fail once, and a base tree
-carrying only the head prompts failed twice in six. The race is in the promotion
-pointer check, outside this node's write scope; the longer rubric shifts the
-timing of brief composition enough to expose it. Logs:
-<code>importers-head.log</code>, <code>importers-base.log</code>,
-<code>crew-repeat.log</code>, <code>crew-repeat-base.log</code>,
-<code>crew-pair.log</code>, <code>crew-fresh.log</code>,
-<code>crew-main.log</code>, <code>crew-attrib.log</code>,
-<code>crew-attrib2.log</code>.</p>
+carrying only the head prompts failed twice in six.</p>
+
+<p id="a-plan-review-judges-the-endpoint-mechanism">The mechanism is identified, and
+it is a defect in that test rather than in this node's change. The test means to
+substitute a launcher (<code>monkeypatch.setattr(crew, "_spawn", …)</code>,
+<code>tests/test_crew.py:1992</code>) but the stub is unreachable: <code>dispatch()</code>
+takes <code>launcher=None</code> and its launch step then calls
+<code>_start_supervisor</code>, which spawns a real detached
+<code>python -m reckon.crew.supervisor_main</code> process with parent pid 1. That
+supervisor is handed the composed brief as the worker's stdin and records
+<code>phase: starting → working</code> in the live pointer; promotion snapshots the
+pointer before landing and refuses when a compared field moves, so the
+supervisor's write lands inside the <code>dispatch</code> → <code>complete</code>
+window. The rubric's size moves the window because the brief is the worker's
+stdin. A three-second delay before the promotion check makes the collision
+certain and shows the single field that moves:
+<code>{"phase": ["starting", "working"]}</code>. The fix belongs in
+<code>tests/test_crew.py:1992</code> — thread a stub launcher or patch
+<code>reckon.crew.dispatch._start_supervisor</code> — which is outside this node's
+write paths, so the node stops blocked rather than editing that test to tolerate
+the race. Recorded in <code>mechanism.log</code> with <code>diag.log</code> beside
+it.</p>
 
 <p id="a-plan-review-judges-the-endpoint-control">Negative control: restoring the
 base revision's rubric text makes the content and design assertions fail — 4
