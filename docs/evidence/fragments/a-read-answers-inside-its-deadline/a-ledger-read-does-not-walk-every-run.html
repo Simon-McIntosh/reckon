@@ -132,12 +132,13 @@
   <code>reckon.ledger</code> ran on <code>all_debug</code>, one arm at a time at
   <code>-n 4</code>, each over its own extracted tree. The base revision
   <code>acfbdab8</code> failed 70 of them (<code>2941 passed</code>) and the head
-  <code>fa88ae1a</code> failed the same 70 (<code>2953 passed</code>): the two
-  failure lists are identical under <code>comm</code>, so the head adds none and
-  repairs none. An intermediate head, before the absent-counter fix, failed 80 —
-  ten head-only, all of them the out-of-band-write shape that paragraph
-  describes — and the fix removed every one. The two held-worktree tests are
-  green in both arms.</p>
+  <code>3eca4c75</code> failed 69 (<code>2956 passed</code>): <code>comm</code>
+  finds nothing the head failed that the base passed, and one test the base
+  failed — <code>test_a_promoted_run_replays_its_allowance_from_the_committed_row</code>
+  — passes at the head. An intermediate head, before the absent-counter fix,
+  failed 80 with ten head-only, all of them the out-of-band-write shape that
+  paragraph describes, and the fix removed every one. The two held-worktree
+  tests are green in both arms.</p>
 
   <p><strong>Scope retained.</strong> The driving followup stays open and no
   terminal status is set. Logs under
