@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>a-crew-verb-costs-the-same-at-any-population</title>
+</head>
+<body>
+<article data-reckon="evidence" data-node="a-crew-verb-costs-the-same-at-any-population">
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-what">What this node did</h3>
+  <p>It adds one guard module over whole crew verbs rather than over single
+  functions. <code>tests/test_a_crew_verb_costs_the_same_at_any_population.py</code>
+  drives a <code>crew complete --gate not-run</code> of a review run, a
+  plan-review compose, and a <code>crew complete --land</code> of an implement
+  run, each against a temporary crew home and ledger holding 20 and then 200
+  other runs, and counts the stat, scandir, listdir and glob calls each verb
+  makes. Each other run is written to all three places a stage grew over: a
+  ledger aggregate row, a per-run document under the ledger's
+  <code>runs/</code>, and a crew run directory carrying a client harness home.
+  Each measurement runs in its own interpreter, and within an arm the verb runs
+  once before the counter is armed, so one-time costs are outside the count.</p>
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-verdict">The guard does not pass at this revision</h3>
+  <p>The gate ran 2 failures and 2 passes in 116 s at
+  <code>af2b3d53cb</code>. The compose and the counter's own positive control
+  pass. Both verbs that append a ledger row fail on <code>stat</code> only,
+  by 2 calls for each other run:</p>
+  <table>
+    <thead><tr><th>case</th><th>20 runs</th><th>200 runs</th><th>delta</th></tr></thead>
+    <tbody>
+      <tr><td>review-promotion</td><td>2278</td><td>2638</td><td>+360</td></tr>
+      <tr><td>implement-landing</td><td>2464</td><td>2824</td><td>+360</td></tr>
+      <tr><td>plan-review-compose</td><td>99</td><td>99</td><td>equal</td></tr>
+    </tbody>
+  </table>
+  <p>The growth is one <code>ledger._run_snapshot</code> walk of every
+  <code>runs/*.json</code> document. A promotion writes its own row, which
+  advances the write generation and the run directory's identity, so the read
+  that follows the append cannot reuse the index's stamps and rebuilds as
+  before. That is one walk per verb, not one per read: a warm read reuses. The
+  walk is therefore the residual §64 deliberately left to a read whose
+  generation differs, and §67's own design requires exactly one such read after
+  the append.</p>
+
+  <h3 id="a-crew-verb-costs-the-same-at-any-population-remedy">The remedy is one function, outside this node's scope</h3>
+  <p>With that walk answered from the stamps the index already holds, the same
+  measurement is exactly equal at both populations — stat 1536, scandir 15,
+  glob 13 at 20 and at 200 — in the review-promotion case. So the population
+  dependence has one cause, and bounding it in <code>reckon/ledger.py</code>
+  (record the append's own generation beside the index, or on a generation
+  change read the run directory's names and open only the documents it has not
+  indexed) makes this module pass with no change to it.</p>
+  <p>The node reports blocked: the repair is in a module another section owns,
+  and this node's write scope is the test module.</p>
+
+</article>
+</body>
+</html>
