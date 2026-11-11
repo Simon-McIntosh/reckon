@@ -1,0 +1,73 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:05:12.730Z",
+  "dispatched_at": "2026-11-11T16:00:25Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:72",
+      "id": "single_goal-1",
+      "reason": "the section must either become two sections (with the catch-up owning its read record) or drop the views clause back to \"launch does not wait on the session\".",
+      "text": "\u00a75 now delivers two behaviours: a watch-stream row written within the admit pass that launches a queued request, and a catch-up in the live and obligations views that lists runs submitted since the session's previous read and drops them on the following read. The second needs per-session read bookkeeping that the system does not have and that \u00a75 gives one line and one hour to, so a single verdict cannot close both and the gate proves neither",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:75",
+      "id": "done_when-1",
+      "reason": "the assertion must name every field the deliverable requires, or the key field (the `crew tell` command) can be missing from a passing run.",
+      "text": "the changed \u00a75 done-when asserts each row names \"its run, section, lane and advice\", but the deliverable also requires the plan, the model and the `crew tell` command that reaches the worker. A node can satisfy the gate while the row omits the steering handle, which is the only reason the section exists",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:75",
+      "id": "done_when-2",
+      "reason": "without a control for the views clause the node cannot show that half of its deliverable is guarded, which is exactly the gap the earlier review closed for the row.",
+      "text": "the negative control named for \u00a75 (\"removing the row write from the launch path makes the two-row assertion fail\") falsifies only the watch-row half; the added views assertions have no mutation that shows them failing, so a view that lists all live runs rather than runs submitted since the session's previous read could pass the first read and still be indistinguishable from the intended behaviour except through the second read alone",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:74",
+      "id": "reasoning-1",
+      "reason": "the author must either name where the read record lives and who writes it, or restate the clause as \"the views list the run once it is live, however long the session was away\", which needs no new state.",
+      "text": "\u00a75 says \"its live and obligations views list every run submitted since it last read them\", but no record of a session's previous read exists: the views are built on demand (`view=\"live\"` in `reckon/crew/query.py`, the obligations snapshot in `reckon/crew/obligation_snapshot.py`), and reading them writes nothing. The endpoint is therefore not obtainable from the system as described, and the done-when's \"neither on the read after that\" cannot hold without a persisted cursor that the plan assigns to no one",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8243e08a82dcf9c54590e8c8a48ab11bdc5a75a9",
+  "plan_fingerprint": "463def11a134d2d816bb25ca618a4faf8dc5b3ef2abcce2da4bf8fc566e411a4",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 1,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T155643695515-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "ae1834914ecb6b67cf5a7bf52dba63dd8be688ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/queue_admission.py` exists, `crew tell` exists at `reckon/crew_run_commands.py:2565`, the live view is built with `view=\"live\"` at `reckon/crew/query.py:469`, and the obligations view at `reckon/crew/obligation_snapshot.py:1533`.",
+    "done_when": "a finding \u2014 the changed \u00a75 done-when asserts only \"its run, section, lane and advice\" for each row while the deliverable also requires the plan, the model and the `crew tell` command, and the newly added views clause has no negative control of its own.",
+    "evidence_paths": "pass \u2014 \u00a75's gate is a test under `tests/` measured on `all_debug`, and it names no scratchpad, node-local temporary or non-durable evidence path.",
+    "naming": "pass \u2014 the section and its new test file name the behaviour they deliver, with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 \u00a75's views clause requires each view to list a run \"since that session's previous read\", but the system holds no record of when a session last read a view, so that endpoint is not obtainable from the system the section describes.",
+    "single_goal": "a finding \u2014 \u00a75 now carries two deliverables: the submit-time watch row, and a per-session \"submitted since that session's previous read\" catch-up in the live and obligations views.",
+    "wiring": "pass \u2014 \u00a75 declares no dependency and needs none, and \u00a79's `plan-section-depends-on` correctly lists `s5` among its upstreams."
+  },
+  "section_digests": {
+    "_document": "e6b5ad712adf92d86d5411ad47672eaf7e536665c1e1d0b1710db4c52ec4ec94",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "c7c35d89aece960f75ff07296ed6ba165d30178dd518b6c5a09e343d1d8645e9",
+    "s6": "e3c7bc0d0096a6c0a8c522054cd48a1cd1c56da6259377c3e1f880aec6d01923",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "e20fb1fa345a829eb61e3bcf1af3f102051b1b043cbdb17ddf737f6a141df9c6",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:09:14.237799+00:00",
+  "total": null
+}
