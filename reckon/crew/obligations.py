@@ -25,7 +25,7 @@ import os
 import re
 import shlex
 import threading
-from collections import OrderedDict
+from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -2193,8 +2193,12 @@ def _held_records_read_uncached(
     project: str, repository: Path, signature: tuple[Any, ...]
 ) -> dict[Path, Mapping[str, Any]]:
     """Read the held-tree records once, inside the region a fresh read opens."""
-    with file_memo.read_only_region():
-        return _held_worktree_records_read(project, repository, signature=signature)
+    token = _HELD_SOURCE_SIGNATURE.set(signature)
+    try:
+        with file_memo.read_only_region():
+            return _held_worktree_records_read(project, repository)
+    finally:
+        _HELD_SOURCE_SIGNATURE.reset(token)
 
 
 def _held_input_signature(path: Path) -> tuple[int, ...] | None:
@@ -2286,7 +2290,7 @@ def _held_records_signature(project: str, repository: Path) -> tuple[Any, ...] |
     rather than a new ledger derivation. Unreadable inputs forfeit reuse.
     """
     root = _ledger_read_root(project, repository)
-    aggregate = ledger.ledger_path(project, root)
+    aggregate = ledger.ledger_path(project, root).resolve()
     try:
         registry_signature = _worktree_registry_signature(repository)
         registered = _held_registered_worktrees(
@@ -2353,6 +2357,9 @@ def _held_registered_worktrees(
 
 # Retain mutable indexes separately from parsed document views. A refresh updates
 # these under one lock; callers receive the file memo's read-only answer view.
+_HELD_SOURCE_SIGNATURE: ContextVar[tuple[Any, ...] | None] = ContextVar(
+    "held_source_signature", default=None
+)
 _HELD_READ_LOCK = threading.RLock()
 _HELD_RECORD_READS: OrderedDict[tuple[str, str], Any] = OrderedDict()
 _HELD_REGISTRY_READS: OrderedDict[str, Any] = OrderedDict()
@@ -2368,6 +2375,8 @@ def _held_remember(cache: OrderedDict, key: Any, value: Any) -> None:
 
 def _held_registry_changes(repository: Path, signature: tuple[Any, ...]) -> list[Path]:
     """Read only added or replaced Git registry entries after the first listing."""
+    if len(signature) != 3:
+        return _registered_worktrees(repository)
     registry, _stamp, identities = signature
     current = dict(identities)
     with _HELD_READ_LOCK:
@@ -2400,10 +2409,14 @@ def _held_row_keys(row: Mapping[str, Any], retained: Path | None) -> tuple[Any, 
 
 
 def _held_tree_keys(tree: Path) -> tuple[Any, ...]:
-    return (
-        ("path", tree),
-        ("node", tree.parent.name, tree.name),
-        ("node", "", tree.name),
+    return tuple(
+        dict.fromkeys(
+            (
+                ("path", tree),
+                ("node", tree.parent.name, tree.name),
+                ("node", "", tree.name),
+            )
+        )
     )
 
 
@@ -2445,13 +2458,9 @@ class _HeldRecordIndex:
         candidates = set().union(
             *(self.buckets.get(name, set()) for name in _held_tree_keys(tree))
         )
-        ordered = (
-            sorted(
-                candidates, key=lambda key: ledger.promotion_order_key(self.rows[key])
-            )
-            if self.extra
-            else sorted(candidates)
-        )
+        ordered = sorted(candidates)
+        if self.extra:
+            ordered.sort(key=lambda key: ledger.promotion_order_key(self.rows[key]))
         return [self.rows[key] for key in ordered]
 
     def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
@@ -2490,7 +2499,11 @@ def _held_worktree_records_read(
     no per-row change identities; a refused merged read keeps the unrefused
     document-reader fallback rather than losing duties from healthy records.
     """
-    signature = signature or _held_records_signature(project, repository)
+    signature = (
+        signature
+        or _HELD_SOURCE_SIGNATURE.get()
+        or _held_records_signature(project, repository)
+    )
     if signature is None:
         # The source cannot be validated: make a fresh read, never reuse it.
         registered = _held_registered_worktrees(repository)
@@ -2521,6 +2534,11 @@ def _held_worktree_records_read(
             except Exception:  # noqa: BLE001 - unreadable aggregates contribute no rows
                 aggregate_rows = []
             index = _HeldRecordIndex(aggregate_rows)
+            aggregate_order: dict[Any, deque[int]] = defaultdict(deque)
+            for ordinal, row in enumerate(aggregate_rows):
+                aggregate_order[
+                    (str(row.get("run_id") or ""), ledger.promotion_order_key(row))
+                ].append(ordinal)
             for position, row in enumerate(rows):
                 run_id = str(row.get("run_id") or "")
                 retained = (
@@ -2529,7 +2547,10 @@ def _held_worktree_records_read(
                     else _retained_worktree(row)
                 )
                 if run_id in index.aggregate or not run_id:
-                    key = (0, position)
+                    ordinals = aggregate_order[
+                        (run_id, ledger.promotion_order_key(row))
+                    ]
+                    key = (0, ordinals.popleft() if ordinals else position)
                 else:
                     key = (1, run_id)
                     index.extra.add(run_id)

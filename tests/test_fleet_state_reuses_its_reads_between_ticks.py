@@ -332,9 +332,19 @@ def test_an_aggregate_rewrite_rebuilds_from_the_current_union(fleet):
         completed_at="2026-11-01T12:00:00Z",
         gate="passed",
     )
+    earlier = dict(row, run_id="earlier-holder", completed_at="2026-10-15T12:00:00Z")
     path = ledger.ledger_path(PROJECT, fleet.repo)
     path.write_text(
-        json.dumps({"data": {"members": [], "runs": [row], "holds": [], "_version": 1}})
+        json.dumps(
+            {
+                "data": {
+                    "members": [],
+                    "runs": [row, earlier],
+                    "holds": [],
+                    "_version": 1,
+                }
+            }
+        )
     )
     after = obligation_snapshot.fleet_state(PROJECT)
     assert {item["run_id"] for item in after.held_worktrees[SESSION]} == {
@@ -342,4 +352,11 @@ def test_an_aggregate_rewrite_rebuilds_from_the_current_union(fleet):
         "held-run-1",
         "held-run-2",
         "held-run-3",
+    }
+
+    for index in range(4):
+        ledger.run_path(PROJECT, f"held-run-{index}", fleet.repo).unlink()
+    aggregate_only = obligation_snapshot.fleet_state(PROJECT)
+    assert {item["run_id"] for item in aggregate_only.held_worktrees[SESSION]} == {
+        "earlier-holder"
     }
