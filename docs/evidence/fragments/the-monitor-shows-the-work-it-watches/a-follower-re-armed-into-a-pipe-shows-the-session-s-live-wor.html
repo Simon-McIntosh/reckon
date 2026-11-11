@@ -1,0 +1,28 @@
+<section id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-landing">
+  <h2 id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-title">A follower re-armed into a pipe shows the session's live work</h2>
+  <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-what">
+    The resume branch of <code>reckon/crew_follow_commands.py</code> now hands a
+    pipe one framed snapshot of the session's current work in place of nothing.
+    A session owning nothing prints the frame with <q>none</q>. The history
+    burst stays terminal-only.
+  </p>
+  <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-measure">
+    Measure: <code>tests/test_a_rearmed_pipe_follower_shows_its_live_work.py</code>
+    — 4 cases pass at head; the after arm ran 55 tests with 0 failures against a
+    base arm of 51 with 0 failures. The declared negative control (returns early
+    from the pipe branch) fails 3 cases, naming the first case printing nothing.
+  </p>
+  <ul id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence">
+    <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-rows">
+      The snapshot's run set comes from the session's live pointers, classified
+      by the same projection the live view serves, plus the run-scoped duties
+      the obligations view carries; project-wide duty rows that name no run are
+      excluded.
+    </li>
+    <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-parity">
+      The test reads both views over the same temporary store and asserts the
+      pane's run ids equal the union of the session's live runs and its
+      run-scoped duties.
+    </li>
+  </ul>
+</section>
