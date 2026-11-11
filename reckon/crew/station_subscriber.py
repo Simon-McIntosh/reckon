@@ -243,17 +243,39 @@ def _review_grace(project: str) -> int:
         return obligations.parse_duration("15m")
 
 
+def _record_has_pending_work(pointer: Mapping[str, Any]) -> bool:
+    """An unpromoted delivery or review recorded on this pointer still owes work.
+
+    Promotion removes the live pointer. A completed pointer carrying its
+    delivery manifest therefore holds the pane without opening that manifest,
+    a worktree, or the review store. A review dispatch also records outstanding
+    work on a terminal pointer, unless that dispatch has been withdrawn.
+    """
+    if pointer.get("promoted_revision"):
+        return False
+    if str(pointer.get("phase") or "") == "complete" and pointer.get("manifest_path"):
+        return True
+    return any(
+        isinstance(entry, Mapping)
+        and str(entry.get("status") or "") not in ("", "withdrawn")
+        for entry in (
+            pointer.get("review_dispatch"),
+            pointer.get("figure_review_dispatch"),
+        )
+    )
+
+
 def live_work_populations(
     pointers: Iterable[Mapping[str, Any]],
     *,
-    include_terminal_duties: bool = True,
+    read_terminal_duties: bool = True,
 ) -> tuple[bool, bool, list[str]]:
     """One fleet's reading: whether anything is live, unowned, and for whom.
 
     This is the one statement of the has-live-work rule. The station writes its
     answer into the reading a pane settles by. A stale station's follower
-    excludes terminal duties to judge pointer phases without the review walk;
-    its extended settle grace covers duties that only the station can see.
+    reads pointer phases and pending delivery or review records without the
+    review walk; its extended settle grace covers duties only the station sees.
 
     A run that has not reached a terminal phase is work still owed a pane. A
     terminal run is too, while the obligations view raises a duty on that run
@@ -278,16 +300,12 @@ def live_work_populations(
         pointer
         for pointer in pointers
         if str(pointer.get("phase") or "") != LAUNCH_FAILED_PHASE
-        and (
-            include_terminal_duties
-            or str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES
-        )
     ]
     # One read serves every pointer: the duties are asked of one snapshot of the
     # live directory and one ordering, so two runs in one pass cannot be judged
     # against two different views of the fleet.
     duty_inputs: dict[str, Any] = {}
-    if any(
+    if read_terminal_duties and any(
         str(pointer.get("phase") or "") in node._TERMINAL_RUN_PHASES
         for pointer in snapshot
     ):
@@ -317,13 +335,17 @@ def live_work_populations(
     )
     try:
         for pointer in snapshot:
-            if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES:
+            if str(pointer.get("phase") or "") not in node._TERMINAL_RUN_PHASES or (
+                not read_terminal_duties and _record_has_pending_work(pointer)
+            ):
                 project_live = True
                 owner = str(pointer.get("session") or "")
                 if owner:
                     sessions.add(owner)
                 else:
                     unowned = True
+                continue
+            if not read_terminal_duties:
                 continue
             project = str(pointer.get("project") or "")
             if project not in graces:

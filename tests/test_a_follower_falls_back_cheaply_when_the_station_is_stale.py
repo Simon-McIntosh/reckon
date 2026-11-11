@@ -209,3 +209,43 @@ def test_observed_populations_share_one_fallback_reading(fleet):
     assert len(sampled) == 60
     assert counts["populations"] <= 2, dict(counts)
     assert not events
+
+
+@pytest.mark.parametrize(
+    "delivery",
+    [
+        {"manifest_path": "delivery.md"},
+        {"review_dispatch": {"status": "dispatched", "run_id": "review-worker"}},
+        {"figure_review_dispatch": {"status": "refused", "reason": "review owed"}},
+    ],
+)
+def test_stale_fallback_keeps_an_owed_review_without_walking_reviews(fleet, delivery):
+    clock, _, counts, _, _paths = fleet
+
+    def deliver(now, subscriber, paths):
+        if now == 1:
+            pointer = json.loads(paths[0].read_text())
+            pointer.update(delivery, phase="complete")
+            paths[0].write_text(json.dumps(pointer))
+
+    events, sampled = _samples(fleet, seconds=181, change=deliver)
+    assert len(sampled) == 181, (clock.now, events)
+    assert not events, "a stale pane must stay for its pending delivery or review"
+    assert 1 <= counts["populations"] <= 4, dict(counts)
+    assert counts["reviews"] == 0, dict(counts)
+
+
+def test_stale_fallback_releases_a_delivery_after_promotion(fleet):
+    clock, _, counts, _, paths = fleet
+    pointer = json.loads(paths[0].read_text())
+    pointer.update(phase="complete", manifest_path="delivery.md")
+    paths[0].write_text(json.dumps(pointer))
+
+    def promote(now, subscriber, paths):
+        if now == 1:
+            paths[0].unlink()
+
+    events, _ = _samples(fleet, seconds=121, change=promote)
+    assert len(events) == 1 and events[0]["event"] == follow.FOLLOWER_SETTLE_EVENT
+    assert clock.now == 120
+    assert counts["reviews"] == 0, dict(counts)

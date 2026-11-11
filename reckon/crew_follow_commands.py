@@ -436,7 +436,7 @@ def _settle_grace_default() -> float:
 FOLLOWER_SETTLE_SAMPLE_SECONDS = 1.0
 
 # A stale station must not turn every pane's fast poll into a fleet-wide read.
-# Keep the pointer-only fallback for one minute, also added to the stale grace.
+# Keep the run-record fallback for one minute, also added to the stale grace.
 FOLLOWER_FALLBACK_SECONDS = 60.0
 
 
@@ -1594,7 +1594,7 @@ def _follow_watch_lines(
             if fallback_at is None or moment - fallback_at >= FOLLOWER_FALLBACK_SECONDS:
                 fallback_reading = station_subscriber.live_work_populations(
                     runs._list_live_records(project=project),
-                    include_terminal_duties=False,
+                    read_terminal_duties=False,
                 )
                 fallback_at = clock()
             project_live, unowned, sessions = fallback_reading
