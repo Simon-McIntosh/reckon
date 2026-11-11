@@ -24,7 +24,11 @@ from typing import Any
 import pytest
 
 from reckon.crew import findings as findings_module
-from reckon.crew import queue_landing, review_dispositions
+from reckon.crew import (
+    queue_landing,
+    recovery_review_acceptance,
+    review_dispositions,
+)
 from reckon.crew import review as review_module
 
 PROJECT = "deferral-fixture"
@@ -119,7 +123,7 @@ def test_two_non_blocking_and_one_follow_on_finding_land_deferred(stored) -> Non
     assert queue_landing._undisposed_finding_guard(record) == ""
 
     deferred = review_dispositions.record_landed_deferrals(
-        PROJECT, RUN, record, reviewed_head_sha=HEAD
+        PROJECT, RUN, reviewed_head_sha=HEAD
     )
 
     assert deferred == [0, 1, 2], deferred
@@ -218,8 +222,77 @@ def test_a_claimless_entry_ahead_of_it_does_not_shift_the_deferral(stored) -> No
     assert queue_landing._undisposed_finding_guard(record) == ""
 
     assert review_dispositions.record_landed_deferrals(
-        PROJECT, RUN, record, reviewed_head_sha=HEAD
+        PROJECT, RUN, reviewed_head_sha=HEAD
     ) == [1]
     assert set(record["finding_dispositions"]) == {"1"}, record["finding_dispositions"]
     answered = [row for row in _open_rows(record) if row["text"]]
     assert [row["disposition"] for row in answered] == [f"deferred:{RUN}"], answered
+
+
+def test_the_recovery_acceptance_path_defers_what_the_landing_path_defers(
+    stored, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A run promoted by recovery keeps its findings open, as a landed one does.
+
+    Recovery promotes a reviewed run without a coordinator and records the
+    findings the reviewer left unanswered. That record used to be an exemption,
+    a judgement, which closed the finding — so the same run closed its findings
+    when recovery promoted it and left them open when the landing pass did. The
+    path a run arrives by must not decide whether its unreviewed findings are
+    still owed, so both write the deferral through one writer.
+    """
+    from reckon.crew import promotion as promotion_module
+
+    record = stored(
+        _review(
+            _finding(
+                "reckon/crew/queue_landing.py:210",
+                "the refusal names the run it could not read",
+                "non-blocking",
+            )
+        )
+    )
+    checkout = tmp_path / "checkout"
+    checkout.mkdir()
+    # Recovery reads a review's completeness before it promotes, so the record
+    # takes the shape a parsed one has: every dimension scored and their total.
+    record["status"] = "parsed"
+    record["total"] = sum(record["scores"].values())
+
+    monkeypatch.setattr(
+        recovery_review_acceptance, "_review_head_and_tree", lambda _p: (HEAD, None)
+    )
+    monkeypatch.setattr(
+        recovery_review_acceptance,
+        "select_review_for_head",
+        lambda *_a, **_k: (record, HEAD),
+    )
+    monkeypatch.setattr(
+        recovery_review_acceptance,
+        "_recorded_gate_passed",
+        lambda _p: (
+            {"command": "true", "exit_status": 0},
+            (),
+        ),
+    )
+    monkeypatch.setattr(
+        recovery_review_acceptance, "_commits_missing_from", lambda *_a: ([], None)
+    )
+    monkeypatch.setattr(
+        promotion_module,
+        "rerun_gate_at_integrated_revision",
+        lambda **_k: {"integrated_verdict": "passed"},
+    )
+    monkeypatch.setattr(promotion_module, "complete", lambda *_a, **_k: {"record": {}})
+
+    accepted = recovery_review_acceptance.accept_clean_review(
+        {"run_id": RUN, "project": PROJECT, "repo": str(checkout)}
+    )
+
+    assert accepted is not None, accepted
+    assert accepted["accepted"] is True, accepted
+    assert accepted["review"]["deferred_findings"] == 1, accepted
+    assert "deferral_refusal" not in accepted, accepted
+    assert findings_module.finding_disposition(record, 0) == f"deferred:{RUN}", record[
+        "finding_dispositions"
+    ]

@@ -633,7 +633,6 @@ def _write_disposition_against_finding(
 def record_landed_deferrals(
     project: str,
     reviewed_run_id: str,
-    review: Mapping[str, Any],
     *,
     reviewed_head_sha: str | None = None,
     base_dir: str | Path | None = None,
@@ -655,10 +654,10 @@ def record_landed_deferrals(
     uses, so a deferral reaches the delivered copies and the record commit
     rather than restating that path here.
 
-    The dispositions are read from the stored record rather than from the mapping
-    the caller holds — a review parsed in memory carries no dispositions, and
-    reading them there would report every finding unanswered and overwrite the
-    answers the store already holds. The record rewritten is the one for the head
+    The dispositions are read from the stored record rather than from any review
+    the caller may hold in memory — an in-memory review carries no dispositions,
+    and reading them there would report every finding unanswered and overwrite
+    the answers the store already holds. The record rewritten is the one for the head
     this review read, so a deferral recorded against one revision never speaks
     for another. The returned indexes are the findings this call deferred.
     """

@@ -2076,7 +2076,7 @@ def _land_deliveries() -> dict[str, Any]:
                 from reckon.crew import review_dispositions as dispositions_module
 
                 dispositions_module.record_landed_deferrals(
-                    project, run_id, review, reviewed_head_sha=head
+                    project, run_id, reviewed_head_sha=head
                 )
             except (OSError, ValueError) as exc:
                 # The landing stands; only the record of what the reviewer
