@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-title" content="A resume can change the run's budget">
+  <meta name="plan-summary" content="crew resume accepts --time-budget and composes the resumed attempt's fence from it, recording the new allowance on the run; an allowance above the resolved fence is refused unless --over-fence states why.">
+  <meta name="plan-evidence-for" content="reckon:a-gate-halts-only-on-substance">
+  <meta name="plan-verifies" content="reckon:a-gate-halts-only-on-substance#s4">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-tags" content="crew,resume,budget,fence">
+  <title>A resume can change the run's budget — verification | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="ab2-clive-anchored-a-gate-halts-s4" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="ab2-clive-anchored-a-gate-halts-s4-title">A resume can change the run's budget — verification</h2>
+  <p id="ab2-clive-anchored-a-gate-halts-s4-what">The deliverable is present in the tree at the base revision: <code>crew_resume</code> in <code>reckon/crew_run_commands.py</code> declares <code>--time-budget</code> and <code>--over-fence</code> (lines 2281 and 2287), <code>_refuse_a_budget_above_the_resume_fence</code> applies the resolved <code>fences.time_budget</code> ceiling and names <code>--over-fence</code> in the refusal, <code>_record_resumed_time_budget</code> writes the new allowance onto the run's node and appends a <code>budget_changes</code> entry carrying the figure it replaced, the instant and any stated reason, and the pointer is re-read before launch so the resumed attempt's fence is composed from the new figure. The session module that composes that fence is <code>reckon/crew/dispatch_sessions.py</code>, which reads the node budget it is handed; the resume door was handing it the stored one and now hands it the recorded one. This node found the behaviour already correct and re-implemented nothing.</p>
+  <p id="ab2-clive-anchored-a-gate-halts-s4-measure">With the launch instant pinned to <code>2031-01-01T01:00:00Z</code>, a run stored at <code>25m</code> resumed with <code>--time-budget 45m</code> composes <code>deadline 2031-01-01T01:45:00Z</code> and stores <code>45m</code>; a <code>90m</code> resume above the <code>60m</code> fence is accepted with <code>--over-fence</code> and keeps its reason; the same <code>90m</code> without the option is refused naming <code>--over-fence</code>, launches no worker and leaves the stored <code>25m</code> untouched. Three cases pass (<code>EXIT=0</code>).</p>
+  <p id="ab2-clive-anchored-a-gate-halts-s4-control">The declared mutation sets the recording helper aside, so the option is ignored: the resumed prompt then carries <code>deadline 2031-01-01T01:25:00Z</code>, the stored budget's, and two cases fail while the refusal case still passes (<code>EXIT=1</code>).</p>
+  <p id="ab2-clive-anchored-a-gate-halts-s4-red">The named test is red at the base revision for a reason outside this node's scope: two of its three cases compose a codex backend argv, and <code>_CodexDialect._inbox_hook_flags</code> (<code>reckon/_backends.py</code>, added as ancestor <code>fc6561cb69</code> — after this test landed) runs a real <code>codex app-server</code> exchange for <code>hooks/list</code> and raises <code>BackendError</code> when no matching hook comes back. The same test with only that method replaced by a no-op passes 3/3, which is the evidence quoted above, and the sibling <code>tests/test_resume_and_lane_change_follow_their_own_attempt.py</code> fails identically. Those two cases are what <code>logs/resume-budget-unstubbed.log</code> records when the test runs with nothing stubbed: 2 failed, 1 passed, <code>EXIT=1</code>. The gate arms the manifest records run <code>tests/test_staged_write_inventory.py</code>, the standing staged-write inventory check the template resolves for this node's scope; both arms read 51 passed with no failure and <code>EXIT=0</code> at their own revision, so those arms carry no failure at all and this node adds none to them.</p>
+</article>
+</body>
+</html>
