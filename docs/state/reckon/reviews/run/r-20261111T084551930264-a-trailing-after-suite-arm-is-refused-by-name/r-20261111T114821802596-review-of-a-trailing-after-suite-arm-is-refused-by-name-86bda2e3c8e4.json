@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/promotion.py:714 _evaluate_suite_delta called at promotion",
+    "reckon/crew/promotion_records.py:1101 _run_head called inside the delta reader",
+    "reckon/crew/promotion_records.py:1117 _arm_missing_fields called with head"
+  ],
+  "completed_at": "2026-11-11T12:01:20.467Z",
+  "dispatched_at": "2026-11-11T11:50:34Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 573,
+      "severity": "non-blocking",
+      "summary": "_revision_store and _run_head duplicate the repository's existing owners of the run's head",
+      "text": "_revision_store at :573 duplicates _review_tree at reckon/crew/recovery_review_subject.py:42 and _run_head at :690 duplicates _run_head_for_review at reckon/crew/recovery_review_dispatch.py:903 with _record_carried_head at :789; the addition duplicates the owner rather than extending or wrapping it, and the two resolvers already disagree on which cited commit is the head for a released worktree whose manifest lists commits newest-first (ancestry here, last resolvable manifest entry there)."
+    },
+    {
+      "file": "docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-trailing-after-suite-arm-is-refused-by-name.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "summary": "the head-side probe refusal is quoted verbatim but no log under the run directory records it",
+      "text": "The fragment quotes the head-side probe refusal verbatim, but `grep -l revision_matches_head` over the run's logs returns nothing: the plan's before/after pair has a recorded base arm (base-revision-trailing-arm.log, ACCEPTED, EXIT=0) and an unrecorded head arm, so the head behaviour rests only on the new test's assertions rather than on the verbatim probe output the manifest and fragment both claim."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/head-node-gate-initial.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "summary": "a gate log header names the base revision while running the tree that carried the change",
+      "text": "The header names revision 0ce01d29a8 (the base) while the run imported the worktree's promotion_records.py and reported 3 passed, which the base revision cannot produce; base-revision-trailing-arm.log:2 similarly names the worktree as its tree without recording the revision of the module it imported, so a later reader can establish which code ran only from mtimes."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/head-node-arm.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/baseline-node-arm.log"
+  },
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all three commits against base 0ce01d29a8: 2bd430aa14 adds the head reader, the revision comparison, the named refusal and three tests, 215fb252bb narrows the comparison to citations that resolve in a surviving store, and 86bda2e3c8 adds the evidence fragment; the landed code matches what the manifest describes.",
+    "done_when": "The done_when requires a verbatim base-revision log, the new test passing, an importer delta adding no failure and clean ruff: baseline-node-arm.log and head-node-arm.log record 51 then 54 passed with EXIT=0, the importer arms record the same six failures at both revisions, base-revision-trailing-arm.log records the base ACCEPTING the trailing arm with EXIT=0, and I re-ran the new test file at the head (3 passed, EXIT=0) and ruff (clean), but the head-side probe refusal the manifest quotes has no log under the run directory.",
+    "goal": "The node's goal is that a promotion refuses an after-suite arm recorded at a trailing revision, naming both revisions; reckon/crew/promotion_records.py:716 refuses after_suite.revision_matches_head and :1167 spells the recorded revision and the run head beside the head-resolved command into the refusal message, so the goal is met.",
+    "manifest": "The manifest reports status complete with commits 2bd430aa14, 215fb252bb and 86bda2e3c8, the 51/54 suite pair, the six-failure importer delta at both arms and the negative control at 2 failed 1 passed; the log files it cites exist and end in the EXIT lines it claims, and its only unbacked claims are the head-side verbatim refusal and the ruff result.",
+    "write_paths": "The node was fenced to reckon/crew/promotion_records.py, the new test, and the evidence fragment and figures directory; git diff 0ce01d29a8..86bda2e3c8 touches exactly those first three paths with no figure added and nothing outside the grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:130 asserts missing_fields == [after_suite.revision_matches_head] against revisions taken from git, so restoring the pre-change comparison reddens it, as the recorded negative control shows; tests/test_the_consequence_gate_runs_the_nodes_tests.py is the only guard on the resolve-both-sides narrowing at promotion_records.py:742.",
+    "evidence": "baseline-node-arm.log and head-node-arm.log record 51 and 54 passed with EXIT=0 and the importer arms record 6 failed/145 passed and 6 failed/148 passed, but the head-side probe refusal quoted at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-trailing-after-suite-arm-is-refused-by-name.html:26 appears in no .log file under the run directory.",
+    "fit": "reckon/crew/promotion_records.py:690 and :716 follow the module's probe idiom of returning an empty answer for an unreadable instrument, and the added names state mechanism rather than plan.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:716 returns after_suite.revision_matches_head when the recorded revision differs from the head, and :1167 names both revisions with the head-resolved armed command.",
+    "reuse": "reckon/crew/promotion_records.py:573 re-implements reckon/crew/recovery_review_subject.py:42 _review_tree and :690 re-implements reckon/crew/recovery_review_dispatch.py:903 _run_head_for_review, duplicating the repository's owner of the run's head instead of extending it.",
+    "scope_discipline": "git diff 0ce01d29a8..86bda2e3c8 changes only reckon/crew/promotion_records.py, tests/test_a_trailing_after_suite_arm_is_refused_by_name.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a promotion refuses an after-suite arm recorded at a trailing revision, naming both revisions; reckon/crew/promotion_records.py:716 refuses after_suite.revision_matches_head and :1167 spells the recorded revision and the run head beside the head-resolved command into the refusal message, so the goal is met.\nVERDICT done_when: The done_when requires a verbatim base-revision log, the new test passing, an importer delta adding no failure and clean ruff; baseline-node-arm.log and head-node-arm.log record 51 then 54 passed with EXIT=0, the importer arms record the same six failures at both revisions, base-revision-trailing-arm.log records the base ACCEPTING the trailing arm with EXIT=0, and I re-ran the new test file at the head (3 passed, EXIT=0) and ruff (clean), but the head-side probe refusal the manifest quotes has no log under the run directory.\nVERDICT write_paths: The node was fenced to reckon/crew/promotion_records.py, the new test, and the evidence fragment and figures directory; git diff 0ce01d29a8..86bda2e3c8 touches exactly those first three paths with no figure added and nothing outside the grant.\nVERDICT manifest: The manifest reports status complete with commits 2bd430aa14, 215fb252bb and 86bda2e3c8, the 51/54 suite pair, the six-failure importer delta at both arms and the negative control at 2 failed 1 passed; the log files it cites exist and end in the EXIT lines it claims, and its only unbacked claims are the head-side verbatim refusal and the ruff result.\nVERDICT diff: Read all three commits against base 0ce01d29a8: 2bd430aa14 adds the head reader, the revision comparison, the named refusal and three tests, 215fb252bb narrows the comparison to citations that resolve in a surviving store, and 86bda2e3c8 adds the evidence fragment; the landed code matches what the manifest describes.\nCALL_SITES: reckon/crew/promotion.py:714 _evaluate_suite_delta called at promotion, reckon/crew/promotion_records.py:1101 _run_head called inside the delta reader, reckon/crew/promotion_records.py:1117 _arm_missing_fields called with head\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:716 returns after_suite.revision_matches_head when the recorded revision differs from the head, and :1167 names both revisions with the head-resolved armed command.\nSCORE evidence: 15\nJUSTIFICATION evidence: baseline-node-arm.log and head-node-arm.log record 51 and 54 passed with EXIT=0 and the importer arms record 6 failed/145 passed and 6 failed/148 passed, but the head-side probe refusal quoted at docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-trailing-after-suite-arm-is-refused-by-name.html:26 appears in no log under the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 0ce01d29a8..86bda2e3c8 changes only reckon/crew/promotion_records.py, tests/test_a_trailing_after_suite_arm_is_refused_by_name.py and the declared evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_trailing_after_suite_arm_is_refused_by_name.py:130 asserts missing_fields == [after_suite.revision_matches_head] against revisions taken from git, so restoring the pre-change comparison reddens it, as the recorded negative control shows; tests/test_the_consequence_gate_runs_the_nodes_tests.py is the only guard on the resolve-both-sides narrowing at promotion_records.py:742.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_records.py:690 and :716 follow the module's probe idiom of returning an empty answer for an unreadable instrument, and the added names state mechanism rather than plan.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/promotion_records.py:573 re-implements reckon/crew/recovery_review_subject.py:42 _review_tree and :690 re-implements reckon/crew/recovery_review_dispatch.py:903 _run_head_for_review, duplicating the repository's owner of the run's head instead of extending it.\nFINDING reckon/crew/promotion_records.py:573 non-blocking: _revision_store duplicates _review_tree at reckon/crew/recovery_review_subject.py:42 and _run_head at :690 duplicates _run_head_for_review at reckon/crew/recovery_review_dispatch.py:903 with _record_carried_head at :789, so the addition duplicates the repository's owner of the run's head rather than extending it, and the two resolvers already disagree on which cited commit is the head for a released worktree whose manifest lists commits newest-first.\nFINDING docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-trailing-after-suite-arm-is-refused-by-name.html:26 non-blocking: the fragment quotes the head-side probe refusal verbatim and it was genuinely observed, but it survives only in the worker's stream.jsonl \u2014 grep -l revision_matches_head over the run's .log files returns nothing \u2014 so the required before/after pair has a recorded base arm and a head arm recorded in no log that starts with its revision and ends in EXIT=.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name/head-node-gate-initial.log:1 non-blocking: the header names revision 0ce01d29a8 (the base) while running the worktree that carried the change and reporting 3 passed, which the base revision cannot produce; base-revision-trailing-arm.log:2 similarly names the worktree as its tree without recording the module revision it imported, so what ran is recoverable only from mtimes.",
+  "review_run_id": "r-20261111T114821802596-review-of-a-trailing-after-suite-arm-is-refused-by-name-86bda2e3c8e4",
+  "reviewed_base_sha": "0ce01d29a8ad44e784545b4b47348f48de1ec811",
+  "reviewed_head_sha": "86bda2e3c8e440360d9944b4eba933a20684c160",
+  "reviewed_run_id": "r-20261111T084551930264-a-trailing-after-suite-arm-is-refused-by-name",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:05:00.000000+00:00",
+  "total": 95
+}
