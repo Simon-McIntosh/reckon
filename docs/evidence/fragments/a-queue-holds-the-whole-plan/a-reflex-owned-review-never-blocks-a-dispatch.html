@@ -1,0 +1,41 @@
+<section id="a-reflex-owned-review-never-blocks-a-dispatch-landing">
+  <h2>A reflex review window permits the next dispatch</h2>
+  <p><code>overdue_unreconciled_runs</code> excludes a scoring run while its
+  session's armed reflex owns the review and its delivery age is inside the
+  sweep window. It asks <code>obligations._reflex_owns_review</code> and reads
+  the window from the follower cadence. A run without an armed follower, or
+  beyond that window, still refuses a direct dispatch.</p>
+  <p>The defect was reproduced before repair: the can-dispatch case raised
+  <code>UnreconciledRuns: project has 1 unreconciled run(s) older than the 1s
+  grace</code>. The same five tests copied into the dispatch-base tree report
+  <strong>1 failed, 4 passed</strong>. With the exemption, all five pass.</p>
+  <p>The existing sweep and refusal mechanisms meet the other two cases. After
+  twice the window with no review in flight, the next sweep launches one review,
+  records its id and the delivered head, and composes a brief naming that head.
+  An undisposed blocking finding refuses the sweep, is recorded on the pointer,
+  and gives the obligation the same cause and its <code>crew dispose</code>
+  remedy, with no promise that a follower will compose the review.</p>
+  <table id="a-reflex-owned-review-never-blocks-a-dispatch-measures">
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>New test copied to both trees</td><td>1 failed, 4 passed</td><td>5 passed</td></tr>
+      <tr><td>Armed command, resolved for each revision</td><td>51 passed</td><td>56 passed</td></tr>
+      <tr><td>55 importer files, one arm at a time, <code>-n 6 --timeout 120</code></td><td>7 failed, 652 passed</td><td>7 failed, 652 passed; zero added failure ids</td></tr>
+      <tr><td>Ruff findings on changed Python paths</td><td>4 existing findings</td><td>4 findings; zero added</td></tr>
+      <tr><td>Ruff format check</td><td>Passed</td><td>Passed</td></tr>
+    </tbody>
+  </table>
+  <p>The declared negative control forces the reflex-owned scoring run back into
+  the unreconciled count. It reports <strong>1 failed, 4 passed</strong>: only
+  <code>test_a_session_waiting_inside_the_reflex_window_can_dispatch</code>
+  fails, again with <code>UnreconciledRuns</code>.</p>
+  <p>The importer arms have exactly the same seven failing test identities.
+  They remain recorded under the manifest's <code>outside_scope</code> field;
+  this node does not diagnose or change them. The armed suite and the five
+  focused cases add no failure.</p>
+  <p>Logs and literal commands are retained in the run directory. Extracted
+  trees identify their imported module path and working directory in their log;
+  every gate ends with a bare <code>EXIT=</code> line. The base revision is
+  <code>fc6009a41705c2af12c24437b9a5b897c6d16937</code>; the implementation is
+  <code>8e79edc0f7b47f6b81277a6c69d3ab918f695637</code>.</p>
+</section>
