@@ -1400,6 +1400,12 @@ class _CodexDialect(Dialect):
         run_directory: str | None = None,
     ) -> list[str]:
         argv = [command, "exec", "--json", "-C", working_directory]
+        if (
+            run_directory
+            and Path(run_directory).is_absolute()
+            and Path(run_directory).is_dir()
+        ):
+            argv += self._inbox_hook_flags(command, working_directory)
         argv += self._sandbox_flags(backend.get("sandbox"))
         if backend.get("sandbox") in (READ_ONLY, WORKSPACE_WRITE):
             working_root = Path(working_directory).resolve()
@@ -1433,6 +1439,63 @@ class _CodexDialect(Dialect):
         # Trailing "-" is how this harness is told the prompt arrives on stdin.
         argv.append("-")
         return argv
+
+    def _inbox_hook_flags(self, command: str, working_directory: str) -> list[str]:
+        """Trust only the inbox command, using the harness's own identity/hash.
+
+        The app server lists the exact session-flag definition that exec will
+        load. Its key and currentHash are authoritative: reproducing their
+        derivation here would silently lose trust when the harness changes it.
+        Neither the discovery request nor these overrides writes config.
+        """
+        from reckon.hooks.install import worker_inbox_group
+
+        group = worker_inbox_group()
+        hook_command = group["hooks"][0]["command"]
+        definition = (
+            'hooks.PostToolUse=[{hooks=[{type="command", command='
+            + json.dumps(hook_command)
+            + "}]}]"
+        )
+        handshake = self.budget_probe(command).requests[0]
+        response = run_probe(
+            BudgetProbe(
+                argv=[command, "app-server", "-c", definition],
+                requests=[
+                    handshake,
+                    {
+                        "id": 2,
+                        "method": "hooks/list",
+                        "params": {"cwds": [working_directory]},
+                    },
+                ],
+                answer_id=2,
+            )
+        )
+        entries = (response or {}).get("result", {}).get("data", [])
+        hooks = [
+            hook
+            for entry in entries
+            if not entry.get("errors")
+            for hook in entry.get("hooks", [])
+            if hook.get("source") == "sessionFlags"
+            and hook.get("eventName") == "postToolUse"
+            and hook.get("handlerType") == "command"
+            and hook.get("command") == hook_command
+        ]
+        if (
+            len(hooks) != 1
+            or not hooks[0].get("key")
+            or not re.fullmatch(
+                r"sha256:[0-9a-f]{64}", str(hooks[0].get("currentHash", ""))
+            )
+        ):
+            raise BackendError(
+                "codex inbox hook trust could not be established by hooks/list"
+            )
+        hook = hooks[0]
+        trust = f"hooks.state.{json.dumps(hook['key'])}.trusted_hash={json.dumps(hook['currentHash'])}"
+        return ["-c", definition, "-c", trust]
 
     def working_directory(
         self,
