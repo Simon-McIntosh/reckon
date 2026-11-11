@@ -1,0 +1,118 @@
+<section id="omp-agent-context-landing">
+  <h2>The context preflight can describe the agent it is sizing</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/agent_context.py</code> declares
+  one layout per agent it can describe &mdash; the root under the user's home,
+  the entrypoint file there, the instruction filenames that agent loads, and
+  whether a directory contributes one of them or all of them. The <code>omp</code>
+  layout joins <code>codex</code> and <code>claude</code>; an agent outside the
+  table is still refused with <code>unsupported agent: &lt;name&gt;</code>. Tests
+  in <code>tests/test_agent_context.py</code> cover the omp manifest, the omp
+  chain's two filenames per directory, an explicitly declared agent root, the
+  unknown-agent refusal, and the unchanged codex and claude manifests.</p>
+
+  <p><strong>Where the layout's facts come from.</strong> They are read from the
+  pinned install at <code>/home/ITER/mcintos/.local/share/omp-pilot</code>
+  (<code>omp</code> 18.13.2), not guessed from the harness's name:</p>
+
+  <ul>
+    <li><code>@oh-my-pi/pi-utils/src/dirs.ts</code> &mdash; the config root is
+    <code>path.join(os.homedir(), ".omp")</code> and the agent directory is
+    <code>&lt;root&gt;/agent</code> (profile-dependent), so the default root the
+    preflight resolves is <code>~/.omp/agent</code>.</li>
+    <li><code>@oh-my-pi/pi-coding-agent/src/discovery/builtin.ts</code> &mdash;
+    the user instruction file is <code>path.join(getAgentDir(), "AGENTS.md")</code>,
+    and the user skill root is <code>path.join(getAgentDir(), "skills")</code>,
+    which is why the default agent root is the agent directory rather than the
+    config root.</li>
+    <li><code>src/discovery/agents-md.ts</code> and
+    <code>src/discovery/claude-md.ts</code> &mdash; both register a standalone
+    walker over the same ancestor chain, so a directory holding
+    <code>AGENTS.md</code> and <code>CLAUDE.md</code> contributes both. The
+    codex layout takes the first candidate that exists; the omp layout takes
+    every one.</li>
+  </ul>
+
+  <p><strong>What the measure does now, and what it used to do.</strong> The
+  probe calls the two functions dispatch calls for the context step
+  (<code>_context_agent</code>, then <code>_standing_context_input</code>) with
+  the mapping a resolved <code>omp-local</code> backend hands them &mdash; a
+  <code>cli</code> launch whose command names the omp binary:</p>
+
+  <pre id="omp-agent-context-probe">$ python probe_context_step.py &lt;base module&gt;
+context agent for omp-local: omp
+HEAD CONTEXT STEP OK
+tokens: 50392
+files:
+    5464 .../omp-agent-context/AGENTS.md
+      14 .../omp-agent-context/CLAUDE.md
+   32461 /home/ITER/mcintos/.agents/AGENTS.md
+BASE REFUSES: unsupported agent: omp</pre>
+
+  <p>The same probe against the base revision's module stops at the refusal
+  <code>ValueError: unsupported agent: omp</code>, which is the failure the node
+  exists to remove; the head revision returns the standing-context figure. The
+  full <code>crew dispatch --dry-run</code> cannot be driven from inside this
+  write fence &mdash; it stops earlier, opening a watcher lock under
+  <code>~/.config/reckon/crew/watch</code> that the fence mounts read-only, a
+  failure that predates and is unrelated to the context step. The probe is the
+  narrowest command that reaches the step in question.</p>
+
+  <h3 id="omp-agent-context-arms">Suite arms and the control</h3>
+
+  <table id="omp-agent-context-table">
+    <caption>Each arm is a log whose last line reads
+    <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision / tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base, the command resolved over the base tree
+        (<code>tests/test_agent_context.py tests/test_staged_write_inventory.py</code>)</td>
+        <td><code>90848af130</code>, scratch tree committed as
+        <code>094bba7</code></td>
+        <td>64 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after, the same command over this node's tree</td>
+        <td><code>018be5a42a</code></td>
+        <td><strong>70 passed</strong>, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: <code>omp</code> removed from the layouts</td>
+        <td><code>018be5a42a</code> + mutation</td>
+        <td><strong>3 failed, 16 passed</strong>, <code>EXIT=1</code> &mdash;
+        <code>ValueError: unsupported agent: omp</code> from
+        <code>test_omp_manifest_reports_the_agent_root_and_entrypoint_it_loads</code>,
+        <code>test_omp_chain_names_both_instruction_files_a_directory_holds</code>
+        and <code>test_omp_agent_root_can_be_declared</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Why the codex and claude arms are a test and not a promise.</strong>
+  The two layouts share every code path this change touched, so the risk is not
+  that they break loudly but that a field is added, removed or renamed for all
+  three and nobody notices. The test therefore spells out the whole manifest for
+  both agents &mdash; every key, the byte and sha figures, the sorted input-path
+  set, the budget source, the skill roots &mdash; with the paths derived from the
+  fixture at assertion time rather than frozen. Measured before and after on one
+  fixture, base and head produce byte-identical JSON for both agents.</p>
+
+  <h3 id="omp-agent-context-open">Left open</h3>
+
+  <p><strong>The omp project skill root is not modelled.</strong> The manifest's
+  <code>skills.metadata_roots</code> lists <code>&lt;dir&gt;/.agents/skills</code>
+  for every agent, while omp's builtin provider scans
+  <code>&lt;dir&gt;/.omp/skills</code> (<code>discovery/builtin.ts</code>). The
+  standing-context figure does not read skill roots, so the estimate is right;
+  the metadata field is inaccurate for omp and is the coordinator's call.</p>
+
+  <p><strong>@-import expansion is still not counted.</strong> A repository
+  <code>CLAUDE.md</code> of the loader form here is 14 bytes and imports
+  <code>AGENTS.md</code> and <code>~/.agents/AGENTS.md</code>, which omp expands
+  at load. The measure charges the loader at its own size, as it already did for
+  claude; the canonical policy is counted once, separately.</p>
+
+  <p><strong>The fence still seeds no omp agent store.</strong>
+  <code>_HARNESS_HOME</code> relocates <code>HOME</code>, so a run's agent
+  directory is <code>&lt;run home&gt;/.omp/agent</code>, and the host flight
+  entry <code>omp-local</code> must declare the <code>models.yml</code> it needs
+  there. Without one the preflight's entrypoint is absent for a fenced run,
+  which reports <code>agent_entrypoint_missing</code> rather than sizing it
+  &mdash; the same shape as the codex and claude layouts on an operator home
+  that carries no entrypoint.</p>
+</section>
