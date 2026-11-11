@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import logging
 from collections import Counter, defaultdict, deque
 from collections.abc import Mapping, Sequence
@@ -35,6 +36,129 @@ def _named_plan_signature(docs_dir: Path, slugs: set[str]) -> tuple[Any, ...]:
     return tuple(signature)
 
 
+def _plan_priority_state(docs_dir: Path, slug: str, project: str) -> str | None:
+    """The named plan's structured ranking inputs, without editorial stamps."""
+    from reckon import _plan_html
+    from reckon.crew.plan_review import _plan_inventory_item
+    from reckon.roadmap import _decision_rows
+
+    item = _plan_inventory_item(project, docs_dir, slug)
+    if item is None:
+        return None
+    priority = {
+        field: item.get(field)
+        for field in (
+            "type",
+            "status",
+            "archived",
+            "sprint",
+            "roi",
+            "effort",
+            "effort_hours",
+            "wall_clock_hours",
+            "effort_calibrated",
+            "impl",
+            "depends_on",
+            "after",
+            "blocks",
+            "blockers",
+            "section_declarations",
+            "section_depends_on",
+            "decision_sections",
+        )
+    }
+    priority["followups"] = sorted(
+        (str(row.get("id") or ""), str(row.get("status") or "open"))
+        for row in item.get("followups") or []
+    )
+    priority["decisions"] = sorted(
+        (row["id"], row["status"], sorted(row.get("sections") or []))
+        for row in _decision_rows(item, item.get("decision_sections"))
+    )
+    # Gate text can declare section waits, so the ref reader's text inputs stay.
+    priority["gates"] = [
+        {
+            field: gate.get(field)
+            for field in (
+                "id",
+                "section",
+                "gated_sections",
+                "status",
+                "verdict",
+                "passed",
+                "transition",
+                "gating_plan",
+                "decision",
+                "measure",
+                "required_evidence",
+                "evidence",
+            )
+        }
+        for gate in item.get("gates") or []
+    ]
+    state, text = _plan_html.read_state_and_text_file(
+        docs_dir / "plans" / f"{slug}.html"
+    )
+    priority["sections"] = [
+        {field: record.get(field) for field in ("id", "status", "effort_hours")}
+        for record in state.get("sections") or []
+    ]
+    priority["section_ids"] = [
+        identity for identity, _heading in _plan_html.authored_section_headings(text)
+    ]
+    return json.dumps(priority, sort_keys=True, separators=(",", ":"))
+
+
+def _roadmap_input_signature(
+    docs_dir: Path, slugs: set[str], project: str
+) -> tuple[Any, ...]:
+    """Queued plans' priority state and the sprint inputs used beside them.
+
+    File identities avoid reparsing unchanged plans, but only their structured
+    priority state enters the roadmap key. An unrelated plan or an editorial
+    change therefore leaves the queued work's priorities reusable.
+    """
+    from reckon import file_memo
+    from reckon._store import state_path
+
+    plans = tuple(
+        (
+            slug,
+            file_memo.memoized_key(
+                "queue_plan_priority",
+                (project, str(docs_dir), slug, identity),
+                lambda slug=slug: _plan_priority_state(docs_dir, slug, project),
+            )
+            if identity is not None
+            else None,
+        )
+        for slug, identity in _named_plan_signature(docs_dir, slugs)
+    )
+    signature: list[tuple[str, tuple[int, int, int, int, int] | None]] = []
+    paths = {
+        state_path(project, "index"),
+        state_path(project, "index", root=docs_dir.parent),
+    }
+    directory = docs_dir / "sprints"
+    try:
+        identity = file_memo.file_signature(directory)
+    except OSError:
+        identity = None
+    files = file_memo.memoized_key(
+        "queue_priority_directory",
+        (str(directory), identity),
+        lambda: tuple(directory.glob("*.html")),
+    )
+    paths.update(files)
+    for path in sorted(paths):
+        try:
+            identity = file_memo.file_signature(path)
+        except OSError:
+            identity = None
+        signature.append((str(path), identity))
+    return plans, tuple(signature)
+
+
 def _roadmap_priority_keys(
     queued_pointers: Sequence[Mapping[str, Any]],
 ) -> dict[int, tuple[Any, ...]]:
@@ -58,7 +182,9 @@ def _roadmap_priority_keys(
                 for pointer in queued_pointers
                 if str(pointer.get("project") or "") == project and pointer.get("plan")
             }
-            signature = _named_plan_signature(docs_dir, slugs) if docs_dir else ()
+            signature = (
+                _roadmap_input_signature(docs_dir, slugs, project) if docs_dir else ()
+            )
             cached = _PRIORITY_KEYS.get(cache_key) if cache_key else None
             if cached is not None and cached[0] == signature:
                 project_keys = cached[1]

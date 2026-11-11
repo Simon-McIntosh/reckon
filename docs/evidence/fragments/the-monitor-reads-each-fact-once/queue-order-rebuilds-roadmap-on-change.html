@@ -1,0 +1,162 @@
+<section id="queue-order-rebuilds-roadmap-on-change-priority-cache">
+  <h2>Reviewed input-stamp implementation</h2>
+  <p>This section records the implementation reviewed at <code>6b86e20289</code>.
+  The <a href="#queue-order-rebuilds-roadmap-on-change-semantic-priorities">semantic-priority repair below</a>
+  supersedes its broad invalidation rule and private directory cache.</p>
+  <p>The priority cache retains named-plan inventory construction and its existing
+  named-plan identity helper. Its input signature also tracks plan and sprint
+  directory membership, the other HTML files in those directories, and the
+  configured and checkout sprint indexes. File identities detect in-place edits;
+  directory identities detect arrivals and removals. Directory listings are reused
+  while their own identities stay unchanged. The final source commit is
+  <code>e66fe5ad5ae8639b72ad0f42914d6178bc70fd20</code>.</p>
+  <p>The assigned base, <code>5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd</code>,
+  already cached unchanged queued plans. The recorded repeated-build diagnosis
+  therefore does not reproduce there. The new test verifies that working guard
+  through <code>queued_placements</code>, with counters patched onto every loaded
+  binding of <code>build_roadmap</code>. Its four failing base cases instead expose
+  missing index and other-plan invalidation; they pass after the repair.</p>
+  <table>
+    <thead><tr><th>Calls to build_roadmap</th><th>Base</th><th>Delivered</th></tr></thead>
+    <tbody>
+      <tr><td>Two unchanged placements</td><td>1</td><td>1</td></tr>
+      <tr><td>Then touch the queued plan</td><td>2 total</td><td>2 total</td></tr>
+      <tr><td>Build, then touch either sprint index</td><td>1 total</td><td>2 total</td></tr>
+      <tr><td>Build, then touch another plan</td><td>1 total</td><td>2 total</td></tr>
+      <tr><td>Build, then add a plan</td><td>1 total</td><td>2 total</td></tr>
+    </tbody>
+  </table>
+  <p>Seven new tests also cover removal after arrival (three builds total),
+  an unrelated figure write (one build total), and no second directory listing
+  for an unchanged directory. The armed gate reports
+  <code>51 passed in 23.51s</code> at base and
+  <code>58 passed in 30.84s</code> at the repaired source commit.
+  The matched nine-file importer arms report
+  <code>6 failed, 62 passed in 108.52s (0:01:48)</code> at base and
+  <code>6 failed, 62 passed in 98.89s (0:01:38)</code> at head;
+  the failing-id sets are identical, with zero added failures.
+  Both Python paths pass Ruff lint and format checks.</p>
+  <p>Receipts are preserved in
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T193413529575-queue-order-rebuilds-roadmap-on-change/</code>:
+  <code>negative-control-base.log</code> (four failed, one passed),
+  <code>baseline-suite.log</code>, <code>after-suite-final.log</code>,
+  <code>baseline-importers.log</code>, <code>after-importers-final.log</code>,
+  <code>importer-delta.json</code> and <code>lint-final.log</code>.
+  Earlier head logs are retained: the importer comparison caught the renamed
+  signature helper, and the delivered source restores and reuses it.
+  The coordinator owns the post-landing 60-second station I/O and CPU reading;
+  no live station reduction is claimed by this worker evidence.</p>
+</section>
+
+<section id="queue-order-rebuilds-roadmap-on-change-semantic-priorities">
+  <h2>Reviewed semantic projection</h2>
+  <p>This projection was reviewed at <code>2633d00a96</code>. Its followup and
+  decision payloads still admitted editorial changes to the key. The
+  <a href="#queue-order-rebuilds-roadmap-on-change-workflow-state">workflow-state repair below</a>
+  narrows those inputs. Earlier importer arms in this fragment ran inside the
+  fleet allocation and are retained as history; the partition-job receipts below
+  replace them as admission evidence.</p>
+  <p>Commit <code>6eb915d68bd7390af3edf8e42762740147f4d43e</code>
+  keys queued plans by their structured ranking inputs. The projection reuses the
+  plan inventory and semantic HTML readers, retains section records and heading
+  identities, and excludes title, summary, owner, modified date and version.
+  An edit to a plan with no queued request is outside that key. Ordinary body
+  prose and timestamp-only touches of a queued plan leave its key unchanged;
+  changes to state, waits, sprint, ROI and effort still rebuild it.</p>
+  <p>The sprint directory listing and per-file semantic projections now use
+  <code>file_memo.memoized_key</code>. The shared module owns their stat-keyed
+  cache entries, lock, bounded retention and clearing. A functional probe clears
+  that memo and observes a fresh directory listing while the unchanged roadmap
+  priority keys remain reusable. Sprint file identities and the configured and
+  checkout index identities remain inputs.</p>
+  <table>
+    <thead><tr><th>Probe</th><th>Roadmap builds after repair</th></tr></thead>
+    <tbody>
+      <tr><td>Two unchanged placements</td><td>1</td></tr>
+      <tr><td>Edit a valid plan with no queued request</td><td>1; reviewed implementation built 2</td></tr>
+      <tr><td>Change queued-plan body prose and bookkeeping</td><td>1</td></tr>
+      <tr><td>Touch the queued plan without changing its content</td><td>1</td></tr>
+      <tr><td>Change queued state, wait, sprint, ROI or effort</td><td>2 per case; each matches a forced fresh result</td></tr>
+      <tr><td>Clear the shared file memo</td><td>1 total; directory is listed again</td></tr>
+      <tr><td>Remove and return the queued plan</td><td>3 total</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control was run before the repair at the reviewed commit
+  <code>6b86e20289e8f09b71bac4dc2589f22b1d8f8084</code>. Editing the
+  unqueued plan between calls preserved placements but produced
+  <code>['proj', 'proj']</code> where the new assertion requires
+  <code>['proj']</code>. The runner reports <code>1 failed in 18.43s</code>
+  and names <code>test_an_unqueued_plan_edit_keeps_the_build</code>.
+  That case is among the 14 focused tests passing after the repair.</p>
+  <p>The fresh armed baseline uses the original node base
+  <code>5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd</code>, extracted to a
+  disposable node-local tree with the imported module path and working directory
+  recorded in its log. It reports <code>51 passed in 10.89s</code>.
+  The committed repair reports <code>65 passed in 51.69s</code>.
+  Matching nine-file importer arms report
+  <code>6 failed, 62 passed in 53.53s</code> at the original node base and
+  <code>6 failed, 62 passed in 167.97s (0:02:47)</code> at the repair,
+  with identical failing-id sets and zero added failures. The archived base and
+  assigned worktree have different I/O paths, and the head arm encountered
+  filesystem waits; this comparison judges failure IDs. Both Python paths
+  pass Ruff lint and format checks.</p>
+  <p>The repair receipts share the run directory named above:
+  <code>repair-negative-unrelated-plan.log</code>,
+  <code>repair-baseline-suite.log</code>, <code>repair-after-suite.log</code>,
+  <code>repair-baseline-importers.log</code>, <code>repair-after-importers.log</code>,
+  <code>repair-importer-delta.json</code> and <code>repair-lint.log</code>.
+  An initial baseline extraction omitted the census helper; its rejected receipt
+  is retained as <code>repair-baseline-suite-scaffolding.log</code>, and the
+  admitted baseline includes both helper modules. The coordinator still owns
+  integration and the post-landing 60-second station I/O and CPU reading.</p>
+</section>
+
+<section id="queue-order-rebuilds-roadmap-on-change-workflow-state">
+  <h2>Workflow text stays outside the priority key</h2>
+  <p>Commit <code>baf77cdef3778dad79eb663fa53792d965f1fd93</code>
+  constructs the fingerprint from explicit ordering fields. Followups contribute
+  only identity and status. Decisions contribute identity, readiness state and
+  section scope, derived by the roadmap's existing decision-state owner.
+  Section records contribute identity, declaration and effort. Plan state,
+  declared waits, sprint and priority inputs remain. Gate inputs retain the
+  fields the roadmap reads to resolve section waits. Full followup and decision
+  payloads are no longer serialized into the key.</p>
+  <p>Before the repair, three probes at reviewed commit
+  <code>2633d00a96d4004af347dc12b6ee9e02c88366ba</code> each preserved
+  placements while producing two builds instead of one: a followup title edit,
+  a followup body edit and a decision rationale rewrite. The control reports
+  <code>3 failed in 14.22s</code>. Those cases pass after the repair.
+  A positive control opens a scoped decision, changes the placement's readiness
+  reason, rebuilds and matches a forced fresh result.</p>
+  <p>All admitted armed and importer arms ran as separate job
+  <code>1309909</code> on <code>98dci4-clu-3141.iter.org</code>, partition
+  <code>all_debug</code>, submitted with
+  <code>RECKON_ALLOW_NESTED_LAUNCH=1 sbatch --partition=all_debug --time=00:59:00 --cpus-per-task=8 --mem=32G --wait</code>.
+  Scheduler accounting records <code>COMPLETED</code>, exit <code>0:0</code>,
+  8 allocated CPUs, 32G requested memory and elapsed time <code>00:00:49</code>.
+  The job differs from the originating fleet allocation <code>1291586</code>.
+  Both revision trees were extracted inside the job beneath
+  <code>/tmp/queue-importers-1309909-4yxz0g9c/</code>, and each log records the
+  imported module and resolved working directory. The job removed its scratch
+  before completing. Importer arms ran sequentially with four pytest workers
+  and a 60-second per-test bound.</p>
+  <table>
+    <thead><tr><th>Partition-job arm</th><th>Original node base</th><th>Repaired source</th></tr></thead>
+    <tbody>
+      <tr><td>Armed gate</td><td>51 passed in 6.56s</td><td>69 passed in 8.25s</td></tr>
+      <tr><td>Nine-file importer population</td><td>6 failed, 62 passed in 9.84s</td><td>6 failed, 62 passed in 9.36s</td></tr>
+      <tr><td>Added failing test IDs</td><td colspan="2">0; identical six failing IDs</td></tr>
+    </tbody>
+  </table>
+  <p>The armed base is <code>5b9e3c0e060bd0a2d73d42e558c11a4c015e16cd</code>;
+  the source head is the commit above. Raw arm logs reconcile with
+  <code>partition-receipt.json</code> and <code>partition-verification.json</code>.
+  Durable receipts in the assigned run directory are
+  <code>partition-baseline-suite.log</code>, <code>partition-after-suite.log</code>,
+  <code>partition-baseline-importers.log</code>, <code>partition-after-importers.log</code>,
+  <code>partition-scheduler-receipt.log</code> and
+  <code>logs/importers-1309909.log</code>. The editorial control is
+  <code>workflow-editorial-negative.log</code>; both Python paths pass the checks
+  recorded in <code>workflow-lint.log</code>. Coordinator review, integration and
+  the live 60-second station I/O and CPU measurement remain coordinator-owned.</p>
+</section>
