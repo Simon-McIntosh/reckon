@@ -1,0 +1,689 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 2,
+  "attempt_kind": "resume",
+  "backend": "codex",
+  "base_sha": "c32e901c387f5b318b598ecd2d76a8fd3e0c0451",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 16357248,
+      "cached_input_tokens_cumulative": 16357248,
+      "input_tokens": 16562626,
+      "input_tokens_cumulative": 16562626,
+      "output_tokens": 64124,
+      "output_tokens_cumulative": 64124,
+      "reasoning_output_tokens": 26467,
+      "reasoning_output_tokens_cumulative": 26467
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 355,
+    "files": 4,
+    "removed": 8
+  },
+  "clone_matches": [
+    {
+      "existing_function": {
+        "line": 445,
+        "name": "live_work_reading",
+        "path": "reckon/crew/station_subscriber.py"
+      },
+      "run_function": {
+        "line": 409,
+        "name": "live_work_verdict",
+        "path": "reckon/crew/station_subscriber.py"
+      },
+      "window_line": 410
+    },
+    {
+      "existing_function": {
+        "line": 409,
+        "name": "live_work_verdict",
+        "path": "reckon/crew/station_subscriber.py"
+      },
+      "run_function": {
+        "line": 445,
+        "name": "live_work_reading",
+        "path": "reckon/crew/station_subscriber.py"
+      },
+      "window_line": 446
+    },
+    {
+      "existing_function": {
+        "line": 445,
+        "name": "append_history",
+        "path": "reckon/crew/follow_checkpoint.py"
+      },
+      "run_function": {
+        "line": 608,
+        "name": "append_history",
+        "path": "reckon/crew/station_subscriber.py"
+      },
+      "window_line": 623
+    },
+    {
+      "existing_function": {
+        "line": 2605,
+        "name": "_review_options",
+        "path": "reckon/crew_dispatch_commands.py"
+      },
+      "run_function": {
+        "line": 2744,
+        "name": "_ticker_options",
+        "path": "reckon/crew_follow_commands.py"
+      },
+      "window_line": 2760
+    }
+  ],
+  "commit_resolution": null,
+  "commits": [
+    "69bfe590b3833dfc8ee4c7de84c114bdb110977b",
+    "d85087cbccc21347bb796fea8856dd0e71966d47",
+    "47a92a406c6c9b546b33ebd538898ef5d5a2fb41",
+    "e3d3dc95704072803dd4453d6c99ebc93fad5a13"
+  ],
+  "completed_at": "2026-11-11T04:43:12Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-11T03:48:58Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "passed",
+  "gate_check": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py tests/test_a_follower_stays_while_a_review_is_owed.py tests/test_the_pane_carries_counts_not_names.py tests/test_staged_write_inventory.py",
+    "exit_status": 0,
+    "log_digest": null,
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/logs/armed-head-coord.log"
+  },
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.8144399460188934,
+    "plan": "the-monitor-reads-each-fact-once",
+    "reason": "corrective-run:resume",
+    "verdict": "exempt"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 1.33515212620841,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-13T18:27:38Z, which is after this node's 3000s horizon ending 2026-11-11T04:36:31.666743+00:00",
+    "horizon_ends_at": "2026-11-11T04:36:31.666743+00:00",
+    "horizon_seconds": 3000,
+    "metered": true,
+    "observed_at": "2026-11-11T03:46:30Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-13T18:27:38Z",
+    "resets_at": "2026-11-14T15:28:13Z",
+    "seconds_until_reset": 301302,
+    "state": "quiet",
+    "utilisation_pct": 67.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-11T03:46:30Z",
+    "read_at": "2026-11-11T03:46:31Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 67.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-11T04:43:12Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-11T04:43:12Z",
+        "resets_at": 1794670093,
+        "used_percent": 68.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/manifest.md",
+  "member": "disposable-r-20261111T034614437441-follower-falls-back-cheaply",
+  "model_key": "sol",
+  "negative_control": {
+    "added_failure_ids": [
+      "tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py::test_stale_reading_reuses_pointer_verdict_for_sixty_samples"
+    ],
+    "baseline_failure_ids": [],
+    "comparison_arm": "after_suite",
+    "control_exit_status": 1,
+    "control_failure_ids": [
+      "tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py::test_stale_reading_reuses_pointer_verdict_for_sixty_samples"
+    ],
+    "control_run_failed": true,
+    "declaration": "At the base revision the same 60 samples recompute on every sample, so the head assertion fails there",
+    "head_failure_ids": [],
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/resumed-checks/negative-control.log",
+    "resolved_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/resumed-checks/negative-control.log",
+    "test_paths": [
+      "tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py",
+      "tests/test_a_follower_stays_while_a_review_is_owed.py",
+      "tests/test_the_pane_carries_counts_not_names.py"
+    ],
+    "verdict": "matched"
+  },
+  "no_commit": null,
+  "node": "follower-falls-back-cheaply",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "standard",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "source": "claude-code-session-transcript",
+        "status": "measured",
+        "tokens": {
+          "cache_creation_input_tokens": 2977,
+          "cached_input_tokens": 809930,
+          "input_tokens": 812909,
+          "output_tokens": 1410,
+          "reasoning_output_tokens": 122,
+          "total_tokens": 814319,
+          "uncached_input_tokens": 2
+        }
+      },
+      "harness": "claude-code",
+      "runtime_session_id": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "session_id": "1fb615a0-2801-4418-bbb4-c2914719e520"
+    },
+    "done_when": "A new tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py shows, with a station reading older than its staleness bound and 60 follower samples at one per second over 40 pointers, that live_work_populations or _population_has_live_work runs at most twice, counted through patches on every name that binds it; the fallback makes no _review_in_flight call; a pointer turning terminal is still seen within one interval. Matched importer arms run as a partition job and add no failure; ruff check and ruff format --check add no finding on the staged paths.",
+    "estimated_hours": null,
+    "goal": "Make a follower whose station reading is stale keep its live-work verdict for an interval instead of recomputing it every sample",
+    "id": "follower-falls-back-cheaply",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-11T03:46:30Z",
+      "read_at": "2026-11-11T03:46:31Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 67.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/manifest.md",
+    "negative_control": "At the base revision the same 60 samples recompute on every sample, so the head assertion fails there",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-concurrent-launch-is-refused": [
+        "docs/evidence/fragments/a-run-has-one-live-worker/a-concurrent-launch-is-refused.html",
+        "docs/figures/a-run-has-one-live-worker/a-concurrent-launch-is-refused",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_launch.py",
+        "reckon/crew/dispatch_sessions.py",
+        "reckon/crew/resumption.py",
+        "tests/test_a_concurrent_launch_is_refused.py",
+        "tests/test_a_resume_never_launches_beside_another_node.py"
+      ],
+      "a-crew-verb-costs-the-same-at-any-population": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-crew-verb-costs-the-same-at-any-population.html",
+        "tests/test_a_crew_verb_costs_the_same_at_any_population.py"
+      ],
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-ledger-read-does-not-walk-every-run": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run.html",
+        "docs/figures/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run",
+        "reckon/ledger.py",
+        "tests/test_a_ledger_read_does_not_walk_every_run.py"
+      ],
+      "a-node-waits-only-on-what-it-names": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names.html",
+        "docs/figures/a-queue-holds-the-whole-plan/a-node-waits-only-on-what-it-names",
+        "reckon/crew/dispatch_batch.py",
+        "reckon/crew/node.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew_dispatch_commands.py",
+        "tests/test_a_node_waits_only_on_what_it_names.py"
+      ],
+      "anchored-edit-codex-arm": [
+        "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-edit-codex-arm.html",
+        "docs/figures/workers-spend-fewer-tokens-per-landed-node/anchored-edit-codex-arm",
+        "reckon/_backends.py",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/prompts.py",
+        "tests/test_anchored_edit_codex_arm.py"
+      ],
+      "armed-suite-collectible-tests": [
+        "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/armed-suite-collectible-tests.html",
+        "docs/figures/workers-spend-fewer-tokens-per-landed-node/armed-suite-collectible-tests",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/node.py",
+        "reckon/crew/promotion_records.py",
+        "reckon/crew/queue_landing.py",
+        "tests/test_armed_suite_collectible_tests.py"
+      ],
+      "fleet-refresh-reuses-its-reads": [
+        "docs/evidence/fragments/the-monitor-reads-each-fact-once/fleet-refresh-reuses-its-reads.html",
+        "docs/figures/the-monitor-reads-each-fact-once/fleet-refresh-reuses-its-reads",
+        "reckon/crew/obligation_snapshot.py",
+        "reckon/crew/obligations.py",
+        "reckon/ledger.py",
+        "tests/test_fleet_state_reuses_its_reads_between_ticks.py"
+      ],
+      "keep-only-named-run-waits": [
+        "docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html",
+        "docs/figures/a-queue-holds-the-whole-plan/keep-only-named-run-waits",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_dropped_request_strands_no_waiter.py"
+      ],
+      "omp-models-path": [
+        "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/omp-models-path.html",
+        "docs/figures/workers-spend-fewer-tokens-per-landed-node/omp-models-path",
+        "reckon/_backends.py",
+        "reckon/_worker_fence.py",
+        "tests/test_omp_dialect.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "the-model-catalogue-has-one-memo": [
+        "docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html",
+        "docs/figures/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo",
+        "reckon/flight.py",
+        "reckon/ledger.py",
+        "tests/test_the_model_catalogue_has_one_memo.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "worker-inbox-hook": [
+        "docs/evidence/fragments/a-live-worker-can-be-reached/worker-inbox-hook.html",
+        "docs/figures/a-live-worker-can-be-reached/worker-inbox-hook",
+        "reckon/_worker_fence.py",
+        "reckon/crew_run_commands.py",
+        "reckon/hooks/install.py",
+        "reckon/hooks/worker_inbox.py",
+        "reckon/hooks/worker_message_guard.py",
+        "reckon/mcp_views.py",
+        "tests/test_anchored_edit_claude_arm.py",
+        "tests/test_crew_help_names_its_state.py",
+        "tests/test_harness_home_carries_the_operator_config.py",
+        "tests/test_run_home_hooks_are_interpreter_bound.py",
+        "tests/test_worker_inbox.py"
+      ],
+      "worktree-index-reads-clean-across-the-fence": [
+        "docs/evidence/fragments/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence.html",
+        "docs/figures/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence",
+        "reckon/crew/routing.py",
+        "tests/test_a_worktree_index_reads_clean_across_the_fence.py"
+      ]
+    },
+    "plan": "the-monitor-reads-each-fact-once",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§26",
+    "spec_level": "guided",
+    "time_budget": "50m",
+    "token_budget": null,
+    "write_paths": [
+      "reckon/crew_follow_commands.py",
+      "reckon/crew/station_subscriber.py",
+      "tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py",
+      "docs/evidence/fragments/the-monitor-reads-each-fact-once/follower-falls-back-cheaply.html",
+      "docs/figures/the-monitor-reads-each-fact-once/follower-falls-back-cheaply",
+      "tests/test_a_follower_stays_while_a_review_is_owed.py",
+      "tests/test_the_pane_carries_counts_not_names.py"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_later_request_starts_one_new_child",
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_a_new_host_restarts_a_child_that_exits_without_settling",
+    "tests/test_a_pane_settles_when_no_work_is_live.py::test_the_host_retires_a_settled_child_and_stays_alive",
+    "tests/test_follow_sweep_cadence.py::test_pane_output_is_unchanged_by_the_sweep",
+    "tests/test_follower_hands_off_to_host.py::test_a_follower_hands_off_to_a_waiting_host_and_exits",
+    "tests/test_follower_hands_off_to_host.py::test_a_follower_no_census_lists_hands_off",
+    "tests/test_follower_hands_off_to_host.py::test_a_reloaded_follower_adopts_launched_workers_before_it_hands_off",
+    "tests/test_follower_hands_off_to_host.py::test_dispatch_asks_a_waiting_host_for_a_foreignly_attached_session",
+    "tests/test_follower_hands_off_to_host.py::test_the_lifetime_end_row_hands_over_without_a_re_arm_command"
+  ],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": 1.3349379687172616,
+      "derived": 0.5520855779599868,
+      "drain_hours": 168.0,
+      "effective_limit": 0.5520855779599868,
+      "elapsed_fraction": 0.5018959799636243,
+      "elapsed_hours": 84.31852463388888,
+      "group": "codex-sub",
+      "lift": {
+        "ends_at": "2026-11-11T09:00:01+00:00",
+        "ends_on": "time",
+        "form": "uncapped",
+        "group": "codex-sub",
+        "id": "codex-sub-1794082577-c029e5",
+        "pace_multiple": null,
+        "remaining_seconds": 18761.311318,
+        "scope": "global"
+      },
+      "lift_hold": {
+        "held": false,
+        "kind": "uncapped"
+      },
+      "limited_by": "allowance",
+      "observed_at": "2026-11-11T03:47:19+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": null,
+      "remaining_budget": 0.32999999999999996,
+      "remaining_windows": null,
+      "resets_at": "2026-11-14T15:28:13Z",
+      "state": "observed",
+      "utilisation": 0.67,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.7451740000000001,
+      "decided_by": "window",
+      "margin": -0.00767400000000007,
+      "name": "follower-falls-back-cheaply",
+      "score": 0.7375,
+      "state": "observed",
+      "verdict": "split",
+      "window_fill": 0.67
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.688682,
+        "observed_at": "2026-11-11T03:47:19+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-14T15:28:13Z",
+        "state": "observed",
+        "utilisation": 0.67,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": "codex-sub-1794082577-c029e5",
+    "member": "codex",
+    "node": "follower-falls-back-cheaply",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-11T03:47:19.688682+00:00",
+    "score": 0.7375,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "Lead directive: critical fleet contention, codex without waiting for review. Nine followers used 586% CPU and read about 25 GB/min at 03:41Z on 11 November. sbatch --partition passes the fence now. crew_follow_commands.py and station_subscriber.py are shared-write paths",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout in pick:capability",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5006.57,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {
+      "budget-snapshot": 2429.442,
+      "context-estimate": 424.621,
+      "records": 3414.263,
+      "verdict-inputs": 1634.539
+    }
+  },
+  "plan": "the-monitor-reads-each-fact-once",
+  "plan_impl_at_dispatch": 0.8144399460188934,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "e3d3dc95704072803dd4453d6c99ebc93fad5a13",
+  "resume_waiver": null,
+  "review": {
+    "absent": [],
+    "reviewed_base_sha": "c32e901c387f5b318b598ecd2d76a8fd3e0c0451",
+    "reviewed_head_sha": "e3d3dc95704072803dd4453d6c99ebc93fad5a13",
+    "scores": {
+      "durability": 19,
+      "evidence": 20,
+      "fit": 20,
+      "goal_fidelity": 20,
+      "reuse": 20,
+      "scope_discipline": 20
+    },
+    "status": "parsed",
+    "total": 119
+  },
+  "review_tier": "full",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261111T034614437441-follower-falls-back-cheaply",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§26",
+  "session": "1fb615a0-2801-4418-bbb4-c2914719e520",
+  "session_harness": "codex",
+  "session_id": "01a1c8b9-e8d0-71f0-8057-7f5e471846e9",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "guided",
+  "stalled": false,
+  "suite_delta": {
+    "added_failure_ids": [],
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py tests/test_a_follower_stays_while_a_review_is_owed.py tests/test_the_pane_carries_counts_not_names.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/logs/armed-head-coord.log",
+      "revision": "e3d3dc95704072803dd4453d6c99ebc93fad5a13"
+    },
+    "baseline_measured_nothing": false,
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_stays_while_a_review_is_owed.py tests/test_the_pane_carries_counts_not_names.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_digest": null,
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/logs/armed-base-coord.log",
+      "revision": "c32e901c387f5b318b598ecd2d76a8fd3e0c0451"
+    },
+    "failure_attribution": {},
+    "status": "clean",
+    "suite_command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_follower_falls_back_cheaply_when_the_station_is_stale.py tests/test_a_follower_stays_while_a_review_is_owed.py tests/test_the_pane_carries_counts_not_names.py tests/test_staged_write_inventory.py",
+    "waiver_reason": null
+  },
+  "tests_added": 9,
+  "throughput": {
+    "cumulative_cached_input_tokens": 16357248,
+    "cumulative_input_tokens": 32919874,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 90591
+  },
+  "time_budget": "50m",
+  "tool_steps": 141.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 3254,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 2,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-11T04:43:19Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-11T04:22:52Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 68346934,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/codex-home/cache"
+      },
+      {
+        "bytes": 28814443,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261111T034614437441-follower-falls-back-cheaply",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 548,
+    "worker_pid": 3767821
+  },
+  "worker_seconds": 3201,
+  "worker_seconds_source": "rollout_receipts",
+  "worktree_retention": null
+}
