@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-rereview-gates-only-the-units-it-covers">
+<meta name="plan-title" content="A re-review gates only the units it was composed to cover">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s49">
+<meta name="plan-recorded-at" content="2026-11-11">
+<meta name="plan-verdict" content="passed">
+<meta name="plan-commits" content="f3856c21ed,35fe42361b">
+<title>A re-review gates only the units it was composed to cover | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-rereview-gates-only-the-units-it-covers-verification">
+<h1>A re-review gates only the units it was composed to cover</h1>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Re-review, one in-scope and one out-of-scope unanswered finding</td><td>Gate reports one unanswered finding; the out-of-scope one is listed as an observation</td><td><code>plan_review.unanswered_findings_by_unit</code> answers <code>{"s4": ["reasoning-1"]}</code> and <code>observation_findings</code> answers <code>["done_when-1"]</code>; the enforce-mode refusal names <code>reasoning-1</code> and not <code>done_when-1</code></td></tr>
+<tr><td>A dispatch of the covered section</td><td>Admitted</td><td>The same record, gated at the section the observation is about, returns <code>None</code></td></tr>
+<tr><td>A dispatch naming no section reads the whole plan</td><td>Refused naming one finding</td><td>The refusal reads <code>1 finding(s) unanswered</code> and names <code>reasoning-1</code> only</td></tr>
+<tr><td>A first review gates on every finding</td><td>Both findings refuse their own sections</td><td>A record with no traced units leaves <code>observation_findings</code> empty and groups both findings by unit</td></tr>
+<tr><td>Head arm</td><td>55 passed; EXIT=0</td><td>gate-head.log; revision 35fe42361b, its own scratch tree, <code>module.__file__</code> named in the header</td></tr>
+<tr><td>Base arm</td><td>51 passed; EXIT=0</td><td>gate-base.log; revision e2a9a5cbe, the same template resolved over that tree, which carries no such test file</td></tr>
+<tr><td>Added failures</td><td>0</td><td>Neither arm failed; the head arm adds the four new cases</td></tr>
+<tr><td>Declared negative control</td><td>3 failed, 1 passed; EXIT=1</td><td>negative-control.log; with every finding treated as a finding, both section-narrowed cases and the whole-plan case fail, the whole-plan refusal naming two unanswered findings</td></tr>
+</tbody></table>
+<h2>What changed</h2>
+<p>A stored review already records the units a round traced against the code (<code>traced_units</code>). That set is now also the review's own scope: <code>plan_review._observation_ids</code> marks a finding whose every blocked unit lies outside it, <code>observation_findings</code> lists those ids, and <code>unanswered_findings_by_unit</code> — the one reader the dispatch gate uses — leaves them out. A finding that blocks the document unit is never an observation, because the document unit is the plan as a whole and every review reads it. A review that traced nothing read the whole plan, so nothing it raises is an observation: every first review, and every record stored before a round could be scoped, gates on every finding exactly as before.</p>
+<p>The distinction is the review's scope, not the dispatch's. The gate already narrowed findings to the units a dispatch builds; this node adds the other half, so a re-review composed for one edited section no longer holds a node building a section an earlier review already covers. Observations are recorded and answerable — <code>unanswered_findings</code> still lists them — so they are carried rather than lost.</p>
+<h2>Durable receipts</h2>
+<table><thead><tr><th>Artifact</th><th>Path</th></tr></thead><tbody>
+<tr><td>manifest.md</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/manifest.md</td></tr>
+<tr><td>gate-head.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/logs/gate-head.log</td></tr>
+<tr><td>gate-base.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/logs/gate-base.log</td></tr>
+<tr><td>negative-control.log</td><td>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T043410358327-a-rereview-gates-only-the-units-it-covers/logs/negative-control.log</td></tr>
+</tbody></table>
+</section></main></body></html>
