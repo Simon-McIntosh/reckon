@@ -125,15 +125,13 @@ def test_an_exclusive_pattern_is_named_in_the_refusal(repository: Path) -> None:
 @pytest.mark.parametrize(
     "owner_path,joiner_path", [(SOURCE, "pkg"), ("pkg", SOURCE), ("pkg", "pkg")]
 )
-def test_directory_claims_stay_exclusive(
+def test_directory_claims_share_their_files_under_a_shared_root(
     repository: Path, owner_path: str, joiner_path: str
 ) -> None:
     owner = _dispatch(repository, "owner", owner_path)
+    joiner = _dispatch(repository, "joiner", joiner_path)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", joiner_path)
-
-    assert refusal.value.run_id == owner["run_id"]
+    assert owner["run_id"] != joiner["run_id"]
 
 
 def test_a_project_without_shared_roots_keeps_its_default(repository: Path) -> None:
@@ -162,8 +160,8 @@ def test_queue_edits_keep_a_directory_claim_exclusive(repository: Path) -> None:
     assert refusal.run_id == owner["run_id"]
 
 
-def test_admission_keeps_a_directory_claim_exclusive(repository: Path) -> None:
-    owner = _dispatch(repository, "owner", "pkg")
+def test_admission_admits_a_file_under_a_directory_claim(repository: Path) -> None:
+    _dispatch(repository, "owner", "pkg")
     request = _queue(repository, node_id="joiner", run_id="r-joiner")
     request["node"]["write_paths"] = [SOURCE]
 
@@ -174,8 +172,7 @@ def test_admission_keeps_a_directory_claim_exclusive(repository: Path) -> None:
         shared_files=runs._shared_write_paths(PROJECT, repository),
     )
 
-    assert hold is not None
-    assert owner["run_id"] in str(hold)
+    assert hold is None, hold
 
 
 def test_queue_edits_admit_an_exact_shared_file_claim(repository: Path) -> None:

@@ -61,6 +61,7 @@ from reckon.crew.routing import (
     resolve_scope_repository,
 )
 from reckon.crew.runs import (
+    _claim_paths_share,
     _exclusive_write_pattern,
     _expanded_scope_paths,
     _pointer_lock,
@@ -1557,7 +1558,7 @@ def _live_conflict_rows(
             for repository, path, absolute, _declared, _derived_from in candidates
             if repository == claim.repository
             and _scopes_overlap(absolute.as_posix(), claim.absolute_path.as_posix())
-            and not (path in shared_files and path == claim.path)
+            and not _claim_paths_share(shared_files, path, claim.path)
         ]
         if not overlapping:
             continue
@@ -2192,9 +2193,11 @@ def _raise_repository_scope_conflict(
                 absolute.as_posix(), claim.absolute_path.as_posix()
             ):
                 continue
-            # Worktrees isolate concurrent edits to one shared file. A
-            # containing directory claim remains a different, exclusive path.
-            if candidate in shared_files and candidate == claim.path:
+            # Worktrees isolate concurrent edits to one shared file, and a
+            # directory claim under a shared root shares as the files beneath
+            # it do, so a peer naming one of those files passes. A claim that is
+            # or contains an exclusive pattern still fences below.
+            if _claim_paths_share(shared_files, candidate, claim.path):
                 continue
             if not claim.binding:
                 # Named on the record rather than passed over quietly: an

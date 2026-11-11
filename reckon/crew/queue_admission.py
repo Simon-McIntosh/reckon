@@ -1178,7 +1178,7 @@ def _claim_collision(
             for path in ours
             if any(
                 runs._scopes_overlap(path, claim)
-                and not (path == claim and path in shared_files)
+                and not runs._claim_paths_share(shared_files, path, claim)
                 for claim in theirs
             )
         ),

@@ -1662,6 +1662,53 @@ class _SharedWritePaths(frozenset[str]):
             and any(character.isalpha() for character in absolute.suffix)
         )
 
+    def shares_region(self, path: str) -> bool:
+        """Whether a directory here shares as the files beneath it do.
+
+        A directory that is, contains, or sits under a declared exclusive
+        pattern does not: its files are the ones a merge cannot reconcile, so a
+        broad claim over them fences a peer however deep the file it names.
+        """
+        normalized = _repository_relative_scope(path, self.repo)
+        if normalized is None:
+            return False
+        return not any(
+            _scopes_overlap(normalized, _pattern_root(pattern))
+            for pattern in self.exclusive_patterns
+        )
+
+
+def _pattern_root(pattern: str) -> str:
+    """The directory a declared pattern is declared under.
+
+    ``docs/plans/*.html`` is a rule about files in ``docs/plans``, so a claim on
+    ``docs`` or on ``docs/plans`` covers paths the pattern keeps exclusive.
+    """
+    for index, character in enumerate(pattern):
+        if character in "*?[":
+            return pattern[:index].rstrip("/") or pattern
+    return pattern.rstrip("/") or pattern
+
+
+def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
+    """Whether two overlapping claim paths are both shareable under the policy.
+
+    The narrower of the two names the path the claims meet on, the broader names
+    the region holding it, and both must share: the path under a declared root
+    and outside an exclusive pattern, and the region not exclusive either. A
+    directory claim under a shared root therefore shares exactly as the files
+    beneath it do, while one that is or contains an exclusive pattern fences.
+    """
+    if not isinstance(shared, _SharedWritePaths):
+        return False
+    if _scope_contains(path, claim):
+        narrower, broader = claim, path
+    else:
+        narrower, broader = path, claim
+    if not _scope_contains(broader, narrower):
+        return False
+    return narrower in shared and shared.shares_region(broader)
+
 
 def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
     """Name an exclusive declaration without requiring one on legacy projects."""

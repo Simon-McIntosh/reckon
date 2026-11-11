@@ -5,11 +5,11 @@ The pair reproduced here is the one the live admit pass held from 13:54 UTC on
 inside it, and the request declared one file in that same package. The overlap
 is therefore the holder's containing directory claim against a file under a
 declared shared root, not a file claim against the same file, which is the shape
-the shared-path comparison is written for.
+the shared-path comparison was written for.
 
-Three facts are asserted: the pair is admitted, the same pair on an exclusive
-pattern is still held naming that pattern, and a request that claims a directory
-is still held.
+A directory claim under a shared root shares as the files beneath it do, so that
+pair is admitted by the queue and passes the launch-time check. An exclusive
+pattern still fences, and so does a directory claim that is or contains one.
 """
 
 from __future__ import annotations
@@ -20,10 +20,13 @@ from typing import Any
 
 import pytest
 
-from reckon.crew import queue_admission, runs
+from reckon import crew
+from reckon.crew import dispatch_claims, queue_admission, runs
+from reckon.crew.dispatch_claims import _RepositoryScopeClaim
 
 PROJECT = "proj"
 EXCLUSIVE = "docs/plans/x.html"
+FIGURE_DIR = "docs/figures/topic"
 
 #: The holder's declared scope, as recorded for the run the live pass held.
 HOLDER_PATHS = [
@@ -42,7 +45,7 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     repo = tmp_path / "repo"
     repo.mkdir()
-    for path in [*HOLDER_PATHS[:2], *REQUEST_PATHS, EXCLUSIVE]:
+    for path in [*HOLDER_PATHS[:2], *REQUEST_PATHS, EXCLUSIVE, f"{FIGURE_DIR}/a.svg"]:
         target = repo / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text("VALUE = 1\n")
@@ -51,24 +54,26 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (state / "shared-write-paths.json").write_text(
         json.dumps(
             {
-                "shared_roots": ["reckon/", "tests/"],
-                "exclusive_patterns": ["docs/plans/*.html"],
+                "shared_roots": ["reckon/", "tests/", "docs/evidence/"],
+                "exclusive_patterns": [
+                    "docs/plans/*.html",
+                    "docs/state/",
+                    "docs/figures/",
+                ],
             }
         )
     )
     return repo
 
 
-def _pointer(
-    run_id: str, phase: str, paths: list[str], repo: Path
-) -> dict[str, Any]:
+def _pointer(run_id: str, phase: str, paths: list[str], repo: Path) -> dict[str, Any]:
     """One live pointer, written where the claim refresh reads it back."""
     pointer = {
         "run_id": run_id,
         "phase": phase,
         "project": PROJECT,
         "repo": str(repo),
-        "session": "coordinator-a",  # noqa: S105 - a session name, not a secret
+        "session": "coordinator-a",
         "node": {"id": run_id, "write_paths": list(paths)},
     }
     runs._write_json(runs.pointer_path(run_id), pointer)
@@ -76,6 +81,7 @@ def _pointer(
 
 
 def _hold(repo: Path, holder_paths: list[str], request_paths: list[str]) -> str | None:
+    """The queue's verdict on the pair, through the live claim comparison."""
     holder = _pointer("r-holder", "working", holder_paths, repo)
     request = _pointer("r-request", "queued", request_paths, repo)
     return queue_admission._live_claim_hold(
@@ -86,21 +92,73 @@ def _hold(repo: Path, holder_paths: list[str], request_paths: list[str]) -> str 
     )
 
 
+def _launch_refusal(
+    repo: Path, holder_paths: list[str], request_paths: list[str]
+) -> str:
+    """The launch-time claim check's answer for the same pair, as a string."""
+    node = crew.TaskNode(
+        id="r-request",
+        plan="plan-a",
+        section="dispatch",
+        goal="edit one declared file",
+        done_when="the launch-time claim check admits the pair",
+        write_paths=list(request_paths),
+        spec_level="exact",
+        time_budget="20m",
+    )
+    claims = [
+        _RepositoryScopeClaim(
+            project=PROJECT,
+            repository=repo.resolve(),
+            run_id="r-holder",
+            node_id="r-holder",
+            path=path,
+            absolute_path=(repo / path).resolve(),
+            declared_path=path,
+            registered_at="2026-11-11T08:02:03Z",
+            launched=True,
+            binding=True,
+        )
+        for path in holder_paths
+    ]
+    try:
+        dispatch_claims._raise_repository_scope_conflict(
+            node,
+            project=PROJECT,
+            repo=repo,
+            authority={"repositories": [repo]},
+            claims=claims,
+        )
+    except crew.ScopeConflict as refused:
+        return str(refused)
+    return ""
+
+
 def test_the_reproduced_pair_is_admitted(repository: Path) -> None:
     hold = _hold(repository, HOLDER_PATHS, REQUEST_PATHS)
 
     assert hold is None, hold
 
 
-def test_the_same_pair_is_shared_by_an_exclusive_pattern(repository: Path) -> None:
+def test_the_reproduced_pair_passes_the_launch_check(repository: Path) -> None:
+    refusal = _launch_refusal(repository, HOLDER_PATHS, REQUEST_PATHS)
+
+    assert refusal == "", refusal
+
+
+def test_the_same_pair_is_held_by_an_exclusive_pattern(repository: Path) -> None:
     hold = _hold(repository, [EXCLUSIVE], [EXCLUSIVE])
 
     assert hold is not None
     assert "docs/plans/*.html" in hold, hold
+    assert _launch_refusal(repository, [EXCLUSIVE], [EXCLUSIVE])
 
 
-def test_a_directory_claim_is_still_held(repository: Path) -> None:
-    hold = _hold(repository, ["reckon/crew/picker/snapshot.py"], ["reckon/crew/picker"])
+def test_a_claim_on_a_figure_directory_holds_a_file_inside_it(
+    repository: Path,
+) -> None:
+    hold = _hold(repository, [FIGURE_DIR], [f"{FIGURE_DIR}/a.svg"])
 
     assert hold is not None
-    assert "holds 'reckon/crew/picker'" in hold, hold
+    assert "docs/figures/" in hold, hold
+    assert _launch_refusal(repository, [FIGURE_DIR], [f"{FIGURE_DIR}/a.svg"])
