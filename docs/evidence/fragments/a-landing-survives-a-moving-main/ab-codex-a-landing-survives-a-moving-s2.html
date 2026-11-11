@@ -1,0 +1,29 @@
+<section id="ab-codex-a-landing-survives-a-moving-s2">
+  <h2>Measurement reuse verified on the delivered code</h2>
+  <p>The implementation and all six focused tests are already committed at
+  <code>87d2bcc8e682c2558e010894c02499950a57cf1e</code>. The recorded livelock does
+  not reproduce there. This delivery preserves that implementation and adds
+  verification evidence only.</p>
+  <table>
+    <thead><tr><th>Exercise</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Stored measurement followed by a docs/plans commit</td><td>Lands without measuring again</td></tr>
+      <tr><td>Primary changes under reckon/</td><td>Measures the delivery again</td></tr>
+      <tr><td>Docs-only move introduces a real merge conflict</td><td>Landing is refused; verification raises a merge-conflict refusal</td></tr>
+      <tr><td>A second delivery waits for a later pass</td><td>The deferred id has a nonempty reason</td></tr>
+      <tr><td>Docs-only move during measurement</td><td>Lands without deferring</td></tr>
+      <tr><td>Stored measurement verified against the current primary</td><td>Reads the current merge and preserves the measured primary identity</td></tr>
+    </tbody>
+  </table>
+  <p>The focused gate reports <strong>6 passed in 23.17s</strong>, exit 0.
+  Forcing <code>_moved_primary_keeps_the_measurement</code> to return false
+  produces <strong>2 failed in 5.84s</strong>, exit 1: the stored-measurement test
+  reports “a measurement a docs-only move cannot change was repeated”, and the
+  during-measurement test observes an empty landed list with the delivery
+  deferred. These are passing tests on the unmodified implementation.</p>
+  <p>Reuse compares the committed package, tests, dependency declarations and
+  pins, and the model catalogue. Plans, ordinary state records, evidence and
+  figures leave those identities unchanged. The catalogue is protected even
+  though it lives under docs because the product reads it. Detailed gate logs
+  and the mutation command are retained with the run manifest.</p>
+</section>
