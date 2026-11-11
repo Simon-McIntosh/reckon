@@ -31,6 +31,32 @@ crew_unwatch = tombstone_command("unwatch")
 crew_resume_ready = tombstone_command("resume-ready")
 
 
+@crew.command(name="census")
+@click.option(
+    "--apply",
+    is_flag=True,
+    help="Stop exactly the listed ownerless pids, printing each result.",
+)
+@click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+def crew_census(apply, pretty) -> None:
+    """List local processes whose recorded owner is dead, and duplicate followers.
+
+    Ownership comes from follower registrations, producer leases, live run
+    pointers or explicit environment stamps. Unrecorded and live-owned
+    processes are spared. The first report names the signal targets and the
+    spared processes before --apply prints one result per target. Live run
+    pointers remain available for completion with a failure classification.
+    """
+    from reckon.crew.census import apply_census, census
+
+    report = census()
+    _emit(report, pretty)
+    if apply:
+        results = apply_census(report, emit=lambda result: _emit(result, pretty))
+        if any(result["action"] == "refused" for result in results):
+            raise click.exceptions.Exit(1)
+
+
 def _answer_carried_finding(pretty, **params):
     """Answer a plan-review finding as carried, on the review verb's behalf.
 

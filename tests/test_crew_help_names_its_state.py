@@ -21,6 +21,7 @@ STATE_PHRASES: dict[CommandPath, str] = {
         "budget",
     ): "one budget group's pace, its banked reset, its lifts or backend holds",
     ("check",): "delivered manifest or run review",
+    ("census",): "local processes whose recorded owner is dead",
     ("complete",): "finished run",
     ("directory",): "live coordinator ownership",
     ("discard",): "non-running live pointer",
