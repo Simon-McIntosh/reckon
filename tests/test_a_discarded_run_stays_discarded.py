@@ -25,6 +25,10 @@ def delivery(tmp_path, monkeypatch):
     git(repository, "init", "-q", "-b", "main")
     git(repository, "config", "user.name", "Test")
     git(repository, "config", "user.email", "test@example.invalid")
+    origin = tmp_path / "origin.git"
+    origin.mkdir()
+    git(origin, "init", "-q", "--bare", "-b", "main")
+    git(repository, "remote", "add", "origin", str(origin))
     source = repository / "result.txt"
     source.write_text("base\n")
     git(repository, "add", source.name)
@@ -39,6 +43,7 @@ def delivery(tmp_path, monkeypatch):
     git(repository, "add", source.name)
     git(repository, "commit", "-qm", "test: change primary result")
     primary = git(repository, "rev-parse", "HEAD")
+    git(repository, "push", "-q", "origin", "main")
     (home / "mounts.json").write_text(json.dumps({PROJECT: str(repository / "docs")}))
     row = {"run_id": RUN_ID, "project": PROJECT, "promoted_revision": head}
     runs._write_json(ledger.run_path(PROJECT, RUN_ID, repository), row)
@@ -120,6 +125,7 @@ def test_landed_delivery_clears_pending_without_a_resume(delivery, route, at_tip
         )
         runs._write_json(ledger.run_path(PROJECT, RUN_ID, repository), pointer)
     assert merge._is_ancestor(repository, delivery[3], "main")
+    git(repository, "push", "-q", "origin", "main")
 
     receipt = _repair(delivery, route)
 
@@ -127,6 +133,27 @@ def test_landed_delivery_clears_pending_without_a_resume(delivery, route, at_tip
     assert not pending_landing._record_path(RUN_ID).exists(), receipt
     assert resumed == [], receipt
     assert "already-landed" in str(receipt), receipt
+
+
+def test_local_ancestry_keeps_a_pending_push(delivery):
+    repository, _worker, _pointer, head, _primary, resumed = delivery
+    git(
+        repository,
+        "merge",
+        "--no-ff",
+        "-s",
+        "ours",
+        head,
+        "-m",
+        "test: integrate delivery",
+    )
+    assert merge._is_ancestor(repository, head, "main")
+    assert merge.head_on_remote_branch(repository, head)["on_branch"] is False
+
+    assert pending_landing._settled_landing(RUN_ID, head, repository=repository) == ""
+
+    assert pending_landing._record_path(RUN_ID).exists()
+    assert resumed == []
 
 
 @pytest.mark.parametrize("route", ["direct", "pending-pass"])

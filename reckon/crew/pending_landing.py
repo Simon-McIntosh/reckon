@@ -84,7 +84,12 @@ def clear_pending(run_id: str) -> None:
 def _settled_landing(
     run_id: str, head: str, *, repository: Path | None = None, project: str = ""
 ) -> str:
-    """Refuse repair after a discard or integration, retiring landed records."""
+    """Refuse repair after a discard or remote integration, retiring its record.
+
+    Local ancestry alone leaves a push outstanding, so only the remote primary
+    can establish that no landing remains. An unreadable remote keeps the
+    pending record; a recorded discard still prevents resuming its worker.
+    """
     from reckon.crew import merge, promotion
 
     disposition = "discarded" if promotion.discard_recorded(run_id) else ""
@@ -92,8 +97,7 @@ def _settled_landing(
         return disposition
     try:
         repository = repository or merge.project_repository(project)
-        branch = merge._current_branch(repository)
-        landed = merge._is_ancestor(repository, head, branch)
+        landed = merge.head_on_remote_branch(repository, head)["on_branch"] is True
     except (merge.MergeError, OSError):
         return disposition
     if landed:
