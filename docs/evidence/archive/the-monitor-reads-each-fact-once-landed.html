@@ -80,6 +80,11 @@
     <p>Landed through the admit service's lander after its third review (head 38fe5dcdee, on main). The priority keys are keyed on parsed section state, so an edit to followups, decisions or prose no longer rebuilds the roadmap. The directory cache uses <code>file_memo</code>. The plan review of 10 November found the text's negative control and head clause imprecise; the landed tests pin the behaviour on parsed state.</p>
   </section>
 
+  <section id="follower-falls-back-cheaply" data-evidence-origin="append">
+    <h2>A follower falls back cheaply when the station is stale</h2>
+    <p>Landed from r-20261111T034614437441 (head e3d3dc9570). A follower whose station reading is stale keeps its live-work verdict for an interval and recomputes it at most once per interval. It judges liveness from pointer phases and the run's own owed-review record, not the full review-in-flight walk, so an owed review still holds the pane. Armed tests: 77 passed at head; matched importers added no failure; the review found nothing. <strong>Live result:</strong> at 05:53Z, 14 followers on the landed code used 27% CPU and read 22 MiB/min together, against about 586% and 25 GB/min for 9 followers at 03:41Z (<code>~/.config/reckon/crew/runs/r-20261111T034614437441-follower-falls-back-cheaply/logs/post-landing-follower-load.log</code>).</p>
+  </section>
+
 </main>
 </body>
 </html>
