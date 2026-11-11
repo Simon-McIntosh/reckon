@@ -9,8 +9,10 @@ module is the decision the ``srun``/``sbatch``/``salloc`` shims under
 The answer comes from :func:`reckon.host.host_facts`, whose ``in_allocation``
 is taken from the process's own cgroup line rather than from ``SLURM_JOB_ID``
 (a variable a shell outside the job inherits). Inside the allocation a launch
-is refused with status 97 unless one of two things holds:
+is refused with status 97 unless one of these things holds:
 
+* it is an ``sbatch`` naming a partition explicitly (``--partition`` or
+  ``-p``), which submits a job of its own; or
 * the caller set ``RECKON_ALLOW_NESTED_LAUNCH`` — the deliberate discharge,
   named in every refusal so the escape is one visible step rather than a
   default; or
@@ -137,19 +139,198 @@ def _explicit_single_step(tool: str, argv: Sequence[str]) -> bool:
     return _names_one_task(argv) or _names_a_job(argv)
 
 
+# Argument roles from Slurm src/common/slurm_opt.c: common_options filtered
+# by slurm_option_table_create for sbatch. Optional values attach to their
+# option; required values consume the next token even when it starts with a dash.
+
+_SBATCH_LONG_REQUIRED = frozenset(
+    {
+        "account",
+        "acctg-freq",
+        "array",
+        "autocomplete",
+        "batch",
+        "bb",
+        "bbf",
+        "begin",
+        "chdir",
+        "cluster",
+        "cluster-constraint",
+        "clusters",
+        "comment",
+        "constraint",
+        "container",
+        "container-id",
+        "context",
+        "core-spec",
+        "cores-per-socket",
+        "cpu-freq",
+        "cpus-per-gpu",
+        "cpus-per-task",
+        "deadline",
+        "delay-boot",
+        "dependency",
+        "distribution",
+        "error",
+        "exclude",
+        "export",
+        "extra",
+        "extra-node-info",
+        "gid",
+        "gpu-bind",
+        "gpu-freq",
+        "gpus",
+        "gpus-per-node",
+        "gpus-per-socket",
+        "gpus-per-task",
+        "gres",
+        "gres-flags",
+        "hint",
+        "input",
+        "job-name",
+        "kill-on-invalid-dep",
+        "licenses",
+        "mail-type",
+        "mail-user",
+        "mcs-label",
+        "mem",
+        "mem-bind",
+        "mem-per-cpu",
+        "mem-per-gpu",
+        "mincpus",
+        "network",
+        "nodefile",
+        "nodelist",
+        "nodes",
+        "ntasks",
+        "ntasks-per-core",
+        "ntasks-per-gpu",
+        "ntasks-per-node",
+        "ntasks-per-socket",
+        "ntasks-per-tres",
+        "open-mode",
+        "output",
+        "partition",
+        "power",
+        "prefer",
+        "priority",
+        "profile",
+        "qos",
+        "reservation",
+        "signal",
+        "sockets-per-node",
+        "switches",
+        "tasks-per-node",
+        "thread-spec",
+        "threads-per-core",
+        "time",
+        "time-min",
+        "tmp",
+        "tres-bind",
+        "tres-per-task",
+        "uid",
+        "wait-all-nodes",
+        "wckey",
+        "wrap",
+    }
+)
+
+_SBATCH_SHORT_REQUIRED = frozenset("ABCDFGJLMNSabcdeimnopqtwx")
+
+_SBATCH_LONG_OPTIONAL = frozenset(
+    {
+        "exclusive",
+        "get-user-env",
+        "nice",
+        "no-kill",
+        "propagate",
+    }
+)
+
+_SBATCH_SHORT_OPTIONAL = frozenset("k")
+
+_SBATCH_LONG_FLAGS = frozenset(
+    {
+        "contiguous",
+        "help",
+        "hold",
+        "ignore-pbs",
+        "no-requeue",
+        "overcommit",
+        "oversubscribe",
+        "parsable",
+        "quiet",
+        "reboot",
+        "requeue",
+        "spread-job",
+        "test-only",
+        "usage",
+        "use-min-nodes",
+        "verbose",
+        "version",
+        "wait",
+    }
+)
+
+_SBATCH_SHORT_FLAGS = frozenset("HOQVWhsv")
+
+
+def _explicit_partition_submission(tool: str, argv: Sequence[str]) -> bool:
+    """Read scheduler option roles without interpreting values or script args.
+
+    Unknown options are refused because their value boundaries are unknown.
+    The real scheduler still validates option values on a forwarded launch.
+    """
+    if tool != "sbatch":
+        return False
+    arguments = iter(argv)
+    partition = ""
+    for argument in arguments:
+        if argument in ("--", "-") or not argument.startswith("-"):
+            break
+        if argument.startswith("--"):
+            name, attached, value = argument[2:].partition("=")
+            if name in _SBATCH_LONG_REQUIRED:
+                if not attached:
+                    value = next(arguments, "")
+            elif name in _SBATCH_LONG_FLAGS:
+                if attached:
+                    return False
+            elif name not in _SBATCH_LONG_OPTIONAL:
+                return False
+            if name == "partition":
+                partition = value
+        else:
+            for index, name in enumerate(argument[1:], 2):
+                if name in _SBATCH_SHORT_REQUIRED:
+                    value = argument[index:] or next(arguments, "")
+                elif name in _SBATCH_SHORT_OPTIONAL:
+                    value = argument[index:]
+                elif name in _SBATCH_SHORT_FLAGS:
+                    continue
+                else:
+                    return False
+                if name == "p":
+                    partition = value
+                break
+    return bool(partition.strip()) and not partition.startswith("-")
+
+
 def refuses_implicit_launch(
     tool: str, argv: Sequence[str], facts: HostFacts, environ: Mapping[str, str]
 ) -> bool:
     """Whether ``tool`` with ``argv`` must be refused where it stands.
 
     Outside the allocation nothing is refused. Inside it, only the implicit
-    launch is: the override discharges all of them, and an explicit single-step
-    ``srun`` is already the shape the rule wants.
+    launch is: sbatch may name a partition for a separate job, the override
+    discharges deliberate nesting, and an explicit single-step ``srun`` names
+    the step it wants.
     """
     return (
         facts.in_allocation
         and not _override_set(environ)
         and not _explicit_single_step(tool, argv)
+        and not _explicit_partition_submission(tool, argv)
     )
 
 
@@ -179,6 +360,7 @@ def refusal_message(tool: str, facts: HostFacts) -> str:
             f"{PARTITION_ROUTE} instead (for example on "
             f"{' or '.join(PARTITION_EXAMPLES)})."
         ),
+        "Submit it with sbatch --partition=<partition> (or sbatch -p <partition>).",
         NESTED_SRUN_SENTENCE,
     ]
     if tool == _SRUN:
