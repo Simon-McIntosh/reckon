@@ -1,0 +1,95 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived by set difference of FAILED ids in the reviewed run baseline-suite.log and after-suite.log; both completed with EXIT=0. Importer logs separately retain one identical failure in each arm.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restore default sbatch refusal by removing the new partition exemption: exit 97 violates expected exit 0; the base negative control demonstrates this.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 29
+    },
+    {
+      "failure_condition": "Forward to a different binary, omit or change an argument, or skip the stub: the independently written invocation record differs from the expected executable path and original argv. Expected tuple(argv) checks transparency against independent stub output, not the input against itself.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 30
+    },
+    {
+      "failure_condition": "Remove the refusal check for any parametrized implicit launch: the recording stub exits 0 instead of required 97.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 51
+    },
+    {
+      "failure_condition": "Remove the newly added explicit-partition instruction: stderr lacks sbatch --partition; all nine refusal cases fail here at base.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 52
+    },
+    {
+      "failure_condition": "Invoke the scheduler despite returning refusal 97 and printing route text: the independent stub record is nonempty. Positive forwarding cases prove the reader observes real invocations.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 53
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/host_shims/sbatch:65",
+    "reckon/host_shims/srun:65",
+    "reckon/host_shims/salloc:65",
+    "reckon/nested_launch.py:main"
+  ],
+  "completed_at": "2026-11-11T00:14:42Z",
+  "dispatched_at": "2026-11-11T00:00:19Z",
+  "evidence_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/baseline-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/after-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/baseline-importers.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/after-importers.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/negative-control.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/lint.log"
+  ],
+  "findings": [
+    {
+      "file": "reckon/nested_launch.py",
+      "line": "147",
+      "severity": "blocking",
+      "text": "blocking: the scan does not consume values of other sbatch options, so argv [\"--output\", \"--partition=all_debug\", \"--wrap=true\"] grants the partition exemption even though --partition=all_debug is the output filename and no partition is selected; similarly [\"--job-name\", \"-prigel\", \"--wrap=true\"] passes, weakening the required implicit-submission refusal; parse actual option/value roles and add recording-stub refusal cases before landing."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read e5e4df2ee7df6ccd4ff92993ddd5d1d01ecee6d9 (tests), 1d8969a052c8a7d77b9de9abf054d94895d3b158 (guard), and 9c0d55869131d589266211e64205070feafbc058 (evidence) against 9f5c5bd09e57dfee5196e642efac79c1f36ef670; the added partition scan has one blocking false admission.",
+    "done_when": "prompt.txt FENCE EVIDENCE and live plan s13 are measured by the recording-stub tests, baseline-suite.log (51 passed), after-suite.log (64 passed), identical importer failure sets, negative-control.log (13 failed), and lint.log (clean).",
+    "goal": "prompt.txt:40 requires explicit-partition sbatch admission; reckon/nested_launch.py:143 admits all four intended spellings but also mistakes other options' values for partition selectors.",
+    "manifest": "manifest.md names three commits, complete gate receipts and the unchanged importer failure; the cited log summaries and terminal exits agree with those claims.",
+    "write_paths": "prompt.txt FENCE SCOPE permits nested_launch.py, host_shims, the new test and evidence paths; all three changed paths lie within those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py:29-30 fails on restored default denial or damaged forwarding, and :51-53 fails on lost refusal or route text, but no case covers a partition-looking option value.",
+    "evidence": "baseline-suite.log and after-suite.log record completed 51/64-pass arms, negative-control.log records 13 failures at base, and the importer logs and lint.log substantiate the remaining done_when clauses.",
+    "fit": "reckon/nested_launch.py:143 extends the existing small argv predicates and refusal composition, and the new test imports the established fixture owner without introducing forbidden source names.",
+    "goal_fidelity": "reckon/nested_launch.py:147 scans option values as independent switches, so the required no-partition refusal is incomplete despite admitting the requested spellings.",
+    "reuse": "the capability search found nested_launch.py owns scheduler admission and tests/test_nested_launch.py owns recording fixtures, both extended here; reckon/crew/node.py:_placement_target only formats placement labels and supplies no reusable admission predicate.",
+    "scope_discipline": "the three paths in the base-to-head diff match prompt.txt FENCE SCOPE and contain only the guard, its recording-stub coverage and its permitted landing fragment."
+  },
+  "probe_note": "Read-only extraction and execution of the reviewed _explicit_partition_submission function returned True for a genuine --partition selector (positive control), True for --output followed by --partition=all_debug, True for --job-name followed by -prigel, and False for --wrap=true alone; no scheduler invoked and no source modified.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:40 requires explicit-partition sbatch admission; reckon/nested_launch.py:143 admits all four intended spellings but also mistakes other options' values for partition selectors.\nVERDICT done_when: prompt.txt FENCE EVIDENCE and live plan s13 are measured by the recording-stub tests, baseline-suite.log (51 passed), after-suite.log (64 passed), identical importer failure sets, negative-control.log (13 failed), and lint.log (clean).\nVERDICT write_paths: prompt.txt FENCE SCOPE permits nested_launch.py, host_shims, the new test and evidence paths; all three changed paths lie within those grants.\nVERDICT manifest: manifest.md names three commits, complete gate receipts and the unchanged importer failure; the cited log summaries and terminal exits agree with those claims.\nVERDICT diff: read e5e4df2ee7df6ccd4ff92993ddd5d1d01ecee6d9 (tests), 1d8969a052c8a7d77b9de9abf054d94895d3b158 (guard), and 9c0d55869131d589266211e64205070feafbc058 (evidence) against 9f5c5bd09e57dfee5196e642efac79c1f36ef670; the added partition scan has one blocking false admission.\nCALL_SITES: reckon/host_shims/sbatch:65, reckon/host_shims/srun:65, reckon/host_shims/salloc:65, reckon/nested_launch.py:main\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:147 scans option values as independent switches, so the required no-partition refusal is incomplete despite admitting the requested spellings.\nSCORE evidence: 20\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log record completed 51/64-pass arms, negative-control.log records 13 failures at base, and the importer logs and lint.log substantiate the remaining done_when clauses.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three paths in the base-to-head diff match prompt.txt FENCE SCOPE and contain only the guard, its recording-stub coverage and its permitted landing fragment.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_explicit_partition_sbatch_passes_the_fence.py:29-30 fails on restored default denial or damaged forwarding, and :51-53 fails on lost refusal or route text, but no case covers a partition-looking option value.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/nested_launch.py:143 extends the existing small argv predicates and refusal composition, and the new test imports the established fixture owner without introducing forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search found nested_launch.py owns scheduler admission and tests/test_nested_launch.py owns recording fixtures, both extended here; reckon/crew/node.py:_placement_target only formats placement labels and supplies no reusable admission predicate.\nFINDING reckon/nested_launch.py:147 blocking: the scan does not consume values of other sbatch options, so argv [\"--output\", \"--partition=all_debug\", \"--wrap=true\"] grants the partition exemption even though --partition=all_debug is the output filename and no partition is selected; similarly [\"--job-name\", \"-prigel\", \"--wrap=true\"] passes, weakening the required implicit-submission refusal; parse actual option/value roles and add recording-stub refusal cases before landing.\n",
+  "review_run_id": "r-20261110T235558799033-review-of-partition-sbatch-passes-the-fence-9c0d55869131",
+  "reviewed_base_sha": "9f5c5bd09e57dfee5196e642efac79c1f36ef670",
+  "reviewed_head_sha": "9c0d55869131d589266211e64205070feafbc058",
+  "reviewed_run_id": "r-20261110T225809682241-partition-sbatch-passes-the-fence",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:27:51.671151+00:00",
+  "total": 112
+}
