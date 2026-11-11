@@ -2345,12 +2345,18 @@ def dispatch(
             wait_projects=wait_projects,
             max_requests=flight.queue_max_requests(config),
         )
-        held = LaneHeld(
-            {
-                "detail": "waiting on " + ", ".join(waiting),
-                "reason": "this section's waits have not landed",
-            }
+        hold = queue_admission.section_hold(
+            waiting,
+            project=project,
+            docs_dir=Path(str(repo_root)) / "docs",
+            cache=readiness_cache,
         )
+        queue_admission.record_section_hold(
+            str(queued["run_id"]),
+            hold,
+            verdict="held-on-readiness",
+        )
+        held = LaneHeld({"detail": hold["detail"], "reason": hold["reason"]})
         held.queued = {
             "run_id": str(queued["run_id"]),
             "position": position,
@@ -2359,7 +2365,8 @@ def dispatch(
             # the pointer does not carry.
             "phase": phase,
             "waits": list(validated_refs),
-            "reason": "this section's waits have not landed",
+            "hold": hold["names"],
+            "reason": hold["reason"],
         }
         if held_selection is not None:
             # The hold that offered the local lane is kept in the outcome

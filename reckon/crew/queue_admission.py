@@ -2377,6 +2377,62 @@ def _record_gated_verdicts(
         )
 
 
+def _record_readiness_verdicts(
+    result: dict[str, Any],
+    *,
+    live: Sequence[Mapping[str, Any]],
+    lane: str = "",
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> None:
+    """Name what holds each request waiting on its section, and record the
+    blocker on the request itself.
+
+    A request waiting on a refs it declares is accounted for by that wait, but
+    a request held on its own section's readiness is held by a gate or an open
+    decision, and a pass otherwise records nothing for it: the request never
+    reaches the queue it launches from, so every other verdict skips it. The
+    hold and the request's own record carry the same blocker names, so a
+    coordinator reading the pass and one reading the pointer agree.
+    """
+    readonly: dict[str, Any] = {}
+    for pointer in live:
+        if str(pointer.get("phase") or "") not in WAITING_UPSTREAM_PHASES:
+            continue
+        if lane and str(pointer.get("backend")) != lane:
+            continue
+        refs = section_waits_for(pointer)
+        if not any(ref.startswith(READINESS_REF_PREFIX) for ref in refs):
+            continue
+        hold = section_hold(
+            refs,
+            project=str(pointer.get("project") or ""),
+            docs_dir=Path(str(pointer.get("repo") or "") or ".") / "docs",
+            cache=readonly,
+        )
+        allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        row = _verdict_row(
+            pointer,
+            allowance=allowance,
+            allowance_source=source,
+            verdict="held-on-readiness",
+            detail=hold["detail"],
+        )
+        row["reason"] = hold["reason"]
+        row["hold"] = list(hold["names"])
+        result["verdicts"].append(row)
+        _record_pass_hold(
+            pointer,
+            {
+                "verdict": "held-on-readiness",
+                "reason": hold["reason"],
+                "detail": hold["detail"],
+                "hold": list(hold["names"]),
+            },
+            live=live,
+            moment=_now(),
+        )
+
+
 def _pass_verdict_record(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> dict[str, Any] | None:
@@ -2476,6 +2532,15 @@ PENDING = "pending"
 #: a gate id spelled like a section id is still read as a gate.
 GATE_REF_PREFIX = "gate:"
 REQUEST_REF_PREFIX = "run:"
+#: The ref a node's own section's readiness is waited on under. It names no
+#: upstream: it is the plan's hold on the section the request would build, and
+#: the blockers behind it are what a reader has to settle.
+READINESS_REF_PREFIX = "readiness:"
+
+#: The kinds of authored hold a plan puts on its own section. Each one is
+#: reported with the id its plan gives it, so a coordinator knows what to
+#: settle rather than going looking for an upstream that does not exist.
+SECTION_HOLD_KINDS = ("gate", "decision")
 
 #: The statuses a run's own manifest records when it delivered, and when it
 #: ended without delivering. They are the run vocabulary and not the plan's: a
@@ -2733,6 +2798,65 @@ def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
     return list(dict.fromkeys(refs))
 
 
+def _own_readiness_ref(
+    node: TaskNode,
+    *,
+    project: str,
+    docs_dir: str | Path,
+    cache: dict[str, Any],
+    refs: Sequence[str],
+    read_own_verdict: bool = True,
+) -> str:
+    """The readiness ref a node's own section carries, or ``""`` for none.
+
+    A gate or an open decision on the section holds new work on it, and the
+    roadmap reports that hold as a blocker on the section. The ref is derived
+    here rather than by each caller, because a reader and a writer that derive
+    it differently disagree the moment one of them asks again: the dispatch and
+    the pass that re-reads the request both compose their waits through this,
+    so a held request stays held rather than being released by the next pass.
+    """
+    from reckon._schema import parse_plan_ref
+
+    if not read_own_verdict or node.waits_only_after:
+        return ""
+    if not _needs_own_section_verdict(node):
+        return ""
+    rows, _ = _readiness_rows(project, docs_dir, cache, node.plan, refs)
+    verdicts = (rows.get(node.plan) or {}).get("sections", {})
+    own = next(
+        (
+            verdict
+            for section, verdict in verdicts.items()
+            if normalize_section(section) == normalize_section(node.section)
+        ),
+        None,
+    )
+    holding_kinds = {
+        blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
+    }
+    explicit_gates = {
+        parsed.stage
+        for ref in refs
+        if ref.startswith(GATE_REF_PREFIX)
+        if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
+        and parsed.stage
+    }
+    held_gates = {
+        str(blocker.get("id") or blocker.get("gate") or "")
+        for blocker in (own or {}).get("blockers") or ()
+        if blocker.get("kind") == "gate"
+    }
+    if not holding_kinds & {"gate", "decision"}:
+        return ""
+    if held_gates and held_gates <= explicit_gates and "decision" not in holding_kinds:
+        return ""
+    identity = normalize_section(node.section)
+    if identity.startswith("§"):
+        identity = f"s{identity[1:]}"
+    return f"{READINESS_REF_PREFIX}{project}:{node.plan}#{identity}"
+
+
 def _validated_batch_waits(
     nodes: Sequence[TaskNode],
     run_ids: Mapping[str, str],
@@ -2859,44 +2983,16 @@ def _validated_batch_waits(
         # section, so a gate there appends no readiness ref. The flag would
         # otherwise leave exactly the gate waits in place that it exists to
         # drop.
-        if (
-            read_own_verdict
-            and not node.waits_only_after
-            and _needs_own_section_verdict(node)
-        ):
-            rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
-            verdicts = (rows.get(node.plan) or {}).get("sections", {})
-            own = next(
-                (
-                    verdict
-                    for section, verdict in verdicts.items()
-                    if normalize_section(section) == normalize_section(node.section)
-                ),
-                None,
-            )
-            holding_kinds = {
-                blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
-            }
-            explicit_gates = {
-                parsed.stage
-                for ref in refs
-                if ref.startswith(GATE_REF_PREFIX)
-                if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
-                and parsed.stage
-            }
-            held_gates = {
-                str(blocker.get("id") or blocker.get("gate") or "")
-                for blocker in (own or {}).get("blockers") or ()
-                if blocker.get("kind") == "gate"
-            }
-            if holding_kinds & {"gate", "decision"} and not (
-                held_gates
-                and held_gates <= explicit_gates
-                and "decision" not in holding_kinds
-            ):
-                refs.append(
-                    f"readiness:{section_key(project, node.plan, node.section)}"
-                )
+        readiness = _own_readiness_ref(
+            node,
+            project=project,
+            docs_dir=current_docs,
+            cache=cache,
+            refs=refs,
+            read_own_verdict=read_own_verdict,
+        )
+        if readiness:
+            refs.append(readiness)
         refs_by_run[run_id] = list(dict.fromkeys(refs))
         projects_by_run[run_id] = wait_projects
         edges[f"run:{run_id}"] = edge_set
@@ -3674,6 +3770,143 @@ def dispatch_waits(
     return refs, wait_projects, unmet
 
 
+def section_hold(
+    refs: Iterable[str],
+    *,
+    project: str = "",
+    docs_dir: str | Path | None = None,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Name what holds a request on its section, by kind and id.
+
+    Three different things put a request in a waiting phase, and only one of
+    them is an upstream that has not landed. A declared section wait names a
+    section, a gate or another request, and the ref is the thing to go and
+    settle. A hold on the request's own section is not a wait at all: it is a
+    gate or an open decision the roadmap reports as a blocker, and the readiness
+    ref that carries it names no upstream. A reader told "this section's waits
+    have not landed" goes looking for that upstream and finds nothing, so a
+    hold of that kind is reported by the kind and id its plan gives it.
+
+    The wording about waits is used only where every unmet ref is a declared
+    wait, so the reason a coordinator reads always names something that exists.
+
+    Returns ``names`` (one entry per blocker), ``detail`` (the phrase a hold
+    carries) and ``reason`` (the one-line reason). The three are derived here
+    rather than by each caller, so the dispatch answer, the recorded hold on the
+    pointer and the admission verdict cannot describe one hold two ways.
+
+    An unreadable plan falls back to the readiness ref itself: the hold is real
+    and the ref is what was read, which is more than a blocker id guessed from
+    nothing would be.
+    """
+    names: list[str] = []
+    for ref in refs:
+        text = str(ref).strip()
+        if not text:
+            continue
+        if not text.startswith(READINESS_REF_PREFIX):
+            names.append(text)
+            continue
+        resolved = _readiness_blocker_names(
+            text[len(READINESS_REF_PREFIX) :],
+            project=project,
+            docs_dir=docs_dir,
+            cache=cache if cache is not None else {},
+        )
+        names.extend(resolved or [text])
+    names = list(dict.fromkeys(names))
+    authored = [name for name in names if name.split(":", 1)[0] in SECTION_HOLD_KINDS]
+    waited = [name for name in names if name.split(":", 1)[0] not in SECTION_HOLD_KINDS]
+    if not names:
+        reason = ""
+    elif not waited:
+        reason = "this section is held by " + ", ".join(names)
+    elif not authored:
+        reason = "this section's waits have not landed"
+    else:
+        reason = (
+            "this section is held by "
+            + ", ".join(authored)
+            + ", and its waits have not landed"
+        )
+    return {"names": names, "detail": ", ".join(names), "reason": reason}
+
+
+def record_section_hold(
+    run_id: str,
+    hold: Mapping[str, Any],
+    *,
+    verdict: str,
+    live: Sequence[Mapping[str, Any]] | None = None,
+    moment: datetime | None = None,
+) -> bool:
+    """Store on a queued request what holds it, naming the blocker.
+
+    The reason and the blocker names are written together with the verdict, so
+    a coordinator reading the pointer is told the same thing the dispatch
+    answer said. The write goes through the same writer an admission pass uses,
+    so a later admission hold replaces this one instead of sitting beside it,
+    and a pointer that cannot be written is reported rather than assumed.
+    """
+    if not run_id or not hold.get("names"):
+        return False
+    pointer = {"run_id": run_id}
+    _record_pass_hold(
+        pointer,
+        {
+            "verdict": verdict,
+            "reason": str(hold.get("reason") or ""),
+            "detail": str(hold.get("detail") or ""),
+            "hold": list(hold.get("names") or ()),
+        },
+        live=list(live if live is not None else ()),
+        moment=moment if moment is not None else _now(),
+    )
+    return True
+
+
+def _readiness_blocker_names(
+    ref: str,
+    *,
+    project: str,
+    docs_dir: str | Path | None,
+    cache: dict[str, Any],
+) -> list[str]:
+    """The gates and open decisions the roadmap reports as a section's blockers."""
+    from reckon._schema import parse_plan_ref
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None or not parsed.stage or docs_dir is None:
+        return []
+    target_project = parsed.project or project
+    target_docs = _docs_for_project(
+        target_project, current_project=project, current_docs=Path(docs_dir)
+    )
+    if target_docs is None:
+        return []
+    rows, _inventory = _readiness_rows(target_project, target_docs, cache, parsed.slug)
+    verdict = next(
+        (
+            value
+            for section, value in (rows.get(parsed.slug) or {})
+            .get("sections", {})
+            .items()
+            if normalize_section(section) == normalize_section(parsed.stage)
+        ),
+        None,
+    )
+    names: list[str] = []
+    for blocker in (verdict or {}).get("blockers") or ():
+        kind = str(blocker.get("kind") or "")
+        if kind not in SECTION_HOLD_KINDS:
+            continue
+        identifier = str(blocker.get("id") or blocker.get("gate") or "").strip()
+        if identifier:
+            names.append(f"{kind}:{identifier}")
+    return names
+
+
 def unmet_waits(
     node: TaskNode,
     *,
@@ -4086,6 +4319,16 @@ def _rederive_waits(
     derived = None if cache is None else cache.get(key)
     if derived is None:
         derived = derive_wait_refs(node, repo_root=repo_root)
+        own = _own_readiness_ref(
+            node,
+            project=str(pointer.get("project") or "")
+            or _project_of_docs_dir(Path(repo_root) / "docs"),
+            docs_dir=Path(repo_root) / "docs",
+            cache=cache if cache is not None else {},
+            refs=derived,
+        )
+        if own and own not in derived:
+            derived = [*derived, own]
         if cache is not None:
             cache[key] = list(derived)
     stored = section_waits_for(pointer)
@@ -5272,6 +5515,7 @@ def admit_once(
         # batch queued in one call launch in dependency order.
         waits_started = time.monotonic()
         upstream = advance_waiting_requests(live)
+        _record_readiness_verdicts(result, live=live, lane=lane, config_for=config_for)
         result["released_plan_review"] = _release_plan_review_holds(
             live, config_for=config_for
         )
