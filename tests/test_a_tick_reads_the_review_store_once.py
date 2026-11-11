@@ -5,22 +5,116 @@ from __future__ import annotations
 import json
 import os
 import sys
+import time
 from collections import Counter
-from contextlib import suppress
+from contextlib import contextmanager, suppress
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
-from reckon.crew import recovery, recovery_memo, recovery_watch, review, runs
-from tests.helpers.git import git
-from tests.test_a_producer_tick_reads_live_pointers_once import (
-    tick as tick,  # noqa: PLC0414
+from reckon import flight, ledger
+from reckon.crew import (
+    model_catalogue,
+    plan_review,
+    recovery,
+    recovery_memo,
+    recovery_review_acceptance,
+    recovery_review_dispatch,
+    recovery_watch,
+    resumption,
+    review,
+    runs,
 )
+from tests.helpers.git import git
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 
 class TickFinishedError(Exception):
     """Stop after the producer has completed its next tick."""
+
+
+@pytest.fixture
+def tick(project, monkeypatch):
+    """A producer tick over a synthetic crew home, driven one tick at a time.
+
+    The producer's own readers are replaced so the tick measures the review
+    store's reads alone: every other sweep that would reach a service, a model
+    catalogue or the network answers empty. The fixture is built here rather
+    than shared, so this measurement keeps its own harness and a reader can see
+    every input the counted tick was given.
+    """
+    _home, repo, plan = project
+    edited = time.time() - 11 * 60
+    os.utime(plan, (edited, edited))
+    monkeypatch.setattr(runs, "PRODUCER_TICK_SECONDS", 120.0, raising=False)
+    created = (datetime.now(UTC) - timedelta(hours=1)).isoformat()
+    for index in range(40):
+        run_id = f"r-author-{index:02}"
+        runs._write_json(
+            runs.pointer_path(run_id),
+            {
+                "run_id": run_id,
+                "project": "sample",
+                "repo": str(repo),
+                "session": f"author-{index % 4}",
+                "phase": "working",
+                "created_at": created,
+                "node": {"id": f"author-{index}", "plan": "fixture"},
+            },
+        )
+        stale = time.time() - 3600
+        os.utime(runs.pointer_path(run_id), (stale, stale))
+    producer = runs._WatchStreamProducer(
+        path=runs.watch_stream_path("sample"), known={}, stall_window="10m"
+    )
+    # Obligations publish on their own thread; the synchronous tick is measured
+    # here with that independent writer already holding its sweep lock.
+    producer.sweep_lock.acquire()
+    monkeypatch.setitem(runs._WATCH_STREAM_PRODUCERS, "sample", producer)
+
+    @contextmanager
+    def registration(*args, **kwargs):
+        yield True, {}
+
+    monkeypatch.setattr(recovery_watch, "_watch_registration", registration)
+    monkeypatch.setattr(recovery_watch, "_refuse_unresolvable_watch", lambda _: None)
+    monkeypatch.setattr(runs, "renew_watch_host_lease", lambda _: True)
+    monkeypatch.setattr(
+        recovery_watch, "update_watch_registration", lambda *a, **kw: None
+    )
+    monkeypatch.setattr(
+        recovery_watch.quota_weight, "backend_rate_statuses", lambda **kw: {}
+    )
+    monkeypatch.setattr(model_catalogue, "check_model_catalogue", lambda _: None)
+    monkeypatch.setattr(recovery_watch, "_sweep_lift_rows", lambda *a: {})
+    monkeypatch.setattr(recovery_watch, "_sweep_reset_rows", lambda *a: set())
+    monkeypatch.setattr(recovery_watch, "_sweep_gate_rows", lambda *a: {})
+    monkeypatch.setattr(ledger, "read_records", lambda *a, **kw: ([], 0))
+    monkeypatch.setattr(plan_review, "list_plan_reviews", lambda *a, **kw: [])
+    monkeypatch.setattr(
+        plan_review, "_project_plan_paths", lambda _: ([("fixture", plan)], [])
+    )
+    compose = Mock(wraps=plan_review.compose_owed_plan_reviews)
+    monkeypatch.setattr(plan_review, "compose_owed_plan_reviews", compose)
+    dispatch = Mock(return_value={"run_id": "r-composed", "dispatched": True})
+    monkeypatch.setattr(recovery, "dispatch_review_for_run", dispatch)
+
+    listing = Mock(wraps=runs.list_live)
+    for module in (
+        runs,
+        recovery_watch,
+        resumption,
+        recovery_review_dispatch,
+        recovery_review_acceptance,
+    ):
+        monkeypatch.setattr(module, "list_live", listing)
+    publish = Mock(wraps=runs._publish_watch_stream)
+    monkeypatch.setattr(runs, "_publish_watch_stream", publish)
+    resolve = Mock(wraps=flight.resolve)
+    monkeypatch.setattr(flight, "resolve", resolve)
+    return listing, publish, resolve, dispatch, producer, compose
 
 
 @pytest.fixture
@@ -262,3 +356,27 @@ def test_annotation_inputs_change_the_next_tick_answer(reviewed_store, changed_i
     assert observed[run_id]["added_failure_count"] == 1
     assert observed[run_id]["added_failure_ids"] == [failure_id]
     assert observed[run_id]["total"] == review.ADDED_FAILURES_TOTAL_CAP
+
+
+def test_a_live_runs_growing_stream_reads_no_review(reviewed_store):
+    """A worker's stream is not an input of its stored-review answer.
+
+    A live run appends to its own stream every tick. That file is an input of
+    the run's liveness reading, not of the review stored against it, so a tick
+    whose only move is the stream must answer every run's review from the
+    previous tick's read.
+    """
+    paths, counts, _bindings, _observed = reviewed_store
+    logs = {run_id: runs.run_dir(run_id) / "worker.jsonl" for run_id in paths}
+
+    def append_streams():
+        for index, (run_id, log) in enumerate(logs.items()):
+            with log.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps({"type": "text", "n": index}) + "\n")
+
+    first, second = _ticks(paths, counts, append_streams)
+    assert first == {
+        "enumerations": 1,
+        **dict.fromkeys((f"read:{run_id}" for run_id in paths), 1),
+    }
+    assert second == {"enumerations": 1}

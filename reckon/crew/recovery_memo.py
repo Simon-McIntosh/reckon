@@ -2,13 +2,14 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import hashlib
 import json
 import re
 import time
 from contextvars import ContextVar
 from pathlib import Path
-from typing import Any, Iterator, Mapping, Sequence
+from typing import Any, Callable, Iterator, Mapping, Sequence
 
 from reckon import file_memo
 from reckon._timestamps import parse_utc
@@ -493,17 +494,58 @@ def _directory_identity(path: Path) -> str:
 _TICK_CLASSIFICATION_INPUTS: ContextVar[dict[str, dict[str, str]] | None] = ContextVar(
     "tick_classification_inputs", default=None
 )
+# The review answer's own inputs, memoised per run beside the classification's:
+# a caller that reads the review and one that reads the whole classification
+# share one computation of them within a tick.
+_TICK_REVIEW_READ_INPUTS: ContextVar[dict[tuple[str, str], dict[str, str]] | None] = (
+    ContextVar("tick_review_read_inputs", default=None)
+)
 
 
 @contextlib.contextmanager
 def _classification_input_tick() -> Iterator[None]:
     """Share each run's file identities only for the duration of one tick."""
     token = _TICK_CLASSIFICATION_INPUTS.set({})
+    review_token = _TICK_REVIEW_READ_INPUTS.set({})
     try:
         with review_store_tick():
             yield
     finally:
+        _TICK_REVIEW_READ_INPUTS.reset(review_token)
         _TICK_CLASSIFICATION_INPUTS.reset(token)
+
+
+def _review_read_inputs(
+    record: Mapping[str, Any], *, tree: Path | None = None
+) -> dict[str, str]:
+    """The identity of every input of this run's stored-review answer.
+
+    Only the review is described here, unlike :func:`_classification_inputs`:
+    the review is read from the store's files for this run and annotated from
+    the reviewed run's manifest and the gate logs it names, and nothing else.
+    A live worker's stream is an input of its liveness reading and not of its
+    review, so a tick whose only move is the stream answers the review from the
+    previous read rather than opening the store again.
+
+    ``tree`` is the checkout the review is selected against, which the legacy
+    reconstruction reads; it defaults to the one the record names.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if tree is None:
+        tree = _review_tree(record)
+    key = (run_id, str(tree))
+    tick_inputs = _TICK_REVIEW_READ_INPUTS.get()
+    if run_id and tick_inputs is not None and key in tick_inputs:
+        return tick_inputs[key]
+    identities: dict[str, str] = {}
+    if project and run_id:
+        identities.update(_review_input_identities(record))
+        identities.update(_review_annotation_identities(record))
+        identities[f"git-head:{tree}"] = _worktree_head_identity(tree)
+    if run_id and tick_inputs is not None:
+        tick_inputs[key] = identities
+    return identities
 
 
 def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, str]:
@@ -531,15 +573,13 @@ def _classification_inputs(record: Mapping[str, Any], log: Path) -> dict[str, st
     for name in _CLASSIFICATION_RUN_RECORDS:
         record_path = directory / name
         identities[str(record_path)] = _file_identity(record_path)
-    identities.update(_review_input_identities(record))
-    identities.update(_review_annotation_identities(record))
-    # A review is chosen against the revision the run's tree carries now, so the
-    # head is part of the key even though no reader of the review calls it a
-    # file: a tree that gained a commit between two classifications moves the
-    # record that describes it, and serving the earlier one would report a
-    # review of code the run no longer holds.
-    repository = _review_tree(record)
-    identities[f"git-head:{repository}"] = _worktree_head_identity(repository)
+    # The review's own inputs include the revision the run's tree carries now,
+    # which no reader of the review calls a file: a tree that gained a commit
+    # between two classifications moves the record that describes it, and
+    # serving the earlier one would report a review of code the run no longer
+    # holds. The same set keys the review answer, so it is computed once here
+    # and reused there.
+    identities.update(_review_read_inputs(record, tree=_review_tree(record)))
     if run_id and tick_inputs is not None:
         tick_inputs[run_id] = identities
     return identities
@@ -549,6 +589,52 @@ def _classification_key(identities: Mapping[str, str]) -> str:
     """One key from a set of input identities, order-independent and stable."""
     rendered = "\n".join(f"{path}={identities[path]}" for path in sorted(identities))
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
+
+
+# One stored review per run each time the inputs of its answer change. The key
+# is the run and the selection asked for -- the record describing a named head,
+# or the newest record -- never the classification's wider input set, so a run
+# whose stream or pointer moved still answers its review from the last read.
+# Answers are held for the process that took them and bounded, because a long
+# lived producer sees every run the fleet ever had.
+_READ_REVIEW_ANSWERS: dict[tuple[str, ...], tuple[str, Any]] = {}
+_READ_REVIEW_ANSWERS_LIMIT = 1024
+
+
+def _read_review_once(
+    record: Mapping[str, Any],
+    selector: tuple[str, ...],
+    reader: Callable[[], Any],
+    *,
+    tree: Path | None = None,
+) -> Any:
+    """Answer one stored-review selection, re-reading only when an input moved.
+
+    ``reader`` performs the selection and its return value is the answer.
+    The answer is kept beside the digest of the inputs it was read against, so
+    a later reader of the same run answers from it while those inputs are
+    unchanged and asks again the moment one of them moves -- a record rewritten
+    in place, a new copy of it, a reviewed manifest rewritten, or a gate log it
+    names rewritten. The answer is copied in and out because a caller may
+    annotate or normalise the record it was given, and a cache that served the
+    caller's own edits to the next reader would report a review nobody stored.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not project or not run_id:
+        return reader()
+    digest = _classification_key(_review_read_inputs(record, tree=tree))
+    key = (project, run_id, *selector)
+    held = _READ_REVIEW_ANSWERS.get(key)
+    if held is not None and held[0] == digest:
+        return copy.deepcopy(held[1])
+    answer = reader()
+    if len(_READ_REVIEW_ANSWERS) >= _READ_REVIEW_ANSWERS_LIMIT and (
+        key not in _READ_REVIEW_ANSWERS
+    ):
+        _READ_REVIEW_ANSWERS.pop(next(iter(_READ_REVIEW_ANSWERS)), None)
+    _READ_REVIEW_ANSWERS[key] = (digest, copy.deepcopy(answer))
+    return answer
 
 
 # Tokens a terminal message carries that belong to the run rather than to the
