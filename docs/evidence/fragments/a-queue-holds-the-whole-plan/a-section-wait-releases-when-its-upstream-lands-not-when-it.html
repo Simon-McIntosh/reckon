@@ -1,0 +1,92 @@
+<section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-landing">
+  <h2>A section wait releases when its upstream lands, not when it is declared done</h2>
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-defect">
+  <h3>The defect</h3>
+
+  <p><strong>A declaration of done is not a landing.</strong> A coordinator
+  marks a section done in the plan and commits that immediately before
+  <code>crew complete --land</code>, so between the two the plan reads done
+  while the section's revision is still off the registered checkout's HEAD.
+  Every route that released waiters read the declaration alone, so a request
+  waiting on that section could launch onto a base without its upstream code.
+
+  <p><strong>Reproduction at the base revision.</strong> The new test file run
+  against <code>bc6d7fd9f1306f21d21daa58f44f235265e6cca3</code> reports
+  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>. Both failures are the
+  same assertion: a waiter on a section that is declared done, whose run has
+  delivered and whose head is not in HEAD, reads
+  <code>queued</code> where it must read <code>awaiting-upstream</code>
+  (<code>assert 'queued' == 'awaiting-upstream'</code>).
+  </section>
+
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-change">
+  <h3>The change</h3>
+
+  <p><strong>One derivation, every route.</strong> <code>_section_run_unlanded</code>
+  in <code>reckon/crew/queue_admission.py</code> answers whether a run of one
+  section has delivered or been promoted and is not landed. A section
+  declaration of done releases only when it answers no. It is consulted from
+  the three places a section ref is resolved — <code>_ref_state</code>,
+  <code>_section_readiness_state</code> and the dispatch fast path
+  <code>_dispatch_nonrun_wait_state</code> — and that one derivation already
+  serves the admission pass, a promotion's own release and a dispatch's
+  queue-time check, so all three reach the guard.
+
+  <p><strong>What is read.</strong> A delivered run keeps its live pointer until
+  promotion removes it, so the pointers are read first: a run whose pointer
+  phase is dead or whose discard is recorded holds nothing, a run carrying a
+  promoted revision holds nothing when that revision is an ancestor of HEAD,
+  and a delivered run with no promoted revision holds. A promoted run whose
+  pointer is gone is read from the project's ledger, which is where promotion
+  records its revision. The landed test is the queue's own —
+  <code>_revision_is_ancestor(checkout, revision, "HEAD")</code> — so a section
+  ref and a run ref now answer the same question the same way.
+
+  <p><strong>What still releases.</strong> A section declared done with no run
+  at all, such as one completed by hand, releases its waiters at once, and a
+  discarded run stops holding the moment its discard is recorded.
+
+  <p><strong>Cost.</strong> The ledger is read once per project per pass and
+  kept in the readiness cache beside the plan rows, so a release tick pays one
+  ledger read rather than one per waiting request.
+  </section>
+
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-measure">
+  <h3>The measure</h3>
+
+  <p><strong>Gate.</strong>
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_wait_releases_when_its_upstream_lands.py
+  tests/test_staged_write_inventory.py</code> reports
+  <code>54 passed</code>, <code>EXIT=0</code> at the head, run on the
+  <code>all_debug</code> partition. The base arm of the same template, resolved
+  over the base tree where the new file does not exist, reports
+  <code>51 passed</code>, <code>EXIT=0</code>: the three added tests are the
+  only difference and no base failure is added.
+
+  <p><strong>Cases.</strong> The first test drives the whole sequence: a
+  delivered run off HEAD holds its waiter through an admission pass and through
+  the promotion's own release, and the waiter is released once the delivered
+  head is merged into HEAD. The second discards the delivered run and shows the
+  waiter released. The third declares a section done with no run at all and
+  shows the waiter released at once.
+
+  <p><strong>Negative control.</strong> With
+  <code>_section_run_unlanded</code> made to answer <code>False</code> — the
+  declaration alone releasing — the same three tests report
+  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>, failing the first and
+  second cases. The guard is load-bearing: without it the first case releases
+  before the merge, which is the defect the section reports.
+
+  <p><strong>Regression.</strong> Six queue tests carrying dependency waits,
+  discards, holds and the drain (<code>test_a_queued_request_waits_on_its_dependencies</code>,
+  <code>test_queue_dag_waits</code>,
+  <code>test_a_released_request_takes_the_sections_current_contract</code>,
+  <code>test_a_discarded_request_stays_discarded</code>,
+  <code>test_a_held_request_stays_queued</code>,
+  <code>test_drain_lists_unloaded</code>) report the same result at the base
+  revision and at the head: <code>30 failed, 38 passed</code>, with the failing
+  id sets identical. Those 30 failures predate this change and are not reached
+  by it; the delta is zero.
+  </section>
+</section>
