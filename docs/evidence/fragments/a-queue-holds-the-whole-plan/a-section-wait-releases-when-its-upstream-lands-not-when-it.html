@@ -56,6 +56,14 @@
   cannot find. The unregistered-checkout hold applies only once a run of the
   section exists, so the release of the no-run case above is unchanged.
 
+  <p><strong>The ledger is read, not its index.</strong> The rows are taken
+  from <code>ledger.load(project, use_index=False)</code>, the same route the
+  drain's own derivation takes. The index is a cache of an earlier moment: a run
+  promoted after it was built is absent from it, and a read that consults it
+  answers as though nothing had been promoted — releasing the waiter. Reading
+  the run documents directly makes the answer a property of the ledger alone
+  rather than of a cache's vintage.
+
   <p><strong>Cost.</strong> The ledger rows are read once per project per pass
   and kept in the readiness cache beside the plan rows, so a release tick pays
   one ledger read rather than one per waiting request.
@@ -84,14 +92,37 @@
   registration and shows the waiter held. The fifth declares a section done
   with no run at all and shows the waiter released at once.
 
-  <p><strong>The test owns the checkout it reads.</strong> The mounts registry
-  outranks the config home wherever both are consulted, so a host that exports
+  <p><strong>The test owns everything it reads.</strong> Three inputs resolve
+  outside the fixture's temporary repository, and each one is pinned and then
+  asserted rather than assumed. The mounts registry outranks the config home
+  wherever both are consulted, so a host that exports
   <code>RECKON_MOUNTS_PATH</code> would leave the fixture's repository unnamed
-  and the guard would read the host's HEAD. The fixture pins the registry at its
-  own <code>mounts.json</code> and asserts that the guard resolves the checkout
-  it built. The file therefore passes in any tree: the head arm below is a fresh
-  tree of the head revision, made a repository of its own, and its five cases
-  are among the <code>56 passed</code>.
+  and the guard would read another tree's HEAD; it is pinned at the fixture's
+  own <code>mounts.json</code>. The ledger resolves through the configuration
+  home, so that home is pinned and the ledger's path is asserted to be inside
+  it. The cache home is pinned too, since an index or a pick-input cache written
+  by another run would otherwise answer for this one. The fixture then asserts
+  that <code>project_mount_repository</code> resolves the checkout it built.
+  After the promotion it names the ledger row the guard must read and calls
+  <code>_section_run_unlanded</code> directly, so a tree where any of these
+  resolves elsewhere fails at the component that decides rather than as a phase
+  assertion further down.
+
+  <p><strong>Fresh trees.</strong> Two runs of the gate command in a tree of
+  their own — the head revision, and the revision whose failure this round
+  reported — report <code>56 passed</code>, <code>EXIT=0</code>, the second
+  with the host's real mounts registry exported and the fixture's config home
+  unset, which is the hostile case the pinning exists for. A literal
+  <code>git worktree add</code> cannot be created from this worker: the main
+  checkout's <code>.git</code> is read-only here
+  (<code>git worktree add</code> fails with
+  <code>could not create directory of …/reckon/.git/worktrees/…: Read-only file
+  system</code>), so each fresh tree is the revision extracted into a new
+  directory, made a repository of its own, with the shared
+  <code>.venv</code> symlinked in — log <code>fresh-tree-head.log</code>, and
+  <code>repro-224-hostile.log</code> beside it. The one read whose answer could
+  depend on which tree is asking was the ledger index, and it is gone: the guard
+  reads the run documents directly.
 
   <p><strong>Negative control.</strong> With
   <code>_section_run_unlanded</code> made to answer <code>False</code> — the
