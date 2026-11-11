@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s9">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <meta name="evidence-commit" content="d8bd57abe26920e328c7bf5fce38ce39e0171f5a">
+  <title>Codex inbox delivery with exact hook trust</title>
+</head>
+<body>
+<section id="codex-inbox-trust">
+  <h2>Codex receives the inbox hook and its exact trust on process arguments</h2>
+  <p><code>_CodexDialect</code> reuses <code>worker_inbox_group</code> to declare the existing
+  inbox hook through <code>-c hooks.PostToolUse=…</code>. A <code>BudgetProbe</code> exchange
+  reuses the initialize handshake and asks <code>hooks/list</code> for the definition. Only
+  one session-flags command with the matching event and command can supply the trust key
+  and hash; missing, unrelated or invalid metadata refuses the launch. The trust is passed
+  as a separate <code>-c hooks.state={…}</code> inline table, on both fresh and resumed runs.
+  No trust bypass flag or configuration writer is used.</p>
+
+  <h3 id="codex-inbox-trust-identity">The harness supplies the identity and hash</h3>
+  <p>The installed app server returned key
+  <code>/&lt;session-flags&gt;/config.toml:post_tool_use:0:0</code> and
+  <code>sha256:99a755c275a425dfaa2077631918b2cddd33beb7f25568236302e34fb987dea2</code>
+  for this checkout's command. A scratch-home <code>config/value/write</code> returned
+  <code>status: ok</code>, and a subsequent list reported <code>trusted</code>.
+  These values are discovery evidence, not constants in reckon: another checkout's command
+  receives its own current hash from the app server.</p>
+  <p>The first composed dotted trust override reproduced silent non-delivery:
+  <code>trusted run failed to claim the inbox message</code>, with the actual argv still
+  reported <code>untrusted</code> by <code>hooks/list</code>. An inline state table preserves
+  the dot in the identity as part of one TOML key and was reported <code>trusted</code>.
+  The argv test pins this encoding. Probe receipts are retained as
+  <code>hook-probe.json</code>, <code>hook-trust-write.json</code>,
+  <code>hook-trusted-list.json</code>, <code>composed-trust-probe.json</code> and
+  <code>inline-state-probe.json</code> in the run directory.</p>
+
+  <h3 id="codex-inbox-trust-measure">Paired direct headless measure</h3>
+  <p>Each run received a message before startup and a prompt to execute exactly three
+  separate commands: <code>printf one</code>, <code>printf two</code>,
+  <code>printf three</code>. The random codeword existed only in the inbox message.
+  The comparison removes the trust override in the test, with no production switch.</p>
+  <table>
+    <thead><tr><th>Arguments</th><th>Commands completed</th><th>Message claimed</th>
+      <th>Receipts</th><th>Codeword in final answer</th><th>Config file written</th></tr></thead>
+    <tbody>
+      <tr><td>Composed hook and trust</td><td>3</td><td>Yes</td><td>1</td><td>Yes</td><td>No</td></tr>
+      <tr><td>Trust override removed</td><td>3</td><td>No</td><td>0</td><td>No</td><td>No</td></tr>
+    </tbody>
+  </table>
+  <p><code>live-inline-state.log</code>: <strong>2 passed, 15 deselected in 36.89s</strong>,
+  <code>EXIT=0</code>. The trusted receipt names session
+  <code>01a1c95b-7b6a-7102-8543-15c0790295c3</code> and its following tool call.
+  Both streams, argv, final answers, receipt summaries and the claimed message are retained
+  under <code>live-inline-state-gate/trusted/</code> and
+  <code>live-inline-state-gate/untrusted/</code>. The source config SHA-256 stayed
+  <code>149675c7f4c3b1350e03acc919241d3302767543b46e58590d8e2a91fb818c98</code>.
+  Neither scratch Codex home acquired a config file.</p>
+
+  <h3 id="codex-inbox-trust-negative">The check fails when trust is removed</h3>
+  <p>Declared mutation: drop the trust override from the composed Codex argv. The
+  trusted-run test then fails at <code>trusted run failed to claim the inbox message</code>:
+  <strong>1 failed, 16 deselected in 21.48s</strong>, <code>EXIT=1</code>.
+  <code>negative-control.log</code> names
+  <code>test_headless_codex_claims_and_quotes_only_with_trust[trusted]</code>, which passes
+  in the head arm. Its stream, pending message, argv and final answer remain under
+  <code>negative-control-gate/trusted/</code>.</p>
+
+  <h3 id="codex-inbox-trust-regression">Regression gate and limitations</h3>
+  <p>The armed base arm passed 51 tests. The head arm passed 66 with 2 credentialled
+  live cases skipped; those two cases passed separately in the direct gate above.
+  Unit cases cover fresh and resumed argv, every other registered dialect, untouched
+  config bytes, previews without a run and refusal of missing or unrelated hook metadata.
+  Formatting passes on both staged Python paths. Ruff reports the same two findings
+  present in the base module (UP017 and RET504), with zero added findings.</p>
+  <p>The credentialled gate opts out of the suite's account-probe stub using
+  <code>RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1</code>; its first stubbed attempt and
+  the test-helper TOML decoding failure remain in the logs. The initial regression
+  reproduced missing overrides with <code>KeyError: 'hooks'</code>. The change adds one
+  bounded app-server metadata exchange to real Codex argv composition, with the existing
+  20-second probe timeout. The coordinator owns merged verification and the later live
+  dispatched-worker check; this fragment records the direct scoped measure only.</p>
+  <p>Run evidence directory:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T062858537322-codex-inbox-trust</code>.</p>
+</section>
+</body>
+</html>
