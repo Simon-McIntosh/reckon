@@ -106,10 +106,11 @@ def _launch_refusal(
         spec_level="exact",
         time_budget="20m",
     )
+    resolved = repo.resolve()
     claims = [
         _RepositoryScopeClaim(
             project=PROJECT,
-            repository=repo.resolve(),
+            repository=resolved,
             run_id="r-holder",
             node_id="r-holder",
             path=path,
@@ -125,8 +126,8 @@ def _launch_refusal(
         dispatch_claims._raise_repository_scope_conflict(
             node,
             project=PROJECT,
-            repo=repo,
-            authority={"repositories": [repo]},
+            repo=resolved,
+            authority={"repositories": [resolved]},
             claims=claims,
         )
     except crew.ScopeConflict as refused:
