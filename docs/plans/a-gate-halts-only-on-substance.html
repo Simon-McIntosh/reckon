@@ -24,8 +24,8 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="15">
-<meta name="plan-modified" content="2026-11-08">
+<meta name="plan-version" content="16">
+<meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -84,13 +84,16 @@
     <div class="r-comment-body"><p>Independent review of r-20261108T012541385234-negative-control-from-runner-record at base 7f41f27119b349046e1591f412cbf60de2bb5036 -&gt; head 0da707fa244a78bc2387bc86c708ef8c5209ccd7: a parsed record scoring all six dimensions (goal_fidelity 17, evidence 15, scope_discipline 12, durability 16, fit 18, reuse 18), added_failure_count 0 with added_failure_ids [], and four non-blocking findings — the inert `_RUNNER_FAILURE_SUMMARY` branch at promotion_evidence.py:1082, an after_suite/baseline_suite arm pair that measures two different populations, three changed paths outside the dispatch fence, and one assertion at test line 139 that survives the regression it sits beside. No blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T012541385234-negative-control-from-runner-record" data-who="reckon-build" data-when="2026-11-08T02:21:36.018Z">
-    <div class="r-comment-body"><p>A declared negative control is now admitted on the runner&#x27;s own record: `_control_run_shows_a_failure` in promotion_evidence.py takes the run&#x27;s failure from a nonzero capture EXIT line when one is present and otherwise from pytest&#x27;s FAILED id list beside its `N failed` summary, while a log naming no id or naming only ids the head arm also fails is still refused, and the dispatch prompt states that the EXIT line is optional — gate 5 passed EXIT=0, importer head arm 20 passed vs base 15 passed (0 added failures), negative control 3 failed 2 passed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>A declared negative control is now admitted on the runner's own record: `_control_run_shows_a_failure` in promotion_evidence.py takes the run's failure from a nonzero capture EXIT line when one is present and otherwise from pytest's FAILED id list beside its `N failed` summary, while a log naming no id or naming only ids the head arm also fails is still refused, and the dispatch prompt states that the EXIT line is optional — gate 5 passed EXIT=0, importer head arm 20 passed vs base 15 passed (0 added failures), negative control 3 failed 2 passed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T173401077731-brief-raises-budget-fence" data-who="reckon-build" data-when="2026-11-07T19:35:57.388Z">
     <div class="r-comment-body"><p>an over-fence time budget now passes the bounded check when `crew dispatch --over-fence REASON` records why, the reason stored on the node as over_fence_reason and carried by TaskNode.as_dict() onto the run record and ledger row; without it the refusal names --over-fence, and a budget inside the fence is unchanged — gate 7 passed, head arm 456 passed, base arm 449 passed, negative control 2 failed 1 passed</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T200709906377-review-of-brief-raises-budget-fence-67b90bde616f" data-who="reckon-build" data-when="2026-11-07T20:22:08.597Z">
     <div class="r-comment-body"><p>independent review of r-20261107T173401077731-brief-raises-budget-fence at head 67b90bde61 scored goal_fidelity 19, evidence 15, scope_discipline 14, durability 16, fit 17, reuse 20 against base 5a444bc, added_failure_count 0, with four non-blocking findings: the queue-admission rebuild drops over_fence_reason, two written paths sit outside the dispatch fence though plan section 3 names them, the gate log header names a base revision that does not contain the test, and the manifest's baseline_suite/after_suite are null</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261111T110047796765-review-of-ab-clive-a-gate-halts-only-on-substance-s3-1c502c963648" data-who="reckon-build" data-when="2026-11-11T11:11:00.411Z">
+    <div class="r-comment-body"><p>Independent review of r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3 at base e14d057042b3d017d23cf21c9c741f66c4a23cf5 -&gt; head 1c502c963648b2b131a730bd1e8e2f23392779b4: a parsed record scoring all six dimensions (goal_fidelity 17, evidence 13, scope_discipline 20, durability 16, fit 17, reuse 20; total 103), added_failure_count 0 with added_failure_ids [], one blocking finding (both suite arms record the absolute interpreter while the run&#x27;s suite_command resolves to the relative `.venv/bin/python`, so promotion refuses the pair on command_matches_suite_command) and one non-blocking finding (the new fragment&#x27;s filename carries the plan and section label and duplicates the capability-named sibling for the same section).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>

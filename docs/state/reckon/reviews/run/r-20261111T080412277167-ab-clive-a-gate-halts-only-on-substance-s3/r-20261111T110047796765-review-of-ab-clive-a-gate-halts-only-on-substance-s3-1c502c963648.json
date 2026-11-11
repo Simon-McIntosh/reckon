@@ -1,0 +1,85 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "The diff adds no assertion, so there is no added assertion whose two sides could move together; the arms it cites live in the pre-existing tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and were shown red under mutation rather than merely green.",
+  "assertion_review": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:341 validate_node",
+    "reckon/crew/dispatch_plan.py:841 validate_node",
+    "reckon/crew/queue_edit.py:195 validate_node",
+    "reckon/crew_dispatch_commands.py:1710 TaskNode(over_fence_reason=...)",
+    "reckon/crew/queue_admission.py:228 _node_from_pointer"
+  ],
+  "completed_at": "2026-11-11T11:11:00.411Z",
+  "dispatched_at": "2026-11-11T11:03:26Z",
+  "failure_delta_source": {
+    "after_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3/logs/after-arm.log",
+      "revision": "1c502c963648b2b131a730bd1e8e2f23392779b4"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3/logs/base-arm.log",
+      "revision": "e14d057042b3d017d23cf21c9c741f66c4a23cf5"
+    }
+  },
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3/manifest.md",
+      "line": 17,
+      "severity": "blocking",
+      "text": "baseline_suite and after_suite record the command with the absolute interpreter `/home/ITER/mcintos/Code/reckon/.venv/bin/python`, while the run pointer's suite_command resolves to `PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py` (live/r-20261111T080412277167-...json). promotion_records._arm_missing_fields compares the two whitespace-normalised but literally, and reports baseline_suite.command_matches_suite_command and after_suite.command_matches_suite_command, so _evaluate_suite_delta raises SuiteDeltaError and the run cannot be promoted on this pair. Re-running both arms with the declared relative interpreter path repairs it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The filename encodes the plan name and section label (\u2026-s3) and duplicates the subject of the existing capability-named sibling brief-raises-budget-fence.html, which already records this section's landing; every other fragment in that directory is named by capability, so a reader now finds two records for one section under two naming schemes."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified 5 production call sites; the landed change is documentation, and the guard it evidences is reached through validate_node from dispatch.py:341, dispatch_plan.py:841 and queue_edit.py:195, through crew_dispatch_commands.py:1710 and through queue_admission.py:228.",
+    "diff": "One commit, 1c502c963648b2b131a730bd1e8e2f23392779b4 against base e14d057042b3d017d23cf21c9c741f66c4a23cf5, adding 41 lines of documentation only: no product source, no test, nothing outside the declared scope.",
+    "done_when": "The done_when names tests/test_a_budget_may_exceed_its_fence_with_a_reason.py; gate-head.log records 7 passed and its three arms match the three clauses, with negative-control.log reddening exactly the two reason-bearing arms.",
+    "goal": "The node's goal is to build a-gate-halts-only-on-substance section 3; the guard it names is present at reckon/crew/node.py:1508 and the node's single commit, 1c502c9636, verifies it rather than reimplementing it.",
+    "manifest": "Read; it names commit 1c502c9636, records gate 7 passed, census 51 passed in both arms and negative control 2 failed / 5 passed, and its claims about node.py:1508, crew_dispatch_commands.py:1710 and queue_admission.py:228 all verify in the tree.",
+    "write_paths": "The dispatch declared the evidence fragment, reckon/crew/node.py and a figures directory; the single changed file, docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html, is inside that set."
+  },
+  "justifications": {
+    "durability": "The diff adds no assertion, so the guard rests on the pre-existing tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:185-195, which negative-control.log shows failing when the reason clause is dropped from the bounded check.",
+    "evidence": "gate-head.log records 7 passed and negative-control.log reddens exactly test_an_over_fence_budget_with_a_reason_passes_the_bounded_check and test_dispatch_carries_the_reason_onto_the_node, but the manifest's arm commands do not match the run's resolved suite command and promotion refuses the pair.",
+    "fit": "The fragment follows the sibling idiom in docs/evidence/fragments/a-gate-halts-only-on-substance/brief-raises-budget-fence.html but its filename encodes the plan and section label, unlike every capability-named sibling in that directory.",
+    "goal_fidelity": "The section's deliverable is present at base e14d0570 via ancestor 14aa929e and the fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html records it, but this node added no code or test of its own.",
+    "reuse": "The commit adds no definition and reuses the existing guard at reckon/crew/node.py:1508; a search for over-fence admission across reckon/ found no second implementation of the capability.",
+    "scope_discipline": "The only path in the diff, docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html, lies inside the declared write paths and nothing else in the tree was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to build a-gate-halts-only-on-substance section 3; the guard it names is present at reckon/crew/node.py:1508 and the node's single commit, 1c502c9636, verifies it rather than reimplementing it.\nVERDICT done_when: the done_when names tests/test_a_budget_may_exceed_its_fence_with_a_reason.py; gate-head.log records 7 passed and its three arms match the three clauses, with negative-control.log reddening exactly the two reason-bearing arms.\nVERDICT write_paths: the dispatch declared the evidence fragment, reckon/crew/node.py and a figures directory; the single changed file, docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html, is inside that set.\nVERDICT manifest: read; it names commit 1c502c9636, records gate 7 passed, census 51 passed in both arms and negative control 2 failed / 5 passed, and its claims about node.py:1508, crew_dispatch_commands.py:1710 and queue_admission.py:228 all verify in the tree.\nVERDICT diff: one commit, 1c502c963648b2b131a730bd1e8e2f23392779b4 against base e14d057042b3d017d23cf21c9c741f66c4a23cf5, adding 41 lines of documentation only \u2014 no product source, no test, nothing outside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:341 validate_node, reckon/crew/dispatch_plan.py:841 validate_node, reckon/crew/queue_edit.py:195 validate_node, reckon/crew_dispatch_commands.py:1710 TaskNode(over_fence_reason=...), reckon/crew/queue_admission.py:228 _node_from_pointer\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the section's deliverable, the fragment at docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html, records a guard already present at base e14d0570 via ancestor 14aa929e, but this node added no code or test of its own.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate-head.log records 7 passed and negative-control.log reddens exactly test_an_over_fence_budget_with_a_reason_passes_the_bounded_check and test_dispatch_carries_the_reason_onto_the_node, but the manifest's arm commands do not match the run's resolved suite command and promotion refuses the pair.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only path in the diff, docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html, lies inside the declared write paths and nothing else in the tree was touched.\nSCORE durability: 16\nJUSTIFICATION durability: the diff adds no assertion, so the guard rests on the pre-existing tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:185-195, which negative-control.log shows failing when the reason clause is dropped from the bounded check.\nSCORE fit: 17\nJUSTIFICATION fit: the fragment follows the sibling idiom in docs/evidence/fragments/a-gate-halts-only-on-substance/brief-raises-budget-fence.html but its filename encodes the plan and section label, unlike every capability-named sibling in that directory.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition and reuses the existing guard at reckon/crew/node.py:1508; a search for over-fence admission across reckon/ found no second implementation of the capability.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3/manifest.md:17 blocking: the arm commands record the absolute interpreter while the run's suite_command resolves to the relative `.venv/bin/python`, so promotion_records._arm_missing_fields reports command_matches_suite_command on both arms and _evaluate_suite_delta refuses the pair.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/ab-clive-a-gate-halts-only-on-substance-s3.html:1 non-blocking: the filename encodes the plan name and section label and duplicates the existing capability-named sibling brief-raises-budget-fence.html, leaving two records for one section under two naming schemes.\n",
+  "reuse_search": "Searched reckon/ for a second over-fence admission mechanism (over_fence, budget_ceiling, validate_node) and found one owner, reckon/crew/node.py:1508, already used by the guard; the commit adds nothing to duplicate it.",
+  "review_run_id": "r-20261111T110047796765-review-of-ab-clive-a-gate-halts-only-on-substance-s3-1c502c963648",
+  "reviewed_base_sha": "e14d057042b3d017d23cf21c9c741f66c4a23cf5",
+  "reviewed_head_sha": "1c502c963648b2b131a730bd1e8e2f23392779b4",
+  "reviewed_run_id": "r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3",
+  "scores": {
+    "durability": 16,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T11:20:00.000000+00:00",
+  "total": 103
+}
