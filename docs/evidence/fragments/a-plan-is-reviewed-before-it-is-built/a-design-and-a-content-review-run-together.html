@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<meta name="plan-slug" content="a-design-and-a-content-review-run-together">
+<meta name="plan-title" content="A design review and a content review of one plan can run together">
+<meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
+<meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s48">
+<meta name="plan-recorded-at" content="2026-11-11">
+<meta name="plan-verdict" content="blocked">
+<title>A design review and a content review of one plan can run together | reckon</title>
+<link rel="stylesheet" href="/_shared/foundation.css">
+<link rel="stylesheet" href="/_shared/dashboard.css">
+</head><body><main class="plan-doc">
+<section id="a-design-and-a-content-review-run-together-verification">
+<h1>A design review and a content review of one plan can run together</h1>
+<p>Two holds refuse a second plan review of one plan. The first is the compose's
+own in-flight check, <code>_standing_plan_review</code>, keyed on the plan alone;
+it now keys on the plan and the rubric, read from the composed node's goal line
+(<code>review the &lt;rubric&gt; of plan &lt;slug&gt;</code>), and a pointer whose
+rubric cannot be read keeps standing for every rubric. That change is landed and
+measured below.</p>
+<p>The second hold is <code>dispatch()</code>'s existing-run answer,
+<code>_answer_existing_node_run</code> (<code>reckon/crew/dispatch.py:430</code>),
+which reads <code>runs.existing_node_run</code>
+(<code>reckon/crew/runs.py:670</code>) keyed on
+<code>(plan, section, node id)</code> (<code>reckon/crew/runs.py:544</code>).
+Both rubrics of a plan compose under the one node id
+<code>plan-review-of-&lt;slug&gt;</code>, so the design review passes the compose
+check and is then refused by dispatch with
+<code>run r-…-plan-review-of-fixture is already starting for this node</code>.
+That guard sits outside this node's write scope: <code>reckon/crew/dispatch.py</code>
+belongs to the concurrent <code>a-concurrent-launch-is-refused</code> node, and
+the composed node identity is built in
+<code>reckon/crew/recovery_review_subject.py</code>. The section's done-when is
+therefore not met by this node's write paths.</p>
+<table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
+<tr><td>Defect reproduction at base</td><td>2 failed, 1 passed; the design case refuses with <code>a plan review is already in flight as a live run</code></td><td id="a-design-and-a-content-review-run-together-base-repro">base-reproduction.log; base revision extracted by <code>git archive</code> with this node's test copied in; the second content review already refuses at base, which is the behaviour that must be kept</td></tr>
+<tr><td>First hold after the change</td><td>Design review passes the compose check; second content review still refused naming the running review</td><td id="a-design-and-a-content-review-run-together-head-gate">head-suite.log; 1 failed, 53 passed, the one failure being the design case</td></tr>
+<tr><td>Second hold</td><td>Design compose refused by dispatch: <code>run r-20261111T014446288217-plan-review-of-fixture is already starting for this node</code></td><td id="a-design-and-a-content-review-run-together-second-hold">head-suite.log; <code>_answer_existing_node_run</code>, reached because both rubrics share one node id</td></tr>
+<tr><td>Unreadable rubric stays standing</td><td>A pointer with no goal answers no rubric and still refuses a design compose</td><td id="a-design-and-a-content-review-run-together-unreadable">third case of the test; passes at head</td></tr>
+<tr><td>Declared negative control</td><td>1 failed, 2 passed; the design case refuses with the compose message again</td><td id="a-design-and-a-content-review-run-together-negative-control">negative-control.log; the rubric narrowing removed from <code>_standing_plan_review</code> at the committed head</td></tr>
+<tr><td>Ruff</td><td><code>check</code> and <code>format --check</code> clean on both staged Python paths</td><td id="a-design-and-a-content-review-run-together-ruff">no findings, exit 0</td></tr>
+</tbody></table>
+<p id="a-design-and-a-content-review-run-together-next-step">What the section
+needs beyond this node's scope is a decision on where the two reviews are told
+apart at dispatch: either the composed plan review's node id carries its rubric
+(and the readers that recover a plan slug from that id recover it too), or
+<code>dispatch()</code>'s existing-run answer takes the rubric as a discriminator.
+Either change touches modules another node owns.</p>
+</section>
+</main></body></html>

@@ -321,6 +321,12 @@ IN_HARNESS_LAUNCH = "in-harness"
 # grammar the writer enforces.
 _REVIEW_HEAD_PATTERN = re.compile(r"[0-9A-Fa-f]{7,64}")
 
+# The goal line a composed plan review carries, which names the rubric the
+# review was asked for: ``review the <rubric> of plan <slug>``. It is the one
+# field on a live pointer that tells a design review and a content review of
+# the same plan apart, because both compose under the plan's node id.
+_PLAN_REVIEW_GOAL_RUBRIC_RE = re.compile(r"^review the (?P<rubric>[A-Za-z]+) of plan\s")
+
 
 def _review_record_subject(path: Path) -> tuple[str, str]:
     """The reviewed run and head a granted record path spells, if either.
@@ -2113,11 +2119,29 @@ def _resolved_review_config(
     return runs.resolved_tick_config(project, config)
 
 
+def _plan_review_rubric(pointer: Mapping[str, Any]) -> str:
+    """The rubric a live plan-review pointer composes for, or "" when unread.
+
+    A plan review's node id names the plan alone, so the two rubrics of one
+    plan share it; the rubric is carried by the composed node's own goal line,
+    which the composer writes as ``review the <rubric> of plan <slug>``. That
+    goal is the declared identity of the review the pointer launched, so it
+    answers for a queued request as it does for a running one, and it names no
+    path a reviewer could have written differently.
+    """
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    match = _PLAN_REVIEW_GOAL_RUBRIC_RE.match(str(node.get("goal") or ""))
+    return match.group("rubric").lower() if match else ""
+
+
 def _standing_plan_review(
     project: str,
     plan_slug: str,
     *,
     session: str = "",
+    rubric: str | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
 ) -> str:
     """The live plan-review run standing for ``plan_slug``, or empty.
@@ -2131,11 +2155,21 @@ def _standing_plan_review(
     again, so the review a view names comes from the same reading as the row
     that names it.
 
+    ``rubric`` narrows the answer to reviews of that rubric, so a design review
+    and a content review of one plan — which read it independently — can be in
+    flight together, while a second review of a rubric already running is still
+    found and refused. A pointer whose rubric cannot be read keeps standing for
+    every rubric: the reader must not compose a duplicate because a record it
+    could not classify left the answer unknown. A caller with no rubric to
+    state (an obligation asking whether any review of the plan is running) is
+    answered by the plan alone, as it was before the rubric was named.
+
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
     runs inside every session's obligations reading, and one malformed pointer
     on disk must not raise the reader out of listing everything else.
     """
     live = list_live(project=project) if pointers is None else pointers
+    wanted = str(rubric or "").strip().lower()
     for pointer in live:
         node = pointer.get("node")
         if not isinstance(node, Mapping):
@@ -2144,6 +2178,10 @@ def _standing_plan_review(
             continue
         if session and str(pointer.get("session") or "") != session:
             continue
+        if wanted:
+            standing_rubric = _plan_review_rubric(pointer)
+            if standing_rubric and standing_rubric != wanted:
+                continue
         return str(pointer.get("run_id") or "")
     return ""
 
@@ -2176,11 +2214,17 @@ def _dispatch_text_review_for_run(
     exception stays visible after the command that supplied it is gone.
     """
     if record.get("subject") == "plan":
+        # The rubric this compose asks for, read from the record the same way
+        # the composed fields read it, so the in-flight check refuses a second
+        # review of this rubric and admits a review of the other one.
+        rubric = str(record.get("rubric") or "design").strip().lower()
         if dry_run:
             # A preview takes no lock and creates nothing: the directory and
             # its lock file are themselves artifacts of a dispatch that has not
             # happened, and the in-flight read it guards is a plain read here.
-            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            standing = _standing_plan_review(
+                record["project"], record["plan_slug"], rubric=rubric
+            )
             if standing:
                 return {
                     "dispatched": False,
@@ -2203,7 +2247,9 @@ def _dispatch_text_review_for_run(
         # The lock spans the pointer check and launch across coordinator sessions.
         with (directory / "dispatch.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX)
-            standing = _standing_plan_review(record["project"], record["plan_slug"])
+            standing = _standing_plan_review(
+                record["project"], record["plan_slug"], rubric=rubric
+            )
             if standing:
                 return {
                     "dispatched": False,
