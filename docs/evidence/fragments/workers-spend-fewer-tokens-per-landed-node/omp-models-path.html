@@ -75,6 +75,25 @@ srun: error: 98dci4-clu-2026: task 0: Exited with exit code 1</pre>
         already formatted.</p>
     </section>
 
+    <section id="omp-models-path-probe">
+      <h2>Probe against the real harness</h2>
+      <p>The pinned oh-my-pi 18.13.2 install was run twice over one seeded run
+        home holding <code>agent/models.yml</code>, with
+        <code>HOME=&lt;run home&gt;</code> in both runs and only the store
+        variable differing:</p>
+      <ul>
+        <li>with <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code>:
+          <code>omp -p --model local/deepseek-v4.1-flash --no-session</code>
+          resolved the model, completed the prompt and printed
+          <code>ready</code>, exit 0;</li>
+        <li>with <code>HOME</code> alone: the same command printed
+          <code>Model "local/deepseek-v4.1-flash" not found</code> and exited 1
+          — the live check's failure, reproduced on demand.</li>
+      </ul>
+      <p>So the variable is the cause of the difference, not a correlated
+        change: the same home, the same file, the same binary.</p>
+    </section>
+
     <section id="omp-models-path-negative-control">
       <h2>Negative control</h2>
       <p>With the store assignment dropped from the composition, the environment
