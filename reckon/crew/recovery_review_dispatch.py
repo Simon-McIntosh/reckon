@@ -786,18 +786,65 @@ def _resolve_abbreviated_commit(repository: Path | None, text: str) -> str:
     return _resolve_commit(repository, text)
 
 
+def _newest_cited_revision(tree: Path | None, revisions: Sequence[str]) -> str:
+    """The newest of ``revisions`` by ancestry in ``tree``, or empty.
+
+    A manifest's ``commits:`` field is a citation list, not an ordered history,
+    so its entries are compared by ancestry rather than read in the order they
+    were written. One citation needs no query. A tree that cannot answer leaves
+    the caller its other readers rather than guessing, and the query is bounded
+    so a repository on a stalled filesystem cannot hold a caller open.
+    """
+    if not revisions:
+        return ""
+    if len(revisions) == 1:
+        return revisions[0]
+    if tree is None:
+        return ""
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tree),
+                "rev-list",
+                "--topo-order",
+                "--max-count=1",
+                *revisions,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = completed.stdout.split()
+    if completed.returncode != 0 or not lines:
+        return ""
+    return lines[0]
+
+
 def _record_carried_head(record: Mapping[str, Any]) -> str:
     """The head a run's own record names, for a worktree that has been reclaimed.
 
     A manifest's ``commits:`` field is a run's last word on the revisions it
-    landed, so its last resolvable entry is the head the run reached. An entry
-    that is already an object id stands as itself; a shorter citation is
-    resolved to its full id through the run's repository, whose object store it
-    wrote into while the worktree existed, because workers cite abbreviated
-    ids. An entry git cannot resolve unambiguously is skipped rather than
-    guessed, and the pointer's own recorded head is read after the manifest,
-    because a run that has not yet written one still names the revision it was
-    dispatched against.
+    landed, but it is a citation list and not an ordered history: a worker may
+    write it newest-first, oldest-first or in the order the work landed. The
+    entries are therefore compared by ancestry and the newest is the head the
+    run reached. Reading position instead picks the oldest commit of a
+    newest-first list, which is the defect this reader and the promotion's
+    head resolver exist to avoid — promotion reads its head through this same
+    function, so a review and a promotion of one run cannot name different
+    heads.
+
+    An entry that is already an object id stands as itself where no tree can
+    answer; otherwise it is resolved through the run's tree, whose object store
+    the worktree wrote into before it was reclaimed, because workers cite
+    abbreviated ids. An entry git cannot resolve unambiguously is skipped
+    rather than guessed, and the pointer's own recorded head is read after the
+    manifest, because a run that has not yet written one still names the
+    revision it was dispatched against.
     """
     manifest = Path(str(record.get("manifest_path") or ""))
     try:
@@ -807,17 +854,20 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     entries = data.get("commits") or []
     if isinstance(entries, str):
         entries = [entries]
-    repo_raw = str(record.get("repo") or "").strip()
-    repository = Path(repo_raw) if repo_raw and Path(repo_raw).is_dir() else None
-    for entry in reversed(list(entries)):
+    tree = _review_tree(record)
+    revisions: list[str] = []
+    for entry in entries:
         text = str(entry).strip()
-        sha = _object_id(text)
-        if sha:
-            return sha
-        if re.fullmatch(r"[0-9A-Fa-f]{7,64}", text):
-            resolved = _resolve_abbreviated_commit(repository, text)
-            if resolved:
-                return resolved
+        resolved = (
+            _resolve_commit(tree, text, cached=True) if tree else _object_id(text)
+        )
+        if resolved and resolved not in revisions:
+            revisions.append(resolved)
+    newest = _newest_cited_revision(tree, revisions)
+    if newest:
+        return newest
+    if revisions:
+        return revisions[-1]
     return _object_id(str(record.get("head") or "").strip())
 
 
