@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="docs-project" content="reckon">
+<meta name="reckon-type" content="evidence">
+<title>A stored plan review is decoded once per change</title>
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="plan-review-record-decoded-once-record">A stored plan review is decoded once per change</h2>
+<p><code>reckon.crew.plan_review._read_record</code> serves stored records through
+<code>file_memo.memoized</code>, using its existing stat identity and requesting
+<code>mutable=True</code>. Callers receive an independent mutable copy, including
+inside a read-only region. The parsing and unreadable-record handling stay in
+the reader; no other reader changes. Implementation commit:
+<code>6ea766d684264068fefcab331e152ef0d73a72c9</code>.</p>
+<table id="plan-review-record-decoded-once-measures">
+<thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+<tbody>
+<tr><td>JSON decodes for two unchanged reads</td><td>2</td><td>1</td></tr>
+<tr><td>Total decodes after an in-place rewrite</td><td>2</td><td>2; updated content returned</td></tr>
+<tr><td>Nested mutation of a returned record</td><td>Next read unchanged</td><td>Next read unchanged, inside and outside a read-only region</td></tr>
+<tr><td>Armed node suite</td><td>51 passed in 11.60s</td><td>55 passed in 12.18s</td></tr>
+<tr><td>Importing test files, matched partition arms</td><td>71 failed, 793 passed in 311.08s</td><td>71 failed, 797 passed in 318.80s; identical failure IDs, zero added</td></tr>
+</tbody>
+</table>
+<p id="plan-review-record-decoded-once-control">The new unchanged-record assertion
+was run before repair at <code>ecbcf2f53c40e92703c7516a1eb8f773fdc08220</code>:
+the second read failed with <code>assert 2 == 1</code> on the patched
+<code>plan_review.json.loads</code> counter. That negative-control run recorded
+<code>1 failed, 3 passed in 8.20s</code>, exit 1. All four focused cases pass
+at the head. The matched arms ran as separate <code>all_debug</code> jobs
+<code>1310309</code> and <code>1310314</code>. Ruff lint and formatting checks
+pass on both staged Python paths, with zero added findings.</p>
+<p id="plan-review-record-decoded-once-receipts">Durable receipts are in
+<code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T081102597177-plan-review-record-decoded-once/</code>:
+<code>negative-control.log</code>, <code>baseline-suite.log</code>,
+<code>after-suite.log</code>, <code>baseline-importers.log</code>,
+<code>after-importers.log</code>, <code>importer-comparison.json</code> and
+<code>ruff.log</code>. Each test log records its revision, command and terminal
+exit status; partition logs also name the imported module and working directory.</p>
+</main>
+</body>
+</html>
