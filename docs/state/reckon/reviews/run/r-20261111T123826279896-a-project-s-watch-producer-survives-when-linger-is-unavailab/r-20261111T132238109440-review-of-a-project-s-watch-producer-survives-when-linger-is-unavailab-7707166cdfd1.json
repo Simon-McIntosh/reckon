@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T13:38:38.885Z",
+  "dispatched_at": "2026-11-11T13:24:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_watch.py",
+      "line": 3227,
+      "severity": "non-blocking",
+      "text": "the pre-existing lapse branch in _wait returns True out of watch_ticker, so the CLI exits 0 for the same lost seat this node exists to have restarted, leaving the defect reachable whenever the lapse is observed at _wait's entry rather than during its own sleep; route that return through runs.exit_lost_watch_seat"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 3870,
+      "severity": "non-blocking",
+      "text": "watch_lease_lapsed re-derives the lapse predicate the repository already owns at reckon/crew/recovery_watch.py:3219 (_lease_remaining) instead of extending it, so the two owners can change without the other and the split above survives"
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": 3914,
+      "severity": "non-blocking",
+      "text": "only a live follower renews the registration (reckon/crew_follow_commands.py:1817), so a project with no live runs now exits with WATCH_SEAT_LOST_EXIT every lease interval and is respawned each time, a new steady-state churn on idle projects that the fragment does not mention"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a project's watch producer survives when linger is unavailable; the diff gives a lost seat its own exit status (reckon/crew/runs.py:3867 WATCH_SEAT_LOST_EXIT) and has the arming supervisor restart it (reckon/crew/dispatch_watch.py:311).\nVERDICT done_when: the done_when names tests/test_a_producer_survives_without_linger.py with its negative control, plus no added failures against the base revision on all_debug with at most -n 4; the manifest records both arms (arm-base.log, arm-after.log) and the red negative-control.log, and its tests line is the command that ran.\nVERDICT write_paths: read the six declared paths against the diff; all five files the two commits touch lie inside them (reckon/crew/runs.py, reckon/crew/dispatch_watch.py, both test files, the evidence fragment), and the declared figures directory is untouched.\nVERDICT manifest: read; it records commits 20f749a4c1 and 7707166cdf, both arms green (8 passed at base, 12 passed at head), the negative control red with test_a_lapsed_lease_is_restarted_without_a_unit failing, and the head commit resolves in the reviewed tree.\nVERDICT diff: read commit by commit against a5764282bdee; 20f749a4c1 changes the producer's exit path, the supervisor's restart rule and the tests, and 7707166cdf adds only the landing fragment, 427 insertions and 16 deletions across five files.\nCALL_SITES: reckon/crew/recovery_watch.py:3242, reckon/crew/recovery_watch.py:3255, reckon/crew/recovery_watch.py:3337, reckon/crew/runs.py:4528, reckon/crew/runs.py:4549, reckon/crew/dispatch_watch.py:_watch_producer_argv\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:3914 exits with WATCH_SEAT_LOST_EXIT and reckon/crew/dispatch_watch.py:311 restarts it unless another live producer holds the seat, but reckon/crew/recovery_watch.py:3227 still returns out of the ticker on the same lapse, which exits 0 and is read as a deliberate stop.\nSCORE evidence: 16\nJUSTIFICATION evidence: arm-base.log and arm-after.log carry revision, tree, command, module and cwd headers with EXIT=0 and 8 and 12 passed, and negative-control.log ends EXIT=1 naming test_a_lapsed_lease_is_restarted_without_a_unit; the done_when's ruff half is claimed rather than logged, so I re-ran ruff check and ruff format --check over the four changed source and test paths and both are clean.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the two commits is one of the six declared write paths, and the plan is untouched -- the landing lives in docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-project-s-watch-producer-survives-when-linger-is-unavailab.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_producer_survives_without_linger.py:135 asserts a second producer start after a lapsed lease and the recorded negative control reddens exactly that assertion, and :225 asserts returncode 75 for a seat taken at renewal; the untested residual is the recovery_watch.py:3227 return.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the surrounding idiom -- a module constant and docstringed predicate at reckon/crew/runs.py:3867-3915, and a supervisor that asks the module for the seat answer rather than reimplementing it at reckon/crew/dispatch_watch.py:280 -- and every new name states a mechanism rather than a plan label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/runs.py:3870 watch_lease_lapsed re-derives the lapse predicate the repository already owns at reckon/crew/recovery_watch.py:3219 (_lease_remaining), and neither side was refactored onto the other, so the two can drift.\nFINDING reckon/crew/recovery_watch.py:3227 non-blocking: the pre-existing lapse branch in _wait returns True out of watch_ticker, so the CLI exits 0 for the same lost seat this node exists to have restarted, leaving the defect reachable whenever the lapse is observed at _wait's entry rather than during its own sleep; route that return through runs.exit_lost_watch_seat.\nFINDING reckon/crew/runs.py:3870 non-blocking: watch_lease_lapsed re-derives the lapse predicate the repository already owns at reckon/crew/recovery_watch.py:3219 (_lease_remaining) instead of extending it, so the two owners can change without the other and the split above survives.\nFINDING reckon/crew/runs.py:3914 non-blocking: only a live follower renews the registration (reckon/crew_follow_commands.py:1817), so a project with no live runs now exits with WATCH_SEAT_LOST_EXIT every lease interval and is respawned each time -- a new steady-state churn on idle projects that the landing fragment does not mention.\n",
+  "review_run_id": "r-20261111T132238109440-review-of-a-project-s-watch-producer-survives-when-linger-is-unavailab-7707166cdfd1",
+  "reviewed_base_sha": "a5764282bdeeeda4d3f26910564f212bcfcacc12",
+  "reviewed_head_sha": "7707166cdfd1e53f58ccd0b0d0470c0f5cf4a3d0",
+  "reviewed_run_id": "r-20261111T123826279896-a-project-s-watch-producer-survives-when-linger-is-unavailab",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T13:51:59.541355+00:00",
+  "total": 90
+}
