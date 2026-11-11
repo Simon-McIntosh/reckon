@@ -705,6 +705,10 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --acted 
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
+Answer every finding before editing the plan, then make the edits in one
+burst and compose once: an answer is refused once the plan has moved past the
+stored review (`reckon-edit` step "Answer first, then edit once").
+
 Edit the plan only for a finding you act on, and act only on one that makes
 an endpoint wrong, ambiguous or unsatisfiable; a finding about how the node
 should implement something is declined with that reason (hard rule 9). An edit a
