@@ -24,20 +24,28 @@
     to the <code>anchored</code> server are counted apart from the harness's
     own <code>file_change</code> items, once per call — codex emits a
     <code>started</code> and a <code>completed</code> record for the same call,
-    and counting both would double every one. Both totals ride the observation
-    the run store already receives, so a later comparison can report the share
-    of edits an arm routed through the tool.</p>
+    and counting both would double every one. Both totals are carried onto the
+    run pointer, which is the record a later comparison reads, so the share of
+    edits an arm routed through the tool survives the run that produced it.</p>
+  <p>The numbers reach further than the count. An <code>edit_anchored</code>
+    call that completed is read as a write by the input-to-first-write measure,
+    the same way a harness <code>file_change</code> item is, so an anchored arm
+    is timed on the edit that actually landed. A call the tool refused is not a
+    write: the tool answers a stale anchor with a <code>refused</code> result
+    rather than an error, so the call completes with the file untouched.</p>
   <table id="anchored-edit-codex-arm-measures">
     <caption>Commands are literal; each log's last line is its own exit status.</caption>
     <thead><tr><th>Measure</th><th>Result</th></tr></thead>
     <tbody>
       <tr><td>Base arm at <code>acfbdab8c1</code>, resolved over that tree (this node's test file is absent there)</td><td>51 passed, <code>EXIT=0</code></td></tr>
-      <tr><td>Head arm at <code>db062d6ca3</code></td><td>64 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>Head arm at <code>1af14da8c4</code></td><td>67 passed, <code>EXIT=0</code></td></tr>
       <tr><td>Declared mutation: count anchored <code>mcp_tool_call</code> items as <code>file_change</code></td><td>3 failed, 10 passed, <code>EXIT=1</code>; the parser separation test is among the failures</td></tr>
       <tr><td>Codex argv without the key</td><td>Byte-identical to the base revision's, for both an absent key and an explicit false</td></tr>
       <tr><td>Stream at <code>docs/research/fixtures/codex-anchored-edit-stream.jsonl</code>, read in place</td><td>4 anchored calls — 1 <code>read_anchored</code>, 3 <code>edit_anchored</code>, 1 failed — and 0 <code>file_change</code> items</td></tr>
-      <tr><td>Ruff check over the four changed paths</td><td>3 findings at base and 3 at head (all pre-existing); zero added</td></tr>
-      <tr><td>Ruff format <code>--check</code> over the same paths</td><td>Clean in both arms</td></tr>
+      <tr><td>Ruff check over the five changed source paths</td><td>4 findings at base and 4 at head (all pre-existing); zero added</td></tr>
+      <tr><td>Ruff format <code>--check</code> over the same paths, plus the arm's test file</td><td>Clean in both arms</td></tr>
+      <tr><td>Anchored counts read back from the run pointer after a fold of the fixture stream</td><td>4 calls — 1 <code>read_anchored</code>, 3 <code>edit_anchored</code>, 1 failed — and 0 <code>file_change</code> items</td></tr>
+      <tr><td>Prompt file a freshly dispatched codex worker is fed, keyed lane vs lane without the key</td><td>The instruction is present for the first and absent for the second</td></tr>
     </tbody>
   </table>
   <p>The fixture carries no <code>file_change</code> item, so a zero there would
