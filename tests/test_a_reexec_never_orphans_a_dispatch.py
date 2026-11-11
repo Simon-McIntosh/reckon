@@ -38,6 +38,8 @@ def _record(path: Path) -> dict:
 def test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch(
     crew_store: Path,
 ) -> None:
+    # An import alone publishes nothing; the identity a claim publishes is the
+    # one a later dispatch judges this holder by.
     imported = subprocess.run(
         [
             sys.executable,
@@ -48,7 +50,7 @@ def test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch(
         capture_output=True,
         text=True,
     )
-    assert (crew_store / f"exec-{int(imported.stdout)}.identity").is_file()
+    assert not (crew_store / f"exec-{int(imported.stdout)}.identity").exists()
 
     first = _take_claim("first-run")
     recorded = _record(first.path)
