@@ -1,0 +1,92 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2348 dispatch() calls queue_admission.section_hold and :2354 record_section_hold",
+    "reckon/crew/queue_admission.py:5524 admit_once() calls _record_readiness_verdicts, which calls section_hold at :2407",
+    "reckon/crew/queue_admission.py:4329 _rederive_waits calls _own_readiness_ref during the pass",
+    "reckon/crew/obligations.py:1151 reads recorded_pass_hold from the pointer the dispatch wrote"
+  ],
+  "completed_at": "2026-11-11T20:59:37.964Z",
+  "dispatched_at": "2026-11-11T20:39:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html",
+      "line": "1",
+      "severity": "blocking",
+      "text": "the fragment is written one directory deeper than the declared path docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold.html; reckon/evidence.py:745 composes fragment_dir/<node>.html and :757 globs *.html non-recursively, and reckon/crew/reports.py:2555 recognises a fragment only exactly one level under the plan directory, so this node's evidence never composes into the plan's cumulative record."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/manifest.md",
+      "line": "13",
+      "severity": "blocking",
+      "text": "baseline_suite and after_suite carry prose sentences instead of the armed JSON observation the manifest contract requires; reckon/crew/queue_landing.py:1218 refuses a non-mapping after_suite ('records no after_suite observation of the delivered head'), so the run is refused at landing despite its gate having measured clean."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/gate-head2.log",
+      "line": "7",
+      "severity": "non-blocking",
+      "text": "the head arm's log ends NODE_EXIT=0 rather than a bare EXIT=<code> line, and carries no '# command:' header, so promotion cannot read the head arm's exit status from the log the manifest names."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2357",
+      "severity": "non-blocking",
+      "text": "every queued hold is recorded with verdict 'held-on-readiness', including a hold on a declared section wait whose names are upstream refs; a reader selecting on the verdict classifies a genuine declared wait as a readiness hold, which is the mislabelling the node exists to remove."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3850",
+      "severity": "non-blocking",
+      "text": "record_section_hold's docstring claims 'a pointer that cannot be written is reported rather than assumed', but _record_pass_hold (:1442) swallows CrewError and returns None, record_section_hold returns True regardless, and dispatch.py:2354 ignores the return, so a failed pointer write leaves the dispatch answer claiming a hold the pointer does not carry."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2397",
+      "severity": "non-blocking",
+      "text": "_record_readiness_verdicts starts a fresh empty readonly cache per call, so the pass reads a plan once per readiness-held request rather than once per plan; the once-per-plan invariant asserted at tests/test_a_pass_computes_coverage_once.py:208 stays green only because its fixture holds no readiness request."
+    }
+  ],
+  "gate_sources": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/population-head2.log",
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/population-base.log"
+  },
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites",
+    "diff": "Read all three commits 2e4cf597da..ba00d850d8: 333307a891 adds section_hold/record_section_hold/_readiness_blocker_names to queue_admission.py:3773-3907 and 19 lines to dispatch.py:2348-2370, 8e0fc11c47 guards the pass re-derivation at queue_admission.py:4319-4341, ba00d850d8 adds the fragment and figure.",
+    "done_when": "gate-head2.log records 56 passed (the base file's 51 plus the node's 5) and the head arm's NODE_EXIT=0; population-base.log and population-head2.log both end EXIT=1 with identical 170-id failure sets, so zero failure ids are added; negative-control.log ends EXIT=1 with test_a_dispatch_held_by_an_open_decision_names_the_decision and test_a_dispatch_held_by_a_closed_gate_names_the_gate red; ruff check and format --check are clean on the three staged paths (re-run by this review).",
+    "goal": "The goal asks for the blocker by kind and id in the dispatch result, the recorded hold and the admission verdict, from one function; queue_admission.py:3773 section_hold is that function, dispatch.py:2348 and queue_admission.py:5524 both read it, and the dispatch answer now carries hold:['decision:route'] with a reason naming it.",
+    "manifest": "Read the manifest; it names three commits, five changed paths and the gate/population/negative-control logs; its suite arms are prose rather than the armed JSON the contract requires, and it lists the fragment at a path one level deeper than its own orientation_write_paths declares.",
+    "write_paths": "The fence grants dispatch.py, queue_admission.py, the new test, docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold.html and the figure topic directory; the diff's source and test files and the figure are inside those, but the fragment landed at docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html, one directory deeper."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_names_its_hold.py:131-160 pin the decision key and gate id against values authored in the fixture plan rather than echoed from the code, and negative-control.log shows both reddening when the old wording returns, but the pass-retention case at :203-215 would still pass with the re-derivation guard at queue_admission.py:4328 removed, so the half it names is unguarded.",
+    "evidence": "The gate measures what the done_when asserts and both population logs record identical 170-id failure sets, but the head-arm log the manifest names (gate-head2.log:7) lacks a readable EXIT= line and the manifest's suite arms (manifest.md:13-14) are prose, so a promotion reading the record cannot read either arm's status.",
+    "fit": "The additions follow the module's idiom (lazy _schema imports, module-level constants at queue_admission.py:2538-2546, docstrings stating the mechanism) and ruff check/format are clean on all three staged paths.",
+    "goal_fidelity": "queue_admission.py:3773 section_hold derives the names once and dispatch.py:2348-2368 and queue_admission.py:5524 both report them, so all three readers carry the blocker; the recorded-hold side is weakened by dispatch.py:2357 labelling a declared wait 'held-on-readiness' and by the swallowed write failure at queue_admission.py:1442.",
+    "reuse": "section_hold extends the existing readiness reader at queue_admission.py:3102 and record_section_hold wraps _record_pass_hold at :1390 rather than adding a second writer, but _own_readiness_ref at :2840 re-implements the identity formatting of the nested section_key at :2890 instead of the rule being hoisted once.",
+    "scope_discipline": "The diff stays inside the granted source and test paths and the figure topic, but places the evidence fragment at docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html, which is not the granted fragment path and is not composed by reckon/evidence.py:745."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal asks for the blocker by kind and id in the dispatch result, the recorded hold and the admission verdict, from one function; reckon/crew/queue_admission.py:3773 section_hold() is that function, and reckon/crew/dispatch.py:2348 and reckon/crew/queue_admission.py:5524 both read it.\nVERDICT done_when: The done_when's five facts are met; gate-head2.log records 56 passed with NODE_EXIT=0, population-base.log and population-head2.log both end EXIT=1 with identical 170-id failure sets so no failure is added, and negative-control.log ends EXIT=1 with the two naming cases red.\nVERDICT write_paths: The fence grants reckon/crew/dispatch.py, reckon/crew/queue_admission.py, tests/test_a_held_request_names_its_hold.py, docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold.html and the figure topic; the source, test and figure paths are inside the grant, but the fragment landed one directory deeper at docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html.\nVERDICT manifest: Read; it names commits 333307a891, 8e0fc11c47 and ba00d850d8 and the gate, population and negative-control logs, but its baseline_suite and after_suite lines at lines 13-14 are prose rather than the armed JSON observation the contract requires.\nVERDICT diff: Read commit by commit from 2e4cf597da to ba00d850d8; 333307a891 adds section_hold, record_section_hold and _readiness_blocker_names in queue_admission.py:3773-3907 and 19 lines in dispatch.py:2348-2370, 8e0fc11c47 guards the pass re-derivation at queue_admission.py:4319-4341, and ba00d850d8 adds the fragment and one matplotlib diagram.\nCALL_SITES: reckon/crew/dispatch.py:2348 dispatch calls section_hold and :2354 record_section_hold, reckon/crew/queue_admission.py:5524 admit_once calls _record_readiness_verdicts which calls section_hold at :2407, reckon/crew/queue_admission.py:4329 _rederive_waits calls _own_readiness_ref, reckon/crew/obligations.py:1151 reads recorded_pass_hold\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: queue_admission.py:3773 section_hold derives the names once and dispatch.py:2348-2368 and queue_admission.py:5524 both report them, but dispatch.py:2357 labels a declared wait 'held-on-readiness' and queue_admission.py:1442 swallows a failed pointer write the docstring at :3850 says is reported.\nSCORE evidence: 13\nJUSTIFICATION evidence: The gate measures what the done_when asserts and the population arms record identical 170-id failure sets, but gate-head2.log:7 ends NODE_EXIT=0 with no EXIT= line and manifest.md:13-14 records prose instead of the armed JSON, so a promotion reading the record can read neither arm.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: The diff stays inside the granted source, test and figure paths but writes docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html instead of the granted fragment file, and reckon/evidence.py:745 never composes it.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_held_request_names_its_hold.py:131-160 assert blocker names authored in the fixture plan and negative-control.log shows both reddening, but the pass-retention case at :203-215 still passes with the guard at queue_admission.py:4328 removed.\nSCORE fit: 18\nJUSTIFICATION fit: the additions follow the module idiom (lazy _schema imports, constants at queue_admission.py:2538-2546) and ruff check and format --check are clean on the three staged paths.\nSCORE reuse: 17\nJUSTIFICATION reuse: section_hold reads the existing readiness rows at queue_admission.py:3102 and record_section_hold wraps _record_pass_hold at :1390, but _own_readiness_ref at :2840 restates the identity formatting of the nested section_key at :2890.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold/a-held-request-names-its-hold.html:1 blocking: the fragment is one directory deeper than the declared path, and reckon/evidence.py:745 composes only fragment_dir/<node>.html while :757 globs *.html non-recursively, so the node's evidence never reaches the plan's cumulative record.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/manifest.md:13 blocking: baseline_suite and after_suite are prose, and reckon/crew/queue_landing.py:1218 refuses a non-mapping after_suite, so the run is refused at landing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185654778148-held-request-names-its-hold/gate-head2.log:7 non-blocking: the head arm's log ends NODE_EXIT=0 with no bare EXIT= line, so promotion cannot read its exit status.\nFINDING reckon/crew/dispatch.py:2357 non-blocking: every queued hold is recorded as 'held-on-readiness', including a declared section wait, so a reader keying on the verdict misclassifies the one case where the waits wording is true.\nFINDING reckon/crew/queue_admission.py:3850 non-blocking: the docstring says a failed pointer write is reported, but _record_pass_hold at :1442 swallows CrewError, record_section_hold returns True regardless and dispatch.py:2354 ignores the return.\nFINDING reckon/crew/queue_admission.py:2397 non-blocking: a fresh readonly cache per call reads the plan once per readiness-held request, which the once-per-plan invariant at tests/test_a_pass_computes_coverage_once.py:208 does not catch because its fixture holds no readiness request.\n",
+  "review_run_id": "r-20261111T203722270808-review-of-held-request-names-its-hold-ba00d850d8d6",
+  "reviewed_base_sha": "2e4cf597da81c04da1ae305ece1289fd6c74e47d",
+  "reviewed_head_sha": "ba00d850d8d6511bccea4fb1081de773994f5779",
+  "reviewed_run_id": "r-20261111T185654778148-held-request-names-its-hold",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 17,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:55:04+00:00",
+  "total": 92
+}
