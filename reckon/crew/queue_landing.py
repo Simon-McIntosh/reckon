@@ -16,7 +16,7 @@ from typing import Any
 
 from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
-from reckon.crew.node import CrewError, is_test_path
+from reckon.crew.node import CrewError, is_collectible_test_path
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import (
     _review_accepts_promotion,
@@ -995,14 +995,17 @@ def _landing_test_files(
     batch entry taking its scope from section prose often is, still delivered
     the tests its done-when asked for, so the test files the delivery changed
     are measured instead of refusing the landing as having nothing to run. Only
-    files present in the measured tree are named, so a deleted test is not
-    passed to the runner.
+    files pytest can collect and that are present in the measured tree are
+    named, so a fixture is not handed to the runner and a deleted test is not
+    passed to it.
     """
     named = _node_test_files(pointer)
     if named:
         return named
     return sorted(
-        path for path in changed if is_test_path(path) and (Path(tree) / path).is_file()
+        path
+        for path in changed
+        if is_collectible_test_path(path) and (Path(tree) / path).is_file()
     )
 
 

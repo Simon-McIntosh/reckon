@@ -18,7 +18,7 @@ from reckon.crew.dispatch import (
 )
 from reckon.crew.node import (
     CrewError,
-    is_test_path,
+    is_collectible_test_path,
 )
 from reckon.crew.reports import (
     parse_manifest,
@@ -524,17 +524,21 @@ def _repository_write_paths(record: Mapping[str, Any]) -> list[str]:
 
 
 def _node_test_files(record: Mapping[str, Any]) -> list[str]:
-    """The node's fenced write paths that are tests, sorted and repo-relative.
+    """The node's fenced write paths pytest collects as tests, sorted.
 
     A scoped suite command names the tests a node's own change can reach rather
     than the whole suite, so the files it runs come from the fenced write scope
-    the node was dispatched with. Which paths count as tests is the dispatcher's
-    own rule rather than a second one written here: a node scoped to
-    ``tests/body_test.py`` is a node writing a check under ``is_test_path``, so
-    the scoped command has to measure it, which a narrower rule would not.
+    the node was dispatched with. The command hands each path to pytest, so the
+    rule here is pytest's collection rule rather than the dispatcher's broader
+    trigger: a node scoped to a fixture under ``tests/`` is still writing part
+    of a fenced check, and the fixture is not something pytest can run.
     """
     return sorted(
-        {path for path in _repository_write_paths(record) if is_test_path(path)}
+        {
+            path
+            for path in _repository_write_paths(record)
+            if is_collectible_test_path(path)
+        }
     )
 
 
