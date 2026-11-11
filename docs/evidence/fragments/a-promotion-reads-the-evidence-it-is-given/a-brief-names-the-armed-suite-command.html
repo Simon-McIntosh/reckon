@@ -37,4 +37,23 @@
   <p><strong>Negative control.</strong> Dropping the revisions from the brief and
   from the resume advice makes both cases fail: <code>2 failed</code>, exit 1, in
   <code>negative-control.log</code>.</p>
+
+  <p><strong>The modules' importers.</strong> The 33 test files that import
+  <code>reckon.crew.resumption</code> or compose a dispatch prompt were run one
+  arm at a time at most <code>-n 4</code> on <code>all_debug</code>, each arm
+  resolved over its own tree. Base arm at <code>067c8035e4</code>:
+  <code>40 failed, 272 passed</code>. After arm: <code>38 failed, 276 passed</code>.
+  No failure id is added; two baseline ids pass in the after arm. The 38 ids
+  common to both arms are outside this node's scope and are listed in the
+  manifest.</p>
+
+  <p><strong>The armed command.</strong> The template resolved over each arm's
+  own tree: <code>tests/test_staged_write_inventory.py</code> alone at the base
+  revision, which does not hold the new test file, and both files at the head.
+  Base arm <code>51 passed</code>, exit 0. After arm <code>53 passed</code>,
+  exit 0. The census test reads its tree through the object store, so the base
+  arm ran in a detached worktree of the base revision rather than in a
+  <code>git archive</code> extraction; an extraction has no object store and the
+  census errored on <code>git ls-tree HEAD</code> there, which is a fact about
+  the scratch tree and not about the change.</p>
 </section>
