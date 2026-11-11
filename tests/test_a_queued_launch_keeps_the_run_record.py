@@ -24,8 +24,10 @@ from pathlib import Path
 
 import pytest
 
+from reckon import _backends
 from reckon.crew import queue_admission, runs
 from reckon.crew.node import TaskNode
+from reckon.hooks.install import worker_inbox_group
 
 PROJECT = "proj"
 SESSION = "coordinator-a"
@@ -54,11 +56,46 @@ def _git(repository: Path, *arguments: str) -> None:
     subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
 
 
+@pytest.fixture(autouse=True)
+def harness_handshake(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Answer the harness's hook-trust handshake without running the harness.
+
+    Composing a launch argv asks the installed harness which inbox hook
+    definition it will load, which costs a subprocess and a writable harness
+    home on whichever machine the suite runs. The subject here is the record
+    each dispatch door stores, so the handshake is answered from the definition
+    the argv carries in place of that exchange.
+    """
+    handshake = {
+        "result": {
+            "data": [
+                {
+                    "errors": [],
+                    "hooks": [
+                        {
+                            "key": "/<session-flags>/config.toml:post_tool_use:0:0",
+                            "currentHash": "sha256:" + "a" * 64,
+                            "source": "sessionFlags",
+                            "eventName": "postToolUse",
+                            "handlerType": "command",
+                            "command": worker_inbox_group()["hooks"][0]["command"],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    monkeypatch.setattr(_backends, "run_probe", lambda probe: handshake)
+
+
 @pytest.fixture()
 def admit_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
+    # Every run's scratch sits beneath this root, so pointing it at the case's
+    # own directory keeps a launch from writing to the host's real temp tree.
+    monkeypatch.setenv("RECKON_WORKER_SCRATCH_ROOT", str(tmp_path / "scratch"))
 
     repository = tmp_path / "checkout"
     scripts = repository / "skills" / "reckon-build" / "scripts"
@@ -213,17 +250,32 @@ def _refuse_once_then_launch(repository: Path, tmp_path: Path) -> tuple[dict, di
     return runs.read_pointer(run_id), result
 
 
+def _stored_record(run_id: str) -> tuple[dict, dict]:
+    """One run's pointer as stored, and the dispatch detail it names.
+
+    Both dispatch doors write through the pointer store, which moves
+    dispatch-time detail into the run's own file. Comparing either door's
+    in-memory return would compare a shape no reader of a launched run ever
+    sees, so every case here reads what was written.
+    """
+    pointer = runs.read_pointer(run_id)
+    return pointer, runs.read_dispatch_detail(pointer)
+
+
 def test_a_refused_then_launched_request_carries_the_launch_record(
     admit_repo: Path, tmp_path: Path
 ) -> None:
-    launched, _ = _refuse_once_then_launch(admit_repo, tmp_path)
+    _refuse_once_then_launch(admit_repo, tmp_path)
 
-    assert launched["phase"] != "queued"
-    assert isinstance(launched.get("argv"), list) and launched["argv"], launched.keys()
-    assert launched.get("worktree"), launched.keys()
-    assert launched.get("lane"), launched.keys()
+    stored, detail = _stored_record("r-refused-twice")
+    assert stored["phase"] != "queued"
+    argv = runs.dispatch_field(stored, "argv")
+    assert isinstance(argv, list) and argv, (stored.keys(), detail.keys())
+    assert "argv" not in stored, "the pointer still carries argv inline"
+    assert stored.get("worktree"), stored.keys()
+    assert stored.get("lane"), stored.keys()
     for key in ("failure", "failure_at", "failure_attempts", "retry_at"):
-        assert key not in launched, f"{key} left at the top level of a launched run"
+        assert key not in stored, f"{key} left at the top level of a launched run"
 
 
 def test_the_queued_life_is_kept_under_admission_history(
@@ -243,14 +295,19 @@ def test_the_queued_life_is_kept_under_admission_history(
 def test_the_launched_record_carries_every_key_a_direct_dispatch_writes(
     admit_repo: Path, tmp_path: Path
 ) -> None:
-    launched, _ = _refuse_once_then_launch(admit_repo, tmp_path)
-    direct = _direct_dispatch_pointer(admit_repo, tmp_path)
+    _refuse_once_then_launch(admit_repo, tmp_path)
+    _direct_dispatch_pointer(admit_repo, tmp_path)
 
-    missing = sorted(set(direct) - set(launched))
+    queued_pointer, queued_detail = _stored_record("r-refused-twice")
+    direct_pointer, direct_detail = _stored_record("r-direct")
+    queued_fields = set(queued_pointer) | set(queued_detail)
+    direct_fields = set(direct_pointer) | set(direct_detail)
+
+    missing = sorted(direct_fields - queued_fields)
     assert not missing, f"a queued launch is missing direct-dispatch keys: {missing}"
 
 
-def _direct_dispatch_pointer(repository: Path, tmp_path: Path) -> dict:
+def _direct_dispatch_pointer(repository: Path, tmp_path: Path) -> None:
     """A node dispatched straight through the coordinator's own path."""
     from reckon.crew.dispatch import dispatch
 
@@ -266,7 +323,7 @@ def _direct_dispatch_pointer(repository: Path, tmp_path: Path) -> dict:
         time_budget="20m",
         spec_level="exact",
     )
-    return dispatch(
+    dispatch(
         node=node,
         project=PROJECT,
         repo=repository,
