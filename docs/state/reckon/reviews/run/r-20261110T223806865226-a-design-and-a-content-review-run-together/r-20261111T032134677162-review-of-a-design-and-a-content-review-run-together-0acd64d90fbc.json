@@ -1,0 +1,51 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion.py:_resolve_promotion_outcome call at :420",
+    "reckon/crew/promotion.py:_plan_review_store_outcome call at :1554",
+    "reckon/crew/promotion_checks.py:_plan_review_record_for_promoting_run",
+    "reckon/crew/promotion_checks.py:_misdelivered_plan_review_directories",
+    "reckon/crew/dispatch_sessions.py:507 round_node_source",
+    "reckon/crew/plan_coordinator.py:155 round_node_source",
+    "reckon/crew/recovery_review_delivery.py:258 round_node_source",
+    "reckon/crew/recovery_watch.py:2283 round_node_source"
+  ],
+  "completed_at": "2026-11-11T03:35:36.376Z",
+  "dispatched_at": "2026-11-11T03:23:41Z",
+  "findings": [
+    {
+      "severity": "non-blocking",
+      "text": "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html:49 non-blocking: the 'Both rubrics compose together' row states '7 passed' but its receipt head-suite.log records 55 passed (and the repair gate repair-head-suite.log records 15), so the figure does not reconcile with the log it cites and a reader checking the receipt cannot verify it; 7 is the node test file's own case count, which no cited log carries."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "manifest.md:17 non-blocking: baseline_suite names the command as prose and points log_path at base-importers-population.log, whose summary is only a job submission and EXIT=1, rather than slurm-pop-base.log which carries the 4 failure ids and '4 failed, 313 passed'; baseline_suite and after_suite also name different commands and populations, so the pair itself does not measure a delta even though the matched population arms show zero added failures."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from e328c7acb5a72b62e71806761ec06ed927d38057 to 0acd64d90fbc41bca47c11d7170afbd6d7f55f0e; aaf7b2f080 changes the four promotion readers and narrows the rubric strip in round_node_source to the plan-review prefix, and 0acd64d90f rewrites the evidence fragment, four files and no others.",
+    "done_when": "the done_when names tests/test_a_design_and_a_content_review_run_together.py with two composition cases, a plan-alone negative control, an importer regression arm and ruff; logs/repair-head-suite.log records 15 passed EXIT=0, logs/repair-repro.log records the defect red at e328c7acb5 (2 failed, 5 passed), and logs/slurm-pop-head.log and logs/slurm-pop-base.log each record 4 failed, 313 passed.",
+    "goal": "the node's goal is that a design review and a content review of one plan run together; aaf7b2f080 routes the four promotion readers at reckon/crew/promotion_checks.py:1631,2646,2740,2819 through _plan_review_plan_slug, so a design review's slug resolves to its plan and its delivered report is found.",
+    "manifest": "read; it reports the repair round with commits 2fa4cda4b0..0acd64d90f, the head gate, the reproduction at the previous revision, the 38-file importer population at both revisions, and the residual outside_scope ambiguity.",
+    "write_paths": "the manifest's orientation_write_paths lists six paths; this round's four changed paths (reckon/crew/promotion_checks.py, reckon/crew/repair.py, tests/test_a_design_and_a_content_review_run_together.py, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html) are all inside that list, and promotion_checks.py and repair.py were granted by resume-2-advice.txt line 1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a design review and a content review of one plan run together; aaf7b2f080 routes the four promotion readers at reckon/crew/promotion_checks.py:1631,2646,2740,2819 through _plan_review_plan_slug, so a design review's slug resolves to its plan and its delivered report is found.\nVERDICT done_when: the done_when names tests/test_a_design_and_a_content_review_run_together.py with two composition cases, a plan-alone negative control, an importer regression arm and ruff; logs/repair-head-suite.log records 15 passed EXIT=0, logs/repair-repro.log records the defect red at e328c7acb5 (2 failed, 5 passed), and logs/slurm-pop-head.log and logs/slurm-pop-base.log each record 4 failed, 313 passed.\nVERDICT write_paths: the manifest's orientation_write_paths lists six paths; this round's four changed paths (reckon/crew/promotion_checks.py, reckon/crew/repair.py, tests/test_a_design_and_a_content_review_run_together.py, docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html) are all inside that list, and promotion_checks.py and repair.py were granted by resume-2-advice.txt line 1.\nVERDICT manifest: read; it reports the repair round with commits 2fa4cda4b0..0acd64d90f, the head gate, the reproduction at the previous revision, the 38-file importer population at both revisions, and the residual outside_scope ambiguity.\nVERDICT diff: read commit by commit from e328c7acb5a72b62e71806761ec06ed927d38057 to 0acd64d90fbc41bca47c11d7170afbd6d7f55f0e; aaf7b2f080 changes the four promotion readers and narrows the rubric strip in round_node_source to the plan-review prefix, and 0acd64d90f rewrites the evidence fragment, four files and no others.\nCALL_SITES: reckon/crew/promotion.py:_resolve_promotion_outcome call at :420, reckon/crew/promotion.py:_plan_review_store_outcome call at :1554, reckon/crew/promotion_checks.py:_plan_review_record_for_promoting_run, reckon/crew/promotion_checks.py:_misdelivered_plan_review_directories, reckon/crew/dispatch_sessions.py:507 round_node_source, reckon/crew/plan_coordinator.py:155 round_node_source, reckon/crew/recovery_review_delivery.py:258 round_node_source, reckon/crew/recovery_watch.py:2283 round_node_source\nSCORE goal_fidelity: 18\nSCORE evidence: 15\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 17\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_checks.py:1631 now recovers the slug with _plan_review_plan_slug, so the design node id 'plan-review-of-<slug>-design' resolves to '<slug>' and promotion no longer reads the rubric as part of the plan; the residual ambiguity for a content review of a slug ending in -design is recorded in the manifest's outside_scope and is inherent to the prefix grammar.\nJUSTIFICATION evidence: the matched arms are recorded at logs/slurm-pop-head.log and logs/slurm-pop-base.log (4 failed, 313 passed at both), but the manifest's baseline_suite command is prose and its log_path names the sbatch wrapper rather than that log, and the evidence fragment states 7 passed beside head-suite.log whose summary is 55 passed.\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's orientation_write_paths and the repair was made in the modules resume-2-advice.txt granted.\nJUSTIFICATION durability: tests/test_a_design_and_a_content_review_run_together.py:377 fails if _plan_review_plan_slug reverts to slicing, as logs/repair-repro.log shows the same case red at e328c7acb5; the case at :232 passes both before and after the change and guards over-stripping rather than this regression.\nJUSTIFICATION fit: the added helpers are named for what they do and the docstring style at reckon/crew/repair.py:409 matches the surrounding round-id grammar functions in that module.\nJUSTIFICATION reuse: the change extends round_node_source at reckon/crew/repair.py:403, the function that already owns the node-id grammar and is used by reckon/crew/recovery_review_dispatch.py:2139, rather than forking a second reader.\nFINDING docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html:49 non-blocking: the 'Both rubrics compose together' row states '7 passed' but its receipt head-suite.log records 55 passed (and the repair gate repair-head-suite.log records 15), so the figure does not reconcile with the log it cites and a reader checking the receipt cannot verify it; 7 is the node test file's own case count, which no cited log carries.\nFINDING manifest.md:17 non-blocking: baseline_suite names the command as prose and points log_path at base-importers-population.log, whose summary is only a job submission and EXIT=1, rather than slurm-pop-base.log which carries the 4 failure ids and '4 failed, 313 passed'; baseline_suite and after_suite also name different commands and populations, so the pair itself does not measure a delta even though the matched population arms show zero added failures.",
+  "review_run_id": "r-20261111T032134677162-review-of-a-design-and-a-content-review-run-together-0acd64d90fbc",
+  "reviewed_base_sha": "e328c7acb5a72b62e71806761ec06ed927d38057",
+  "reviewed_head_sha": "0acd64d90fbc41bca47c11d7170afbd6d7f55f0e",
+  "reviewed_run_id": "r-20261110T223806865226-a-design-and-a-content-review-run-together",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T04:03:40.909174+00:00",
+  "total": 105
+}
