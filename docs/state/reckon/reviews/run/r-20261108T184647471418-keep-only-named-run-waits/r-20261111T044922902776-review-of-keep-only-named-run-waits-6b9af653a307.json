@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T05:09:07.078Z",
+  "dispatched_at": "2026-11-11T05:00:41Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "4092",
+      "severity": "non-blocking",
+      "text": "non-blocking: `own` re-derives exactly the refs derive_wait_refs already returns (reckon/crew/queue_admission.py:2719 builds `run:{run_id}` from node.after with the identical expression and includes them on both of its return paths), so `own` is always a subset of `derived` and the union at :4093 is a no-op. The added definition duplicates the owner's computation rather than extending it, and the vestigial union keeps a stored-versus-derived distinction the code no longer makes, inviting a future reader to reintroduce a stored ref through it; the line can simply be deleted."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 states the goal as making _rederive_waits keep a stored run wait only when the request named it through its own after, and reckon/crew/queue_admission.py:4092 now reads the own refs from node.after instead of from the stored waits.\nVERDICT done_when: the done-when in prompt.txt (FENCE - EVIDENCE) names a logged reproduction, three cases, a logged negative control, the armed suite judged by delta and ruff; logs/repro-defect-base.log:8-12 records the reproduction with both defect flags True, logs/suite-baseline.log ends `2 failed, 50 passed, 2 errors` with the two defect cases among them, logs/suite-after.log ends `54 passed` EXIT=0, logs/negative-control.log ends `2 failed, 1 passed` EXIT=1, and logs/ruff.log EXIT=0.\nVERDICT write_paths: prompt.txt grants reckon/crew/queue_admission.py, tests/test_a_dropped_request_strands_no_waiter.py, the landing fragment and a figures dir; `git show --stat 6b9af653a3` changes exactly the first three and no figure, so every changed path is inside the grant.\nVERDICT manifest: manifest.md records status complete, the single commit 6b9af653a3, the literal armed suite command, completed base and after suite receipts with their failure ids, the negative-control log path and a per-dimension rubric self-check.\nVERDICT diff: one commit, 6b9af653a3, reading it commit by commit against d98e22fb19: reckon/crew/queue_admission.py:4092 replaces the stored-ref comprehension with a node.after comprehension, tests/test_a_dropped_request_strands_no_waiter.py adds 263 lines showing the three cases, and the fragment records the landing.\nCALL_SITES: reckon/crew/queue_admission.py:_advance_waiting_requests, reckon/crew/queue_admission.py:advance_waiting_requests, reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:_release_tick\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4092 takes the request's own refs from node.after, so a stored run: ref the request never named is no longer unioned into the derived waits at :4093.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/repro-defect-base.log:5-12 shows the defect at d98e22fb19 before the fix and logs/suite-after.log ends `54 passed`, though the base arm also carries two scaffolding errors in tests/test_staged_write_inventory.py that the manifest attributes to a git-less scratch tree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git show --stat 6b9af653a3 changes only reckon/crew/queue_admission.py, tests/test_a_dropped_request_strands_no_waiter.py and the landing fragment, all four declared paths minus the unused figures directory.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_dropped_request_strands_no_waiter.py:198 asserts the stored waits equal [DECLARED] and :227 asserts the queued sibling's ref is absent, and logs/negative-control.log shows both reddening under the restored stored-ref comprehension while case 3 stays green.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:4086-4091 replaces the old comment with one stating the mechanism, and the new expression mirrors the existing one at :2719 in form and naming, with no plan or ticket identifier introduced.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:4092 re-implements the `run:{run_id}` construction derive_wait_refs already owns at :2719 rather than deleting the now-redundant union at :4093, so the added definition duplicates that owner.\nFINDING reckon/crew/queue_admission.py:4092 non-blocking: `own` re-derives exactly the refs derive_wait_refs already returns (reckon/crew/queue_admission.py:2719 builds `run:{run_id}` from node.after with the identical expression and includes them on both of its return paths), so `own` is always a subset of `derived` and the union at :4093 is a no-op; the added definition duplicates the owner's computation rather than extending it, and the vestigial union keeps a stored-versus-derived distinction the code no longer makes, inviting a future reader to reintroduce a stored ref through it; the line can simply be deleted.\n",
+  "review_run_id": "r-20261111T044922902776-review-of-keep-only-named-run-waits-6b9af653a307",
+  "reviewed_base_sha": "d98e22fb19a87d8d66d3cd61ee8e0e75e24ea940",
+  "reviewed_head_sha": "6b9af653a307a6beb68589b9c463adc7209efca9",
+  "reviewed_run_id": "r-20261108T184647471418-keep-only-named-run-waits",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T05:27:19.612307+00:00",
+  "total": 101
+}

@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="325">
+<meta name="plan-version" content="326">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -694,7 +694,7 @@
     <div class="r-comment-body"><p>increment review of run r-20261110T165947769366-a-node-waits-only-on-what-it-names covering only the three commits gained since the prior review at c35c29708e39 (18fde7f932, 03e38d5990, 3735d84af5); base c35c29708e395b43449494bbbd100133fcaf335b, head 3735d84af5a0c298950807c534924260105c1962; scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 19, reuse 20, with one non-blocking finding that the added batch case has no dispatch-base arm; added_failure_count 0 against the reviewed run's own baseline/after suite pair</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261110T165947769366-a-node-waits-only-on-what-it-names" data-who="reckon-build" data-when="2026-11-10T23:01:41Z">
-    <div class="r-comment-body"><p>crew dispatch gains --waits-only-after, so a request waits exactly on its own --after refs on any admission pass, and the same flag survives the batch entry path, whose declared field set now carries it; six cases pass at head 03e38d5990 (four of the five earlier ones fail at the dispatch base) and three negative controls fail exactly the case each names, including dropping the field from BATCH_ENTRY_FIELDS; the armed suite runs 57 passed at that head against 51 at base 434ec98ac; the importer population&#x27;s first 10-file slice of chunk 02 ran in both arms with identical failure ids, adding none.</p></div>
+    <div class="r-comment-body"><p>crew dispatch gains --waits-only-after, so a request waits exactly on its own --after refs on any admission pass, and the same flag survives the batch entry path, whose declared field set now carries it; six cases pass at head 03e38d5990 (four of the five earlier ones fail at the dispatch base) and three negative controls fail exactly the case each names, including dropping the field from BATCH_ENTRY_FIELDS; the armed suite runs 57 passed at that head against 51 at base 434ec98ac; the importer population's first 10-file slice of chunk 02 ran in both arms with identical failure ids, adding none.</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261028T172037278571-review-of-a-request-that-cannot-launch-costs-nothing-509b754be256" data-who="reckon-build" data-when="2026-10-28T17:34:26.104Z">
     <div class="r-comment-body"><p>review of r-20261028T143214494729-a-request-that-cannot-launch-costs-nothing at base 1211c30e8ba43ec26c5e38a185cd0c30fb9ab4e2 and head 509b754be2561eb15557ff4445f9d8625d97a1e9 stored parsed, scoring goal_fidelity 14, evidence 11, scope_discipline 19, durability 15, fit 17, reuse 5, with one added failure and two blocking findings</p></div>
@@ -905,6 +905,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261111T044922902776-review-of-keep-only-named-run-waits-6b9af653a307" data-who="reckon-build" data-when="2026-11-11T05:09:07.078Z">
+    <div class="r-comment-body"><p>review of r-20261108T184647471418-keep-only-named-run-waits at base d98e22fb19 to head 6b9af653a3 stored as a parsed record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 5; 101/120), zero added failures, one non-blocking finding: the new `own` set at reckon/crew/queue_admission.py:4092 duplicates what derive_wait_refs already builds at :2719, so the union at :4093 is a no-op and the line can be deleted.</p></div>
 </div>
 </section>
 </main>
