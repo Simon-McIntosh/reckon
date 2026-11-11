@@ -116,7 +116,9 @@ reckon crew review --project <project> --plan <slug> --rubric currency --session
 
 Read the plan's existing content and design reviews beside it
 (`crew(project, view="plan-review", plan=<slug>)`) so a settled finding is not
-raised twice. Spot-check each remaining implementable section against the tree —
+raised twice. A content or design review judges the plan's endpoint: a section
+prescribing implementation is a finding, and the reuse map — the module to
+extend — belongs to the node brief, never to plan text. Spot-check each remaining implementable section against the tree —
 is it already in the code? — and apply what the review proposes through
 `reckon-edit`. Report the plan's status, stored and derived impl, sprint
 membership, days since its last commit, the open declarations and followups, and

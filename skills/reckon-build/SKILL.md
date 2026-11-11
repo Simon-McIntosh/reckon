@@ -149,6 +149,9 @@ two of its write scopes must run in parallel; list exclusive write paths per
 item, use isolated worktrees by default, and never dispatch two workers that
 write the same file. Each node carries a brief citing the reuse map: the module
 to extend, the interface not to widen, the question the worker may not settle.
+That reuse map stays in the brief. The plan states the endpoint and names no
+module, function or file to extend, so a plan that does is a review finding
+rather than something to implement.
 
 **Queue the work you have chosen in one beat.** Decide which sections need doing
 now, often a few from each of several plans whose review rounds are answered.
