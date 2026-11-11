@@ -2657,9 +2657,98 @@ def _follow_replay_visible() -> bool:
         return False
 
 
+def _follow_live_state_rows(project: str, session: str) -> list[dict[str, str]]:
+    """The runs one session owns right now, in the shape the row path reads.
+
+    Each row carries the state word the producer wrote for the run, which is
+    the word the delivered record holds: that record is written from the rows
+    the pane drew, so re-reading the row's state is the only way a re-arm can
+    ask whether the pane has already drawn it.
+    """
+    from reckon.crew import runs as runs_module
+    from reckon.crew import ticker as ticker_module
+    from reckon.crew.query import project_live_rows
+
+    pointers = [
+        pointer
+        for pointer in runs_module.list_live(project=project)
+        if str(pointer.get("session") or "") == session
+    ]
+    rows: dict[str, dict[str, str]] = {}
+    for row in project_live_rows(pointers, session=session, pointers=pointers):
+        run_id = str(row.get("run_id") or "")
+        if not run_id:
+            continue
+        state = str(row.get("classification") or row.get("phase") or "")
+        rows[run_id] = {
+            "run_id": run_id,
+            "to_state": ticker_module._display_state(state) or state,
+            "node": str(row.get("node") or ""),
+        }
+    return [rows[run_id] for run_id in sorted(rows)]
+
+
+def _follow_live_state_line(row: Mapping[str, str]) -> str:
+    """One run's state on the pane: its name and its word, with no arrow."""
+    line = f"  {row['run_id']}  {row['to_state']}"
+    node = str(row.get("node") or "")
+    return f"{line}  {node}" if node else line
+
+
+def _follow_resume_output(
+    project: str,
+    session: str,
+    *,
+    read_history: Callable[[], list[dict]],
+    history_caps: tuple[int, ...] | None,
+    dim: Callable[[str], str],
+) -> str:
+    """What a re-arm writes into its pane: the history on a terminal, state on a pipe.
+
+    The stored history stays terminal-only. A pipe is handed the rows for the
+    runs the pane has not been shown at their current word, which is the same
+    question the re-attach diff asks of the fleet's rows: the delivered record
+    names the word each run was last drawn at, so a run still at that word is
+    not repeated and a run the pane has never drawn — or one that moved while
+    it was away — is drawn from the state it stands in now.
+    """
+    if _follow_replay_visible():
+        from reckon.crew import follow_checkpoint as history_module
+
+        restored = history_module.cap_history(
+            read_history(),
+            now=time.time(),
+            max_rows=(history_caps or (0, 0))[0],
+            max_seconds=(history_caps or (0, 0))[1],
+        )
+        return _follow_history_burst(restored, dim=dim)
+    from reckon.crew import runs as runs_module
+    from reckon.crew import ticker as ticker_module
+
+    record = runs_module.read_delivered(project, session)
+    if not record.get("states"):
+        # A pane with no memory of its own rows has nothing to be shown the
+        # difference against, and its replay draws the fleet as it stands.
+        return ""
+    # The record can hold the state the producer wrote rather than the word the
+    # pane draws for it, so both halves are read on the pane's own word before
+    # they are compared; a word that is already one of the pane's maps to itself.
+    record = dict(record)
+    record["states"] = {
+        str(run_id): ticker_module._display_state(state) or str(state)
+        for run_id, state in dict(record.get("states") or {}).items()
+    }
+    rows = _follow_gap_rows(
+        _follow_live_state_rows(project, session),
+        record,
+        session=session,
+        observed=(),
+        run_ids=(),
+    )
+    return "\n".join(_follow_live_state_line(row) for row in rows)
+
 
 _HISTORY_FRAME = "── history · {count} rows ──"
-
 
 
 def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:
@@ -3283,19 +3372,21 @@ def crew_follow(
                 # fill and would read the restored rows as fresh transitions,
                 # which is precisely the replay this removes. When there is a
                 # terminal, the burst opens under one dim frame line that names
-                # it as earlier history, so a restored row is never acted on.
+                # it as earlier history, so a restored row is never acted on. A
+                # pipe is handed the session's current work instead, framed as
+                # state, so a re-arm is never silent about what it owns.
                 if json_output:
                     _emit_crew_result(event, pretty, observation=True)
-                elif session is not None and _follow_replay_visible():
-                    restored = history_module.cap_history(
-                        read_history(),
-                        now=time.time(),
-                        max_rows=history_caps[0],
-                        max_seconds=history_caps[1],
+                elif session is not None:
+                    text = _follow_resume_output(
+                        project,
+                        session,
+                        read_history=read_history,
+                        history_caps=history_caps,
+                        dim=replay_dim,
                     )
-                    burst = _follow_history_burst(restored, dim=replay_dim)
-                    if burst:
-                        _echo_follow_line(burst)
+                    if text:
+                        _echo_follow_line(text)
                 continue
             if event.get("event") in (
                 FOLLOWER_PRODUCER_RELOAD_FAILED_EVENT,
