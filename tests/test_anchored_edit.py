@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import io
+import json
 import os
 import shutil
 import stat
+import subprocess
 import sys
+import textwrap
 import tomllib
 from datetime import timedelta
 from pathlib import Path
@@ -15,6 +19,7 @@ import pytest
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from reckon import anchored_edit
 from reckon.anchored_edit import DEFAULT_LIMIT, AnchoredEditor, _line_hash
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -399,3 +404,120 @@ def test_console_script_completes_a_read_and_an_edit_over_stdio(root, monkeypatc
     assert "edit" in edit_text
     assert target.read_bytes() == b"one\nTWO\nthree\n"
     assert DEFAULT_LIMIT >= 200
+
+
+def _serve_capture(lines, roots):
+    """Feed JSON-RPC lines to the server loop and return the parsed responses."""
+    stream = io.StringIO("".join(json.dumps(line) + "\n" for line in lines))
+    out = io.StringIO()
+    anchored_edit.serve(stream, out, roots)
+    return [json.loads(line) for line in out.getvalue().splitlines() if line.strip()]
+
+
+_INITIALIZE = {
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+        "protocolVersion": "2025-06-18",
+        "capabilities": {},
+        "clientInfo": {"name": "test", "version": "0"},
+    },
+}
+
+
+def test_the_server_answers_initialize_and_lists_its_tools(root):
+    responses = _serve_capture(
+        [
+            _INITIALIZE,
+            {"jsonrpc": "2.0", "method": "notifications/initialized"},
+            {"jsonrpc": "2.0", "id": 2, "method": "tools/list", "params": {}},
+        ],
+        [str(root)],
+    )
+
+    assert [response["id"] for response in responses] == [1, 2]
+    initialized = responses[0]["result"]
+    assert initialized["serverInfo"]["name"] == anchored_edit.SERVER_NAME
+    assert initialized["capabilities"] == {"tools": {"listChanged": False}}
+    names = {tool["name"] for tool in responses[1]["result"]["tools"]}
+    assert names == {"read_anchored", "edit_anchored"}
+
+
+def test_an_unknown_request_is_refused_as_a_jsonrpc_error(root):
+    (response,) = _serve_capture(
+        [{"jsonrpc": "2.0", "id": 7, "method": "no/such", "params": {}}],
+        [str(root)],
+    )
+
+    assert response["error"]["code"] == -32601
+
+
+# The imports that made the server take more than five seconds to answer
+# ``initialize`` from a cold process: the MCP framework (about four and a half
+# seconds) and the two reckon modules the editor's hot path pulls in.
+_SLOW_COMPONENTS = (
+    "mcp",
+    "mcp.server.fastmcp",
+    "reckon._store",
+    "reckon._worker_fence",
+)
+
+_COLD_IMPORT_SCRIPT = textwrap.dedent(
+    f"""
+    import io, json, sys
+    import reckon.anchored_edit as editor
+
+    slow = {_SLOW_COMPONENTS!r}
+    def present():
+        return sorted(name for name in slow if name in sys.modules)
+
+    out = io.StringIO()
+    editor.serve(io.StringIO(
+        json.dumps({{"jsonrpc": "2.0", "id": 1, "method": "initialize", "params":
+            {{"protocolVersion": "2025-06-18", "capabilities": {{}},
+              "clientInfo": {{"name": "t", "version": "0"}}}}}}) + "\\n"
+        + json.dumps({{"jsonrpc": "2.0", "id": 2, "method": "tools/list",
+                       "params": {{}}}}) + "\\n"),
+        out, [])
+    before = present()
+
+    call = io.StringIO()
+    editor.serve(io.StringIO(json.dumps(
+        {{"jsonrpc": "2.0", "id": 3, "method": "tools/call", "params":
+          {{"name": "read_anchored", "arguments": {{"path": sys.argv[1]}}}}}}) + "\\n"),
+        call, [sys.argv[2]])
+    after = present()
+
+    print(json.dumps({{"before": before, "after": after}}))
+    """
+)
+
+
+def test_the_console_script_module_imports_no_slow_component_before_the_first_request(
+    root,
+):
+    """The console script runs this module; it must answer before importing them.
+
+    A cold session-start snapshot is taken within two seconds, so a module that
+    imports the framework and the fence at import time is still unconnected
+    when the harness reads it. The read that follows proves the check can see
+    those imports appear: it drives the fence, so its absence before is a fact
+    about the server rather than an instrument that never fires.
+    """
+    target = root / "sample.py"
+    target.write_bytes(b"one\ntwo\n")
+
+    completed = subprocess.run(
+        [sys.executable, "-c", _COLD_IMPORT_SCRIPT, str(target), str(root)],
+        env={**os.environ, "PYTHONPATH": str(ROOT)},
+        capture_output=True,
+        text=True,
+        timeout=120,
+        check=False,
+    )
+
+    assert completed.returncode == 0, completed.stderr
+    report = json.loads(completed.stdout)
+    assert report["before"] == [], report
+    assert "reckon._worker_fence" in report["after"], report

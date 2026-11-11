@@ -34,22 +34,15 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import os
+import sys
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
-from typing import Any
-
-try:
-    from mcp.server.fastmcp import FastMCP
-
-    _HAS_MCP = True
-except ImportError:  # pragma: no cover - the package is a declared dependency
-    _HAS_MCP = False
-    FastMCP = None  # type: ignore[assignment,misc]
-
-from reckon._store import write_atomically
-from reckon._worker_fence import _within_any
+from typing import Any, TextIO
 
 DEFAULT_LIMIT = 400
 HASH_CHARS = 3
@@ -159,7 +152,14 @@ class AnchoredEditor:
 
         With no roots this is True for every path, so a server started without
         ``--root`` can read and write nothing.
+
+        The fence module is imported here rather than at module scope: it pulls
+        in roughly half a second of import work that no session-start request
+        needs, and a server that spends that before answering ``initialize``
+        is still unconnected when the harness snapshots its servers.
         """
+        from reckon._worker_fence import _within_any
+
         return not self._roots or not _within_any(resolved, self._roots)
 
     def _hash_matches(self, content: bytes, expected: str) -> bool:
@@ -421,6 +421,8 @@ class AnchoredEditor:
 
         new_bytes = b"".join(line.content + line.ending for line in out)
         try:
+            from reckon._store import write_atomically
+
             mode = os.stat(resolved).st_mode & 0o7777
             write_atomically(
                 resolved,
@@ -449,32 +451,182 @@ INSTRUCTIONS = (
     "file. Paths outside the roots this server was started with are refused."
 )
 
+SERVER_NAME = "reckon-anchored-edit"
+PROTOCOL_VERSION = "2025-06-18"
 
-def build_server(roots: list[str] | list[Path] | tuple[Path, ...] = ()) -> FastMCP:
-    """A FastMCP server serving the two tools over one set of roots."""
+_TOOLS: list[dict[str, Any]] = [
+    {
+        "name": "read_anchored",
+        "description": "Read a file as anchorable lines (N:HHH|text).",
+        "inputSchema": {
+            "properties": {
+                "path": {"title": "Path", "type": "string"},
+                "offset": {"default": 1, "title": "Offset", "type": "integer"},
+                "limit": {
+                    "default": DEFAULT_LIMIT,
+                    "title": "Limit",
+                    "type": "integer",
+                },
+            },
+            "required": ["path"],
+            "title": "read_anchoredArguments",
+            "type": "object",
+        },
+        "outputSchema": {
+            "properties": {"result": {"title": "Result", "type": "string"}},
+            "required": ["result"],
+            "title": "read_anchoredOutput",
+            "type": "object",
+        },
+    },
+    {
+        "name": "edit_anchored",
+        "description": (
+            "Apply anchored edits atomically; each edit has anchor, op and text."
+        ),
+        "inputSchema": {
+            "properties": {
+                "path": {"title": "Path", "type": "string"},
+                "edits": {
+                    "items": {"additionalProperties": True, "type": "object"},
+                    "title": "Edits",
+                    "type": "array",
+                },
+            },
+            "required": ["path", "edits"],
+            "title": "edit_anchoredArguments",
+            "type": "object",
+        },
+        "outputSchema": {
+            "properties": {"result": {"title": "Result", "type": "string"}},
+            "required": ["result"],
+            "title": "edit_anchoredOutput",
+            "type": "object",
+        },
+    },
+]
+
+
+def _server_version() -> str:
+    try:
+        return version("reckon-plans")
+    except PackageNotFoundError:
+        return "0"
+
+
+def _error(identifier: Any, code: int, message: str) -> dict[str, Any]:
+    return {
+        "jsonrpc": "2.0",
+        "id": identifier,
+        "error": {"code": code, "message": message},
+    }
+
+
+def _call_tool(editor: AnchoredEditor, name: str, arguments: dict[str, Any]) -> str:
+    if name == "read_anchored":
+        return editor.read(
+            str(arguments.get("path", "")),
+            offset=int(arguments.get("offset", 1)),
+            limit=int(arguments.get("limit", DEFAULT_LIMIT)),
+        )
+    if name == "edit_anchored":
+        return editor.edit(str(arguments.get("path", "")), arguments.get("edits") or [])
+    raise KeyError(name)
+
+
+def _answer(message: Mapping[str, Any], editor: AnchoredEditor) -> Any:
+    """Answer one JSON-RPC message; ``None`` means it is a notification."""
+    method = message.get("method")
+    identifier = message.get("id")
+    params = message.get("params") or {}
+
+    if identifier is None:
+        return None
+
+    if method == "initialize":
+        requested = params.get("protocolVersion")
+        return {
+            "jsonrpc": "2.0",
+            "id": identifier,
+            "result": {
+                "protocolVersion": requested or PROTOCOL_VERSION,
+                "capabilities": {"tools": {"listChanged": False}},
+                "serverInfo": {
+                    "name": SERVER_NAME,
+                    "version": _server_version(),
+                },
+                "instructions": INSTRUCTIONS,
+            },
+        }
+    if method == "ping":
+        return {"jsonrpc": "2.0", "id": identifier, "result": {}}
+    if method == "tools/list":
+        return {"jsonrpc": "2.0", "id": identifier, "result": {"tools": _TOOLS}}
+    if method == "tools/call":
+        name = params.get("name")
+        try:
+            text = _call_tool(editor, str(name), params.get("arguments") or {})
+        except KeyError:
+            return _error(identifier, -32602, f"unknown tool {name!r}")
+        except Exception as error:  # noqa: BLE001 - reported to the client, not raised
+            return {
+                "jsonrpc": "2.0",
+                "id": identifier,
+                "result": {
+                    "content": [{"type": "text", "text": f"tool failed: {error}"}],
+                    "isError": True,
+                },
+            }
+        return {
+            "jsonrpc": "2.0",
+            "id": identifier,
+            "result": {
+                "content": [{"type": "text", "text": text}],
+                "structuredContent": {"result": text},
+                "isError": False,
+            },
+        }
+    if method == "resources/list":
+        return {"jsonrpc": "2.0", "id": identifier, "result": {"resources": []}}
+    if method == "prompts/list":
+        return {"jsonrpc": "2.0", "id": identifier, "result": {"prompts": []}}
+    return _error(identifier, -32601, f"method {method!r} is not supported")
+
+
+def serve(instream: TextIO, outstream: TextIO, roots: list[str]) -> None:
+    """Serve the two tools over newline-delimited JSON-RPC on stdin/stdout.
+
+    This is written directly on the standard library rather than through an MCP
+    framework. A framework import costs several seconds here, and the harness
+    reads a server's status from the ``initialize`` and ``tools/list`` answers
+    inside a two-second snapshot taken at session start; a server still
+    importing when the snapshot is read is recorded as unconnected and its
+    tools are never offered. The editing machinery those answers do not need is
+    imported on first use instead (see ``AnchoredEditor``).
+    """
     editor = AnchoredEditor(roots)
-    server = FastMCP("reckon-anchored-edit", instructions=INSTRUCTIONS)
-
-    @server.tool()
-    def read_anchored(path: str, offset: int = 1, limit: int = DEFAULT_LIMIT) -> str:
-        """Read a file as anchorable lines (N:HHH|text)."""
-        return editor.read(path, offset=offset, limit=limit)
-
-    @server.tool()
-    def edit_anchored(path: str, edits: list[dict[str, Any]]) -> str:
-        """Apply anchored edits atomically; each edit has anchor, op and text."""
-        return editor.edit(path, edits)
-
-    return server
+    for raw in instream:
+        line = raw.strip()
+        if not line:
+            continue
+        try:
+            message = json.loads(line)
+        except ValueError:
+            outstream.write(json.dumps(_error(None, -32700, "parse error")) + "\n")
+            outstream.flush()
+            continue
+        response = _answer(message, editor)
+        if response is not None:
+            outstream.write(json.dumps(response) + "\n")
+            outstream.flush()
+        if message.get("method") == "exit":
+            return
 
 
 def main(argv: list[str] | None = None) -> None:
     """Parse the roots and serve both tools over stdio."""
-    if not _HAS_MCP or FastMCP is None:
-        msg = "mcp package not found; it is a declared dependency of reckon."
-        raise SystemExit(msg)
     parser = argparse.ArgumentParser(
-        prog="reckon-anchored-edit",
+        prog=SERVER_NAME,
         description=(
             "Line-anchored edit tools over MCP stdio. Every path is confined "
             "to the roots given with --root; with none, nothing is readable or "
@@ -488,7 +640,7 @@ def main(argv: list[str] | None = None) -> None:
         metavar="DIR",
         help="a directory the server may read and write (repeatable)",
     )
-    build_server(parser.parse_args(argv).root).run(transport="stdio")
+    serve(sys.stdin, sys.stdout, parser.parse_args(argv).root)
 
 
 if __name__ == "__main__":

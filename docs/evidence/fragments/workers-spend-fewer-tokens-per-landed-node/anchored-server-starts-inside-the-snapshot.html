@@ -1,0 +1,38 @@
+<section id="anchored-server-starts-inside-the-snapshot-landing">
+  <h2>The anchored server answers before the harness snapshots it</h2>
+  <p>A cold <code>reckon-anchored-edit</code> process took 3.0 to 7.3 s to answer
+    <code>initialize</code> because importing the module pulled in the MCP
+    framework (about 4.4 s) and the fence and store modules. The harness reads a
+    server's status from its <code>initialize</code> and <code>tools/list</code>
+    answers inside a two-second snapshot at session start, so a server still
+    importing then is recorded as <code>pending</code> and its tools are never
+    offered. The fix keeps the session-start answers on the standard library: a
+    newline-delimited JSON-RPC loop in <code>reckon/anchored_edit.py</code>
+    answers <code>initialize</code>, <code>tools/list</code> and
+    <code>tools/call</code> directly, and the editing machinery
+    (<code>reckon._store</code>, <code>reckon._worker_fence</code>) is imported
+    only when a call actually needs it. The module imports the MCP framework
+    nowhere, because the unused framework server path was removed.</p>
+  <table id="anchored-server-starts-inside-the-snapshot-timings">
+    <caption>Cold-process time from spawn to the <code>initialize</code> answer, five runs each, on the fleet node.</caption>
+    <thead><tr><th>Arm</th><th>Min</th><th>Max</th><th>Mean</th></tr></thead>
+    <tbody>
+      <tr><td>Before (base 994610e0bc)</td><td>3.035 s</td><td>7.322 s</td><td>4.914 s</td></tr>
+      <tr><td>After (this node)</td><td>0.233 s</td><td>0.317 s</td><td>0.260 s</td></tr>
+    </tbody>
+  </table>
+  <p>A headless <code>clive</code> session against the worktree, with the server
+    registered through <code>--mcp-config --strict-mcp-config</code>, records it
+    in its session-start <code>init</code> record as
+    <code>{"name": "reckon-anchored-edit", "status": "connected"}</code>, with
+    <code>mcp__reckon-anchored-edit__read_anchored</code> and
+    <code>mcp__reckon-anchored-edit__edit_anchored</code> in the offered tool
+    list. A test in <code>tests/test_anchored_edit.py</code> runs the
+    console-script module in a fresh interpreter, serves
+    <code>initialize</code> and <code>tools/list</code>, and asserts none of
+    <code>mcp</code>, <code>reckon._store</code> or
+    <code>reckon._worker_fence</code> is imported before the first request; a
+    following <code>read_anchored</code> call proves the check can see
+    <code>reckon._worker_fence</code> appear. Restoring the eager import fails
+    that test, which is the declared negative control.</p>
+</section>
