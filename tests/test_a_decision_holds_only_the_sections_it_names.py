@@ -169,7 +169,7 @@ def test_admission_uses_the_same_decision_hold(
     assert len(launched) == len(expected_runs), result
     assert len(hook_probe) == len(launched)
     for pointer in runs.list_live(project=fixtures.PROJECT):
-        if pointer["section"] in held_sections:
+        if pointer["node"]["section"] in held_sections:
             assert pointer["phase"] == "awaiting-upstream", pointer
 
 
