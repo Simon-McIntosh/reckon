@@ -570,6 +570,22 @@ def _canonical_suite_command(value: Any, tree: Path | None) -> tuple[str, ...]:
     return tuple(others + test_files)
 
 
+def _revision_store(record: Mapping[str, Any]) -> Path | None:
+    """A surviving tree whose object store answers what a citation names.
+
+    A released worktree is gone while the repository that holds its commits
+    remains, so the store is the first of the two that still exists.
+    """
+    for key in ("worktree", "repo"):
+        text = str(record.get(key) or "").strip()
+        if not text:
+            continue
+        tree = Path(text).expanduser()
+        if tree.is_dir():
+            return tree
+    return None
+
+
 def _same_tree(first: str | Path | None, second: str | Path | None) -> bool:
     """Whether two spellings name one tree, ignoring a symlinked home."""
     if first is None or second is None:
@@ -697,19 +713,6 @@ def _run_head(
     return _newest_cited_commit(record, manifest)
 
 
-def _same_revision(record: Mapping[str, Any], first: str, second: str) -> bool:
-    """Whether two revision spellings name one commit."""
-    if first == second:
-        return True
-    tree = _scope_tree(record)
-    if tree is None or not tree.is_dir():
-        return False
-    from reckon.crew.recovery_review_subject import _resolve_commit
-
-    resolved = _resolve_commit(tree, first, cached=True)
-    return bool(resolved) and resolved == _resolve_commit(tree, second, cached=True)
-
-
 def _arm_revision_mismatch(
     record: Mapping[str, Any],
     arm_name: str,
@@ -718,14 +721,25 @@ def _arm_revision_mismatch(
 ) -> list[str]:
     """Name an after arm recorded at a revision other than the run's head.
 
-    ``head`` is read by the caller of the arm check. An absent head is an
-    unreadable instrument rather than a defect in the arm, so nothing is named
-    then; the arm's other fields still decide the pair.
+    An arm compares against the head only when both revisions answer: ``head``
+    is read by the caller, and the revision the arm records must name a commit
+    in the run's own store. A head that could not be read and a citation that
+    names no commit are unreadable instruments rather than defects in the arm,
+    so neither is named here and the arm's other fields still decide the pair.
+
+    A citation that does resolve and differs from the head is the case this
+    check exists for: the arm measured a tree the run no longer delivers.
     """
     if arm_name != "after_suite" or not head:
         return []
     recorded = str(observation.get("revision") or "").strip()
-    if not recorded or _same_revision(record, recorded, head):
+    tree = _revision_store(record)
+    if not recorded or tree is None:
+        return []
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    resolved = _resolve_commit(tree, recorded, cached=True)
+    if not resolved or resolved == _resolve_commit(tree, head, cached=True):
         return []
     return [f"{arm_name}.revision_matches_head"]
 
