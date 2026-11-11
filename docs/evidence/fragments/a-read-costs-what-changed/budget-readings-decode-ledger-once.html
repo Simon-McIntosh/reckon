@@ -1,0 +1,6 @@
+<section id="budget-readings-decode-ledger-once">
+  <h3>Budget readings reuse the unchanged ledger</h3>
+  <p>Historical readings now use the bounded process memo keyed by ledger write generation, aggregate and run-directory identity, and backend configuration. Live pointers are read on every call, and cached readings are handed out as deep copies. Missing generations and failed ledger loads do not publish a cached answer.</p>
+  <p>The regression check failed on the base source with two ledger loads where one was required (<code>assert 2 == 1</code>). All 11 new checks pass, covering unchanged reads, promotion, a new live pointer without a ledger load, nested mutation isolation, generation changes, missing generations, explicit records, changed configuration, transient read failures, and external aggregate and run-file writes.</p>
+  <p>Matched checks ran in separate job <code>1310370</code> on <code>all_debug</code>. The armed base passed 51 tests; the head passed 62. Across 51 existing importer files, both arms reported 22 failed and 711 passed, with identical failing test identities: zero added failures. Ruff check and format check pass on the changed Python paths. The coordinator still owns the station re-profile after landing.</p>
+</section>
