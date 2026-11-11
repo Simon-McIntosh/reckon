@@ -1494,7 +1494,15 @@ class _CodexDialect(Dialect):
                 "codex inbox hook trust could not be established by hooks/list"
             )
         hook = hooks[0]
-        trust = f"hooks.state.{json.dumps(hook['key'])}.trusted_hash={json.dumps(hook['currentHash'])}"
+        # CLI override paths split at every dot, including dots inside quoted
+        # hook keys. An inline table keeps the entire identity as one TOML key.
+        trust = (
+            "hooks.state={"
+            + json.dumps(hook["key"])
+            + "={trusted_hash="
+            + json.dumps(hook["currentHash"])
+            + "}}"
+        )
         return ["-c", definition, "-c", trust]
 
     def working_directory(

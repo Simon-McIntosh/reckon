@@ -83,6 +83,8 @@ def test_codex_carries_only_its_inbox_hook_and_exact_trust(
             "trusted_hash": "sha256:" + "a" * 64,
         }
     }
+    trust_override = next(word for word in argv if "trusted_hash=" in word)
+    assert trust_override.startswith("hooks.state={")
     assert "--dangerously-bypass-hook-trust" not in argv
     assert {p.name: p.read_bytes() for p in tmp_path.iterdir()} == before
     assert hook_probe[0].requests[-1]["method"] == "hooks/list"
