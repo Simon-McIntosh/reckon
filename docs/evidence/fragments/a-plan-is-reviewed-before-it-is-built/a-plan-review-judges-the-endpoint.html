@@ -1,0 +1,58 @@
+<section class="landed-node" id="a-plan-review-judges-the-endpoint">
+<h3>a-plan-review-judges-the-endpoint</h3>
+
+<p id="a-plan-review-judges-the-endpoint-what">The composed plan-review briefs now
+judge a section's endpoint and never its implementation. In the content rubric,
+<code>reasoning</code> drops the two checks that judged a stated method — whether
+a section's mechanism produced its done-when, and whether the mechanism ran on a
+named production caller — and asks instead whether the endpoint is reachable and
+checkable and whether the section prescribes implementation, which is a finding.
+<code>anchors_resolve</code> no longer requires claims to be cited: a reference is
+judged on resolution alone. In the design rubric, the reuse map is produced for
+the node brief and no finding asks the plan to name a module, function or file to
+extend. <code>skills/reckon-build/SKILL.md</code> and
+<code>skills/reckon-review/SKILL.md</code> state that the reuse map stays out of
+the plan.</p>
+
+<p id="a-plan-review-judges-the-endpoint-measure">The measure is
+<code>tests/test_a_plan_review_judges_the_endpoint.py</code>: it composes both
+briefs through the production composer for a temporary plan and asserts the
+clauses above, including that the base rubric's method checks are absent. Gate at
+<code>fbcdaf87</code>: 86 passed, <code>EXIT=0</code> (<code>gate-head.log</code>);
+base arm over the same resolved files, the new test absent from that tree: 79
+passed, <code>EXIT=0</code> (<code>gate-base.log</code>), both on
+<code>all_debug</code> with <code>-n 4</code>, one arm at a time.
+<code>tests/test_skill_contracts.py</code> adds no failure: 4 failed at base and
+the same 4 at head (<code>skill-contracts-base.log</code>). Ruff check and ruff
+format --check are clean on the staged Python paths.</p>
+
+<p id="a-plan-review-judges-the-endpoint-control">Negative control: restoring the
+base revision's rubric text makes the content and design assertions fail — 4
+failed, incl. <code>test_content_brief_raises_prescribed_implementation_as_a_finding</code>
+and <code>test_design_brief_*</code>, <code>EXIT=1</code>
+(<code>negative-control-base-rubric.log</code>); the mutation was reverted and the
+file digests re-checked identical.</p>
+
+<p id="a-plan-review-judges-the-endpoint-evidence">Recorded evidence, not a gate:
+one content review of each of two fixture plans, composed by the production
+composer and run on the local lane (local release
+<code>deepseek-v4.1-flash</code> at the site router). The prescribing fixture — a
+function to extend, a call order and a helper to write — drew the implementation
+finding on <code>reasoning</code> (<q>the deliverable prescribes a code path, a
+step sequence and functions to extend and add</q>). The endpoint fixture — records,
+quantity, tolerance, independent reference and negative control — drew
+<code>RUBRIC reasoning: pass</code>; its one finding is that the negative control
+does not name the rule to restore. Logs:
+<code>fixture-review-prescribing-fixture.log</code> and
+<code>fixture-review-endpoint-fixture.log</code> under the run directory, each
+headed by its revision and command and ending in <code>EXIT=</code>.</p>
+
+<p id="a-plan-review-judges-the-endpoint-outside">Outside this node's scope: one
+test asserting the removed reasoning clause still stands —
+<code>tests/test_plan_review_prompt.py::test_reasoning_check_names_the_real_path_caller</code>
+requires the base rubric's <q>does each section's mechanism produce its
+done-when</q> and <q>with the caller named</q> strings, which this change removes
+by design. It is the only remaining red case (5 failed → 4 failed apart from it
+across the related set) and needs replacing with a case that asserts the endpoint
+checks.</p>
+</section>
