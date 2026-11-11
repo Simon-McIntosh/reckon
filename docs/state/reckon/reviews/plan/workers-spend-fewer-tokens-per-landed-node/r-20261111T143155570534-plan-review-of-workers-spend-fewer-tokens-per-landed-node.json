@@ -1,0 +1,66 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T14:43:50.735Z",
+  "dispatched_at": "2026-11-11T14:36:29Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "done_when-1",
+      "reason": "the section's whole claim to a working guard is that control, and as written it is vacuous for two of the three fixes the same paragraph authorises.",
+      "text": "the positive measure was widened to \"the launch environment and prompt \u2026 carry the fix\", matching a deliverable that offers three fixes (an MCP startup allowance, a faster server start, or a prompt-side route through a deferred-tool search), but the declared negative control still names only \"with the startup allowance removed, the test of the launch environment must fail\": if the node establishes that the server starts fast enough or that the harness defers the tools, no allowance is part of its fix and the removal changes nothing, so the control cannot fail \u2014 it measures a component the fix may not contain.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "done_when-2",
+      "reason": "the probe must also record a deferred-tool listing (the run's one `ToolSearch` result carried `total_deferred_tools`), or the section's node-local measure cannot pass under the mechanism the section was just changed to admit.",
+      "text": "the fixed-arm acceptance is \"the fixed one lists the anchored tools as offered or reachable\" read from \"its session-start `mcp_servers` status and tool list\", but a session-start record binds only the tools present at init: under the deferral mechanism the plan now names as equally likely, a connected server's tools are absent from that list and surface only through a `ToolSearch` result, so the record the plan names cannot show \"reachable\" and the node can satisfy its own endpoint yet be unable to evidence it.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/workers-spend-fewer-tokens-per-landed-node.html:117",
+      "id": "reasoning-1",
+      "reason": "the sentence is offered as a hypothesis and the done-when requires the node to settle it by experiment, so the plan's endpoint is unaffected; only the strength of one evidential claim would change.",
+      "text": "the added sentence concludes that \"the harness deferring MCP tools behind a search is as likely a mechanism as a slow connect\" from the run's one `ToolSearch` having \"reported 39 deferred tools\", but that record carries `total_deferred_tools: 39` as a count with no membership, while the same run's init record lists 42 tools that exclude `Edit`, `Glob`, `Grep` and `Agent` \u2014 so the 39 are at this evidence equally consistent with the harness's own unlisted tools as with MCP tools; the sentence is also imprecise about the statuses (the record shows `imas-dd` connected, `lucy2` needs-auth, `reckon` pending, `reckon-anchored-edit` pending, not \"every server but one \u2026 pending\").",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "c3de01de77a84e5c5eab3f815d333a1f30c109b9",
+  "plan_fingerprint": "b7a52efb2a28b5b192b0c8716f9ebe900756e074d128e2b043e8ebded0693ae8",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 42,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T143155570534-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "d150e9fc5d42e56f6f39cb8dfd74911c04bc041e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited run `r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4` exists at `/home/ITER/mcintos/.config/reckon/crew/runs/\u2026` and holds the quoted session-start record, and the `\u00a75` and `\u00a78` cross-references resolve.",
+    "done_when": "two findings \u2014 the declared negative control is bound to the startup allowance alone while the positive measure and the deliverable now admit three different fixes, and the fixed-arm criterion (\"offered or reachable\") cannot be read from the session-start record the plan names when the mechanism turns out to be harness deferral.",
+    "evidence_paths": "pass \u2014 the two new probe records are kept as gate logs on the run's durable directory, while the scratch worktree named at plan.html:117 is only the session's target, never the evidence location.",
+    "naming": "pass \u2014 the unit carries no stage labels or ticket numbers into code or prose; the identifiers it quotes are a run id and measured figures.",
+    "reasoning": "a finding \u2014 the newly added co-equal mechanism is inferred from a deferred-tool COUNT whose membership the record does not carry, and the same sentence overstates the server statuses (\"every MCP server but one was pending\" reads 1 connected, 2 pending and 1 needs-auth at the cited record).",
+    "single_goal": "pass \u2014 establishing which mechanism hides the tools, fixing the launch and the prompt, and the coordinator-dispatched closing run all serve one deliverable: a Claude-dialect anchored worker actually edits through the tool.",
+    "wiring": "pass \u2014 \u00a710 itself declares no depends-on; the `plan-section-depends-on` map names `s10` in s8's set, so the anchored-arm population (\u00a78, plan.html:106) waits on this unit landing, which is the ordering the change requires."
+  },
+  "section_digests": {
+    "_document": "8d9aad505e7936579e5e4d355f26468dc70508e02815f52d9cd1e07e6b0f49e9",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "dcae4b1869c6ec3391f678af70935c4b3aaaa7d35240088c30375f22911a3b8e",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "10e892d6aec42a5f364c16cf41d2e8b307a924b921b3027cd2a9aced2e84b949",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T14:54:03.402136+00:00",
+  "total": null
+}
