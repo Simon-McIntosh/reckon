@@ -234,6 +234,30 @@ mechanism, create it there and use a qualified relationship from the consumer.
      evidence; decorative organization is unnecessary ink.
    - **Self-check before finishing:** "Could the lead read every label at a
      glance, and would it survive a black-and-white printout?" If not, fix it.
+9. **A section states its outcome and an independent check, not a mechanism
+   you have not run.** Write what the node must deliver and the measurement that
+   proves it: the quantity, the tolerance, the reference it is compared against,
+   and the negative control that must fail. Do not write the code path
+   ("halve the spectrum, multiply by the transfer, resynthesize") unless you have
+   run it and it reproduces the reference. A mechanism read off the source and
+   written into a plan is a guess, and the content review will test it against
+   the code. Each wrong guess costs a full review round, and every edit to fix
+   it reopens the gate. Measured on one plan: five consecutive review rounds,
+   each catching the previous round's restatement of an existing function, where
+   the outcome ("the per-instant terminal trace matches that function at its own
+   operating point within 2 %, fitted out of sample") would have needed none.
+   - **Call an owner, don't restate it.** When a section needs what an existing
+     function computes, require the node to call that function, extending its
+     signature if needed and pinning its default output to a fixture captured
+     before the change, rather than describing its internals.
+   - **When a worker blocks with a diagnosis, record the decision, not a
+     recipe.** The worker has run the code; put the choice it asked for into the
+     plan (which quantity, which reference, which tolerance) and let it settle
+     the mechanism.
+   - **Answer review findings about implementation detail without editing.**
+     Decline them with "the worker settles the mechanism; the done-when checks
+     the outcome". Edit only for a finding that makes the outcome wrong or
+     unsatisfiable.
 
 ## Authoring for faithful display (the SPA render contract)
 
@@ -675,7 +699,10 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --acted 
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
-Edit the plan only for a finding you act on. An edit a finding asked for is
+Edit the plan only for a finding you act on, and act only on one that makes
+an outcome wrong or unsatisfiable; a finding about how the node should
+implement something is declined with that reason (hard rule 9). An edit a
+finding asked for is
 covered by that finding's review only while it leaves the section's done-when
 paragraph unchanged and stays under the change threshold, so an answering edit
 of that shape starts no new round; an edit to a done-when is never covered,
