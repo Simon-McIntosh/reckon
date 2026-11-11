@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§51 — A dirty shared checkout does not hold services on old code</title>
+</head>
+<body>
+<h1 id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-title">A dirty shared checkout does not hold services on old code</h1>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-outcome">A declared
+service is restarted onto the committed head within one supervisor check of main
+moving, even while the shared checkout's working tree carries uncommitted edits.
+The replacement is started from a published image of the committed tree, so those
+edits are never code the service runs. A code identity that cannot be read is
+reported as uncompared rather than adopted.</p>
+
+<h2 id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-repro">Reproduction at the base revision</h2>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-repro-text">At
+<code>121eead60c</code> a declared service running stamp A, a committed head
+moved to stamp B, and a dirty working tree left it running A: the restart
+decision consulted the working-tree trust verdict and adopted the copy. The
+node's test file, run against the base module, fails both cases
+(<code>2 failed</code>, <code>EXIT=1</code>); the run log is
+<code>logs/reproduction-base.log</code> under the run directory.</p>
+
+<h2 id="a-dirty-shared-checkout-doing-measure">Measure</h2>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-measure">Head arm
+<code>53 passed</code>, <code>EXIT=0</code> across the node's test file and
+<code>tests/test_staged_write_inventory.py</code>; base arm <code>51 passed</code>,
+<code>EXIT=0</code> across <code>tests/test_staged_write_inventory.py</code> (the node's
+test file does not exist at the base revision). Negative control, with the refusal
+restored to base behaviour, is <code>1 failed</code> naming
+<code>test_a_dirty_checkout_restarts_a_service_onto_the_committed_head</code>,
+<code>EXIT=1</code>. Ruff check and format add no findings on the staged paths.</p>
+</body>
+</html>
