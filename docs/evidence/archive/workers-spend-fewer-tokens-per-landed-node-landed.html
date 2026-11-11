@@ -177,6 +177,11 @@
     <p>Run <code>r-20261111T003925615270-anchored-edit-codex-arm</code> (local lane), landed at reviewed head <code>353de281cc46</code>. With <code>anchored_edit</code> on, the codex argv gains <code>-c mcp_servers.anchored</code> overrides starting <code>reckon-anchored-edit</code> with approval mode <code>approve</code> and the fence's writable roots including the worktree; dispatch adds one steering instruction for a codex backend whose key is true; and <code>_CodexDialect.observe</code> counts anchored-server calls apart from <code>file_change</code> items (fixture: one read, three edits, one failed, zero <code>file_change</code>).</p><p>The first review (102/120) found three gaps that would have broken the measurement: the anchored counts never reached the run pointer (<code>dispatch_sessions.py</code> copied a fixed key list), an <code>edit_anchored</code> write was invisible to the input-to-first-write figure, and the steering call was untested end to end. The repair round fixed all three; the re-review scored 109/120. Armed arms: base <code>acfbdab8c1</code> 51 passed, head 67 passed.</p>
   </section>
 
+  <section id="s9-armed-suite-collectible-tests" data-evidence-origin="append">
+    <h2>§9 — the armed suite command names only files pytest can collect</h2>
+    <p>Run <code>r-20261111T021111296714-armed-suite-collectible-tests</code> (local lane), landed at <code>fcec1e7f5b06</code>. One predicate, <code>is_collectible_test_path</code>, narrows every pytest argument list to pytest's default collection rule (<code>test_*.py</code>, <code>*_test.py</code>), and <code>_node_test_files</code>, <code>_landing_test_files</code> and the worker-facing <code>_suite_gate_prompt_body</code> all use it; <code>is_test_path</code> stays the dispatch trigger, so a node writing a fixture still owes a negative control. A scope holding a test, a JSONL fixture, <code>conftest.py</code>, a helper and an <code>x.test.py</code> now names only the test. Removing the narrowing fails the mixed-scope test by naming the fixture. Review 109/120; armed arms base 51, head 59 passed.</p>
+  </section>
+
 </main>
 </body>
 </html>
