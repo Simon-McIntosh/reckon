@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -257,6 +257,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261111T150634145922-review-of-promotion-profile-refresh-folds-its-row-e90a244db54d" data-who="reckon-build" data-when="2026-11-11T15:26:16Z">
+    <div class="r-comment-body"><p>Independently reviewed b5801e8feb89a3caf0a513dfc8204fa6cd4e0a84..e90a244db54d5206d24062dc98b930403bf6bbfc; scores 20/20/20/20/18/5, zero added failures, one non-blocking duplication finding; parsed records stored under the reviewed run.</p></div>
 </div>
 </section>
 </main>
