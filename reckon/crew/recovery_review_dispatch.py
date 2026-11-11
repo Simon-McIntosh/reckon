@@ -1390,8 +1390,12 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
     speaks for a revision the run has finished with. The reflex records the
     attempt withdrawn rather than letting it stand, so the superseded attempt is
     visible and the run is free to be re-reviewed — or carried — at its new
-    head. A dispatch that already covers the current head, or a run not resumed
-    since the attempt was recorded, is left standing.
+    head. The attempt is ordered by the head it composed for, never by the
+    instant its dispatch record was written: that record is written after the
+    launch, so a review composed before a resume but recorded after it would
+    otherwise read as newer than the resume and be kept. A dispatch that speaks
+    for the head the run now carries, and one no resume has superseded, is left
+    standing.
 
     Only an attempt that never started is withdrawn. A review whose worker has
     launched is running, and a running review finishes: its verdict reaches the
@@ -1409,11 +1413,7 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         return None
     if str(recorded.get("status") or "") == "withdrawn":
         return None
-    resumed_at = _latest_resume_at(record)
-    if resumed_at is None:
-        return None
-    at = parse_utc(recorded.get("at"))
-    if at is not None and resumed_at <= at:
+    if _latest_resume_at(record) is None:
         return None
     review_run_id = str(recorded.get("run_id") or "")
     if _review_worker_launched(review_run_id):
