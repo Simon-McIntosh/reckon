@@ -28,6 +28,8 @@ from tests.test_a_finding_blocks_its_own_section import (
     _line_of,
     _report,
     _subject,
+)
+from tests.test_a_finding_blocks_its_own_section import (
     many_section_plan as many_section_plan,  # noqa: PLC0414
 )
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
