@@ -1,0 +1,80 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T01:34:27.601Z",
+  "dispatched_at": "2026-11-11T01:29:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261111T012720571348-plan-review-of-a-worker-cannot-write-your-home/plan.html:1611",
+      "id": "wiring-1",
+      "reason": "without a followup the section is dispatchable only from a coordinator's memory, which is exactly the state that produced the wiring findings on \u00a719, \u00a720 and \u00a721 in earlier rounds of this review, each of which was acted on.",
+      "text": "\u00a724 is the only work left on the plan beside \u00a76, and no followup carries it: the followup list ends at `f-awcwyh-023` (:1655 region, both it and `f-awcwyh-022` now resolved), and `grep -c '\u00a724'` over the whole snapshot returns 1, the section's own heading \u2014 so there is no `/reckon-build \u2026 \u00a724` entry point and the roadmap has no record of the section",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261111T012720571348-plan-review-of-a-worker-cannot-write-your-home/plan.html:1612",
+      "id": "done_when-1",
+      "reason": "the deliverable and its assertion stand; a node needs only to separate the index write from the edit by more than a second, which is a test detail rather than a change to what is built.",
+      "text": "the control \"edits a tracked file while keeping its size and restoring its mtime, and asserts `git diff --name-only` still names it\" leaves ctime as the only discriminator, and `core.checkStat=minimal` compares ctime at whole-second resolution, so an index written and a file edited inside the same second read clean and the control fails on correct code",
+      "type": "done_when",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-worker-cannot-write-your-home/r-20261111T012720571348-plan-review-of-a-worker-cannot-write-your-home/plan.html:1612",
+      "id": "reasoning-1",
+      "reason": "the done-when asserts the effective value in each tree, which holds either way, and the node writes the extension regardless; only the sentence overstates the isolation.",
+      "text": "\"so the main checkout's configuration is unchanged\" is not what the prescribed mechanism does: a worktree-scoped config exists only after `extensions.worktreeConfig=true` is written into the shared `.git/config`, measured here on git 2.39.3, so the shared configuration does change while the shared `core.checkStat` does not",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "afe73da2859d0fea02b33340ed13e06d7140c761",
+  "plan_fingerprint": "0bde164af61466e278b53e350e5773ba80be0247f6a12c515ef2e0f213966008",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 246,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T012720571348-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "4df255d18358af56d69352dd733fc43325a3bef1",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the profile, `promotion_evidence._worktree_repository_changes` / `_worktree_git_paths`, `routing._create_worktree` and both followup outcome commits resolve on this host.",
+    "done_when": "a finding \u2014 \u00a724's declared negative control discriminates only on whole-second ctime, so it can read clean on correct code.",
+    "evidence_paths": "pass \u2014 the profile, the two fleet-node logs and the gate logs are named under the run directory, which is durable; nothing is placed in a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 `test_a_worktree_index_reads_clean_across_the_fence.py` and the section's text carry no plan labels, stage names or ticket numbers, and the prose states the mechanism rather than its history.",
+    "reasoning": "a finding \u2014 the stated root cause matches the cited profile, and the mechanism produces the measure, but the claim that the main checkout's configuration is \"unchanged\" is contradicted by the extension the deliverable requires.",
+    "single_goal": "pass \u2014 \u00a724 names one deliverable (a per-worktree `core.checkStat=minimal` written where worktrees are created), and its latency measure supports that same deliverable.",
+    "wiring": "a finding \u2014 \u00a724 is declared `implementable` (plan.html:1611, and in `plan-section-declarations` at :26) but the plan carries no followup for it; the string `\u00a724` appears once in the whole document, at its own heading."
+  },
+  "section_digests": {
+    "_document": "696051baa420f619d29c845b82d9c6a1a278d222cc5a7ba1d8f0d83c96c0c300",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s20": "0e83d5fb9828cc778802066bff24b452e47586b9a89ef3f93a84aaed1fe3cb99",
+    "s21": "dca32e63251fb5b4cd4bc5d1f524afc97180a85eaba73e88b4b62111045239dd",
+    "s22": "ef5b9c4c529863e2e86cecfa7d84a4924ba83f404bdc9ca035f4819836210b4d",
+    "s23": "ab07a99f68b5d4dbe39f548e45b055fcc2611d7773c1283d19ef18f4840969cf",
+    "s24": "59c7a7ec68fdcf96d6f4edd8474b2925cf1e58d6fb3f996035b1c556d67c53d2",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:44:42.740854+00:00",
+  "total": null
+}
