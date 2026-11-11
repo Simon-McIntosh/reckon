@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-follower-reads-only-what-moved-landed">
+  <meta name="plan-title" content="A Follower Reads Only What Moved — landed record">
+  <meta name="plan-summary" content="Landing record for A Follower Reads Only What Moved: evidence appended by section.">
+  <meta name="plan-evidence-for" content="a-follower-reads-only-what-moved">
+  <title>A Follower Reads Only What Moved — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>A Follower Reads Only What Moved — landed record</h1>
+  <p>Landing record for A Follower Reads Only What Moved: evidence appended by section.</p>
+
+
+   <section id="follower-cuts-measured" data-evidence-origin="append">
+    <h2>The follower&#x27;s git spawns and catalogue re-reads are gone</h2>
+    <p>Measured on <code>98dci4-clu-2023</code> with the instruments the plan names. Before either section, a 20 s <code>strace -f -e trace=execve</code> of reckon follower <code>3597827</code> recorded 9 <code>git rev-parse</code> spawns and 171 failed <code>PATH</code> probes, and a 15 s <code>openat</code> trace recorded 86 opens of the model catalogue. After §1 landed (merge <code>9e3a336dca</code> for §2, <code>db53aa480b</code> for §1) and the followers reloaded, a 20 s trace with 843 opens as its attach control recorded no <code>execve</code>. After §2, follower <code>56776</code>, now a subscriber reading the station's node-local <code>/tmp/39486-fleet/station.sqlite3</code>, opened one file in 15 s. It made no catalogue open and no git spawn. Its remaining reads, about 17 MB/s by <code>rchar</code>, come from that node-local database, not GPFS. Node load was still 66 to 75 with 23 tasks in D-state at that moment, carried by test runs, workers and other projects' monitors.</p>
+  </section>
+
+</main>
+</body>
+</html>
