@@ -1,0 +1,47 @@
+<section id="armed-suite-collectible-tests-landing">
+  <h2>An armed suite command names only the files pytest collects</h2>
+  <p>A node's fenced write scope names fixtures, helpers and <code>conftest</code>
+    modules under <code>tests/</code> beside the checks it wrote, because all of
+    them are part of the check. The armed suite command handed every one of them
+    to pytest, so a fixture made pytest exit on a usage error and the arm read as
+    one that collected nothing, while a command narrowed by hand was refused as
+    not matching the command the run was armed with. Neither shape could promote
+    a node that writes a fixture. One predicate now decides which paths pytest
+    can collect, and every consumer that turns write or changed paths into pytest
+    arguments reads it.</p>
+  <p><code>is_collectible_test_path</code> sits beside <code>is_test_path</code>
+    in <code>reckon/crew/node.py</code> and matches pytest's default
+    <code>python_files</code> (<code>test_*.py</code> and <code>*_test.py</code>)
+    on the basename, case-sensitively, because this repository declares no
+    <code>python_files</code> of its own. <code>_node_test_files</code> in
+    <code>reckon/crew/promotion_records.py</code> resolves the armed command with
+    it, so the recorded command and the command each arm is compared against are
+    the same list; <code>_landing_test_files</code> in
+    <code>reckon/crew/queue_landing.py</code> applies it to the fallback over a
+    delivery's changed paths, which would otherwise re-admit the fixture the
+    resolver had just narrowed out; and
+    <code>_suite_gate_prompt_body</code> in <code>reckon/crew/dispatch.py</code>
+    states the same rule to the worker, which resolves its own command from that
+    sentence.</p>
+  <p><code>is_test_path</code> is unchanged, so a node writing a fixture is still
+    writing part of a check and still owes a negative-control declaration, and
+    the census tests the project declares still run for a product-scope node with
+    no test file of its own.</p>
+  <table id="armed-suite-collectible-tests-measures">
+    <caption>Every figure below is quoted from the log it cites.</caption>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Node gate, <code>tests/test_armed_suite_collectible_tests.py</code></td><td>8 passed; <code>EXIT=0</code></td></tr>
+      <tr><td>Related consumers, four files that resolve or compare the command</td><td>27 passed; <code>EXIT=0</code></td></tr>
+      <tr><td>Declared mutation: remove the collectible-test narrowing</td><td>7 failed, 1 passed; <code>EXIT=1</code></td></tr>
+      <tr><td>Ruff check and <code>ruff format --check</code> over the changed Python paths</td><td>All checks passed; zero added findings</td></tr>
+    </tbody>
+  </table>
+  <p>The mixed-scope test is the one the declared mutation must break: it holds
+    <code>tests/test_x.py</code>, <code>tests/fixtures/data.jsonl</code>,
+    <code>tests/conftest.py</code>, <code>tests/helpers.py</code> and
+    <code>tests/x.test.py</code>, and requires the resolved command to name only
+    <code>tests/test_x.py</code>. With the narrowing removed it fails naming the
+    fixture among four extra paths, so the test measures the narrowing rather
+    than passing for want of a check.</p>
+</section>

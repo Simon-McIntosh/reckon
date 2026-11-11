@@ -1510,7 +1510,8 @@ def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
     return (
         "  Template, as the project arms it, with "
         f"{_SUITE_TEMPLATE_SPELLING} standing for the test files in this node's\n"
-        "  write scope that exist in the tree the command runs against:\n"
+        "  write scope that pytest collects (`test_*.py` and `*_test.py`) and\n"
+        "  that exist in the tree the command runs against:\n"
         f"    {shown}\n"
         "  Resolve it over the tree you run it against: a write path absent from\n"
         "  that tree is dropped, so a test your change adds is not in the base\n"

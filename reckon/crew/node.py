@@ -1023,6 +1023,14 @@ _TEST_FILE_RE = re.compile(
 )
 
 
+# pytest's own default ``python_files``, which this repository does not
+# override. It is deliberately narrower than ``_TEST_FILE_RE``: that pattern
+# decides whether a node is writing a check, while this one decides whether
+# pytest can run the file at all. A ``.test.py`` or ``.spec.py`` module, a
+# fixture and a helper are all part of a check, and none of them is collected.
+_COLLECTIBLE_TEST_FILE_RE = re.compile(r"^(?:test_.*|.*_test)\.py$")
+
+
 def is_test_path(path: str) -> bool:
     """Return whether a declared write path names a test file.
 
@@ -1037,6 +1045,26 @@ def is_test_path(path: str) -> bool:
     if any(part.lower() in _TEST_DIRECTORY_NAMES for part in parts[:-1]):
         return True
     return bool(_TEST_FILE_RE.match(parts[-1].lower()))
+
+
+def is_collectible_test_path(path: str) -> bool:
+    """Return whether pytest's default collection would run this path as a test.
+
+    A suite command hands its arguments to pytest, so a path only belongs in one
+    when pytest can collect a test from it. ``is_test_path`` answers a different
+    question — whether a node is writing part of a check — and a fixture under
+    ``tests/`` answers yes to that and no to this. Naming the fixture in the
+    command makes pytest exit on a usage error, so an arm that never ran reads
+    as one that collected nothing.
+
+    The basename is matched exactly rather than lowered, because pytest matches
+    its patterns case-sensitively: admitting a case variant would name a file
+    pytest then refuses.
+    """
+    parts = Path(str(path)).parts
+    if not parts:
+        return False
+    return bool(_COLLECTIBLE_TEST_FILE_RE.match(parts[-1]))
 
 
 def declares_negative_control(node: TaskNode) -> bool:
