@@ -219,8 +219,127 @@ def test_stream_growth_reuses_both_reads_and_source_changes_invalidate(
     )
     ledger.write_run_file(PROJECT, row, fleet.repo)
     assert refresh() == expected - {"held-run-0"} | {"new-holder"}
-    assert counts["held_records"] > 0 and counts["ledger_load"] > 0, counts
+    assert counts["held_records"] > 0 and counts["ledger_load"] == 0, counts
     counts.clear()
     fleet.trees[1].rename(fleet.trees[1].with_name("displaced"))
     assert refresh() == expected - {"held-run-0", "held-run-1"} | {"new-holder"}
     assert counts["held_records"] > 0, counts
+    fleet.trees[1].with_name("displaced").rename(fleet.trees[1])
+    assert refresh() == expected - {"held-run-0"} | {"new-holder"}
+
+
+def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkeypatch):
+    transient = fleet.trees[0].parent / "transient"
+    git(fleet.repo, "worktree", "add", "-q", "--detach", str(transient), "HEAD")
+    for index in range(200):
+        ledger.write_run_file(
+            PROJECT,
+            ledger.build_record(
+                plan="fixture",
+                run_id=f"history-{index}",
+                node=f"unrelated-{index}",
+                session=SESSION,
+                completed_at="2026-09-01T12:00:00Z",
+                gate="passed",
+            ),
+            fleet.repo,
+        )
+    counts = Counter()
+    bindings = {}
+    for label, original in (
+        ("ledger_load", ledger.load),
+        ("whole_ledger", obligations._run_namings),
+        ("registry_listing", routing._registered_worktrees),
+        ("record_read", ledger.read_document),
+        ("tree_match", obligations._holding_record),
+    ):
+
+        def counted(*args, _label=label, _original=original, **kwargs):
+            counts[_label] += 1
+            return _original(*args, **kwargs)
+
+        bindings[label] = patch_bindings(monkeypatch, original, counted)
+
+    def refresh():
+        state = obligation_snapshot.fleet_state(PROJECT)
+        assert len(state.pointers) == 60
+        return {row["run_id"] for row in state.held_worktrees.get(SESSION, [])}
+
+    expected = {f"held-run-{index}" for index in range(4)}
+    assert refresh() == expected
+    assert all(counts[label] > 0 for label in bindings), counts
+    first = dict(counts)
+    counts.clear()
+    row = ledger.build_record(
+        plan="fixture",
+        run_id="unrelated-landing",
+        node="unrelated-landing",
+        session=SESSION,
+        completed_at="2026-11-01T12:00:00Z",
+        gate="passed",
+    )
+    ledger.write_run_file(PROJECT, row, fleet.repo)
+    git(fleet.repo, "worktree", "remove", str(transient))
+    added = transient.with_name("another-live-tree")
+    git(fleet.repo, "worktree", "add", "-q", "--detach", str(added), "HEAD")
+    for stream in fleet.streams:
+        with stream.open("a") as output:
+            output.write('{"type":"thread.started","thread_id":"growing"}\n')
+    assert refresh() == expected
+    print(json.dumps({"first": first, "changed": dict(counts), "bindings": bindings}))
+    assert counts["ledger_load"] == 0, counts
+    assert counts["whole_ledger"] == 0, counts
+    assert counts["registry_listing"] == 0, counts
+    assert counts["record_read"] == 1, counts
+    assert counts["tree_match"] == 1, counts
+
+    counts.clear()
+    row["node"] = fleet.trees[0].name
+    ledger.write_run_file(PROJECT, row, fleet.repo)
+    assert refresh() == expected - {"held-run-0"} | {"unrelated-landing"}
+    assert counts["record_read"] == 1 and counts["tree_match"] == 1, counts
+    assert counts["ledger_load"] == counts["whole_ledger"] == 0, counts
+
+    counts.clear()
+    source = ledger.run_path(PROJECT, "unrelated-landing", fleet.repo)
+    source.unlink()
+    assert refresh() == expected
+    assert counts["record_read"] == 0 and counts["tree_match"] == 1, counts
+
+    counts.clear()
+    registered = transient.with_name("unrelated-0")
+    git(fleet.repo, "worktree", "add", "-q", "--detach", str(registered), "HEAD")
+    assert refresh() == expected | {"history-0"}
+    assert counts["record_read"] == 0 and counts["tree_match"] == 1, counts
+    assert (
+        counts["registry_listing"]
+        == counts["whole_ledger"]
+        == counts["ledger_load"]
+        == 0
+    ), counts
+
+
+def test_an_aggregate_rewrite_rebuilds_from_the_current_union(fleet):
+    before = obligation_snapshot.fleet_state(PROJECT)
+    assert {row["run_id"] for row in before.held_worktrees[SESSION]} == {
+        f"held-run-{index}" for index in range(4)
+    }
+    row = ledger.build_record(
+        plan="fixture",
+        run_id="aggregate-holder",
+        node=fleet.trees[0].name,
+        session=SESSION,
+        completed_at="2026-11-01T12:00:00Z",
+        gate="passed",
+    )
+    path = ledger.ledger_path(PROJECT, fleet.repo)
+    path.write_text(
+        json.dumps({"data": {"members": [], "runs": [row], "holds": [], "_version": 1}})
+    )
+    after = obligation_snapshot.fleet_state(PROJECT)
+    assert {item["run_id"] for item in after.held_worktrees[SESSION]} == {
+        "aggregate-holder",
+        "held-run-1",
+        "held-run-2",
+        "held-run-3",
+    }

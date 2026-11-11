@@ -24,6 +24,8 @@ import json
 import os
 import re
 import shlex
+import threading
+from collections import OrderedDict
 from collections.abc import Callable, Iterable, Mapping, Sequence
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta
@@ -56,6 +58,7 @@ from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES
 from reckon.crew.routing import (
     WorktreeRecordIndex,
+    _node_worktree_identity,
     _registered_worktrees,
     _retained_worktree,
     record_names_worktree,
@@ -1695,6 +1698,9 @@ def _review_tier_key(
 def _clear_cached_obligation_inputs() -> None:
     """Drop every memoised per-run derivation, so the next read recomputes."""
     _INDEX_LAG_READINGS.clear()
+    with _HELD_READ_LOCK:
+        _HELD_RECORD_READS.clear()
+        _HELD_REGISTRY_READS.clear()
     file_memo.clear()
 
 
@@ -2136,7 +2142,7 @@ def _row_may_name_a_tree(
 
 def _holding_record(
     worktree: Path,
-    index: WorktreeRecordIndex,
+    index: WorktreeRecordIndex | _HeldRecordIndex,
 ) -> Mapping[str, Any] | None:
     """The run the whole-ledger reader attributes a tree to, or None.
 
@@ -2155,45 +2161,16 @@ def _holding_record(
 
 
 def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
-    """Return the ledger record holding each registered tree that is still held.
+    """Return the record holding each registered, present and unoccupied tree.
 
-    A tree is held only when Git's registry lists it, its directory is still on
-    disk, a promotion record names it, and no promotion record shows it
-    released. Git keeps a path in its registry until the registry is pruned, so
-    a directory deleted out from under a registration is still listed; naming
-    that registration would raise a duty whose remedy, a project-wide sweep,
-    would take peers' trees to clear a tree entry that holds nothing.
-
-    A registered path a live run now occupies is skipped: the promoted run's
-    ledger record still names it under the same node id, but the tree belongs
-    to the live run and the collector will not take it, so naming the promoted
-    run would send a coordinator at the wrong run for a tree it cannot free.
-
-    The rows are taken from the ledger reader that refreshes them: it stats
-    every per-run document once and re-decodes one only when it has moved since
-    the published index, so a record is never older than its file. A screen
-    that acted on the published index unvalidated would answer from a run's old
-    row, and a run that starts retaining a tree after publication would be
-    dropped. A run names a tree by either route :func:`record_names_worktree`
-    applies — its node id, or the path its retention carries — and the screen
-    admits on both, so a run dispatched for one node and retaining a tree named
-    for another still answers. The same rows supply the candidates, so no
-    document is opened a second time and only a row that can name an inspected
-    tree is filed. The screen is dropped, not the answer, when that reader
-    refuses or fails: every run stays a candidate and the per-run documents are
-    read for themselves, so a reader that cannot be reached costs a read rather
-    than a duty.
-    Source identities key the answer across calls, including per-run files,
-    semantic live claims, the common Git registry and registered-tree presence.
-    An unchanged call reuses the answer without listing or checking held paths.
-    The whole call runs inside :func:`reckon.file_memo.read_only_region`, so a
-    fresh derivation shares each document as a read-only view.
-    Records are filed into one index of the trees they name, so an inspected
-    tree is one lookup rather than a comparison against every record, and the
-    row the merged ledger's own order puts last holds the tree. A tree no
-    screened row names is looked up in a second index built from the rows the
-    screen left out, so the fallback costs one filing per left-out row rather
-    than one path resolution per row per unresolved tree.
+    Source identities validate per-run files, live claims, the common Git
+    registry and registered-tree presence. Unchanged inputs reuse the answer;
+    changed inputs update the retained naming index and only the affected
+    trees. New registrations read their own gitdir entries, and new or edited
+    run documents read their own ledger rows, without loading the whole ledger.
+    An aggregate rewrite rebuilds the index because its envelope has no per-row
+    identity. Reader failures retain the unrefused document-reader fallback.
+    The read-only region shares parsed document views without copying them.
     """
     docs_dir = _store._docs_dir_for_project(project)
     if docs_dir is None:
@@ -2207,17 +2184,17 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
         return file_memo.memoized(
             "obligation_held_records",
             Path(__file__),
-            lambda: _held_records_read_uncached(project, repository),
+            lambda: _held_records_read_uncached(project, repository, key[2]),
             variant=key,
         )
 
 
 def _held_records_read_uncached(
-    project: str, repository: Path
+    project: str, repository: Path, signature: tuple[Any, ...]
 ) -> dict[Path, Mapping[str, Any]]:
     """Read the held-tree records once, inside the region a fresh read opens."""
     with file_memo.read_only_region():
-        return _held_worktree_records_read(project, repository)
+        return _held_worktree_records_read(project, repository, signature=signature)
 
 
 def _held_input_signature(path: Path) -> tuple[int, ...] | None:
@@ -2362,94 +2339,241 @@ def _held_registered_worktrees(
             signature = _worktree_registry_signature(repository)
         except OSError:
             return _registered_worktrees(repository)
-    return file_memo.memoized(
-        "obligation_held_registered",
-        Path(__file__),
-        lambda: _registered_worktrees(repository),
-        variant=(str(repository), signature),
+    try:
+        return file_memo.memoized(
+            "obligation_held_registered",
+            Path(__file__),
+            lambda: _held_registry_changes(repository, signature),
+            variant=(str(repository), signature),
+        )
+    except OSError:
+        # A registration can disappear between validation and reading gitdir.
+        return _registered_worktrees(repository)
+
+
+# Retain mutable indexes separately from parsed document views. A refresh updates
+# these under one lock; callers receive the file memo's read-only answer view.
+_HELD_READ_LOCK = threading.RLock()
+_HELD_RECORD_READS: OrderedDict[tuple[str, str], Any] = OrderedDict()
+_HELD_REGISTRY_READS: OrderedDict[str, Any] = OrderedDict()
+_HELD_READ_LIMIT = 64
+
+
+def _held_remember(cache: OrderedDict, key: Any, value: Any) -> None:
+    cache[key] = value
+    cache.move_to_end(key)
+    while len(cache) > _HELD_READ_LIMIT:
+        cache.popitem(last=False)
+
+
+def _held_registry_changes(repository: Path, signature: tuple[Any, ...]) -> list[Path]:
+    """Read only added or replaced Git registry entries after the first listing."""
+    registry, _stamp, identities = signature
+    current = dict(identities)
+    with _HELD_READ_LOCK:
+        previous = _HELD_REGISTRY_READS.get(registry)
+        old, paths, base = previous if previous is not None else ({}, {}, set())
+        paths = dict(paths)
+        for name in old.keys() - current.keys():
+            paths.pop(name, None)
+        for name, identity in current.items():
+            if previous is None or old.get(name) != identity:
+                gitfile = Path(Path(name).read_text().strip())
+                if gitfile.name != ".git":
+                    raise OSError(f"invalid worktree registration: {name}")
+                paths[name] = gitfile.parent.resolve()
+        if previous is None:
+            base = set(_registered_worktrees(repository)) - set(paths.values())
+        _held_remember(_HELD_REGISTRY_READS, registry, (current, paths, base))
+        return sorted(base | set(paths.values()))
+
+
+def _held_row_keys(row: Mapping[str, Any], retained: Path | None) -> tuple[Any, ...]:
+    """The shared naming rule's retained path and session-qualified node keys."""
+    node, session = _node_worktree_identity(row)
+    keys: list[Any] = []
+    if retained is not None:
+        keys.append(("path", retained))
+    if node:
+        keys.append(("node", session, node))
+    return tuple(keys)
+
+
+def _held_tree_keys(tree: Path) -> tuple[Any, ...]:
+    return (
+        ("path", tree),
+        ("node", tree.parent.name, tree.name),
+        ("node", "", tree.name),
     )
 
 
-def _held_worktree_records_read(
-    project: str, repository: Path
-) -> dict[Path, Mapping[str, Any]]:
-    """The held-tree records, inside the read-only region the caller opened."""
-    registered = {
-        path
-        for path in _held_registered_worktrees(repository)
-        if path != repository and path.is_dir()
-    }
-    occupied = _live_worktrees(project)
-    inspected = sorted(registered - occupied)
-    names = {worktree.name for worktree in inspected}
-    trees = set(inspected)
-    # One fresh read of the merged ledger supplies both the screen and the
-    # records: every per-run document is stat'ed once to detect a write, and one
-    # that has moved is re-decoded, so no candidate is ever older than its file.
-    fresh = _run_namings(project, repository) if names else ({}, [])
-    namings: Mapping[str, tuple[str, Path | None]]
-    rows: Sequence[Mapping[str, Any]]
-    if fresh is None:
-        # The reader that supplies the namings refused or failed, so the screen
-        # cannot be built. Every run stays a candidate and the documents are
-        # read for themselves: a screen that drops the runs it cannot name turns
-        # a refused reader into a lost duty, which is the one outcome a screen
-        # must never produce.
-        namings, rows = {}, _run_file_rows(project, repository)
-    else:
-        namings, rows = fresh
-    index = WorktreeRecordIndex()
-    left_out: list[Mapping[str, Any]] = []
-    for row in rows:
-        # A row that can name no inspected tree on either route the naming rule
-        # applies is left out of the index: the match is then bounded by the
-        # trees that are held rather than by the corpus, and the answer is
-        # unchanged because a row the screen excludes names none of them. A row
-        # carrying no run id is the one row the screen cannot read: it has no
-        # namings entry, so it is kept for the bounded fallback below rather
-        # than dropped. Every other excluded row was read and names none of the
-        # inspected trees, so filing it again would resolve its path a second
-        # time to learn nothing.
-        if _row_may_name_a_tree(row, names, trees, namings):
-            index.add(row)
-        elif not str(row.get("run_id") or ""):
-            left_out.append(row)
-    matched: dict[Path, Mapping[str, Any]] = {}
-    unresolved: list[Path] = []
-    for worktree in inspected:
-        record = _holding_record(worktree, index)
-        if record is None:
-            unresolved.append(worktree)
-        else:
-            matched[worktree] = record
-    if unresolved:
-        # A tree the screened rows do not name can be named, if at all, only by
-        # a row the screen could not read. Those rows are filed once into an
-        # index of their own, built from the same rule's keys as the first, so
-        # each inspected tree costs a lookup rather than a pass over every row
-        # with a path resolution for each. The answer is unchanged: a tree
-        # reaches this path only when no screened row names it, so the rows
-        # left out are the only candidates it has, and the last of them in
-        # ledger order holds it exactly as the whole-ledger reader would have
-        # put it.
-        fallback = WorktreeRecordIndex()
-        for row in left_out:
-            fallback.add(row)
-        for worktree in unresolved:
-            record = _holding_record(worktree, fallback)
-            if record is not None:
-                matched[worktree] = record
+class _HeldRecordIndex:
+    """Mutable naming buckets; changing one row touches only its named trees."""
 
-    held: dict[Path, Mapping[str, Any]] = {}
-    for worktree, record in matched.items():
-        release = record.get("release")
-        if isinstance(release, Mapping) and release.get("worktree_released") is True:
-            # The promotion's own record answers for this tree: it reported the
-            # tree released, so the path is not held whatever the registry or
-            # the filesystem now shows.
-            continue
-        held[worktree] = record
-    return held
+    def __init__(self, aggregate_rows: Sequence[Mapping[str, Any]]) -> None:
+        self.rows: dict[Any, Mapping[str, Any]] = {}
+        self.keys: dict[Any, tuple[Any, ...]] = {}
+        self.buckets: dict[Any, set[Any]] = {}
+        self.aggregate = {
+            str(row.get("run_id")): row for row in aggregate_rows if row.get("run_id")
+        }
+        self.extra: set[str] = set()
+        self.trees: dict[Any, set[Path]] = {}
+        self.inspected: set[Path] = set()
+        self.held: dict[Path, Mapping[str, Any]] = {}
+
+    def replace(
+        self, key: Any, row: Mapping[str, Any] | None, retained: Path | None = None
+    ) -> set[Path]:
+        affected: set[Path] = set()
+        for name in self.keys.pop(key, ()):
+            affected.update(self.trees.get(name, ()))
+            bucket = self.buckets[name]
+            bucket.discard(key)
+            if not bucket:
+                del self.buckets[name]
+        self.rows.pop(key, None)
+        if row is not None:
+            self.rows[key] = row
+            self.keys[key] = _held_row_keys(row, retained)
+            for name in self.keys[key]:
+                self.buckets.setdefault(name, set()).add(key)
+                affected.update(self.trees.get(name, ()))
+        return affected
+
+    def records_naming(self, tree: Path) -> list[Mapping[str, Any]]:
+        candidates = set().union(
+            *(self.buckets.get(name, set()) for name in _held_tree_keys(tree))
+        )
+        ordered = (
+            sorted(
+                candidates, key=lambda key: ledger.promotion_order_key(self.rows[key])
+            )
+            if self.extra
+            else sorted(candidates)
+        )
+        return [self.rows[key] for key in ordered]
+
+    def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
+        for tree in self.inspected - inspected:
+            self.held.pop(tree, None)
+            for name in _held_tree_keys(tree):
+                self.trees[name].discard(tree)
+                if not self.trees[name]:
+                    del self.trees[name]
+        for tree in inspected - self.inspected:
+            for name in _held_tree_keys(tree):
+                self.trees.setdefault(name, set()).add(tree)
+            affected.add(tree)
+        self.inspected = inspected
+        for tree in affected & inspected:
+            record = _holding_record(tree, self)
+            release = record.get("release") if record is not None else None
+            if record is None or (
+                isinstance(release, Mapping)
+                and release.get("worktree_released") is True
+            ):
+                self.held.pop(tree, None)
+            else:
+                self.held[tree] = record
+
+
+def _held_worktree_records_read(
+    project: str, repository: Path, *, signature: tuple[Any, ...] | None = None
+) -> dict[Path, Mapping[str, Any]]:
+    """Apply changed run documents and tree registrations to the previous answer.
+
+    File identities are still validated, including in-place document edits.
+    Only changed documents are decoded and filed, and only trees those rows
+    name or whose registration/presence/occupancy changed are matched again.
+    An aggregate rewrite rebuilds the index because its JSON envelope carries
+    no per-row change identities; a refused merged read keeps the unrefused
+    document-reader fallback rather than losing duties from healthy records.
+    """
+    signature = signature or _held_records_signature(project, repository)
+    if signature is None:
+        # The source cannot be validated: make a fresh read, never reuse it.
+        registered = _held_registered_worktrees(repository)
+        present = tuple(
+            tree for tree in registered if tree != repository and tree.is_dir()
+        )
+        signature = ("", None, ("", ()), None, present, tuple(_live_worktrees(project)))
+        reusable = False
+    else:
+        reusable = True
+    _aggregate, aggregate_stamp, documents, _registry, present, occupied = signature
+    identities = dict(documents[1])
+    inspected = set(present) - set(occupied) - {repository}
+    cache_key = (project, str(repository))
+    with _HELD_READ_LOCK:
+        previous = _HELD_RECORD_READS.get(cache_key) if reusable else None
+        if previous is None and not inspected:
+            return {}
+        if previous is None or previous[0] != aggregate_stamp:
+            fresh = _run_namings(project, repository)
+            rows = (
+                fresh[1] if fresh is not None else _run_file_rows(project, repository)
+            )
+            try:
+                aggregate_rows = ledger.load_aggregate(
+                    project, _ledger_read_root(project, repository)
+                )[0]["runs"]
+            except Exception:  # noqa: BLE001 - unreadable aggregates contribute no rows
+                aggregate_rows = []
+            index = _HeldRecordIndex(aggregate_rows)
+            for position, row in enumerate(rows):
+                run_id = str(row.get("run_id") or "")
+                retained = (
+                    fresh[0][run_id][1]
+                    if fresh is not None and run_id in fresh[0]
+                    else _retained_worktree(row)
+                )
+                if run_id in index.aggregate or not run_id:
+                    key = (0, position)
+                else:
+                    key = (1, run_id)
+                    index.extra.add(run_id)
+                index.replace(key, row, retained)
+            affected = set(inspected)
+        else:
+            _stamp, old_identities, index = previous
+            had_extra = bool(index.extra)
+            affected = set()
+            for name in old_identities.keys() | identities.keys():
+                if old_identities.get(name) == identities.get(name):
+                    continue
+                source = Path(name)
+                run_id = source.stem
+                row = None
+                if name in identities:
+                    try:
+                        row = ledger.normalize_identity(ledger._read_run(source))
+                    except ledger.LedgerError:
+                        # A damaged document cannot erase the aggregate's copy.
+                        row = None
+                if run_id in index.aggregate:
+                    # The aggregate remains authoritative for duplicate copies,
+                    # including the unrefused reader's conflict fallback.
+                    continue
+                if row is None:
+                    index.extra.discard(run_id)
+                else:
+                    index.extra.add(run_id)
+                affected.update(
+                    index.replace(
+                        (1, run_id),
+                        row,
+                        _retained_worktree(row) if row is not None else None,
+                    )
+                )
+            if had_extra != bool(index.extra):
+                affected.update(inspected)
+        index.refresh_trees(inspected, affected)
+        if reusable:
+            _held_remember(
+                _HELD_RECORD_READS, cache_key, (aggregate_stamp, identities, index)
+            )
+        return dict(index.held)
 
 
 def _held_worktrees_by_session(
