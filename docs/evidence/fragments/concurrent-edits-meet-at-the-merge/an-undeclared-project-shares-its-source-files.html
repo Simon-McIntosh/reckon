@@ -19,16 +19,19 @@
     <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
     <tbody>
       <tr><td>Focused head contract</td><td>75 passed, 0 failed</td></tr>
-      <tr><td>Focused base arm (same files, base revision)</td><td>12 failed, 51 passed, 2 errors</td></tr>
+      <tr><td>Importer arm at base <code>87f837f</code></td><td>15 failed, 148 passed, 2 errors</td></tr>
+      <tr><td>Importer arm at head <code>80d9cde</code></td><td>3 failed, 172 passed</td></tr>
       <tr><td>Added failures against base</td><td>0</td></tr>
       <tr><td>Negative control</td><td>restores the share-nothing undeclared default; the first case refuses</td></tr>
       <tr><td>Ruff check and format</td><td>no findings on the staged paths</td></tr>
     </tbody>
   </table>
-  <p>The base arm's twelve failures are the same dispatch cases failing on the
-  harness hook-trust handshake in a fenced tree, before any claim is judged;
-  the head arm answers that handshake from the definition the argv carries, so
-  the claim path is what the head arm measures. The two setup errors are the
-  staged-write inventory reading <code>HEAD</code> in a scratch tree extracted
-  with <code>git archive</code> and therefore not a repository.</p>
+  <p>The three remaining importer failures are real dispatches that need the
+  harness hook-trust handshake, which cannot be established from a fenced tree;
+  all three fail identically at the base revision. Twelve base failures healed:
+  they were claim-mechanics cases whose temporary projects declared nothing, so
+  they were measuring the superseded exclusive-by-default rule. Each of those
+  fixtures now writes a declaration naming an empty <code>shared_roots</code>
+  list, which keeps every path exclusive and leaves the case measuring
+  refusal, widening and promotion scope exactly as written.</p>
 </section>
