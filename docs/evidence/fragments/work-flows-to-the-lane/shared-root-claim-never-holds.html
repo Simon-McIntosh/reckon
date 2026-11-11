@@ -10,16 +10,19 @@
   admission held that request from 13:54 UTC on 11 November for the whole of the
   holder's run.</p>
 
-  <p>Two new helpers in <code>reckon/crew/runs.py</code> state the rule once.
+  <p>Two helpers in <code>reckon/crew/runs.py</code> state the rule once.
   <code>_SharedWritePaths.shares_region</code> answers whether a directory shares
   as the files beneath it do, which is false exactly when the directory is, sits
-  under, or contains a declared exclusive pattern.
+  under, or contains a declared exclusive pattern, and membership of the shared
+  set now includes an existing directory under a declared root on the same
+  terms, so two claims on one directory share as two claims on its files do.
   <code>_claim_paths_share</code> compares two overlapping claims through it, so
-  the narrower path must be a shared file and the broader one must be a
-  shareable region. Queue admission (<code>_claim_collision</code>), the dispatch
+  the narrower path must be shared and the broader one must be a shareable
+  region. Queue admission (<code>_claim_collision</code>), the dispatch
   conflict report, and the launch refusal (<code>_raise_repository_scope_conflict</code>)
-  all now call the same predicate, so the queue and the launch give one
-  answer. An exclusive pattern still fences, and so does a directory claim that
+  all now call the same predicate, so the queue, the conflict report and the
+  launch give one answer, and each of the three is asserted directly rather
+  than only through a dispatch. An exclusive pattern still fences, and so does a directory claim that
   is or contains one &mdash; for example a claim on <code>docs/figures/</code>
   still holds a request for a file inside it.</p>
 
