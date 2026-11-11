@@ -438,11 +438,15 @@ class LaunchPlan:
     # the command line carries it only here, and the run's ``prompt.txt`` is
     # written from this so an argv-prompt run still records what it was told.
     prompt: str = ""
+    anchored_edit: bool = False
+    anchored_edit_reason: str | None = "disabled"
 
     def as_dict(self) -> dict[str, Any]:
         """Return the plan as sorted JSON-ready data, prompt text excluded."""
         return {
             "argv": list(self.argv),
+            "anchored_edit": self.anchored_edit,
+            "anchored_edit_reason": self.anchored_edit_reason,
             "backend": self.backend,
             "backend_search_path": list(self.backend_search_path),
             "cwd": self.cwd,
@@ -2161,6 +2165,8 @@ class _ClaudeDialect(Dialect):
         if effort:
             argv += ["--effort", str(effort)]
         argv += self._sandbox_flags(backend.get("sandbox"))
+        if backend.get("anchored_edit") is True:
+            argv += ["--disallowedTools", "Edit", "MultiEdit"]
         # --add-dir is variadic, so it goes last and the prompt goes on stdin;
         # a prompt argument after it is read as another directory. For the
         # read-only tier the worktree is the boundary: the grant admits only
@@ -2799,6 +2805,7 @@ def launch_plan(
     # is a working directory, and :func:`harness_home` refuses it for that
     # reason rather than seeding a home where the seeding process stood.
     run_directory = None if manifest is None else Path(manifest).parent
+    writable_directories = tuple(writable_directories)
     # Under the fence the run's write roots are created *before* the harness
     # home is resolved, because the run directory a manifest lands in may not
     # exist yet and the home is seeded inside it. Creating the roots first also
@@ -2824,16 +2831,37 @@ def launch_plan(
     # recorded before the run existed already live; a per-run home that carries
     # none of them silently drops the hooks and orphans those sessions.
     adopts_harness_home = fence
+    anchored_edit = False
+    anchored_edit_reason = "disabled"
+    if backend.get("anchored_edit") is True:
+        if dialect.name != "claude":
+            anchored_edit_reason = "unsupported-dialect"
+        elif not fence:
+            anchored_edit_reason = "unfenced"
+        elif resume_session:
+            anchored_edit_reason = "resumed"
+        elif fence_config is None:
+            anchored_edit_reason = "no-flight-config"
+        elif harness is None:
+            anchored_edit_reason = "no-harness-home"
+        else:
+            anchored_edit_reason = "operator-settings"
     if harness is not None and adopts_harness_home:
         from reckon.flight import harness_home_adjacent_files, harness_home_files
 
-        seed_harness_home(
+        anchored_edit = seed_harness_home(
             harness,
             dialect_name=dialect.name,
             operator_home=fence_home if fence_home is not None else Path.home(),
             declaration=harness_home_files(dialect.name, backend),
             adjacent_declaration=harness_home_adjacent_files(dialect.name),
             resume_session=resume_session,
+            anchored_edit=(
+                backend.get("anchored_edit") is True
+                and dialect.name == "claude"
+                and not resume_session
+            ),
+            anchored_edit_roots=tuple(writable_directories),
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
@@ -2889,9 +2917,14 @@ def launch_plan(
     )
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
+    launch_backend = dict(backend)
+    if dialect.name == "claude":
+        launch_backend["anchored_edit"] = anchored_edit
+    if anchored_edit:
+        anchored_edit_reason = None
     argv = dialect.argv(
         command=str(backend["command"]),
-        backend=backend,
+        backend=launch_backend,
         worktree=worktree_path,
         working_directory=working_directory,
         writable_directories=tuple(str(path) for path in dialect_roots),
@@ -2939,6 +2972,8 @@ def launch_plan(
         fence_waiver=fence_waiver,
         backend_search_path=backend_search_directories(backend),
         prompt=prompt,
+        anchored_edit=anchored_edit,
+        anchored_edit_reason=anchored_edit_reason,
     )
 
 
