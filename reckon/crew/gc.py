@@ -5,6 +5,7 @@ import os
 import re
 import shlex
 import shutil
+import socket
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
@@ -513,6 +514,16 @@ _EXEC_IDENTITY_NAME = re.compile(r"^exec-(\d+)\.identity$")
 # modification time, which are sampled from different clocks.
 _EXEC_IDENTITY_CLOCK_SLACK_SECONDS = 2.0
 
+# How long an identity file published by another host is kept. A pid is
+# meaningful only on the node that issued it, while the claims directory sits
+# under a crew home every node shares, so this kernel cannot find a foreign
+# holder gone and must not remove its file on local evidence. The bound is the
+# age past which no claim-holding execution survives: the only process that
+# publishes one is a dispatch composing a launch, and the admission pass
+# releases a launch that outlives its span. A file older than a day therefore
+# names a holder that has gone, whatever host wrote it.
+EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS = 24 * 60 * 60.0
+
 
 def _process_start_epoch(pid: int) -> float | None:
     """When the process now wearing ``pid`` began, in epoch seconds."""
@@ -552,17 +563,36 @@ def _execution_is_live(pid: int, path: Path) -> bool:
     return written >= started - _EXEC_IDENTITY_CLOCK_SLACK_SECONDS
 
 
+def _foreign_identity_is_kept(path: Path) -> bool:
+    """Whether an identity file another host published is inside the age bound.
+
+    A file whose age cannot be read is kept: the sweep removes what it can
+    show is dead, and a stat that fails shows nothing.
+    """
+    try:
+        age = time.time() - path.stat().st_mtime
+    except OSError:
+        return True
+    return age < EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS
+
+
 def sweep_exec_identities(*, apply: bool) -> dict[str, Any]:
     """Remove execution identity files of processes that are no longer running.
 
-    Every identity file names the pid that published it, so one belongs to a
-    live execution only while that pid is running and is still the process
-    that wrote it. A pid the kernel has freed, or one now worn by a later
-    process, leaves a file that no claim can be judged against and that
-    nothing else removes. Each removal is printed, so a sweep can be read
-    without opening the directory afterwards.
+    Every identity file names the pid that published it and the host it was
+    published from. On the host that published a file, one belongs to a live
+    execution only while its pid is running and is still the process that
+    wrote it; a pid the kernel has freed, or one now worn by a later process,
+    leaves a file that no claim can be judged against and that nothing else
+    removes. A file published by another host cannot be judged here at all —
+    its pid belongs to that host's kernel — so it is kept until it is older
+    than any claim-holding execution lives. Each removal is printed, so a
+    sweep can be read without opening the directory afterwards.
     """
-    from reckon.crew.dispatch_claims import NODE_DISPATCH_CLAIM_DIRECTORY
+    from reckon.crew.dispatch_claims import (
+        NODE_DISPATCH_CLAIM_DIRECTORY,
+        read_exec_identity,
+    )
     from reckon.crew.runs import crew_home
 
     directory = crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY
@@ -581,6 +611,21 @@ def sweep_exec_identities(*, apply: bool) -> dict[str, Any]:
         if match is None:
             continue
         pid = int(match.group(1))
+        identity = read_exec_identity(path)
+        host = None if identity is None else identity[0]
+        if host is not None and host != socket.gethostname():
+            if _foreign_identity_is_kept(path):
+                report["kept"].append(str(path))
+                continue
+            sys.stderr.write(
+                f"removing identity file {path} (published by host {host!r}, "
+                f"older than {EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS:.0f}s)\n"
+            )
+            if apply:
+                with contextlib.suppress(OSError):
+                    path.unlink(missing_ok=True)
+            report["removed"].append({"path": str(path), "pid": pid, "host": host})
+            continue
         if _execution_is_live(pid, path):
             report["kept"].append(str(path))
             continue

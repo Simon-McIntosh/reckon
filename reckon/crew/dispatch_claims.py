@@ -611,22 +611,56 @@ def _exec_identity_path(pid: int) -> Path:
     return crew_home() / NODE_DISPATCH_CLAIM_DIRECTORY / f"exec-{pid}.identity"
 
 
+def parse_exec_identity(text: str) -> tuple[str | None, str]:
+    """The host that published an identity file and the token it wrote.
+
+    A pid is meaningful only on the node that issued it, while the claims
+    directory sits under a crew home every node shares, so the file records
+    the host beside the token. A file written before the host was recorded
+    carries the token alone; its host reads as unknown, which leaves the
+    reader's own kernel as the only evidence there is.
+    """
+    host, separator, token = text.partition("\n")
+    if not separator:
+        return None, text.strip()
+    return host.strip(), token.strip()
+
+
+def read_exec_identity(path: Path) -> tuple[str | None, str] | None:
+    """Read an identity file, or ``None`` when it cannot be read at all."""
+    try:
+        return parse_exec_identity(path.read_text(encoding="utf-8"))
+    except OSError:
+        return None
+
+
+def _local_host() -> str:
+    """The host whose kernel may judge a pid in this process's crew home."""
+    return socket.gethostname()
+
+
+def _exec_identity_text() -> str:
+    """This execution's identity file: the publishing host, then the token."""
+    return f"{_local_host()}\n{_EXEC_IDENTITY}"
+
+
 def _publish_exec_identity() -> str | None:
     """Publish this execution's identity so its claims can be judged."""
     path = _exec_identity_path(os.getpid())
+    content = _exec_identity_text()
     if path in _PUBLISHED_EXEC_IDENTITY_PATHS:
-        return _EXEC_IDENTITY
+        return content
     temporary = path.with_name(f"{path.name}.{_EXEC_IDENTITY}.tmp")
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
-        temporary.write_text(_EXEC_IDENTITY, encoding="utf-8")
+        temporary.write_text(content, encoding="utf-8")
         os.replace(temporary, path)
     except OSError:
         with contextlib.suppress(OSError):
             temporary.unlink(missing_ok=True)
         return None
     _PUBLISHED_EXEC_IDENTITY_PATHS.add(path)
-    return _EXEC_IDENTITY
+    return content
 
 
 def _retain_exec_identity() -> str | None:
@@ -715,12 +749,22 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     start time recorded, no kernel start times to read, or a pid beyond the
     range the kernel takes — gets the conservative answer: the holder counts
     as present, because displacing a live dispatch whose record is still being
-    written would leave two.
+    written would leave two. An identity file naming another host counts as
+    present for the same reason: the recorded pid belongs to that host's
+    kernel, so this one cannot find it gone.
     """
     holder_pid = holder.get("pid")
     recorded_start = holder.get("process_start_time")
     if not isinstance(holder_pid, int) or not isinstance(recorded_start, str):
         return True
+    published = read_exec_identity(_exec_identity_path(holder_pid))
+    if published is not None:
+        published_host, published_token = published
+        # A holder on another host is live as far as this one can tell: the
+        # pid in the record was issued by a kernel this process cannot ask,
+        # so a missing pid here says nothing about the holder.
+        if published_host is not None and published_host != _local_host():
+            return True
     if not Path("/proc").is_dir():
         return True
     try:
@@ -737,11 +781,11 @@ def _claim_holder_is_alive(holder: Mapping[str, Any]) -> bool:
     recorded_exec = holder.get("exec_identity")
     if not isinstance(recorded_exec, str) or not recorded_exec:
         return True
-    try:
-        published_exec = _exec_identity_path(holder_pid).read_text(encoding="utf-8")
-    except OSError:
+    if published is None:
         return True
-    return not published_exec or published_exec == recorded_exec
+    return (
+        not published_token or published_token == parse_exec_identity(recorded_exec)[1]
+    )
 
 
 def _empty_claim_is_stale(path: Path, holder: Mapping[str, Any]) -> bool:
