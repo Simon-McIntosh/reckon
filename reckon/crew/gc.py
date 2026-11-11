@@ -56,6 +56,7 @@ from reckon.crew.runs import (
     read_pointer,
     record_process_alive,
 )
+from reckon.run_store import INCREMENTAL_VACUUM_PAGES, RETIREMENT_BATCH_SIZE
 
 # The scratch a harness plants in every worktree it provisions: the agent home
 # a worker runs against, and the directory carrying the run's own harness
@@ -1527,7 +1528,7 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "log")
+RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "store", "log")
 
 
 def retention_log_path() -> Path:
@@ -1622,11 +1623,75 @@ def _retention_ledger_records(
     return runs_root, records, owner, roots
 
 
+def _retire_run_store(
+    roots: Mapping[str, Path],
+    *,
+    apply: bool,
+    now: datetime,
+    limit: int,
+    vacuum_pages: int,
+) -> dict[str, Any]:
+    """Retire store history only after live consumers and owed reviews release it."""
+    from reckon import run_store
+    from reckon.crew.queue_admission import REQUEST_REF_PREFIX, section_waits_for
+
+    if not run_store.store_path().is_file():
+        return {"offered": [], "retired": []}
+    protected = _live_review_targets()
+    for pointer in list_live():
+        protected.add(str(pointer.get("run_id") or ""))
+        protected.update(
+            ref.removeprefix(REQUEST_REF_PREFIX)
+            for ref in section_waits_for(pointer)
+            if ref.startswith(REQUEST_REF_PREFIX)
+        )
+
+    def released(record: Mapping[str, Any]) -> bool:
+        tier = str(record.get("review_tier") or "").strip().lower()
+        return (
+            not tier
+            or tier == review_tiers.NONE
+            or _committed_review_exists(
+                str(record["project"]),
+                str(record["run_id"]),
+                roots[str(record["project"])],
+            )
+        )
+
+    with run_store.RunStore() as store:
+        report = store.retire(
+            before=now - timedelta(days=30),
+            protected=protected,
+            projects=set(roots),
+            apply=apply,
+            can_retire=released,
+            limit=limit,
+            vacuum_pages=vacuum_pages,
+        )
+    for run_id in report["retired"]:
+        sys.stderr.write(f"archived run {run_id} to {report['archive']}\n")
+    if report["retired"]:
+        sys.stderr.write(
+            f"incrementally compacted run store pages {report['pages_before']} -> {report['pages_after']}\n"
+        )
+        sys.stderr.flush()
+    if report["maintenance_required"]:
+        sys.stderr.write(
+            "run store needs one-time incremental-vacuum maintenance; "
+            "run python -m reckon.run_store --enable-incremental-vacuum "
+            "in a separate all_debug job\n"
+        )
+        sys.stderr.flush()
+    return report
+
+
 def retention_sweep(
     *,
     project: str | None = None,
     apply: bool = False,
     limit: int = RETENTION_SWEEP_LIMIT,
+    store_limit: int = RETIREMENT_BATCH_SIZE,
+    store_vacuum_pages: int = INCREMENTAL_VACUUM_PAGES,
     now: datetime | None = None,
     log: Path | None = None,
 ) -> dict[str, Any]:
@@ -1651,6 +1716,8 @@ def retention_sweep(
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
         raise CrewError("retention sweep limit must be at least one directory")
+    if store_limit < 1 or store_vacuum_pages < 1:
+        raise CrewError("store row and compaction page limits must be positive")
     phase_seconds: dict[str, float] = {}
 
     started = time.perf_counter()
@@ -1743,8 +1810,18 @@ def retention_sweep(
     _emit_phase("cache", started, phase_seconds)
 
     started = time.perf_counter()
+    store_retention = _retire_run_store(
+        roots,
+        apply=apply,
+        now=moment,
+        limit=store_limit,
+        vacuum_pages=store_vacuum_pages,
+    )
+    _emit_phase("store", started, phase_seconds)
+
+    started = time.perf_counter()
     written = ""
-    if removed or settled_removed or caches_removed:
+    if removed or settled_removed or caches_removed or store_retention["retired"]:
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1756,6 +1833,8 @@ def retention_sweep(
                 stream.write(f"removed scratch {path}\n")
             for row in caches_removed:
                 stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
+            for run_id in store_retention["retired"]:
+                stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -1777,6 +1856,7 @@ def retention_sweep(
         "ledger_indexes": indexes,
         "picker_views": picker_views,
         "cache_removed_count": len(caches_removed),
+        "run_store": store_retention,
         "log": written,
         "phase_seconds": phase_seconds,
     }
@@ -1846,9 +1926,11 @@ def install_retention_timer(
 
 USAGE = """\
 usage: python -m reckon.crew.gc [--apply] [--limit N] [--project NAME] [--install-timer]
+                              [--store-limit N] [--store-vacuum-pages N]
 
 Retire finished crew run directories across every mounted project. Without
 --apply the pass reports what it would remove and removes nothing.
+Store retirement defaults to 2,000 rows and 256 incremental compaction pages.
 """
 
 
@@ -1865,6 +1947,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     install = False
     project: str | None = None
     limit = RETENTION_SWEEP_LIMIT
+    store_limit = RETIREMENT_BATCH_SIZE
+    store_vacuum_pages = INCREMENTAL_VACUUM_PAGES
     index = 0
     while index < len(args):
         flag = args[index]
@@ -1878,14 +1962,23 @@ def main(argv: Sequence[str] | None = None) -> int:
         elif flag == "--project":
             index += 1
             project = args[index] if index < len(args) else None
-        elif flag == "--limit":
+        elif flag in ("--limit", "--store-limit", "--store-vacuum-pages"):
             index += 1
             value = args[index] if index < len(args) else ""
             try:
-                limit = int(value)
+                parsed = int(value)
             except ValueError:
                 sys.stderr.write(f"limit must be an integer, not {value!r}\n")
                 return 2
+            if parsed < 1:
+                sys.stderr.write(f"{flag} must be positive\n")
+                return 2
+            if flag == "--limit":
+                limit = parsed
+            elif flag == "--store-limit":
+                store_limit = parsed
+            else:
+                store_vacuum_pages = parsed
         else:
             sys.stderr.write(f"unknown argument {flag!r}\n{USAGE}")
             return 2
@@ -1899,7 +1992,13 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
         return 0
 
-    report = retention_sweep(project=project, apply=apply, limit=limit)
+    report = retention_sweep(
+        project=project,
+        apply=apply,
+        limit=limit,
+        store_limit=store_limit,
+        store_vacuum_pages=store_vacuum_pages,
+    )
     sys.stdout.write(json.dumps(report, indent=2, default=str) + "\n")
     return 0
 
