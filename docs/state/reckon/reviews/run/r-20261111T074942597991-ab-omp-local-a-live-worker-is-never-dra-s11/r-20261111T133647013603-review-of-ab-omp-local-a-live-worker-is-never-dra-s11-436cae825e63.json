@@ -1,0 +1,83 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's gate logs: the reviewed node is unarmed (its fence declares SUITE unarmed because its write paths hold no test file), so no baseline_suite/after_suite pair exists to diff; its only gate log logs/head-gate.log reads 14 passed and EXIT=0 at rev 42c70d8 with no failing id on that side, and logs/historical-census.log reads EXIT=0. The added set is therefore empty by derivation from the two recorded runs, not an unmeasured null.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "Pre-existing rather than added by this node: the arm fails if the census misclassifies a synthetic row, since each expected count is 1 against fixtures built with their own run ids (progress_run, repair_run, wait_run) rather than against the value under test.",
+      "file": "scripts/census/test_monitor_census.py",
+      "line": "158-166"
+    },
+    {
+      "condition_to_fail": "Pre-existing sampler arm: it fails if a live review pointer beside a review-missing duty is not counted as the defect with both records copied, or if the copied duty loses its run id or kind.",
+      "file": "scripts/census/test_monitor_census.py",
+      "line": "327-334"
+    }
+  ],
+  "base_log_revision": "42c70d80c9ff9a24d6d57718c658c945fc2d5095",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/evidence.py:compose_landed_record",
+    "reckon/serve.py:_send_evidence_record",
+    "reckon/resources.py:_is_evidence_fragment",
+    "reckon/doccheck.py:audit_fragment_ids"
+  ],
+  "completed_at": "2026-11-11T13:40:24.895Z",
+  "dispatched_at": "2026-11-11T13:39:22Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added sentence says the repair moved the lift ids from 27 to 23 and then names the six dropped ones, but 27 minus 23 is four, and the commit body itself records the move as 27 to 23, so the landed evidence record states a figure its own two numbers contradict."
+    },
+    {
+      "file": "docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11.html",
+      "line": "25-40",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new fragment re-records the gate result and the whole control table that census-instrument.html:33-40 already carries, so one measurement now lives in two files that can drift independently, which is the drift that produced the arithmetic finding above."
+    }
+  ],
+  "head_log_revision": "42c70d80c9ff9a24d6d57718c658c945fc2d5095",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the composition and serving readers reach the added fragment: reckon/evidence.py:724 loads fragments for the plan, reckon/serve.py:2693 serves the composed record, reckon/resources.py:244 classifies evidence fragments and reckon/doccheck.py:2063 audits fragment ids (run here: 0 findings on the plan fragment directory).",
+    "diff": "Read git diff 42c70d8..436cae8 commit by commit: one commit, two files, +55/-1, a new evidence fragment ab-omp-local-a-live-worker-is-never-dra-s11.html and four added lines plus one reworded line in census-instrument.html; no code, no test and no figure directory.",
+    "done_when": "The done_when names scripts/census/monitor_census.py, its co-located test scripts/census/test_monitor_census.py, one assertion per counted kind, and a 48-hour negative control; the recorded gate log logs/head-gate.log reads 14 passed and EXIT=0 on that test file and logs/historical-census.json carries 242 carried halted rows, process_alive 38, returns_to_progress 128, after_status_repair 7.",
+    "goal": "The node goal is to build the section as specified; docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html:43 records the re-verification of the committed census instrument and sampler rather than a rebuild, and scripts/census/monitor_census.py exists at the base beside death_census.py and carryover_census.py.",
+    "manifest": "Read manifest.md: status complete, gate PYTHONPATH=<worktree> python -m pytest -p no:cacheprovider -q scripts/census/test_monitor_census.py with test_logs naming logs/head-gate.log, logs/historical-census.log and logs/historical-census.json, commits 436cae825e, and an added note that the sampler job is the coordinator's, not this node's.",
+    "write_paths": "The launched fence (prompt.txt:81-84) granted docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html, docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11.html and docs/figures/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11; the commit touches only the first two, and the third is empty."
+  },
+  "justifications": {
+    "durability": "The landed change is prose and no test reddens if it regresses: scripts/census/test_monitor_census.py guards the module, not the fragment, and the arithmetic error at census-instrument.html:39 shows the unguarded prose can drift while the gate stays green.",
+    "evidence": "logs/head-gate.log ends 14 passed and EXIT=0 at rev 42c70d8, and logs/historical-census.json reads 242/38/128/7 with the 12:25:51Z returns_to_progress row and the 12:14:49Z after_status_repair row present, so the recorded gate measures the done_when rather than merely claiming it.",
+    "fit": "The new fragment follows the head idiom of its siblings (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html:1-18) with unique prefixed ids (doccheck audit_fragment_ids returned 0 findings), but it restates figures another fragment already records.",
+    "goal_fidelity": "The done-when deliverable is present and re-verified at head (scripts/census/test_monitor_census.py:158-166 asserts each halted kind at 1 from fixtures with independent run ids), and census-instrument.html:43 records the control figures that logs/historical-census.json reproduces.",
+    "reuse": "No function, class or module is added; the change extends the plan's existing evidence composition (reckon/evidence.py:687 compose_landed_record) instead of introducing a parallel mechanism, with the duplicated figures noted under fit.",
+    "scope_discipline": "git diff --stat 42c70d8..436cae8 names exactly two files, both inside the three paths the launched prompt.txt:81-84 fence granted, and nothing else was touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is to build the section as specified; docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html:43 records the re-verification of the committed census instrument and sampler rather than a rebuild, and scripts/census/monitor_census.py exists at the base beside death_census.py and carryover_census.py.\nVERDICT done_when: The done_when names scripts/census/monitor_census.py, its co-located test scripts/census/test_monitor_census.py, one assertion per counted kind, and a 48-hour negative control; the recorded gate log logs/head-gate.log reads 14 passed and EXIT=0 on that test file and logs/historical-census.json carries 242 carried halted rows, process_alive 38, returns_to_progress 128, after_status_repair 7.\nVERDICT write_paths: The launched fence (prompt.txt:81-84) granted docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html, docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11.html and docs/figures/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11; the commit touches only the first two, and the third is empty.\nVERDICT manifest: Read manifest.md: status complete, gate PYTHONPATH=<worktree> python -m pytest -p no:cacheprovider -q scripts/census/test_monitor_census.py with test_logs naming logs/head-gate.log, logs/historical-census.log and logs/historical-census.json, commits 436cae825e, and an added note that the sampler job is the coordinator's, not this node's.\nVERDICT diff: Read git diff 42c70d8..436cae8 commit by commit: one commit, two files, +55/-1, a new evidence fragment ab-omp-local-a-live-worker-is-never-dra-s11.html and four added lines plus one reworded line in census-instrument.html; no code, no test and no figure directory.\nCALL_SITES: reckon/evidence.py:compose_landed_record, reckon/serve.py:_send_evidence_record, reckon/resources.py:_is_evidence_fragment, reckon/doccheck.py:audit_fragment_ids\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: The done-when deliverable is present and re-verified at head (scripts/census/test_monitor_census.py:158-166 asserts each halted kind at 1 from fixtures with independent run ids), and census-instrument.html:43 records the control figures that logs/historical-census.json reproduces.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head-gate.log ends 14 passed and EXIT=0 at rev 42c70d8, and logs/historical-census.json reads 242/38/128/7 with the 12:25:51Z returns_to_progress row and the 12:14:49Z after_status_repair row present, so the recorded gate measures the done_when rather than merely claiming it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 42c70d8..436cae8 names exactly two files, both inside the three paths the launched prompt.txt:81-84 fence granted, and nothing else was touched.\nSCORE durability: 14\nJUSTIFICATION durability: The landed change is prose and no test reddens if it regresses: scripts/census/test_monitor_census.py guards the module, not the fragment, and the arithmetic error at census-instrument.html:39 shows the unguarded prose can drift while the gate stays green.\nSCORE fit: 15\nJUSTIFICATION fit: The new fragment follows the head idiom of its siblings (docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html:1-18) with unique prefixed ids (doccheck audit_fragment_ids returned 0 findings), but it restates figures another fragment already records.\nSCORE reuse: 18\nJUSTIFICATION reuse: No function, class or module is added; the change extends the plan's existing evidence composition (reckon/evidence.py:687 compose_landed_record) instead of introducing a parallel mechanism, with the duplicated figures noted under fit.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/census-instrument.html:39 non-blocking: The added sentence says the repair moved the lift ids from 27 to 23 and then names the six dropped ones, but 27 minus 23 is four, and the commit body itself records the move as 27 to 23, so the landed evidence record states a figure its own two numbers contradict.\nFINDING docs/evidence/fragments/a-live-worker-is-never-drawn-halted/ab-omp-local-a-live-worker-is-never-dra-s11.html:25-40 non-blocking: The new fragment re-records the gate result and the whole control table that census-instrument.html:33-40 already carries, so one measurement now lives in two files that can drift independently, which is the drift that produced the arithmetic finding above.\n",
+  "review_run_id": "r-20261111T133647013603-review-of-ab-omp-local-a-live-worker-is-never-dra-s11-436cae825e63",
+  "reviewed_base_sha": "42c70d80c9ff9a24d6d57718c658c945fc2d5095",
+  "reviewed_commits": [
+    "436cae825e630603b764d5004624e62fad21aefd"
+  ],
+  "reviewed_head_sha": "436cae825e630603b764d5004624e62fad21aefd",
+  "reviewed_run_id": "r-20261111T074942597991-ab-omp-local-a-live-worker-is-never-dra-s11",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T13:47:05Z",
+  "total": 103
+}
