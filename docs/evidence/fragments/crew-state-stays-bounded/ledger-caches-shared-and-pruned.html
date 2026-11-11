@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-slug" content="ledger-caches-shared-and-pruned">
+  <meta name="plan-evidence-for" content="reckon:crew-state-stays-bounded">
+  <meta name="plan-verifies" content="reckon:crew-state-stays-bounded#s11">
+  <meta name="evidence-verdict" content="blocked">
+  <meta name="evidence-date" content="2026-11-11">
+  <title>Shared ledger caches and scheduled pruning | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="ledger-caches-shared-and-pruned-implementation">
+  <h2>One cache for matching repository ledgers</h2>
+  <p>Commits <code>93a77943b6164eff25c3fccc0eafd4d2f37b7649</code> and
+  <code>b826f614660bd911a12953ffe55a09c7e2ad300c</code> key a ledger
+  index by the repository's common git directory, the ledger's tree-relative
+  path and the projection version. Ordinary checkout and linked-worktree git
+  pointer files are read through the existing <code>reckon.git_head</code>
+  helpers. Byte-identical worktree ledgers use the main checkout's index;
+  differing aggregate or per-run files read through without publishing or
+  changing that index. Content digests reuse <code>reckon.file_memo</code>.
+  Discovery stats absent git markers without trying to open each one, retaining
+  the existing focused-read file-open bound.</p>
+  <p>The existing <code>gc.retention_sweep</code> now calls
+  <code>_orphan_ledger_indexes</code> and <code>_expired_picker_views</code>.
+  It removes missing-source ledger indexes and picker budget views older than
+  seven days, prints each removal, and appends it through the existing rotating
+  retention log. It checks the configured cache and the fallback cache readers
+  use inside a read-only configuration fence; an explicit cache override limits
+  the sweep to that cache. Open process descriptors and SQLite write locks
+  protect active ledger caches. Open descriptors protect picker views. A cache
+  backed only by per-run files stays even when its aggregate is absent.
+  Scheduled removals print without changing the existing garbage-collection
+  JSON response.</p>
+</section>
+<section id="ledger-caches-shared-and-pruned-measure">
+  <h2>Measured behavior</h2>
+  <table>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base armed gate</td><td><code>946d691d74d681ff392c907b657967096656e531</code></td><td>51 passed in 9.01s</td></tr>
+      <tr><td>Final head armed gate</td><td><code>b826f614660bd911a12953ffe55a09c7e2ad300c</code></td><td>59 passed in 14.23s</td></tr>
+      <tr><td>Base negative control</td><td>Final new tests against base source</td><td>2 failed, 5 deselected in 0.62s</td></tr>
+      <tr><td>Lint and formatting</td><td>Base and head scoped Python paths</td><td>Zero findings; all format checks pass</td></tr>
+      <tr><td>Base direct importers</td><td>288 test files; all_debug job 1310038</td><td>70 failed, 2945 passed, 4 skipped, 4 warnings in 436.24s</td></tr>
+      <tr><td>Final head direct importers</td><td>Same 288 files; all_debug job 1310052</td><td>79 failed, 2936 passed, 4 skipped, 4 warnings in 398.12s</td></tr>
+      <tr><td>Failure-id comparison</td><td>Final head against base</td><td>11 added; 2 resolved; blocked</td></tr>
+    </tbody>
+  </table>
+  <p>The new cases use a temporary repository, two linked worktrees and an
+  isolated cache. All three readers resolve one path. Spies first observe one
+  aggregate parse and one run-document parse, then observe zero of each for
+  the second worktree. Four differing-ledger cases cover an aggregate edit,
+  a document edit, an added document and a removed document; each returns its
+  own source view and leaves the shared cache byte-identical. Another case
+  distinguishes repositories and projection versions.</p>
+  <p>The sweep case offers an orphan index and an eight-day-old picker view,
+  leaves both during a dry run, and removes both when applied. It keeps a
+  current-source index, a fresh picker view, an unrelated picker file and two
+  files a child process holds open. The holder instrument first sees that
+  child's pid on the open view. When the child closes its descriptors, the
+  next pass removes the formerly held files. Both removed paths appear in
+  stderr and the retention log.</p>
+  <p>The declared negative control uses the base implementation. It fails
+  <code>test_two_worktrees_share_one_cache_and_second_reader_builds_nothing</code>
+  on distinct cache paths and
+  <code>test_retention_prunes_orphans_and_old_picker_views_but_keeps_fresh_and_held</code>
+  on the surviving orphan. Both pass in the head arm. The initial focused head
+  run found a fixture connection that was committed but left open; explicitly
+  closing it produced the passing gate. An initial partition head arm had
+  invalid scratch git metadata and was cancelled; its logs are retained and
+  excluded from code evidence. The initial importer comparison found 28 added
+  failing ids (70 base failures, 97 initial head failures, one base failure
+  absent at head). It reproduced diagnostics entering JSON responses, extra
+  opens of absent git markers, and repeated removal of a per-run-only cache.
+  The scoped repair clears those importer regressions. The final comparison
+  still has 11 added failure ids and two base ids absent at head, so this
+  evidence is blocked, not a completed landing. The manifest records the
+  remaining scope findings and the complete id sets.</p>
+  <p>Logs and receipts are under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T035550813418-ledger-caches-shared-and-pruned/</code>:
+  <code>base-armed.log</code>, <code>head-repair-armed.log</code>,
+  <code>negative-control.log</code>, <code>lint.log</code>, and the paired
+  <code>base-importers.log</code> / <code>head-repair-importers.log</code>.
+  The final comparison is <code>final-importer-delta.json</code>.
+  Every partition gate records its revision, resolved tree, imported module
+  path, literal command and terminal exit code.</p>
+</section>
+</main>
+</body>
+</html>
