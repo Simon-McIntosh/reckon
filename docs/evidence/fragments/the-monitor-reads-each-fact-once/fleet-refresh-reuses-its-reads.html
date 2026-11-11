@@ -1,0 +1,57 @@
+<section id="fleet-refresh-reuses-its-reads">
+  <h3 id="fleet-refresh-reuses-its-reads-result">Held-worktree discovery applies changed rows and registrations</h3>
+  <p>The fleet refresh retains its held-tree answer around the shared
+  <code>routing.WorktreeRecordIndex</code>. The owner supplies record naming keys,
+  filing order, replacement and removal; obligations keeps source membership
+  and affected-tree state. A new or edited split-run document replaces its filing
+  in that owner; a removed document removes its candidates. Git registrations are
+  read through their changed
+  <code>gitdir</code> entries. Only trees whose candidates, registration, presence
+  or live occupancy changed are matched again. Equivalent ledger paths share
+  canonical source identities, and aggregate-only records retain their authored
+  order when the last split-only document disappears.</p>
+  <p>The fixture has 60 pointers, six growing worker streams, 60 committed review
+  records, 204 ledger documents and four held worktrees. A quiet second refresh
+  already passed at the assigned base. The additional input that reproduced the
+  live miss was an unrelated ledger append together with one registry removal
+  and one registry addition between refreshes.</p>
+  <table>
+    <thead><tr><th>Work after unrelated churn</th><th>Base</th><th>Incremental reader</th></tr></thead>
+    <tbody>
+      <tr><td>Full ledger loads</td><td>1</td><td>0</td></tr>
+      <tr><td>Whole-ledger naming derivations</td><td>1</td><td>0</td></tr>
+      <tr><td>Full Git worktree listings</td><td>1</td><td>0</td></tr>
+      <tr><td>Changed document reads</td><td>1</td><td>1</td></tr>
+      <tr><td>Tree matches</td><td>6</td><td>1</td></tr>
+    </tbody>
+  </table>
+  <p>The regression also checks a new holding row, an in-place row edit, row
+  deletion, a removed and restored worktree directory, and a newly registered tree
+  named by an older ledger row. Counters patch every loaded binding of the
+  measured readers, with first-refresh positive controls. The declared churn
+  negative control fails on the product base, retained in
+  <code>churn-negative-control-receipt.log</code> in run
+  <code>r-20261111T033651310546-fleet-refresh-reuses-its-reads</code>.</p>
+  <p>The owner API negative control at the review base fails with
+  <q>the shared owner must support replacement</q>. The added check covers changed
+  session and retained-path routes, preserved filing order, removal and append
+  compatibility. The churn regression additionally observes one shared-owner
+  replacement for one changed row, and one removal when that document disappears.
+  Its first refresh confirms that the owner instrumentation sees known records.</p>
+  <p>The repair's armed base passes 54 tests in 16.55s; its head passes 55 tests in
+  18.68s. Matched importer arms over 216 files ran through
+  <code>sbatch --partition=all_debug</code>: base has 82 failed and 1,573 passed in
+  262.87s; head has 78 failed and 1,578 passed in 255.14s. There are zero added
+  failing test IDs and four baseline failures absent at head, without attributing
+  that difference to the refactor. Receipts are <code>repair-base-armed.log</code>,
+  <code>repair-head-armed.log</code>, <code>repair-base-importers.log</code>,
+  <code>repair-head-importers.log</code> and <code>repair-importer-delta.json</code>.</p>
+  <p>Ruff adds no lint or formatting findings on the changed Python paths; the
+  before/after receipt is <code>repair-ruff-delta.log</code>. The owner API negative control is
+  <code>reuse-owner-negative.log</code>.</p>
+  <p>Per-file metadata is still validated to catch in-place edits. Rewriting the
+  aggregate JSON envelope rebuilds the naming index because that source has no
+  per-row change identities; split-run changes use the incremental path.
+  The coordinator's station read-rate and CPU measurement remains a separate
+  post-landing check.</p>
+</section>
