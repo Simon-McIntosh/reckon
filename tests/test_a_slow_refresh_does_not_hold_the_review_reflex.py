@@ -50,7 +50,6 @@ SESSION = "session-one"
 REVIEW_PROJECT = "review-owner-fixture"
 REVIEW_SESSION = "coordinator-fixture"
 WINDOW = 8.0
-MOMENT = datetime(2026, 11, 11, 18, 0, tzinfo=UTC)
 
 
 def _now() -> datetime:
@@ -128,7 +127,12 @@ def _station(
 def test_a_run_delivered_into_a_held_refresh_is_reviewed_in_the_window(
     home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """A run delivered while the tick is held in its slow stage is reviewed."""
+    """A run delivered while the tick is held in its slow stage is reviewed.
+
+    The station runs through ``run_station``, the entry point a real station
+    takes, so the reflex's arm is started and stopped by production code
+    rather than by this case.
+    """
     monkeypatch.setattr(resumption, "DEFAULT_SWEEP_SECONDS", WINDOW)
     dispatches = _Dispatches()
     monkeypatch.setattr(resumption, "dispatch_awaiting_reviews", dispatches)
@@ -154,12 +158,11 @@ def test_a_run_delivered_into_a_held_refresh_is_reviewed_in_the_window(
     monkeypatch.setattr(station_obligations, "publish", held_publish)
 
     def run_tick() -> None:
-        node.tick(now=MOMENT)
+        station.run_station(station_instance=node, store=node.store, once=True)
         finished.set()
 
     # A run already live when the tick opens is what gives the tick a project.
     _pointer(crew_home(), "run-already-live")
-    node.reflex.start()
     try:
         ticker = threading.Thread(target=run_tick, name="held-tick", daemon=True)
         ticker.start()
@@ -187,7 +190,7 @@ def test_a_run_delivered_into_a_held_refresh_is_reviewed_in_the_window(
         )
     finally:
         gate.set()
-        node.reflex.stop()
+        ticker.join(timeout=30)
 
 
 def _commit(repository: Path, name: str, body: str) -> str:
