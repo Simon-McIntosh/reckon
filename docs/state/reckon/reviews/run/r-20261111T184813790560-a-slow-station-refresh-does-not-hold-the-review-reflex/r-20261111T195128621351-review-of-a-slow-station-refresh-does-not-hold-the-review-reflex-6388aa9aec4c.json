@@ -1,0 +1,46 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T20:12:37.494Z",
+  "dispatched_at": "2026-11-11T19:58:56Z",
+  "findings": [
+    {
+      "file": "reckon/crew/station.py",
+      "line": 772,
+      "severity": "non-blocking",
+      "text": "run_station's start of the reflex is exercised by no test: the new case calls station.reflex.start() itself at tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:162, so deleting this line silently restores the defect while every test stays green."
+    },
+    {
+      "file": "logs/negative-control-window-8s.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log header names revision 10afb2acb95e8a72d378978cbd9654c7d1ad253c while it ran the mutated head tree, so a reader checking out the named revision cannot reproduce the failure because the test file does not exist there."
+    },
+    {
+      "file": "manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the after_suite arm names only tests/test_staged_write_inventory.py and the new file, so the run_station and Station constructor paths this node changes are not measured by the promoted suite, although the plan's done-when asks for the test files importing the changed modules."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a slow station refresh does not hold the review reflex; reckon/crew/station.py:557 constructs a ReflexBeat armed on its own thread and reckon/crew/station.py:772 starts it in run_station, and reckon/crew/obligations.py:2052 carries the station's held stage and the dispatch into an overdue review duty.\nVERDICT done_when: the done_when names tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py with a declared negative control and ruff on the staged paths; both cases and the negative control are recorded in the manifest and its logs, and I re-ran ruff check and ruff format --check over the three staged paths at the reviewed head, which report All checks passed and 3 files already formatted.\nVERDICT write_paths: read the node's declared scope (reckon/crew/station.py, reckon/crew/obligations.py, the new test, the evidence fragment, the figure directory); all four paths in the diff are inside it and the figure directory is unused.\nVERDICT manifest: read; it records both suite arms with log paths (51 passed EXIT=0 base, 53 passed EXIT=0 head), the negative control log (1 failed EXIT=1), and an empty added-failure set.\nVERDICT diff: read all three commits against 10afb2acb95e8a72d378978cbd9654c7d1ad253c; 077b415935 changes the two modules, 4f5e927da4 and 6388aa9aec add the landing fragment, 541 insertions and 3 deletions, every file inside the declared scope.\nCALL_SITES: reckon/crew/station.py:772 run_station, reckon/crew/station.py:557 Station.__init__, reckon/crew/obligations.py:2052 _review_duty_item, reckon/crew/obligations.py:3316 obligation builder, reckon/crew/station_subscriber.py:155, reckon/crew/obligation_snapshot.py:1453\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:352 arm_once requests each session's sweep from the reflex thread when the fleet's phase or manifest identity moves, so a delivery during a held tick is armed without waiting for it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-suite.log records 53 passed EXIT=0 and logs/baseline-suite.log 51 passed EXIT=0, but both arms name only tests/test_staged_write_inventory.py plus the new file, so the suites importing the changed modules (tests/test_one_station_per_node_runs_the_tick.py) are not covered as the done_when asks.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/station.py, reckon/crew/obligations.py, tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-slow-station-refresh-does-not-hold-the-review-reflex.html) is inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:179 reddens under the declared negative control (logs/negative-control-window-8s.log, EXIT=1), but no test covers reckon/crew/station.py:772, so deleting that line leaves the suite green.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station.py:305 keeps the module's local-constant and class idiom and introduces no plan, section or ticket label; the three commit subjects are conventional with bodies.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends SweepBeat's own request(changed=...) contract at reckon/crew/station.py:392 rather than forking it, and the searches over reckon/ for a shared file-identity or fleet-signature owner found only module-local stat helpers.\nFINDING reckon/crew/station.py:772 non-blocking: run_station's start of the reflex is exercised by no test \u2014 the new case calls station.reflex.start() itself at tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:162, so deleting this line silently restores the defect while every test stays green.\nFINDING logs/negative-control-window-8s.log:1 non-blocking: the log's header names revision 10afb2acb95e8a72d378978cbd9654c7d1ad253c while it ran the mutated head tree, so a reader checking out the named revision cannot reproduce the failure because the test file does not exist there.\nFINDING manifest.md:20 non-blocking: the after_suite arm names only tests/test_staged_write_inventory.py and the new file, so the run_station and Station constructor paths this node changes are not measured by the promoted suite, although the plan's done-when asks for the test files importing the changed modules.\n",
+  "review_run_id": "r-20261111T195128621351-review-of-a-slow-station-refresh-does-not-hold-the-review-reflex-6388aa9aec4c",
+  "reviewed_base": "10afb2acb95e8a72d378978cbd9654c7d1ad253c",
+  "reviewed_base_sha": "10afb2acb95e8a72d378978cbd9654c7d1ad253c",
+  "reviewed_head": "6388aa9aec4c11a49205c1769cd7bc2cd497210b",
+  "reviewed_head_sha": "6388aa9aec4c11a49205c1769cd7bc2cd497210b",
+  "reviewed_run_id": "r-20261111T184813790560-a-slow-station-refresh-does-not-hold-the-review-reflex",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:31:08.427782+00:00",
+  "total": 104
+}
