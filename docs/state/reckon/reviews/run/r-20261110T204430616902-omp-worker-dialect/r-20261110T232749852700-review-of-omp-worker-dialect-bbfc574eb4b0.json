@@ -1,0 +1,75 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed manifest's own arms and their logs: baseline_suite records 67c9e36671107c5c73905e9fcb58088927395294, `env PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py`, exit 0, 51 passed, no FAILED line; after_suite records cbb1b00692, `env PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_omp_dialect.py tests/test_staged_write_inventory.py`, exit 0, 75 passed, no FAILED line. Zero failing ids in either arm, so nothing is added. The after arm precedes the reviewed head bbfc574eb4, which changes only the evidence fragment and no code or test.",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3373 (prompt.txt written from the plan's composed prompt)",
+    "reckon/crew/dispatch.py:1553 (_prompt_file_text, the new helper)",
+    "reckon/crew/dispatch_sessions.py:1959 (change_lane writes prompt.txt from the composed plan)",
+    "reckon/_backends.py:2857 (GIT_CONFIG_GLOBAL in the launch environment)",
+    "reckon/_backends.py:2941 (LaunchPlan carries prompt=prompt)",
+    "reckon/crew/dispatch.py:3333 (launch_plan, fresh dispatch)",
+    "reckon/crew/dispatch_sessions.py:1339 (launch_plan) and :1862 (launch_plan, change_lane)",
+    "reckon/crew/resumption.py:532 (launch_plan, resume)"
+  ],
+  "completed_at": "2026-11-10T23:50:49.626Z",
+  "dispatched_at": "2026-11-10T23:36:07Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3373",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repaired call site is not held. tests/test_omp_dialect.py:123 imports `_prompt_file_text` from this module and asserts on the function alone, so restoring `prompt_path.write_text(plan.stdin_text, encoding=\"utf-8\")` here \u2014 the exact defect the review filed \u2014 leaves the whole of tests/test_omp_dialect.py green and empties an argv-prompt run's prompt.txt again. reckon/crew/dispatch_sessions.py:1959 has the same expression with no test at all. A case that drives dispatch() or change_lane() and reads the written prompt.txt would hold it."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1553",
+      "severity": "non-blocking",
+      "text": "non-blocking: the repair landed in two files outside the node's declared write paths. reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py were not among the six granted paths, and unlike the earlier fixture relocation (granted in writing by resume-1-advice.txt) no re-grant for these two is recorded in the run; the manifest's resume_brief asks the coordinator to extend write_paths after the fact, so the record on disk disagrees with the diff until that is done."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/omp-worker-dialect.html",
+      "line": "110",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment records the accumulate-replacement control as `1 failed`, but control-assignment.log is a combined two-mutation run \u2014 its header reads `(accumulate replaced by assignment; prompt file read from stdin only)` \u2014 and reports `2 failed, 22 deselected`. The figure is a per-test attribution rather than the run's own count, so no log on disk shows the accumulate mutation alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read commit by commit from 0fb10d86e0: cbb1b00692 adds the LaunchPlan.prompt field and its fan-out to prompt.txt, the GIT_CONFIG_GLOBAL composition in launch_plan, the _prompt_file_text helper, and four test cases; bbfc574eb4 rewrites the evidence fragment only (34 insertions, 5 deletions, no code or test). 5 files, +215/-12, nothing unrelated.",
+    "done_when": "the done_when names parser tests over the recorded fixture, a positive control, a codex-vocabulary refusal, argv tests and clean ruff; the repair round's own measure is the armed command, which the manifest records at 51 passed at the base and 75 passed at cbb1b00692 (after-arm-head.log ends `75 passed` then a bare `EXIT=0`), with three controls on disk at control-assignment.log, control-git-identity.log and negative-control.log.",
+    "goal": "the node's original goal was registering the omp dialect (reviewed at 0fb10d86e0); the commits gained since answer the coordinator's three-item repair directive in resume-2-advice.txt, and all three landed at cbb1b00692 \u2014 reckon/_backends.py:2857 carries the operator git identity through GIT_CONFIG_GLOBAL, reckon/crew/dispatch.py:3373 writes prompt.txt from the plan's composed prompt, and tests/test_omp_dialect.py:366 puts a later turn's zero-usage record after a measured total.",
+    "manifest": "read; it records commits cbb1b00692 and bbfc574eb4, a 51-passed base arm at 67c9e366 with EXIT=0, a 75-passed after arm at cbb1b00692 with EXIT=0, the three controls, and a ruff result of two pre-existing findings at reckon/_backends.py:718 and :3707 \u2014 all of which reconcile with baseline-arm.log, after-arm-head.log, the three control logs, ruff-check.log and ruff-format.log on disk.",
+    "write_paths": "the source node was fenced to six paths (reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py, tests/fixtures/omp-stream.jsonl, the evidence fragment, the figures dir); the gained diff changes five paths, and two of them \u2014 reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py \u2014 are outside that list; they were repaired on the coordinator's explicit directive and the manifest records them under outside_scope, but no written re-grant of those two paths exists in the run record the way resume-1-advice.txt granted the fixture move."
+  },
+  "justifications": {
+    "durability": "the placeholder case at tests/test_omp_dialect.py:366 and the identity case at :272 each fail under the mutation recorded in control-assignment.log and control-git-identity.log, but restoring `prompt_path.write_text(plan.stdin_text, ...)` at reckon/crew/dispatch.py:3373 leaves every case green.",
+    "evidence": "after-arm-head.log and baseline-arm.log each end in a summary line and a bare EXIT line and are recorded in the manifest, but no log or test exercises the repaired production call site at reckon/crew/dispatch.py:3373 \u2014 the prompt-file case calls the helper directly.",
+    "fit": "reckon/_backends.py:438 adds a dataclass field with a mechanism-level comment and keeps it out of as_dict (reckon/_backends.py:443), following the surrounding LaunchPlan shape, and no added symbol carries a plan or ticket label.",
+    "goal_fidelity": "every element of the coordinator's three-item directive is present at the reviewed head: reckon/_backends.py:2857, reckon/crew/dispatch.py:3373 and tests/test_omp_dialect.py:366.",
+    "reuse": "no owner of a git-identity carry exists in reckon production code (GIT_CONFIG_GLOBAL appears only in tests) and the identity case extends launch_plan's existing environment composition rather than forking it; reckon/crew/dispatch_sessions.py:1959 restates `stdin_text or prompt` inline instead of importing _prompt_file_text, presumably to avoid a cycle, which is duplication of two lines rather than of a mechanism.",
+    "scope_discipline": "reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py are changed although the node's declared write paths list neither, and the run record records the shortfall rather than a re-grant."
+  },
+  "node": "review-of-omp-worker-dialect-bbfc574eb4b0",
+  "node:reviewed": "omp-worker-dialect",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's original goal was registering the omp dialect (reviewed at 0fb10d86e0); the commits gained since answer the coordinator's three-item repair directive in resume-2-advice.txt, and all three landed at cbb1b00692 \u2014 reckon/_backends.py:2857 carries the operator git identity through GIT_CONFIG_GLOBAL, reckon/crew/dispatch.py:3373 writes prompt.txt from the plan's composed prompt, and tests/test_omp_dialect.py:366 puts a later turn's zero-usage record after a measured total.\nVERDICT done_when: the done_when names parser tests over the recorded fixture, a positive control, a codex-vocabulary refusal, argv tests and clean ruff; the repair round's own measure is the armed command, which the manifest records at 51 passed at the base and 75 passed at cbb1b00692 (after-arm-head.log ends `75 passed` then a bare `EXIT=0`), with three controls on disk at control-assignment.log, control-git-identity.log and negative-control.log.\nVERDICT write_paths: the source node was fenced to six paths (reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py, tests/fixtures/omp-stream.jsonl, the evidence fragment, the figures dir); the gained diff changes five paths, and two of them \u2014 reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py \u2014 are outside that list; they were repaired on the coordinator's explicit directive and the manifest records them under outside_scope, but no written re-grant of those two paths exists in the run record the way resume-1-advice.txt granted the fixture move.\nVERDICT manifest: read; it records commits cbb1b00692 and bbfc574eb4, a 51-passed base arm at 67c9e366 with EXIT=0, a 75-passed after arm at cbb1b00692 with EXIT=0, the three controls, and a ruff result of two pre-existing findings at reckon/_backends.py:718 and :3707 \u2014 all of which reconcile with baseline-arm.log, after-arm-head.log, the three control logs, ruff-check.log and ruff-format.log on disk.\nVERDICT diff: read commit by commit from 0fb10d86e0: cbb1b00692 adds the LaunchPlan.prompt field and its fan-out to prompt.txt, the GIT_CONFIG_GLOBAL composition in launch_plan, the _prompt_file_text helper, and four test cases; bbfc574eb4 rewrites the evidence fragment only (34 insertions, 5 deletions, no code or test). 5 files, +215/-12, nothing unrelated.\nCALL_SITES: reckon/crew/dispatch.py:3373, reckon/crew/dispatch.py:1553, reckon/crew/dispatch_sessions.py:1959, reckon/_backends.py:2857, reckon/_backends.py:2941, reckon/crew/dispatch.py:3333, reckon/crew/dispatch_sessions.py:1339, reckon/crew/resumption.py:532\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: every element of the coordinator's three-item directive is present at the reviewed head: reckon/_backends.py:2857, reckon/crew/dispatch.py:3373 and tests/test_omp_dialect.py:366.\nSCORE evidence: 15\nJUSTIFICATION evidence: after-arm-head.log and baseline-arm.log each end in a summary line and a bare EXIT line and are recorded in the manifest, but no log or test exercises the repaired production call site at reckon/crew/dispatch.py:3373 \u2014 the prompt-file case calls the helper directly.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py are changed although the node's declared write paths list neither, and the run record records the shortfall rather than a re-grant.\nSCORE durability: 14\nJUSTIFICATION durability: the placeholder case at tests/test_omp_dialect.py:366 and the identity case at :272 each fail under the mutation recorded in control-assignment.log and control-git-identity.log, but restoring `prompt_path.write_text(plan.stdin_text, ...)` at reckon/crew/dispatch.py:3373 leaves every case green.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/_backends.py:438 adds a dataclass field with a mechanism-level comment and keeps it out of as_dict (reckon/_backends.py:443), following the surrounding LaunchPlan shape, and no added symbol carries a plan or ticket label.\nSCORE reuse: 17\nJUSTIFICATION reuse: no owner of a git-identity carry exists in reckon production code (GIT_CONFIG_GLOBAL appears only in tests) and the identity case extends launch_plan's existing environment composition rather than forking it; reckon/crew/dispatch_sessions.py:1959 restates `stdin_text or prompt` inline instead of importing _prompt_file_text, presumably to avoid a cycle, which is duplication of two lines rather than of a mechanism.\nFINDING reckon/crew/dispatch.py:3373 non-blocking: the repaired call site is not held. tests/test_omp_dialect.py:123 imports `_prompt_file_text` from this module and asserts on the function alone, so restoring `prompt_path.write_text(plan.stdin_text, encoding=\"utf-8\")` here \u2014 the exact defect the review filed \u2014 leaves the whole of tests/test_omp_dialect.py green and empties an argv-prompt run's prompt.txt again. reckon/crew/dispatch_sessions.py:1959 has the same expression with no test at all. A case that drives dispatch() or change_lane() and reads the written prompt.txt would hold it.\nFINDING reckon/crew/dispatch.py:1553 non-blocking: the repair landed in two files outside the node's declared write paths. reckon/crew/dispatch.py and reckon/crew/dispatch_sessions.py were not among the six granted paths, and unlike the earlier fixture relocation (granted in writing by resume-1-advice.txt) no re-grant for these two is recorded in the run; the manifest's resume_brief asks the coordinator to extend write_paths after the fact, so the record on disk disagrees with the diff until that is done.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/omp-worker-dialect.html:110 non-blocking: the fragment records the accumulate-replacement control as `1 failed`, but control-assignment.log is a combined two-mutation run \u2014 its header reads `(accumulate replaced by assignment; prompt file read from stdin only)` \u2014 and reports `2 failed, 22 deselected`. The figure is a per-test attribution rather than the run's own count, so no log on disk shows the accumulate mutation alone.",
+  "review_run_id": "r-20261110T232749852700-review-of-omp-worker-dialect-bbfc574eb4b0",
+  "reviewed_base_sha": "0fb10d86e086dcaf5d18d693fb600c4903017a58",
+  "reviewed_head_sha": "bbfc574eb4b07d587435021cfddd31bff14c60d2",
+  "reviewed_run_id": "r-20261110T204430616902-omp-worker-dialect",
+  "scores": {
+    "durability": 14,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:55:00+00:00",
+  "total": 95
+}
