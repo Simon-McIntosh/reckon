@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-worker-cannot-write-your-home">
+  <meta name="plan-title" content="A worktree index written inside the fence reads clean outside it">
+  <meta name="plan-summary" content="routing._create_worktree enables extensions.worktreeConfig on the shared configuration and writes core.checkStat=minimal into each new worktree's own configuration, so a fenced index whose entries carry the overflow gid no longer makes every unfenced git call re-read every file.">
+  <meta name="plan-evidence-for" content="reckon:a-worker-cannot-write-your-home">
+  <meta name="plan-verifies" content="reckon:a-worker-cannot-write-your-home#s24">
+  <meta name="plan-commits" content="76fe60bcc5">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <title>A worktree index written inside the fence reads clean outside it — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="worktree-index-reads-clean-across-the-fence" data-reckon="landed" data-when="2026-11-11">
+
+<h2 id="worktree-index-reads-clean-across-the-fence-h">A worktree index written inside the fence reads clean outside it</h2>
+
+<p id="worktree-index-reads-clean-across-the-fence-what">A worktree <code>routing._create_worktree</code> creates now carries
+<code>core.checkStat=minimal</code> in its own worktree configuration, reached through
+<code>extensions.worktreeConfig=true</code> written once to the shared <code>.git/config</code>.
+The main checkout keeps the default comparison. Minimal drops uid, gid, inode and device
+and keeps whole-second mtime, ctime and size.</p>
+
+<p id="worktree-index-reads-clean-across-the-fence-repro">The defect reproduced at the base revision:
+<code>git config --get extensions.worktreeConfig</code> and <code>git config --get core.checkStat</code>
+both returned nothing on a freshly created worktree, so every entry's fence-era gid 65534
+was compared against the files' group 89486 on the next unfenced call.</p>
+
+<table id="worktree-index-reads-clean-across-the-fence-checks">
+  <caption>Checks and their outcomes</caption>
+  <thead><tr><th>Check</th><th>Outcome</th></tr></thead>
+  <tbody>
+    <tr><td>Setting assertion (worktree reads <code>minimal</code>, main reads none)</td><td>passes</td></tr>
+    <tr><td>ctime control: same-size edit, mtime restored, only whole-second ctime moved</td><td><code>git diff --name-only</code> names the file</td></tr>
+    <tr><td>Configuration-write control: the <code>core.checkStat</code> write dropped</td><td>setting assertion fails (<code>None == 'minimal'</code>)</td></tr>
+    <tr><td>Fenced/unfenced first-call timing ratio</td><td>see the run directory's ratio log</td></tr>
+  </tbody>
+</table>
+
+<p id="worktree-index-reads-clean-across-the-fence-limit">Worktrees created before this landing keep the cost until they are removed; nothing
+rewrites an existing tree's configuration.</p>
+
+</article>
+</body>
+</html>
