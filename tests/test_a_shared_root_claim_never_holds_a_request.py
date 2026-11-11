@@ -22,7 +22,7 @@ from typing import Any
 import pytest
 
 from reckon import crew
-from reckon.crew import dispatch_claims, queue_admission, runs
+from reckon.crew import dispatch_claims, queue_admission, queue_edit, runs
 from reckon.crew.dispatch_claims import _RepositoryScopeClaim
 
 PROJECT = "proj"
@@ -117,16 +117,7 @@ def _launch_refusal(
     repo: Path, holder_paths: list[str], request_paths: list[str]
 ) -> str:
     """The launch-time claim check's answer for the same pair, as a string."""
-    node = crew.TaskNode(
-        id="r-request",
-        plan="plan-a",
-        section="dispatch",
-        goal="edit one declared file",
-        done_when="the launch-time claim check admits the pair",
-        write_paths=list(request_paths),
-        spec_level="exact",
-        time_budget="20m",
-    )
+    node = _request_node(request_paths)
     resolved = repo.resolve()
     claims = [
         _RepositoryScopeClaim(
@@ -156,6 +147,20 @@ def _launch_refusal(
     return ""
 
 
+def _request_node(paths: list[str]) -> crew.TaskNode:
+    """The held request's node, as every claim comparison reads it."""
+    return crew.TaskNode(
+        id="r-request",
+        plan="plan-a",
+        section="dispatch",
+        goal="edit one declared file",
+        done_when="the claim comparison admits the pair",
+        write_paths=list(paths),
+        spec_level="exact",
+        time_budget="20m",
+    )
+
+
 def _claims(repo: Path, paths: list[str]) -> list[_RepositoryScopeClaim]:
     """The holder's claims, as the launch check and the conflict report read them."""
     return [
@@ -179,16 +184,7 @@ def _conflict_rows(
     repo: Path, holder_paths: list[str], request_paths: list[str]
 ) -> list[dict[str, Any]]:
     """The dispatch conflict report's answer for the same pair."""
-    node = crew.TaskNode(
-        id="r-request",
-        plan="plan-a",
-        section="dispatch",
-        goal="edit one declared file",
-        done_when="the conflict report agrees with admission",
-        write_paths=list(request_paths),
-        spec_level="exact",
-        time_budget="20m",
-    )
+    node = _request_node(request_paths)
     return dispatch_claims._live_conflict_rows(
         node,
         project=PROJECT,
@@ -215,6 +211,27 @@ def test_the_reproduced_pair_passes_the_launch_check(repository: Path) -> None:
     refusal = _launch_refusal(repository, HOLDER_PATHS, REQUEST_PATHS)
 
     assert refusal == "", refusal
+
+
+def test_the_queue_edit_admits_the_reproduced_pair(repository: Path) -> None:
+    _pointer("r-holder", "working", HOLDER_PATHS, repository)
+    record = {
+        "run_id": "r-request",
+        "project": PROJECT,
+        "repo": str(repository),
+        "node": {"id": "r-request", "write_paths": list(REQUEST_PATHS)},
+    }
+
+    assert queue_edit._live_claim_conflict(_request_node(REQUEST_PATHS), record) is None
+
+    _pointer("r-holder", "working", [EXCLUSIVE], repository)
+    exclusive = {
+        **record,
+        "node": {"id": "r-request", "write_paths": [EXCLUSIVE]},
+    }
+    refusal = queue_edit._live_claim_conflict(_request_node([EXCLUSIVE]), exclusive)
+
+    assert refusal is not None and "docs/plans/*.html" in str(refusal)
 
 
 def test_the_conflict_report_agrees_with_admission(repository: Path) -> None:
