@@ -24,8 +24,8 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
-<meta name="plan-modified" content="2026-11-10">
+<meta name="plan-version" content="44">
+<meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -96,7 +96,7 @@
     <div class="r-comment-body"><p>Reviewed run r-20261110T150554869217 at base c8e0018c20..head 5c29da3b3c (two commits, tests and evidence only); scores 17/12/20/15/18/19, three non-blocking findings on record evidence and arm methodology, and added_failure_count 2 derived from the run's own baseline_suite and after_suite.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract" data-who="reckon-build" data-when="2026-11-10T17:12:34Z">
-    <div class="r-comment-body"><p>§2&#x27;s composition already lands: node.validate_node judges the whole contract and both dispatch_plan.plan_dispatch and dispatch.queue_requests call it, so a batch entry missing negative_control while declaring a test write path is refused in its own row with no pointer written and its valid sibling stored; this node adds tests/test_a_batch_entry_is_checked_when_queued.py, sharing the contract fixture with tests/test_every_path_meets_the_node_contract.py (3 passed at head; the arm over the 168 files importing the three dispatch modules adds no failure beyond two timing-bound ids that pass alone at both revisions), and changes no product source.</p></div>
+    <div class="r-comment-body"><p>§2's composition already lands: node.validate_node judges the whole contract and both dispatch_plan.plan_dispatch and dispatch.queue_requests call it, so a batch entry missing negative_control while declaring a test write path is refused in its own row with no pointer written and its valid sibling stored; this node adds tests/test_a_batch_entry_is_checked_when_queued.py, sharing the contract fixture with tests/test_every_path_meets_the_node_contract.py (3 passed at head; the arm over the 168 files importing the three dispatch modules adds no failure beyond two timing-bound ids that pass alone at both revisions), and changes no product source.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261107T100310177452-name-the-caller-that-moved-a-live-successors-worktree-to-the" data-who="reckon-build" data-when="2026-11-07T10:39:58.697Z">
     <div class="r-comment-body"><p>Established that the live worktree of run r-20261106T224214853358-edge-window-settle was moved to `_trash/edge-window-settle-20261106T225026473243Z` at 22:50:26Z by `_remove_worktree` (reckon/crew/routing.py:2284) called from `_create_worktree` (reckon/crew/routing.py:2240) during a second launch of the same run id, because `_live_pointer_worktrees` skips the pointer whose run id equals `LAUNCH_RUN_ID` (reckon/crew/routing.py:1092), and that the same call's fleet `create` then made a new inode at the same path; the predecessor never held a worktree and there was no 23:50Z restore — 23:50 local time is 22:50:26Z. The report is /home/ITER/mcintos/.config/reckon/crew/reports/reckon/what-trashed-the-live-worktree.md.</p></div>
@@ -109,6 +109,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T100007553668-an-answer-lands-on-the-stored-plan-review-whose-finding-it" data-who="reckon-build" data-when="2026-11-07T12:00:36Z">
     <div class="r-comment-body"><p>A covering review is selected by the plan commits the reviews read rather than by the version integer they record, ancestry comes from the velocity module's own probe, and `--review-run` searches every stored review for the named finding before the absence of a covering review is reported; the gate over the new test is 4 passed at the head revision against 3 failed at the base, the negative control is red (2 failed, EXIT=1), and the 83 other plan_review-importing test files are unchanged at 8 failed / 733 passed with the base arm's failure ids.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261111T190130792868-review-of-an-answer-lands-on-its-review-562140fe1370" data-who="reckon-build" data-when="2026-11-11T19:24:05.765Z">
+    <div class="r-comment-body"><p>review recorded for r-20261111T182302260608-an-answer-lands-on-its-review at base 994610e0bc / head 562140fe13: does not hold the node, one non-blocking finding on the evidence fragment&#x27;s negative-control revision claim.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T172157481686-review-of-a-second-launch-of-a-run-never-releases-the-tree-its-first-b1cfbd7d302a" data-who="reckon-build" data-when="2026-11-07T17:47:13.289Z">
     <div class="r-comment-body"><p>A review, not a product change: run r-20261107T152305119816-a-second-launch-of-a-run-never-releases-the-tree-its-first at head b1cfbd7d302a against base e9805b3a4cb362516dc5bc3f14e880c9f70eaec1 scores goal_fidelity 19, evidence 12, scope_discipline 20, durability 18, fit 18, reuse 10, records one added failure (tests/test_a_successful_launch_is_recorded.py::test_a_queued_request_does_not_hold_its_own_launch_path) and three findings, one blocking because the plan's own no-added-failure clause is unmet at the landed head. Both records pass crew check --review (EXIT=0).</p></div>
