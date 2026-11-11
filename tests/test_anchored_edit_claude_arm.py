@@ -24,6 +24,41 @@ BASE_MCP = (
     '      "command": "operator-server"\n    }\n  }\n}\n'
 )
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+
+
+def _inbox_group() -> dict:
+    """The PostToolUse group seeding adds, written out rather than built.
+
+    Composing this through the installer would assert the function under test
+    against itself: a change to the script name or the interpreter layout would
+    move both sides together and the case would still pass. The literal states
+    what a run home must contain — the checkout's interpreter running the hook
+    script from this repository — so the seeding must agree with it.
+    """
+    script = REPO_ROOT / "reckon" / "hooks" / "worker_inbox.py"
+    interpreter = REPO_ROOT / ".venv" / "bin" / "python"
+    return {"hooks": [{"type": "command", "command": f"{interpreter} {script}"}]}
+
+
+def _with_inbox_hook(document: dict, *, sorted_keys: bool = False) -> bytes:
+    """The settings bytes a run home holds once the inbox hook is merged in.
+
+    Seeding keeps every key and hook group the document already carries and adds
+    exactly one — the run's inbox delivery hook, without which the run has no
+    channel at all. The expectation is written out in full rather than as a
+    containment check, so a case still fails if any other byte changes.
+    ``sorted_keys`` states which writer had the last word: the MCP-settings seed
+    rewrites a home it created with its keys sorted, while a merge into a file
+    the run already wrote leaves the order it found.
+    """
+    merged = dict(document)
+    merged["hooks"] = {
+        **(merged.get("hooks") or {}),
+        "PostToolUse": [_inbox_group()],
+    }
+    return (json.dumps(merged, indent=2, sort_keys=sorted_keys) + "\n").encode()
+
 
 @pytest.fixture
 def launch_case(tmp_path, monkeypatch):
@@ -134,7 +169,9 @@ def test_key_false_preserves_base_argv_and_settings_bytes(
         *(str(root) for root in _backends.fence_writable_roots(compose.write_roots)),
     ]
     assert json.dumps(plan.argv).encode() == json.dumps(expected).encode()
-    assert (run / "harness" / "settings.json").read_bytes() == BASE_SETTINGS.encode()
+    assert (run / "harness" / "settings.json").read_bytes() == _with_inbox_hook(
+        json.loads(BASE_SETTINGS), sorted_keys=True
+    )
     assert (run / "harness" / ".claude.json").read_bytes() == BASE_MCP.encode()
     assert plan.anchored_edit is False
 
@@ -197,7 +234,9 @@ def test_ineligible_launch_keeps_builtin_tools_and_records_why(
             "mcpServers", {}
         )
     if reason == "operator-settings":
-        assert (run / "harness" / "settings.json").read_bytes() == b'{"operator":true}'
+        assert (run / "harness" / "settings.json").read_bytes() == _with_inbox_hook(
+            {"operator": True}
+        )
 
 
 def test_a_treated_run_resumes_with_builtin_tools_and_a_false_receipt(

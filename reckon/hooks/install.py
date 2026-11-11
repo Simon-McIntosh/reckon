@@ -47,6 +47,7 @@ from __future__ import annotations
 import json
 import shlex
 import sys
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import IO, Any
@@ -70,6 +71,14 @@ WORKER_GIT_GUARD_SCRIPT_NAME = "worker_git_guard.py"
 WORKER_WALK_GUARD_SCRIPT_NAME = "worker_walk_guard.py"
 NATIVE_AGENT_GUARD_SCRIPT_NAME = "native_agent_guard.py"
 WORKER_MESSAGE_GUARD_SCRIPT_NAME = "worker_message_guard.py"
+
+# The inbox hook, which a run home carries rather than the operator's settings:
+# it reads the run's own inbox, so it is registered in the home each fenced run
+# is launched into (see :func:`merge_worker_inbox_hook`). It names an event of
+# its own because it runs AFTER a tool call and reports, rather than before one
+# and refusing.
+WORKER_INBOX_SCRIPT_NAME = "worker_inbox.py"
+INBOX_EVENT = "PostToolUse"
 
 # The matchers the worker walk guard is bound under. It reads two kinds of
 # payload — a Bash command's text and the Grep/Glob tools' target directory —
@@ -96,6 +105,7 @@ HOOK_SCRIPT_NAMES = (
     WORKER_WALK_GUARD_SCRIPT_NAME,
     NATIVE_AGENT_GUARD_SCRIPT_NAME,
     WORKER_MESSAGE_GUARD_SCRIPT_NAME,
+    WORKER_INBOX_SCRIPT_NAME,
 )
 
 # The hook script each PreToolUse matcher's crew guard group runs. A matcher may
@@ -152,6 +162,131 @@ def worker_git_guard_script_path() -> Path:
 def worker_walk_guard_script_path() -> Path:
     """Return the worker walk guard script shipped beside this module."""
     return Path(__file__).resolve().with_name(WORKER_WALK_GUARD_SCRIPT_NAME)
+
+
+def worker_inbox_script_path() -> Path:
+    """Return the inbox hook script shipped beside this module."""
+    return Path(__file__).resolve().with_name(WORKER_INBOX_SCRIPT_NAME)
+
+
+def worker_inbox_group(script_path: Path | str | None = None) -> dict[str, Any]:
+    """Return the PostToolUse group that binds a run's inbox hook.
+
+    No matcher: the hook must run after every tool call, because any call may be
+    the last one before the worker acts. The command names the checkout's
+    interpreter and script, for the same reason every entry here does — the
+    script must run under an interpreter that can import this package.
+    """
+    script = (
+        worker_inbox_script_path() if script_path is None else Path(script_path)
+    ).resolve()
+    interpreter = interpreter_path(script)
+    return {
+        "hooks": [
+            {"type": "command", "command": shlex.join([str(interpreter), str(script)])}
+        ]
+    }
+
+
+def build_worker_inbox_snippet(
+    script_path: Path | str | None = None,
+) -> dict[str, Any]:
+    """Return the settings fragment that registers the inbox hook."""
+    return {"hooks": {INBOX_EVENT: [worker_inbox_group(script_path)]}}
+
+
+def _is_worker_hook_group(
+    group: Any,
+    *,
+    script_name: str,
+    matchers: Iterable[str] | None = None,
+) -> bool:
+    """Recognise a group that runs exactly one bare or bound worker hook.
+
+    ``matchers`` is the set of tool matchers the group may name, or None for an
+    event that carries no matcher at all — the inbox hook answers every tool
+    call, so its group names none. One recogniser serves every worker hook: the
+    three callers differ only in which script and matcher they accept, and
+    three copies of this body would let a fix to one drift from the others.
+    """
+    if not isinstance(group, dict):
+        return False
+    if matchers is not None and group.get("matcher") not in matchers:
+        return False
+    hooks = group.get("hooks")
+    if not isinstance(hooks, list) or len(hooks) != 1:
+        return False
+    hook = hooks[0]
+    if not isinstance(hook, dict) or hook.get("type") != "command":
+        return False
+    command = _command_tokens(str(hook.get("command") or ""))
+    if command is None:
+        return False
+    if len(command) == 2:
+        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
+            return False
+        path = Path(command[1])
+    elif len(command) == 1:
+        path = Path(command[0])
+    else:
+        return False
+    return path.name == script_name and path.parent.name == "hooks"
+
+
+def is_worker_inbox_group(group: Any) -> bool:
+    """Recognise a bare or interpreter-bound inbox hook group."""
+    return _is_worker_hook_group(group, script_name=WORKER_INBOX_SCRIPT_NAME)
+
+
+def settings_carry_worker_inbox(settings_path: Path | str) -> bool:
+    """Whether a settings file registers the inbox hook under its own event.
+
+    This is the test a coordinator's message writer applies to a run home, and
+    it reads the file the harness reads, not the run's record: a run launched
+    before the hook was seeded carries the home it was launched with, and
+    nothing re-seeds a live run's home.
+    """
+    path = Path(settings_path).expanduser()
+    try:
+        loaded = json.loads(path.read_text())
+    except (OSError, ValueError):
+        return False
+    if not isinstance(loaded, dict):
+        return False
+    hooks = loaded.get("hooks")
+    groups = hooks.get(INBOX_EVENT) if isinstance(hooks, dict) else None
+    if not isinstance(groups, list):
+        return False
+    return any(is_worker_inbox_group(group) for group in groups)
+
+
+def merge_worker_inbox_hook(
+    settings_path: Path | str, *, script_path: Path | str | None = None
+) -> bool:
+    """Merge the inbox hook into a settings file, returning whether it wrote.
+
+    An entry already present is skipped rather than duplicated, so seeding a home
+    twice leaves one entry, and every other key and hook group the file carries
+    is preserved — a run home seeded from the operator's settings keeps the
+    operator's hooks beside this one.
+    """
+    target = Path(settings_path).expanduser()
+    original = _read_bytes(target)
+    snippet = build_worker_inbox_snippet(script_path)
+    merged, added, _, upgraded = _merge_settings(
+        _parse_settings(original, target), snippet, target
+    )
+    if not added and not upgraded:
+        return False
+    _write_settings(target, merged, original)
+    return True
+
+
+def _command_tokens(command: str) -> list[str] | None:
+    try:
+        return shlex.split(command)
+    except ValueError:
+        return None
 
 
 def interpreter_path(script_path: Path | str | None = None) -> Path:
@@ -444,52 +579,18 @@ def worker_walk_guard_groups(script_path: Path | str | None = None) -> list[dict
 
 def is_worker_walk_guard_group(group: Any) -> bool:
     """Recognise a bare or interpreter-bound worker walk guard group."""
-    if not isinstance(group, dict) or group.get("matcher") not in WALK_GUARD_MATCHERS:
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) == 2:
-        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
-            return False
-        path = Path(command[1])
-    elif len(command) == 1:
-        path = Path(command[0])
-    else:
-        return False
-    return path.name == WORKER_WALK_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
+    return _is_worker_hook_group(
+        group,
+        script_name=WORKER_WALK_GUARD_SCRIPT_NAME,
+        matchers=WALK_GUARD_MATCHERS,
+    )
 
 
 def is_worker_git_guard_group(group: Any) -> bool:
     """Recognise a bare or interpreter-bound worker git guard group."""
-    if not isinstance(group, dict) or group.get("matcher") != "Bash":
-        return False
-    hooks = group.get("hooks")
-    if not isinstance(hooks, list) or len(hooks) != 1:
-        return False
-    hook = hooks[0]
-    if not isinstance(hook, dict) or hook.get("type") != "command":
-        return False
-    try:
-        command = shlex.split(str(hook.get("command") or ""))
-    except ValueError:
-        return False
-    if len(command) == 2:
-        if not interpreter_bootstrap.is_checkout_interpreter(command[0]):
-            return False
-        path = Path(command[1])
-    elif len(command) == 1:
-        path = Path(command[0])
-    else:
-        return False
-    return path.name == WORKER_GIT_GUARD_SCRIPT_NAME and path.parent.name == "hooks"
+    return _is_worker_hook_group(
+        group, script_name=WORKER_GIT_GUARD_SCRIPT_NAME, matchers=("Bash",)
+    )
 
 
 def _print(payload: dict[str, Any], stream: IO[str] | None) -> None:

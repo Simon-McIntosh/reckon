@@ -20,9 +20,10 @@ Behavior, in order:
    record this host as its launcher is never matched.
 3. Waiver — an explicit environment override allows the send.
 4. Otherwise the send is refused, and the refusal names the resolved run id
-   and the crew recovery-order command that reaches that run, so the caller
-   steers the worker on a channel that delivers rather than diagnose a
-   silent expiry.
+   and the crew command that reaches that run in its current state — the inbox
+   channel while its worker is live, and the resume channel once it has
+   stopped — so the caller steers the worker on a channel that delivers rather
+   than diagnose a silent expiry.
 """
 
 from __future__ import annotations
@@ -50,6 +51,10 @@ OVERRIDE_ENV = "RECKON_ALLOW_PEER_MESSAGE"
 # have carried. The angle-bracket placeholder marks the message text the caller
 # supplies; the run id is resolved from the matched pointer.
 RESUME_INVOCATION_SHAPE = "reckon crew resume --run {run_id} --advice {advice}"
+
+# The channel that reaches a worker while it is still working. Delivery is at
+# the worker's next tool call, through the inbox hook its run home carries.
+TELL_INVOCATION_SHAPE = 'reckon crew tell --run {run_id} "<your message>"'
 
 
 def _config_home() -> Path:
@@ -124,21 +129,51 @@ def _resolve_live_worker(recipient: str) -> dict[str, Any] | None:
     return None
 
 
+def _worker_live(pointer: dict[str, Any]) -> bool:
+    """Whether the pointer's worker process still answers on this host.
+
+    The record was already matched to this host, so its pid is meaningful here.
+    A pointer that records no pid names a run whose worker has not started yet,
+    which is not a live worker to deliver to.
+    """
+    pid = pointer.get("pid")
+    if not pid:
+        return False
+    try:
+        os.kill(int(pid), 0)
+    except (ProcessLookupError, ValueError):
+        return False
+    except PermissionError:
+        return True
+    except OSError:
+        return False
+    return True
+
+
 def _refusal_message(*, recipient: str, pointer: dict[str, Any]) -> str:
     run_id = pointer.get("run_id") or "<run-id>"
     resume = RESUME_INVOCATION_SHAPE.format(
         run_id=shlex.quote(str(run_id)),
         advice='"<your message>"',
     )
+    tell = TELL_INVOCATION_SHAPE.format(run_id=shlex.quote(str(run_id)))
+    live = _worker_live(pointer)
+    channel = (
+        "This run's worker is still live, so a message reaches it at its next "
+        "tool call:\n"
+        f"  {tell}\n"
+        "while a run whose turn has ended is continued with:\n"
+        if live
+        else "This run's worker is no longer live, so its session continues with:\n"
+    )
     return (
         f'peer send refused: "{recipient}" resolves to live crew run '
         f"{run_id} on this host. A CLI-launched worker's session has no "
-        "user, so a send to it returns success and is never delivered; "
-        "steer this run on the channel that does work instead:\n"
+        "user and no channel reads a peer send, so a send to it returns "
+        f"success and is never delivered. {channel}"
         f"  {resume}\n"
-        "Resume continues the same session with its prior context. A run "
-        "still mid-turn resumes once its turn has ended. To waive this "
-        f"send for a case the guard did not anticipate, set "
+        "Resume continues the same session with its prior context. To waive "
+        f"this send for a case the guard did not anticipate, set "
         f"{OVERRIDE_ENV}=1."
     )
 
