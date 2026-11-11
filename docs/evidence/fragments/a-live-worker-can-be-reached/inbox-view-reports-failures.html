@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s10">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+</head>
+<body>
+<main class="plan-doc">
+<section id="inbox-view-reports-failures">
+  <h2>The run view separates failure from delivery</h2>
+  <p>The coordinator's run view reported every receipt under one <code>delivered</code> key,
+  so a message the hook claimed and then could not read was presented as delivered.
+  It now reads the receipts through a split the hook itself owns —
+  <code>worker_inbox.delivered_receipts</code> and
+  <code>worker_inbox.failed_receipts</code> — and answers them under
+  <code>delivered</code> and <code>failed</code>. The same split backs the manifest
+  audit, so the record a worker owes and the view a coordinator reads cannot disagree
+  about whether a message arrived.</p>
+
+  <h3 id="inbox-view-reports-failures-unreadable">A queued message that cannot be read stays visible</h3>
+  <p><code>_unclaimed_message</code> swallowed every <code>OSError</code>, which dropped a
+  queued message from the answer on any failure, not only on the claim race. Only
+  <code>FileNotFoundError</code> — the hook's rename landing between the listing and the
+  read — now returns nothing; every other failure is reported as present and unreadable,
+  carrying its message name, its size and the error, and counted under
+  <code>unreadable_count</code>. A message that vanishes from the view is otherwise
+  indistinguishable from one that was never written.</p>
+
+  <h3 id="inbox-view-reports-failures-race">The race test drives the hook's own delivery</h3>
+  <p>The race case previously claimed the message in the test and asserted only the
+  unclaimed half, so nothing measured the hook's receipt. It now runs the real hook
+  process — claim and receipt together — and hands the view the stale listing it read
+  before that claim, then asserts the delivered receipt carries the tool call the hook
+  saw (<code>tool_use_id: toolu_race</code>) and equals the run's own receipt list.</p>
+
+  <h3 id="inbox-view-reports-failures-gate">Gate and negative control</h3>
+  <p>The gate ran <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_worker_inbox.py tests/test_staged_write_inventory.py</code>: the head arm
+  recorded <code>75 passed</code> with <code>71 passed, 2 errors</code> at the base
+  revision, and zero failures in either. Both base-arm errors are scaffolding: the base
+  arm runs in an extracted tree that is not a git repository, so that module's setup
+  fixture fails at <code>git ls-tree HEAD</code> before reaching code under test. Two
+  tests are new and one is rewritten: the failed-receipt separation, the unreadable
+  queued message, and the hook-driven race.</p>
+  <p>The declared negative control — failure receipts merged back into
+  <code>delivered</code> — makes the separation test fail, naming
+  <code>test_the_run_view_lists_a_failed_receipt_under_its_own_key</code>: the view then
+  answers a list holding the failed receipt where the test requires an empty delivered
+  list. Ruff check and format add no findings on the staged paths: the three
+  <code>mcp_views.py</code> findings present after the change were present at the base
+  revision.</p>
+</section>
+</main>
+</body>
+</html>

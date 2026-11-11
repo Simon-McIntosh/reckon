@@ -369,9 +369,11 @@ def test_the_run_view_tolerates_a_message_claimed_while_it_reads(
 ):
     """Listing and reading are two steps, and a claim can land between them.
 
-    The message is then delivered, not lost, and its receipt appears in the same
-    answer. Treating that race as an error would fail a coordinator's read of a
-    run whose delivery was working — the one moment it most needs to see.
+    The claim and the receipt are the hook's own — the real hook process delivers
+    the message and the view is then handed the listing it read from before that
+    claim. So the receipt asserted below is one the hook wrote, not one the test
+    made: a test that wrote its own receipt would assert its own bookkeeping and
+    leave the delivery path unmeasured.
     """
     from reckon.crew import query as query_module
     from reckon.mcp_views import serve_crew_view
@@ -383,17 +385,103 @@ def test_the_run_view_tolerates_a_message_claimed_while_it_reads(
         query_module, "runs_view", lambda *args, **kwargs: {"ok": True, "rows": []}
     )
     written = worker_inbox.write_message("steer left", run)
-    assert worker_inbox.claim(written) is not None
+    stale_listing = [written]
+    payload = {"tool_name": "Bash", "tool_use_id": "toolu_race", "session_id": "s-1"}
+
+    assert written.name in _run_hook(payload, manifest=manifest, home=home, cwd=run)
+    assert not written.exists()
+
     # The listing the view received from before the claim, naming a path that
     # is no longer in the inbox.
     monkeypatch.setattr(
-        worker_inbox, "pending_messages", lambda run_directory: [written]
+        worker_inbox, "pending_messages", lambda run_directory: list(stale_listing)
     )
 
     view = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
 
     assert view["inbox"]["unclaimed"] == []
     assert view["inbox"]["unclaimed_count"] == 0
+    assert view["inbox"]["delivered"] == _receipts(run)
+    [receipt] = view["inbox"]["delivered"]
+    assert receipt["message"] == written.name
+    assert receipt["tool_use_id"] == "toolu_race"
+
+
+def test_the_run_view_lists_a_failed_receipt_under_its_own_key(
+    tmp_path: Path, monkeypatch
+):
+    """A message the hook could not read is never reported as delivered.
+
+    The hook claims the message before reading it, so a read failure leaves a
+    receipt naming a message that never reached the model. Counting every receipt
+    as a delivery would tell the coordinator its instruction arrived when it did
+    not — the false confirmation this channel exists to end.
+    """
+    from reckon.crew import query as query_module
+    from reckon.mcp_views import serve_crew_view
+
+    run, manifest, _ = _seeded_run(tmp_path)
+    home = _crew_home(tmp_path, _record(tmp_path, manifest_path=str(manifest)))
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setattr(
+        query_module, "runs_view", lambda *args, **kwargs: {"ok": True, "rows": []}
+    )
+    monkeypatch.setenv("RECKON_MANIFEST", str(manifest))
+    written = worker_inbox.write_message("steer left", run)
+    original_read_text = Path.read_text
+
+    def unreadable(self: Path, *args, **kwargs):
+        if self.parent.name == worker_inbox.CLAIMED_DIRNAME:
+            raise PermissionError(13, "Permission denied", str(self))
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+    assert worker_inbox.deliver({"tool_name": "Bash", "tool_use_id": "toolu_1"}) is None
+    monkeypatch.setattr(Path, "read_text", original_read_text)
+
+    view = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
+
+    assert view["inbox"]["delivered"] == []
+    [failed] = view["inbox"]["failed"]
+    assert failed["message"] == written.name
+    assert failed["failed"].startswith("PermissionError")
+
+
+def test_the_run_view_reports_an_unreadable_queued_message(tmp_path: Path, monkeypatch):
+    """A queued message that cannot be read is shown as unreadable, not dropped.
+
+    Listing and reading are two steps, and only the vanished file is the claim
+    race. A permission or I/O failure on a message still in the inbox names an
+    instruction the coordinator wrote and nobody can read, so the view reports
+    its presence rather than letting it leave the answer silently.
+    """
+    from reckon.crew import query as query_module
+    from reckon.mcp_views import serve_crew_view
+
+    run, manifest, _ = _seeded_run(tmp_path)
+    home = _crew_home(tmp_path, _record(tmp_path, manifest_path=str(manifest)))
+    monkeypatch.setenv("RECKON_HOME", str(home))
+    monkeypatch.setattr(
+        query_module, "runs_view", lambda *args, **kwargs: {"ok": True, "rows": []}
+    )
+    written = worker_inbox.write_message("steer left", run)
+    original_read_text = Path.read_text
+
+    def unreadable(self: Path, *args, **kwargs):
+        if self.name == written.name:
+            raise PermissionError(13, "Permission denied", str(self))
+        return original_read_text(self, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "read_text", unreadable)
+
+    view = serve_crew_view("runs", project="synthetic", run_id=RUN_ID)
+
+    assert view["inbox"]["unclaimed_count"] == 1
+    assert view["inbox"]["unreadable_count"] == 1
+    [entry] = view["inbox"]["unclaimed"]
+    assert entry["message"] == written.name
+    assert entry["unreadable"].startswith("PermissionError")
+    assert "text" not in entry
 
 
 def test_crew_tell_refuses_an_ended_run_naming_resume(tmp_path: Path, monkeypatch):

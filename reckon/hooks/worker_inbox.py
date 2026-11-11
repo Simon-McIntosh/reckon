@@ -250,6 +250,21 @@ def receipts(run_directory_path: Path) -> list[dict[str, Any]]:
     return records
 
 
+def delivered_receipts(run_directory_path: Path) -> list[dict[str, Any]]:
+    """Every receipt recording a message actually handed to the model.
+
+    A receipt carries ``failed`` when the hook claimed a message it could not
+    read, so counting every line would report a message the worker never saw as
+    delivered — the false confirmation this channel exists to end.
+    """
+    return [entry for entry in receipts(run_directory_path) if not entry.get("failed")]
+
+
+def failed_receipts(run_directory_path: Path) -> list[dict[str, Any]]:
+    """Every receipt recording a message the hook could not hand over."""
+    return [entry for entry in receipts(run_directory_path) if entry.get("failed")]
+
+
 def park_unreadable(
     run_directory_path: Path,
     claimed_path: Path,
@@ -335,9 +350,7 @@ def manifest_message_finding(text: str, run_directory_path: Path) -> str | None:
     reads as a model that ignored its inbox, and no receipt with no statement
     reads as a channel nobody can tell from silence.
     """
-    recorded = [
-        entry for entry in receipts(run_directory_path) if not entry.get("failed")
-    ]
+    recorded = delivered_receipts(run_directory_path)
     if not recorded:
         if _manifest_says_none(text):
             return None
