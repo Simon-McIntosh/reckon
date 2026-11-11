@@ -3748,7 +3748,7 @@ def _review_launch_kind(project: str) -> str:
     from reckon import flight
 
     try:
-        config = flight.resolve(project).config or {}
+        config = flight.resolve(project=project).config or {}
     except (flight.FlightConfigError, OSError):  # the verb reports its own
         return ""
     backend_name = str(
