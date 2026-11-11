@@ -22,12 +22,16 @@
   exists, because a review the lane held was never dispatched and a row for it
   would put a guess about nothing into the population.</p>
 
-  <p><strong>The view.</strong> <code>crew view review-need</code> reports, over
-  the recorded rows, how many blocking re-reviews and how many clean ones each
-  threshold would have skipped, and how many judged rows with an outcome still
-  stand between the record and the hundred the lead's decision needs. A row whose
-  outcome has not arrived is counted as pending and never as clean, so an
-  unmeasured row cannot flatter a threshold.</p>
+  <p><strong>The view.</strong> <code>review_need.shadow_view(project)</code>
+  reports, over the recorded rows, how many blocking re-reviews and how many
+  clean ones each threshold would have skipped, and how many judged rows with an
+  outcome still stand between the record and the hundred the lead's decision
+  needs. A row whose outcome has not arrived is counted as pending and never as
+  clean, so an unmeasured row cannot flatter a threshold. It is not reachable as
+  a crew view: the dispatcher's registry is paired with the crew tool's argument
+  model, and declaring the view there needs <code>reckon/_mcp_tools.py</code>,
+  outside this run's write paths. The counts are the deliverable and they are
+  tested; wiring them onto a surface is one line in each of those two files.</p>
 
   <h3 id="re-review-need-in-shadow-measured">Measured</h3>
 
