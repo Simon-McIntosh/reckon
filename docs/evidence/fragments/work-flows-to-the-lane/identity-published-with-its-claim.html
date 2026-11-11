@@ -21,22 +21,31 @@
   <p><strong>Reclaim decision unchanged.</strong> A live holder is still refused
   and a holder whose identity file no longer matches its claim record is still
   reclaimed, because both read the same file this node only stopped writing at
-  import.</p>
+  import. The dispatch-claim reclaim test now asserts that an import alone
+  publishes nothing and keeps its reclaim assertion, so the identity it judges
+  is the one a claim publishes.</p>
+
+  <p><strong>One counting defect was found by widening the gate.</strong> The
+  count that decides when a file is removed was a single process-wide total, so
+  claims taken under one crew home and released under another kept a file alive
+  that no claim justified — visible only when the two test files ran in one
+  session. The count is now keyed by the identity path, which is the thing the
+  file names.</p>
 
   <table id="identity-published-with-its-claim-arms">
     <caption>Every arm is a log whose first line names its revision, tree and
     command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
     <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>base suite (node's two files)</td>
+      <tr><td>base suite (dispatch-claim and inventory files)</td>
         <td><code>d5df5102</code> extracted to scratch, new test copied in</td>
-        <td>6 failed, 50 passed, 2 setup errors (no git in the extraction), <code>EXIT=1</code></td></tr>
-      <tr><td>after suite (node's two files)</td>
-        <td>worktree head</td>
-        <td>58 passed, <code>EXIT=0</code></td></tr>
+        <td>52 passed, 2 setup errors (no git in the extraction), <code>EXIT=1</code></td></tr>
+      <tr><td>after suite (dispatch-claim, identity and inventory files)</td>
+        <td><code>443958da</code>, worktree head</td>
+        <td>61 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: import-time publish restored</td>
-        <td>worktree head with the declared mutation</td>
-        <td><code>test_importing_the_module_publishes_no_identity</code> FAILED, 1 failed, 6 passed, <code>EXIT=1</code></td></tr>
+        <td><code>443958da</code> with the declared mutation</td>
+        <td><code>test_importing_the_module_publishes_no_identity</code> and <code>test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch</code> FAILED, 2 failed, 8 passed, <code>EXIT=1</code></td></tr>
     </tbody>
   </table>
 
