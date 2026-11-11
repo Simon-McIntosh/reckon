@@ -645,6 +645,40 @@ def with_anchored_edit_instruction(prompt: str, backend: Mapping[str, object]) -
     )
 
 
+ANCHORED_EDIT_CLAUDE_INSTRUCTION = (
+    "Read files with read_anchored and change them with edit_anchored rather "
+    "than Edit, Write or a shell command. Every line is shown as N:HHH|text, "
+    "so an edit is addressed by N:HHH, or by HHH alone when exactly one line "
+    "carries that hash; creating a file the run did not have is still Write. "
+    "A stale anchor refuses the whole call and returns the region's current "
+    "lines, so retry from those anchors instead of re-reading the file. This "
+    "harness defers MCP tools behind its search: when the anchored tools are "
+    "not in your tool list, load them with ToolSearch and the query\n"
+    "  select:mcp__reckon-anchored-edit__read_anchored,"
+    "mcp__reckon-anchored-edit__edit_anchored"
+)
+
+
+def with_claude_anchored_edit_instruction(prompt: str) -> str:
+    """Add the anchored edit steering lines to a Claude-dialect worker's prompt.
+
+    The instruction follows what the launch did, not the flight key: the caller
+    passes a launch that seeded the server into its run home, so a launch that
+    seeded none — unfenced, resumed, or holding the operator's own settings —
+    never reaches this function and is not told to use a tool it does not have.
+
+    The search route is stated because the harness lists an MCP server's tools
+    only when it answers before the session-start snapshot, and this server's
+    own start outlasts that snapshot; a worker that reads its tool list and
+    finds no anchored tool there would otherwise never reach the server that is
+    connected a moment later.
+    """
+    return (
+        f"{prompt.rstrip()}\n\n{ANCHORED_EDIT_HEADING}\n"
+        f"{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+
+
 def compose_prompt(
     *,
     node: TaskNode,

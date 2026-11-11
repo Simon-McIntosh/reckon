@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-title" content="A Claude-dialect anchored worker is offered and told to use the tool">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s10">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="anchored-edit,claude-dialect,mcp-deferral,session-start">
+  <meta name="plan-node" content="anchored-tools-reach-a-claude-worker">
+  <title>A seeding Claude launch now names the anchored tools in the worker's prompt — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="anchored-tools-reach-a-claude-worker-landed" data-node="anchored-tools-reach-a-claude-worker" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="anchored-tools-reach-a-claude-worker-heading">A seeding Claude launch now names the anchored tools in the worker's prompt</h2>
+  <p id="anchored-tools-reach-a-claude-worker-mechanism">The launch step that seeds the anchored server (<code>launch_plan</code>) now appends an instruction to the worker's prompt naming <code>read_anchored</code> and <code>edit_anchored</code> and giving the <code>ToolSearch</code> query that loads them. It is added where the seeding is decided, so an unfenced, resumed, operator-settings or no-flight-config launch — none of which registers the server — carries no instruction.</p>
+  <p id="anchored-tools-reach-a-claude-worker-causes">Two causes were measured, on headless <code>clive</code> sessions against a scratch worktree with the server registered in a run-shaped config home. First, the session-start record snapshots MCP state about two seconds after launch: a server that answers <code>initialize</code> in one second reads <code>connected</code> with its tool in the 23-tool list, while the anchored server (4.0–5.6 s, almost all of it the <code>mcp</code> SDK import) reads <code>pending</code> with 22 tools and none of its own. Second, this build defers MCP tools behind the harness search: the same unfixed session's <code>ToolSearch</code> returned both anchored tools, so they were reachable and the prompt never said so. Neither <code>MCP_TIMEOUT</code> (60 s) nor <code>MCP_CONNECT_TIMEOUT_MS</code> (15 s) moves the snapshot; both were measured against the same 3 s server, which stayed <code>pending</code>.</p>
+  <table id="anchored-tools-reach-a-claude-worker-figures">
+    <caption>Session-start records, gate arms and controls</caption>
+    <thead>
+      <tr><th>Run</th><th>Server status at init</th><th>Init tool list</th><th>ToolSearch for the anchored tools</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Unfixed, anchored server only</td><td><code>pending</code></td><td>22, none anchored</td><td>returns both</td></tr>
+      <tr><td>Fixed-launch environment (MCP_TIMEOUT 60000)</td><td><code>pending</code></td><td>22, none anchored</td><td>returns both</td></tr>
+      <tr><td>Positive control: 1 s MCP server</td><td><code>connected</code></td><td>23, <code>mcp__probe-fast__ping</code></td><td>—</td></tr>
+      <tr><td>3 s and 5 s servers</td><td><code>pending</code></td><td>22</td><td>—</td></tr>
+      <tr><td>3 s server under MCP_TIMEOUT 15000 / MCP_CONNECT_TIMEOUT_MS 15000</td><td><code>pending</code></td><td>22</td><td>—</td></tr>
+    </tbody>
+  </table>
+  <p id="anchored-tools-reach-a-claude-worker-gate">Gate on <code>tests/test_anchored_edit_claude_arm.py</code> and <code>tests/test_staged_write_inventory.py</code>: 83 passed, EXIT=0 at head; 71 passed with 2 errors at base <code>c560a4445</code> (the extraction carries no git checkout, so the two staged-write-inventory cases cannot run there). The added cases assert the seeded launch's prompt carries both tool names and the search query for both <code>claude</code> and <code>clive</code>, and that each ineligible launch's prompt is untouched. Negative control: with the launch-step instruction removed, <code>test_a_seeding_launch_instructs_the_anchored_tools</code> fails for both dialects (2 failed, EXIT=1). Ruff check reports the same three pre-existing findings on both arms; ruff format is clean on the staged paths.</p>
+  <p id="anchored-tools-reach-a-claude-worker-residual">The startup half of the deliverable is not shipped: reaching <code>connected</code> at session start requires the server's own start under about two seconds, which means importing the MCP SDK lazily in <code>reckon/anchored_edit.py</code> — outside this node's write scope. The search route the instruction names is what makes the tools reachable in the meantime, and the closing live run is the coordinator's.</p>
+</article>
+</body>
+</html>

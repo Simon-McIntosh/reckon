@@ -3104,6 +3104,15 @@ def launch_plan(
     )
     if named_in_prompt:
         prompt = _prompt_naming_images(prompt, attached)
+    # A Claude-dialect launch that seeded the anchored server names its tools in
+    # the worker's prompt. The instruction belongs to this step rather than to
+    # prompt composition, because only this step knows whether the server was
+    # registered: a launch that seeded none — unfenced, resumed, or holding the
+    # operator's settings — carries no server and must not be told to use one.
+    if anchored_edit and dialect.name == "claude":
+        from reckon.crew.prompts import with_claude_anchored_edit_instruction
+
+        prompt = with_claude_anchored_edit_instruction(prompt)
     launch_backend = dict(backend)
     if dialect.name in ("claude", "codex"):
         launch_backend["anchored_edit"] = anchored_edit
