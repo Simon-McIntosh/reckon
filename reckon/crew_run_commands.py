@@ -1215,7 +1215,7 @@ def crew_check_manifest(run_id, pretty):
         raise click.exceptions.Exit(1)
 
 
-def crew_check_review(record_path, pretty):
+def crew_check_review(record_path, pretty, expected_run_id=""):
     """Check whether a delivered run review can be filed, without writing it."""
     import json
 
@@ -1231,6 +1231,17 @@ def crew_check_review(record_path, pretty):
             if isinstance(body, dict)
             else ["record is not an object"]
         )
+        # The record's own id is checkable only when the writing run is named,
+        # which the ``--run`` form does and the ``--record`` form does not: a
+        # record that dropped a suffix from its own run id names a review that
+        # never ran, and nothing in the record alone says so.
+        if expected_run_id and isinstance(body, dict):
+            named = str(body.get("review_run_id") or "").strip()
+            if named != expected_run_id:
+                findings.append(
+                    f"review_run_id {named or '(missing)'!r} is not this run's own "
+                    f"id {expected_run_id!r}"
+                )
     _emit(
         {"ok": not findings, "record": str(record_path), "findings": findings}, pretty
     )
@@ -1285,10 +1296,15 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
         return crew_check_manifest(run_id, pretty)
     if bool(run_id) == bool(record_path):
         raise click.UsageError("--review needs exactly one of --run or --record")
+    expected_run_id = ""
     if run_id:
         from reckon.crew import review as review_module
         from reckon.crew import runs as runs_module
         from reckon.crew.node import CrewError
+        from reckon.crew.recovery_review_delivery import (
+            _declared_head_keyed_record,
+            _is_review_run,
+        )
 
         try:
             pointer = runs_module.read_pointer(run_id)
@@ -1297,10 +1313,23 @@ def crew_check(manifest, review, run_id, record_path, pretty, project=None):
             raise click.ClickException(
                 f"run {run_id} could not be resolved: {exc}"
             ) from exc
+        # Only a review run's record owes that run's own id; a check run
+        # against the reviewed run judges the record delivered to it, not the
+        # reviewer's identity.
+        expected_run_id = run_id if _is_review_run(pointer) else ""
         record_path, _ = review_module.stored_record(project, run_id)
         if record_path is None:
+            # A review run's record is filed under the run it reviewed, at the
+            # head-keyed path its own dispatch declared, so the store answers
+            # for the reviewed run and not for the writer. Read the declared
+            # path, which is where ``crew complete`` reads this run's verdict
+            # from, so the check judges the record that run actually wrote.
+            declared = _declared_head_keyed_record(pointer, project)
+            if declared is not None and declared[0].is_file():
+                record_path = declared[0]
+        if record_path is None:
             raise click.ClickException(f"run {run_id} has no stored review")
-    return crew_check_review(record_path, pretty)
+    return crew_check_review(record_path, pretty, expected_run_id=expected_run_id)
 
 
 @crew.command(name="repair")
