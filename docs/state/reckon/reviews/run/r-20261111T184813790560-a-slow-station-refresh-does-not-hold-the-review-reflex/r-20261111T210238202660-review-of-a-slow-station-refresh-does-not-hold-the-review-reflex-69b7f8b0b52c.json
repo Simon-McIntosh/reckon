@@ -1,0 +1,40 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T21:13:06.676Z",
+  "dispatched_at": "2026-11-11T21:04:43Z",
+  "findings": [
+    {
+      "file": "logs/negative-control-no-start.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the log header records '# revision: 6388aa9aec4c' while the run it captured executed the test body that first exists at 449122a711c5 (the no-start traceback quotes station.run_station at tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:161, which 6388aa9aec4c does not contain), so a reader checking out the named revision cannot reproduce the failure; the evidence fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/a-slow-station-refresh-does-not-hold-the-review-reflex.html:27 compounds it by saying the tree is 'recorded as 449122a711c5+no-reflex-start', which is the right value but not the one the log records."
+    },
+    {
+      "file": "manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "text": "the done_when asks that ruff check and ruff format --check add no findings on the staged paths, and neither test_logs nor test_logs entry name a ruff run, so that leg of the measure is claimed by the worker's self-check rather than recorded; I re-ran both over tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py at the reviewed head and both are clean, so the state is true and only its record is missing."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a slow station refresh does not hold the review reflex; the gained commits make tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:161 drive the station through station.run_station, so reckon/crew/station.py:772's start of the reflex arm is exercised by production code rather than by the case itself.\nVERDICT done_when: the done_when asks for the node's file passing with its negative control, the files importing the changed modules adding no failure against the base, and ruff clean on the staged paths; manifest.md:19-22 record both suite arms (51 passed EXIT=0 at 10afb2ac, 53 passed EXIT=0 at 449122a711) and both importer arms (4 failed/86 passed and 4 failed/84 passed, same four ids), logs/negative-control-no-start.log records 1 failed 1 passed EXIT=1, and I re-ran the node's file at the reviewed head (logs/reviewer-test-rerun.log, 2 passed EXIT=0) and ruff check with ruff format --check (All checks passed, 1 file already formatted).\nVERDICT write_paths: read the declared scope at manifest.md:3 (reckon/crew/station.py, reckon/crew/obligations.py, the new test, the evidence fragment, the figure directory); the two files the gained commits touch, tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py and the evidence fragment, are both inside it and the figure directory is unused.\nVERDICT manifest: read; it records the base arm, the head arm at 449122a711, the importer arm and its base comparison with the four shared ids, and two negative controls, and its failure_attribution reproduces the four importer ids at the base revision so the added-failure set is empty; it records no ruff run although the done_when names one.\nVERDICT diff: read both gained commits against 6388aa9aec4c (449122a711 changes only the node's test, 8 insertions and 5 deletions; 69b7f8b0b5 changes only the evidence fragment, 5 insertions and 3 deletions) and confirmed the prior record at .at-6388aa9aec4c covers the three earlier commits from 10afb2ac.\nCALL_SITES: reckon/crew_follow_commands.py:47 (run_station call), reckon/crew/station.py:772 (station.reflex.start inside run_station), reckon/crew/station.py:557 (Station construction the entry point uses)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:161 now runs station.run_station(station_instance=node, store=node.store, once=True) instead of calling node.tick and node.reflex.start itself, so the arm reckon/crew/station.py:772 starts is what the case measures.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/after-suite.log records 53 passed EXIT=0 and logs/importer-arm-station{,-base}.log record 4 failed in each arm with the same four ids, but no ruff log is recorded at manifest.md:16-20 and logs/negative-control-no-start.log:1 names a revision that does not carry the test it ran.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the only two paths the gained commits touch, tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-slow-station-refresh-does-not-hold-the-review-reflex.html, are both inside the declared write paths at manifest.md:3.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:182 asserts the reflex reached the delivered run, and logs/negative-control-no-start.log shows deleting station.py:772's start reddens exactly that line (1 failed EXIT=1), so the assertion is proven against an executed mutation rather than merely green.\nSCORE fit: 19\nJUSTIFICATION fit: the new call at tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py:161 uses the production signature at reckon/crew/station.py:699, keeps the case's existing threaded-gate idiom, and introduces no plan or ticket label in the diff, the commits or the fragment.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition at all and replaces the case's own node.tick/node.reflex.start pair with the entry point reckon/crew/station.py:699 already owns, so it removes a test-side fork rather than creating one.\nFINDING logs/negative-control-no-start.log:1 non-blocking: the header records revision 6388aa9aec4c while the captured run executed the test body that first exists at 449122a711c5, so a reader checking out the named revision cannot reproduce the failure; the fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/a-slow-station-refresh-does-not-hold-the-review-reflex.html:27 cites the correct 449122a711c5+no-reflex-start and so disagrees with the log it cites.\nFINDING manifest.md:20 non-blocking: the done_when asks for ruff check and ruff format --check to add no findings on the staged paths and no ruff log is recorded; I re-ran both at the reviewed head and they are clean, so the state holds but the record of it does not.",
+  "review_run_id": "r-20261111T210238202660-review-of-a-slow-station-refresh-does-not-hold-the-review-reflex-69b7f8b0b52c",
+  "reviewed_base": "6388aa9aec4c11a49205c1769cd7bc2cd497210b",
+  "reviewed_base_sha": "6388aa9aec4c11a49205c1769cd7bc2cd497210b",
+  "reviewed_head": "69b7f8b0b52cc8e6fa51b8060b1e1e55a4854922",
+  "reviewed_head_sha": "69b7f8b0b52cc8e6fa51b8060b1e1e55a4854922",
+  "reviewed_run_id": "r-20261111T184813790560-a-slow-station-refresh-does-not-hold-the-review-reflex",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:19:03.962073+00:00",
+  "total": 112
+}
