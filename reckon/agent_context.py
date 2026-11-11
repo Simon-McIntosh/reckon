@@ -16,6 +16,32 @@ from typing import Any, Iterable
 DEFAULT_PROJECT_DOC_MAX_BYTES = 32 * 1024
 _PRIMARY_INSTRUCTION_FILES = ("AGENTS.override.md", "AGENTS.md")
 
+_AGENT_LAYOUTS: dict[str, dict[str, Any]] = {
+    "codex": {
+        "root": (".codex",),
+        "entrypoint": "AGENTS.md",
+        "instruction_files": _PRIMARY_INSTRUCTION_FILES,
+        # One instruction file per directory: the first candidate that exists
+        # is the one that directory contributes.
+        "one_per_directory": True,
+    },
+    "claude": {
+        "root": (".claude",),
+        "entrypoint": "CLAUDE.md",
+        "instruction_files": _PRIMARY_INSTRUCTION_FILES,
+        "one_per_directory": True,
+    },
+    # oh-my-pi keeps its agent store in ``<home>/.omp/agent`` and reads a user
+    # instruction file there; its standalone walkers register both ``AGENTS.md``
+    # and ``CLAUDE.md``, so a directory holding both contributes both.
+    "omp": {
+        "root": (".omp", "agent"),
+        "entrypoint": "AGENTS.md",
+        "instruction_files": ("AGENTS.md", "CLAUDE.md"),
+        "one_per_directory": False,
+    },
+}
+
 
 @dataclass(frozen=True)
 class ContextRequest:
@@ -33,13 +59,12 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
     """Return a deterministic, content-free manifest for an agent launch target."""
 
     agent = request.agent.lower()
-    if agent not in {"codex", "claude"}:
+    layout = _AGENT_LAYOUTS.get(agent)
+    if layout is None:
         raise ValueError(f"unsupported agent: {request.agent}")
 
     user_home = _absolute(request.user_home)
-    agent_root = _absolute(
-        request.agent_root or user_home / (".codex" if agent == "codex" else ".claude")
-    )
+    agent_root = _absolute(request.agent_root or user_home.joinpath(*layout["root"]))
     target = _absolute(request.target)
     target_dir = target if target.is_dir() else target.parent
     findings: list[dict[str, str]] = []
@@ -49,7 +74,7 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
 
     canonical_path = user_home / ".agents" / "AGENTS.md"
     canonical = _file_record(canonical_path, findings, "canonical_policy")
-    entrypoint_name = "AGENTS.md" if agent == "codex" else "CLAUDE.md"
+    entrypoint_name = layout["entrypoint"]
     entrypoint_path = agent_root / entrypoint_name
     entrypoint = _file_record(entrypoint_path, findings, "agent_entrypoint")
     entrypoint["relationship"] = _entrypoint_relationship(
@@ -62,7 +87,12 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
 
     repo_root = _find_repository_root(target_dir)
     project_chain, scanned_dirs = _project_instruction_chain(
-        repo_root, target_dir, fallback_names, findings
+        repo_root,
+        target_dir,
+        layout["instruction_files"],
+        fallback_names,
+        findings,
+        one_per_directory=layout["one_per_directory"],
     )
     project_bytes = sum(item["bytes"] for item in project_chain)
     remaining = budget_limit - project_bytes
@@ -118,7 +148,7 @@ def build_context_manifest(request: ContextRequest) -> dict[str, Any]:
         "repository": {
             "root": str(repo_root) if repo_root else None,
             "instruction_filenames": [
-                *_PRIMARY_INSTRUCTION_FILES,
+                *layout["instruction_files"],
                 *fallback_names,
             ],
         },
@@ -413,8 +443,11 @@ def _find_repository_root(target_dir: Path) -> Path | None:
 def _project_instruction_chain(
     repo_root: Path | None,
     target_dir: Path,
+    instruction_files: Iterable[str],
     fallback_names: list[str],
     findings: list[dict[str, str]],
+    *,
+    one_per_directory: bool,
 ) -> tuple[list[dict[str, Any]], list[Path]]:
     if repo_root is None:
         return [], []
@@ -437,22 +470,18 @@ def _project_instruction_chain(
         directories.append(current)
 
     chain: list[dict[str, Any]] = []
-    candidates = (*_PRIMARY_INSTRUCTION_FILES, *fallback_names)
+    candidates = (*instruction_files, *fallback_names)
     for directory in directories:
-        selected = next(
-            (
-                directory / name
-                for name in candidates
-                if (directory / name).is_file()
-            ),
-            None,
-        )
-        if selected is None:
-            continue
-        record = _file_record(selected, findings, "project_instruction")
-        record["directory"] = str(directory)
-        record["selected_name"] = selected.name
-        chain.append(record)
+        present = [
+            directory / name for name in candidates if (directory / name).is_file()
+        ]
+        if one_per_directory:
+            present = present[:1]
+        for selected in present:
+            record = _file_record(selected, findings, "project_instruction")
+            record["directory"] = str(directory)
+            record["selected_name"] = selected.name
+            chain.append(record)
     return chain, directories
 
 

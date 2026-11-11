@@ -779,6 +779,14 @@ class TaskNode:
     plan: str
     section: str = ""
     after: list[str] = field(default_factory=list)
+    # When set, ``after`` is the whole of what the request waits on: the
+    # section's declared waits, the plan's ``depends_on`` and the section's
+    # gates are not inherited. A section's waits describe its own deliverable,
+    # not every node filed under it, so a coordinator can file a small
+    # correction beside a section without parking it behind work it does not
+    # need. The section is still recorded for routing, landing and the plan's
+    # review gate.
+    waits_only_after: bool = False
     brief: str = ""
     brief_sha256: str = ""
     brief_path: str = ""
@@ -1339,6 +1347,13 @@ def validate_node(
         fail(
             "fully-specified",
             "no plan or brief is named as the semantic authority",
+        )
+    if node.waits_only_after and not node.after:
+        fail(
+            "waits-only-after",
+            "the node waits only on its own --after refs and names none; "
+            "a request that waits on nothing is queued at once, so name at "
+            "least one request the work depends on",
         )
     combined = f"{goal} {node.done_when}"
     deferred = _DECISION_DEFERRED.search(combined)

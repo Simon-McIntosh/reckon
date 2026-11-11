@@ -1,0 +1,87 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:02:02.158Z",
+  "dispatched_at": "2026-11-11T01:53:34Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-worker-cannot-write-your-home.html:1612",
+      "id": "done_when-1",
+      "reason": "an absolute 10 s ceiling can red a correct implementation when the fleet node is loaded, sending the node to re-derive a fix that already works; naming the measure as a ratio to a same-session clean run, or a larger ceiling, changes what the node proves.",
+      "text": "the arm \"the first `git diff --name-only` outside the fence ... finishes in under 10 s\" is an absolute bar set against a call the section's own evidence measures at 5.7 s clean (5.6 s of it \"preload index\", in `~/.cache/reckon-promotion-rollout/review29/main-thread.txt`), on a node whose recorded load ranged 50\u201385, so the arm has about 1.75\u00d7 the clean floor and can fail for load rather than for the defect \u2014 the same evidence shows the right shape is a paired comparison (250.4 s then 5.7 s in one worktree)",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b2eaf9ea5d126d354577a5709abe3c95c59f9e1c",
+  "plan_fingerprint": "275f1eabc3c5d52b36220fcb66bab6fdcfda4a1da77b76adb3310f054dbb5ed8",
+  "plan_slug": "a-worker-cannot-write-your-home",
+  "plan_version": 249,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a724's timing arm is now a ratio: the first call after a fenced index write takes at most twice a warm call made straight after it, against more than tenfold (250.4 s against 5.7 s) at base, so node load cannot fail it.",
+      "reason": "",
+      "when": "2026-11-11T02:26:36.940104+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a724's timing arm is now a ratio: the first call after a fenced index write takes at most twice a warm call made straight after it, against more than tenfold (250.4 s against 5.7 s) at base, so node load cannot fail it.",
+      "reason": "",
+      "when": "2026-11-11T02:26:36.940104+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-worker-cannot-write-your-home/r-20261111T015113647478-plan-review-of-a-worker-cannot-write-your-home.json",
+  "review_run_id": "r-20261111T015113647478-plan-review-of-a-worker-cannot-write-your-home",
+  "reviewed_blob_sha": "9e2e2158566867b9e6816d0203b63faeb1ae9c8d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `routing._create_worktree` exists (`reckon/crew/routing.py:2275`, called from `reckon/crew/dispatch.py:2920`), `promotion_evidence._worktree_repository_changes` exists (`reckon/crew/promotion_evidence.py:497`) and its `git diff --name-only` call is at `:534`, `git --version` on this host is 2.39.3 as the section states, and the cited profile file opens.",
+    "done_when": "a finding \u2014 the fleet-node performance arm sets an absolute \"< 10 s\" ceiling on a call whose own clean-run floor the section records at 5.7 s, so the arm can go red on node load alone.",
+    "evidence_paths": "pass \u2014 both named logs sit under the run directory (`~/.config/reckon/crew/runs/<run>`), the profile the Why cites resolves at `~/.cache/reckon-promotion-rollout/review29/main-thread.txt`, and no gate names a scratchpad or a node-local temporary path.",
+    "naming": "pass \u2014 the proposed test file and the described setting name the mechanism (a worktree index reading clean across the fence) and carry no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (the profile's deepest frame is `_worktree_git_paths (promotion_evidence.py:482) <- _worktree_repository_changes (:534)` at 270.0 s of 621 s, and its own reading of 250.4 s then 5.7 s is a stale index whose first refresh re-reads contents, which is what a recorded-gid mismatch produces); the mechanism produces the done-when (`minimal` drops uid/gid/ino/dev while `match_stat_data` still compares whole-second mtime, ctime and size, which is what the corrected control exercises); and it runs on the real path, with `dispatch.py:2920` calling `routing._create_worktree` for every worker worktree the profile was taken in \u2014 the function delegates the `git worktree add` to `worktree_fleet.py create`, so the setting must be written after that call returns, which the declared write path (`reckon/crew/routing.py`) still permits.",
+    "single_goal": "pass \u2014 \u00a724 carries one deliverable (worktree-scoped `core.checkStat=minimal` at creation) and one gate.",
+    "wiring": "pass \u2014 \u00a724 is carried by open followup `f-awcwyh-024` (`plan.html:1826`) with its `/reckon-build a-worker-cannot-write-your-home \u00a724` invocation, and the section declares no dependency it needs (`plan-section-depends-on` at `plan.html:31` lists s16/s17/s18/s22 only, none of which \u00a724 consumes; the fence precondition is already landed, `FENCE_WORKERS = True` at `reckon/crew/dispatch_sessions.py:166`)."
+  },
+  "section_digests": {
+    "_document": "696051baa420f619d29c845b82d9c6a1a278d222cc5a7ba1d8f0d83c96c0c300",
+    "s1": "20aea2196f748a0a26dcd8c4f13a51e89056dc090927dcbf7c88e3384e3a5ab4",
+    "s10": "c5c7fe720643fd4e73b5f1c9fff30c26f8357f46808e3b91eb33b5271d3a19bc",
+    "s11": "f2f305292dacd47d88930479053d919c6bce05b3f863e60a502ce40a2b1c1239",
+    "s12": "bcbf84b314096bf944f58481d98177c11ed6732c763472dc6bc259bc0ad8f54e",
+    "s13": "274d2cd914af10830f75d7ac253c9a1833d25cf9ac0e37e28c0c48ba60b77628",
+    "s14": "fcefb6cd20b26029bf0d8c785373a493532289cca9f2b4b01a93bf7b4ef7c19a",
+    "s15": "2d4c8c79a854bdbb21757053e30b9cf1366a1b627dc8c8ef6e7760cb15af06a2",
+    "s16": "f2c003eb41a15d4a475407c4f28b7405bf87620a7ee1c9732c823c0bd535923c",
+    "s17": "2d2d08c8567a83cca3bdd3a30b5cca94fa8e377c6e1552aed6dfb8e1d15db707",
+    "s18": "8f63d2e9144312cbecd9a2f55a3526ba207f322d3d1f237392b076ed1b4abf53",
+    "s19": "19da2176124b0de549bb7c585cc22ee853204ec373eb89082871457fa89862bf",
+    "s2": "dfbb662d3da9aa4d3d153e8d2cd5e2c614534034829ebd298f56063c2150b8b6",
+    "s20": "0e83d5fb9828cc778802066bff24b452e47586b9a89ef3f93a84aaed1fe3cb99",
+    "s21": "dca32e63251fb5b4cd4bc5d1f524afc97180a85eaba73e88b4b62111045239dd",
+    "s22": "ef5b9c4c529863e2e86cecfa7d84a4924ba83f404bdc9ca035f4819836210b4d",
+    "s23": "ab07a99f68b5d4dbe39f548e45b055fcc2611d7773c1283d19ef18f4840969cf",
+    "s24": "a78adac18965e58854407a55461d5bc4a7addbb7bf835f6b38c793e0b017fe69",
+    "s3": "8a798e91551442bdcf324bf0e8f2801e9ced17b35f45f3867f8314e98619dde9",
+    "s4": "b249a7c0cf7296d1b03a7dcdc45216481b546ee13550784bcaabea3f34abe51d",
+    "s5": "b591d224f29bac0f9b5918e6ee3a87b55260f3424887d057e5a8bec79aec03b1",
+    "s6": "a2ea9ae61376b301400c70bae6a0060a2a2abf072b89cbf83a102cea2ab5f3b4",
+    "s7": "b363364b7464f2f7c7af654833037ddd56f6af79fd55aa44a6d3327083f626a5",
+    "s8": "af9d785f0f9f36ee58ec7010366aec4f06efdf850c84cf4ce0619311174d54dd",
+    "s9": "131001034a4d533c7f8c0beb295eb3570f2b7e1fc7853a1a09da023955ff5c4d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:14:20.551169+00:00",
+  "total": null
+}

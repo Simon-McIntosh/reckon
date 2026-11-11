@@ -2936,6 +2936,8 @@ def _supervisor_spec(
         # supervisor's boundary baseline reads the same two trees the dispatch
         # record names.
         "fenced": fenced,
+        "anchored_edit": plan.anchored_edit,
+        "anchored_edit_reason": plan.anchored_edit_reason,
         "prompt_path": str(prompt_path),
         "log_path": str(log_path),
         "stderr_path": str(stderr_path),
@@ -3515,6 +3517,8 @@ def _worker_record_payload(
         "launched_at": launched_at,
         "claim_registered_at": registered_at,
         "backend": str(spec["plan"].get("backend") or ""),
+        "anchored_edit": spec.get("anchored_edit") is True,
+        "anchored_edit_reason": spec.get("anchored_edit_reason"),
         "argv": list(spec["plan"].get("argv") or ()),
     }
 
@@ -4009,6 +4013,9 @@ def _publish_stored_phase(
         )
         if phase:
             record["phase"] = phase
+        if "anchored_edit" in spec:
+            record["anchored_edit"] = spec["anchored_edit"] is True
+            record["anchored_edit_reason"] = spec.get("anchored_edit_reason")
         if not ended:
             try:
                 worker = json.loads(

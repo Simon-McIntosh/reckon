@@ -1,0 +1,122 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:29:50.659Z",
+  "dispatched_at": "2026-11-11T02:20:10Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:179",
+      "id": "done_when-1",
+      "reason": "a node running this control gets a red log quoting a different refusal, and will either weaken the assertion or rebuild \u00a77's `--reopen` gate inside \u00a731, which is another section's defect.",
+      "text": "\u00a731's second negative control reads \"restores the advice refusal, which makes the advice case fail with the `--reopen requires a completed run` text\", but that text is raised only inside `if reopen:` (reckon/crew_run_commands.py:2345) and `--reopen` itself refuses without `--write-path` (:2323), while the case it controls issues a plain `crew resume --advice` with no `--reopen`; a plain resume of a live round is refused by a different door entirely (`live_attempt_refusal`, reckon/crew/resumption.py:330-355, whose message keeps the advice at `refused_advice_path`), so the red log cannot carry the named text and the section's own deliverable (\"no channel that reaches a worker mid-turn\") is contradicted by the refusal it borrows",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-crew-does-its-own-bookkeeping.html:183",
+      "id": "reasoning-1",
+      "reason": "the section's first done-when case is unsatisfiable on the surface it names, so the node must invent an argument or a second lookup the plan does not scope, and its write paths (`review.py`, `crew_run_commands.py`) may not include the reader it then needs.",
+      "text": "\u00a732's first change requires `crew check --review` to refuse \"a record whose `review_run_id` is not the writing run's own id, naming the expected id\", but `crew check` accepts exactly one of `--run` or `--record` (reckon/crew_run_commands.py:1274) and `review_record_refusals(record)` is handed only the record (reckon/crew/review.py:932), so no invocation knows both the record and the writer's id; `--run <review-run>` cannot supply the record either, because `stored_record` selects it by the run's own `review_run_id` (reckon/crew/review_records.py:677-740), which is precisely the truncated value the fix exists to detect",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+  "plan_fingerprint": "f022599c2b8a4718fd54d9a65aed518252d4c6d4eef8b26099fe4ad03d349abc",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 128,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9695c84d46ab455146df74923f7eb09f053cc16c",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a731's second control now checks the base revision's own recorded output for a plain crew resume --advice on a live round, and states the --reopen text is raised only on that path (crew_run_commands.py:2323, :2345).",
+      "reason": "",
+      "when": "2026-11-11T03:05:12.217253+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9695c84d46ab455146df74923f7eb09f053cc16c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a732's check is now on the crew check --review --run form, where the writing run is known; the command passes the run id in and the --record form is unchanged.",
+      "reason": "",
+      "when": "2026-11-11T03:05:53.566962+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9695c84d46ab455146df74923f7eb09f053cc16c",
+      "commit_basis": "edit",
+      "note": "\u00a731's second control now checks the base revision's own recorded output for a plain crew resume --advice on a live round, and states the --reopen text is raised only on that path (crew_run_commands.py:2323, :2345).",
+      "reason": "",
+      "when": "2026-11-11T03:05:12.217253+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9695c84d46ab455146df74923f7eb09f053cc16c",
+      "commit_basis": "edit",
+      "note": "\u00a732's check is now on the crew check --review --run form, where the writing run is known; the command passes the run id in and the --record form is unchanged.",
+      "reason": "",
+      "when": "2026-11-11T03:05:53.566962+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261111T021745778646-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261111T021745778646-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "b52e2139870d8476922f9581f1d5c0a82e0d4870",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `claims.py:157-158` (the `widen_takes_effect` docstring on fixed mounts), `claims.py:113-116` (`ClaimAmendmentRefusedError` for a live worker), `crew_run_commands.py:2345` (`--reopen requires a completed run`), `review.py:932` (`review_record_refusals`) and `crew_run_commands.py:1229` (`crew_repair_review`) all resolve at the reviewed revision; the section hrefs there are fragment anchors on this page.",
+    "done_when": "a finding \u2014 \u00a731's second negative control names a refusal text that the command its case runs cannot produce.",
+    "evidence_paths": "pass \u2014 every log and note lands under the run directory (plan.html:175, 179, 183), which is durable and outside any session scratchpad or node-local temp path.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or changelog prose reach the symbols or test filenames these sections add.",
+    "reasoning": "two findings \u2014 \u00a731's control text and \u00a732's `crew check --review` surface, the latter being a mechanism that cannot reach the state its done-when asserts.",
+    "single_goal": "pass \u2014 each of the three sections names one deliverable: \u00a730 one investigation, \u00a731 one repair (the round takes new input), \u00a732 one mistyped-id repair with its write-time refusal.",
+    "wiring": "pass \u2014 \u00a730, \u00a731 and \u00a732 declare no `depends-on` entries in `plan-section-depends-on` (plan.html:29) and need none: \u00a731's advice half does not consume \u00a77's halted-run reopen, and \u00a732's repair path consumes no other section's output."
+  },
+  "section_digests": {
+    "_document": "6c7fa9792d7d2a52adc42edc01334e15cb3cba45afdb98386c8eb5919beefe5c",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "eb071af115c6cb885404bfcecff89e32a49dff5e2320cb170f63c531701d4409",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "be10222fbb926fdc4d836974d1d08c2536144a9031126f7495a6287ee8824637",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "b78dc61ddf33b375b1ce609a25ab41c3b7817ded96a1793e664ead8b6f3be994",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s29": "cee16ef0e6d7471aa27d3b5ae38b60037bec4bcd730f4c11b81e48711461a50e",
+    "s3": "82923ffe5453d6953374033d35019e07de5b29917533560cbc5730ff737bbe8f",
+    "s30": "fdce4967024d4ebfc8a44747ea2c0a96aa18bc07db75515c17b0afae103f69ef",
+    "s31": "2549b6686c87444deabe7ae710949a6fb00199f74f04206c374be71fe99228de",
+    "s32": "25fca065c2d9624a00293989345fd5e72e55cea115c9937fc813e429e282e0e5",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "97a25d1bcb177fd8366f65079625d64835768889b839d6734ae89fa8e922189b",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:51:59.116687+00:00",
+  "total": null
+}

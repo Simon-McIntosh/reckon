@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="111">
+<meta name="plan-version" content="112">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;]}">
 </head>
@@ -419,7 +419,7 @@
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
-<div class="r-dec" data-key="reports-bound-across-projects" data-choice="" data-by="" data-when="" data-sections="s5" data-recommended="rebaseline-the-clause" data-recommended-by="reckon-build">
+<div class="r-dec" data-key="reports-bound-across-projects" data-choice="Bounded by a retention policy across every project: a report expires at its plan&#x27;s close or after 30 days unless it is persisted or cited (a-report-is-kept-only-when-persisted)" data-by="Simon McIntosh" data-when="2026-11-11T03:54:16+00:00" data-sections="s5" data-recommended="rebaseline-the-clause" data-recommended-by="reckon-build">
     <p class="r-dec-q">Should the crew home&#x27;s reports store be bounded across projects?</p>
     <p class="r-dec-ctx">&lt;p&gt;§5&#x27;s reclaim ran on 2026-10-16 and freed 162.6 GB. Its done-when wants the four stores at least 100 GB below §1&#x27;s 330 GB, but they now hold 494 GB. Nearly all of the growth is other projects&#x27; data: imas-efit&#x27;s reports are 139 GB, nova&#x27;s are 35 GB, and the shared run store has grown too. A &lt;code&gt;--project reckon&lt;/code&gt; sweep cannot reach any of it, and should not. So the clause can be met only if those stores are bounded, and that is the lead&#x27;s decision, not reckon&#x27;s. §5 stays deferred until it is made.&lt;/p&gt;</p>
     <p class="r-dec-opts">
@@ -427,7 +427,7 @@
       <button class="r-opt" data-value="per-project-quota">reckon bounds each project&#x27;s reports with a size quota</button>
       <button class="r-opt" data-value="rebaseline-the-clause">Measure the clause on reckon&#x27;s own share of the stores, which §5 met</button>
       </p>
-    <p class="r-dec-rat"></p>
+    <p class="r-dec-rat">Lead decision 2026-11-11. The reports store reached 330 GB, of which imas-efit was 294.8 GB and nova 35.0 GB. Neither a per-project gc nor a size quota decides what is worth keeping, and an explicit persist action does. The existing backlog was moved to /work on the same day, and a-report-is-kept-only-when-persisted §4 expires it.</p>
     </div>
 </section>
 </main>

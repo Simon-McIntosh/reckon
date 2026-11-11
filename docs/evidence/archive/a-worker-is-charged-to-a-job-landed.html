@@ -857,6 +857,11 @@
     <p>Landed from r-20261110T201615063661 (head b38574a5db). The digest generator selects the fleet-node rule by its new heading, the role digests are regenerated, and a pinned repository fixture asserts every mapped heading exists. <code>worker_digest --check</code> reports all four role digests up to date, so the dotfiles hook passes again.</p>
   </section>
 
+  <section id="partition-sbatch-passes-the-fence" data-evidence-origin="append">
+    <h2>An sbatch naming a partition passes the fence</h2>
+    <p>Landed from r-20261110T225809682241 (head a8536e9bf1). The nested-launch shim lets through an <code>sbatch</code> that names its partition. It parses sbatch's options by role, so another option's value (<code>--output --partition=...</code>, <code>--job-name -prigel</code>) never counts as a partition. An <code>sbatch</code> with no partition, and any <code>srun</code> inside the job, stay refused, and the refusal names <code>sbatch --partition</code> as the route. Armed tests: 190 passed at head. The second review found nothing.</p>
+  </section>
+
 </main>
 </body>
 </html>

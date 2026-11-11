@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run's own arms: baseline_suite tests/test_staged_write_inventory.py 51 passed EXIT=0 (logs/suite-baseline.log) and after_suite tests/test_a_worktree_index_reads_clean_across_the_fence.py + tests/test_staged_write_inventory.py 53 passed EXIT=0 (logs/suite-head.log), so no failing id is added",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2920",
+    "reckon/crew.py:87"
+  ],
+  "completed_at": "2026-11-11T03:39:27.209Z",
+  "dispatched_at": "2026-11-11T03:27:13Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the two config writes run once at worktree creation; routing them through the module's _git helper is a convention change that does not alter what is written, and a hung git config at creation is already bounded by the dispatch's own timeout",
+      "recorded_at": "2026-11-11T03:48:43.247177+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the four precondition assertions guard the control's premise; the setting and the edit-detection are asserted at lines 89, 92, 93 and 124, which fail on the configuration-write control",
+      "recorded_at": "2026-11-11T03:49:02.475450+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2340",
+      "severity": "non-blocking",
+      "text": "non-blocking: the two git config writes run through a raw subprocess.run with a hand-built CrewError instead of the module's own _git helper at reckon/crew/routing.py:543, which already wraps velocity.run_git, decodes output and raises the module's error shape, so this adds a second invocation convention to one module and loses the 180-second timeout the wrapper applies."
+    },
+    {
+      "file": "tests/test_a_worktree_index_reads_clean_across_the_fence.py",
+      "line": "117",
+      "severity": "non-blocking",
+      "text": "non-blocking: the four assertions at lines 117-121 compare the test's own stat record before and after its own os.utime call, so they cannot fail on any regression in routing.py and prove only the control's premise; they are fixture preconditions rather than guards, and the file's coverage of the change rests on lines 89, 92, 93 and 124 alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 0d3f3fe297ae \u2014 76fe60bcc5 adds the 14-line _give_worktree_minimal_stat plus its call at reckon/crew/routing.py:2316 and a 124-line test, and 59bb39e176 only replaces the fragment's PENDING commit marker with 76fe60bcc5.",
+    "done_when": "the done_when names the node test with its ctime and configuration-write controls, a fenced/unfenced timing ratio at most two logged with the load average, a routing-importing population arm pair on all_debug, and ruff on the staged paths; logs/suite-head.log (53 passed, EXIT=0), logs/negative-control-checkstat-write-dropped.log (1 failed, EXIT=1), logs/fence-timing-ratio.log (0.863 and 0.808 against a limit of 2 at load 27.60), and logs/routing-population-{base,head}.log (7 failed/821 passed and 7 failed/823 passed) record four of the five clauses, and I re-derived the ruff clause by delta myself, but the run records no ruff command or log for it.",
+    "goal": "the node goal is that every worktree routing._create_worktree creates carries core.checkStat=minimal in its own configuration, and reckon/crew/routing.py:2316 calls the new _give_worktree_minimal_stat on the created tree on the single production creation path, which writes extensions.worktreeConfig on the shared config and core.checkStat=minimal with --worktree at reckon/crew/routing.py:2336-2337.",
+    "manifest": "read at manifest.md; it reports status complete, names both commits, records the suite pair, the routing population arms, the fence ratio with its load average, and the negative control, and it does not record a ruff invocation or log even though the done_when names one.",
+    "write_paths": "read the manifest's orientation_write_paths (reckon/crew/routing.py, tests/test_a_worktree_index_reads_clean_across_the_fence.py, docs/evidence/fragments/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence.html, docs/figures/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence); git diff --name-only 0d3f3fe..59bb39e1 lists exactly three files, all inside them, and the figure directory was granted but not used."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worktree_index_reads_clean_across_the_fence.py:89 reddens when the configuration write is dropped, confirmed by logs/negative-control-checkstat-write-dropped.log, and line 124 reddens if minimal comparison stops catching a same-size edit, but no assertion reproduces the gid defect the fix exists for.",
+    "evidence": "the four logged clauses under logs/ each carry a revision header and a bare EXIT= line, but no ruff command or log backs the done-when's ruff clause and the timing ratio at logs/fence-timing-ratio.log cannot separate its arms on this host.",
+    "fit": "reckon/crew/routing.py:2340 spawns git through subprocess.run directly while the same module's _git wrapper at reckon/crew/routing.py:543 carries 14 other call sites and the module's CrewError shape.",
+    "goal_fidelity": "reckon/crew/routing.py:2316 is the single call site the production creation path reaches, and it is after the success check so no worktree is created without the setting.",
+    "reuse": "no owner for a worktree stat-comparison setting exists in the tree, but the added function re-implements the module's own git invocation wrapper at reckon/crew/routing.py:543 rather than extending it.",
+    "scope_discipline": "the three changed paths are exactly a subset of the four declared write paths, and the reviewed worktree at 59bb39e176 is clean with no untracked file in the diff."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every worktree routing._create_worktree creates carries core.checkStat=minimal in its own configuration, and reckon/crew/routing.py:2316 calls the new _give_worktree_minimal_stat on the created tree on the single production creation path, which writes extensions.worktreeConfig on the shared config and core.checkStat=minimal with --worktree at reckon/crew/routing.py:2336-2337.\nVERDICT done_when: the done_when names the node test with its ctime and configuration-write controls, a fenced/unfenced timing ratio at most two logged with the load average, a routing-importing population arm pair on all_debug, and ruff on the staged paths; logs/suite-head.log (53 passed, EXIT=0), logs/negative-control-checkstat-write-dropped.log (1 failed, EXIT=1), logs/fence-timing-ratio.log (0.863 and 0.808 against a limit of 2 at load 27.60), and logs/routing-population-{base,head}.log (7 failed/821 passed and 7 failed/823 passed) record four of the five clauses, and I re-derived the ruff clause by delta myself, but the run records no ruff command or log for it.\nVERDICT write_paths: read the manifest's orientation_write_paths (reckon/crew/routing.py, tests/test_a_worktree_index_reads_clean_across_the_fence.py, docs/evidence/fragments/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence.html, docs/figures/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence); git diff --name-only 0d3f3fe..59bb39e1 lists exactly three files, all inside them, and the figure directory was granted but not used.\nVERDICT manifest: read at manifest.md; it reports status complete, names both commits, records the suite pair, the routing population arms, the fence ratio with its load average, and the negative control, and it does not record a ruff invocation or log even though the done_when names one.\nVERDICT diff: read both commits against base 0d3f3fe297ae \u2014 76fe60bcc5 adds the 14-line _give_worktree_minimal_stat plus its call at reckon/crew/routing.py:2316 and a 124-line test, and 59bb39e176 only replaces the fragment's PENDING commit marker with 76fe60bcc5.\nCALL_SITES: reckon/crew/dispatch.py:2920, reckon/crew.py:87\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2316 is the single call site the production creation path reaches, and it is after the success check so no worktree is created without the setting.\nSCORE evidence: 14\nJUSTIFICATION evidence: the four logged clauses under logs/ each carry a revision header and a bare EXIT= line, but no ruff command or log backs the done-when's ruff clause and the timing ratio at logs/fence-timing-ratio.log cannot separate its arms on this host.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three changed paths are exactly a subset of the four declared write paths, and the reviewed worktree at 59bb39e176 is clean with no untracked file in the diff.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_worktree_index_reads_clean_across_the_fence.py:89 reddens when the configuration write is dropped, confirmed by logs/negative-control-checkstat-write-dropped.log, and line 124 reddens if minimal comparison stops catching a same-size edit, but no assertion reproduces the gid defect the fix exists for.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/routing.py:2340 spawns git through subprocess.run directly while the same module's _git wrapper at reckon/crew/routing.py:543 carries 14 other call sites and the module's CrewError shape.\nSCORE reuse: 16\nJUSTIFICATION reuse: no owner for a worktree stat-comparison setting exists in the tree, but the added function re-implements the module's own git invocation wrapper at reckon/crew/routing.py:543 rather than extending it.\nFINDING reckon/crew/routing.py:2340 non-blocking: the two git config writes run through a raw subprocess.run with a hand-built CrewError instead of the module's own _git helper at reckon/crew/routing.py:543, which already wraps velocity.run_git, decodes output and raises the module's error shape, so this adds a second invocation convention to one module and loses the 180-second timeout the wrapper applies.\nFINDING tests/test_a_worktree_index_reads_clean_across_the_fence.py:117 non-blocking: the four assertions at lines 117-121 compare the test's own stat record before and after its own os.utime call, so they cannot fail on any regression in routing.py and prove only the control's premise; they are fixture preconditions rather than guards, and the file's coverage of the change rests on lines 89, 92, 93 and 124 alone.",
+  "review_run_id": "r-20261111T032451617646-review-of-worktree-index-reads-clean-across-the-fence-59bb39e1762d",
+  "reviewed_base_sha": "0d3f3fe297aed3973904e4ba3a6fa785b5da8ea3",
+  "reviewed_head_sha": "59bb39e1762d64ead3f6ad302e9a33cf05614928",
+  "reviewed_node": "worktree-index-reads-clean-across-the-fence",
+  "reviewed_run_id": "r-20261111T025701923995-worktree-index-reads-clean-across-the-fence",
+  "rubric": "landed-node",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T03:46:48.954005+00:00",
+  "total": 100,
+  "verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read both commits against base 0d3f3fe297ae \u2014 76fe60bcc5 adds the 14-line _give_worktree_minimal_stat plus its call at reckon/crew/routing.py:2316 and a 124-line test, and 59bb39e176 only replaces the fragment's PENDING commit marker with 76fe60bcc5.",
+    "done_when": "the done_when names the node test with its ctime and configuration-write controls, a fenced/unfenced timing ratio at most two logged with the load average, a routing-importing population arm pair on all_debug, and ruff on the staged paths; logs/suite-head.log (53 passed, EXIT=0), logs/negative-control-checkstat-write-dropped.log (1 failed, EXIT=1), logs/fence-timing-ratio.log (0.863 and 0.808 against a limit of 2 at load 27.60), and logs/routing-population-{base,head}.log (7 failed/821 passed and 7 failed/823 passed) record four of the five clauses, and I re-derived the ruff clause by delta myself, but the run records no ruff command or log for it.",
+    "goal": "the node goal is that every worktree routing._create_worktree creates carries core.checkStat=minimal in its own configuration, and reckon/crew/routing.py:2316 calls the new _give_worktree_minimal_stat on the created tree on the single production creation path, which writes extensions.worktreeConfig on the shared config and core.checkStat=minimal with --worktree at reckon/crew/routing.py:2336-2337.",
+    "manifest": "read at manifest.md; it reports status complete, names both commits, records the suite pair, the routing population arms, the fence ratio with its load average, and the negative control, and it does not record a ruff invocation or log even though the done_when names one.",
+    "write_paths": "read the manifest's orientation_write_paths (reckon/crew/routing.py, tests/test_a_worktree_index_reads_clean_across_the_fence.py, docs/evidence/fragments/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence.html, docs/figures/a-worker-cannot-write-your-home/worktree-index-reads-clean-across-the-fence); git diff --name-only 0d3f3fe..59bb39e1 lists exactly three files, all inside them, and the figure directory was granted but not used."
+  }
+}

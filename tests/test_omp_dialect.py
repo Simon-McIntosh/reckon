@@ -269,6 +269,70 @@ def test_the_run_home_is_relocated_through_home(tmp_path: Path) -> None:
     assert (run / "omp-home").is_dir()
 
 
+def test_the_seeded_models_file_is_where_the_harness_reads_it(tmp_path: Path) -> None:
+    """A relocated HOME alone leaves the harness reading an empty store.
+
+    The fence mirrors the operator's ``.omp/agent/models.yml`` relative to the
+    run home it owns, so the seed lands at ``<run home>/agent/models.yml``.
+    With ``HOME`` pointing at that home the harness resolves its store as
+    ``<HOME>/.omp/agent`` and refuses every model, naming the file it wanted:
+    measured on a live run whose stderr read ``Model "local/deepseek-v4.1-flash"
+    not found ... create <run home>/.omp/agent/models.yml`` while the seeded
+    file sat at ``<run home>/agent/models.yml``. Naming the store variable
+    points the harness at the copy the fence wrote.
+    """
+    operator = tmp_path / "operator-home"
+    source = operator / ".omp" / "agent" / "models.yml"
+    source.parent.mkdir(parents=True)
+    declared = "providers:\n  local:\n    name: local\n"
+    source.write_text(declared, encoding="utf-8")
+
+    run = tmp_path / "run"
+    run.mkdir()
+    backend = dict(OMP, harness_home_files=[{"path": "agent/models.yml"}])
+    plan = _backends.launch_plan(
+        backend_name="probe",
+        backend=backend,
+        prompt="p",
+        worktree="/wt",
+        manifest_path=str(run / "manifest.md"),
+        fence_home=str(operator),
+    )
+
+    home = run / "omp-home"
+    assert plan.environment["HOME"] == str(home)
+    assert plan.environment["PI_CODING_AGENT_DIR"] == str(home / "agent")
+
+    # The file the harness resolves through the store variable is the seeded one.
+    seeded = Path(plan.environment["PI_CODING_AGENT_DIR"]) / "models.yml"
+    assert seeded == home / "agent" / "models.yml"
+    assert seeded.read_text(encoding="utf-8") == declared
+
+
+def test_a_dialect_whose_home_is_its_store_gets_no_store_variable(
+    tmp_path: Path,
+) -> None:
+    """The store variable is omp's alone; the other dialects read their home."""
+    operator = tmp_path / "operator-home"
+    (operator / ".claude").mkdir(parents=True)
+    (operator / ".codex").mkdir()
+
+    run = tmp_path / "run"
+    run.mkdir()
+    for command, variable in (("claude", "CLAUDE_CONFIG_DIR"), ("codex", "CODEX_HOME")):
+        plan = _backends.launch_plan(
+            backend_name=command,
+            backend={"launch": "cli", "command": command, "dialect": command},
+            prompt="p",
+            worktree="/wt",
+            manifest_path=str(run / "manifest.md"),
+            fence_home=str(operator),
+        )
+
+        assert variable in plan.environment
+        assert "PI_CODING_AGENT_DIR" not in plan.environment
+
+
 def test_a_run_that_relocates_home_keeps_the_operators_git_identity(
     tmp_path: Path,
 ) -> None:

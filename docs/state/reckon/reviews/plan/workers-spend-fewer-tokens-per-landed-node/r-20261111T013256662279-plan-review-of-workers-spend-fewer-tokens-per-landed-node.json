@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T01:45:45.216Z",
+  "dispatched_at": "2026-11-11T01:35:03Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html#s8",
+      "id": "done_when-1",
+      "reason": "without naming the coordinator as the arm runner and the node as the analyser, the section's done-when is unmeetable by the worker it names and the verdict it exists to produce is never reached.",
+      "text": "the section's measure is a population of at least 90 local implement runs and 30 codex implement runs across five concurrent arms, which no single dispatched node can produce, and the section \u2014 unlike \u00a77, which says its live check \"is dispatched by the coordinator after the node lands\" and that \"the section closes only on that run\" \u2014 never says who runs the arms, so a node dispatched on \u00a78 will either report a verdict on a population far below its own threshold or block having spent its turn",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html#s8",
+      "id": "done_when-2",
+      "reason": "the control is the section's guard against reporting an unmeasured figure as zero, which \u00a71 already identifies as the census's error; without an artifact the plan must say who records one and where, or the codex edit-failure metric cannot be reported either way.",
+      "text": "the codex positive control (\"the edit-failure parser first finds the failure in a recorded stream known to contain a refused patch, so a zero for codex means zero and not an unread field\") names no path, and no such stream exists: the only two files under `docs/research/fixtures/` are `codex-anchored-edit-stream.jsonl` and `omp-stream.jsonl`, and neither contains a `file_change` item or an `apply_patch` call, so the one control that decides whether the codex edit-failure metric is a real zero or an unread field cannot be run as written",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html#s4",
+      "id": "anchors_resolve-1",
+      "reason": "the function is named (`_seed_worker_mcp_settings`, called through `seed_harness_home`) and it is the only call site, so a grep recovers it and the node's design is unchanged.",
+      "text": "\u00a74 cites the settings seeder as \"called from `reckon/_backends.py` near line 2383\", but that call is at `reckon/_backends.py:2841` (`worker_mcp_servers=(_declared_worker_mcp_servers(fence_config) \u2026)` inside `seed_harness_home`), and line 2383 sits inside token accounting for the observation path, so a reader following the pointer lands in unrelated code",
+      "type": "anchors_resolve",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html#s4",
+      "id": "reasoning-1",
+      "reason": "the record field \u00a78 splits the population on would then say the treatment was applied while the arm offered nothing, measuring a baseline that differs only in having lost `Edit` and `MultiEdit`, which reads as a token saving bought by failing more nodes.",
+      "text": "\u00a74 declares that \"the run home registers the `reckon-anchored-edit` server with `--root` set to the run's write roots\" but names no file, and the only registration route its own evidence proves is the argv's `--mcp-config` with `--strict-mcp-config` (recorded in `docs/research/worker-steering-and-anchored-edit-prototypes.html`), while the seeder \u00a74 points at (`_seed_worker_mcp_settings`, `reckon/_worker_fence.py:324`, reached only through the gate at `reckon/_worker_fence.py:274`) writes two permission keys, `enableAllProjectMcpServers` and `enabledMcpjsonServers`, and carries no server definition at all \u2014 so a node can register the server in a key no harness reads, and still record `anchored_edit: true` because its own seeder ran",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0d035440add1a371744173ed2fb76a6a9f268918",
+  "plan_fingerprint": "466c356f279b2d0f1fb2caf7bdab64d4785f2f9d0d8a3934d2ca314de91250a8",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 19,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b50581063a1567fc8aef5cd1832b33c15aa240ec",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "s8 now says the coordinator produces the arm population by routing ordinary ready work to each arm, and the node is dispatched only once every arm has its count",
+      "reason": "",
+      "when": "2026-11-11T02:06:10.636869+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b50581063a1567fc8aef5cd1832b33c15aa240ec",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "s8 names docs/research/fixtures/codex-refused-patch-stream.jsonl, which the coordinator records from a deliberate stale-context apply_patch run before dispatching the node",
+      "reason": "",
+      "when": "2026-11-11T02:06:27.084561+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "anchors_resolve-1",
+      "reason": "s4 is already built and in code review; its delivered head, not the plan's line hint, is now the authority for where the seeder is called",
+      "when": "2026-11-11T02:06:46.217924+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "s4 is already built and in code review; how it registered the server is checked against its delivered head by that review",
+      "when": "2026-11-11T02:07:05.310355+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "s4 is already built and in code review; its delivered head, not the plan's line hint, is now the authority for where the seeder is called",
+      "when": "2026-11-11T02:06:46.217924+00:00"
+    },
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b50581063a1567fc8aef5cd1832b33c15aa240ec",
+      "commit_basis": "edit",
+      "note": "s8 now says the coordinator produces the arm population by routing ordinary ready work to each arm, and the node is dispatched only once every arm has its count",
+      "reason": "",
+      "when": "2026-11-11T02:06:10.636869+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "b50581063a1567fc8aef5cd1832b33c15aa240ec",
+      "commit_basis": "edit",
+      "note": "s8 names docs/research/fixtures/codex-refused-patch-stream.jsonl, which the coordinator records from a deliberate stale-context apply_patch run before dispatching the node",
+      "reason": "",
+      "when": "2026-11-11T02:06:27.084561+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "s4 is already built and in code review; how it registered the server is checked against its delivered head by that review",
+      "when": "2026-11-11T02:07:05.310355+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/workers-spend-fewer-tokens-per-landed-node/r-20261111T013256662279-plan-review-of-workers-spend-fewer-tokens-per-landed-node.json",
+  "review_run_id": "r-20261111T013256662279-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "f7af9de2a70ae6f7cafb67996336d190d2d91b83",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 every href and cited file resolves (all extensionless hrefs resolve as `<path>.html`, the audit anchors `#s3-anchored-edit-tool` and `#s6-omp-headless-contract` exist), but the \u00a74 citation of the settings-seeder's call site is wrong by roughly 460 lines.",
+    "done_when": "a finding \u2014 \u00a78's done-when asserts \"at least 30 implement runs per local arm and 15 per codex arm\" with no statement of who runs that population, unlike \u00a77 which explicitly assigns its live check to the coordinator.",
+    "evidence_paths": "pass \u2014 the measurement record lands on `docs/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html`, the fixtures on `docs/research/fixtures/`, and the \u00a76 note on the crew reports directory; none is a scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 the new identifiers are named by what they do (`anchored_edit`, `read_anchored`, `edit_anchored`, `omp-local`, `_within_any`), and no section, ticket or version label reaches a symbol, filename or comment.",
+    "reasoning": "a finding \u2014 \u00a71's arithmetic and \u00a79's mechanism both hold and are verified against the tree, but \u00a74 names no file the harness reads for the server registration it declares, while the only route its own \u00a72 evidence proved is the argv's `--mcp-config`.",
+    "single_goal": "pass \u2014 each section names one deliverable (\u00a74 one treatment arm's wiring, \u00a78 one measurement and its verdict); \u00a78's default-setting and removal clauses are the consequence of the single verdict it is scored on, not a second deliverable.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s4\u2190s3, s5\u2190s3+s4, s7\u2190s6 and s8\u2190s4+s5+s7, which are exactly the waits the sections state in prose (\u00a75 \"this section waits on \u00a74\", \u00a77 on \u00a76, \u00a78 on the three arms), and `plan-informs` resolves to `docs/plans/a-live-worker-can-be-reached.html`."
+  },
+  "section_digests": {
+    "_document": "a9d507204defbfdeb314ce16077e5af01fcf91de1d69a8dc1e4462da50d23675",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "1c446ae4a199a19c6e7de97686d696708fd9dcc65c5e1093c5efc17872c3d288",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:03:13.839535+00:00",
+  "total": null
+}

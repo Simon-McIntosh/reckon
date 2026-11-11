@@ -1,0 +1,148 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from completed source-manifest baseline_suite and after_suite log FAILED-id set difference; both logs end EXIT=0 and have no failed ids. Importer comparison separately retains one identical failure, proving the failure-id reader sees known-present failures.",
+  "assertion_analysis": [
+    {
+      "failure_condition": "The newly added -p all_debug case fails if separated short partition selection is denied; exit 97 differs from fixed expected 0.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 31
+    },
+    {
+      "failure_condition": "Skipping the stub or changing any forwarded argument makes the independently recorded executable/argv differ; tuple(argv) is the expected input compared with external stub output, not a tautological return of the test variable.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 32
+    },
+    {
+      "failure_condition": "Restore the earlier scanner: both option-value bypasses and the script-argument case return 0 instead of 97, as repair-reproduction.log independently records.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 56
+    },
+    {
+      "failure_condition": "Remove explicit-partition route text from the refusal and each new refusal case lacks the fixed stderr substring.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 57
+    },
+    {
+      "failure_condition": "Run the scheduler despite returning 97 and the independently written invocation record is nonempty; the positive cases establish that the recorder observes invocations.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 58
+    },
+    {
+      "failure_condition": "Stop consuming a required option value and treat --partition=all_debug as a switch: fixed expected False is violated; both role lists are literal and independent of production sets.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 179
+    },
+    {
+      "failure_condition": "Stop consuming a required option value and treat -prigel as a switch: fixed expected False is violated.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 182
+    },
+    {
+      "failure_condition": "Delete an option from the production role set or stop after consuming its value: the genuine subsequent partition no longer produces fixed expected True; this catches omissions that refusal-only checks would miss.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 185
+    },
+    {
+      "failure_condition": "Consume a following token for --nice or -k, reject valid attached required values, or stop processing short flags before p: the relevant literal case produces False rather than fixed True.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 202
+    },
+    {
+      "failure_condition": "Ignore unknown roles before/after a partition, keep the first partition after an empty override, scan inside flag/optional values, or scan past a script: a literal refusal case produces True rather than fixed False.",
+      "file": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py",
+      "line": 217
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/host_shims/sbatch:65-67",
+    "reckon/host_shims/srun:65-67",
+    "reckon/host_shims/salloc:65-67",
+    "reckon/nested_launch.py:refuses_implicit_launch",
+    "reckon/nested_launch.py:main"
+  ],
+  "completed_at": "2026-11-11T01:20:15Z",
+  "dispatched_at": "2026-11-11T01:03:39Z",
+  "evidence_logs": [
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-baseline-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-after-suite.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-reproduction.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-baseline-importers.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-after-importers.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-option-table-check.log",
+    "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-lint.log"
+  ],
+  "findings": [],
+  "gate_arms": {
+    "after_suite": {
+      "observed_failure_ids": [],
+      "receipt": {
+        "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_explicit_partition_sbatch_passes_the_fence.py tests/test_staged_write_inventory.py",
+        "completed": true,
+        "exit_status": 0,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-after-suite.log",
+        "revision": "065870ff1feea9df12531e01c2ee74d089e37ae2"
+      }
+    },
+    "baseline_suite": {
+      "observed_failure_ids": [],
+      "receipt": {
+        "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_an_explicit_partition_sbatch_passes_the_fence.py tests/test_staged_write_inventory.py",
+        "completed": true,
+        "exit_status": 0,
+        "failure_count": 0,
+        "failure_ids": [],
+        "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T225809682241-partition-sbatch-passes-the-fence/repair-baseline-suite.log",
+        "revision": "9c0d55869131d589266211e64205070feafbc058"
+      }
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "reviewed 4f0a07fd2f05f753ad9915dac1503c5ac17055ad, 065870ff1feea9df12531e01c2ee74d089e37ae2 and a8536e9bf13a65b378a020eba2e50400c0519bb9 commit by commit against 9c0d55869131d589266211e64205070feafbc058; the diff repairs argument roles, corrects the optional-value test, and appends evidence without replacing earlier evidence.",
+    "done_when": "source prompt.txt:123-125 and live plan s13 are supported by repair-baseline-suite.log (64 passed), repair-after-suite.log (190 passed), identical importer failure ids, repair-reproduction.log (3 failed, 14 passed), and repair-lint.log (clean).",
+    "goal": "source prompt.txt:38 and live plan s13 require explicit-partition sbatch admission while preserving implicit-launch refusal; reckon/nested_launch.py:278-317 now distinguishes real partition options from values and script operands.",
+    "manifest": "source manifest.md records six cumulative commits and the repaired gate receipts; its baseline_suite and after_suite summaries match their completed logs, and the final documentation-only commit leaves the tested Python unchanged.",
+    "write_paths": "source prompt.txt:80-85 grants nested_launch.py, host_shims and the named test/evidence paths; all three paths in the incremental diff are granted."
+  },
+  "justifications": {
+    "durability": "tests/test_an_explicit_partition_sbatch_passes_the_fence.py:56-58 fails when the earlier token scanner is restored, :179-187 independently checks required-value consumption and admission, and :202,217 protect optional-value, short-cluster and unknown-role boundaries.",
+    "evidence": "repair-reproduction.log:32,64,96 records assert 0 == 97 for the three counterexamples, while repair-after-suite.log records 190 passed and EXIT=0 and the importer logs retain the same single failure.",
+    "fit": "reckon/nested_launch.py:146-317 extends its existing private admission predicate using immutable role sets, and tests/test_an_explicit_partition_sbatch_passes_the_fence.py:7-12 reuses the established shim fixture without forbidden source labels.",
+    "goal_fidelity": "reckon/nested_launch.py:287-317 consumes required values, attaches optional values, stops at script operands, and rejects unknown roles before granting explicit-partition admission.",
+    "reuse": "the capability search at a8536e9bf13a65b378a020eba2e50400c0519bb9 found scheduler argument admission owned by reckon/nested_launch.py, which this diff extends, and the opened tests/test_nested_launch.py fixture is reused; reckon/crew/node.py:667 only formats placement labels and supplies no admission parser.",
+    "scope_discipline": "the 9c0d55869131d589266211e64205070feafbc058..a8536e9bf13a65b378a020eba2e50400c0519bb9 diff changes only reckon/nested_launch.py, tests/test_an_explicit_partition_sbatch_passes_the_fence.py and the granted evidence fragment."
+  },
+  "limitations": "Read-only incremental review; no full suite rerun and no production scheduler invocation. The source gate tests Python at 065870ff1feea9df12531e01c2ee74d089e37ae2; the reviewed final commit adds only evidence HTML.",
+  "negative_control_observation": "The source repair-reproduction.log quotes assert 0 == 97 three times and ends 3 failed, 14 passed / EXIT=1; these same refusal cases are included in the 190-pass after arm.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: source prompt.txt:38 and live plan s13 require explicit-partition sbatch admission while preserving implicit-launch refusal; reckon/nested_launch.py:278-317 now distinguishes real partition options from values and script operands.\nVERDICT done_when: source prompt.txt:123-125 and live plan s13 are supported by repair-baseline-suite.log (64 passed), repair-after-suite.log (190 passed), identical importer failure ids, repair-reproduction.log (3 failed, 14 passed), and repair-lint.log (clean).\nVERDICT write_paths: source prompt.txt:80-85 grants nested_launch.py, host_shims and the named test/evidence paths; all three paths in the incremental diff are granted.\nVERDICT manifest: source manifest.md records six cumulative commits and the repaired gate receipts; its baseline_suite and after_suite summaries match their completed logs, and the final documentation-only commit leaves the tested Python unchanged.\nVERDICT diff: reviewed 4f0a07fd2f05f753ad9915dac1503c5ac17055ad, 065870ff1feea9df12531e01c2ee74d089e37ae2 and a8536e9bf13a65b378a020eba2e50400c0519bb9 commit by commit against 9c0d55869131d589266211e64205070feafbc058; the diff repairs argument roles, corrects the optional-value test, and appends evidence without replacing earlier evidence.\nCALL_SITES: reckon/host_shims/sbatch:65-67, reckon/host_shims/srun:65-67, reckon/host_shims/salloc:65-67, reckon/nested_launch.py:refuses_implicit_launch, reckon/nested_launch.py:main\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/nested_launch.py:287-317 consumes required values, attaches optional values, stops at script operands, and rejects unknown roles before granting explicit-partition admission.\nSCORE evidence: 20\nJUSTIFICATION evidence: repair-reproduction.log:32,64,96 records assert 0 == 97 for the three counterexamples, while repair-after-suite.log records 190 passed and EXIT=0 and the importer logs retain the same single failure.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the 9c0d55869131d589266211e64205070feafbc058..a8536e9bf13a65b378a020eba2e50400c0519bb9 diff changes only reckon/nested_launch.py, tests/test_an_explicit_partition_sbatch_passes_the_fence.py and the granted evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_explicit_partition_sbatch_passes_the_fence.py:56-58 fails when the earlier token scanner is restored, :179-187 independently checks required-value consumption and admission, and :202,217 protect optional-value, short-cluster and unknown-role boundaries.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/nested_launch.py:146-317 extends its existing private admission predicate using immutable role sets, and tests/test_an_explicit_partition_sbatch_passes_the_fence.py:7-12 reuses the established shim fixture without forbidden source labels.\nSCORE reuse: 20\nJUSTIFICATION reuse: the capability search at a8536e9bf13a65b378a020eba2e50400c0519bb9 found scheduler argument admission owned by reckon/nested_launch.py, which this diff extends, and the opened tests/test_nested_launch.py fixture is reused; reckon/crew/node.py:667 only formats placement labels and supplies no admission parser.\n",
+  "reuse_search": "git grep at the reviewed head for getopt, explicit_partition, SBATCH_LONG, sbatch option/argv and partition argument/argv found the extended nested_launch owner; opened tests/test_nested_launch.py and crew/node.py:_placement_target to distinguish fixture reuse and label formatting from admission.",
+  "review_run_id": "r-20261111T010042522462-review-of-partition-sbatch-passes-the-fence-a8536e9bf13a",
+  "reviewed_base_sha": "9c0d55869131d589266211e64205070feafbc058",
+  "reviewed_commits": [
+    "4f0a07fd2f05f753ad9915dac1503c5ac17055ad",
+    "065870ff1feea9df12531e01c2ee74d089e37ae2",
+    "a8536e9bf13a65b378a020eba2e50400c0519bb9"
+  ],
+  "reviewed_head_sha": "a8536e9bf13a65b378a020eba2e50400c0519bb9",
+  "reviewed_run_id": "r-20261110T225809682241-partition-sbatch-passes-the-fence",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:40:31.810273+00:00",
+  "total": 120
+}

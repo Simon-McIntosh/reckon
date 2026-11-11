@@ -1,0 +1,230 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T01:42:27.122Z",
+  "dispatched_at": "2026-11-11T01:30:29Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:179",
+      "id": "reasoning-1",
+      "reason": "the node's first task would be disproving its own deliverable, and the fix scope changes from \"route it through the existing channel\" to \"design a channel a live round can read mid-turn\".",
+      "text": "\u00a731 asks a running repair round to take a widen \"before its next tool call, through the same channel a widen reaches a working run\", but at main there is no such channel: `widen_claim` refuses a live run's amendment with \"its worker is still running; wait for that process to exit\" (reckon/crew/claims.py:113-116), and `widen_takes_effect` states the model the fix would have to overturn \u2014 \"A running worker's mounts are fixed when its sandbox starts, so a widened claim reaches it only on its next attempt\" (reckon/crew/claims.py:157-158). The Why also describes the incident as a widen that \"added the file\", where the refusal above means it most likely did not; the node would arrive expecting to reuse an existing delivery route and find it has to build one \u2014 an investigation whose premise the code contradicts.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:179",
+      "id": "done_when-1",
+      "reason": "the case as written measures the pointer rather than the round's reachable fence, and would go green on a repair that fixes nothing.",
+      "text": "\u00a731's first done-when case is \"a widen issued during an automatic repair round appears in the round's write paths\", a read of the pointer; the pointer's write paths can be written while the running worker's mount set is unchanged (claims.py:157-158), so the assertion passes on a change that leaves the worker still unable to write the file it needs \u2014 which is the entire defect. The declared negative control restores the advice refusal and reddens only the advice case, so no control shows this case can fail.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:179",
+      "id": "done_when-2",
+      "reason": "the node's own gate would skip the population covering half its write paths.",
+      "text": "\u00a731's regression gate names \"the test files importing `reckon.crew.recovery_repair_dispatch`\" while its write paths also include the module that issues the resume refusal (`reckon/crew_run_commands.py:2345`); no test that imports that module is in the measured population, so a regression introduced in the advice half \u2014 the half the incident was reported for \u2014 would not be seen. \u00a732 states the correct form (\"the test files importing the changed modules\").",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:175",
+      "id": "single_goal-1",
+      "reason": "either the goal narrows to the duplicate and the resume variant becomes its own section, or the done-when must demand a reproduction for the resume path too; as written the node can close with the second defect unexplained.",
+      "text": "\u00a730 is titled for the duplicate review of one head, but its deliverable carries two separately caused defects: the 39-second duplicate (a manual dispatch followed by the reflex's) and the pre-resume head dispatched after a widen-and-resume, which the Why already calls \"a head about to move\". The done-when reproduces only one sequence (\"two review pointers for one head\") and its proposed sections must cover both, so one verdict cannot close it and the second variant's evidence is never required.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:183",
+      "id": "evidence_paths-1",
+      "reason": "an ambiguous fence stalls the node once it starts writing, and the two candidate modules are in different files.",
+      "text": "\u00a732's write paths read \"the review-record checker and the review repair command modules, and the new test\", naming no file, while the checker it means is `review_record_refusals` in `reckon/crew/review.py:932` and the repair command in `reckon/crew_run_commands.py:1229`; every other section in the plan names its files. A dispatched worker's fence is built from literal paths, so this description must be resolved by guesswork or a scope extension before the first edit.",
+      "type": "evidence_paths",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:183",
+      "id": "reasoning-2",
+      "reason": "its cases are red at main by construction, so the node would discover the state at once and the missing clause costs a sentence rather than a wrong path.",
+      "text": "_document states \"Each section opens by confirming that its defect still reproduces at main\" (plan.html:34-35), and \u00a731 and \u00a730 both carry a reproduction step, but \u00a732's deliverable opens straight at \"Three changes\" with no reproduce-at-main clause \u2014 although its first, second and fourth cases would fail at main today (`review_record_refusals` compares no id at reckon/crew/review.py:932-972, and `--set` accepts only status/subject at :3523-3524), so the confirmation is cheap and the omission is the document's own claim going unmet.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "514176366893ef0d2a571e7d876f9f0f8adf15db",
+  "plan_fingerprint": "5efcb5633a760a6c024a86606288d8ed29a425d02047e3ce88e45f97846be956",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 123,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a731 no longer asks for a channel into a running worker; it cites claims.py:113-116 and :157-158 and carries a widen or advice given during a round into the round's next attempt instead.",
+      "reason": "",
+      "when": "2026-11-11T02:12:15.214693+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a731's assertion now reads the next attempt's composed launch, its fence writable binds and its prompt, not the pointer's write paths, and a negative control drops the widen carry to redden the bind case.",
+      "reason": "",
+      "when": "2026-11-11T02:12:47.905767+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a731's regression population now covers test files importing recovery_repair_dispatch, crew_run_commands or claims, and its write paths name crew_run_commands.py and claims.py.",
+      "reason": "",
+      "when": "2026-11-11T02:13:24.883552+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a730 stays one investigation of how a review is dispatched for a superseded or already-reviewed head, but its done-when now requires a reproduction and a mutation log for each of the two sequences.",
+      "reason": "",
+      "when": "2026-11-11T02:14:13.173896+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "\u00a732's write paths now name reckon/crew/review.py (review_record_refusals) and reckon/crew_run_commands.py (crew_repair_review).",
+      "reason": "",
+      "when": "2026-11-11T02:14:50.443837+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a732 now opens with a log showing the defect reproduces at base: review_record_refusals accepts a prefix id and crew_repair_review refuses --set review_run_id.",
+      "reason": "",
+      "when": "2026-11-11T02:16:01.647871+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a731's assertion now reads the next attempt's composed launch, its fence writable binds and its prompt, not the pointer's write paths, and a negative control drops the widen carry to redden the bind case.",
+      "reason": "",
+      "when": "2026-11-11T02:12:47.905767+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a731's regression population now covers test files importing recovery_repair_dispatch, crew_run_commands or claims, and its write paths name crew_run_commands.py and claims.py.",
+      "reason": "",
+      "when": "2026-11-11T02:13:24.883552+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a732's write paths now name reckon/crew/review.py (review_record_refusals) and reckon/crew_run_commands.py (crew_repair_review).",
+      "reason": "",
+      "when": "2026-11-11T02:14:50.443837+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a731 no longer asks for a channel into a running worker; it cites claims.py:113-116 and :157-158 and carries a widen or advice given during a round into the round's next attempt instead.",
+      "reason": "",
+      "when": "2026-11-11T02:12:15.214693+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a732 now opens with a log showing the defect reproduces at base: review_record_refusals accepts a prefix id and crew_repair_review refuses --set review_run_id.",
+      "reason": "",
+      "when": "2026-11-11T02:16:01.647871+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "588f068966e1a4de637d46e1c659d4409c3b717a",
+      "commit_basis": "edit",
+      "note": "\u00a730 stays one investigation of how a review is dispatched for a superseded or already-reviewed head, but its done-when now requires a reproduction and a mutation log for each of the two sequences.",
+      "reason": "",
+      "when": "2026-11-11T02:14:13.173896+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261111T012452039908-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261111T012452039908-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "62468d843fa8f6c9a4f4894e0a02407c6095e199",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `dispatch_review_for_run` (reckon/crew/recovery_review_dispatch.py:2631) and its \"already in flight as a live run\" refusal (:2289) exist; `effective_phase` is a real row key (reckon/crew/query.py:108); `--reopen requires a completed run` exists verbatim (reckon/crew_run_commands.py:2345); `crew check --review` and `crew repair --review --set` exist (:1245, :1318); the review-records location refusal exists (reckon/crew/review.py:3512); and both plans cited by _document resolve (a-coordinator-can-clear-its-own-duties.html, the-monitor-shows-the-work-it-watches.html).",
+    "done_when": "three findings \u2014 \u00a731's widen case asserts only that a path \"appears in the round's write paths\" (plan.html:179), a pointer read that passes even when the running worker's fence never moves; \u00a731's regression population excludes one of its own write paths; and \u00a732 names no negative control for three of its four cases.",
+    "evidence_paths": "a finding \u2014 \u00a732's write paths name no file at all (plan.html:183), leaving the fence to be guessed.",
+    "naming": "pass \u2014 the new units introduce no symbols yet, and their test filenames (test_a_running_repair_round_takes_scope_and_advice.py, test_a_mistyped_review_run_id_can_be_repaired.py) name the behaviour rather than a stage or ticket.",
+    "reasoning": "two findings \u2014 \u00a731's stated mechanism (\"the same channel a widen reaches a working run\", \"before its next tool call\") is contradicted by the widen path at main, which refuses a live run's widen outright and, for a self-widen, applies from the next attempt; and \u00a732's deliverable omits the reproduce-at-main step that _document declares every section opens with.",
+    "single_goal": "a finding \u2014 \u00a730 bundles two differently-caused dispatch defects and its reproduction covers only the first (plan.html:175).",
+    "wiring": "pass \u2014 the three new sections (\u00a730, \u00a731, \u00a732) are each named by an open followup (f-tcdiob-030, f-tcdiob-031-b, f-tcdiob-032 at plan.html:187-207) and declare no depends-on, which is right for sections that consume none of the plan's earlier output; the section-declarations map (plan.html:24) lists all three as implementable."
+  },
+  "section_digests": {
+    "_document": "6c7fa9792d7d2a52adc42edc01334e15cb3cba45afdb98386c8eb5919beefe5c",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "eb071af115c6cb885404bfcecff89e32a49dff5e2320cb170f63c531701d4409",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "be10222fbb926fdc4d836974d1d08c2536144a9031126f7495a6287ee8824637",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "b78dc61ddf33b375b1ce609a25ab41c3b7817ded96a1793e664ead8b6f3be994",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s29": "cee16ef0e6d7471aa27d3b5ae38b60037bec4bcd730f4c11b81e48711461a50e",
+    "s3": "82923ffe5453d6953374033d35019e07de5b29917533560cbc5730ff737bbe8f",
+    "s30": "16ba24f30a0072fc25b14c25fca9423dcf2f444df7bde317bd7657a3d8b82d44",
+    "s31": "a02fe4c4e6126c2f4f067a2b5a09a03854febaadda984cba283e9b600a977ab7",
+    "s32": "841e9be47641482fa37aef847e07d44edf07408d7a84000db43b32ecf2d69f34",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "97a25d1bcb177fd8366f65079625d64835768889b839d6734ae89fa8e922189b",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:51:57.157330+00:00",
+  "total": null
+}

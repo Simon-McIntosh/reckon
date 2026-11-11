@@ -1,0 +1,70 @@
+<article class="r-evidence" data-node="a-node-waits-only-on-what-it-names">
+  <h3 id="a-node-waits-only-on-what-it-names-title">A node waits only on what it names</h3>
+
+  <p><strong>What changed.</strong> <code>crew dispatch</code> gains
+  <code>--waits-only-after</code>. With it a request's waits are exactly the
+  requests its <code>--after</code> refs name: the section's
+  <code>plan-section-depends-on</code> refs, the plan's <code>depends_on</code>
+  and the <code>readiness:</code> ref <code>_validated_batch_waits</code>
+  appends for a gate on the section are none of them. The flag rides the stored
+  node, so <code>_rederive_waits</code> honours it on every later admission
+  pass and cannot add the inherited waits back. It is refused without at least
+  one <code>--after</code>, at the command line and in the node contract the
+  batch path shares, so it can never leave a request waiting on nothing. The
+  request still records its section, for routing, landing and the review gate.
+
+  <p><strong>The sibling leak.</strong> The pass's re-derivation cache was keyed on
+  <code>(repo_root, plan, section)</code>, so the first request of a section
+  re-derived in a pass handed its derived waits to every sibling re-derived
+  after it; a request naming no <code>--after</code> waited on a sibling's run.
+  The key now carries the request's own <code>--after</code> refs and the flag,
+  so two requests of one section derive their own waits.
+
+  <p><strong>The measure.</strong> <code>tests/test_a_node_waits_only_on_what_it_names.py</code>
+  shows the flagged request queued as its one ref lands with no pass widening
+  it, the same dispatch unflagged waiting on all four refs, a sibling naming no
+  <code>--after</code> never taking another's, the gate ref suppressed, and the
+  flag-without-ref refusal on both the command line and the contract. Six cases
+  pass at the head and four of the five earlier ones fail at the dispatch base
+  with the same test copied in, the "waits on all four" case being the one that
+  already held there. Three negative controls fail exactly the case they name:
+  ignoring the flag fails the flagged-waits and gate cases, keying the cache
+  without <code>node.after</code> fails the sibling case, and dropping the flag
+  from the batch entry field set fails the batch case. The armed suite arm
+  passes 57 tests at the head (six of this file plus the 51-test census) against
+  51 at the base revision, both with the armed command recorded verbatim.
+
+  <p><strong>The batch path.</strong> A coordinator usually reaches a request
+  through <code>crew dispatch --batch</code>, which rebuilds each node from a
+  declared entry field set, so the flag can be lost between the entry file and
+  the stored request with no single-dispatch case noticing. A sixth case drives
+  <code>queue_batch</code> end to end under a section with unlanded waits: the
+  entry carrying <code>waits_only_after: true</code> and one <code>after</code>
+  ref is stored <code>awaiting-upstream</code>, its waits are that ref alone,
+  the flag is on the stored node, no admission pass widens it, and it launches
+  when that one ref lands. The case asserts the entry-to-node conversion
+  directly as well, so a converter that dropped the field fails here. A third
+  control removes <code>waits_only_after</code> from
+  <code>BATCH_ENTRY_FIELDS</code> and the case fails with
+  <code>entry 1 carries unknown field(s): waits_only_after</code>, logged in
+  <code>negative-control-batch-entry-field.log</code>.
+
+  <p><strong>The importing population.</strong> The test files importing
+  <code>reckon.crew_dispatch_commands</code> or
+  <code>reckon.crew.queue_admission</code> were run in place at
+  <code>-n 4 --timeout 120</code>, one arm at a time, over the same 140-file
+  list at both revisions. Chunk 00 adds one id —
+  <code>test_a_single_section_check_costs_a_tenth_of_the_whole_project_build</code>,
+  a cost-ratio test that passes alone at both revisions and fails only under
+  four-way contention. Chunk 01 adds none: 36 ids fail at the base and the
+  same 36 at the head. Chunk 03 completed at the base (50 failed, 326 passed,
+  1 skipped) and its head arm was cut off by the run's command budget under
+  storage contention, so no comparison exists for it; chunk 02 did not complete
+  at the base. Those two chunks are outstanding as whole chunks. A later attempt
+  split chunk 02: its 20-file slice reached 55 percent before the command
+  budget expired, and the first 10-file slice completed in both arms — 6
+  failed and 282 passed at the base, the same 6 failed and 282 passed at the
+  head, so that slice adds no failure id. The remaining 30 files of chunk 02
+  and chunk 03's head arm are still outstanding, with no failure id claimed
+  for them in either direction.
+</article>

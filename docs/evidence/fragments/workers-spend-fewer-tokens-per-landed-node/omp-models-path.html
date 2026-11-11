@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="omp-models-path">
+  <meta name="plan-title" content="A fenced omp run reads the models.yml the fence seeds">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s7">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,omp,fence,worker-tokens">
+  <title>A fenced omp run reads the models.yml the fence seeds &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A fenced omp run reads the models.yml the fence seeds</h1>
+
+    <section id="omp-models-path-landing">
+      <h2>Landing</h2>
+      <p>The omp launch environment now carries
+        <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code> beside
+        <code>HOME=&lt;run home&gt;</code>. oh-my-pi resolves its home as
+        <code>&lt;HOME&gt;/.omp</code> and its agent store, which holds
+        <code>models.yml</code>, one directory below that at
+        <code>&lt;HOME&gt;/.omp/agent</code>; the fence mirrors the operator's
+        files relative to the run home it owns, so the seeded copy landed at
+        <code>&lt;run home&gt;/agent/models.yml</code>. Relocating <code>HOME</code>
+        alone therefore left the harness reading an empty store.</p>
+      <p>The variable is declared once, in <code>_HARNESS_AGENT_STORE</code> in
+        <code>reckon/_worker_fence.py</code> beside <code>_HARNESS_HOME</code>,
+        and applied by <code>launch_plan</code> through
+        <code>harness_agent_store()</code>. Only omp has an entry, so the
+        claude (<code>CLAUDE_CONFIG_DIR</code>) and codex
+        (<code>CODEX_HOME</code>) environments are unchanged.</p>
+    </section>
+
+    <section id="omp-models-path-defect">
+      <h2>The defect, reproduced before the repair</h2>
+      <p>The live check run <code>r-20261111T015630503261-omp-live-check</code>
+        exited 1 with its stderr reading:</p>
+      <pre>Model "local/deepseek-v4.1-flash" not found
+
+Or create /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T015630503261-omp-live-check/omp-home/.omp/agent/models.yml
+srun: error: 98dci4-clu-2026: task 0: Exited with exit code 1</pre>
+      <p>That run's tree holds the seeded file at
+        <code>omp-home/agent/models.yml</code>, one directory above the path the
+        harness asked for, and <code>omp-home/.omp/agent/</code> holds only the
+        store the harness created for itself.</p>
+    </section>
+
+    <section id="omp-models-path-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_omp_dialect.py</code> seeds an operator
+        <code>~/.omp/agent/models.yml</code> from a temp operator home and
+        asserts three things: the launch environment carries
+        <code>HOME=&lt;run home&gt;</code> and
+        <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code>; the file the
+        store variable resolves is <code>&lt;run home&gt;/agent/models.yml</code>;
+        and its bytes are the operator's. A second test drives the claude and
+        codex backends through the same composition and asserts neither
+        environment carries <code>PI_CODING_AGENT_DIR</code> while each carries
+        its own home variable.</p>
+      <p>Gate: 26 passed in <code>tests/test_omp_dialect.py</code>. The armed
+        suite (<code>tests/test_omp_dialect.py</code> plus the project's declared
+        census test <code>tests/test_staged_write_inventory.py</code>) runs 77
+        passed at the head arm and 73 passed with 2 errors at the base arm, the
+        base errors being the extracted base tree carrying no git repository so
+        the census fixture's own <code>git ls-tree</code> fails before reaching
+        code under test. No ruff findings are added: two pre-existing findings in
+        <code>reckon/_backends.py</code> sit at the same ids before and after,
+        and <code>ruff format --check</code> reports the three staged paths
+        already formatted.</p>
+    </section>
+
+    <section id="omp-models-path-probe">
+      <h2>Probe against the real harness</h2>
+      <p>The pinned oh-my-pi 18.13.2 install was run twice over one seeded run
+        home holding <code>agent/models.yml</code>, with
+        <code>HOME=&lt;run home&gt;</code> in both runs and only the store
+        variable differing:</p>
+      <ul>
+        <li>with <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code>:
+          <code>omp -p --model local/deepseek-v4.1-flash --no-session</code>
+          resolved the model, completed the prompt and printed
+          <code>ready</code>, exit 0;</li>
+        <li>with <code>HOME</code> alone: the same command printed
+          <code>Model "local/deepseek-v4.1-flash" not found</code> and exited 1
+          — the live check's failure, reproduced on demand.</li>
+      </ul>
+      <p>So the variable is the cause of the difference, not a correlated
+        change: the same home, the same file, the same binary.</p>
+    </section>
+
+    <section id="omp-models-path-negative-control">
+      <h2>Negative control</h2>
+      <p>With the store assignment dropped from the composition, the environment
+        test fails with <code>KeyError: 'PI_CODING_AGENT_DIR'</code> and pytest
+        reports <code>1 failed, 25 passed</code> — so the assertion measures the
+        variable the repair introduced rather than the composition running at
+        all. Log:
+        <code>logs/negative-control.log</code> in the run directory.</p>
+    </section>
+
+    <section id="omp-models-path-evidence-inputs">
+      <h2>Evidence inputs</h2>
+      <ul>
+        <li>Commit <code>8616dfcf49</code>: the store variable, its table entry
+          and the two tests.</li>
+        <li>The reproduction's stderr and seeded tree: run
+          <code>r-20261111T015630503261-omp-live-check</code> under
+          <code>~/.config/reckon/crew/runs/</code>.</li>
+        <li>The live check that closes the section is still the coordinator's to
+          dispatch, after this node lands.</li>
+      </ul>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3333 calls launch_plan",
+    "reckon/crew/dispatch_sessions.py:1339 calls launch_plan",
+    "reckon/crew/dispatch_sessions.py:1862 calls launch_plan",
+    "reckon/crew/resumption.py:532 calls launch_plan"
+  ],
+  "completed_at": "2026-11-11T03:41:03.398Z",
+  "dispatched_at": "2026-11-11T03:30:26Z",
+  "findings": [
+    {
+      "file": "reckon/_worker_fence.py",
+      "line": "57",
+      "severity": "non-blocking",
+      "text": "non-blocking: the store subdirectory 'agent' is a second literal copy of the path fragment the omp-local flight declaration carries as 'agent/models.yml' (operator flight.yaml harness_home_files for omp-local), and no test compares the pair \u2014 a change to the declaration alone would point omp at an empty store while every test stays green; derive the subpath from the declaration or assert the two agree."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: 8616dfcf49 adds _HARNESS_AGENT_STORE and harness_agent_store in reckon/_worker_fence.py, applies it in reckon/_backends.py:2884 and adds two tests; 5507340a7e and 3d615da8dd add and extend only the evidence fragment.",
+    "done_when": "The done_when asks for a test seeding an omp run home from an operator ~/.omp/agent/models.yml asserting HOME and PI_CODING_AGENT_DIR, a seeded file at <run home>/agent/models.yml, unchanged claude/codex environments, the failing launch reproduced, and no added ruff findings; tests/test_omp_dialect.py:272-335 supplies all of it, and I re-ran that file at head to 26 passed in 26.51s.",
+    "goal": "The goal is to make a fenced omp run read the models.yml the fence seeds by setting PI_CODING_AGENT_DIR=<run home>/agent beside HOME; reckon/_backends.py:2884 applies it through harness_agent_store and a live probe of the pinned harness prints 'ready' with the variable and 'not found' without it.",
+    "manifest": "Read; it states status complete, commits 8616dfcf49/5507340a7e/3d615da8dd, 77 passed at the head arm against 73 passed with 2 scaffolding errors at base, a negative control red with KeyError and EXIT=1, and a probe pair; the cited logs support each claim.",
+    "write_paths": "The declared scope is reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py and the node's own evidence fragment; git diff 1d53433deb..3d615da8dd changes exactly those four paths."
+  },
+  "justifications": {
+    "durability": "tests/test_omp_dialect.py:304 fails with KeyError: 'PI_CODING_AGENT_DIR' when reckon/_backends.py:2884 is replaced by a no-op, as logs/negative-control.log records, but the 'agent' subpath at reckon/_worker_fence.py:57 is not compared against the flight declaration it must match.",
+    "evidence": "logs/base-arm.log ends '73 passed, 2 errors in 20.58s' with EXIT=1 and a git ls-tree exit 128 traceback, logs/after-arm.log ends '77 passed in 38.43s' with EXIT=0, and logs/negative-control.log ends '1 failed, 25 passed' with EXIT=1; my own ruff run returns the same two pre-existing findings at reckon/_backends.py:723 and :3751, neither on a changed line.",
+    "fit": "reckon/_worker_fence.py:56-63 places the new table beside _HARNESS_HOME and documents the mechanism, and reckon/_backends.py:2879-2884 applies it through the same environment dict as the home variable.",
+    "goal_fidelity": "reckon/_backends.py:2884 sets PI_CODING_AGENT_DIR=<run home>/agent beside HOME for omp only, and the resolve-probe logs show the harness resolving local/deepseek-v4.1-flash with it and refusing it without.",
+    "reuse": "harness_agent_store at reckon/_worker_fence.py:206 extends the module that already owns the per-dialect harness-home environment mapping (harness_home at :192), returning entries for the same dict rather than forking a second launch-side convention.",
+    "scope_discipline": "git diff --stat 1d53433deb 3d615da8dd lists only reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/omp-models-path.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make a fenced omp run read the models.yml the fence seeds by setting PI_CODING_AGENT_DIR=<run home>/agent beside HOME; reckon/_backends.py:2884 applies it through harness_agent_store and a live probe of the pinned harness prints 'ready' with the variable and 'not found' without it.\nVERDICT done_when: the done_when asks for a test seeding an omp run home from an operator ~/.omp/agent/models.yml asserting HOME and PI_CODING_AGENT_DIR, a seeded file at <run home>/agent/models.yml, unchanged claude/codex environments, the failing launch reproduced, and no added ruff findings; tests/test_omp_dialect.py:272-335 supplies all of it, and I re-ran that file at head to 26 passed in 26.51s.\nVERDICT write_paths: the declared scope is reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py and the node's own evidence fragment; git diff 1d53433deb..3d615da8dd changes exactly those four paths.\nVERDICT manifest: read; it states status complete, commits 8616dfcf49/5507340a7e/3d615da8dd, 77 passed at the head arm against 73 passed with 2 scaffolding errors at base, a negative control red with KeyError and EXIT=1, and a probe pair; the cited logs support each claim.\nVERDICT diff: read commit by commit; 8616dfcf49 adds _HARNESS_AGENT_STORE and harness_agent_store in reckon/_worker_fence.py, applies it in reckon/_backends.py:2884 and adds two tests, while 5507340a7e and 3d615da8dd add and extend only the evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3333, reckon/crew/dispatch_sessions.py:1339, reckon/crew/dispatch_sessions.py:1862, reckon/crew/resumption.py:532\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2884 sets PI_CODING_AGENT_DIR=<run home>/agent beside HOME for omp only, and logs/resolve-probe.log prints 'ready' with it against logs/resolve-probe-without-store-var.log printing 'Model \"local/deepseek-v4.1-flash\" not found' without.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-arm.log ends '73 passed, 2 errors' with EXIT=1 and logs/after-arm.log ends '77 passed' with EXIT=0, logs/negative-control.log ends '1 failed, 25 passed' with EXIT=1, and my own ruff run reproduces only the two pre-existing findings at reckon/_backends.py:723 and :3751.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 1d53433deb 3d615da8dd lists only reckon/_backends.py, reckon/_worker_fence.py, tests/test_omp_dialect.py and docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/omp-models-path.html.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_omp_dialect.py:304 fails with KeyError: 'PI_CODING_AGENT_DIR' when reckon/_backends.py:2884 is replaced by a no-op, per logs/negative-control.log, but the 'agent' subpath at reckon/_worker_fence.py:57 is never compared against the flight declaration it must match.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_worker_fence.py:56-63 places the new table beside _HARNESS_HOME and documents the mechanism, and reckon/_backends.py:2879-2884 applies it through the same environment dict as the home variable.\nSCORE reuse: 19\nJUSTIFICATION reuse: harness_agent_store at reckon/_worker_fence.py:206 extends the module that already owns the per-dialect harness-home environment mapping (harness_home at :192) rather than forking a second launch-side convention.\nFINDING reckon/_worker_fence.py:57 non-blocking: the store subdirectory 'agent' is a second literal copy of the path fragment the omp-local flight declaration carries as 'agent/models.yml', and no test compares the pair, so a change to the declaration alone would point omp at an empty store while every test stays green.\n",
+  "review_run_id": "r-20261111T032752853031-review-of-omp-models-path-3d615da8ddde",
+  "reviewed_base_sha": "1d53433debf87711be5997bead94cb8e7132e832",
+  "reviewed_head_sha": "3d615da8ddde6cea1a34bb4c79ad0c14b1bde6db",
+  "reviewed_run_id": "r-20261111T020844111171-omp-models-path",
+  "scores": {
+    "durability": 17,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T03:39:00+00:00",
+  "total": 114
+}

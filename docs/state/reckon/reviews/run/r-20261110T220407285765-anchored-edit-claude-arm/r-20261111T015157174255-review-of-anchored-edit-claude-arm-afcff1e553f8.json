@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_count": 34,
+  "assertion_review_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T015157174255-review-of-anchored-edit-claude-arm-afcff1e553f8/assertion-review.md",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3324-3339",
+    "reckon/crew/dispatch_admission.py:_fence_write_roots",
+    "reckon/crew/dispatch_sessions.py:1339",
+    "reckon/_backends.py:launch_plan",
+    "reckon/_worker_fence.py:seed_harness_home",
+    "reckon/crew/dispatch_launch.py:3203",
+    "reckon/crew/dispatch_launch.py:4757"
+  ],
+  "completed_at": "2026-11-11T02:08:46Z",
+  "dispatched_at": "2026-11-11T01:56:03Z",
+  "failure_evidence": {
+    "after_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T220407285765-anchored-edit-claude-arm/final-after-suite.log",
+      "revision": "598c292c03345c91a45c5155f0e43be2b3ad3e9a",
+      "summary": "71 passed in 34.97s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "exit_status": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T220407285765-anchored-edit-claude-arm/baseline-suite.log",
+      "revision": "e1c296ff16a4e6ba142b2e3248385ce24cd88997",
+      "summary": "51 passed in 22.64s"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "anchored-edit-claude-arm",
+      "recorded_at": "2026-11-11T02:40:55.782694+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_backends.py",
+      "line": "2864",
+      "severity": "blocking",
+      "text": "blocking: Include the detached worktree in the anchored server's write roots; production dispatch.py:3324-3339 supplies _fence_write_roots, whose fenced_write_roots skips declarations inside the worktree and never includes that worktree, while fence_argv adds it separately, so Edit/MultiEdit are disabled and read_anchored/edit_anchored refuse normal source paths; the test fixture at tests/test_anchored_edit_claude_arm.py:59 explicitly injects the missing root and masks this production failure."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "reviewed c0286290ec478eecafeba8295a38c58b7abdcc77, 598c292c03345c91a45c5155f0e43be2b3ad3e9a and afcff1e553f85e9bc191abe5d8a487eb63517f07 against base e1c296ff16a4e6ba142b2e3248385ce24cd88997; changes comprise launch gating and receipts, coordinated schema generation, 20 test cases and an evidence fragment.",
+    "done_when": "manifest.md and baseline-suite.log/final-after-suite.log record 51 and 71 passes with EXIT=0 and negative-control.log records four intended failures, but tests/test_anchored_edit_claude_arm.py:59 supplies a worktree root the production caller does not supply.",
+    "goal": "dispatch-detail.json names backend-gated anchored editing and actual-launch receipts; reckon/_backends.py:2864 forwards roots that omit the production detached worktree, so the core edit capability is unavailable there.",
+    "manifest": "manifest.md names all three commits, completed suite arms and the four-failure mutation; the recorded after revision 598c292c03345c91a45c5155f0e43be2b3ad3e9a has identical product/schema/test blobs at the reviewed head.",
+    "write_paths": "the eight changed files lie within manifest.md orientation_write_paths, including reckon/schema/flight.yaml explicitly granted by resume-1-advice.txt."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit_claude_arm.py:121 demonstrably reddens under unconditional disallow and the receipt assertions detect dropped propagation, but its root assertion at line 136 only tests forwarding of the fixture's supplied roots and cannot catch omission by production dispatch.",
+    "evidence": "baseline-suite.log and final-after-suite.log end in 51 passed/71 passed and EXIT=0, while negative-control.log names four failing false-key tests, but tests/test_anchored_edit_claude_arm.py:59 bypasses the actual root producer.",
+    "fit": "reckon/_worker_fence.py:359 extends the existing harness seeder with the shared private JSON writer and the generated schema tracks reckon/schema/flight.yaml, with no new forbidden source names found.",
+    "goal_fidelity": "reckon/_backends.py:2864 passes only writable_directories to the server while reckon/crew/dispatch_admission.py:2292 and reckon/_backends.py:274 omit the worktree that fence_argv adds separately, leaving ordinary treatment source edits refused.",
+    "reuse": "capability searches for MCP/settings seeding, permissions and private JSON writes found reckon/_worker_fence.py:335 and :439 as owners that the new seeding step extends and wraps, while reckon/project_maintenance_commands.py:925 only reads MCP entries rather than providing an alternative registration writer.",
+    "scope_discipline": "the eight paths changed by the three commits match manifest.md orientation_write_paths and resume-1-advice.txt authorizes reckon/schema/flight.yaml."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: dispatch-detail.json names backend-gated anchored editing and actual-launch receipts; reckon/_backends.py:2864 forwards roots that omit the production detached worktree, so the core edit capability is unavailable there.\nVERDICT done_when: manifest.md and baseline-suite.log/final-after-suite.log record 51 and 71 passes with EXIT=0 and negative-control.log records four intended failures, but tests/test_anchored_edit_claude_arm.py:59 supplies a worktree root the production caller does not supply.\nVERDICT write_paths: the eight changed files lie within manifest.md orientation_write_paths, including reckon/schema/flight.yaml explicitly granted by resume-1-advice.txt.\nVERDICT manifest: manifest.md names all three commits, completed suite arms and the four-failure mutation; the recorded after revision 598c292c03345c91a45c5155f0e43be2b3ad3e9a has identical product/schema/test blobs at the reviewed head.\nVERDICT diff: reviewed c0286290ec478eecafeba8295a38c58b7abdcc77, 598c292c03345c91a45c5155f0e43be2b3ad3e9a and afcff1e553f85e9bc191abe5d8a487eb63517f07 against base e1c296ff16a4e6ba142b2e3248385ce24cd88997; changes comprise launch gating and receipts, coordinated schema generation, 20 test cases and an evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3324-3339, reckon/crew/dispatch_admission.py:_fence_write_roots, reckon/crew/dispatch_sessions.py:1339, reckon/_backends.py:launch_plan, reckon/_worker_fence.py:seed_harness_home, reckon/crew/dispatch_launch.py:3203, reckon/crew/dispatch_launch.py:4757\nSCORE goal_fidelity: 10\nJUSTIFICATION goal_fidelity: reckon/_backends.py:2864 passes only writable_directories to the server while reckon/crew/dispatch_admission.py:2292 and reckon/_backends.py:274 omit the worktree that fence_argv adds separately, leaving ordinary treatment source edits refused.\nSCORE evidence: 16\nJUSTIFICATION evidence: baseline-suite.log and final-after-suite.log end in 51 passed/71 passed and EXIT=0, while negative-control.log names four failing false-key tests, but tests/test_anchored_edit_claude_arm.py:59 bypasses the actual root producer.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the eight paths changed by the three commits match manifest.md orientation_write_paths and resume-1-advice.txt authorizes reckon/schema/flight.yaml.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_anchored_edit_claude_arm.py:121 demonstrably reddens under unconditional disallow and the receipt assertions detect dropped propagation, but its root assertion at line 136 only tests forwarding of the fixture's supplied roots and cannot catch omission by production dispatch.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/_worker_fence.py:359 extends the existing harness seeder with the shared private JSON writer and the generated schema tracks reckon/schema/flight.yaml, with no new forbidden source names found.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for MCP/settings seeding, permissions and private JSON writes found reckon/_worker_fence.py:335 and :439 as owners that the new seeding step extends and wraps, while reckon/project_maintenance_commands.py:925 only reads MCP entries rather than providing an alternative registration writer.\nFINDING reckon/_backends.py:2864 blocking: Include the detached worktree in the anchored server's write roots; production dispatch.py:3324-3339 supplies _fence_write_roots, whose fenced_write_roots skips declarations inside the worktree and never includes that worktree, while fence_argv adds it separately, so Edit/MultiEdit are disabled and read_anchored/edit_anchored refuse normal source paths; the test fixture at tests/test_anchored_edit_claude_arm.py:59 explicitly injects the missing root and masks this production failure.\n",
+  "review_run_id": "r-20261111T015157174255-review-of-anchored-edit-claude-arm-afcff1e553f8",
+  "reviewed_base_sha": "e1c296ff16a4e6ba142b2e3248385ce24cd88997",
+  "reviewed_commits": [
+    "c0286290ec478eecafeba8295a38c58b7abdcc77",
+    "598c292c03345c91a45c5155f0e43be2b3ad3e9a",
+    "afcff1e553f85e9bc191abe5d8a487eb63517f07"
+  ],
+  "reviewed_head_sha": "afcff1e553f85e9bc191abe5d8a487eb63517f07",
+  "reviewed_run_id": "r-20261110T220407285765-anchored-edit-claude-arm",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 10,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:13:32.489521+00:00",
+  "total": 98,
+  "verdict": "changes-required"
+}

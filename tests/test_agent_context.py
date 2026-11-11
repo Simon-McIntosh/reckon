@@ -1,7 +1,9 @@
+import hashlib
 import json
 import subprocess
 from pathlib import Path
 
+import pytest
 from click.testing import CliRunner
 
 from reckon.agent_context import ContextRequest, build_context_manifest
@@ -272,3 +274,222 @@ def test_human_cli_reports_context_summary(tmp_path):
     assert "agent context: PASS (codex)" in result.output
     assert "[canonical-link]" in result.output
     assert "skills:" in result.output
+
+
+def test_omp_manifest_reports_the_agent_root_and_entrypoint_it_loads(tmp_path):
+    home = _home(tmp_path)
+    omp_agent = home / ".omp" / "agent"
+    omp_agent.mkdir(parents=True)
+    (omp_agent / "models.yml").write_text("providers: {}\n")
+    (omp_agent / "AGENTS.md").symlink_to(home / ".agents" / "AGENTS.md")
+    repo = tmp_path / "repo"
+    _init_repository(repo)
+
+    manifest = build_context_manifest(_request(home, repo, agent="omp"))
+
+    assert manifest["ok"]
+    assert manifest["agent"] == "omp"
+    assert manifest["entrypoint"]["path"] == str(omp_agent / "AGENTS.md")
+    assert manifest["entrypoint"]["relationship"] == "canonical-link"
+    assert manifest["repository"]["instruction_filenames"] == ["AGENTS.md", "CLAUDE.md"]
+    assert manifest["skills"]["metadata_roots"][1] == {
+        "scope": "agent",
+        "path": str(omp_agent / "skills"),
+        "exists": False,
+    }
+
+
+def test_omp_chain_names_both_instruction_files_a_directory_holds(tmp_path):
+    home = _home(tmp_path)
+    omp_agent = home / ".omp" / "agent"
+    omp_agent.mkdir(parents=True)
+    (omp_agent / "AGENTS.md").symlink_to(home / ".agents" / "AGENTS.md")
+    repo = tmp_path / "repo"
+    nested = repo / "physics"
+    nested.mkdir(parents=True)
+    _init_repository(repo)
+    (repo / "AGENTS.md").write_text("repository policy\n")
+    (repo / "CLAUDE.md").write_text("@AGENTS.md\n")
+    (nested / "AGENTS.md").write_text("nested policy\n")
+
+    manifest = build_context_manifest(_request(home, nested, agent="omp"))
+
+    assert [item["path"] for item in manifest["instructions"]["project_chain"]] == [
+        str(repo / "AGENTS.md"),
+        str(repo / "CLAUDE.md"),
+        str(nested / "AGENTS.md"),
+    ]
+    assert manifest["instructions"]["total_bytes"] == sum(
+        len(path.read_bytes())
+        for path in (
+            omp_agent / "AGENTS.md",
+            repo / "AGENTS.md",
+            repo / "CLAUDE.md",
+            nested / "AGENTS.md",
+        )
+    )
+
+
+def test_omp_agent_root_can_be_declared(tmp_path):
+    home = _home(tmp_path)
+    declared = tmp_path / "run-home" / ".omp" / "agent"
+    declared.mkdir(parents=True)
+    (declared / "AGENTS.md").write_text("canonical policy\n")
+
+    manifest = build_context_manifest(
+        _request(home, home, agent="omp", agent_root=declared)
+    )
+
+    assert manifest["entrypoint"]["path"] and manifest["ok"]
+    assert manifest["entrypoint"]["path"] == str(declared / "AGENTS.md")
+    assert manifest["entrypoint"]["relationship"] == "identical-copy"
+
+
+def test_unknown_agent_is_refused(tmp_path):
+    home = _home(tmp_path)
+
+    with pytest.raises(ValueError, match="unsupported agent: gemini"):
+        build_context_manifest(_request(home, home, agent="gemini"))
+
+
+def _layout_fixture(tmp_path: Path) -> tuple[Path, Path]:
+    """A home and repository carrying every instruction file the layouts read."""
+
+    home = _home(tmp_path)
+    (home / ".codex" / "config.toml").write_text("project_doc_max_bytes = 4096\n")
+    claude = home / ".claude"
+    claude.mkdir()
+    (claude / "CLAUDE.md").symlink_to(home / ".agents" / "AGENTS.md")
+    repo = tmp_path / "repo"
+    nested = repo / "physics"
+    nested.mkdir(parents=True)
+    _init_repository(repo)
+    (repo / "AGENTS.md").write_text("repository policy\n")
+    (nested / "AGENTS.md").write_text("nested policy\n")
+    return home, repo
+
+
+def _entry(root: Path, name: str) -> dict:
+    path = root / name
+    data = path.resolve().read_bytes()
+    return {
+        "path": str(path),
+        "resolved_path": str(path.resolve()),
+        "exists": True,
+        "readable": True,
+        "bytes": len(data),
+        "sha256": hashlib.sha256(data).hexdigest(),
+    }
+
+
+def _expected_manifest(
+    home: Path, repo: Path, agent: str, entrypoint_name: str
+) -> dict:
+    """The manifest the codex and claude layouts produce, with paths derived.
+
+    Every field is spelled out, so a key added, removed or renamed by a change
+    meant for another agent makes this fail rather than pass unnoticed.
+    """
+
+    canonical = home / ".agents" / "AGENTS.md"
+    agent_root = home / ("." + agent)
+    entrypoint = _entry(agent_root, entrypoint_name)
+    canonical_record = _entry(home / ".agents", "AGENTS.md")
+    root_instruction = repo / "AGENTS.md"
+    nested_instruction = repo / "physics" / "AGENTS.md"
+    project_chain = []
+    for path in (root_instruction, nested_instruction):
+        record = _entry(path.parent, path.name)
+        record["directory"] = str(path.parent)
+        record["selected_name"] = path.name
+        project_chain.append(record)
+    config = agent_root / "config.toml"
+    # Only the codex layout reads a budget from the agent's config file.
+    limit, source = (4096, str(config)) if agent == "codex" else (32 * 1024, "default")
+    return {
+        "schema_version": 1,
+        "agent": agent,
+        "target": str(repo / "physics"),
+        "canonical_policy": canonical_record,
+        "entrypoint": {**entrypoint, "relationship": "canonical-link"},
+        "repository": {
+            "root": str(repo),
+            "instruction_filenames": ["AGENTS.override.md", "AGENTS.md"],
+        },
+        "instructions": {
+            "project_chain": project_chain,
+            "effective_chain": [
+                {
+                    **entrypoint,
+                    "relationship": "canonical-link",
+                    "scope": "user",
+                    "loaded_via": str(agent_root / entrypoint_name),
+                },
+                *({**item, "scope": "project"} for item in project_chain),
+            ],
+            "total_bytes": entrypoint["bytes"]
+            + sum(item["bytes"] for item in project_chain),
+        },
+        "budget": {
+            "limit_bytes": limit,
+            "source": source,
+            "project_bytes": sum(item["bytes"] for item in project_chain),
+            "remaining_bytes": limit - sum(item["bytes"] for item in project_chain),
+            "overflow_bytes": 0,
+            "truncation_risk": False,
+        },
+        "skills": {
+            "metadata_roots": [
+                {
+                    "scope": "user",
+                    "path": str(home / ".agents" / "skills"),
+                    "exists": False,
+                },
+                {
+                    "scope": "agent",
+                    "path": str(agent_root / "skills"),
+                    "exists": False,
+                },
+                {
+                    "scope": "project",
+                    "path": str(repo / ".agents" / "skills"),
+                    "exists": False,
+                },
+                {
+                    "scope": "project",
+                    "path": str(repo / "physics" / ".agents" / "skills"),
+                    "exists": False,
+                },
+            ],
+            "discovered": [],
+            "activated_bodies": [],
+        },
+        "input_paths": sorted(
+            {
+                str(canonical),
+                str(home / ".agents" / "skills"),
+                str(agent_root / entrypoint_name),
+                str(config),
+                str(agent_root / "skills"),
+                str(repo),
+                str(repo / ".agents" / "skills"),
+                str(root_instruction),
+                str(repo / "physics"),
+                str(repo / "physics" / ".agents" / "skills"),
+                str(nested_instruction),
+            }
+        ),
+        "findings": [],
+        "ok": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("agent", "entrypoint_name"), [("codex", "AGENTS.md"), ("claude", "CLAUDE.md")]
+)
+def test_codex_and_claude_manifests_are_unchanged(tmp_path, agent, entrypoint_name):
+    home, repo = _layout_fixture(tmp_path)
+
+    manifest = build_context_manifest(_request(home, repo / "physics", agent=agent))
+
+    assert manifest == _expected_manifest(home, repo, agent, entrypoint_name)

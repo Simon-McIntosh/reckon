@@ -234,6 +234,36 @@ mechanism, create it there and use a qualified relationship from the consumer.
      evidence; decorative organization is unnecessary ink.
    - **Self-check before finishing:** "Could the lead read every label at a
      glance, and would it survive a black-and-white printout?" If not, fix it.
+9. **A plan describes the endpoint, never the implementation.** A section
+   states what the node must deliver and the measurement that proves it: the
+   records and figures it writes, the quantity each holds, the tolerance, the
+   independent reference it is compared against, and the negative control that
+   must fail. It does not say how to compute any of it: no code path, no
+   sequence of steps, no formula the node is to implement, no function to call
+   or extend. The worker reads the code and runs it; the plan only fixes what
+   counts as done. A mechanism written into a plan is a guess the content review
+   will test against the code, each wrong guess costs a full review round, and
+   every edit to fix it reopens the gate. Measured on one plan: five consecutive
+   review rounds, each catching the previous round's restatement of an existing
+   function, where the endpoint ("the per-instant terminal trace matches that
+   function's output at its own operating point within 2 %, fitted out of
+   sample") needed none.
+   - **What a section may name.** The reference an outcome is measured
+     against (a record, a function's output at a stated point, a held design
+     value), the paths the node may write, and the records it reads as inputs.
+     Naming a reference is part of the endpoint; prescribing how to reach it is
+     not.
+   - **A relation the plan exists to state is an endpoint.** When the
+     deliverable is itself a set of equations or coefficients (a fitted
+     relation, a published table), state the form to be delivered and its
+     accuracy bound, not how to fit it.
+   - **When a worker blocks with a diagnosis, record the decision, not a
+     recipe.** The worker has run the code. Put the choice it asked for into the
+     plan as an endpoint (which quantity, which reference, which tolerance) and
+     let it settle the method.
+   - **Answer review findings about method without editing.** Decline them with
+     "the worker settles the method; the done-when checks the endpoint". Edit
+     only for a finding that makes an endpoint wrong, ambiguous or unsatisfiable.
 
 ## Authoring for faithful display (the SPA render contract)
 
@@ -675,7 +705,10 @@ reckon crew review --project <project> --plan <slug> --answer <finding> --acted 
 reckon crew review --project <project> --plan <slug> --answer <finding> --declined "<reason>"
 ```
 
-Edit the plan only for a finding you act on. An edit a finding asked for is
+Edit the plan only for a finding you act on, and act only on one that makes
+an endpoint wrong, ambiguous or unsatisfiable; a finding about how the node
+should implement something is declined with that reason (hard rule 9). An edit a
+finding asked for is
 covered by that finding's review only while it leaves the section's done-when
 paragraph unchanged and stays under the change threshold, so an answering edit
 of that shape starts no new round; an edit to a done-when is never covered,

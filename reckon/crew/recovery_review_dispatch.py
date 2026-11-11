@@ -2156,6 +2156,22 @@ def _plan_review_rubric(pointer: Mapping[str, Any]) -> str:
     return match.group("rubric").lower() if match else ""
 
 
+def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
+    """Whether a plan review run's record is stored and readable.
+
+    A plan review is stored as soon as its reviewer writes it, which happens
+    before the run is promoted, so a record naming the run is the evidence that
+    the review has delivered. The set of stored run ids is the store's own
+    reading of its records — the one the promotion and the delivery readers
+    share — so this asks the store rather than globbing it. That reader skips a
+    file it cannot parse, so an unreadable record reads as absent here and the
+    review keeps standing.
+    """
+    if not run_id:
+        return False
+    return run_id in plan_review._stored_review_run_ids(project, plan_slug)
+
+
 def _standing_plan_review(
     project: str,
     plan_slug: str,
@@ -2184,6 +2200,14 @@ def _standing_plan_review(
     state (an obligation asking whether any review of the plan is running) is
     answered by the plan alone, as it was before the rubric was named.
 
+    Only a review still composing or working stands. Once its record is stored
+    and readable the review has delivered, and what remains is its promotion,
+    which is owed and listed as it is today; it does not hold the next round's
+    compose. A review whose record is missing or unreadable is still working,
+    and keeps the gate. Both narrowings apply in turn: a delivered review of
+    the other rubric is skipped by the rubric first and by the delivery second,
+    and the answer is the same either way.
+
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
     runs inside every session's obligations reading, and one malformed pointer
     on disk must not raise the reader out of listing everything else.
@@ -2202,7 +2226,10 @@ def _standing_plan_review(
             standing_rubric = _plan_review_rubric(pointer)
             if standing_rubric and standing_rubric != wanted:
                 continue
-        return str(pointer.get("run_id") or "")
+        run_id = str(pointer.get("run_id") or "")
+        if _delivered_plan_review(project, plan_slug, run_id):
+            continue
+        return run_id
     return ""
 
 

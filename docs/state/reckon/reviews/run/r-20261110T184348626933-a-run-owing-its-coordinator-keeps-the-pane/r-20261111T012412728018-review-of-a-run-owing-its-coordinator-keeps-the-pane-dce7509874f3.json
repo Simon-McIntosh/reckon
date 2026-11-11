@@ -1,0 +1,71 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/session_host.py:420 (population_has_live_work)",
+    "reckon/crew/station.py:524 (live_work_populations)",
+    "reckon/crew_follow_commands.py:605 (_population_has_live_work)"
+  ],
+  "completed_at": "2026-11-11T01:41:54.136Z",
+  "dispatched_at": "2026-11-11T01:27:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the restated exemption matches its owner's three predicates at this head; sharing them needs a change to reckon/crew/obligations.py, outside this node's write scope",
+      "recorded_at": "2026-11-11T02:10:59.305854+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "measured by the coordinator on all_debug over the 52 test files importing station_subscriber, session_host or obligations: base 86493937b5 42 failures, head dce7509874 43; the extra, test_an_ask_for_the_calling_session_marks_its_request, passes 3 of 3 alone at both revisions, gives a stub host 0.3 s to answer, and exercises dispatch_watch, which this change does not touch",
+      "recorded_at": "2026-11-11T02:11:15.833036+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/station_subscriber.py",
+      "line": "145",
+      "severity": "non-blocking",
+      "text": "the scoring exemption (reviews_in_flight, review_run_phase, _refused_delivered_review) is still restated here rather than shared with its owner at reckon/crew/obligations.py:3019-3031, so the prior review's folded finding is unanswered by dce7509874 and the two readers the module docstring promises cannot disagree can drift."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the recorded gate runs 3 of the 23 test files an AST scan finds importing station_subscriber or session_host (the gate's fourth file, test_staged_write_inventory.py, imports neither), so the done-when's clause that those files add no failure against the base revision is measured over a fraction of its population, and no ruff check or ruff format --check result is recorded for the staged paths."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 65eca0c536; the single commit dce7509874 changes four files, replacing the two-kind exemption set with _HEAD_KEYED_DUTY_KIND = \"review-missing\" and adding the tier-none coverage.",
+    "done_when": "the done-when asks for five keep-live cases, a promoted-settle, a SessionHost re-arm, a negative control, no added failures across the test files importing station_subscriber or session_host, and clean ruff on staged paths; arms-repair-base.log (88 passed EXIT=0 at 65eca0c536) and arms-repair-head.log (89 passed EXIT=0 at dce7509874) record the first four over four test files, of which three import either changed module, and no ruff result is recorded.",
+    "goal": "the node's goal is \"A run that owes its coordinator an action keeps the pane\"; reckon/crew/station_subscriber.py:221 narrows the unresolvable-head exemption to \"review-missing\" alone, so a review-ready promotion carrying no head now holds.",
+    "manifest": "read; it records base 88 passed / head 89 passed both EXIT=0, the negative control (2 failed, 18 passed, EXIT=1), and a rubric line per dimension.",
+    "write_paths": "the node's four declared paths plus the two scope-extended test files; every path in the diff is inside them."
+  },
+  "justifications": {
+    "durability": "the negative control reddens both new checks when station_subscriber.py:221 is reverted, as negative-control-repair.log records.",
+    "evidence": "arms-repair-head.log records 89 passed EXIT=0 and arms-repair-base.log 88 passed EXIT=0, but the run covers 3 of the 23 test files importing the changed modules.",
+    "fit": "the replacement constant and its comment at reckon/crew/station_subscriber.py:76-82 follow the module's existing naming and comment idiom.",
+    "goal_fidelity": "reckon/crew/station_subscriber.py:221 exempts only a review-missing duty with no head, so the tier-none review-ready duty now holds the pane.",
+    "reuse": "the head-keyed kind vocabulary is restated at reckon/crew/station_subscriber.py:82 rather than taken from reckon/crew/obligations.py:69, and the scoring exemption at station_subscriber.py:145 still duplicates obligations.py:3019-3031.",
+    "scope_discipline": "every one of the four paths in git diff --stat 65eca0c536 dce7509874 lies inside the manifest's orientation_write_paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is \"A run that owes its coordinator an action keeps the pane\"; reckon/crew/station_subscriber.py:221 narrows the unresolvable-head exemption to \"review-missing\" alone, so a review-ready promotion carrying no head now holds.\nVERDICT done_when: the done-when asks for five keep-live cases, a promoted-settle, a SessionHost re-arm, a negative control, no added failures across the test files importing station_subscriber or session_host, and clean ruff on staged paths; arms-repair-base.log (88 passed EXIT=0 at 65eca0c536) and arms-repair-head.log (89 passed EXIT=0 at dce7509874) record the first four over four test files, of which three import either changed module, and no ruff result is recorded.\nVERDICT write_paths: the node's four declared paths plus the two scope-extended test files; every path in the diff (reckon/crew/station_subscriber.py, tests/test_a_run_owing_its_coordinator_keeps_the_pane.py, tests/test_a_follower_stays_while_a_review_is_owed.py, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-run-owing-its-coordinator-keeps-the-pane.html) is inside them.\nVERDICT manifest: read; it records base 88 passed / head 89 passed both EXIT=0, the negative control at negative-control-repair.log (2 failed, 18 passed, EXIT=1), and a rubric line per dimension.\nVERDICT diff: read commit by commit against 65eca0c536; the single commit dce7509874 changes four files, replacing the two-kind exemption set with _HEAD_KEYED_DUTY_KIND = \"review-missing\", rewording the tier-none follower test and adding the tier-none pane test.\nCALL_SITES: reckon/crew/session_host.py:420 (population_has_live_work), reckon/crew/station.py:524 (live_work_populations), reckon/crew_follow_commands.py:605 (_population_has_live_work)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/station_subscriber.py:221 exempts only a review-missing duty with no head, so the tier-none review-ready duty at the test's assert now holds the pane.\nSCORE evidence: 14\nJUSTIFICATION evidence: arms-repair-head.log records 89 passed EXIT=0 and arms-repair-base.log 88 passed EXIT=0, but the run covers 3 of the 23 test files an AST scan finds importing station_subscriber or session_host, so the done-when's population clause at prompt.txt:119 is only partly measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the four paths in git diff --stat 65eca0c536 dce7509874 lies inside the manifest's orientation_write_paths.\nSCORE durability: 18\nJUSTIFICATION durability: the negative control at tests/test_a_follower_stays_while_a_review_is_owed.py:465 and tests/test_a_run_owing_its_coordinator_keeps_the_pane.py:154 reddens both new checks when station_subscriber.py:221 is reverted, as negative-control-repair.log records.\nSCORE fit: 18\nJUSTIFICATION fit: the replacement constant and its comment at reckon/crew/station_subscriber.py:76-82 follow the module's existing naming and comment idiom.\nSCORE reuse: 13\nJUSTIFICATION reuse: the head-keyed kind vocabulary is restated at reckon/crew/station_subscriber.py:82 rather than taken from the obligations owner at reckon/crew/obligations.py:69, and the scoring exemption at station_subscriber.py:145 still duplicates obligations.py:3019-3031.\nFINDING reckon/crew/station_subscriber.py:145 non-blocking: the scoring exemption (reviews_in_flight, review_run_phase, _refused_delivered_review) is still restated here rather than shared with its owner at reckon/crew/obligations.py:3019-3031, so the prior review's folded finding is unanswered by dce7509874 and the two readers the module docstring promises cannot disagree can drift.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane/manifest.md:15 non-blocking: the recorded gate runs 4 of the 35 test files that name station_subscriber or session_host, so the done-when's clause that those files add no failure against the base revision is measured over a fraction of its population, and no ruff check or ruff format --check result is recorded for the staged paths.\n",
+  "review_run_id": "r-20261111T012412728018-review-of-a-run-owing-its-coordinator-keeps-the-pane-dce7509874f3",
+  "reviewed_base_sha": "65eca0c53604a108117a5ea23ae828a230e3f9e6",
+  "reviewed_head_sha": "dce7509874f351467d021e05af2abc709f56781e",
+  "reviewed_run_id": "r-20261110T184348626933-a-run-owing-its-coordinator-keeps-the-pane",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:59:32.496346+00:00",
+  "total": 101
+}

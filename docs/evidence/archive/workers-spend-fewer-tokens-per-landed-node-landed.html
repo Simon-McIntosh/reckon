@@ -83,6 +83,95 @@
         temporary and rename.</p>
   </section>
 
+  <section id="s4-anchored-edit-claude-arm" data-evidence-origin="append">
+    <h2>§4 — Claude-dialect workers can be given the anchored tool</h2>
+    <p>Run <code>r-20261110T220407285765-anchored-edit-claude-arm</code> (codex lane, picked by the router), landed at reviewed head <code>782e0a1f54dc</code>. The first review (98/120) found a blocking defect: the anchored server's roots came from the delivery roots, which never include the detached worktree, so in production every edit would have been refused while Edit and MultiEdit were disabled, and the test hid it by injecting the missing root. The repair routes the roots through the fence's writable-root filter with the worktree included and the test through the production computation; the re-review scored 118/120 with no findings. Armed arms: base <code>e1c296ff16</code> 51 passed, head 73 passed.</p><p><strong>A worker records whether anchored editing actually ran</strong></p>
+  <p>The per-backend <code>anchored_edit</code> flight key defaults off. A fresh,
+    fenced Claude-shaped launch with resolved flight configuration and no
+    existing run settings registers <code>reckon-anchored-edit</code> in its own
+    <code>.claude.json</code>. The server receives one repeated
+    <code>--root</code> argument per writable delivery root and includes the
+    detached worktree that the fence grants separately. Its command uses the
+    launching Python interpreter with <code>-m reckon.anchored_edit</code>, so
+    server startup does not depend on the worker's search path or a separately
+    installed console script. A smoke test executes the registered command.</p>
+  <p>The seeded settings allow
+    <code>mcp__reckon-anchored-edit__read_anchored</code> and
+    <code>mcp__reckon-anchored-edit__edit_anchored</code>, preserve the operator's
+    existing hooks and servers, and leave the operator's source files untouched.
+    Only successful registration enables the argv restriction
+    <code>--disallowedTools Edit MultiEdit</code>. The built-in
+    <code>Write</code> remains available.</p>
+  <table>
+    <caption>Both <code>claude</code> and <code>clive</code> use the same launch rule.</caption>
+    <thead><tr><th>Launch</th><th>Recorded anchored_edit</th><th>Reason</th><th>Built-in edits</th></tr></thead>
+    <tbody>
+      <tr><td>Key false or absent</td><td>false</td><td>disabled</td><td>Available; seeded settings and argv preserve the base bytes</td></tr>
+      <tr><td>Key true, fresh fenced home</td><td>true</td><td>None</td><td>Edit and MultiEdit disallowed</td></tr>
+      <tr><td>Key true, unfenced</td><td>false</td><td>unfenced</td><td>Available</td></tr>
+      <tr><td>Key true, resumed</td><td>false</td><td>resumed</td><td>Available; existing run settings preserved</td></tr>
+      <tr><td>Key true, existing run settings</td><td>false</td><td>operator-settings</td><td>Available; settings preserved byte for byte</td></tr>
+      <tr><td>Key true, no resolved flight config</td><td>false</td><td>no-flight-config</td><td>Available</td></tr>
+    </tbody>
+  </table>
+  <p>The actual result and its reason travel through <code>LaunchPlan</code>, the
+    supervisor specification beside <code>fenced</code>, and the spawned-worker
+    record. The supervisor publishes them to the current attempt's run pointer,
+    which supplies the run-store record. An older attempt cannot replace the
+    newer attempt's result. A treated run that resumes records false with
+    <code>resumed</code>, even though its prior seeded settings remain on disk.</p>
+  <p>The authoritative <code>reckon/schema/flight.yaml</code> declares the key.
+    The repository's existing generator regenerated both
+    <code>reckon/_flight_schema.py</code> and
+    <code>docs/_shared/flight.schema.json</code> in one invocation.</p>
+  <table>
+    <caption>Run logs retain their literal commands and terminal exit statuses.</caption>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base scoped arm at <code>e1c296ff16a4e6ba142b2e3248385ce24cd88997</code></td><td>51 passed; the new test file is absent at that revision</td></tr>
+      <tr><td>Committed scoped arm at <code>598c292c03345c91a45c5155f0e43be2b3ad3e9a</code></td><td>71 passed; 20 launch-treatment cases plus the 51 census cases</td></tr>
+      <tr><td>Declared mutation at <code>c0286290ec478eecafeba8295a38c58b7abdcc77</code>: add the Edit and MultiEdit disallow list unconditionally</td><td>4 failed, 15 deselected; every false-key or absent-key argv byte check fails for both command dialects</td></tr>
+      <tr><td>Ruff check over changed Python paths, including the generated module</td><td>41 findings at base and head; zero added</td></tr>
+      <tr><td>Ruff format --check over the same paths</td><td>One existing generated-module format failure in both arms; zero added</td></tr>
+    </tbody>
+  </table>
+  <p>The base launch probe, before implementation, recorded no registered
+    anchored server, no edit-tool restrictions, and no treatment receipt despite
+    <code>anchored_edit=true</code>. After the mutation was removed, the
+    committed scoped arm passed all 71 cases. The generated module keeps the
+    generator's exact bytes; formatting it separately would desynchronise it
+    from the authoritative source.</p>
+  <p><strong>The server can edit the worktree it was launched to change</strong></p>
+  <p>The initial fixture supplied the worktree directly as a delivery root.
+    Production does not: <code>_fence_write_roots</code> omits declarations
+    inside the worktree because <code>fence_argv</code> binds that tree
+    separately. The initial 71-test arm therefore missed a treatment worker
+    whose built-in edits were disabled while its server refused every normal
+    source path.</p>
+  <p>The server roots now pass the delivery roots and worktree through
+    <code>fence_writable_roots</code>, which also withholds the sealed shared
+    stores. The fixture calls production <code>_fence_write_roots</code> and
+    asserts that no returned root contains the worktree. Its temporary root is
+    a disjoint scratch directory, so an ambient temporary ancestor cannot mask
+    an omitted worktree grant.</p>
+  <table>
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>New regression on the implementation without the worktree grant</td><td>2 failed, 20 deselected; both command dialects report source.py outside every server root</td></tr>
+      <tr><td>Corrected focused suite</td><td>22 passed; both dialects read and replace a source line through the configured roots, and refuse a path outside them</td></tr>
+      <tr><td>Ruff on the changed Python paths</td><td>2 existing findings at base and head, zero added; both files pass format --check</td></tr>
+    </tbody>
+  </table>
+  <p>The run manifest records the subsequent armed command at the committed
+    correction, using the shared interpreter path with no environment prefix,
+    and retains both the reproduction log and the passing focused log.</p>
+  </section>
+
+  <section id="s7-omp-worker-backend" data-evidence-origin="append">
+    <h2>§7 — oh-my-pi runs as a crew worker backend on the local lane</h2>
+    <p>The omp worker backend is built from three landed nodes and closed on a live run.</p><ul><li><strong><code>omp-worker-dialect</code></strong> (head <code>bbfc574eb4b0</code>): the <code>omp</code> dialect — headless <code>-p --mode=json</code> argv with stdin closed, a <code>--config</code> overlay disabling task, browser, computer, web search, fetch and project MCP, a <code>--tools</code> allowlist, the run home relocated through <code>HOME</code> with the operator's git identity carried in, and usage folded from real totals rather than the zero first record. Reviews 105 and 95 of 120. Its fixture moved to <code>docs/research/fixtures/</code> to avoid the armed-suite defect now filed as §9.</li><li><strong><code>omp-agent-context</code></strong> (head <code>1ac50de0e1fe</code>): the first live dispatch failed with <code>unsupported agent: omp</code> in <code>reckon/agent_context.py</code>; the layout now resolves <code>~/.omp/agent</code> with an <code>AGENTS.md</code> entrypoint. Review 109/120.</li><li><strong><code>omp-models-path</code></strong> (head <code>3d615da8ddde</code>): the second live dispatch found <code>models.yml</code> seeded at <code>&lt;run home&gt;/agent</code> while omp, with <code>HOME</code> relocated, read <code>&lt;run home&gt;/.omp/agent</code>; the launch now sets <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code>. Review 114/120.</li></ul><p><strong>Live check</strong> (run <code>r-20261111T035722040991-omp-live-check-2</code>, <code>--backend omp-local</code>, oh-my-pi 18.13.2 with DeepSeek V4.1 Flash): completed in 9 minutes with a complete manifest and an accurate note (all four dialects with cited lines); <code>prompt.txt</code> kept its 16 KB brief; the run record carries input 1,014,036 and output 15,240 tokens, peak context 52,348, from 4,895 events. The host flight entry <code>omp-local</code> lives in the operator's <code>~/.config/reckon/flight.yaml</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
