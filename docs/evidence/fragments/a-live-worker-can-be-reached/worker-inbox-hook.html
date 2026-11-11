@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s8">
+  <meta name="evidence-verdict" content="pass-with-unreconciled-scope">
+  <meta name="evidence-date" content="2026-11-11">
+  <meta name="evidence-commit" content="78218ee3f8">
+</head>
+<body>
+<main class="plan-doc">
+<section id="worker-inbox-hook">
+  <h2>A message reaches a live worker at its next tool call</h2>
+
+  <p>Delivery no longer depends on the model remembering to look. A
+  <code>PostToolUse</code> hook, <code>reckon/hooks/worker_inbox.py</code>, reads
+  <code>&lt;run dir&gt;/inbox/*.md</code>, claims each message by moving it into
+  <code>inbox/claimed/</code>, emits the bodies as
+  <code>hookSpecificOutput.additionalContext</code> and appends a line per delivery to
+  <code>inbox/receipts.jsonl</code> naming the message, the delivery time and the tool call it
+  followed. The transport stays the run directory, as §6 requires: the change is that the
+  harness reads it, not the model.</p>
+
+  <h3 id="worker-inbox-hook-claim">The claim is the rename, and that is what makes it exactly-once</h3>
+  <p>Three parallel tool calls run three hook processes, and each lists the inbox before any of
+  them has claimed anything. A hook that merely read a message would deliver it three times. The
+  rename into <code>claimed/</code> is the claim: the kernel serialises it, the process that moves
+  the file delivers, and the others find the source gone and skip it.</p>
+  <p>Declared negative control — the claiming rename replaced by a plain read — makes the
+  concurrency case deliver three times:
+  <code>1 failed</code>, <code>EXIT=1</code>, naming
+  <code>test_three_concurrent_hook_invocations_deliver_one_message_exactly_once</code> with
+  <code>assert 3 == 1</code> (three hook processes each emitted the same
+  <code>only message 0</code>). Log:
+  <code>negative-control.log</code> in this run's directory.</p>
+
+  <h3 id="worker-inbox-hook-registration">Registration lives in the fence's seeding, not the operator's settings</h3>
+  <p><code>seed_harness_home</code> merges the entry into the run home's
+  <code>settings.json</code> for Claude-dialect runs, after the declared-file loop, whether or not
+  the home already carried a settings file. It is merged rather than skipped — the one place the
+  seeder rewrites a run's own settings — because the hook is what gives the run a channel, and a
+  home seeded before the hook existed would otherwise read as reachable while holding no hook.
+  Every other key and hook group is kept and an entry already present is not duplicated.</p>
+
+  <h3 id="worker-inbox-hook-writer">The writer refuses what it cannot deliver to</h3>
+  <p><code>reckon crew tell --run &lt;id&gt; "&lt;message&gt;"</code> writes one message atomically to
+  <code>&lt;run dir&gt;/inbox/</code> and reports <code>queued_for_next_tool_call</code>, never a
+  delivery: the receipt is the only proof. It refuses an ended run naming
+  <code>crew resume --advice</code>, and refuses a live run whose own home carries no
+  <code>PostToolUse</code> entry — <code>fenced: false</code>, a record with no <code>fenced</code>
+  key, a home seeded without the entry, and any non-Claude dialect. The test is the run home's
+  settings file, read through <code>install.settings_carry_worker_inbox</code>, not the record's
+  <code>fenced</code> flag, because a live run's home is never re-seeded.</p>
+  <p>The peer-send guard now names <code>crew tell</code> while the addressed worker is live and
+  <code>crew resume</code> once it has stopped; <code>crew check --manifest</code> reports a run
+  whose receipts record a delivery its manifest does not quote, and one that received nothing
+  without saying <code>messages_received: none</code>.</p>
+
+  <h3 id="worker-inbox-hook-measure">Measure</h3>
+  <p>Gate, after arm: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_worker_inbox.py tests/test_staged_write_inventory.py</code> —
+  <strong>70 passed</strong>, <code>EXIT=0</code>. Base arm, resolved over the base tree (which
+  carries no <code>tests/test_worker_inbox.py</code>): 49 passed with two errors in the inventory
+  test, both scaffolding — the extracted base tree is not a git repository and that test resolves
+  staged paths through git — so the delta adds no failure. Logs:
+  <code>gate-after.log</code>, <code>gate-base.log</code>.</p>
+
+  <h3 id="worker-inbox-hook-unreconciled">What this node could not finish inside its fence</h3>
+  <p>Four assertions of the old seeding contract sit outside this node's write scope and now fail
+  because every seeded Claude home carries one more <code>PostToolUse</code> entry:
+  <code>tests/test_run_home_hooks_are_interpreter_bound.py</code> (exact seeded-hooks equality),
+  <code>tests/test_harness_home_carries_the_operator_config.py</code> (four cases asserting the
+  seeded hooks equal the operator's), <code>tests/test_anchored_edit_claude_arm.py</code> (five
+  byte-preservation cases), and the crew help census
+  <code>tests/test_crew_help_names_its_state.py</code>, which needs one row for the new verb. Each
+  is a consequence of this section's requirement rather than a defect in it, and none belongs to
+  a concurrent node. Also outside the fence: the run view does not yet list an unclaimed inbox
+  message (<code>reckon/mcp_views.py</code>), and promotion-time enforcement of the manifest's
+  messages field would live in <code>reckon/crew/reports.py</code> — the check implemented here
+  runs in <code>crew check --manifest</code>, where the writer can still fix it.</p>
+</section>
+</main>
+</body>
+</html>
