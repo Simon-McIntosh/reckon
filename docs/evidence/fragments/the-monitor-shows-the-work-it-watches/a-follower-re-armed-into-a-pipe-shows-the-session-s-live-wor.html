@@ -1,10 +1,12 @@
 <section id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-landing">
   <h2 id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-title">A follower re-armed into a pipe shows the session's live work</h2>
   <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-what">
-    The resume branch of <code>reckon/crew_follow_commands.py</code> now hands a
-    pipe one framed snapshot of the session's current work in place of nothing.
-    A session owning nothing prints the frame with <q>none</q>. The history
-    burst stays terminal-only.
+    The resume branch of <code>reckon/crew_follow_commands.py</code> hands a
+    pipe one framed snapshot of the session's current work in place of nothing:
+    when the session owns no run, or when every run it owns already stands at
+    the state the pane last drew, the frame names them; a run that moved is left
+    to its own row, so the pane is never drawn twice. A session owning nothing
+    prints the frame with <q>none</q>. The history burst stays terminal-only.
   </p>
   <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-measure">
     Measure: <code>tests/test_a_rearmed_pipe_follower_shows_its_live_work.py</code>
