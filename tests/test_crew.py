@@ -23,6 +23,7 @@ from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
+import reckon.crew.dispatch_launch as dispatch_launch_module
 import reckon.crew.dispatch_plan as dispatch_plan_module
 import reckon.crew.dispatch_sessions as dispatch_sessions_module
 from reckon import cli as cli_module
@@ -1985,26 +1986,6 @@ def _assert_attach_line_shape(
     )
 
 
-def _child_pids(pid: int) -> list[int]:
-    """The pids whose parent is ``pid``, read from the process table.
-
-    Read through ``/proc`` rather than by running ``ps``: a ``ps`` subprocess
-    is itself a child of ``pid`` while it runs, so it would report itself.
-    """
-    children: list[int] = []
-    for entry in os.listdir("/proc"):
-        if not entry.isdigit():
-            continue
-        try:
-            stat = Path(f"/proc/{entry}/stat").read_text(encoding="utf-8")
-        except OSError:
-            continue
-        fields = stat.rsplit(")", 1)[-1].split()
-        if len(fields) > 1 and int(fields[1]) == pid:
-            children.append(int(entry))
-    return children
-
-
 def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     home, repo, monkeypatch
 ) -> None:
@@ -2027,6 +2008,7 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     # the supervisor's own phase write otherwise lands while promotion is
     # checking that the pointer it read is still the pointer on disk.
     monkeypatch.setattr(dispatch_module, "_start_supervisor", no_supervisor)
+    children_before = set(dispatch_launch_module._inherited_child_pids())
     result = CliRunner().invoke(
         cli_module.main,
         [
@@ -2080,9 +2062,11 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     )
     # The stub is the seam the launch took, and nothing it started is still
     # running: a real supervisor is a child of this process that outlives the
-    # call and keeps writing the run's phase.
+    # call and keeps writing the run's phase. Only children this call added
+    # count, so another case's leftover process cannot redden this one.
     assert launches, "the dispatch started a supervisor through another seam"
-    assert _child_pids(os.getpid()) == []
+    children_after = set(dispatch_launch_module._inherited_child_pids())
+    assert children_after - children_before == set()
 
 
 def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
