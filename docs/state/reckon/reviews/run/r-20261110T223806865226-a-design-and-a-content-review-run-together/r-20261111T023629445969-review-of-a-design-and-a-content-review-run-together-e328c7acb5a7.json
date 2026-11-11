@@ -1,0 +1,42 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T02:48:06.178Z",
+  "dispatched_at": "2026-11-11T02:39:01Z",
+  "findings": [
+    {
+      "severity": "blocking",
+      "text": "reckon/crew/promotion_checks.py:1621 blocking: the composed design-review node id now carries the -design suffix, but the four production readers in this module recover the plan slug with node_id[len(prefix):] (lines 1621, 2636, 2730, 2809), so a design review's slug reads '<slug>-design'; _plan_review_report_root then resolves a directory that does not exist, _delivered_plan_review_for_run finds no delivery, and promotion neither joins nor stores the review's delivered report, raising 'a plan review of <slug>-design with no delivered report'. Measured at the reviewed head: round_node_source('plan-review-of-fixture-design', prefix) returns 'fixture' while node_id[len(prefix):] returns 'fixture-design', and the two report roots differ. The repair is to route these four through round_node_source, the reader the diff extended; that file was outside this node's write scope, so the identity change is half-landed."
+    },
+    {
+      "severity": "non-blocking",
+      "text": "reckon/crew/repair.py:436 non-blocking: the new -design strip in round_node_source is unconditional across every prefix, so it truncates node ids that have nothing to do with plan reviews: round_node_source('review-of-layout-design', 'review-of-') returns 'layout', and the bare content-review id of a plan whose slug ends in -design reads as the wrong plan, which would make _standing_plan_review miss that plan's live content review and admit a duplicate. No plan in this repository's 230 slugs ends in -design, so the trigger is latent, and the comment at repair.py:348 claiming a repair round's source 'never carries this suffix' states a guarantee the code does not enforce. Scoping the strip to the plan-review prefix would remove both."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "three commits differ from the base in five files; the eligibility narrowing and the node-id suffix land in the first two and the fragment is rewritten in the third.",
+    "done_when": "tests/test_a_design_and_a_content_review_run_together.py asserts both composition cases and the plan-alone negative control; logs/head-suite.log records 55 passed EXIT=0 and logs/negative-control.log records the declared red.",
+    "goal": "recovery_review_subject.py:889 composes one node id per rubric and recovery_review_dispatch.py:2178 narrows the in-flight read to the rubric, so the composition goal is met, but the id is mis-read at promotion.",
+    "manifest": "read; it records the head gate, base reproduction, negative control and the zero-delta importer arm with their log paths.",
+    "write_paths": "all five diff paths are inside the manifest's orientation_write_paths, with the two extra modules and the test path granted by resume-1-advice.txt line 1."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a design review and a content review of one plan can run together; recovery_review_subject.py:889 composes one node id per rubric and recovery_review_dispatch.py:2178 narrows the in-flight read to the rubric, and the composed path is proven by the node's test, but the identity half is unpromotable (finding at promotion_checks.py:1621).\nVERDICT done_when: the done_when names tests/test_a_design_and_a_content_review_run_together.py with two composition cases and a plan-alone negative control; logs/head-suite.log records 55 passed EXIT=0, logs/base-reproduction.log records the design refusal verbatim, and logs/negative-control.log records the declared red at 1 failed, 3 passed EXIT=1.\nVERDICT write_paths: read the manifest's orientation_write_paths; the diff's five paths (recovery_review_dispatch.py, recovery_review_subject.py, repair.py, the test, the evidence fragment) are all inside that list, and the two module paths beyond the original two-file fence were granted by the coordinator's resume advice (resume-1-advice.txt line 1).\nVERDICT manifest: read; it reports the head gate as 55 passed with its log paths, the base reproduction, the negative control and a zero-delta importer arm of 58 passed at both revisions, and it names the two scaffolding-attributed base errors.\nVERDICT diff: read commit by commit from a6c7b84069852f279b9d4ad624215540fa9c24fc to e328c7acb5a72b62e71806761ec06ed927d38057; 2fa4cda4b0 keys the in-flight check on the rubric and records that the done-when is not yet met, 1fe8dd3f62 gives the design review its own node id and extends round_node_source, e328c7acb5 rewrites the evidence fragment, and the four promotion_checks.py readers of that id were left on the bare prefix strip.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:_dispatch_text_review_for_run, reckon/crew/recovery_review_dispatch.py:join_admitted_plan_review, reckon/crew/obligations.py:_queued_request_waiting_on_plan_review, reckon/crew/plan_review.py:4095, reckon/crew/plan_coordinator.py:155, reckon/crew/dispatch_sessions.py:507, reckon/crew/promotion_checks.py:_resolve_promotion_outcome, reckon/crew/promotion_checks.py:_plan_review_record_for_promoting_run, reckon/crew/promotion_checks.py:_plan_review_store_outcome, reckon/crew/promotion_checks.py:_misdelivered_plan_review_directories\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: recovery_review_dispatch.py:2178 admits the design compose beside a live content review as the goal states, but the id recovery_review_subject.py:889 mints is mis-read at promotion, so a design review cannot be delivered end to end.\nSCORE evidence: 16\nJUSTIFICATION evidence: the done-when's two composition cases and the plan-alone negative control are asserted in tests/test_a_design_and_a_content_review_run_together.py and their runs are recorded in logs/head-suite.log, logs/base-reproduction.log and logs/negative-control.log, with the ruff claim the only measure the manifest states without a log.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every diff path is inside the granted scope in the manifest's orientation_write_paths, but the change stops short of reckon/crew/promotion_checks.py:1621, which its new node id makes reachable.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_design_and_a_content_review_run_together.py fails when the rubric narrowing is removed, as logs/negative-control.log shows, but no test covers the four promotion readers that the new suffix at repair.py:436 breaks.\nSCORE fit: 16\nJUSTIFICATION fit: the new helpers follow the module's local-import and docstring idiom in recovery_review_dispatch.py:2126 and carry no plan or ticket identifiers, though the comment at repair.py:348 claims a guarantee the code does not provide.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends round_node_source at repair.py:432 as the one owner of the node-id grammar and composes through _plan_review_node_id rather than a second reader; no existing owner composes a headless prefix+rubric id, so the small composer is new capability rather than a fork.\nFINDING reckon/crew/promotion_checks.py:1621 blocking: the design-review node id carries the -design suffix but this module and its three siblings at 2636, 2730 and 2809 still strip the prefix with node_id[len(prefix):], so a design review's plan slug reads '<slug>-design', its report root and delivered report are never found, and its record is never stored at promotion.\nFINDING reckon/crew/repair.py:436 non-blocking: the new -design strip applies to every prefix, so round_node_source('review-of-layout-design', 'review-of-') returns 'layout' and the content-review id of a plan whose slug ends in -design resolves to the wrong plan, which would admit a duplicate content review.\n",
+  "review_run_id": "r-20261111T023629445969-review-of-a-design-and-a-content-review-run-together-e328c7acb5a7",
+  "reviewed_base_sha": "a6c7b84069852f279b9d4ad624215540fa9c24fc",
+  "reviewed_head_sha": "e328c7acb5a72b62e71806761ec06ed927d38057",
+  "reviewed_run_id": "r-20261110T223806865226-a-design-and-a-content-review-run-together",
+  "rubric": "content",
+  "scores": {
+    "durability": 14,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 18,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:57:59.112514+00:00",
+  "total": 93
+}
