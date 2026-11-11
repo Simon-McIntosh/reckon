@@ -1,0 +1,60 @@
+<section id="worktree-leaves-shared-config-landing" class="evidence-fragment">
+  <h2>§18 — A worktree leaves the shared configuration alone</h2>
+
+  <p><strong>The defect.</strong> Worktree creation wrote
+  <code>extensions.worktreeConfig</code> into the shared checkout's
+  configuration on every dispatch, though the setting is a property of that
+  checkout and reads <code>true</code> after the first one. Two concurrent
+  dispatches therefore contended for the shared configuration lock, and one was
+  refused outright. The base arm reproduces it verbatim:
+  <code>worktree creation failed: git config extensions.worktreeConfig true at
+  …/repo: error: could not lock config file .git/config: File exists</code>,
+  raised from <code>_give_worktree_minimal_stat</code>.</p>
+
+  <p><strong>The change.</strong> <code>reckon/crew/routing.py</code> reads the
+  setting with <code>git config --bool --get</code> first and writes it only
+  when absent (<code>_enable_shared_worktree_config</code>, returning whether
+  it wrote). When the write is needed and git reports that it could not lock
+  the configuration file, the write is retried every 50 ms for up to 5 s; a
+  lock still held at the bound is named in the refusal, with the lock path
+  resolved from <code>git rev-parse --git-common-dir</code>, because a dispatch
+  that fails here otherwise reports only that the worktree could not be
+  created. The worktree's own <code>core.checkStat=minimal</code> is set as
+  before, in the worktree's configuration rather than the shared one, so an
+  already-enabled setting still yields a minimal-stat tree.</p>
+
+  <table id="worktree-leaves-shared-config-arms">
+    <caption>Each arm is one log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both ran
+    on <code>all_debug</code>, one at a time.</caption>
+    <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
+    <tbody>
+      <tr>
+        <td>base suite (new test copied in at <code>bf5030f</code>)</td>
+        <td>extraction of <code>bf5030f</code> under the job's scratch</td>
+        <td>4 failed, 51 passed, <code>EXIT=1</code>: the four new tests fail,
+        the first with the recorded lock refusal</td>
+      </tr>
+      <tr>
+        <td>after suite at <code>f782679b0d</code></td>
+        <td>the node's worktree</td>
+        <td>55 passed, <code>EXIT=0</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p><strong>Negative control.</strong> Making the shared write unconditional
+  again turns the held-lock case red: with the setting already true and
+  <code>.git/config.lock</code> held, creation refuses, and the second test
+  observes the setting rewritten. Log:
+  <code>runs/…-worktree-leaves-shared-config/negative-control.log</code>
+  (2 failed, 2 passed, <code>EXIT=1</code>).</p>
+
+  <p>What the new test pins: with the setting already true, creation
+  succeeds while the shared configuration's lock is held and leaves that file's
+  content, mtime and inode unchanged; a repository without the setting gets it
+  once, and a second call writes nothing; with the setting absent and the lock
+  held, creation waits out a lock released inside the bound and succeeds; a
+  lock held past the bound refuses, naming the lock; the new worktree reads
+  <code>core.checkStat=minimal</code>.</p>
+</section>
