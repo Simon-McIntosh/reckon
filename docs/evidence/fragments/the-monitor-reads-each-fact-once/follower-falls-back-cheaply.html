@@ -1,0 +1,30 @@
+<section id="follower-falls-back-cheaply">
+  <h3>A stale follower shares one bounded pointer reading</h3>
+  <p>The follower caches its pointer-phase population reading for 60 seconds across its own and
+  observed sessions. Terminal duties stay in the station's full calculation; the stale fallback
+  excludes them and adds 60 seconds to the configured settle grace. A fresh station answer
+  bypasses the cached fallback immediately.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Implementation</th></tr></thead>
+    <tbody>
+      <tr><td>Population calculations in 60 one-second samples over 40 pointers</td><td>60</td><td>At most 2</td></tr>
+      <tr><td>Review-in-flight checks in those samples</td><td>2,400</td><td>0</td></tr>
+      <tr><td>Pointer turning terminal after the opening sample</td><td>Not the bounded path</td><td>Read at 60 seconds</td></tr>
+      <tr><td>Armed gate</td><td>51 passed</td><td>56 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The review recorder's positive control observes 40 calls before the follower measurement.
+  Every loaded alias of the population and review functions is patched. The new sample-count
+  assertion fails against the unmodified base with 60 calculations and passes at the implementation
+  commit <code>69bfe590b3833dfc8ee4c7de84c114bdb110977b</code>.</p>
+  <p><strong>The complete measure is unmet.</strong> The matched 66-file importer comparison on
+  <code>all_debug</code>, job <code>1310019</code>, adds three failure ids. They are outside the granted
+  test scope and are recorded in the worker manifest for coordinator disposition. No outside-scope
+  tests were changed or triaged. The node is blocked rather than ready for promotion.</p>
+  <p>Ruff adds no finding: the follower module retains the same two lint findings and the same
+  64 formatting-delta lines at base and head; the station module and new test are clean. Durable
+  commands, imported-module paths, receipts and logs are in run
+  <code>r-20261111T034614437441-follower-falls-back-cheaply</code>.</p>
+  <p>The coordinator's post-integration 60-second CPU/read-rate measurement remains outstanding
+  against the recorded 586% CPU and approximately 25 GB/min baseline.</p>
+</section>
