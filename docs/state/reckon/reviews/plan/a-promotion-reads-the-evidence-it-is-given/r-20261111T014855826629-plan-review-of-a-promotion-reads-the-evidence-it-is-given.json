@@ -1,0 +1,103 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:00:58.194Z",
+  "dispatched_at": "2026-11-11T01:52:41Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:119",
+      "id": "anchors_resolve-1",
+      "reason": "a worker greps for the cited name, finds nothing, and must guess which of the several arm checks the section means before it can start.",
+      "text": "\u00a714 cites `_arm_command_findings` (`reckon/crew/promotion_records.py` near lines 690\u2013722) as the comparison it widens, but no such symbol exists; the function at that range is `_arm_missing_fields` (line 686), whose body at 702\u2013722 is the whitespace comparison the section describes",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:122",
+      "id": "reasoning-1",
+      "reason": "a worker taking the premise at face value will add a second command block beside the existing one, or rewrite `_suite_gate_prompt_body`, when the section only needs the revisions added to it.",
+      "text": "\u00a715 claims \"No brief or advice tells the worker the exact command and the two revisions\", but the implement dispatch brief already emits both the template and the resolved command through `_suite_gate_prompt_body` (`reckon/crew/dispatch.py:1490\u20131524`), reached from `_compose_dispatch_prompt` at `dispatch.py:2953\u20132971`; only the two revisions and the per-revision resolution are missing",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:123",
+      "id": "done_when-1",
+      "reason": "a case that passes before the change proves nothing about it, so the node can land with the briefs unchanged and still see green.",
+      "text": "\u00a715's first case (\"A composed implement brief contains the armed command at the base revision\") holds on the unmodified code for any fixture whose base tree holds every scoped test, because `_resolved_suite_gate` already resolves `_scoped_suite_command` over the whole write scope and the brief prints it (`dispatch.py:1507`, `:1519`)",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:123",
+      "id": "done_when-2",
+      "reason": "an unconditional refusal and a correct one read identically in a suite, so nothing shows the new comparison fires on the right side of the boundary.",
+      "text": "\u00a715 declares one negative control, which drops the command from the brief and reddens case one; the third case, the new `crew complete` refusal of a trailing `after_suite.revision`, is the section's only evidence for that mechanism and no control makes it refuse",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:122",
+      "id": "single_goal-1",
+      "reason": "one verdict cannot close two mechanisms, so a node that lands the brief side and misses the refusal is closed as done and the refusal is never built; the plan already split exactly this shape out of \u00a76 into \u00a79.",
+      "text": "\u00a715 carries two independent repairs: the brief and resume-advice composers under `crew dispatch`/`crew resume`, and a new revision comparison inside `crew complete`'s promotion path (`reckon/crew/promotion_records.py`); different modules, different callers, and either can land alone",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:123",
+      "id": "anchors_resolve-2",
+      "reason": "a worker holding a described write scope has no path to open and no path to check its grant against, so it either guesses outside its fence or stalls to ask.",
+      "text": "\u00a715's write scope names \"the brief composer and the advice composer that `crew dispatch` and `crew resume` use\", two descriptions with no file; the brief composer lives in `reckon/crew/dispatch.py` and the resume path in `reckon/crew/resumption.py`, and neither is openable from the plan",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-promotion-reads-the-evidence-it-is-given.html:139",
+      "id": "wiring-1",
+      "reason": "the plan's only instruction for the remaining two sections dispatches a section that has already landed, so a coordinator following it spends a node re-doing \u00a711 or has to hand-edit the prompt every time.",
+      "text": "`f-aprteig-011` is open with the prompt `/reckon-build a-promotion-reads-the-evidence-it-is-given \u00a711 \u00a712 \u00a713` and the body \"Three promotion refusals \u2026 \u00a713 runs after \u00a711\", while s11 is now done with its reviews and landing recorded in the same document's s11 comments",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b5879a8a2604f3af2dbc770474a81f1f65613484",
+  "plan_fingerprint": "c40d6dddf835035d84d3f2115101cd07505196cc84245262328340d4614df8bb",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 78,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T014855826629-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "f437acccb2257ceca8b5258891c3ea8a23e1758e",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "findings \u2014 \u00a714 cites `_arm_command_findings`, which does not exist in the tree, and \u00a715's write scope names its two composers by description rather than by path.",
+    "done_when": "findings \u2014 \u00a715's first case asserts a brief property the current composer already satisfies, and its third case (the new refusal) has no negative control.",
+    "evidence_paths": "pass \u2014 \u00a714 and \u00a715 place every gate log under the run directory, which survives the run, and name test files under `tests/`.",
+    "naming": "pass \u2014 the two new test filenames and the section prose carry no plan labels, ticket numbers or version tags, and no changelog prose.",
+    "reasoning": "a finding \u2014 \u00a715's stated root cause (\"No brief \u2026 tells the worker the exact command\") is contradicted by the implement dispatch brief, which already carries both the template and the resolved command.",
+    "single_goal": "a finding \u2014 \u00a715 carries two deliverables on two different callers: the prompt composers and a new refusal at `crew complete`.",
+    "wiring": "a finding \u2014 the open followup `f-aprteig-011` still instructs `/reckon-build \u2026 \u00a711 \u00a712 \u00a713` while `plan-section-declarations` (line 22) now marks s11 done."
+  },
+  "section_digests": {
+    "_document": "42a5cf5d7d473c208143df54b24c13746dade5f78eeff94ce2852a9acd055ce7",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "f099a29d688677457cc74c8cb9aff793b8f18a69dfd31c04952cb15c5cfcb515",
+    "s15": "5f51381fc0bddd64f27aae23edd79dedb5993474ea01288384cb6c4a91c3db38",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:26:50.117899+00:00",
+  "total": null
+}
