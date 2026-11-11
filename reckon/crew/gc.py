@@ -1622,6 +1622,54 @@ def _retention_ledger_records(
     return runs_root, records, owner, roots
 
 
+def _retire_run_store(
+    roots: Mapping[str, Path], *, apply: bool, now: datetime
+) -> dict[str, Any]:
+    """Retire store history only after live consumers and owed reviews release it."""
+    from reckon import run_store
+    from reckon.crew.queue_admission import REQUEST_REF_PREFIX, section_waits_for
+
+    if not run_store.store_path().is_file():
+        return {"offered": [], "retired": []}
+    protected = _live_review_targets()
+    for pointer in list_live():
+        protected.add(str(pointer.get("run_id") or ""))
+        protected.update(
+            ref.removeprefix(REQUEST_REF_PREFIX)
+            for ref in section_waits_for(pointer)
+            if ref.startswith(REQUEST_REF_PREFIX)
+        )
+
+    def released(record: Mapping[str, Any]) -> bool:
+        tier = str(record.get("review_tier") or "").strip().lower()
+        return (
+            not tier
+            or tier == review_tiers.NONE
+            or _committed_review_exists(
+                str(record["project"]),
+                str(record["run_id"]),
+                roots[str(record["project"])],
+            )
+        )
+
+    with run_store.RunStore() as store:
+        report = store.retire(
+            before=now - timedelta(days=30),
+            protected=protected,
+            projects=set(roots),
+            apply=apply,
+            can_retire=released,
+        )
+    for run_id in report["retired"]:
+        sys.stderr.write(f"archived run {run_id} to {report['archive']}\n")
+    if report["retired"]:
+        sys.stderr.write(
+            f"compacted run store pages {report['pages_before']} -> {report['pages_after']}\n"
+        )
+        sys.stderr.flush()
+    return report
+
+
 def retention_sweep(
     *,
     project: str | None = None,
@@ -1743,8 +1791,12 @@ def retention_sweep(
     _emit_phase("cache", started, phase_seconds)
 
     started = time.perf_counter()
+    store_retention = _retire_run_store(roots, apply=apply, now=moment)
+    _emit_phase("store", started, phase_seconds)
+
+    started = time.perf_counter()
     written = ""
-    if removed or settled_removed or caches_removed:
+    if removed or settled_removed or caches_removed or store_retention["retired"]:
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1756,6 +1808,8 @@ def retention_sweep(
                 stream.write(f"removed scratch {path}\n")
             for row in caches_removed:
                 stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
+            for run_id in store_retention["retired"]:
+                stream.write(f"archived run {run_id} to {store_retention['archive']}\n")
         finally:
             stream.close()
         written = str(target)
@@ -1777,6 +1831,7 @@ def retention_sweep(
         "ledger_indexes": indexes,
         "picker_views": picker_views,
         "cache_removed_count": len(caches_removed),
+        "run_store": store_retention,
         "log": written,
         "phase_seconds": phase_seconds,
     }

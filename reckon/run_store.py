@@ -20,6 +20,7 @@ import random
 import sqlite3
 import time
 from collections.abc import Callable, Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Self
 
@@ -80,6 +81,10 @@ _RUNS_INSERT_MARKS = ", ".join("?" for _name in ("run_id", *QUERY_KEYS, "payload
 _RUNS_INSERT = (
     f'INSERT INTO "runs" ({_RUNS_INSERT_COLUMNS}) VALUES ({_RUNS_INSERT_MARKS})'  # noqa: S608
 )
+_RUNS_ARCHIVE_INSERT = (
+    f"INSERT INTO archive.runs ({_RUNS_INSERT_COLUMNS}) "  # noqa: S608
+    f"SELECT {_RUNS_INSERT_COLUMNS} FROM main.runs WHERE run_id = ?"
+)
 # The migration backfills every column a row is missing. The SET list and the
 # values share the QUERY_KEYS declaration, so the two cannot drift.
 _RUNS_UPDATE_SET = ", ".join(
@@ -106,6 +111,11 @@ CREATE TABLE IF NOT EXISTS "refusals" (
     "refused_at" TEXT PRIMARY KEY,
     "payload" TEXT NOT NULL
 );
+CREATE TABLE IF NOT EXISTS "retired_runs" (
+    "run_id" TEXT PRIMARY KEY,
+    "project" TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS "idx_retired_runs_project" ON "retired_runs" ("project");
 """
 
 
@@ -230,6 +240,7 @@ class RunStore:
             else sqlite3.connect(str(self._path), timeout=busy_timeout)
         )
         self._create()
+        self._archive_attached = False
 
     def __enter__(self) -> Self:
         return self
@@ -316,6 +327,8 @@ class RunStore:
         promotion, not store content.
         """
         run_id, payload, detail = _split_durable(project, record)
+        if self._is_archived(run_id):
+            raise sqlite3.IntegrityError(f"run {run_id} is already archived")
         with self._conn:
             self._conn.execute(
                 _RUNS_INSERT,
@@ -344,10 +357,15 @@ class RunStore:
         run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         encoded_detail = json.dumps(detail, sort_keys=True, separators=(",", ":"))
+        table = "archive.runs" if self._is_archived(run_id) else "runs"
+        details = "archive.run_details" if table == "archive.runs" else "run_details"
+        select = (
+            "SELECT payload FROM archive.runs WHERE run_id = ?"
+            if table == "archive.runs"
+            else "SELECT payload FROM runs WHERE run_id = ?"
+        )
         with self._conn:
-            existing = self._conn.execute(
-                'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
-            ).fetchone()
+            existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
                 self._conn.execute(
                     _RUNS_INSERT,
@@ -365,15 +383,130 @@ class RunStore:
             if existing[0] == encoded_payload:
                 return "unchanged"
             self._conn.execute(
-                _RUNS_UPDATE,
+                _RUNS_UPDATE.replace('"runs"', table),
                 (encoded_payload, *(payload.get(name) for name in QUERY_KEYS), run_id),
             )
             self._conn.execute(
-                'INSERT INTO "run_details" ("run_id", "detail") VALUES (?, ?) '
-                'ON CONFLICT("run_id") DO UPDATE SET "detail" = excluded."detail"',
+                (
+                    'INSERT INTO run_details ("run_id", "detail") VALUES (?, ?) '
+                    'ON CONFLICT("run_id") DO UPDATE SET "detail" = excluded."detail"'
+                ).replace("INSERT INTO run_details", f"INSERT INTO {details}"),
                 (run_id, encoded_detail),
             )
             return "updated"
+
+    @property
+    def archive_path(self) -> Path:
+        """The separate SQLite file holding retired history."""
+        return self._path.with_name(f"{self._path.stem}.archive{self._path.suffix}")
+
+    def _attach_archive(self, *, create: bool = False) -> bool:
+        if not self._archive_attached and (create or self.archive_path.is_file()):
+            self._conn.execute(
+                "ATTACH DATABASE ? AS archive", (str(self.archive_path),)
+            )
+            if create:
+                self._conn.execute(
+                    f"CREATE TABLE IF NOT EXISTS archive.runs ({_RUNS_COLUMN_DEFS})"
+                )
+                self._conn.execute(
+                    "CREATE TABLE IF NOT EXISTS archive.run_details "
+                    "(run_id TEXT PRIMARY KEY, detail TEXT NOT NULL)"
+                )
+                self._conn.execute(
+                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_project ON runs(project)"
+                )
+                self._conn.execute(
+                    "CREATE INDEX IF NOT EXISTS archive.idx_runs_node ON runs(node)"
+                )
+            self._archive_attached = True
+        return self._archive_attached
+
+    def _archived_ids(self, project: str | None = None) -> set[str]:
+        # Membership stays narrow and hot so current readers never open history.
+        query = "SELECT run_id FROM retired_runs"
+        return {
+            str(row[0])
+            for row in self._conn.execute(
+                query + (" WHERE project = ?" if project is not None else ""),
+                (project,) if project is not None else (),
+            )
+        }
+
+    def _is_archived(self, run_id: str) -> bool:
+        present = (
+            self._conn.execute(
+                "SELECT 1 FROM retired_runs WHERE run_id = ?", (run_id,)
+            ).fetchone()
+            is not None
+        )
+        if present and not self._attach_archive():
+            raise FileNotFoundError(f"retired history is missing: {self.archive_path}")
+        return present
+
+    def retire(
+        self,
+        *,
+        before: datetime,
+        protected: set[str],
+        projects: set[str],
+        apply: bool,
+        can_retire: Callable[[Mapping[str, Any]], bool] | None = None,
+    ) -> dict[str, Any]:
+        """Copy unneeded ended runs to the archive, then compact the hot file.
+
+        An attached-database transaction commits the copy and deletion together.
+        Unknown completion times stay hot. The cutoff uses parsed instants so
+        equivalent stamps with different offsets receive the same treatment.
+        """
+        from reckon._timestamps import parse_utc
+
+        candidates = []
+        for run_id, project, completed, payload in self._conn.execute(
+            "SELECT run_id, project, completed_at, payload FROM runs"
+        ):
+            ended = parse_utc(completed)
+            if (
+                project in projects
+                and run_id not in protected
+                and ended
+                and ended < before
+                and (can_retire is None or can_retire(_decoded_record(payload)))
+            ):
+                candidates.append(str(run_id))
+        pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
+        if candidates and apply:
+            self._attach_archive(create=True)
+            with self._conn:
+                for run_id in candidates:
+                    self._conn.execute(
+                        _RUNS_ARCHIVE_INSERT,
+                        (run_id,),
+                    )
+                    self._conn.execute(
+                        "INSERT INTO archive.run_details SELECT * FROM main.run_details "
+                        "WHERE run_id = ?",
+                        (run_id,),
+                    )
+                    self._conn.execute(
+                        "INSERT INTO retired_runs (run_id, project) "
+                        "SELECT run_id, project FROM runs WHERE run_id = ?",
+                        (run_id,),
+                    )
+                    self._conn.execute(
+                        "DELETE FROM main.run_details WHERE run_id = ?", (run_id,)
+                    )
+                    self._conn.execute(
+                        "DELETE FROM main.runs WHERE run_id = ?", (run_id,)
+                    )
+            self._conn.execute("VACUUM main")
+        return {
+            "offered": candidates,
+            "retired": candidates if apply else [],
+            "archive": str(self.archive_path),
+            "pages_before": pages_before,
+            "pages_after": self._conn.execute("PRAGMA main.page_count").fetchone()[0],
+        }
 
     def _ledger_roots(self) -> dict[str, Path | None]:
         """Find ledger owners through state routing and the mount registry."""
@@ -395,11 +528,20 @@ class RunStore:
                     roots[project] = docs.parent
         return roots
 
-    def _indexed_records(self) -> dict[str, dict[str, Any]]:
+    def _indexed_records(
+        self, *, include_archive: bool = False
+    ) -> dict[str, dict[str, Any]]:
         rows = self._conn.execute(
             "SELECT r.run_id, r.payload, d.detail FROM runs r "
             "LEFT JOIN run_details d ON r.run_id = d.run_id"
-        )
+        ).fetchall()
+        if include_archive and self._attach_archive():
+            rows.extend(
+                self._conn.execute(
+                    "SELECT r.run_id, r.payload, d.detail FROM archive.runs r "
+                    "LEFT JOIN archive.run_details d ON r.run_id = d.run_id"
+                ).fetchall()
+            )
         return {
             str(run_id): run_record.normalize_outside_scope_paths(
                 {**json.loads(payload), **(json.loads(detail) if detail else {})}
@@ -426,7 +568,7 @@ class RunStore:
                 for row in self._conn.execute(
                     "SELECT run_id FROM runs WHERE project = ?", (name,)
                 )
-            }
+            } | self._archived_ids(name)
             if indexed != ledger.run_ids(name, root):
                 data, _version = ledger.load(name, root)
                 changed[name] = data["runs"]
@@ -434,7 +576,7 @@ class RunStore:
             return None
         records = {
             run_id: record
-            for run_id, record in self._indexed_records().items()
+            for run_id, record in self._indexed_records(include_archive=True).items()
             if record.get("project") not in changed
         }
         for name, rows in changed.items():
@@ -450,8 +592,47 @@ class RunStore:
                         (name,),
                     )
                     self._conn.execute("DELETE FROM runs WHERE project = ?", (name,))
+                    archived = self._archived_ids(name)
+                    if archived and not self._attach_archive():
+                        raise sqlite3.DatabaseError(
+                            f"retired history is missing: {self.archive_path}"
+                        )
+                    retained = {str(record["run_id"]) for record in rows}
+                    for run_id in archived - retained:
+                        self._conn.execute(
+                            "DELETE FROM archive.run_details WHERE run_id = ?",
+                            (run_id,),
+                        )
+                        self._conn.execute(
+                            "DELETE FROM archive.runs WHERE run_id = ?", (run_id,)
+                        )
+                        self._conn.execute(
+                            "DELETE FROM retired_runs WHERE run_id = ?", (run_id,)
+                        )
                     for record in rows:
                         run_id, payload, detail = _split_durable(name, record)
+                        if run_id in archived:
+                            self._conn.execute(
+                                _RUNS_UPDATE.replace('"runs"', "archive.runs"),
+                                (
+                                    json.dumps(
+                                        payload, sort_keys=True, separators=(",", ":")
+                                    ),
+                                    *(payload.get(key) for key in QUERY_KEYS),
+                                    run_id,
+                                ),
+                            )
+                            self._conn.execute(
+                                "INSERT INTO archive.run_details (run_id, detail) VALUES (?, ?) "
+                                "ON CONFLICT(run_id) DO UPDATE SET detail = excluded.detail",
+                                (
+                                    run_id,
+                                    json.dumps(
+                                        detail, sort_keys=True, separators=(",", ":")
+                                    ),
+                                ),
+                            )
+                            continue
                         self._conn.execute(
                             _RUNS_INSERT,
                             (
@@ -480,9 +661,12 @@ class RunStore:
         return records
 
     def records(self) -> dict[str, dict[str, Any]]:
-        """Read complete records for census consumers, refreshing the cache."""
+        """Read hot records for current-state consumers, refreshing the cache."""
         records = self._refresh()
-        return records if records is not None else self._indexed_records()
+        if records is None:
+            return self._indexed_records()
+        archived = self._archived_ids()
+        return {key: value for key, value in records.items() if key not in archived}
 
     def get_run(self, run_id: str) -> dict[str, Any] | None:
         """Return one run's durable half as a dict, or None when absent.
@@ -500,7 +684,13 @@ class RunStore:
             'SELECT "payload" FROM "runs" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
         if row is None:
-            return None
+            if not self._is_archived(run_id):
+                return None
+            row = self._conn.execute(
+                "SELECT payload FROM archive.runs WHERE run_id = ?", (run_id,)
+            ).fetchone()
+            if row is None:
+                return None
         return _decoded_record(row[0])
 
     def get_detail(self, run_id: str) -> dict[str, Any] | None:
@@ -518,7 +708,13 @@ class RunStore:
             'SELECT "detail" FROM "run_details" WHERE "run_id" = ?', (run_id,)
         ).fetchone()
         if row is None:
-            return None
+            if not self._is_archived(run_id):
+                return None
+            row = self._conn.execute(
+                "SELECT detail FROM archive.run_details WHERE run_id = ?", (run_id,)
+            ).fetchone()
+            if row is None:
+                return None
         return json.loads(row[0])
 
     def durable_rows(
@@ -541,6 +737,13 @@ class RunStore:
         rows = self._conn.execute(
             'SELECT "run_id", "payload" FROM "runs" WHERE "project" = ?', (project,)
         ).fetchall()
+        if self._attach_archive():
+            rows.extend(
+                self._conn.execute(
+                    "SELECT run_id, payload FROM archive.runs WHERE project = ?",
+                    (project,),
+                ).fetchall()
+            )
         return {
             str(run_id): _decoded_record(payload)
             for run_id, payload in rows
@@ -683,22 +886,29 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
     raises to the caller, which decides what an unreadable answer means for the
     question it asked.
     """
-    path = store_path()
-    if not path.exists():
-        return []
-    connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
-    try:
-        if project is None:
-            rows = connection.execute(
-                'SELECT "payload" FROM "runs" WHERE "node" = ?', (str(node),)
-            ).fetchall()
-        else:
-            rows = connection.execute(
-                'SELECT "payload" FROM "runs" WHERE "node" = ? AND "project" = ?',
-                (str(node), str(project)),
-            ).fetchall()
-    finally:
-        connection.close()
+    hot = store_path()
+    archive = hot.with_name(f"{hot.stem}.archive{hot.suffix}")
+    rows = []
+    for path in (hot, archive):
+        if not path.is_file():
+            continue
+        connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
+        try:
+            if project is None:
+                rows.extend(
+                    connection.execute(
+                        'SELECT "payload" FROM "runs" WHERE "node" = ?', (str(node),)
+                    ).fetchall()
+                )
+            else:
+                rows.extend(
+                    connection.execute(
+                        'SELECT "payload" FROM "runs" WHERE "node" = ? AND "project" = ?',
+                        (str(node), str(project)),
+                    ).fetchall()
+                )
+        finally:
+            connection.close()
     records: list[dict[str, Any]] = []
     for (payload,) in rows:
         if payload is None:
@@ -721,12 +931,22 @@ def indexed_run_ids(project: str) -> set[str] | None:
         return None
     connection = sqlite3.connect(f"{path.resolve().as_uri()}?mode=ro", uri=True)
     try:
-        return {
+        ids = {
             str(row[0])
             for row in connection.execute(
                 "SELECT run_id FROM runs WHERE project = ?", (project,)
             )
         }
+        if connection.execute(
+            "SELECT 1 FROM sqlite_master WHERE name = 'retired_runs'"
+        ).fetchone():
+            ids.update(
+                str(row[0])
+                for row in connection.execute(
+                    "SELECT run_id FROM retired_runs WHERE project = ?", (project,)
+                )
+            )
+        return ids
     finally:
         connection.close()
 
