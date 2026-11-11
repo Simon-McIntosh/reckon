@@ -1985,11 +1985,48 @@ def _assert_attach_line_shape(
     )
 
 
+def _child_pids(pid: int) -> list[int]:
+    """The pids whose parent is ``pid``, read from the process table.
+
+    Read through ``/proc`` rather than by running ``ps``: a ``ps`` subprocess
+    is itself a child of ``pid`` while it runs, so it would report itself.
+    """
+    children: list[int] = []
+    for entry in os.listdir("/proc"):
+        if not entry.isdigit():
+            continue
+        try:
+            stat = Path(f"/proc/{entry}/stat").read_text(encoding="utf-8")
+        except OSError:
+            continue
+        fields = stat.rsplit(")", 1)[-1].split()
+        if len(fields) > 1 and int(fields[1]) == pid:
+            children.append(int(entry))
+    return children
+
+
 def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
     home, repo, monkeypatch
 ) -> None:
     monkeypatch.setattr(crew_dispatch_commands, "_resolved_flight", lambda *args, **kwargs: CONFIG)
-    monkeypatch.setattr(crew, "_spawn", lambda *args, **kwargs: 4242)
+    dispatch_module = importlib.import_module("reckon.crew.dispatch")
+    launches: list[tuple[tuple, dict]] = []
+
+    def no_supervisor(*args, **kwargs):
+        launches.append((args, kwargs))
+        # This test process is the recorded worker: the launch must name a
+        # process that is alive, because the completion below waives a live
+        # run, and naming one that does not exist leaves nothing to waive.
+        return os.getpid()
+
+    # The launch seam this dispatch reaches is ``_start_supervisor``, not
+    # ``crew._spawn``: dispatch is called with no launcher, so its launch step
+    # takes the supervisor branch and starts a detached interpreter that goes
+    # on writing the run's phase after this call returns. Stubbing that seam
+    # keeps the launch in-process, which is what the completion below needs:
+    # the supervisor's own phase write otherwise lands while promotion is
+    # checking that the pointer it read is still the pointer on disk.
+    monkeypatch.setattr(dispatch_module, "_start_supervisor", no_supervisor)
     result = CliRunner().invoke(
         cli_module.main,
         [
@@ -2041,6 +2078,11 @@ def test_no_watch_dispatch_records_the_override_on_pointer_and_ledger(
         )["record"]["watch_override"]
         == waiver
     )
+    # The stub is the seam the launch took, and nothing it started is still
+    # running: a real supervisor is a child of this process that outlives the
+    # call and keeps writing the run's phase.
+    assert launches, "the dispatch started a supervisor through another seam"
+    assert _child_pids(os.getpid()) == []
 
 
 def test_cli_dispatch_arms_a_missing_watcher(home, repo, monkeypatch) -> None:
