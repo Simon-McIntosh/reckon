@@ -336,6 +336,7 @@ def test_a_failed_admitted_launch_keeps_the_waits_it_recorded(
     """
     run_id = "r-waiting-request"
     request = _queued_request(admit_repo, node_id="node-c", run_id=run_id)
+    request["node"]["after"] = ["r-upstream"]
     request["waits"] = ["run:r-upstream"]
     request["wait_projects"] = {"r-upstream": PROJECT}
     runs._write_json(runs.pointer_path(run_id), dict(request))
@@ -372,6 +373,7 @@ def test_a_wait_naming_no_project_records_an_issue_and_an_obligation(
     """
     run_id = "r-waitless-project"
     request = _queued_request(admit_repo, node_id="node-d", run_id=run_id)
+    request["node"]["after"] = ["r-delivered"]
     request["waits"] = ["run:r-delivered"]
     request["wait_projects"] = {}
     request["phase"] = queue_admission.AWAITING_UPSTREAM_PHASE
