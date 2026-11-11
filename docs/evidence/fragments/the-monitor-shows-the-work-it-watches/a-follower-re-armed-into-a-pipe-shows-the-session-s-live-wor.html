@@ -2,29 +2,40 @@
   <h2 id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-title">A follower re-armed into a pipe shows the session's live work</h2>
   <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-what">
     The resume branch of <code>reckon/crew_follow_commands.py</code> hands a
-    pipe one framed snapshot of the session's current work in place of nothing:
-    when the session owns no run, or when every run it owns already stands at
-    the state the pane last drew, the frame names them; a run that moved is left
-    to its own row, so the pane is never drawn twice. A session owning nothing
-    prints the frame with <q>none</q>. The history burst stays terminal-only.
+    pipe the rows for the runs its session still owns and the pane has not
+    drawn: it derives those runs in the row shape
+    <code>_follow_gap_rows</code> reads and replays them against the delivered
+    record, which is the same question the re-attach diff asks of the fleet's
+    rows. A run the record does not hold, or one that moved since the pane drew
+    it, is named once at the word the pane draws now; a run already drawn at
+    that word is not repeated, so a re-arm adds no second row for what the pane
+    carries. The history burst stays terminal-only, and a session owning nothing
+    draws nothing.
   </p>
   <p id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-measure">
     Measure: <code>tests/test_a_rearmed_pipe_follower_shows_its_live_work.py</code>
-    — 4 cases pass at head; the after arm ran 55 tests with 0 failures against a
-    base arm of 51 with 0 failures. The declared negative control (returns early
-    from the pipe branch) fails 3 cases, naming the first case printing nothing.
+    — 6 cases pass, and with the re-arm guard file
+    <code>tests/test_follower_rearm_shows_nothing_twice.py</code> 15 cases pass.
+    The after arm ran 57 tests with 0 failures at the head revision against a
+    base arm of 51 with 0 failures. The declared negative control (the delivered
+    word mapped through <code>ticker._bucket_of</code> before comparison) fails
+    3 of the 6 cases.
   </p>
   <ul id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence">
     <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-rows">
-      The snapshot's run set comes from the session's live pointers, classified
-      by the same projection the live view serves, plus the run-scoped duties
-      the obligations view carries; project-wide duty rows that name no run are
-      excluded.
+      The two halves are read on the pane's own word. A live row carries the
+      producer's state and the delivered record carries what the pane drew, so
+      both are mapped through <code>ticker._display_state</code> before they are
+      compared — a record holding <code>complete</code> matches a pane drawing
+      <code>delivered</code>, while a run recorded at <code>working</code> and
+      standing at <code>queued</code> is drawn.
     </li>
     <li id="a-follower-re-armed-into-a-pipe-shows-the-session-s-live-wor-evidence-parity">
-      The test reads both views over the same temporary store and asserts the
-      pane's run ids equal the union of the session's live runs and its
-      run-scoped duties.
+      The test writes the delivered record with literal strings as production
+      receives them — never through a function under test — and carries a queued
+      and a stalled run, whose counter buckets differ from the words they are
+      drawn at, so the declared control reddens the cases that hide a wrong
+      comparison.
     </li>
   </ul>
 </section>
