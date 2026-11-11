@@ -490,10 +490,13 @@ def overdue_unreconciled_runs(
     by a recorded closure disposition: the same predicate the closure drain
     uses, so a past-grace pointer that carries no valid disposition is still
     refused here (the forgotten-work case) while one the drain counts as
-    reconciled is never refused.
+    reconciled is never refused. A scoring run inside its armed reflex's review
+    window awaits that reflex rather than coordinator reconciliation.
     """
     if not grace:
         return []
+    from reckon.crew import obligations
+
     grace_seconds = parse_duration(grace)
     rows = []
     for pointer in list_live(project=project):
@@ -505,6 +508,14 @@ def overdue_unreconciled_runs(
             and isinstance(age, int)
             and age > grace_seconds
         ):
+            # A review inside the armed reflex's sweep window is its work;
+            # an expired wait or a run without an owner remains actionable.
+            if (
+                row["classification"] == "scoring"
+                and age <= obligations._reflex_review_window_seconds()
+                and obligations._reflex_owns_review(project, pointer)
+            ):
+                continue
             recorded = pointer.get("closure_disposition")
             disposition = (
                 str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
