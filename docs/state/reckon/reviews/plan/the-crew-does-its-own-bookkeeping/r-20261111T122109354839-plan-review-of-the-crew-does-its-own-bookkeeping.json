@@ -1,0 +1,113 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T12:28:48.891Z",
+  "dispatched_at": "2026-11-11T12:23:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:90",
+      "id": "done_when-1",
+      "reason": "a worker handed this measure chases an assertion that is green however the retry behaves, and the review round that would catch it is spent re-deriving a fact the plan already recorded.",
+      "text": "\u00a711's negative control says it \"removes the retry while keeping the 0.2 s `INDEX_BUSY_TIMEOUT_SECONDS` on the connection, and the short lock then fails the append\", but at main `INDEX_BUSY_TIMEOUT_SECONDS` (0.2 s) is passed in exactly one place, `run_store._retrying` (`reckon/run_store.py:964`), which is the retry the control deletes; with the retry gone the append opens a bare `RunStore` at the driver's 5 s patience, so any lock the control can hold for the 3 s `INDEX_RETRY_SECONDS` bound still succeeds and the control stays green. The plan's own stored review of this section already recorded the clause as \"unmet and unsatisfiable at any hold under 5 s\" (comment `r-20261105T102251084655`), and the done-when carries it unchanged.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:53",
+      "id": "reasoning-1",
+      "reason": "the section's premise is wrong and its deliverable already exists, so a dispatched node either reports a vacuous pass or rewrites working code, and the section should close rather than be built.",
+      "text": "\u00a74's Why states \"`crew complete` has no dry run, so a coordinator cannot ask whether a promotion would pass before landing\", which is false at main: `complete_dry_run` exists at `reckon/crew/promotion.py:946` and is wired to the CLI at `reckon/crew_run_commands.py:3300`, the plan's own design-review comment `c-20261023-design-review` says so, and the merge-side refusal the section asks for is already landed with its regression test (`tests/test_merge_requires_promotable_run.py`) as recorded in the section's own comment `c-run-r-20261103T075956692165`. \u00a74's done-when nevertheless asks a node to find `crew complete --dry-run` reporting a red-base refusal, which it would find without writing anything.",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:24",
+      "id": "reasoning-2",
+      "reason": "an open build followup on a landed section sends a node to rebuild shipped work and re-litigate a measure that has already passed, and the plan is the record a coordinator dispatches from.",
+      "text": "\u00a712 and \u00a721 are declared `implementable` with open build followups (`f-tcdiob-012`, `f-tcdiob-021`) while their work is present at main and their own section comments report it delivered and measured: \u00a712's collision refusal is `doccheck._collision_context` (`reckon/doccheck.py:2787`) with `tests/test_doccheck_slug_collision.py` in the tree, and \u00a721's `_recorded_release` is at `reckon/crew/promotion_release.py:665` with the section comment recording \"verified rather than reimplemented \u2026 head arm 3 passed, base arm 1 failed 2 passed\".",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:187",
+      "id": "single_goal-1",
+      "reason": "split into an investigation node and a repair node, the repair gets the cause in its brief and a bounded scope; unsplit, one gate covers an investigation's conclusion and a code change at once and the write fence is either too narrow or unbounded.",
+      "text": "\u00a733 delivers two endpoints in one node: a note naming \"the operation\" with a reproduction log at the base revision, and a guard plus `tests/test_a_landing_leaves_no_stale_staged_copy.py`; its write-path clause (\"If the investigation finds the cause in another module, the node stops and names it\") makes the second deliverable conditional on the first, so the node can neither be closed on one verdict nor dispatched with a known scope. \u00a730 shows the plan already has an investigation-only form for the note half.",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:113",
+      "id": "anchors_resolve-1",
+      "reason": "the anchor names the wrong function for the release path a node is told to rely on, and a worker checking `dispatch_review_for_run` for the branch would conclude it is absent and start re-implementing the release; naming `_dispatch_text_review_for_run` and its real range costs nothing and prevents that.",
+      "text": "\u00a716 cites \"`dispatch_review_for_run` tests `_stranded_launch` on the standing review, discards it and recomposes (`recovery_review_dispatch.py` near lines 2185\u20132205)\"; at main `dispatch_review_for_run` is defined at `reckon/crew/recovery_review_dispatch.py:2656` and does not contain that branch, and lines 2185\u20132205 fall inside `_dispatch_text_review_for_run` (defined at 2176), whose stranded-launch release is at 2289\u20132303.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-crew-does-its-own-bookkeeping.html:163",
+      "id": "anchors_resolve-2",
+      "reason": "each symbol resolves by name within its own module, so a worker reaches the right code with one grep, and replacing the numbers would only re-arm the same drift.",
+      "text": "\u00a727's line ranges for `_grant_round_scope` (near 435\u2013497), `_repair_resume_advice` (near 551) and `_repair_launch_refusal` (near 781) all name code that has moved: at main they are at `reckon/crew/recovery_repair_dispatch.py:651`, `:750` and `:1115`; \u00a729's `ledger._commit_state_write` \"near line 2730\" is at `reckon/ledger.py:2991`; \u00a732's `review_record_refusals` \"`reckon/crew/review.py:932`\" is at 937 and `crew_repair_review` \"`reckon/crew_run_commands.py:1229`\" is at 1241; \u00a725's `declared_severity` \"near lines 176\u2013192\" is at `reckon/crew/review.py:199`.",
+      "type": "anchors_resolve",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "2953209ccae65c07c73c13fe7a676774e3e0c81b",
+  "plan_fingerprint": "d7f1273a00f96aaca82e6344f28418f7395ddd37c08a0f1e50bf0b409244106c",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 140,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T122109354839-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "d0165859c9b5d76a82c883400b6082cf10e72297",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \u00a716 attributes the stranded-launch release branch to `dispatch_review_for_run` near lines 2185\u20132205, where neither that function nor that branch sits.",
+    "done_when": "a finding \u2014 \u00a711's declared negative control cannot make the append fail, so the node's whole measure for that clause rests on a driver timeout rather than the retry.",
+    "evidence_paths": "pass \u2014 every section puts its gate logs under the run directory (`~/.config/reckon/crew/runs/<id>`) and reserves the run scratch directory for the arm checkouts only, which is the correct split; \u00a730 and \u00a733 keep their notes in the run directory rather than in scratch.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the symbols the sections ask for; the new test filenames are named by behaviour (`test_a_stranded_review_no_longer_stands.py`, `test_a_second_complete_finishes_cleanup.py`).",
+    "reasoning": "findings \u2014 \u00a74's stated root cause is contradicted by the plan's own design-review comment and by the tree, and three sections whose work is present at main are still declared `implementable` with open build followups.",
+    "single_goal": "a finding \u2014 \u00a733 carries an investigation and a repair plus its test as one node, and its own write-path clause makes completion conditional on the investigation's outcome.",
+    "wiring": "pass \u2014 every `plan-section-depends-on` entry resolves to a section that exists (\u00a73\u2192\u00a72, \u00a76\u2192\u00a75, \u00a77\u2192\u00a74, \u00a78\u2192\u00a71, \u00a79\u2192\u00a74, \u00a713\u2192\u00a77/\u00a710, \u00a714\u2192\u00a79, \u00a715\u2192\u00a714, \u00a716\u2192\u00a715, \u00a717\u2192\u00a716, \u00a718\u2192\u00a79, \u00a719\u2192\u00a77, \u00a720\u2192\u00a73, \u00a725\u2192\u00a72, \u00a727\u2192\u00a725, \u00a728\u2192\u00a726), and the plan's `standalone` declaration that no section waits on another plan matches the content: the two sibling plans it names (`the-monitor-shows-the-work-it-watches`, `a-coordinator-can-clear-its-own-duties`) are referenced as evidence, never as a wait."
+  },
+  "section_digests": {
+    "_document": "228efa7e9b2e21c19f8f58dccd59ceca7e489873972b0341a0ea13cdd9be6619",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "eb071af115c6cb885404bfcecff89e32a49dff5e2320cb170f63c531701d4409",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "be10222fbb926fdc4d836974d1d08c2536144a9031126f7495a6287ee8824637",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "b78dc61ddf33b375b1ce609a25ab41c3b7817ded96a1793e664ead8b6f3be994",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s29": "cee16ef0e6d7471aa27d3b5ae38b60037bec4bcd730f4c11b81e48711461a50e",
+    "s3": "82923ffe5453d6953374033d35019e07de5b29917533560cbc5730ff737bbe8f",
+    "s30": "fdce4967024d4ebfc8a44747ea2c0a96aa18bc07db75515c17b0afae103f69ef",
+    "s31": "5333cee87b09332d7450646c97dabdc86ad909af957946a6fdda1082587d485d",
+    "s32": "dfb8569df7bcdfabd4c3e302a28bb3124d2ee99755ea04b21520cee5174726ff",
+    "s33": "60501d16274a71e1bb948ba112a5668f88fbb0c01238f36d87bae3d9a19409d1",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "97a25d1bcb177fd8366f65079625d64835768889b839d6734ae89fa8e922189b",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:50:42.733200+00:00",
+  "total": null
+}
