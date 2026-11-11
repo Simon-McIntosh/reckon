@@ -852,6 +852,11 @@
     <p>Run <code>r-20261016T221856967072-the-worker-path-test-reads-the-host-line</code>, commit <code>a1cb17647</code>, merged as <code>8a73f03b8</code>. <code>test_inside_allocation_prompt_names_the_host_and_storage_contract</code> in <code>tests/test_worker_path_carries_shims.py</code> had asserted the host line's wording from before §10 and was red on main. It now reads the in-place clause and the routes out from <code>reckon/nested_launch.py</code>, and asserts that the stale clause "or an sbatch into it" is absent. The three files that pin the host line pass together: 14 passed. Negative control: re-adding the clause to the host line in a copy of the head tree turns the test red, EXIT=1. Review: 113, with one follow-on exempted, on an assertion that compares two constants.</p>
   </section>
 
+  <section id="worker-digests-carry-partition-rule" data-evidence-origin="append">
+    <h2>Worker digests carry the partition rule</h2>
+    <p>Landed from r-20261110T201615063661 (head b38574a5db). The digest generator selects the fleet-node rule by its new heading, the role digests are regenerated, and a pinned repository fixture asserts every mapped heading exists. <code>worker_digest --check</code> reports all four role digests up to date, so the dotfiles hook passes again.</p>
+  </section>
+
 </main>
 </body>
 </html>

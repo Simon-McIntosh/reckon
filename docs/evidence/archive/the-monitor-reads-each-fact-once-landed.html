@@ -70,6 +70,16 @@
     <p>Landed from r-20261109T220051547043 (head 8e44515bbd, on main at f5d3854194). The delivered-review stop now takes the tick's pointer set, so <code>_resolved_reviewed_run_id</code> makes no second <code>list_live</code> call inside a tick. Its review found nothing. <strong>The live check does not improve:</strong> with §20 and §21 both landed, the producer's main thread (pid 3781488, code stamp 99bcb49e9a) was busy in 54 of 56 samples, with one run of 31 consecutive busy samples (<code>~/.config/reckon/crew/runs/r-20261109T220051547043-delivered-review-stop-reads-the-tick-pointers/logs/post-landing-busy-share.log</code>), against 54 of 57 after §19. A new 75 s profile places the remaining time in reading the review store once per run; that is §22.</p>
   </section>
 
+  <section id="held-worktrees-read-once-per-change" data-evidence-origin="append">
+    <h2>Held worktrees are read once per change</h2>
+    <p>Landed from r-20261110T192857883480 (head ec676fcad5). The held-worktree record is recomputed only when a tree, or a pointer naming it, changes. The importer pair ran as all_debug job 1309892 on 98dci4-clu-3141: 92 failures at base and at head, none added. The plan review of 10 November found the section's text imprecise: the base key already excluded most pointer fields, and the negative control as written did not reproduce at base. The landed code was reviewed against tests that pin its behaviour. The post-landing station sample is pending the station's reload.</p>
+  </section>
+
+  <section id="queue-order-rebuilds-roadmap-on-change" data-evidence-origin="append">
+    <h2>Queue ordering rebuilds the roadmap only when a plan changes</h2>
+    <p>Landed through the admit service's lander after its third review (head 38fe5dcdee, on main). The priority keys are keyed on parsed section state, so an edit to followups, decisions or prose no longer rebuilds the roadmap. The directory cache uses <code>file_memo</code>. The plan review of 10 November found the text's negative control and head clause imprecise; the landed tests pin the behaviour on parsed state.</p>
+  </section>
+
 </main>
 </body>
 </html>
