@@ -7,7 +7,7 @@
   <meta name="reckon-type" content="plan">
   <meta name="plan-slug" content="a-report-is-kept-only-when-persisted">
   <meta name="plan-title" content="A report is kept only when persisted">
-  <meta name="plan-summary" content="Crew reports expire by default; a figure, and optionally its data, survives only when someone persists it to the project's own store.">
+  <meta name="plan-summary" content="Crew reports expire by default; a figure, and optionally its data, survives only when someone persists it to the project&#x27;s own store.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
   <meta name="plan-effort-hours" content="14.0">
@@ -21,10 +21,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
-  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;s2&quot;],&quot;s4&quot;:[&quot;s2&quot;],&quot;s5&quot;:[&quot;s3&quot;,&quot;s4&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;s2&quot;,&quot;s4&quot;],&quot;s4&quot;:[&quot;s2&quot;],&quot;s5&quot;:[&quot;s3&quot;,&quot;s4&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
+<meta name="plan-version" content="2">
+<meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
   <main class="plan-doc">
@@ -88,7 +90,7 @@
 <p><strong>What is kept.</strong> An item is kept for as long as any of these holds:</p>
 <ul>
   <li>a §2 record persists something inside it;</li>
-  <li>its path appears in a plan, research or evidence document of its project;</li>
+  <li>its path, or the path of any file or folder inside it, appears in a plan, research or evidence document of its project. A plan usually cites a figure inside a run folder, not the folder itself, and either form keeps the whole item;</li>
   <li>a live run pointer names it.</li>
 </ul>
 <p><strong>What is never removed.</strong> The four folders reckon writes into are swept only by their own existing rules, never as one item: <code>briefs</code>, <code>plan-review</code>, <code>code-review</code> and <code>portfolio-review</code>.</p>
@@ -97,12 +99,17 @@
 <p><strong>Done when</strong> a new <code>tests/test_an_unpersisted_report_expires.py</code> shows, on a synthetic crew home with a mounted synthetic project:</p>
 <ul>
   <li>An unreferenced item 31 days old is removed. A 29-day-old item is kept unless its plan is closed, and is removed once it is.</li>
-  <li>A persisted item, an item cited in a plan document, and an item named by a live pointer are each kept at 90 days.</li>
+  <li>A persisted item, an item whose own path is cited in a plan document, an item cited only through the path of a file inside it, and an item named by a live pointer are each kept at 90 days.</li>
   <li>None of the four reckon-written folders is removed at any age.</li>
   <li>An expired symlinked item has its target and its symlink removed. A symlink whose target lies outside the permitted roots is kept and reported.</li>
   <li>The dry run's candidate list equals the set <code>--apply</code> removes.</li>
 </ul>
-<p>Two negative controls: dropping the citation check removes the cited item and fails the test, and dropping the target-root check removes the outside target and fails the test.</p>
+<p>Three negative controls:</p>
+<ul>
+  <li>dropping the citation check removes the cited item and fails the test;</li>
+  <li>matching citations against the item's own path only removes the item cited through a file inside it and fails the test;</li>
+  <li>dropping the target-root check removes the outside target and fails the test.</li>
+</ul>
 <p>The test files that import <code>reckon.crew.gc</code> add no failure against the base revision, and the test asserts the real crew home is untouched.</p>
 <p>A host measure follows: one dry run over the real reports store, under a timeout on the fleet node, records the count and bytes it would expire per project. It is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>, the new test and that fragment.</p>
 
@@ -127,56 +134,56 @@
   <li>a fresh comparison lists no difference, and the file counts and byte totals match.</li>
 </ul>
 <p>The original is removed only after a late-write copy and a second comparison both show 0 differences. Every action is printed to <code>/work/projects/imas_gpu/_moves/crew-reports/</code>. Nothing is deleted outright: the copies stay until §4 expires them.</p>
-<p><strong>Done when</strong> the swap log names every child folder of both projects as linked or kept, with the reason for each kept one. <code>du</code> of each project's home reports directory, measured under a timeout, is recorded before and after. The record is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/the-existing-backlog-leaves-home.html</code>.</p>
+<p><strong>Done when</strong> the swap log names every child folder of both projects as linked or kept, with the reason for each kept one. Negative control: the log shows at least one folder kept because it changed inside 7 days, so the settle check is seen refusing a folder rather than assumed to. <code>du</code> of each project's home reports directory, measured under a timeout, is recorded before and after. The record is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/the-existing-backlog-leaves-home.html</code>.</p>
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
-      <h2><span class="sec">§</span> Decisions</h2>
-      <div class="r-dec" data-key="figure-data" data-choice="per-item" data-by="Simon McIntosh" data-when="2026-11-11">
-        <p class="r-dec-q">When a figure is persisted, what happens to the data files behind it?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="per-item">Chosen per item: figure only by default, data when ticked</button>
-          <button class="r-opt" data-value="regenerate">Figure and provenance only; data regenerated from the commit</button>
-          <button class="r-opt" data-value="always">Data always persisted with the figure</button>
-        </p>
-        <p class="r-dec-rat">A figure from a long solver run cannot be rebuilt cheaply, so its data can be kept deliberately. The default keeps the 49 GB of .nc and .h5 in imas-efit from being persisted by reflex.</p>
-      </div>
-      <div class="r-dec" data-key="unpersisted-lifetime" data-choice="plan-close-or-30-days" data-by="Simon McIntosh" data-when="2026-11-11">
-        <p class="r-dec-q">How long does a report nobody persisted stay in the crew home?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="7-days">7 days after the run ends</button>
-          <button class="r-opt" data-value="plan-close-or-30-days">Until its plan closes or 30 days, whichever comes first</button>
-          <button class="r-opt" data-value="plan-close">Until its plan closes</button>
-        </p>
-        <p class="r-dec-rat">Slow plans keep their working evidence for a month, and the 30-day ceiling stops a long-lived plan from growing without bound. The lead asked in the same answer for an SPA filter for retained images, which is §5.</p>
-      </div>
-      <div class="r-dec" data-key="persist-root" data-choice="per-project-flight" data-by="Simon McIntosh" data-when="2026-11-11">
-        <p class="r-dec-q">Where does persisted large data go?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="per-project-flight">A per-project root named in flight configuration, on /work</button>
-          <button class="r-opt" data-value="single-root">One fixed root for every project</button>
-          <button class="r-opt" data-value="git-only">Git only, with large files never persisted</button>
-        </p>
-        <p class="r-dec-rat">Projects outside the GPU allocation can point elsewhere, and reckon keeps no project name or host path in code.</p>
-      </div>
-      <div class="r-dec" data-key="existing-backlog" data-choice="move-then-expire" data-by="Simon McIntosh" data-when="2026-11-11">
-        <p class="r-dec-q">What happens to the existing 330 GB before the policy lands?</p>
-        <p class="r-dec-opts">
-          <button class="r-opt" data-value="move-then-expire">Move to /work now; §4 expires it later, keeping plan-cited items</button>
-          <button class="r-opt" data-value="expire-now">Expire now, keeping plan-cited items</button>
-          <button class="r-opt" data-value="hand-triage">Triage by hand first</button>
-        </p>
-        <p class="r-dec-rat">This frees home at once with nothing deleted, and leaves the deletion to a rule that has a test and a dry run.</p>
-      </div>
-    </section>
+<h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="figure-data" data-choice="per-item" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">When a figure is persisted, what happens to the data files behind it?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="per-item">Chosen per item: figure only by default, data when ticked</button>
+      <button class="r-opt" data-value="regenerate">Figure and provenance only; data regenerated from the commit</button>
+      <button class="r-opt" data-value="always">Data always persisted with the figure</button>
+      </p>
+    <p class="r-dec-rat">A figure from a long solver run cannot be rebuilt cheaply, so its data can be kept deliberately. The default keeps the 49 GB of .nc and .h5 in imas-efit from being persisted by reflex.</p>
+    </div>
+<div class="r-dec" data-key="unpersisted-lifetime" data-choice="plan-close-or-30-days" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">How long does a report nobody persisted stay in the crew home?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt" data-value="7-days">7 days after the run ends</button>
+      <button class="r-opt chosen" data-value="plan-close-or-30-days">Until its plan closes or 30 days, whichever comes first</button>
+      <button class="r-opt" data-value="plan-close">Until its plan closes</button>
+      </p>
+    <p class="r-dec-rat">Slow plans keep their working evidence for a month, and the 30-day ceiling stops a long-lived plan from growing without bound. The lead asked in the same answer for an SPA filter for retained images, which is §5.</p>
+    </div>
+<div class="r-dec" data-key="persist-root" data-choice="per-project-flight" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">Where does persisted large data go?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="per-project-flight">A per-project root named in flight configuration, on /work</button>
+      <button class="r-opt" data-value="single-root">One fixed root for every project</button>
+      <button class="r-opt" data-value="git-only">Git only, with large files never persisted</button>
+      </p>
+    <p class="r-dec-rat">Projects outside the GPU allocation can point elsewhere, and reckon keeps no project name or host path in code.</p>
+    </div>
+<div class="r-dec" data-key="existing-backlog" data-choice="move-then-expire" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">What happens to the existing 330 GB before the policy lands?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="move-then-expire">Move to /work now; §4 expires it later, keeping plan-cited items</button>
+      <button class="r-opt" data-value="expire-now">Expire now, keeping plan-cited items</button>
+      <button class="r-opt" data-value="hand-triage">Triage by hand first</button>
+      </p>
+    <p class="r-dec-rat">This frees home at once with nothing deleted, and leaves the deletion to a rule that has a test and a dry run.</p>
+    </div>
+</section>
 
     <section data-reckon="followups" id="followups" class="r-followups">
-      <h2><span class="sec">§</span> Followups</h2>
-      <article class="r-fu" data-id="f-arkp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-11" data-recommends-skill="/reckon-build a-report-is-kept-only-when-persisted §2" data-resolved-at="" data-resolved-by="">
-        <h4 class="r-fu-title">Persisted-item record and persist root</h4>
-        <div class="r-fu-body"><p>§2 comes first; §3 and §4 both read its records. A content review of the plan is owed before dispatch.</p></div>
-        <pre class="r-fu-prompt">/reckon-build a-report-is-kept-only-when-persisted §2</pre>
-      </article>
-    </section>
+<h2><span class="sec">§</span> Followups</h2>
+<article class="r-fu" data-id="f-arkp-001" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-11" data-recommends-skill="/reckon-build a-report-is-kept-only-when-persisted §2" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Persisted-item record and persist root</h4>
+    <div class="r-fu-body"><p>§2 comes first; §3 and §4 both read its records. A content review of the plan is owed before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-report-is-kept-only-when-persisted §2</pre>
+    </article>
+</section>
   </main>
 </body>
 </html>
