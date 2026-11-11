@@ -1186,6 +1186,10 @@ def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
 # marker no write commits would leave every session's tree dirty.
 _GENERATION_MEMBER = "generation"
 _RUNS_DIRECTORY_MEMBER = "runs_directory"
+# The store reads an absent counter as this value. The ledger reads it as "no
+# key": a project no ledger write has touched has nothing to compare, so its
+# index must go back to the documents rather than trust stamps it cannot check.
+_ABSENT_GENERATION = "none"
 
 
 def ledger_generation_path(project: str) -> Path:
@@ -1193,14 +1197,19 @@ def ledger_generation_path(project: str) -> Path:
     return _store.write_generation_path(project)
 
 
-def ledger_generation(project: str) -> str:
-    """The project's write generation as the index records and compares it.
+def ledger_generation(project: str) -> str | None:
+    """The project's write generation, or ``None`` when no write recorded one.
 
-    A project no write has touched reads ``"none"``, which compares equal to
-    any index published before the value existed only when it also recorded
-    ``"none"``; either way the comparison is equality, so no case is special.
+    The store reads an absent counter as ``"none"``. That value must not key a
+    reuse: a ledger whose documents were all written by something that never
+    bumped — a project this code has not written since the key existed, or a
+    writer outside every ledger write path — has no generation to compare, and
+    the only safe reading of that is to walk the documents as before. ``None``
+    is the "read the documents" case, so absence keeps its old meaning while a
+    counter that exists is compared by equality.
     """
-    return _store.read_write_generation(project)
+    generation = _store.read_write_generation(project)
+    return None if generation == _ABSENT_GENERATION else generation
 
 
 def _bump_generation(project: str) -> None:
@@ -1724,7 +1733,8 @@ def _indexed_data(
             # or an index that recorded no generation — reads them as it
             # always has.
             reuse_documents = (
-                recorded.get(_GENERATION_MEMBER) == generation
+                generation is not None
+                and recorded.get(_GENERATION_MEMBER) == generation
                 and recorded.get(_RUNS_DIRECTORY_MEMBER) == runs_stamp
             )
             # The index records the ledger path it indexes, so a sweep can tell

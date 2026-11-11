@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import contextlib
 import json
+import os
 import subprocess
 from pathlib import Path
 
@@ -190,6 +191,32 @@ def test_with_no_generation_file_a_read_rebuilds_and_finds_the_change(tmp_path):
     gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
     assert gates[_run_record(3)["run_id"]] == "failed"
     assert len(seen) >= 20, f"the read did not walk the documents: {len(seen)} stats"
+
+
+def test_a_ledger_no_write_has_touched_never_reuses_a_stale_index(tmp_path):
+    """No counter means no key, so even a warm read goes back to the documents.
+
+    A project whose documents were all written by something that never bumped —
+    a writer outside every ledger write path, or a ledger this code has not
+    written since the key existed — has no generation to compare. An index
+    published against that absence must not be trusted: an in-place edit that
+    keeps the document's mtime is invisible except by walking, so the read walks
+    and returns the edit.
+    """
+    root = tmp_path / "repo"
+    (root / "docs" / "state" / PROJECT / "runs").mkdir(parents=True)
+    target = ledger.run_path(PROJECT, str(_run_record(0)["run_id"]), root)
+    target.write_text(json.dumps(_run_record(0)), encoding="utf-8")
+    assert not ledger.ledger_generation_path(PROJECT).exists()
+
+    ledger.load(PROJECT, root)
+    before = target.stat()
+    target.write_text(json.dumps(_run_record(0, gate="failed")), encoding="utf-8")
+    os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
+
+    data, _version = ledger.load(PROJECT, root)
+    gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
+    assert gates[_run_record(0)["run_id"]] == "failed"
 
 
 def test_a_document_added_without_a_bump_is_still_seen(tmp_path):
