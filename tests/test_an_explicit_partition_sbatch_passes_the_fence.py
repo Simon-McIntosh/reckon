@@ -192,7 +192,7 @@ def test_required_option_values_cannot_select_a_partition(option):
     [
         ["--nice", "--partition", "all_debug"],
         ["--exclusive=user", "-pall_debug"],
-        ["-kvvpall_debug"],
+        ["-k", "-vvpall_debug"],
         ["--output=--partition=rigel", "-p", "all_debug"],
         ["-o-prigel", "--partition=all_debug"],
         ["--error", "log", "-Hvpall_debug"],
@@ -209,6 +209,7 @@ def test_attached_values_optional_values_and_flag_clusters_preserve_options(opti
         ["--partition=all_debug", "--unknown"],
         ["--partition=all_debug", "--partition="],
         ["--wait=--partition=all_debug"],
+        ["-kpall_debug"],
         ["-o", "log", "job.sh", "-prigel"],
     ],
 )
