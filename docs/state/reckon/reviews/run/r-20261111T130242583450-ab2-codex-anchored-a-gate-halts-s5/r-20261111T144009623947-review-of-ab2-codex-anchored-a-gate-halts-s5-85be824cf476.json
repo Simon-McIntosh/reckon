@@ -1,0 +1,124 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": {
+    "added_assertions": [],
+    "coupled_assertions": "None added; the existing FENCE expectation comes from configuration, independently of the empty node budget that the regression returns.",
+    "existing_assertions": [
+      {
+        "fails_when": "Removing the floor returns the empty declared budget instead of the configured 6h fence.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 76
+      },
+      {
+        "fails_when": "Picker sizing switches away from time_budget as its size source.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 84
+      },
+      {
+        "fails_when": "Removing the floor sizes the H200 brief at up_to_30m instead of over_60m.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 85
+      },
+      {
+        "fails_when": "A plain brief is incorrectly raised above its declared 8m budget.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 91
+      },
+      {
+        "fails_when": "A plain 8m brief is classified outside the small budget bucket.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 92
+      },
+      {
+        "fails_when": "Flooring incorrectly lowers an explicit 12h budget to the 6h fence.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 98
+      },
+      {
+        "fails_when": "An absent configured fence incorrectly synthesizes a budget for an empty declaration.",
+        "file": "tests/test_a_heavy_gate_gets_a_full_budget.py",
+        "line": 104
+      }
+    ]
+  },
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/evidence.py:687 compose_landed_record consumes the added fragment",
+    "reckon/mcp.py:1339 composes it for resource reads",
+    "reckon/serve.py:2705 composes it for HTTP reads",
+    "reckon/crew/picker/prompts.py:609 reaches the verified budget floor through lane_context.build",
+    "reckon/crew/picker/lane_context.py:439 return_times",
+    "reckon/crew/picker/lane_context.py:1028 build"
+  ],
+  "completed_at": "2026-11-11T14:54:09Z",
+  "dispatched_at": "2026-11-11T14:45:42Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T130242583450-ab2-codex-anchored-a-gate-halts-s5/head-suite.log",
+      "revision": "8190c620431d22c4c842dfc749c3ba855aee8990"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T130242583450-ab2-codex-anchored-a-gate-halts-s5/baseline-suite.log",
+      "revision": "f62c42e935d50c9e75b85d4154211b6e1cc89672"
+    },
+    "head_measurement_note": "Head arms measured 8190c620431d22c4c842dfc749c3ba855aee8990; the subsequent commit changes only the evidence fragment.",
+    "importer_pair": {
+      "added_failures": 0,
+      "base_passed": 155,
+      "head_passed": 155
+    },
+    "positive_control_failure_ids": [
+      "tests/test_a_heavy_gate_gets_a_full_budget.py::test_a_brief_naming_an_h200_job_takes_the_resolved_fence",
+      "tests/test_a_heavy_gate_gets_a_full_budget.py::test_the_picker_sizes_a_heavy_brief_at_the_fence_not_the_small_default"
+    ]
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read both 8190c620431d22c4c842dfc749c3ba855aee8990 and 85be824cf476969ca6ac950774e2a6f53f8db428 against f62c42e935d50c9e75b85d4154211b6e1cc89672; they add one 37-line evidence fragment and then correct its slug and add head results, with no production definitions or test assertions added.",
+    "done_when": "Read prompt.txt:126-127 and the retained logs; baseline-focused.log records 5 passing heavy-gate cases, negative-control.log records the 6h-to-8m regression and two failing tests, and the two importer logs each record 155 passing tests with no added failure.",
+    "goal": "Read the source goal at prompt.txt:38 and live plan section s5; docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:19 correctly records that the required budget floor and tests already exist at base, so verification satisfies the goal without reimplementing them.",
+    "manifest": "Read manifest.md and its named logs; its complete status, two commits, evidence-only changed_paths, 51/51 declared suite results and 155/155 importer results reconcile with those artifacts.",
+    "write_paths": "Read prompt.txt:80-83; the sole changed path is the explicitly granted evidence fragment, while lane_context.py, regression tests and figure paths are unchanged."
+  },
+  "justifications": {
+    "durability": "No assertion is added by the diff, while existing tests/test_a_heavy_gate_gets_a_full_budget.py:76 and :85 independently reject a missing floor and small size class, as the retained negative-control.log demonstrates with both tests failing.",
+    "evidence": "The fragment's table at lines 23-29 matches the complete focused, negative-control, baseline/head suite and baseline/head importer logs, with the final evidence-only commit clearly distinguished from the measured head.",
+    "fit": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:6-10 uses the established evidence metadata and a unique slug, and final-doccheck.log records the document audit passing.",
+    "goal_fidelity": "docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:19 accurately reports the already-correct behavior, and lane_context.py:190-213 supplies the configured floor without lowering a larger budget.",
+    "reuse": "The diff adds no function, class or module; it records the existing lane_context.node_budget owner and uses the existing fragment composition mechanism in reckon/evidence.py:687 instead of duplicating either capability.",
+    "scope_discipline": "The base-to-head diff changes only docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html, a path explicitly listed at source prompt.txt:82."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source goal at prompt.txt:38 and live plan section s5; docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:19 correctly records that the required budget floor and tests already exist at base, so verification satisfies the goal without reimplementing them.\nVERDICT done_when: Read prompt.txt:126-127 and the retained logs; baseline-focused.log records 5 passing heavy-gate cases, negative-control.log records the 6h-to-8m regression and two failing tests, and the two importer logs each record 155 passing tests with no added failure.\nVERDICT write_paths: Read prompt.txt:80-83; the sole changed path is the explicitly granted evidence fragment, while lane_context.py, regression tests and figure paths are unchanged.\nVERDICT manifest: Read manifest.md and its named logs; its complete status, two commits, evidence-only changed_paths, 51/51 declared suite results and 155/155 importer results reconcile with those artifacts.\nVERDICT diff: Read both 8190c620431d22c4c842dfc749c3ba855aee8990 and 85be824cf476969ca6ac950774e2a6f53f8db428 against f62c42e935d50c9e75b85d4154211b6e1cc89672; they add one 37-line evidence fragment and then correct its slug and add head results, with no production definitions or test assertions added.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record consumes the added fragment, reckon/mcp.py:1339 composes it for resource reads, reckon/serve.py:2705 composes it for HTTP reads, reckon/crew/picker/prompts.py:609 reaches the verified budget floor through lane_context.build, reckon/crew/picker/lane_context.py:439 return_times, reckon/crew/picker/lane_context.py:1028 build\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:19 accurately reports the already-correct behavior, and lane_context.py:190-213 supplies the configured floor without lowering a larger budget.\nSCORE evidence: 20\nJUSTIFICATION evidence: The fragment's table at lines 23-29 matches the complete focused, negative-control, baseline/head suite and baseline/head importer logs, with the final evidence-only commit clearly distinguished from the measured head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff changes only docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html, a path explicitly listed at source prompt.txt:82.\nSCORE durability: 20\nJUSTIFICATION durability: No assertion is added by the diff, while existing tests/test_a_heavy_gate_gets_a_full_budget.py:76 and :85 independently reject a missing floor and small size class, as the retained negative-control.log demonstrates with both tests failing.\nSCORE fit: 20\nJUSTIFICATION fit: docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-codex-anchored-a-gate-halts-s5.html:6-10 uses the established evidence metadata and a unique slug, and final-doccheck.log records the document audit passing.\nSCORE reuse: 20\nJUSTIFICATION reuse: The diff adds no function, class or module; it records the existing lane_context.node_budget owner and uses the existing fragment composition mechanism in reckon/evidence.py:687 instead of duplicating either capability.\n",
+  "review_run_id": "r-20261111T144009623947-review-of-ab2-codex-anchored-a-gate-halts-s5-85be824cf476",
+  "reviewed_base_sha": "f62c42e935d50c9e75b85d4154211b6e1cc89672",
+  "reviewed_head_sha": "85be824cf476969ca6ac950774e2a6f53f8db428",
+  "reviewed_run_id": "r-20261111T130242583450-ab2-codex-anchored-a-gate-halts-s5",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T15:17:07.949775+00:00",
+  "total": 120
+}

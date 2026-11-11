@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="18">
+<meta name="plan-version" content="19">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -112,6 +112,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T173836158667-picker-budget-floor-from-brief" data-who="reckon-build" data-when="2026-11-07T18:53:03.455Z">
     <div class="r-comment-body"><p>picker §5 — the picker now sizes a node by `node_budget`: a node whose goal, done-when or brief names a SLURM scheduler verb, GPU model/host, partition or cluster job takes the larger of its declared budget and the resolved fence (a brief naming an H200 job with no budget receives 6h in the fixture, bucket over_60m, against up_to_30m at base), while a node naming no compute keeps its declared budget (8m, up_to_30m); 5 new tests, base arm 2 failed/180 passed, head arm 2 failed/185 passed (same two pre-existing ids), negative control 2 failed/3 passed with the floor removed.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261111T144009623947-review-of-ab2-codex-anchored-a-gate-halts-s5-85be824cf476" data-who="reckon-build" data-when="2026-11-11T14:54:09Z">
+    <div class="r-comment-body"><p>Independently reviewed base f62c42e935d50c9e75b85d4154211b6e1cc89672 to head 85be824cf476969ca6ac950774e2a6f53f8db428; six scores of 20, no findings, zero added failures; evidence-only delivery preserves the already-correct budget floor.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T221855825224-review-of-answer-only-edit-owes-no-review-0601bc4fc2f7" data-who="reckon-build" data-when="2026-11-07T22:56:40.043Z">
     <div class="r-comment-body"><p>review of run r-20261107T174332129120-answer-only-edit-owes-no-review at 162fcb20..0601bc4f read commit by commit: the accepted-edit coverage feature lands and its seven cases pass, with 0 added failures against the base; one blocking defect found — `crew review --plan X --accept-edits "&lt;reason&gt;" --dry-run` writes the accepted-edits entry and commits the record, reproduced with the node's own fixture (probe-dry-run.log, 1 failed, EXIT=1); scores goal_fidelity 18, evidence 17, scope_discipline 11, durability 15, fit 17, reuse 17</p></div>
