@@ -24,7 +24,7 @@
   <title>Crew State Stays Bounded | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -261,6 +261,12 @@
 <div class="r-comment" data-section="s10" data-id="c-close-s10" data-who="reckon-build" data-when="2026-11-07T18:40:00Z">
     <div class="r-comment-body"><p>§10 landed at <code>5bc89fc029</code>: a pass is bounded by its limit and a cursor only an applied pass moves; a --limit 500 pass over the real store finished in 223.93 s. The full-store dry run's phases did not complete (judge exceeds 1,900 s, per-prune sizing outside scope). The declaration is set by hand because the promotion recorded impl_move exempt (corrective-run:resume). <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s10">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T063629427067-review-of-ledger-caches-shared-and-pruned-80caedd42a9b" data-who="reckon-build" data-when="2026-11-11T06:46:18Z">
+    <div class="r-comment-body"><p>Independent review of base 946d691d74d681ff392c907b657967096656e531 through head 80caedd42a9b970ae40fdc3ef8dc8ace98283123 stored in both granted review paths; all six dimensions scored; added failure count 0; no blocking findings and one non-blocking duplicate test Git helper requiring coordinator disposition.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T035550813418-ledger-caches-shared-and-pruned" data-who="reckon-build" data-when="2026-11-11T06:17:13Z">
+    <div class="r-comment-body"><p>Worktrees share one repository/projection ledger cache; differing ledgers read through. Scheduled retention prunes orphan indexes and picker views older than seven days while keeping fresh and held files. Release keeps shared caches and removes only private legacy files. Armed gate 64 passed; all 11 prior added ids pass; 306 matched importer files produce zero added failure ids (90 baseline, 88 head); Ruff adds zero findings and formatting passes.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-20261023-s2-owners" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>supervisor.json</code>, composed at dispatch by <code>_supervisor_spec</code> in <code>reckon/crew/dispatch_launch.py</code>, already carries <code>argv</code> in the run directory, so §2 should extend it rather than add a second sidecar. The review also lists the live-pointer read sites §2 must route, among them <code>reckon/run_record.py</code>, <code>reckon/crew/promotion.py</code>, <code>reckon/crew/queue_admission.py</code>, <code>reckon/crew/recovery_watch.py</code> and <code>reckon/serve.py</code>.</p></div>
 </div>
@@ -368,9 +374,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-23T11:30:00Z">
     <div class="r-comment-body"><p>Section 9 landed at merge <code>d549d0066</code>: the retention-sweep verb is exempt as operator maintenance, and the skill-contract verb case passes. <a href="/reckon/evidence/archive/crew-state-stays-bounded-landed.html#s9">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T063629427067-review-of-ledger-caches-shared-and-pruned-80caedd42a9b" data-who="reckon-build" data-when="2026-11-11T06:46:18Z">
-    <div class="r-comment-body"><p>Independent review of base 946d691d74d681ff392c907b657967096656e531 through head 80caedd42a9b970ae40fdc3ef8dc8ace98283123 stored in both granted review paths; all six dimensions scored; added failure count 0; no blocking findings and one non-blocking duplicate test Git helper requiring coordinator disposition.</p></div>
 </div>
 </section>
 </main>
