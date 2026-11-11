@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="326">
+<meta name="plan-version" content="327">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -744,6 +744,9 @@
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261108T082456646701-keep-every-field-of-a-queued-node" data-who="reckon-build" data-when="2026-11-08T15:19:36Z">
     <div class="r-comment-body"><p>`_node_from_pointer` in `reckon/crew/queue_admission.py` and `TaskNode.as_dict()` in `reckon/crew/node.py` now read the dataclass's own field list in both directions and copy every collection deeply, so a queued-node rebuild loses nothing and neither the serialised node nor the pointer record can mutate the other; measured by a replay that lost 4 fields before the change and 0 after, with the new test's 4 cases passing at the head and its first two failing at the dispatch base.</p></div>
 </div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261111T044922902776-review-of-keep-only-named-run-waits-6b9af653a307" data-who="reckon-build" data-when="2026-11-11T05:09:07.078Z">
+    <div class="r-comment-body"><p>review of r-20261108T184647471418-keep-only-named-run-waits at base d98e22fb19 to head 6b9af653a3 stored as a parsed record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 5; 101/120), zero added failures, one non-blocking finding: the new `own` set at reckon/crew/queue_admission.py:4092 duplicates what derive_wait_refs already builds at :2719, so the union at :4093 is a no-op and the line can be deleted.</p></div>
+</div>
 <div class="r-comment" data-section="s38" data-id="c-run-r-20261109T013333105895-review-of-a-released-request-takes-the-sections-current-contract-6b5e2d2baff2" data-who="reckon-build" data-when="2026-11-09T01:41:34.591Z">
     <div class="r-comment-body"><p>The review of r-20261108T232332477115-a-released-request-takes-the-sections-current-contract at head 6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5 stores a parsed record scoring all six dimensions (goal_fidelity 19, evidence 15, scope_discipline 20, durability 14, fit 17, reuse 16) with added_failure_count 0, five non-blocking findings, and the revision pair 29b47d2cb8dc87054d1ba97457c8cfbe48f10544..6b5e2d2baff25f4d1ace2921f8009ade8ccba9e5.</p></div>
 </div>
@@ -906,8 +909,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
 </div>
-<div class="r-comment" data-section="s37" data-id="c-run-r-20261111T044922902776-review-of-keep-only-named-run-waits-6b9af653a307" data-who="reckon-build" data-when="2026-11-11T05:09:07.078Z">
-    <div class="r-comment-body"><p>review of r-20261108T184647471418-keep-only-named-run-waits at base d98e22fb19 to head 6b9af653a3 stored as a parsed record (goal_fidelity 20, evidence 18, scope_discipline 20, durability 19, fit 19, reuse 5; 101/120), zero added failures, one non-blocking finding: the new `own` set at reckon/crew/queue_admission.py:4092 duplicates what derive_wait_refs already builds at :2719, so the union at :4093 is a no-op and the line can be deleted.</p></div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261111T064139388545-review-of-a-reflex-owned-review-never-blocks-a-dispatch-a32cf74cc02d" data-who="reckon-build" data-when="2026-11-11T06:56:32Z">
+    <div class="r-comment-body"><p>Independent review of fc6009a41705c2af12c24437b9a5b897c6d16937..a32cf74cc02d3c145abcccd2971b62da35310d7a stored parsed at its head-keyed run-directory path; all six dimensions 20/20, no findings, added_failure_count=0.</p></div>
 </div>
 </section>
 </main>
