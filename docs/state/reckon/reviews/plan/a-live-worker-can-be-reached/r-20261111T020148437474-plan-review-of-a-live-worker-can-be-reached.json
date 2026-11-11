@@ -1,0 +1,65 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:13:52.027Z",
+  "dispatched_at": "2026-11-11T02:06:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "anchors_resolve-1",
+      "reason": "naming the plan and section, and stating that the `-c` route exists but the MCP-server instance is unbuilt, is a one-sentence edit that stops the node searching for a precedent that is not there and lets a coordinator see s9 does not need to wait for it.",
+      "text": "s9 says the argv route is \"the same route the anchored-edit section uses for its MCP server\", but this plan has no anchored-edit section: the referent is \u00a75 of workers-spend-fewer-tokens-per-landed-node.html (line 84, \"the codex argv gains `-c` overrides declaring an `mcp_servers.anch\u2026`\"), which carries `data-status=\"implementable\"` and so is not built, and the only `-c` override the codex dialect composes today is `model_reasoning_effort` at `reckon/_backends.py:1372` \u2014 an implementer told to follow a built precedent will find none, and a coordinator cannot tell from this plan whether s9 waits on that section",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "reasoning-1",
+      "reason": "the node's first step is scoped to establishing the override keys only, so a differing codex hook payload or output shape would surface mid-run as a mystery failure rather than as a named unknown; adding the output contract to the first step costs one line and makes the two-arm run diagnostic instead of exploratory.",
+      "text": "s9 concludes from the prototype that codex \"uses the same schema as Claude Code \u2026 so \u00a78's hook script works for codex unchanged in principle\", but every codex run in that prototype failed at the earlier step (the research doc records three codex attempts where \"all three runs completed normally, the hook never ran, no receipt was written\"), so the evidence establishes only that an untrusted hook is skipped and says nothing about whether codex places `hookSpecificOutput.additionalContext` in front of the model, what its hook stdin payload looks like, or that s8's script parses it \u2014 the trust is necessary but is not shown to be sufficient",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "reasoning-2",
+      "reason": "every property the decision protects is preserved and narrowed (no write to `~/.codex/config.toml`, no other hook trusted, no `--dangerously-bypass-hook-trust`), so the plan's work is unchanged; the cost is confined to a reader reconciling s9 against the decision text, which the section could pre-empt in one clause.",
+      "text": "s9 opens \"Under the locked `codex-hook-trust` decision\", whose chosen option is `trust-in-run-home` and whose rationale says trust is \"recorded for exactly reckon's own inbox hook in each run's private CODEX_HOME\" (plan.html:198-205), while s9 now supplies the same trust as `-c` argv overrides and writes no file at all, so the section implements a route the locked rationale does not describe and does not say so",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "5e60e50060f91d552cde4b966b58c9c67de43e95",
+  "plan_fingerprint": "6feee2949f67f49822cb85ba78b3e9a075fcfa07bcccc5d809f4bb0b3182cf65",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 29,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T020148437474-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "ba1689dc08c8be3d02f8df51a61f482eec04ce1a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 \"the same route the anchored-edit section uses for its MCP server\" names no plan and no section, and the section it means is still unbuilt.",
+    "done_when": "pass \u2014 the falsifying arm is present and measurable (same argv minus the trust override: message unclaimed, no receipt), the positive arm requires a claimed message plus a receipt plus the codeword in the final answer, and \"the user's codex config untouched\" is a before/after comparison; note only that the control is stated inline rather than under the literal `Negative control:` label s8 uses.",
+    "evidence_paths": "pass \u2014 both arms' streams and receipts are kept as gate logs and the receipt set is `<run dir>/inbox/receipts.jsonl`, which is durable under the run directory; nothing is written to a session scratchpad, and the prototype's own scratch loss is why the scripts are reproduced in the research doc.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach code or symbols; `codex-hook-trust` and `hooks.state.<key>.trusted_hash` are a decision key and codex's own config key respectively, and the prose states mechanisms rather than a changelog.",
+    "reasoning": "a finding \u2014 the claim that \u00a78's hook \"works for codex unchanged\" is not supported by the cited prototype, which never got the hook to run under codex; a second, non-blocking finding records that the locked decision's rationale describes a route s9 no longer takes.",
+    "single_goal": "pass \u2014 one deliverable, codex runs receive \u00a78's hook and its trust; the override-key discovery, the argv composition and the two-arm live run are the one goal's steps.",
+    "wiring": "pass \u2014 `plan-section-depends-on` declares s9 \u2192 s8, and s8's hook file is the only upstream s9 consumes; the argv `-c` override route s9 builds on already exists at `_CodexDialect.argv` (`reckon/_backends.py:1372`, `-c model_reasoning_effort=\u2026`) and `argv()` already takes `run_directory` (`reckon/_backends.py:1355`), so no dependency is missing and no new plumbing is implied."
+  },
+  "section_digests": {
+    "_document": "81eb80e073381f3b1366ce6545c0ae40e6e5ba15ccbd0cf16f9a6483d2e5c8ab",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "370dc84ad6d12da660f0a9c95ec0239ccceac16de70baee83c48a62778a2b195",
+    "s9": "a5f119910aed2eb9881f7fe67985c61745fda3512efd5cb49e46b35927800e1c"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:21:19.745666+00:00",
+  "total": null
+}
