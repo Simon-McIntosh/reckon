@@ -193,6 +193,37 @@ def test_with_no_generation_file_a_read_rebuilds_and_finds_the_change(tmp_path):
     assert len(seen) >= 20, f"the read did not walk the documents: {len(seen)} stats"
 
 
+def test_a_failed_advance_leaves_the_next_read_walking(tmp_path, monkeypatch):
+    """A bump that cannot be recorded must not hide the edit it followed.
+
+    The store suppresses a failed advance, which for a ledger leaves the counter
+    equal to the one the index recorded and an edit invisible to a warm read.
+    The ledger's bump verifies the advance and removes the counter when it did
+    not move, so the next read goes back to the documents.
+    """
+    root = _build(tmp_path / "repo", 2)
+    ledger.load(PROJECT, root)
+    assert ledger.ledger_generation(PROJECT) is not None
+
+    monkeypatch.setattr(_store, "advance_write_generation", lambda project: None)
+
+    target = ledger.run_path(PROJECT, str(_run_record(0)["run_id"]), root)
+    before = target.stat()
+    target.write_text(json.dumps(_run_record(0, gate="failed")), encoding="utf-8")
+    os.utime(target, ns=(before.st_atime_ns, before.st_mtime_ns))
+    ledger.write_run_file(PROJECT, _run_record(1), root)
+
+    assert not ledger.ledger_generation_path(PROJECT).exists(), (
+        "the counter survived a failed advance, so a reader would compare it "
+        "with the index and reuse stamps for the edited document"
+    )
+    with _counting_stats() as seen:
+        data, _version = ledger.load(PROJECT, root)
+    gates = {row["run_id"]: row.get("gate") for row in data["runs"]}
+    assert gates[_run_record(0)["run_id"]] == "failed"
+    assert len(seen) >= 2, f"the read did not walk the documents: {len(seen)}"
+
+
 def test_a_ledger_no_write_has_touched_never_reuses_a_stale_index(tmp_path):
     """No counter means no key, so even a warm read goes back to the documents.
 
@@ -306,8 +337,13 @@ def test_a_run_split_is_seen_by_the_next_read(tmp_path):
     data, _version = ledger.load(PROJECT, root)
     assert len(data["runs"]) == 3, "the seeded aggregate was not read"
 
+    before = ledger.ledger_generation(PROJECT)
     entry = ledger._split_project_runs(PROJECT, root / "docs", dry_run=False)
     assert entry["written"] == 3, entry
+    assert ledger.ledger_generation(PROJECT) != before, (
+        "the split wrote documents without advancing the generation, so the "
+        "next read would reuse stamps for a ledger it just changed"
+    )
 
     data, _version = ledger.load(PROJECT, root)
     gates = {row["run_id"]: row.get("gate") for row in data["runs"]}

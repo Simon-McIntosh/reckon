@@ -1220,8 +1220,28 @@ def _bump_generation(project: str) -> None:
     unequal value sends it back to the documents, which is the only thing a
     write has to signal. The advance is the store's own, so a write made by one
     process is visible to every reader of the project on every node.
+
+    The store suppresses a failed advance so a plan write is never failed by its
+    cache key. A ledger write cannot afford that indifference: an unchanged
+    counter is indistinguishable from a write that never happened, and the next
+    read would reuse stamps for a document it no longer matches. So the advance
+    is verified here, and a counter that did not move is removed — an absent
+    counter reads as no key, which sends every reader back to the documents. If
+    the counter cannot even be removed, the error is raised rather than
+    swallowed: a ledger write whose invalidation cannot be recorded would make
+    the next read answer from stale stamps, and a visible failure is the lesser
+    one. The store keeps its own lenient behaviour for its other callers, which
+    is why the strictness lives here and not in the owner.
     """
+    before = _store.read_write_generation(project)
     _store.advance_write_generation(project)
+    if _store.read_write_generation(project) != before:
+        return
+    try:
+        ledger_generation_path(project).unlink()
+    except FileNotFoundError:
+        # Already gone, which reads as absent and so rebuilds anyway.
+        return
 
 
 def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any]]:
