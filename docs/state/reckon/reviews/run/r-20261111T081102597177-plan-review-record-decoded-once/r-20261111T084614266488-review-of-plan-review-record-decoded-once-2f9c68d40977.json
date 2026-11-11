@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": "Assertions reviewed at 2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3:\nLine 19: decoded payload equals the file fixture; fails if reader returns None, malformed or altered data.\nLine 20: first decode count equals one; fails if first call performs no decode or extra decodes, giving the counter a positive control.\nLine 21: repeated payload equals fixture; fails if the cache returns a different record.\nLine 22: second decode count remains one; restoring the original uncached reader makes it two, as negative-control.log actually records.\nLine 31: original payload is pending; fails if the reader does not load the original file.\nLine 32: original read counts one decode; fails for missing or duplicate initial decode.\nLine 34: inode is unchanged; fails if the test fixture replaces rather than rewrites the file.\nLine 35: returned payload has the rewritten answer; removing invalidation makes it pending and fails this assertion.\nLine 36: total decode count equals two; disabling invalidation gives one and redundant parsing gives more than two.\nLine 49 (both parameter values): after changing nested answer to acted and adding an extra field, the next read equals the separately retained pending fixture; omitting copy isolation outside regions shares the cached nested list, and omitting mutable=True inside a region refuses the mutation before this assertion. A shared mutable cache inside the region also fails the pending comparison.\nNo assertion compares the result to a value mutated alongside it: json.dumps(expected) writes bytes, the reader parses distinct objects, and expected remains unchanged during the deliberate returned-object mutation.\n",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:_load:1415",
+    "reckon/crew/plan_review.py:list_plan_reviews._collect:1657",
+    "reckon/crew/plan_review.py:read_plan_review"
+  ],
+  "completed_at": "2026-11-11T08:55:51Z",
+  "dispatched_at": "2026-11-11T08:49:12Z",
+  "failure_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T081102597177-plan-review-record-decoded-once/after-suite.log",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T081102597177-plan-review-record-decoded-once/baseline-suite.log",
+    "completed": true
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "commits 6ea766d684264068fefcab331e152ef0d73a72c9 and 2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3 change only _read_record, its import, four test cases and the evidence fragment.",
+    "done_when": "prompt.txt:126-127 requires decode counting, rewrite invalidation, copy isolation and matched importer arms; after-suite.log records 55 passed, the negative-control.log records assert 2 == 1, and the importer logs have identical 71-failure sets.",
+    "goal": "prompt.txt:38 requires a stat-keyed copied record, and reckon/crew/plan_review.py:1433 delegates to file_memo.memoized with mutable=True.",
+    "manifest": "manifest.md names both delivered commits and terminal gate receipts; baseline-suite.log records 51 passed and after-suite.log records 55 passed, both EXIT=0.",
+    "write_paths": "prompt.txt:80-84 declares the reader, new test and evidence paths, and all three paths in the ecbcf2f5..2f9c68d4 diff fall within that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_review_record_is_decoded_once.py:22 fails if memoization is removed, :35-36 fails if stale bytes survive a rewrite, and :49 fails if nested mutable state is shared with the cache, including inside a read-only region.",
+    "evidence": "tests/test_a_plan_review_record_is_decoded_once.py:13-49 covers every stated behavior, negative-control.log records the original second-decode failure, and completed all_debug importer logs independently reconcile to zero added failure IDs.",
+    "fit": "reckon/crew/plan_review.py:1424 uses a local reader closure and the established file_memo API, with descriptive names and recorded clean lint and formatting checks in ruff.log.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1424-1433 preserves parsing and error handling while serving stat-keyed mutable copies through the specified shared memo.",
+    "reuse": "capability searches for memoized file reads and copied record reads identify reckon/file_memo.py:memoized and plan_review.py:_load as owners; the changed reader wraps the former and retains the latter rather than adding a separate cache.",
+    "scope_discipline": "the two-commit diff touches only reckon/crew/plan_review.py, tests/test_a_plan_review_record_is_decoded_once.py and the expressly assigned evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires a stat-keyed copied record, and reckon/crew/plan_review.py:1433 delegates to file_memo.memoized with mutable=True.\nVERDICT done_when: prompt.txt:126-127 requires decode counting, rewrite invalidation, copy isolation and matched importer arms; after-suite.log records 55 passed, the negative-control.log records assert 2 == 1, and the importer logs have identical 71-failure sets.\nVERDICT write_paths: prompt.txt:80-84 declares the reader, new test and evidence paths, and all three paths in the ecbcf2f5..2f9c68d4 diff fall within that scope.\nVERDICT manifest: manifest.md names both delivered commits and terminal gate receipts; baseline-suite.log records 51 passed and after-suite.log records 55 passed, both EXIT=0.\nVERDICT diff: commits 6ea766d684264068fefcab331e152ef0d73a72c9 and 2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3 change only _read_record, its import, four test cases and the evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:_load:1415, reckon/crew/plan_review.py:list_plan_reviews._collect:1657, reckon/crew/plan_review.py:read_plan_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1424-1433 preserves parsing and error handling while serving stat-keyed mutable copies through the specified shared memo.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_plan_review_record_is_decoded_once.py:13-49 covers every stated behavior, negative-control.log records the original second-decode failure, and completed all_debug importer logs independently reconcile to zero added failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two-commit diff touches only reckon/crew/plan_review.py, tests/test_a_plan_review_record_is_decoded_once.py and the expressly assigned evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_plan_review_record_is_decoded_once.py:22 fails if memoization is removed, :35-36 fails if stale bytes survive a rewrite, and :49 fails if nested mutable state is shared with the cache, including inside a read-only region.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/plan_review.py:1424 uses a local reader closure and the established file_memo API, with descriptive names and recorded clean lint and formatting checks in ruff.log.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for memoized file reads and copied record reads identify reckon/file_memo.py:memoized and plan_review.py:_load as owners; the changed reader wraps the former and retains the latter rather than adding a separate cache.\n",
+  "report_text": "VERDICT goal: prompt.txt:38 requires a stat-keyed copied record, and reckon/crew/plan_review.py:1433 delegates to file_memo.memoized with mutable=True.\nVERDICT done_when: prompt.txt:126-127 requires decode counting, rewrite invalidation, copy isolation and matched importer arms; after-suite.log records 55 passed, the negative-control.log records assert 2 == 1, and the importer logs have identical 71-failure sets.\nVERDICT write_paths: prompt.txt:80-84 declares the reader, new test and evidence paths, and all three paths in the ecbcf2f5..2f9c68d4 diff fall within that scope.\nVERDICT manifest: manifest.md names both delivered commits and terminal gate receipts; baseline-suite.log records 51 passed and after-suite.log records 55 passed, both EXIT=0.\nVERDICT diff: commits 6ea766d684264068fefcab331e152ef0d73a72c9 and 2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3 change only _read_record, its import, four test cases and the evidence fragment.\nCALL_SITES: reckon/crew/plan_review.py:_load:1415, reckon/crew/plan_review.py:list_plan_reviews._collect:1657, reckon/crew/plan_review.py:read_plan_review\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1424-1433 preserves parsing and error handling while serving stat-keyed mutable copies through the specified shared memo.\nSCORE evidence: 20\nJUSTIFICATION evidence: tests/test_a_plan_review_record_is_decoded_once.py:13-49 covers every stated behavior, negative-control.log records the original second-decode failure, and completed all_debug importer logs independently reconcile to zero added failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two-commit diff touches only reckon/crew/plan_review.py, tests/test_a_plan_review_record_is_decoded_once.py and the expressly assigned evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_plan_review_record_is_decoded_once.py:22 fails if memoization is removed, :35-36 fails if stale bytes survive a rewrite, and :49 fails if nested mutable state is shared with the cache, including inside a read-only region.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/plan_review.py:1424 uses a local reader closure and the established file_memo API, with descriptive names and recorded clean lint and formatting checks in ruff.log.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for memoized file reads and copied record reads identify reckon/file_memo.py:memoized and plan_review.py:_load as owners; the changed reader wraps the former and retains the latter rather than adding a separate cache.\n",
+  "review_run_id": "r-20261111T084614266488-review-of-plan-review-record-decoded-once-2f9c68d40977",
+  "reviewed_base_sha": "ecbcf2f53c40e92703c7516a1eb8f773fdc08220",
+  "reviewed_commits": [
+    "6ea766d684264068fefcab331e152ef0d73a72c9",
+    "2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3"
+  ],
+  "reviewed_head_sha": "2f9c68d4097748ea184b7d6f1e7d0cf00cb254d3",
+  "reviewed_run_id": "r-20261111T081102597177-plan-review-record-decoded-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T09:10:41.841430+00:00",
+  "total": 120
+}
