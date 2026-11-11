@@ -1,0 +1,171 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "The three production readers return a wrong model, lane/model-key pair or declaring-lane list; fixed fixture answers are independent expectations.",
+      "lines": [
+        66,
+        68,
+        70
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "Any mixed caller bypasses flight.read_layer_file for the catalogue, including restoring ledger's private cached reader.",
+      "lines": [
+        71
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "Layer hand-outs share mutable identity outside a region or allocate separate views inside it; observed object identities are compared with the independently observed call count, not a passed-in expected result.",
+      "lines": [
+        75,
+        76
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "A regional nested mutation is accepted, or outside-region hand-outs stop being ordinary dict objects.",
+      "lines": [
+        79,
+        84
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "Restoring uncached layer reads or an independent ledger parse cache makes the instrumented parser run more than once; no real parse also fails the assertion.",
+      "lines": [
+        85
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "The initial readers misresolve the fixture or a rewrite leaves any reader using stale bytes; replacement-model is independently persisted then read through production resolution, so retaining the old cached result makes these assertions fail.",
+      "lines": [
+        89,
+        90,
+        95,
+        96,
+        97,
+        98
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "Removing deep-copy hand-out lets the nested poison assignment corrupt later catalogue answers; the recorded declared mutation demonstrably fails line 105.",
+      "lines": [
+        105,
+        111,
+        112,
+        113
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    },
+    {
+      "fails_if": "The initial fixture does not resolve or deleted-file reads retain the cached mapping instead of returning missing-file answers, including an inherited backend model.",
+      "lines": [
+        117,
+        119,
+        120,
+        121,
+        122
+      ],
+      "path": "tests/test_the_model_catalogue_has_one_memo.py"
+    }
+  ],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/flight.py:shipped_harness_home_files:359",
+    "reckon/flight.py:shipped_harness_home_adjacent_files:396",
+    "reckon/flight.py:resolve:2176",
+    "reckon/flight.py:resolve:2207",
+    "reckon/ledger.py:resolve_name:261",
+    "reckon/ledger.py:lanes_declaring_model:298"
+  ],
+  "completed_at": "2026-11-11T05:13:56Z",
+  "dispatched_at": "2026-11-11T05:05:55Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html",
+      "line": "5",
+      "severity": "blocking",
+      "text": "blocking: Only 218 of 414 importing test files have complete base/head pairs, leaving 196 unmeasured despite the dispatched done-when requiring the whole importing population; finish those pairs and record their failure delta before treating the implementation node as complete."
+    }
+  ],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T224300226702-the-model-catalogue-has-one-memo/armed-head.log",
+    "after_revision": "ea90e1608e525aff21f68969d83b32d5778d2c27",
+    "after_revision_note": "Reviewed head adds only the evidence fragment to the measured source commit.",
+    "after_summary": "56 passed in 45.23s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T224300226702-the-model-catalogue-has-one-memo/armed-base.log",
+    "baseline_revision": "42518da96d18c24af7ccf5302ec0c3e52cf70912",
+    "baseline_summary": "51 passed in 14.87s",
+    "interpretation": "Zero added armed-suite failures; this is not a complete importing-file compatibility result.",
+    "negative_control": {
+      "exit_status": 1,
+      "failure_id": "tests/test_the_model_catalogue_has_one_memo.py::test_mutating_a_handout_never_changes_the_memo",
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T224300226702-the-model-catalogue-has-one-memo/negative-control.log",
+      "summary": "1 failed in 11.81s"
+    },
+    "reproduction": {
+      "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261110T224300226702-the-model-catalogue-has-one-memo/recorded-defect.log",
+      "quote": "catalogue_parses_for_fifty_mixed_calls: 34; resolve_name_after_mutating_stored_catalogue: ('sample', 'standard')"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read ea90e1608e525aff21f68969d83b32d5778d2c27 and 12c83c3f962582773d6f7a5e727248b24fdcf766 against 42518da96d18c24af7ccf5302ec0c3e52cf70912; the source commit changes the shared reader and removes the ledger cache with five focused cases, and the second commit adds only the six-line verification fragment.",
+    "done_when": "Source prompt.txt requires complete paired coverage of importing tests; armed-base.log and armed-head.log record 51/56 passes, while docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:5 records only 218/414 importing files verified, leaving the measure incomplete.",
+    "goal": "Source prompt.txt names one shared stat-keyed catalogue memo; reckon/flight.py:650 and reckon/ledger.py:261 implement that goal using the existing file_memo owner.",
+    "manifest": "Source manifest.md records the source and evidence commits, readable baseline_suite and after_suite receipts, the failing mutation control and 196 unfinished importing files, so its complete status does not establish the full done-when.",
+    "write_paths": "Source prompt.txt and manifest.md declare flight.py, ledger.py, the new test and the evidence fragment; all four changed paths are within that fence."
+  },
+  "justifications": {
+    "durability": "tests/test_the_model_catalogue_has_one_memo.py:85 fails on repeated parsing, :95 fails on stale rewrite results, :105 fails when a stored mutable mapping escapes as negative-control.log demonstrates, and :119 fails on stale deleted-file answers.",
+    "evidence": "armed-base.log and armed-head.log record zero added failures and negative-control.log records the intended mutation failure, but docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:5 explicitly leaves 196/414 importing files without completed paired verification.",
+    "fit": "reckon/flight.py:634 retains the existing YAML validation in a compute closure and :650 adopts the established memo idiom, while tests/test_the_model_catalogue_has_one_memo.py:61 explicitly tests the owner's read-only-region convention and lint-head.log records clean scoped checks.",
+    "goal_fidelity": "reckon/flight.py:650 routes layer reads through file_memo.memoized and reckon/ledger.py:261 removes the second catalogue cache while retaining the existing read-only-region semantics.",
+    "reuse": "Capability searches for YAML caches and memoized layer reads identify reckon/file_memo.py:358 as the stat-keyed copy/read-only-view owner; reckon/flight.py:650 wraps that owner rather than duplicating it, and the added test helpers only build a temporary fixture, invoke flight.resolve, or instrument the real parser and reader.",
+    "scope_discipline": "The four paths in the base/head diff match source prompt.txt's exclusive fence and the evidence fragment at docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:1 reports only this implementation and its verification limit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt names one shared stat-keyed catalogue memo; reckon/flight.py:650 and reckon/ledger.py:261 implement that goal using the existing file_memo owner.\nVERDICT done_when: Source prompt.txt requires complete paired coverage of importing tests; armed-base.log and armed-head.log record 51/56 passes, while docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:5 records only 218/414 importing files verified, leaving the measure incomplete.\nVERDICT write_paths: Source prompt.txt and manifest.md declare flight.py, ledger.py, the new test and the evidence fragment; all four changed paths are within that fence.\nVERDICT manifest: Source manifest.md records the source and evidence commits, readable baseline_suite and after_suite receipts, the failing mutation control and 196 unfinished importing files, so its complete status does not establish the full done-when.\nVERDICT diff: Read ea90e1608e525aff21f68969d83b32d5778d2c27 and 12c83c3f962582773d6f7a5e727248b24fdcf766 against 42518da96d18c24af7ccf5302ec0c3e52cf70912; the source commit changes the shared reader and removes the ledger cache with five focused cases, and the second commit adds only the six-line verification fragment.\nCALL_SITES: reckon/flight.py:shipped_harness_home_files:359, reckon/flight.py:shipped_harness_home_adjacent_files:396, reckon/flight.py:resolve:2176, reckon/flight.py:resolve:2207, reckon/ledger.py:resolve_name:261, reckon/ledger.py:lanes_declaring_model:298\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/flight.py:650 routes layer reads through file_memo.memoized and reckon/ledger.py:261 removes the second catalogue cache while retaining the existing read-only-region semantics.\nSCORE evidence: 12\nJUSTIFICATION evidence: armed-base.log and armed-head.log record zero added failures and negative-control.log records the intended mutation failure, but docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:5 explicitly leaves 196/414 importing files without completed paired verification.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the base/head diff match source prompt.txt's exclusive fence and the evidence fragment at docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:1 reports only this implementation and its verification limit.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_the_model_catalogue_has_one_memo.py:85 fails on repeated parsing, :95 fails on stale rewrite results, :105 fails when a stored mutable mapping escapes as negative-control.log demonstrates, and :119 fails on stale deleted-file answers.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/flight.py:634 retains the existing YAML validation in a compute closure and :650 adopts the established memo idiom, while tests/test_the_model_catalogue_has_one_memo.py:61 explicitly tests the owner's read-only-region convention and lint-head.log records clean scoped checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for YAML caches and memoized layer reads identify reckon/file_memo.py:358 as the stat-keyed copy/read-only-view owner; reckon/flight.py:650 wraps that owner rather than duplicating it, and the added test helpers only build a temporary fixture, invoke flight.resolve, or instrument the real parser and reader.\nFINDING docs/evidence/fragments/a-follower-reads-only-what-moved/the-model-catalogue-has-one-memo.html:5 blocking: Only 218 of 414 importing test files have complete base/head pairs, leaving 196 unmeasured despite the dispatched done-when requiring the whole importing population; finish those pairs and record their failure delta before treating the implementation node as complete.\n",
+  "reuse_review": {
+    "added_definitions": {
+      "reckon/flight.py:read_layer_file.read": "YAML compute callback wraps the existing memo owner",
+      "test cases": "assertions over the production owner and its consumers",
+      "tests/test_the_model_catalogue_has_one_memo.py:_resolve": "thin flight.resolve invocation",
+      "tests/test_the_model_catalogue_has_one_memo.py:catalogue": "isolated test fixture, no production capability fork",
+      "tests/test_the_model_catalogue_has_one_memo.py:counted": "delegating parser instrumentation",
+      "tests/test_the_model_catalogue_has_one_memo.py:observed": "delegating reader instrumentation"
+    },
+    "owner": "reckon/file_memo.py:memoized",
+    "searches": [
+      "YAML memo/cache capability across reckon",
+      "memoized flight_layer across reckon",
+      "resolve wrappers in flight/ledger tests"
+    ]
+  },
+  "review_run_id": "r-20261111T050128443852-review-of-the-model-catalogue-has-one-memo-12c83c3f9625",
+  "reviewed_base_sha": "42518da96d18c24af7ccf5302ec0c3e52cf70912",
+  "reviewed_head_sha": "12c83c3f962582773d6f7a5e727248b24fdcf766",
+  "reviewed_run_id": "r-20261110T224300226702-the-model-catalogue-has-one-memo",
+  "scores": {
+    "durability": 20,
+    "evidence": 12,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparing_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T05:30:59.831422+00:00",
+  "total": 112
+}
