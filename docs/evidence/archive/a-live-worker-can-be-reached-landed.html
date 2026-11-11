@@ -177,6 +177,11 @@
     <p>Run <code>r-20261111T072418312798-crew-tell-admits-codex</code> landed at <code>6c82e335f442</code>: <code>crew tell</code> admits a live codex run whose recorded launch argv carries both the inbox hook override and its trust override, refuses one missing the trust override or launched before the overrides existed, and leaves every Claude-dialect case unchanged. An unfenced codex run carrying both overrides is admitted, because codex delivery travels on the argv and needs no run home. Review 103/120: non-blocking findings that the predicate restates the override shapes <code>_backends.py</code> composes, so the two could drift. Armed arms base 51, head 64 passed.</p>
   </section>
 
+  <section id="s9-codex-inbox-trust" data-evidence-origin="append">
+    <h2>§9 — codex workers receive the same delivery</h2>
+    <p>Node <code>codex-inbox-trust</code> landed at <code>8e7c6981e88e</code> (review 120/120): the codex argv carries the inbox hook and its exact trust record, discovered through the <code>BudgetProbe</code> app-server client, as an inline <code>hooks.state</code> table (a dotted override stayed untrusted).</p><p><strong>Live check</strong> (run <code>r-20261111T132025827799-codex-inbox-live-check</code>, codex, GPT-6.1 sol): a coordinator message was written into the running worker's inbox at 13:28:04Z; the trusted hook claimed it at the worker's next <code>Bash</code> call at 13:28:06Z with one receipt, and the worker quoted the codeword <code>OSPREY-LANTERN-3</code> verbatim in its manifest's <code>messages_received</code>. The message was written into the inbox directly rather than through <code>crew tell</code>, because the live check also exposed that <code>crew tell</code> reads the codex launch argv from a pointer field a real launch never writes; that gate is §11's, reopened under its own repair. The delivery this section owns is proved.</p>
+  </section>
+
 </main>
 </body>
 </html>
