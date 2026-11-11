@@ -370,7 +370,7 @@ def test_a_live_runs_growing_stream_reads_no_review(reviewed_store):
     logs = {run_id: runs.run_dir(run_id) / "worker.jsonl" for run_id in paths}
 
     def append_streams():
-        for index, (run_id, log) in enumerate(logs.items()):
+        for index, log in enumerate(logs.values()):
             with log.open("a", encoding="utf-8") as handle:
                 handle.write(json.dumps({"type": "text", "n": index}) + "\n")
 
