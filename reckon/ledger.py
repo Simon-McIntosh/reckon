@@ -61,6 +61,7 @@ from typing import Any
 from reckon import _store, file_memo
 from reckon._plan_html import SECTION_NUMBER_PATTERN
 from reckon._timestamps import parse_utc
+from reckon.git_head import _common_git_directory, _git_directory
 
 _LOG = logging.getLogger(__name__)
 _DAMAGED_RUN_RECORDS: ContextVar[tuple[str, tuple[Path, ...]]] = ContextVar(
@@ -1078,6 +1079,10 @@ def _open_current_index(
     membership read decide that here, from one stat, so an index trusted by one
     is trusted by the other. The caller owns the returned connection.
     """
+    try:
+        root = _shared_index_root(project, root)
+    except (OSError, subprocess.SubprocessError):
+        return None
     path = _run_index_path(project, root)
     if not path.is_file():
         return None
@@ -1111,6 +1116,10 @@ def _indexed_run_ids(project: str, root: str | Path | None) -> set[str] | None:
     more than the membership, and ``load`` rebuilds the index and decodes the
     rows a caller did not ask for.
     """
+    try:
+        root = _shared_index_root(project, root)
+    except (OSError, subprocess.SubprocessError):
+        return None
     opened = _open_current_index(project, root)
     if opened is None:
         return None
@@ -1243,8 +1252,70 @@ def _index_directory() -> Path:
     return configured
 
 
+def _ledger_repository(
+    project: str, root: str | Path | None
+) -> tuple[Path, Path, Path] | None:
+    """The common git directory, checkout and tree-relative ledger path."""
+    source = ledger_path(project, root).resolve()
+    for checkout in source.parents:
+        git_dir = _git_directory(checkout)
+        if git_dir is not None:
+            return (
+                _common_git_directory(git_dir).resolve(),
+                checkout,
+                source.relative_to(checkout),
+            )
+    return None
+
+
+def _ledger_content(project: str, root: Path) -> tuple[Any, ...]:
+    """Compare ledger bytes across trees, memoising unchanged file digests."""
+    aggregate = ledger_path(project, root)
+    snapshot = _run_snapshot(project, root)
+    stamp = _file_identity(aggregate)
+    content = (
+        file_memo.content_digest(aggregate) if stamp is not None else None,
+        tuple((path.name, file_memo.content_digest(path)) for path, _ in snapshot),
+    )
+    if stamp != _file_identity(aggregate) or snapshot != _run_snapshot(project, root):
+        raise OSError("ledger changed while comparing worktrees")
+    return content
+
+
+def _shared_index_root(project: str, root: str | Path | None) -> str | Path | None:
+    """Use the main tree's index only for byte-identical worktree ledgers.
+
+    A differing worktree reads through the source files instead of replacing a
+    shared index with its private history. Resolving git's pointer files avoids
+    a subprocess for ordinary checkouts and linked worktrees.
+    """
+    repository = _ledger_repository(project, root)
+    if repository is None:
+        return root
+    common, checkout, _relative = repository
+    if common.name == ".git":
+        shared = common.parent
+    else:
+        # A separate git directory need not sit beneath its main checkout.
+        # Git's worktree registry names that checkout first, including when its
+        # .git marker points outside the tree.
+        result = subprocess.run(
+            ["git", "--git-dir", str(common), "worktree", "list", "--porcelain"],
+            check=True,
+            capture_output=True,
+            text=True,
+            timeout=5,
+        )
+        shared = Path(result.stdout.splitlines()[0].removeprefix("worktree "))
+    if checkout != shared and _ledger_content(project, checkout) != _ledger_content(
+        project, shared
+    ):
+        raise OSError("worktree ledger differs from repository ledger")
+    return shared
+
+
 def _run_index_path(project: str, root: str | Path | None) -> Path:
-    """The index file one checkout's ledger is published into.
+    """The index shared by one repository and tree-relative ledger path.
 
     The name carries the projection version, so a reader built at a different
     version keeps its own file. Many processes on a host run older code — a
@@ -1254,7 +1325,12 @@ def _run_index_path(project: str, root: str | Path | None) -> Path:
     restarted. A version-named file lets both read a complete index, and the
     drop-on-mismatch guard inside a file still refuses a stale one.
     """
-    source = str(ledger_path(project, root).resolve())
+    repository = _ledger_repository(project, root)
+    source = (
+        json.dumps([str(repository[0]), str(repository[2])])
+        if repository is not None
+        else str(ledger_path(project, root).resolve())
+    )
     identity = hashlib.sha256(source.encode()).hexdigest()
     return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
 
@@ -1617,6 +1693,10 @@ def _indexed_data(
     picker_only: bool = False,
     activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
+    try:
+        root = _shared_index_root(project, root)
+    except subprocess.SubprocessError as exc:
+        raise OSError("cannot resolve repository ledger") from exc
     reuse = _INDEX_REGION.get()
     index_key = (
         str(project),

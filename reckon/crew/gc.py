@@ -394,56 +394,103 @@ def _run_directory_grace_seconds(project: str | None, repo_root: Path) -> int:
         return parse_duration(DEFAULT_RUN_DIRECTORY_GRACE)
 
 
-def _orphan_ledger_indexes(
-    *, apply: bool, now: datetime | None
-) -> list[dict[str, Any]]:
-    """Ledger caches whose checkout is gone, or stale and carrying no path.
-
-    Each index is keyed per checkout, so a worktree that is later removed
-    leaves a full-size index behind that nothing resolves again. An index
-    recording a ledger path that no longer exists is an orphan outright; one
-    recording no path at all is offered only once it has aged past
-    :data:`LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS`, so a reader between opening
-    and rebuilding an index is never swept. A cache file a live process holds
-    is left alone whatever the age, and only ``ledger-*.sqlite`` files are
-    matched, so the picker's ``picker-*.json`` inputs in the same root are
-    untouched. Every row states its path and size, and removal happens only
-    under ``--apply``.
-    """
+def _ledger_cache_roots() -> list[Path]:
+    """Include the cache used by readers fenced out of the configured home."""
     from reckon import _store
     from reckon import ledger as ledger_module
 
-    root = _store.cache_root("pick-input")
-    if not root.is_dir():
-        return []
+    roots = {_store.cache_root("pick-input").resolve()}
+    if not os.environ.get("RECKON_PICK_CACHE"):
+        roots.add(ledger_module._default_cache_root().resolve())
+    return sorted(roots)
+
+
+def _orphan_ledger_indexes(
+    *, apply: bool, now: datetime | None
+) -> list[dict[str, Any]]:
+    """Offer missing-source ledger caches and aged caches carrying no source.
+
+    Every index records its canonical ledger path. A missing source is an
+    orphan; an unrecorded index gets the grace window so an unfinished build
+    is left alone. Open descriptors and SQLite write locks protect live users.
+    """
+    from reckon import ledger as ledger_module
+
     current = now or datetime.now(tz=UTC)
     stale_before = current - timedelta(days=LEDGER_INDEX_UNRECORDED_MAX_AGE_DAYS)
     entries: list[dict[str, Any]] = []
-    for index in sorted(
-        path for path in root.glob("ledger-*.sqlite") if path.is_file()
-    ):
-        recorded = ledger_module.recorded_ledger_path(index)
-        if recorded is not None:
-            if Path(recorded).exists():
+    for root in _ledger_cache_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for index in sorted(root.glob("ledger-*.sqlite")):
+            if not index.is_file():
                 continue
-            reason = "recorded-checkout-gone"
-        else:
-            modified = datetime.fromtimestamp(index.stat().st_mtime, tz=UTC)
-            if modified > stale_before:
+            try:
+                recorded = ledger_module.recorded_ledger_path(index)
+                stat = index.stat()
+                if recorded is not None:
+                    if Path(recorded).exists():
+                        continue
+                    reason = "recorded-checkout-gone"
+                else:
+                    if datetime.fromtimestamp(stat.st_mtime, tz=UTC) > stale_before:
+                        continue
+                    reason = "unrecorded-stale"
+                entry = {
+                    "path": str(index),
+                    "size": stat.st_size,
+                    "recorded_ledger_path": recorded,
+                    "reason": reason,
+                    "action": "prune",
+                    "removed": False,
+                }
+                if (
+                    apply
+                    and not holders.get(index.name)
+                    and not _ledger_index_locked(index)
+                    and index.stat() == stat
+                ):
+                    sys.stderr.write(
+                        f"removing ledger cache {index} ({stat.st_size} bytes)\n"
+                    )
+                    sys.stderr.flush()
+                    index.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                # Another sweep or an atomic publisher may move the file.
                 continue
-            reason = "unrecorded-stale"
-        entry = {
-            "path": str(index),
-            "size": index.stat().st_size,
-            "recorded_ledger_path": recorded,
-            "reason": reason,
-            "action": "prune",
-            "removed": False,
-        }
-        if apply and not _ledger_index_locked(index):
-            index.unlink()
-            entry["removed"] = True
-        entries.append(entry)
+    return entries
+
+
+PICKER_VIEW_MAX_AGE_DAYS = 7
+
+
+def _expired_picker_views(*, apply: bool, now: datetime) -> list[dict[str, Any]]:
+    """Offer only aged picker budget views, retaining files a process holds."""
+    cutoff = now.timestamp() - timedelta(days=PICKER_VIEW_MAX_AGE_DAYS).total_seconds()
+    entries: list[dict[str, Any]] = []
+    for root in _ledger_cache_roots():
+        if not root.is_dir():
+            continue
+        holders = _scratch_process_holders(root)
+        for path in sorted(root.glob("picker-budget-view-*.json")):
+            try:
+                stat = path.stat()
+                if not path.is_file() or stat.st_mtime >= cutoff:
+                    continue
+                entry = {"path": str(path), "size": stat.st_size, "removed": False}
+                if apply and not holders.get(path.name) and path.stat() == stat:
+                    sys.stderr.write(
+                        f"removing picker view {path} ({stat.st_size} bytes)\n"
+                    )
+                    sys.stderr.flush()
+                    path.unlink()
+                    entry["removed"] = True
+                entries.append(entry)
+            except FileNotFoundError:
+                continue
     return entries
 
 
@@ -1473,7 +1520,7 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "scratch", "log")
+RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "log")
 
 
 def retention_log_path() -> Path:
@@ -1578,7 +1625,7 @@ def retention_sweep(
 ) -> dict[str, Any]:
     """Retire finished runs' directories across every mounted project.
 
-    This is the run-directory retention alone, not the rest of gc: it starts no
+    This sweeps run directories, scratch and disposable caches: it starts no
     git process and inspects no worktree, because gc's worktree checks are where
     a pass over the whole home spent its time. It examines at most ``limit``
     directories, so one pass stays short on shared storage; the rest wait for
@@ -1683,8 +1730,14 @@ def retention_sweep(
     _emit_phase("scratch", started, phase_seconds)
 
     started = time.perf_counter()
+    indexes = _orphan_ledger_indexes(apply=apply, now=moment)
+    picker_views = _expired_picker_views(apply=apply, now=moment)
+    caches_removed = [row for row in [*indexes, *picker_views] if row["removed"]]
+    _emit_phase("cache", started, phase_seconds)
+
+    started = time.perf_counter()
     written = ""
-    if removed or settled_removed:
+    if removed or settled_removed or caches_removed:
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1694,6 +1747,8 @@ def retention_sweep(
                 stream.write(f"removed {row['path']} ({row['bytes']} bytes)\n")
             for path in settled_removed:
                 stream.write(f"removed scratch {path}\n")
+            for row in caches_removed:
+                stream.write(f"removed cache {row['path']} ({row['size']} bytes)\n")
         finally:
             stream.close()
         written = str(target)
@@ -1712,6 +1767,9 @@ def retention_sweep(
         "removed_count": len(removed),
         "scratch": settled,
         "scratch_removed": settled_removed,
+        "ledger_indexes": indexes,
+        "picker_views": picker_views,
+        "cache_removed_count": len(caches_removed),
         "log": written,
         "phase_seconds": phase_seconds,
     }
