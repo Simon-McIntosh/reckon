@@ -327,9 +327,10 @@ class RunStore:
         promotion, not store content.
         """
         run_id, payload, detail = _split_durable(project, record)
-        if self._is_archived(run_id):
-            raise sqlite3.IntegrityError(f"run {run_id} is already archived")
         with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            if self._is_archived(run_id):
+                raise sqlite3.IntegrityError(f"run {run_id} is already archived")
             self._conn.execute(
                 _RUNS_INSERT,
                 (
@@ -357,14 +358,17 @@ class RunStore:
         run_id, payload, detail = _split_durable(project, record)
         encoded_payload = json.dumps(payload, sort_keys=True, separators=(",", ":"))
         encoded_detail = json.dumps(detail, sort_keys=True, separators=(",", ":"))
-        table = "archive.runs" if self._is_archived(run_id) else "runs"
-        details = "archive.run_details" if table == "archive.runs" else "run_details"
-        select = (
-            "SELECT payload FROM archive.runs WHERE run_id = ?"
-            if table == "archive.runs"
-            else "SELECT payload FROM runs WHERE run_id = ?"
-        )
         with self._conn:
+            self._conn.execute("BEGIN IMMEDIATE")
+            table = "archive.runs" if self._is_archived(run_id) else "runs"
+            details = (
+                "archive.run_details" if table == "archive.runs" else "run_details"
+            )
+            select = (
+                "SELECT payload FROM archive.runs WHERE run_id = ?"
+                if table == "archive.runs"
+                else "SELECT payload FROM runs WHERE run_id = ?"
+            )
             existing = self._conn.execute(select, (run_id,)).fetchone()
             if existing is None:
                 self._conn.execute(
@@ -461,23 +465,25 @@ class RunStore:
         """
         from reckon._timestamps import parse_utc
 
-        candidates = []
-        for run_id, project, completed, payload in self._conn.execute(
-            "SELECT run_id, project, completed_at, payload FROM runs"
-        ):
-            ended = parse_utc(completed)
-            if (
-                project in projects
-                and run_id not in protected
-                and ended
-                and ended < before
-                and (can_retire is None or can_retire(_decoded_record(payload)))
+        with self._conn:
+            if apply:
+                self._conn.execute("BEGIN IMMEDIATE")
+            candidates = []
+            for run_id, project, completed, payload in self._conn.execute(
+                "SELECT run_id, project, completed_at, payload FROM runs"
             ):
-                candidates.append(str(run_id))
-        pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
-        if candidates and apply:
-            self._attach_archive(create=True)
-            with self._conn:
+                ended = parse_utc(completed)
+                if (
+                    project in projects
+                    and run_id not in protected
+                    and ended
+                    and ended < before
+                    and (can_retire is None or can_retire(_decoded_record(payload)))
+                ):
+                    candidates.append(str(run_id))
+            pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
+            if candidates and apply:
+                self._attach_archive(create=True)
                 for run_id in candidates:
                     self._conn.execute(
                         _RUNS_ARCHIVE_INSERT,
@@ -499,6 +505,7 @@ class RunStore:
                     self._conn.execute(
                         "DELETE FROM main.runs WHERE run_id = ?", (run_id,)
                     )
+        if candidates and apply:
             self._conn.execute("VACUUM main")
         return {
             "offered": candidates,

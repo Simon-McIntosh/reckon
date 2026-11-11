@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import threading
+from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
 
 import pytest
@@ -181,3 +183,41 @@ def test_a_changed_ledger_keeps_archive_membership_and_updates_its_durable_field
         assert len(store.durable_rows("sample")) == len(records)
         assert store.get_run("r-finished-23") is None
     assert not hot_ids()
+
+
+def test_an_import_racing_retirement_does_not_recreate_a_hot_run(history, monkeypatch):
+    root, now, records, _ = history
+    inspected = threading.Event()
+    proceed = threading.Event()
+
+    def import_run():
+        with run_store.RunStore(root=root) as importer:
+            original = importer._is_archived
+
+            def paused_membership(run_id):
+                archived = original(run_id)
+                inspected.set()
+                assert proceed.wait(5), "retirement never released the importer"
+                return archived
+
+            monkeypatch.setattr(importer, "_is_archived", paused_membership)
+            return importer.sync_run("sample", records[0])
+
+    with run_store.RunStore(root=root, busy_timeout=0.05) as retiring:
+        with ThreadPoolExecutor(max_workers=1) as pool:
+            future = pool.submit(import_run)
+            try:
+                assert inspected.wait(5), "importer never inspected archive membership"
+                try:
+                    retiring.retire(
+                        before=now, protected=set(), projects={"sample"}, apply=True
+                    )
+                except sqlite3.OperationalError as exc:
+                    if "locked" not in str(exc):
+                        raise
+            finally:
+                proceed.set()
+            future.result(timeout=10)
+        retiring.retire(before=now, protected=set(), projects={"sample"}, apply=True)
+        assert retiring.get_run(records[0]["run_id"])["tool_steps"] == 7
+    assert not hot_ids(), "a racing importer recreated a retired run in the hot tables"

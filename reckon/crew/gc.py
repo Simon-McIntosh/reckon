@@ -1527,7 +1527,7 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "log")
+RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "store", "log")
 
 
 def retention_log_path() -> Path:
