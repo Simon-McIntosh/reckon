@@ -31,23 +31,24 @@
   That is the promotion path the plan records waiting in D state on GPFS.</p>
 
   <p><strong>Change.</strong> The index's cache key is no longer the
-  per-document walk. A project's write generation now stands in a file beside
-  the index it invalidates, keyed by the same ledger path hash and written
-  atomically — in the disposable cache, not inside the checkout that owns the
-  ledger, because a marker no write commits would otherwise leave every
-  session's tree dirty. Every ledger write path bumps it once its own files
-  are in place:
-  <code>write_run_file</code>, <code>append_run</code>, <code>_write_state</code>
-  (hence <code>write</code>, the hold and repair paths),
-  <code>_commit_run_split</code> and <code>_restore_run_files</code>. A read
-  whose generation and run-directory identity both still match what its index
-  recorded reuses the stamps the index holds and walks nothing. A read whose
-  generation differs, or whose generation file is absent, walks the documents
+  per-document walk. A project's write generation — the store's own file under
+  the crew home, already consumed by the roadmap snapshot and the coordinator
+  obligations — stands in for it. Keying it by the project alone matters: the
+  index directory falls back to the user cache when the configured one cannot
+  be written, so a token kept beside the index would give a writer and a reader
+  in different directories two different files, and the reader would serve
+  stale rows. Every ledger write path advances it once its own files are in
+  place: <code>write_run_file</code>, <code>append_run</code>,
+  <code>_write_state</code> (hence <code>write</code>, the hold and repair
+  paths), <code>_commit_run_split</code> and <code>_restore_run_files</code>. A
+  read whose generation and run-directory identity both still match what its
+  index recorded reuses the stamps the index holds and walks nothing. A read
+  whose generation differs, or whose index recorded none, walks the documents
   exactly as it did before, so a ledger this code has never written reads
-  correctly and an index published before the key existed refreshes on its
-  next read. The run directory's own identity is compared beside the
-  generation, so a document added or removed by a writer that predates the
-  generation is still noticed.</p>
+  correctly and an index published before the key existed refreshes on its next
+  read. The run directory's own identity is compared beside the generation, so
+  a document added or removed by a writer that predates the generation is still
+  noticed.</p>
 
   <p><strong>Measured.</strong> The same probe at the head commit:
   <strong>2 stat calls at 20 documents and 2 at 200</strong> — the aggregate and
@@ -83,6 +84,16 @@
   answers from the new record: a released worktree, and a retention recorded
   after the index was published, are each seen by the next bounded read. The
   pair passes (<code>10 passed</code>).</p>
+
+  <p><strong>The key is one file.</strong>
+  <code>test_a_write_is_seen_through_another_index_directory</code> publishes an
+  index under two directory configurations, asserts both resolve the same
+  generation path, writes through one and reads through the other, and requires
+  the new row. <code>test_a_run_split_is_seen_by_the_next_read</code> drives
+  <code>_split_project_runs</code> over a seeded aggregate and reads the rows
+  back through <code>load</code>. The rollback case reads the generation
+  immediately before the restore, so a bump from the write that preceded it
+  cannot satisfy the assertion.</p>
 
   <p><strong>Population.</strong> The 287 tests that import
   <code>reckon.ledger</code> ran on <code>all_debug</code>, one arm at a time at
