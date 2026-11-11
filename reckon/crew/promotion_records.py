@@ -570,22 +570,6 @@ def _canonical_suite_command(value: Any, tree: Path | None) -> tuple[str, ...]:
     return tuple(others + test_files)
 
 
-def _revision_store(record: Mapping[str, Any]) -> Path | None:
-    """A surviving tree whose object store answers what a citation names.
-
-    A released worktree is gone while the repository that holds its commits
-    remains, so the store is the first of the two that still exists.
-    """
-    for key in ("worktree", "repo"):
-        text = str(record.get(key) or "").strip()
-        if not text:
-            continue
-        tree = Path(text).expanduser()
-        if tree.is_dir():
-            return tree
-    return None
-
-
 def _same_tree(first: str | Path | None, second: str | Path | None) -> bool:
     """Whether two spellings name one tree, ignoring a symlinked home."""
     if first is None or second is None:
@@ -623,94 +607,22 @@ def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     return None
 
 
-def _looks_like_a_commit(text: str) -> bool:
-    """Whether a cited value has the shape of a revision rather than of prose."""
-    return 4 <= len(text) <= 40 and all(
-        character in "0123456789abcdef" for character in text.lower()
-    )
-
-
-def _cited_commits(
-    record: Mapping[str, Any], manifest: Mapping[str, Any] | None
-) -> list[str]:
-    """The commits a run cites, from its manifest first and its record second."""
-    candidates: list[str] = []
-    for source in (manifest or {}, record):
-        value = source.get("commits")
-        if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
-            continue
-        for entry in value:
-            text = str(entry or "").strip()
-            if _looks_like_a_commit(text):
-                candidates.append(text)
-    return candidates
-
-
-def _newest_cited_commit(
-    record: Mapping[str, Any], manifest: Mapping[str, Any] | None = None
-) -> str:
-    """The newest of a run's cited commits by ancestry, or empty.
-
-    A worktree that has been released leaves the run described only by the
-    commits its manifest cites. A run's head is the one no other citation is a
-    descendant of, which the object store answers directly rather than by
-    guessing from dates.
-    """
-    candidates = _cited_commits(record, manifest)
-    repo_text = str(record.get("repo") or record.get("worktree") or "").strip()
-    if not candidates or not repo_text:
-        return ""
-    tree = Path(repo_text).expanduser()
-    if not tree.is_dir():
-        return ""
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(tree),
-                "rev-list",
-                "--topo-order",
-                "--max-count=1",
-                *candidates,
-            ],
-            capture_output=True,
-            text=True,
-            timeout=60,
-            check=False,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    if result.returncode != 0:
-        return ""
-    answers = result.stdout.split()
-    return answers[0] if answers else ""
-
-
-def _run_head(
-    record: Mapping[str, Any], manifest: Mapping[str, Any] | None = None
-) -> str:
+def _run_head(record: Mapping[str, Any]) -> str:
     """The revision the run's work is delivered at, or empty when unreadable.
 
     An after arm is evidence about the tree the run delivers, so the revision it
-    must record is the run's head. While the run's own worktree survives that is
-    its ``HEAD``; once it is released the cited commits are all the run still
-    has, and the newest of them by ancestry is its head. An empty answer means
-    neither could be read, and the caller then holds no revision to compare
-    against rather than refusing on an unreadable head.
+    must record is the run's head. The head a review of the run is about is the
+    same question, and ``_run_head_for_review`` already answers it: the
+    worktree's ``HEAD`` while that tree is readable, and the run's own record
+    once it has been reclaimed. An empty answer means no head could be read, and
+    the caller then holds no revision to compare against rather than refusing on
+    one.
     """
-    worktree_text = str(record.get("worktree") or "").strip()
-    if worktree_text:
-        worktree = Path(worktree_text).expanduser()
-        if worktree.is_dir():
-            # Deferred: the resolver's module pulls in the review subject
-            # readers, which import this package's siblings.
-            from reckon.crew.recovery_review_subject import _resolve_commit
+    # Deferred: the review modules import this package's siblings, so the
+    # import is made where it is used rather than at load.
+    from reckon.crew.recovery_review_dispatch import _run_head_for_review
 
-            head = _resolve_commit(worktree, "HEAD")
-            if head:
-                return head
-    return _newest_cited_commit(record, manifest)
+    return _run_head_for_review(record)
 
 
 def _arm_revision_mismatch(
@@ -723,9 +635,9 @@ def _arm_revision_mismatch(
 
     An arm compares against the head only when both revisions answer: ``head``
     is read by the caller, and the revision the arm records must name a commit
-    in the run's own store. A head that could not be read and a citation that
-    names no commit are unreadable instruments rather than defects in the arm,
-    so neither is named here and the arm's other fields still decide the pair.
+    in the run's tree. A head that could not be read and a citation that names
+    no commit are unreadable instruments rather than defects in the arm, so
+    neither is named here and the arm's other fields still decide the pair.
 
     A citation that does resolve and differs from the head is the case this
     check exists for: the arm measured a tree the run no longer delivers.
@@ -733,11 +645,14 @@ def _arm_revision_mismatch(
     if arm_name != "after_suite" or not head:
         return []
     recorded = str(observation.get("revision") or "").strip()
-    tree = _revision_store(record)
-    if not recorded or tree is None:
+    if not recorded:
         return []
-    from reckon.crew.recovery_review_subject import _resolve_commit
+    # Deferred for the same reason as the head resolver above.
+    from reckon.crew.recovery_review_subject import _resolve_commit, _review_tree
 
+    tree = _review_tree(record)
+    if tree is None:
+        return []
     resolved = _resolve_commit(tree, recorded, cached=True)
     if not resolved or resolved == _resolve_commit(tree, head, cached=True):
         return []
@@ -1098,7 +1013,7 @@ def _evaluate_suite_delta(
             manifest = {}
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
-    head = _run_head(record, manifest)
+    head = _run_head(record)
     missing: list[str] = []
     if not manifest_present:
         missing.append("manifest")
