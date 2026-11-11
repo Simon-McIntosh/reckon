@@ -81,6 +81,56 @@ are clean on all three Python paths. The original-base arm used an extracted
 snapshot and recorded its imported module paths and working directory before
 running; the other arms ran in the assigned worktree. The coordinator's
 post-landing station-sweep profile remains to be recorded here in the run directory.</p>
+<h3 id="plan-review-record-decoded-once-shared-index">Large index hits share a bounded read-only envelope</h3>
+<p>The large metadata-index payload now bypasses the generic memo's mutable
+handout. Its current envelope is shared read-only per
+<code>(project, resolved docs_dir)</code>, revalidated by the file's full stat
+identity, with producer-digest validation retained. The LRU keeps at most
+32 current snapshots and 128 MiB of source-file bytes, and skips retention for
+an oversized file. Switching a tree's index path replaces its cached revision.
+The small <code>plan_review._read_record</code> copy memo is unchanged.
+Implementation: <code>ae81550571bbe52cf8ece94dcc92b7817a49ab50</code>.</p>
+<p>The consumer audit found one nested write: <code>discovery_state</code>
+refreshes an entry's signature. It now replaces that entry in its outer map,
+leaving the shared envelope unchanged. Other index consumers read entries or
+replace outer entries and directory stamps. The regression file checks the
+warm handout without allowing <code>copy.deepcopy</code>, read-only nested
+values, independent outer maps, rewrite invalidation, replacement per tree,
+LRU eviction, the source-byte budget and signature refresh.</p>
+<table id="plan-review-record-decoded-once-cpu-measures">
+<thead><tr><th>15 MB synthetic payload</th><th>Prior head</th><th>Read-only head</th></tr></thead>
+<tbody>
+<tr><td>Cold miss, median CPU</td><td>424.396 ms</td><td>468.793 ms</td></tr>
+<tr><td>Warm hit, median CPU</td><td>280.176 ms</td><td>0.150642 ms</td></tr>
+<tr><td>Cold miss, median wall time</td><td>425.375 ms</td><td>469.698 ms</td></tr>
+<tr><td>Warm hit, median wall time</td><td>280.711 ms</td><td>0.150930 ms</td></tr>
+<tr><td>Focused regression file</td><td>7 cases</td><td>13 passed in 2.20s</td></tr>
+<tr><td>Armed node suite</td><td>58 passed</td><td>64 passed in 10.24s</td></tr>
+<tr><td>Combined importer arm</td><td>71 failed, 990 passed in 295.07s</td><td>First: 72 failed, 995 passed in 283.19s; unchanged repeat: 71 failed, 996 passed in 301.45s</td></tr>
+</tbody>
+</table>
+<p>The timing input is exactly 15,000,000 bytes with 12,333 nested metadata
+rows, stored in job-local temporary space. Each arm measures three serial
+cold/warm call pairs using process CPU and wall clocks, clearing process
+caches before each cold call and asserting the known first row on both calls.
+Warm CPU improves by 1,859.88 times. Cold CPU rises 10.46% while the read-only
+view is constructed once. These are getter measurements, with the station's
+post-landing profile still owned by the coordinator.</p>
+<p id="plan-review-record-decoded-once-shared-receipts">At the prior head
+<code>1632c8d5387dd281e343e977d2a8264eabdb9bad</code>, the new warm-copy
+control fails at <code>file_memo.py:406</code> with
+<code>AssertionError: payload copied</code>. The run directory holds
+<code>copy-negative-control.log</code>, <code>copy-focused-head.log</code>,
+<code>copy-baseline-timing.json</code>, <code>copy-after-timing.json</code>,
+<code>copy-timing-comparison.json</code>, the <code>copy-*</code> suite/importer
+logs, <code>copy-importer-comparison.json</code>,
+<code>copy-stability-comparison.json</code> and <code>copy-ruff.log</code>.
+Partition jobs <code>1310464</code>, <code>1310476</code> and
+<code>1310479</code> ran explicit one-task <code>srun</code> steps inside
+independent <code>all_debug</code> allocations. The unchanged repeat matches
+all baseline failure IDs; the initial added failure remains in the manifest's
+<code>outside_scope</code> record. Lint and formatting checks are clean on all
+three Python paths.</p>
 </main>
 </body>
 </html>
