@@ -1615,9 +1615,59 @@ def _project_derivations(project: str, repo: Path) -> dict[str, list[str]]:
 
 SHARED_WRITE_PATHS_FILENAME = "shared-write-paths.json"
 
+# The paths a textual merge cannot reconcile, listed once. A declaration's own
+# ``exclusive_patterns`` add to this list rather than replacing it, so a class
+# named here is exclusive in every project, declared or not, and the undeclared
+# default reads the same list rather than restating it.
+DEFAULT_EXCLUSIVE_PATHS = (
+    "docs/plans/*.html",  # a plan document
+    "docs/evidence/archive/",  # a cumulative evidence record
+    "docs/state/",  # generated state
+    "docs/figures/",  # a figure topic directory
+    "pyproject.toml",  # dependency manifest
+    "uv.lock",  # dependency lock
+    "*.receipt",  # a generated receipt
+)
+
+# A binary file is exclusive whoever claims it: git cannot merge two versions
+# of one, so a claim on it is refused rather than shared.
+BINARY_RECEIPT_CLASS = "binary or generated receipt"
+BINARY_SUFFIXES = frozenset(
+    {
+        ".bin",
+        ".gif",
+        ".h5",
+        ".jpeg",
+        ".jpg",
+        ".npz",
+        ".o",
+        ".pdf",
+        ".png",
+        ".pt",
+        ".pyc",
+        ".so",
+        ".webp",
+        ".whl",
+        ".zip",
+    }
+)
+BINARY_HEAD_PROBE_BYTES = 8192
+
+
+def _is_binary_receipt(path: Path) -> bool:
+    """Whether a claimed path carries binary content a textual merge cannot reconcile."""
+    if path.suffix.lower() in BINARY_SUFFIXES:
+        return True
+    try:
+        with path.open("rb") as handle:
+            head = handle.read(BINARY_HEAD_PROBE_BYTES)
+    except OSError:
+        return False
+    return b"\x00" in head
+
 
 class _SharedWritePaths(frozenset[str]):
-    """Exact shared files plus file membership under declared repository roots."""
+    """Exact shared files, declared roots, and the undeclared sharing default."""
 
     def __new__(
         cls,
@@ -1626,21 +1676,37 @@ class _SharedWritePaths(frozenset[str]):
         repo: Path,
         roots: Iterable[str] = (),
         exclusive_patterns: Iterable[str] = (),
+        default_share: bool = False,
+        unreadable_declaration: str = "",
     ) -> Self:
         policy = super().__new__(cls, paths)
         policy.repo = repo
         policy.roots = tuple(roots)
         policy.exclusive_patterns = tuple(exclusive_patterns)
+        policy.default_share = default_share
+        policy.unreadable_declaration = unreadable_declaration
+        policy._binary_cache = {}
         return policy
 
+    def _is_binary_member(self, path: str) -> bool:
+        cached = self._binary_cache.get(path)
+        if cached is None:
+            cached = _is_binary_receipt(self.repo / path)
+            self._binary_cache[path] = cached
+        return cached
+
     def exclusive_pattern(self, path: str) -> str:
-        """The declared pattern that keeps this repository-relative path exclusive."""
+        """The class or declared pattern that keeps this repository-relative path exclusive."""
+        if os.path.isabs(path):
+            path = _repository_relative_scope(path, self.repo) or path
         for pattern in self.exclusive_patterns:
             if (
                 pattern.endswith("/") and _scope_contains(pattern.rstrip("/"), path)
             ) or fnmatch.fnmatchcase(path, pattern):
                 return pattern
-        return ""
+        if self._is_binary_member(path):
+            return BINARY_RECEIPT_CLASS
+        return self.unreadable_declaration
 
     def __contains__(self, path: object) -> bool:
         if not isinstance(path, str):
@@ -1653,7 +1719,9 @@ class _SharedWritePaths(frozenset[str]):
             return False
         if super().__contains__(normalized):
             return True
-        if not any(_scope_contains(root, normalized) for root in self.roots):
+        if not self.default_share and not any(
+            _scope_contains(root, normalized) for root in self.roots
+        ):
             return False
         # An absent suffixless path names a directory, matching dispatch's
         # directory-claim interpretation; existing extensionless files are files.
@@ -1675,49 +1743,87 @@ def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
 
     ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
     repository-relative roots shareable, with ``exclusive_patterns`` taking
-    precedence over both declarations. Directory claims remain exclusive.
-    Missing or malformed declarations share nothing.
+    precedence over both declarations. A project that names no ``shared_roots``
+    key, or has no declaration at all, shares its source files by default: any
+    file is a candidate concurrent edit except the classes listed once in
+    ``DEFAULT_EXCLUSIVE_PATHS`` and the binary files a textual merge cannot
+    reconcile. A declaration that cannot be read shares nothing, and a refusal
+    it causes names it. Directory claims remain exclusive.
     """
+    resolved = repo.resolve()
     if not project:
-        return frozenset()
-    manifest = repo / "docs" / "state" / str(project) / SHARED_WRITE_PATHS_FILENAME
+        return _SharedWritePaths(
+            (),
+            repo=resolved,
+            exclusive_patterns=DEFAULT_EXCLUSIVE_PATHS,
+            default_share=True,
+        )
+    manifest = resolved / "docs" / "state" / str(project) / SHARED_WRITE_PATHS_FILENAME
     try:
         raw = json.loads(manifest.read_text())
+    except FileNotFoundError:
+        return _SharedWritePaths(
+            (),
+            repo=resolved,
+            exclusive_patterns=DEFAULT_EXCLUSIVE_PATHS,
+            default_share=True,
+        )
     except (OSError, json.JSONDecodeError):
-        return frozenset()
-    entries = raw.get("paths", []) if isinstance(raw, Mapping) else raw
-    if not isinstance(entries, list):
-        return frozenset()
+        return _unreadable_declaration(manifest, resolved)
 
-    def normalized_paths(values: Any) -> list[str]:
-        if not isinstance(values, list):
-            return []
+    if isinstance(raw, Mapping):
+        entries = raw.get("paths", [])
+        names_roots = "shared_roots" in raw
+        declared_roots = raw.get("shared_roots") or []
+        declared_patterns = raw.get("exclusive_patterns", [])
+    elif isinstance(raw, list):
+        entries = raw
+        names_roots = False
+        declared_roots = []
+        declared_patterns = []
+    else:
+        return _unreadable_declaration(manifest, resolved)
+    if not (
+        isinstance(entries, list)
+        and isinstance(declared_roots, list)
+        and isinstance(declared_patterns, list)
+    ):
+        return _unreadable_declaration(manifest, resolved)
+
+    def normalized_paths(values: list[Any]) -> list[str]:
         normalized = []
         for entry in values:
             path = entry.get("path") if isinstance(entry, Mapping) else entry
             if isinstance(path, str) and path.strip():
-                relative = _repository_relative_scope(path, repo)
+                relative = _repository_relative_scope(path, resolved)
                 if relative is not None:
                     normalized.append(relative)
         return normalized
 
-    roots = (
-        normalized_paths(raw.get("shared_roots", []))
-        if isinstance(raw, Mapping)
-        else []
-    )
-    patterns = raw.get("exclusive_patterns", []) if isinstance(raw, Mapping) else []
-    if not isinstance(patterns, list):
-        patterns = []
     return _SharedWritePaths(
         normalized_paths(entries),
-        repo=repo.resolve(),
-        roots=roots,
+        repo=resolved,
+        roots=normalized_paths(declared_roots),
         exclusive_patterns=(
-            pattern
-            for pattern in patterns
-            if isinstance(pattern, str) and pattern.strip()
+            *DEFAULT_EXCLUSIVE_PATHS,
+            *(
+                pattern
+                for pattern in declared_patterns
+                if isinstance(pattern, str) and pattern.strip()
+            ),
         ),
+        default_share=not names_roots,
+    )
+
+
+def _unreadable_declaration(manifest: Path, repo: Path) -> _SharedWritePaths:
+    """A declaration present but unreadable shares nothing, and names itself."""
+    name = _repository_relative_scope(str(manifest), repo) or str(manifest)
+    return _SharedWritePaths(
+        (),
+        repo=repo,
+        exclusive_patterns=DEFAULT_EXCLUSIVE_PATHS,
+        unreadable_declaration=f"unreadable declaration {name!r}",
     )
 
 
