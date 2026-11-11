@@ -25,7 +25,7 @@
   <title>A worker is charged to a job | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="81">
+<meta name="plan-version" content="82">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -1090,6 +1090,9 @@ placement path, not as a whole-suite run.</p>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261111T010042522462-review-of-partition-sbatch-passes-the-fence-a8536e9bf13a" data-who="reckon-build" data-when="2026-11-11T01:20:15Z">
     <div class="r-comment-body"><p>Independent incremental review of 9c0d55869131d589266211e64205070feafbc058 through a8536e9bf13a65b378a020eba2e50400c0519bb9 stored at both granted record paths; all six dimensions score 20, zero added failures and no findings; coordinator owns integration.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261110T225809682241-partition-sbatch-passes-the-fence" data-who="reckon-build" data-when="2026-11-11T00:44:14Z">
+    <div class="r-comment-body"><p>Explicit sbatch partition options are parsed by scheduler argument role; both option-value bypasses and script arguments refuse with exit 97. Repair gate 64 passed at reviewed base to 190 passed at head; zero added importer failures. Evidence: /reckon/evidence/fragments/a-worker-is-charged-to-a-job/partition-sbatch-passes-the-fence.html#partition-sbatch-passes-the-fence-option-roles</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20260919T225816807113-awcj-one-record-level-liveness-read" data-who="reckon-ship" data-when="2026-09-19T23:36:23.805Z">
     <div class="r-comment-body"><p>every liveness decision about a run reads the record through one accessor in the runs module, the pid lookup lives in that one place, and a case asserts no module outside it handles a bare record pid; failure id sets are byte identical at base and head over a focused 116-file set, 78 either side, so no answer changed, and the accessor takes the caller probe as an optional argument because routing the modules through it had removed the name nine tests substitute</p></div>
