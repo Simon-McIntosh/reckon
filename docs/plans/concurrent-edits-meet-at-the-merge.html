@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -229,7 +229,10 @@
     <div class="r-comment-body"><p>Landed from r-20261109T074617313035 (head 8ecbbfcf87, on main at 1d59455766). <code>reckon/crew/dispatch_claims.py</code> now compares a claim on a plan's evidence-fragments directory as the fragment files its node writes, so a sibling node of that plan with a different fragment is admitted, and two nodes naming the same fragment file are still refused. <code>tests/test_a_fragment_claim_never_blocks_a_sibling.py</code>: 9 passed at head; with the file copied onto base 6a3aae57b2, 6 failed and 3 passed (the negative control). A 33-file claims population read an identical 28 failure ids at base and head (587 to 596 passed). The review's two evidence findings were answered: the base arm was corrected, and the importer population was scoped to dispatch_claims' callers.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261111T171208697070-review-of-the-build-skill-teaches-the-concurrent-edit-rule-d0f325a62316" data-who="reckon-build" data-when="2026-11-11T17:24:25.602Z">
-    <div class="r-comment-body"><p>§8 reviewed at 16bf78f0ef6d74fdf7116a441da200a5c13ebf8d..d0f325a62316e47c7d1e4e7ba163a2c283075a61 — parsed record with all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 20), added_failure_count 0 with an empty id list from the run&#x27;s own base and after arms, and two non-blocking findings: worker-protocol.md sits outside the declared write paths and must be ratified, and the census guards the retired rule&#x27;s absence but not the new ruling&#x27;s presence.</p></div>
+    <div class="r-comment-body"><p>§8 reviewed at 16bf78f0ef6d74fdf7116a441da200a5c13ebf8d..d0f325a62316e47c7d1e4e7ba163a2c283075a61 — parsed record with all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 20), added_failure_count 0 with an empty id list from the run's own base and after arms, and two non-blocking findings: worker-protocol.md sits outside the declared write paths and must be ratified, and the census guards the retired rule's absence but not the new ruling's presence.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261111T163328318602-the-build-skill-teaches-the-concurrent-edit-rule" data-who="reckon-build" data-when="2026-11-11T17:01:00.001Z">
+    <div class="r-comment-body"><p>§8 landed — the build skill states that concurrent edits to one source file are dispatched and meet at the merge, a conflicting landing is repaired in its own worktree, and exclusive scope remains only for a plan document, a cumulative evidence record, generated state, a figure topic directory, a dependency lock or a directory claim; both `scope-conflict` remedies name those classes, and the new census case takes `tests/test_skill_contracts.py` from 72 to 73 passing cases, with its negative control red at 1 failed.</p></div>
 </div>
 </section>
 </main>
