@@ -69,6 +69,21 @@
   fails <code>test_a_plan_commit_releases_the_request_it_refused</code> — 1 failed, 2
   passed, <code>EXIT=1</code> — against 3 passed, <code>EXIT=0</code> at head, so the
   release is the line the case measures and not an accident of the passes around it.</p>
+
+  <p id="plan-commit-releases-backoff-population">The files that import the modified module
+  add no failure against the base revision. The five central admission files —
+  <code>test_a_request_that_cannot_launch_costs_nothing.py</code>,
+  <code>test_a_queued_run_is_admitted.py</code>, <code>test_a_queued_launch_keeps_the_run_record.py</code>,
+  <code>test_a_successful_launch_is_recorded.py</code> and
+  <code>test_a_discard_keeps_the_admission_record.py</code> — run serially at
+  <code>81250b3e98</code> give 19 failed, 30 passed, <code>EXIT=1</code>, and at this head the
+  same 19 failed, 30 passed, <code>EXIT=1</code>: identical failure sets, so the change adds
+  none. Those 19 are pre-existing at the base revision. A wider arm over all 87 test files
+  naming <code>queue_admission</code> was submitted to <code>all_debug</code> and did not
+  yield a usable comparison: its base arm named a file absent from the base tree and
+  collected nothing, and its head arm ran under <code>-n 4</code> against the worktree's
+  shared environment and failed at the same character as the base revision does; the
+  bounding measurement above is the one this record rests on.</p>
 </article>
 </body>
 </html>
