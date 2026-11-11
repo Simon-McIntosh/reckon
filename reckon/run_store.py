@@ -141,6 +141,10 @@ INDEX_BUSY_TIMEOUT_SECONDS = 0.2
 INDEX_RETRY_SECONDS = 3.0
 INDEX_RETRY_MAX_DELAY_SECONDS = 0.2
 
+# A scheduled pass bounds both its row transfers and its physical page moves.
+RETIREMENT_BATCH_SIZE = 2000
+INCREMENTAL_VACUUM_PAGES = 256
+
 
 def store_path() -> Path:
     """Return the store's SQLite path, resolved in one place.
@@ -154,6 +158,40 @@ def store_path() -> Path:
     if override:
         return Path(override).expanduser()
     return _store._config_home() / "crew" / "run_store.db"
+
+
+def enable_incremental_vacuum(path: str | Path | None = None) -> dict[str, Any]:
+    """Prepare an existing store during a separate, one-time maintenance job.
+
+    Converting a populated store requires a full rewrite. Only the explicit
+    module command calls this function; a scheduled retention pass never does.
+    """
+    target = Path(path) if path is not None else store_path()
+    if not target.is_file():
+        raise FileNotFoundError(target)
+    connection = sqlite3.connect(str(target))
+    try:
+        before = connection.execute("PRAGMA main.auto_vacuum").fetchone()[0]
+        pages_before = connection.execute("PRAGMA main.page_count").fetchone()[0]
+        if before != 2:
+            connection.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
+        if before == 0:
+            connection.execute("VACUUM main")
+        after = connection.execute("PRAGMA main.auto_vacuum").fetchone()[0]
+        if after != 2:
+            raise sqlite3.DatabaseError(
+                "store was not prepared for incremental compaction"
+            )
+        return {
+            "path": str(target),
+            "rewritten": before == 0,
+            "auto_vacuum_before": before,
+            "auto_vacuum_after": after,
+            "pages_before": pages_before,
+            "pages_after": connection.execute("PRAGMA main.page_count").fetchone()[0],
+        }
+    finally:
+        connection.close()
 
 
 def _decoded_record(stored: str) -> dict[str, Any]:
@@ -239,6 +277,8 @@ class RunStore:
             if busy_timeout is None
             else sqlite3.connect(str(self._path), timeout=busy_timeout)
         )
+        if self._conn.execute("PRAGMA main.page_count").fetchone()[0] == 0:
+            self._conn.execute("PRAGMA main.auto_vacuum = INCREMENTAL")
         self._create()
         self._archive_attached = False
 
@@ -456,8 +496,10 @@ class RunStore:
         projects: set[str],
         apply: bool,
         can_retire: Callable[[Mapping[str, Any]], bool] | None = None,
+        limit: int = RETIREMENT_BATCH_SIZE,
+        vacuum_pages: int = INCREMENTAL_VACUUM_PAGES,
     ) -> dict[str, Any]:
-        """Copy unneeded ended runs to the archive, then compact the hot file.
+        """Archive one bounded batch and reclaim at most a fixed number of pages.
 
         An attached-database transaction commits the copy and deletion together.
         Unknown completion times stay hot. The cutoff uses parsed instants so
@@ -465,6 +507,10 @@ class RunStore:
         """
         from reckon._timestamps import parse_utc
 
+        if limit < 1 or vacuum_pages < 1:
+            raise ValueError(
+                "retirement row and compaction page limits must be positive"
+            )
         with self._conn:
             if apply:
                 self._conn.execute("BEGIN IMMEDIATE")
@@ -481,6 +527,8 @@ class RunStore:
                     and (can_retire is None or can_retire(_decoded_record(payload)))
                 ):
                     candidates.append(str(run_id))
+                    if len(candidates) >= limit:
+                        break
             pages_before = self._conn.execute("PRAGMA main.page_count").fetchone()[0]
             if candidates and apply:
                 self._attach_archive(create=True)
@@ -505,14 +553,23 @@ class RunStore:
                     self._conn.execute(
                         "DELETE FROM main.runs WHERE run_id = ?", (run_id,)
                     )
-        if candidates and apply:
-            self._conn.execute("VACUUM main")
+        incremental_ready = (
+            self._conn.execute("PRAGMA main.auto_vacuum").fetchone()[0] == 2
+        )
+        if apply and incremental_ready:
+            # Fetching the pragma's rows completes the bounded page moves.
+            self._conn.execute(
+                f"PRAGMA main.incremental_vacuum({int(vacuum_pages)})"
+            ).fetchall()
         return {
             "offered": candidates,
             "retired": candidates if apply else [],
             "archive": str(self.archive_path),
             "pages_before": pages_before,
             "pages_after": self._conn.execute("PRAGMA main.page_count").fetchone()[0],
+            "batch_limit": limit,
+            "vacuum_page_limit": vacuum_pages,
+            "maintenance_required": not incremental_ready,
         }
 
     def _ledger_roots(self) -> dict[str, Path | None]:
@@ -1062,3 +1119,23 @@ def compare(
         "store_only_run_ids": sorted(store_only),
         "disagreeing_run_ids": sorted(disagreeing),
     }
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Run explicit store maintenance in a separately allocated job."""
+    import argparse
+    import sys
+
+    parser = argparse.ArgumentParser(description="One-time run-store maintenance")
+    parser.add_argument(
+        "--enable-incremental-vacuum", action="store_true", required=True
+    )
+    parser.add_argument("--store", type=Path, default=store_path())
+    args = parser.parse_args(argv)
+    sys.stderr.write(f"preparing incremental compaction for {args.store}\n")
+    print(json.dumps(enable_incremental_vacuum(args.store)), flush=True)
+    return 0
+
+
+if __name__ == "__main__":  # pragma: no cover
+    raise SystemExit(main())

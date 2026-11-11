@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import subprocess
+import sys
 import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta
@@ -130,6 +132,9 @@ def test_import_and_membership_checks_do_not_repopulate_retired_history(history)
     assert run_store.import_ledger("sample", root=root)["rows_unchanged"] == len(
         records
     )
+    assert not hot_ids(), "import_ledger brought archived runs back into the hot tables"
+    with sqlite3.connect(run_store.store_path()) as connection:
+        assert connection.execute("SELECT count(*) FROM run_details").fetchone()[0] == 0
     assert ledger.index_lag("sample", root=root) == 0
     assert run_store.runs_for_node("task-0", project="sample")[0]["tool_steps"] == 7
     assert run_store.compare("sample", root=root)["rows_in_file_absent_from_store"] == 0
@@ -221,3 +226,136 @@ def test_an_import_racing_retirement_does_not_recreate_a_hot_run(history, monkey
         retiring.retire(before=now, protected=set(), projects={"sample"}, apply=True)
         assert retiring.get_run(records[0]["run_id"])["tool_steps"] == 7
     assert not hot_ids(), "a racing importer recreated a retired run in the hot tables"
+
+
+def test_a_default_sweep_moves_exactly_its_batch_and_leaves_the_rest(history):
+    _, now, records, _ = history
+    with run_store.RunStore() as store:
+        backlog = [
+            {
+                "run_id": f"r-backlog-{index}",
+                "project": "sample",
+                "completed_at": records[0]["completed_at"],
+            }
+            for index in range(2003 - len(records))
+        ]
+        with store._conn:
+            store._conn.executemany(
+                "INSERT INTO runs (run_id, project, completed_at, payload) VALUES (?, ?, ?, ?)",
+                [
+                    (row["run_id"], "sample", row["completed_at"], json.dumps(row))
+                    for row in backlog
+                ],
+            )
+            store._conn.executemany(
+                "INSERT INTO run_details (run_id, detail) VALUES (?, ?)",
+                [(row["run_id"], "{}") for row in backlog],
+            )
+    report = gc.retention_sweep(apply=True, now=now)
+    assert len(report["run_store"]["retired"]) == 2000
+    assert len(hot_ids()) == 3
+    next_report = gc.retention_sweep(apply=True, now=now)
+    assert len(next_report["run_store"]["retired"]) == 3
+    assert not hot_ids()
+
+
+def test_the_hourly_sweep_uses_incremental_compaction_without_a_full_rewrite(
+    history, monkeypatch
+):
+    _, now, _, _ = history
+    statements = []
+    original = run_store.RunStore
+
+    def traced_store(*args, **kwargs):
+        store = original(*args, **kwargs)
+        store._conn.set_trace_callback(statements.append)
+        return store
+
+    monkeypatch.setattr(run_store, "RunStore", traced_store)
+    gc.retention_sweep(apply=True, now=now)
+    assert not [
+        sql for sql in statements if sql.strip().upper().startswith("VACUUM")
+    ], statements
+    assert any("incremental_vacuum" in sql.lower() for sql in statements), statements
+
+
+def test_the_command_configures_both_row_and_page_budgets(history, capsys):
+    _, _, _, _ = history
+    assert gc.main(["--apply", "--store-limit", "7", "--store-vacuum-pages", "3"]) == 0
+    report = json.loads(capsys.readouterr().out)["run_store"]
+    assert report["batch_limit"] == 7
+    assert report["vacuum_page_limit"] == 3
+    assert len(report["retired"]) == 7
+    assert len(hot_ids()) == 17
+    assert 0 < report["pages_before"] - report["pages_after"] <= 3
+
+
+def test_incremental_compaction_continues_after_the_retirement_backlog_is_empty(
+    history,
+):
+    _, now, _, _ = history
+    first = gc.retention_sweep(apply=True, now=now, store_vacuum_pages=3)["run_store"]
+    second = gc.retention_sweep(apply=True, now=now, store_vacuum_pages=3)["run_store"]
+    assert len(first["retired"]) == 24
+    assert not second["retired"]
+    for report in (first, second):
+        assert 0 < report["pages_before"] - report["pages_after"] <= 3
+
+
+@pytest.mark.parametrize(("limit", "pages"), [(0, 3), (7, 0)])
+def test_unbounded_store_budgets_are_refused(history, limit, pages):
+    _, now, records, _ = history
+    with (
+        run_store.RunStore() as store,
+        pytest.raises(ValueError, match="must be positive"),
+    ):
+        store.retire(
+            before=now,
+            protected=set(),
+            projects={"sample"},
+            apply=True,
+            limit=limit,
+            vacuum_pages=pages,
+        )
+    assert len(hot_ids()) == len(records)
+
+
+def test_a_store_needing_conversion_is_not_rewritten_by_the_sweep(history, monkeypatch):
+    _, now, records, _ = history
+    legacy = run_store.store_path().with_name("unprepared.db")
+    with sqlite3.connect(legacy) as connection:
+        connection.execute("CREATE TABLE resident (value TEXT)")
+    monkeypatch.setenv("RECKON_RUN_STORE", str(legacy))
+    with run_store.RunStore() as store:
+        store.append("sample", records[0])
+    report = gc.retention_sweep(apply=True, now=now)["run_store"]
+    assert report["maintenance_required"] is True
+    assert len(report["retired"]) == 1
+    with sqlite3.connect(legacy) as connection:
+        assert connection.execute("PRAGMA auto_vacuum").fetchone()[0] == 0
+        assert connection.execute("PRAGMA freelist_count").fetchone()[0] > 0
+    command = [
+        sys.executable,
+        "-m",
+        "reckon.run_store",
+        "--enable-incremental-vacuum",
+        "--store",
+        str(legacy),
+    ]
+    prepared = subprocess.run(
+        command, capture_output=True, text=True, check=True, timeout=30
+    )
+    receipt = json.loads(prepared.stdout)
+    assert receipt["auto_vacuum_before"] == 0
+    assert receipt["auto_vacuum_after"] == 2
+    assert receipt["rewritten"] is True
+    repeated = subprocess.run(
+        command, capture_output=True, text=True, check=True, timeout=30
+    )
+    assert json.loads(repeated.stdout)["rewritten"] is False
+    with run_store.RunStore() as store:
+        assert store.get_run(records[0]["run_id"])["tool_steps"] == 7
+    assert (
+        gc.retention_sweep(apply=True, now=now)["run_store"]["maintenance_required"]
+        is False
+    )
