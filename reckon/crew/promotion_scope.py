@@ -2593,11 +2593,20 @@ def _commit_landing_writes(
             f"{_unrestored_landing_writes(rollback)}",
             rollback,
         )
+    landing_commit = _head_revision(checkout)
+    # A landing moves paths, and the shared index is written by every session in
+    # the checkout: what the commit moved is read back once it has landed, and a
+    # copy staged with other than HEAD's content is cleared rather than left for
+    # the next plain commit to take.
+    unstaged = clear_stale_landed_copies(
+        checkout, landed_paths(checkout, f"{landing_commit}^", landing_commit)
+    )
     mismatched = _landing_path_mismatches(checkout, targets)
     landing_check = {
         "ok": not mismatched,
         "reversals": reversals,
         "mismatched": mismatched,
+        "unstaged": unstaged,
     }
     _append_landing_record(
         run_id,
@@ -2605,7 +2614,7 @@ def _commit_landing_writes(
             "time": _utc_now(),
             "step": "commit",
             "committed": True,
-            "commit": _head_revision(checkout),
+            "commit": landing_commit,
             "head_before": head_before,
             "landing_check": landing_check,
         },
@@ -2641,7 +2650,11 @@ def _revision_is_ancestor(checkout: Path, revision: str, target: str) -> bool:
     )
 
 
-from reckon.crew.merge import _run_waiting_out_a_held_index_lock
+from reckon.crew.merge import (
+    _run_waiting_out_a_held_index_lock,
+    clear_stale_landed_copies,
+    landed_paths,
+)
 from reckon.crew.promotion_evidence import (
     _COMMITLESS_ROLES,
     _commit_canonical_id,

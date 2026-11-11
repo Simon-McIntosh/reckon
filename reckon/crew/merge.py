@@ -19,6 +19,13 @@ Nothing here sets a plan, a sprint or a project index; it moves one branch and
 pushes it. Identity is a module-local concern: an actor, if one arrives later,
 belongs to the caller's scope and not to the landing.
 
+The index itself is not written to build the merge, but it is read back once
+the branch has moved: a path the landing moved that the shared index stages
+with content other than HEAD's — what a peer's ``git add`` of content it read
+before the merge leaves behind — is restored in the index, because the next
+plain ``git commit`` from any session would commit it and revert the landed
+work.
+
 The push is the one step that can fail after the branch has moved, and a
 landing that hides that reads as a refusal that wrote nothing. A push that
 fails after the fast-forward raises :class:`MergePushOutstandingError`, which
@@ -423,6 +430,84 @@ def _changed_paths(repo: Path, base: str, head: str) -> list[tuple[str, str]]:
     return [
         (fields[index], fields[index + 1]) for index in range(0, len(fields) - 1, 2)
     ]
+
+
+def landed_paths(repo: Path, base: str, landed: str) -> list[str]:
+    """Return every path the landed commit changed against the pinned base."""
+    result = _run(repo, "diff", "--name-only", "--no-renames", "-z", base, landed)
+    if result.returncode != 0:
+        raise MergeError(
+            "cannot read the landed change: "
+            + (result.stderr.strip() or result.stdout.strip())
+        )
+    return [name for name in result.stdout.split("\0") if name]
+
+
+def clear_stale_landed_copies(repo: Path, paths: Iterable[str]) -> list[str]:
+    """Unstage every landed path the shared index stages with content but HEAD's.
+
+    A landing moves the branch with a fast-forward, and anything that writes the
+    index in the same window — a peer's ``git add`` of content it read before
+    the merge — leaves the index holding the pre-landing copy of a path the
+    landing moved. The landing returns successfully, and the next plain
+    ``git commit`` from any session commits that index and silently reverts the
+    landed work: measured on a coordinator's plan commit, which took five paths
+    back about ten hours.
+
+    So the paths the landing moved are read back from the index once the branch
+    has moved, and any of them staged with content other than HEAD's is
+    restored to HEAD's in the index for the index only: the working-tree file is
+    left as it is, because an uncommitted edit is a peer's own work and a
+    landing has no business discarding it. What it must not leave is a staged
+    entry, which the next commit would take.
+
+    The restore runs through the bound a briefly held ``index.lock`` is waited
+    out by, and what is still staged afterwards is read back rather than
+    assumed. A landing that cannot clear the index raises: the branch has
+    moved, and a caller told about it can repair one index; a caller told
+    nothing finds out when a plan commit reverts the landing.
+    """
+    names = list(paths)
+    if not names:
+        return []
+    staged = _run(
+        repo, "diff", "--cached", "--name-only", "--no-renames", "-z", "--", *names
+    )
+    if staged.returncode != 0:
+        raise MergeError(
+            "cannot read the staged copies of the landed paths: "
+            + (staged.stderr.strip() or staged.stdout.strip())
+        )
+    stale = [name for name in staged.stdout.split("\0") if name]
+    if not stale:
+        return []
+    restored, _retries = _run_waiting_out_a_held_index_lock(
+        repo,
+        lambda _attempt: _run(
+            repo, "restore", "--staged", "--source=HEAD", "--", *stale
+        ),
+    )
+    if restored.returncode != 0:
+        raise MergeError(
+            "the landing moved the branch but could not unstage "
+            f"{', '.join(stale)}: "
+            + (restored.stderr.strip() or restored.stdout.strip())
+        )
+    still = _run(
+        repo, "diff", "--cached", "--name-only", "--no-renames", "-z", "--", *stale
+    )
+    if still.returncode != 0:
+        raise MergeError(
+            "cannot read the staged copies back after the landing: "
+            + (still.stderr.strip() or still.stdout.strip())
+        )
+    remaining = [name for name in still.stdout.split("\0") if name]
+    if remaining:
+        raise MergeError(
+            "the landing moved the branch and the shared index still stages "
+            f"{', '.join(remaining)}; a plain commit would revert it"
+        )
+    return stale
 
 
 def change_markers(repo: Path, base: str, head: str) -> dict[str, dict[str, object]]:
@@ -908,6 +993,10 @@ def land_merge(
         "branch": branch,
         "remote": remote,
         "pushed": False,
+        # Paths the landing moved that the shared index was staging with other
+        # than HEAD's content, restored in the index before the push so no
+        # peer's later commit can take them back.
+        "unstaged": clear_stale_landed_copies(repo, landed_paths(repo, base, landed)),
     }
     try:
         remote_head = _push_and_confirm(repo, remote, landed, branch)
