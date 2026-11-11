@@ -1,0 +1,94 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite at 22716863ce reports 51 passed EXIT=0 and after_suite at 7c38e14f reports 56 passed EXIT=0; the importer arms record 6 failed/140 passed at the base and 6 failed/145 passed at the head with an identical FAILED id set (verified by diff of the two logs), so the set difference is empty.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "Dropping the sorted() over the test-file arguments in reckon/crew/promotion_records.py:590 makes the reversed-order command compare unequal, which is what the negative control demonstrates.",
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "line": 100
+    },
+    {
+      "condition_to_fail": "Removing the interpreter resolution in reckon/crew/promotion_records.py:578-583 leaves .venv/bin/python relative against the arm's absolute path, so the assertion refuses; the negative control demonstrates this.",
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "line": 112
+    },
+    {
+      "condition_to_fail": "Returning the words untouched from _leading_cd_tree at reckon/crew/promotion_records.py:506 keeps the cd words in the comparison, so the assertion refuses; the negative control demonstrates this.",
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "line": 124
+    },
+    {
+      "condition_to_fail": "Accepting a strict subset of the armed files (for example comparing only the first entry, or returning True from _arm_command_matches) lets the one-file command match and the assertion fails.",
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "line": 134
+    },
+    {
+      "condition_to_fail": "Filtering flag words out of the comparison at reckon/crew/promotion_records.py:594 makes the extra -x invisible, so the assertion fails.",
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "line": 142
+    }
+  ],
+  "base_log_revision": "22716863cedc8bce2960c640e5f55d75a0969b12",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:714",
+    "reckon/crew/promotion.py:2653",
+    "reckon/crew/pending_landing.py:219",
+    "reckon/crew/promotion_records.py:845"
+  ],
+  "completed_at": "",
+  "dispatched_at": "2026-11-11T09:34:39Z",
+  "findings": [
+    {
+      "file": "tests/test_a_suite_arm_matches_by_what_it_runs.py",
+      "id": "fd4e74fc401",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture creates .venv/bin/python as a real file under a real .venv directory, so test_the_absolute_interpreter_of_the_runs_environment_matches passes on the join alone and never exercises the Path.resolve() that reckon/crew/promotion_records.py:527 performs. Every worktree in this repository symlinks .venv to the main checkout (this node's own worktree does), so a worker recording the main checkout's absolute interpreter is matched only because resolve() follows that symlink; a fixture making .venv a symlink would be the case that reddens if the resolve were dropped. Folded into a follow-up node is enough; the five done-when cases are otherwise covered."
+    }
+  ],
+  "head_log_revision": "7c38e14f2201332e888ce5f70e3a50ca7565ecf5",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/promotion.py:714 (_evaluate_suite_delta, the live promotion path, reaching _arm_missing_fields at reckon/crew/promotion_records.py:845), reckon/crew/promotion.py:2653 (its import) and reckon/crew/pending_landing.py:219 (the retained _normalized_command, whose behaviour this change does not alter).",
+    "diff": "Read commit by commit against 22716863cedc8bce2960c640e5f55d75a0969b12: 7c38e14f22 adds 137 lines and removes 7 in reckon/crew/promotion_records.py plus a new 142-line test, and 74d61febb4 adds a 62-line evidence fragment; nothing touches a path outside the fence.",
+    "done_when": "The done-when names tests/test_a_suite_arm_matches_by_what_it_runs.py with five cases, no added failure against the base revision, logs under the run directory ending EXIT=, and ruff clean; the file tests/test_a_suite_arm_matches_by_what_it_runs.py:100-142 carries exactly the five named cases, the manifest records '5 passed' EXIT=0 at 7c38e14f, and a re-run of that file at the reviewed head in this review printed '5 passed in 2.58s'.",
+    "goal": "The node goal is that a suite arm's command matches the armed command when it runs the same thing; reckon/crew/promotion_records.py:486-597 adds _command_words, _leading_cd_tree, _resolved_interpreter, _canonical_suite_command and _arm_command_matches, and _arm_missing_fields at :860 and :883 now compares through them in both its scoped and unscoped branches instead of normalising whitespace only.",
+    "manifest": "The source manifest reads complete, records commits 7c38e14f and 74d61feb, names the three changed paths, carries baseline_suite at 22716863ce ('51 passed', EXIT=0) and after_suite at 7c38e14f ('56 passed', EXIT=0), the negative control log, the five test logs and measurement_module /tmp/mcintos-suite-arm-ytJF4i/base/reckon/__init__.py.",
+    "write_paths": "The node was fenced to reckon/crew/promotion_records.py, tests/test_a_suite_arm_matches_by_what_it_runs.py, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-suite-arm-matches-by-what-it-runs.html and a docs/figures directory; git diff --stat 22716863ce 74d61febb4 changes exactly the first three, and the figure directory is unused."
+  },
+  "justifications": {
+    "durability": "The five assertions at tests/test_a_suite_arm_matches_by_what_it_runs.py:100-142 each name a code change that reddens them and the negative control proves the first three (logs/negative-control.log, '3 failed, 2 passed', EXIT=1 on the restored whitespace-only comparison); the gap is that the fixture builds .venv as a real directory at :37-40, so the symlinked-.venv resolution that reckon/crew/promotion_records.py:_resolved_interpreter relies on in this repository's own worktrees is never exercised.",
+    "evidence": "The five-case file is recorded at 7c38e14f ('5 passed', EXIT=0) and the paired importer arms report the identical six failure ids at 22716863ce and 7c38e14f (diff of the FAILED lines is empty, 6 vs 6), so the zero added-failure count is measured rather than claimed; the ruff half is claimed in the manifest's artifacts line without its own log, and this review verified it directly ('All checks passed!', '2 files already formatted').",
+    "fit": "The additions follow the module's existing private-helper idiom and docstring style beside _normalized_command at reckon/crew/promotion_records.py:473, reuse is_collectible_test_path from reckon/crew/node.py:1050 rather than spelling a second test-path predicate, and no added name or comment carries a plan, stage or ticket label.",
+    "goal_fidelity": "reckon/crew/promotion_records.py:583 _canonical_suite_command sorts the test-file arguments, resolves the interpreter against the arm's tree and drops a leading cd into that tree, while :591 _arm_command_matches still refuses a cd into any other tree, so the goal's three accepted spellings are accepted and every other difference refuses.",
+    "reuse": "The capability is owned by reckon/crew/promotion_records.py, where _normalized_command:473 is the prior comparison and is kept for its two other callers (reckon/crew/pending_landing.py:219, reckon/crew/promotion.py:2656); a search over reckon/ for existing command canonicalisation found only shlex.split uses with different purposes (reckon/crew/landing_measure.py:299 argv building, reckon/crew/promotion_gate.py:273, reckon/crew/obligations.py:471, reckon/crew/recovery_classification.py:225), none of which compares an arm with an armed command.",
+    "scope_discipline": "git diff --stat 22716863ce 74d61febb4 lists only reckon/crew/promotion_records.py, tests/test_a_suite_arm_matches_by_what_it_runs.py and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-suite-arm-matches-by-what-it-runs.html, all inside the four declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that a suite arm's command matches the armed command when it runs the same thing; reckon/crew/promotion_records.py:486-597 adds _command_words, _leading_cd_tree, _resolved_interpreter, _canonical_suite_command and _arm_command_matches, and _arm_missing_fields at :860 and :883 now compares through them in both its scoped and unscoped branches instead of normalising whitespace only.\nVERDICT done_when: The done-when names tests/test_a_suite_arm_matches_by_what_it_runs.py with five cases, no added failure against the base revision, logs under the run directory ending EXIT=, and ruff clean; the file tests/test_a_suite_arm_matches_by_what_it_runs.py:100-142 carries exactly the five named cases, the manifest records '5 passed' EXIT=0 at 7c38e14f, and a re-run of that file at the reviewed head in this review printed '5 passed in 2.58s'.\nVERDICT write_paths: The node was fenced to reckon/crew/promotion_records.py, tests/test_a_suite_arm_matches_by_what_it_runs.py, docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-suite-arm-matches-by-what-it-runs.html and a docs/figures directory; git diff --stat 22716863ce 74d61febb4 changes exactly the first three, and the figure directory is unused.\nVERDICT manifest: The source manifest reads complete, records commits 7c38e14f and 74d61feb, names the three changed paths, carries baseline_suite at 22716863ce ('51 passed', EXIT=0) and after_suite at 7c38e14f ('56 passed', EXIT=0), the negative control log, the five test logs and measurement_module /tmp/mcintos-suite-arm-ytJF4i/base/reckon/__init__.py.\nVERDICT diff: Read commit by commit against 22716863cedc8bce2960c640e5f55d75a0969b12: 7c38e14f22 adds 137 lines and removes 7 in reckon/crew/promotion_records.py plus a new 142-line test, and 74d61febb4 adds a 62-line evidence fragment; nothing touches a path outside the fence.\nCALL_SITES: reckon/crew/promotion.py:714, reckon/crew/promotion.py:2653, reckon/crew/pending_landing.py:219, reckon/crew/promotion_records.py:845\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:583 _canonical_suite_command sorts the test-file arguments, resolves the interpreter against the arm's tree and drops a leading cd into that tree, while :591 _arm_command_matches still refuses a cd into any other tree, so the goal's three accepted spellings are accepted and every other difference refuses.\nSCORE evidence: 18\nJUSTIFICATION evidence: The five-case file is recorded at 7c38e14f ('5 passed', EXIT=0) and the paired importer arms report the identical six failure ids at 22716863ce and 7c38e14f (diff of the FAILED lines is empty, 6 vs 6), so the zero added-failure count is measured rather than claimed; the ruff half is claimed in the manifest's artifacts line without its own log, and this review verified it directly ('All checks passed!', '2 files already formatted').\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 22716863ce 74d61febb4 lists only reckon/crew/promotion_records.py, tests/test_a_suite_arm_matches_by_what_it_runs.py and docs/evidence/fragments/a-promotion-reads-the-evidence-it-is-given/a-suite-arm-matches-by-what-it-runs.html, all inside the four declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: The five assertions at tests/test_a_suite_arm_matches_by_what_it_runs.py:100-142 each name a code change that reddens them and the negative control proves the first three (logs/negative-control.log, '3 failed, 2 passed', EXIT=1 on the restored whitespace-only comparison); the gap is that the fixture builds .venv as a real directory at :37-40, so the symlinked-.venv resolution that reckon/crew/promotion_records.py:_resolved_interpreter relies on in this repository's own worktrees is never exercised.\nSCORE fit: 19\nJUSTIFICATION fit: The additions follow the module's existing private-helper idiom and docstring style beside _normalized_command at reckon/crew/promotion_records.py:473, reuse is_collectible_test_path from reckon/crew/node.py:1050 rather than spelling a second test-path predicate, and no added name or comment carries a plan, stage or ticket label.\nSCORE reuse: 18\nJUSTIFICATION reuse: The capability is owned by reckon/crew/promotion_records.py, where _normalized_command:473 is the prior comparison and is kept for its two other callers (reckon/crew/pending_landing.py:219, reckon/crew/promotion.py:2656); a search over reckon/ for existing command canonicalisation found only shlex.split uses with different purposes (reckon/crew/landing_measure.py:299 argv building, reckon/crew/promotion_gate.py:273, reckon/crew/obligations.py:471, reckon/crew/recovery_classification.py:225), none of which compares an arm with an armed command.\nFINDING tests/test_a_suite_arm_matches_by_what_it_runs.py:37 non-blocking: the fixture creates .venv/bin/python as a real file under a real .venv directory, so test_the_absolute_interpreter_of_the_runs_environment_matches passes on the join alone and never exercises the Path.resolve() that reckon/crew/promotion_records.py:527 performs. Every worktree in this repository symlinks .venv to the main checkout (this node's own worktree does), so a worker recording the main checkout's absolute interpreter is matched only because resolve() follows that symlink; a fixture making .venv a symlink would be the case that reddens if the resolve were dropped. Folded into a follow-up node is enough; the five done-when cases are otherwise covered.\n",
+  "review_run_id": "r-20261111T104215855930-review-of-a-suite-arm-matches-by-what-it-runs",
+  "reviewed_base_sha": "22716863cedc8bce2960c640e5f55d75a0969b12",
+  "reviewed_commits": [
+    "7c38e14f2201332e888ce5f70e3a50ca7565ecf5",
+    "74d61febb4ef7e1dae39d2010450873fff39dc80"
+  ],
+  "reviewed_head_sha": "74d61febb4ef7e1dae39d2010450873fff39dc80",
+  "reviewed_run_id": "r-20261111T084021028109-a-suite-arm-matches-by-what-it-runs",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T11:58:00Z",
+  "total": 111
+}
