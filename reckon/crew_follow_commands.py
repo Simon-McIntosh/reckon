@@ -2657,25 +2657,14 @@ def _follow_replay_visible() -> bool:
         return False
 
 
-# The frame a re-arm writes for a reader with no scrollback: it names the pane
-# as a reading of state rather than a run of transitions, so a restored row
-# cannot be taken for news and an empty pane cannot be mistaken for silence.
-_FOLLOW_LIVE_FRAME = "── live · {count} runs (state, not transitions) ──"
-_FOLLOW_LIVE_CLOSE = "── end live ──"
-_FOLLOW_LIVE_NONE = "none"
+def _follow_live_state_rows(project: str, session: str) -> list[dict[str, str]]:
+    """The runs one session owns right now, in the shape the row path reads.
 
-
-def _follow_live_snapshot_rows(project: str, session: str) -> list[dict[str, str]]:
-    """The runs one session owns right now, as state rather than movement.
-
-    A pointer in the session's live view is work it holds, whatever the run is
-    doing; a duty the session's obligations carry is work the run owes it. The
-    two are read from the same derivations the live and obligations views serve,
-    so the pane and those views cannot disagree about which runs are the
-    session's. A duty row that names no run belongs to the project rather than
-    to one run, so it is not part of the set.
+    Each row carries the state word the producer wrote for the run, which is
+    the word the delivered record holds: that record is written from the rows
+    the pane drew, so re-reading the row's state is the only way a re-arm can
+    ask whether the pane has already drawn it.
     """
-    from reckon.crew import obligations as obligations_module
     from reckon.crew import runs as runs_module
     from reckon.crew.query import project_live_rows
 
@@ -2691,74 +2680,17 @@ def _follow_live_snapshot_rows(project: str, session: str) -> list[dict[str, str
             continue
         rows[run_id] = {
             "run_id": run_id,
-            "state": str(row.get("classification") or row.get("phase") or ""),
+            "to_state": str(row.get("phase") or row.get("classification") or ""),
             "node": str(row.get("node") or ""),
-        }
-    # A duty whose run no longer holds a live pointer — a delivery whose
-    # promotion the session still owes — is work the session has, so it joins
-    # the set. The derivation reads the fleet and the project's configuration,
-    # and a failure there must not cost the reader the live rows it already
-    # holds.
-    try:
-        duties = (
-            obligations_module.obligations(project, session).get("obligations") or ()
-        )
-    except Exception:  # noqa: BLE001 - a snapshot is never worth a crash
-        duties = ()
-    for duty in duties:
-        run_id = str(duty.get("run_id") or "")
-        if not run_id or run_id in rows:
-            continue
-        rows[run_id] = {
-            "run_id": run_id,
-            "state": str(duty.get("kind") or ""),
-            "node": str(duty.get("node") or ""),
         }
     return [rows[run_id] for run_id in sorted(rows)]
 
 
-def _follow_pane_word(state: str) -> str:
-    """The word the pane draws in its left column for a fleet classification.
-
-    The delivered record is written from the rows the pane drew, so it holds
-    the pane's vocabulary ('working', 'delivered'), while a snapshot row
-    carries the fleet's classification ('running'). Reading one against the
-    other as plain strings would call every live run moved.
-    """
-    from reckon.crew import ticker as ticker_module
-
-    return ticker_module._bucket_of(state, state) or state
-
-
-def _follow_live_snapshot_line(row: Mapping[str, str]) -> str:
-    """One run's state on the pane: its name and what it is doing, no arrow."""
-    line = f"  {row['run_id']}  {row['state']}"
+def _follow_live_state_line(row: Mapping[str, str]) -> str:
+    """One run's state on the pane: its name and its word, with no arrow."""
+    line = f"  {row['run_id']}  {row['to_state']}"
     node = str(row.get("node") or "")
     return f"{line}  {node}" if node else line
-
-
-def _follow_live_snapshot(
-    project: str,
-    session: str,
-    *,
-    rows: list[dict[str, str]] | None = None,
-) -> str:
-    """The session's current work in one framed write, for a pipe reader.
-
-    A re-arm into a pipe is handed no transition arrow: a pipe has no
-    scrollback to fill, and a reader that took a restored row for news would
-    act on work it had already done. What it is handed instead is the state the
-    session owns, framed so the rows read as state, and closing with the frame
-    so an empty pane always means nothing is owned.
-    """
-    rows = _follow_live_snapshot_rows(project, session) if rows is None else rows
-    lines = [_FOLLOW_LIVE_FRAME.format(count=len(rows))]
-    if rows:
-        lines.extend(_follow_live_snapshot_line(row) for row in rows)
-    else:
-        lines.append(_FOLLOW_LIVE_NONE)
-    lines.append(_FOLLOW_LIVE_CLOSE)
-    return "\n".join(lines)
 
 
 def _follow_resume_output(
@@ -2768,19 +2700,15 @@ def _follow_resume_output(
     read_history: Callable[[], list[dict]],
     history_caps: tuple[int, ...] | None,
     dim: Callable[[str], str],
-    delivered: Mapping[str, str] | None = None,
 ) -> str:
     """What a re-arm writes into its pane: the history on a terminal, state on a pipe.
 
-    The stored history stays terminal-only. A pipe is handed the framed live
-    snapshot in place of nothing: a re-arm whose runs have all moved draws their
-    rows itself, and adding a state frame to those would draw the pane twice.
-    So a run the pane has not been shown at its current word is left to its own
-    row, and the frame names only the runs the replay drops as repeats — the
-    ones a blank pane would otherwise never show. When every run moved there is
-    nothing left to name and the frame is withheld; a session owning no run is
-    named as owning none, so an empty pane always means the frame was not
-    reached.
+    The stored history stays terminal-only. A pipe is handed the rows for the
+    runs the pane has not been shown at their current word, which is the same
+    question the re-attach diff asks of the fleet's rows: the delivered record
+    names the word each run was last drawn at, so a run still at that word is
+    not repeated and a run the pane has never drawn — or one that moved while
+    it was away — is drawn from the state it stands in now.
     """
     if _follow_replay_visible():
         from reckon.crew import follow_checkpoint as history_module
@@ -2792,22 +2720,16 @@ def _follow_resume_output(
             max_seconds=(history_caps or (0, 0))[1],
         )
         return _follow_history_burst(restored, dim=dim)
-    rows = _follow_live_snapshot_rows(project, session)
-    remembered = delivered or {}
-    # The record names the word the pane draws, and a snapshot row carries the
-    # fleet's classification, so the two are compared through the pane's own
-    # bucket rather than directly: 'working' and 'running' are one word in one
-    # column, and comparing them as strings would read every live run as moved.
-    undrawn = [
-        row
-        for row in rows
-        if remembered.get(row["run_id"]) == _follow_pane_word(row["state"])
-    ]
-    if rows and not undrawn:
-        # Every run moved, so each is drawn by its own row: the pane is not
-        # blank and a state frame would be a second drawing of it.
-        return ""
-    return _follow_live_snapshot(project, session, rows=undrawn)
+    from reckon.crew import runs as runs_module
+
+    rows = _follow_gap_rows(
+        _follow_live_state_rows(project, session),
+        runs_module.read_delivered(project, session),
+        session=session,
+        observed=(),
+        run_ids=(),
+    )
+    return "\n".join(_follow_live_state_line(row) for row in rows)
 
 
 _HISTORY_FRAME = "── history · {count} rows ──"
@@ -3446,7 +3368,6 @@ def crew_follow(
                         read_history=read_history,
                         history_caps=history_caps,
                         dim=replay_dim,
-                        delivered=delivered_states,
                     )
                     if text:
                         _echo_follow_line(text)
