@@ -1,0 +1,41 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T08:01:19.891Z",
+  "dispatched_at": "2026-11-11T07:55:19Z",
+  "findings": [
+    {
+      "file": "tests/test_worker_inbox.py",
+      "line": 404,
+      "severity": "non-blocking",
+      "text": "the race test asserts view[\"inbox\"][\"delivered\"] == _receipts(run), and _receipts is worker_inbox.receipts over the same store the view read, on a run holding no failed receipt, so the assertion holds whichever way the view splits delivered from failed and cannot redden on the split it accompanies; the independent assertion is the tool_use_id check on line 407"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T072301959253-inbox-view-reports-failures/manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "the done_when's ruff half is asserted in the manifest's artifacts line but no ruff log is recorded among test_logs, so the no-added-findings result is claimed rather than shown; verified independently for this review (base 4 findings over the two changed sources, head 3 over sources plus test file, ruff format --check clean on all three), but a later reader cannot re-read a receipt that was never written"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal asks the run view to report failed and unreadable inbox messages as such rather than as delivered or absent, and reckon/mcp_views.py:4361-4363 answers delivered, failed and unreadable_count from separate sources while reckon/hooks/worker_inbox.py:253,263 own the split.\nVERDICT done_when: pass \u2014 the done_when names the separation, the unreadable queued message and a hook-driven race test plus ruff; the gate recorded 75 passed EXIT=0 at ea424d46 in after.log and 71 passed with 2 attributed scaffolding errors at 19ee9d35 in base.log, and the declared negative control in negative-control.log reddens the separation test.\nVERDICT write_paths: pass \u2014 the declared scope is reckon/mcp_views.py, reckon/hooks/worker_inbox.py, tests/test_worker_inbox.py, one evidence fragment and a figure directory; the commit touches exactly the first four and nothing else.\nVERDICT manifest: pass \u2014 read; it records commits ea424d46485226449eda8625e308f10d8e1088de, the gate command, the two arm logs and the negative-control log with the observed failure, and its rubric lines are answered.\nVERDICT diff: pass \u2014 one commit against base 19ee9d35 changing four files: the receipt split in worker_inbox.py, the view's delivered/failed/unreadable answer and the narrowed OSError handling in mcp_views.py, two new tests plus the rewritten race test, and the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4664, reckon/crew_run_commands.py:1199\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/mcp_views.py:4361 answers unreadable_count and splits delivered from failed, and reckon/mcp_views.py:4390 reports a queued message it cannot read as present with its error rather than returning None.\nSCORE evidence: 17\nJUSTIFICATION evidence: after.log records 75 passed EXIT=0 at ea424d46 and negative-control.log records the declared mutation failing test_the_run_view_lists_a_failed_receipt_under_its_own_key at EXIT=1, but the manifest's ruff claim at manifest.md:17 has no log behind it.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in commit ea424d46 (reckon/mcp_views.py, reckon/hooks/worker_inbox.py, tests/test_worker_inbox.py, docs/evidence/fragments/a-live-worker-can-be-reached/inbox-view-reports-failures.html) is inside the declared write paths, and the reviewed worktree is clean at that head.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_worker_inbox.py:444 fails if failure receipts are merged back into delivered \u2014 shown by the recorded negative control \u2014 and tests/test_worker_inbox.py:480 fails if _unclaimed_message swallows OSError again, but tests/test_worker_inbox.py:404 compares the view against worker_inbox.receipts on a run with no failed receipt and so cannot fail on the split.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/hooks/worker_inbox.py:253 and :263 sit beside the existing receipts() at :240 in the same style, and the view's answer follows the surrounding dict-return idiom at reckon/mcp_views.py:4355.\nSCORE reuse: 20\nJUSTIFICATION reuse: the split extends the owner of the capability in reckon/hooks/worker_inbox.py rather than forking it, and reckon/hooks/worker_inbox.py:353 replaces its own inline filter with delivered_receipts; a search over reckon/ and tests/ for other failed-receipt filters found none.\nFINDING tests/test_worker_inbox.py:404 non-blocking: the race test asserts the view's delivered list equals worker_inbox.receipts over the same store, on a run with no failed receipt, so it holds whatever the view does with the split and cannot redden on it; the tool_use_id assertion at line 407 is the independent one.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T072301959253-inbox-view-reports-failures/manifest.md:17 non-blocking: the done_when's ruff result is stated in the manifest with no log recorded among test_logs, so the receipt a later reader would re-read does not exist; verified independently here (base 4 findings, head 3, format clean) but not re-readable from the run.\n",
+  "review_run_id": "r-20261111T075239727624-review-of-inbox-view-reports-failures-ea424d464852",
+  "reviewed_base_sha": "19ee9d35e1148b66060284d250b7ee3659d2c476",
+  "reviewed_head_sha": "ea424d46485226449eda8625e308f10d8e1088de",
+  "reviewed_node": "inbox-view-reports-failures",
+  "reviewed_plan": "reckon:a-live-worker-can-be-reached",
+  "reviewed_run_id": "r-20261111T072301959253-inbox-view-reports-failures",
+  "reviewed_section": "s10",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:08:29.325167+00:00",
+  "total": 112
+}
