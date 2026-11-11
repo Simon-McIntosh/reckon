@@ -1,0 +1,47 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/resumption.py:1701, reckon/crew/recovery_review_acceptance.py:711, reckon/crew/recovery.py:259",
+  "completed_at": "2026-11-11T17:38:59.481Z",
+  "dispatched_at": "2026-11-11T17:27:57Z",
+  "findings": [
+    {
+      "file": "tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "the test file's local _git/_commit duplicate the shared git() helper in tests/helpers/git.py instead of importing it, and the local copy drops the RUN_ID_ENV strip the shared helper performs so a mutating verb survives the git shim inside a crew worker"
+    },
+    {
+      "file": "tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py",
+      "line": 228,
+      "severity": "non-blocking",
+      "text": "assert report[\"review_run_id\"] == review_run_id compares the function's returned review_run_id against the same variable the fixture passed in, an echo assertion that holds whatever the passthrough does rather than against an independent source"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to withdraw a review of the head a resume replaced whether its record was written before or after the resume; reckon/crew/recovery_review_dispatch.py:1384 now decides by head and keeps launched reviews and reviews of the resumed head.\nVERDICT done_when: the done_when names tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py; gate-head-arm.log records 54 passed EXIT=0, gate-base-arm.log 51 passed EXIT=0, negative-control.log 1 failed/2 passed EXIT=1.\nVERDICT write_paths: the manifest declares the fix module, the new test, the landing fragment and a figures dir; every path in the diff is inside them.\nVERDICT manifest: read; it states the gate, base, negative-control and population figures and names every log path.\nVERDICT diff: read commit by commit against base 28595c5569; two commits, three files, all inside the declared scope.\nCALL_SITES: reckon/crew/resumption.py:1701, reckon/crew/recovery_review_acceptance.py:711, reckon/crew/recovery.py:259\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:1413 removes the resumed_at <= at gate and withdraws on supersedes_head, so a review of the replaced head is withdrawn regardless of its record time.\nSCORE evidence: 19\nJUSTIFICATION evidence: gate-head-arm.log ends 54 passed EXIT=0 and gate-base-arm.log 51 passed EXIT=0, with evidence-head-arm.ids and evidence-base-arm.ids identical over 48 modules.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: fca6c3d08d and 3e445fce5c touch only reckon/crew/recovery_review_dispatch.py, the new test and the landing fragment, all inside the manifest's declared paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows the record-time ordering reinstated makes test_a_review_recorded_after_the_resume_is_withdrawn fail with report is None, and the two control cases still pass.\nSCORE fit: 18\nJUSTIFICATION fit: the change removes one comparison and reuses the existing supersedes_head and _review_head_covers helpers in reckon/crew/recovery_review_dispatch.py:180 and :380 rather than adding a mechanism.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py:40 duplicates the shared git() helper owned by tests/helpers/git.py instead of importing it.\nFINDING tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py:40 non-blocking: the local _git/_commit helpers duplicate the shared git() in tests/helpers/git.py and drop its RUN_ID_ENV strip, which the owner performs so a mutating verb survives the git shim inside a crew worker.\nFINDING tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py:228 non-blocking: report[\"review_run_id\"] == review_run_id echoes the variable the fixture passed in rather than an independent source, so it holds for any passthrough.",
+  "review_run_id": "r-20261111T172622373315-review-of-a-resume-withdraws-the-review-of-the-head-it-replaced-3e445fce5c4e",
+  "reviewed_base_sha": "28595c556948ac6cf3cb5ed7fca8560c9e7e7b72",
+  "reviewed_head_sha": "3e445fce5c4e47ba94e59d062a6bb3481d4ade43",
+  "reviewed_run_id": "r-20261111T164139223910-a-resume-withdraws-the-review-of-the-head-it-replaced",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:04:40.896998+00:00",
+  "total": 100,
+  "verdicts": {
+    "call_sites": "reckon/crew/resumption.py:1701 and reckon/crew/recovery_review_acceptance.py:711 call withdraw_superseded_review; reckon/crew/recovery.py:259 re-exports it.",
+    "diff": "read commit by commit against base 28595c5569: fca6c3d08d removes the record-time gate and adds the test, 3e445fce5c adds the evidence fragment; 326 insertions, 7 deletions, all inside scope.",
+    "done_when": "the done_when names tests/test_a_resume_withdraws_the_review_of_the_replaced_head.py and its three cases; gate-head-arm.log records 54 passed EXIT=0 and negative-control.log records 1 failed/2 passed EXIT=1 at fca6c3d08d.",
+    "goal": "the node goal is to withdraw a review of the head a resume replaced, ordered by head not record time, while a launched review finishes and a review of the resumed head stands; reckon/crew/recovery_review_dispatch.py:1384 implements exactly that by removing the resumed_at <= at gate and deciding on _review_head_covers plus supersedes_head.",
+    "manifest": "read; it states the gate (54 passed EXIT=0), base (51 passed EXIT=0), negative control (1 failed/2 passed EXIT=1) and an unchanged 48-module failure population, and names every log path.",
+    "write_paths": "the manifest declares reckon/crew/recovery_review_dispatch.py, the new test, the landing fragment and a figures dir; the diff touches the first three and nothing else."
+  }
+}
