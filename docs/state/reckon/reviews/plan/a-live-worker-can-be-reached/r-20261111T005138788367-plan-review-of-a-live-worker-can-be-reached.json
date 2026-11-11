@@ -1,0 +1,79 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T01:06:16.186Z",
+  "dispatched_at": "2026-11-11T00:55:02Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "reuse_search-1",
+      "reason": "naming the owner turns the node's work from \"add a seeding path\" into \"keep the two writers aligned\", which is the difference the plan's own \u00a78 already made explicit for `settings.json`.",
+      "text": "\u00a79's deliverable says \"the fence seeds \u00a78's hook into each codex run's own CODEX_HOME\" without naming `seed_harness_home` (`reckon/_worker_fence.py:193`, the function \u00a78 cited by name and line) or the codex dialect's existing `harness_home_files` entry at `reckon/schema/flight-defaults.yaml:47` (which already declares `config.toml` as a file seeded into every codex run home), so a worker reading \u00a79 alone would write a second seeding path beside the one that already copies that exact file",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_backends.py:1625",
+      "id": "reuse_search-2",
+      "reason": "the node is asked to acquire codex's hook contract by a route that is already built, so the plan can name it and remove a discovery step from a 1.5-hour node.",
+      "text": "\u00a79 tells the node to establish the trust key and hash \"from the codex source, or from `codex app-server`'s hook-listing and config-write requests\" without citing the working app-server client this repo already owns (`BudgetProbe`, `argv=[command, \"app-server\"]`, the `initialize` handshake and a request/answer pair); the census is that one site, and it is the only place in the tree that speaks this protocol",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/schema/flight-defaults.yaml:47",
+      "id": "duplicate_owner-1",
+      "reason": "the node's seeded-home test passes on a fresh home and the product silently fails on every resumed or already-seeded home, so the plan must state the merge-into-existing case or the section ships the defect it exists to close.",
+      "text": "the codex dialect already declares `config.toml` as a file seeded into a run home, and `_seed_harness_entry` (`reckon/_worker_fence.py:432`) copies it only when the destination is absent (`:443`) and copies raw bytes (no `keys:` filter on this entry, so `_bind_reckon_hook_commands` at `:475` never runs); \u00a79's \"seeds ... together with the trust record\" therefore does nothing on every run home that already carries a codex `config.toml` \u2014 which is the normal case, exactly as \u00a78 documents for `settings.json` \u2014 and cannot add a trust hash to an operator file it copies byte-for-byte",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/_worker_fence.py:348",
+      "id": "duplicate_owner-2",
+      "reason": "the node must either compose TOML by hand, add a dependency, or write a `hooks.json` beside `config.toml`; the plan chooses none of these, so a worker decides at implementation time what the section should have decided.",
+      "text": "the seeding helpers the node would extend are JSON-only: `_merge_harness_entry` (`:348`) and `_filter_top_level_keys` (`:460`) both call `json.loads`, `_bind_reckon_hook_commands` (`:475`) takes a JSON dict, and the repository has no TOML writer (`tomllib` at `reckon/agent_context.py:350` and `reckon/project_maintenance_commands.py:1203` is read-only, and no `tomli`/`tomli-w` dependency exists) \u2014 so writing `hooks.state.<key>.trusted_hash` into `config.toml` has no owner to extend and no library to compose with",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-live-worker-can-be-reached.html:182",
+      "id": "interface_budget-1",
+      "reason": "a test-only switch on a production seeding function is new permanent surface, and the negative control can equally build its scratch home by writing the file without the trust record, which is a sentence the section should contain.",
+      "text": "public_definitions 2455, cli_options 470, mcp_views 15, refusal_families 25: \u00a79 adds a seeding function whose signature carries \"a parameter that omits the trust record, used only by the negative control below\", and the section names nothing it retires or merges, nor why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "1a39b6766bce3aab24fae3625532907a5f0cce00",
+  "plan_fingerprint": "c1f774e314dfd752e2fd58d2f3d85777e5c89b882996155f651198b34d037256",
+  "plan_slug": "a-live-worker-can-be-reached",
+  "plan_version": 28,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T005138788367-plan-review-of-a-live-worker-can-be-reached",
+  "reviewed_blob_sha": "7822973326ff6e8b0dd7999622370dafe8fcfdf4",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "pass \u2014 \u00a79 puts the whole capability behind one seeding function in the fence's existing `seed_harness_home`, which is the module that already hides run-home file location, key/hash computation and non-overwrite semantics; \u00a78 carries the hook itself and \u00a79 adds no second surface.",
+    "duplicate_owner": "a finding \u2014 \u00a79 seeds a Codex home-level `config.toml` without extending its existing owner, the codex `harness_home_files` declaration at `reckon/schema/flight-defaults.yaml:47` copied by `_seed_harness_entry` (`reckon/_worker_fence.py:432`), and that owner's helpers cannot write TOML: `_merge_harness_entry` (`:348`) and `_filter_top_level_keys` (`:460`) are JSON-only and the repo carries no TOML writer (`tomllib` is read-only, used at `reckon/agent_context.py:350`).",
+    "interface_budget": "a finding \u2014 public_definitions 2455, cli_options 470, mcp_views 15, refusal_families 25; \u00a79 adds a public seeding function carrying a parameter used only by its negative control and names nothing it retires, merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a79 names \"the fence\" generically and cites the run-home directory, but not the two mechanisms that already seed it: `reckon/_worker_fence.py:193` (`seed_harness_home`) and `reckon/schema/flight-defaults.yaml:47` (the codex dialect's shipped `config.toml` declaration), nor the existing codex JSON-RPC client at `reckon/_backends.py:1625`.",
+    "thin_wrapper": "pass \u2014 \u00a79 adds no wrapper: it states that Codex 0.167's hook schema and `hookSpecificOutput.additionalContext` match Claude Code, so \u00a78's script runs unchanged, and the only Codex-specific work is a trust record beside the hook definition."
+  },
+  "section_digests": {
+    "_document": "81eb80e073381f3b1366ce6545c0ae40e6e5ba15ccbd0cf16f9a6483d2e5c8ab",
+    "s1": "af5a87f4e6d0d7f124517f60ecf480224a6fdc299aff8194f198ba196313329d",
+    "s2": "e31196644e0e28de58b2c21d27527a6b0e65e792d306f0ff21236bef749b7c13",
+    "s3": "254cf81aac33c6c0c07c9c087e44c5d77f7dcd8364b07633514482a1a7c04f66",
+    "s4": "53d90ef31a57039bc139d3cf10c4bfcd8852b6162e315cbeef9cb19545ce05bb",
+    "s5": "4cf651a9a34b43375476586788c3a5f0c3f72a486f1cb9d3590f7d03050c255c",
+    "s6": "88d4fb1b0423ef81612bc97bd5c371d15fa18ae1f969cccf653dc4be9a102ca8",
+    "s7": "8d27b047c15347662c03ab1268b77feda9bdf2be3c653351afdd1607c3f90164",
+    "s8": "370dc84ad6d12da660f0a9c95ec0239ccceac16de70baee83c48a62778a2b195",
+    "s9": "e9e7bb4428337b2a75cafa0a049036ba787c5c9e15940ee5ebd900ee6bce68e9"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T01:13:38.507026+00:00",
+  "total": null
+}
