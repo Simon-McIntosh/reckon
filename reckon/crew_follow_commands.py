@@ -2723,7 +2723,6 @@ def _follow_resume_output(
         )
         return _follow_history_burst(restored, dim=dim)
     from reckon.crew import runs as runs_module
-
     from reckon.crew import ticker as ticker_module
 
     record = runs_module.read_delivered(project, session)
