@@ -10,8 +10,9 @@
     newline-delimited JSON-RPC loop in <code>reckon/anchored_edit.py</code>
     answers <code>initialize</code>, <code>tools/list</code> and
     <code>tools/call</code> directly, and the editing machinery
-    (<code>reckon._store</code>, <code>reckon._worker_fence</code>) and the MCP
-    framework are imported only when a call actually needs them.</p>
+    (<code>reckon._store</code>, <code>reckon._worker_fence</code>) is imported
+    only when a call actually needs it. The module imports the MCP framework
+    nowhere, because the unused framework server path was removed.</p>
   <table id="anchored-server-starts-inside-the-snapshot-timings">
     <caption>Cold-process time from spawn to the <code>initialize</code> answer, five runs each, on the fleet node.</caption>
     <thead><tr><th>Arm</th><th>Min</th><th>Max</th><th>Mean</th></tr></thead>
