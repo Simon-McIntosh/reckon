@@ -44,6 +44,11 @@
     <p>§7 landed at <code>f238d113fa</code> (reviewed head <code>2160ffdd</code>, run <code>r-20261111T185408798633-re-review-reads-what-changed</code>). A run's second or later code-review brief names the head the previous review read, the commits since it, and each finding that review raised with its disposition. It asks the reviewer to judge those commits and to say whether each earlier blocking finding is resolved; a first review's brief is unchanged. Its review raised one non-blocking finding, deferred at landing under §4: a stored finding with no claim is skipped, so the brief can call such a review empty.</p>
   </section>
 
+  <section id="s16-launched-run-owes-no-queued-duty" data-evidence-origin="append">
+    <h2>§16 — a launched run owes no queued duty</h2>
+    <p>§16 landed at <code>5426731d0f</code> (reviewed head <code>b99ca93f</code>, run <code>r-20261111T185852834144-launched-run-owes-no-queued-duty</code>). The obligations snapshot now compares each queued duty with the run's current pointer, so the obligations view, the stop hook and the follower no longer list a queued duty for a run that has launched, even when they read a snapshot taken before the launch. A request still queued keeps its duty. Its review raised three non-blocking findings, deferred at landing under §4. The <code>run-stalled</code> kind is not in the settled set. A pointer that parses with no phase settles its duty. The arms ran on the fleet node rather than <code>all_debug</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
