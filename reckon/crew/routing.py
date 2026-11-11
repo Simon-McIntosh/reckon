@@ -2313,7 +2313,42 @@ def _create_worktree(
     if result.returncode or not payload.get("ok"):
         detail = payload.get("error") or result.stderr.strip() or result.stdout.strip()
         raise CrewError(f"worktree creation failed: {detail}")
+    _give_worktree_minimal_stat(repo, target)
     return payload
+
+
+def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
+    """Have a new worktree compare whole-second mtime, ctime and size only.
+
+    A fenced worker's user namespace maps only the caller's primary gid, so the
+    index it writes records the overflow gid for every entry against files that
+    carry the supplementary group. Every git call outside the fence then reads
+    every entry as changed and re-reads every file, which cost 270 s of a 621 s
+    promotion on one no-code review. ``core.checkStat=minimal`` drops uid, gid,
+    inode and device from the comparison while keeping whole-second mtime,
+    ctime and size, so an edit is still caught.
+
+    The setting lives in the worktree's own configuration, which git reads only
+    once ``extensions.worktreeConfig`` is enabled on the shared configuration.
+    Enabling it there leaves the main checkout at the default comparison.
+    """
+    for arguments in (
+        ("config", "extensions.worktreeConfig", "true"),
+        ("config", "--worktree", "core.checkStat", "minimal"),
+    ):
+        where = repo if arguments[1] != "--worktree" else path
+        result = subprocess.run(
+            ["git", "-C", str(where), *arguments],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if result.returncode:
+            detail = result.stderr.strip() or result.stdout.strip()
+            raise CrewError(
+                f"worktree creation failed: git {' '.join(arguments)} at {where}: "
+                f"{detail}"
+            )
 
 
 def _remove_worktree(repo: Path, path: str) -> None:
