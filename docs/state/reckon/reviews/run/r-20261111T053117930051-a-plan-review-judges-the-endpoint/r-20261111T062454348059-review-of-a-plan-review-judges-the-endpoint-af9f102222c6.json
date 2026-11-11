@@ -1,0 +1,104 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured from the reviewed run's own arms: gate-base.log records revision e0e37167 with '79 passed in 16.93s' then EXIT=0 and gate-head.log records revision fbcdaf87 with '86 passed in 12.25s' then EXIT=0, so the head adds no failure and adds the seven new cases; the reviewed manifest's baseline_suite and after_suite are both null, so the arms' own logs are the record. Outside those arms the repository's suite does gain one red id \u2014 tests/test_plan_review_prompt.py::test_reasoning_check_names_the_real_path_caller \u2014 which the reviewed manifest discloses under outside_scope and which is raised as a finding here because the file lay outside its fence; re-running that file at the head gives 1 failed, 8 passed.",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The endpoint sentence is dropped from the content rubric, so the composed brief no longer carries 'a section that prescribes implementation is a finding'.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 80
+    },
+    {
+      "condition_to_fail": "The base rubric's 'does each section's mechanism produce its done-when' check is reinstated, so the string reappears in the composed brief.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 91
+    },
+    {
+      "condition_to_fail": "anchors_resolve again requires claims to be cited, so 'claims are cited' reappears in the composed content brief.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 101
+    },
+    {
+      "condition_to_fail": "The design rubric drops its reuse-map paragraph, so 'no finding asks the plan to name a module' is no longer in the composed design brief.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 106
+    },
+    {
+      "condition_to_fail": "Either skill file loses its reuse-map sentence, so the parametrized clause 'reuse map stays in the brief' or 'never to plan text' is absent from skills/reckon-build/SKILL.md or skills/reckon-review/SKILL.md.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 127
+    },
+    {
+      "condition_to_fail": "The composer stops including the on-disk prompt text, so the words load_plan_review_prompt or load_plan_design_review_prompt return are no longer a substring of the composed brief.",
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 143
+    }
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:834",
+    "reckon/crew_dispatch_commands.py:3162",
+    "reckon/crew/recovery_review_dispatch.py:565"
+  ],
+  "completed_at": "2026-11-11T06:33:48.692Z",
+  "dispatched_at": "2026-11-11T06:26:33Z",
+  "findings": [
+    {
+      "file": "tests/test_plan_review_prompt.py",
+      "line": 83,
+      "severity": "non-blocking",
+      "text": "non-blocking: The change removes the two rubric clauses this case asserts verbatim ('does the mechanism run on the real code path, with the caller named' and the mechanism-produces-done-when check), so the repository's suite gains one red test at the head; I re-ran the file at af9f1022 and it reports 1 failed, 8 passed. The file lay outside the node's declared write paths and the manifest records it under outside_scope, which is the contract's remedy, but until a follow-up node rewrites the case as an endpoint-checks assertion the head is not green repository-wide."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T053117930051-a-plan-review-judges-the-endpoint/manifest.md",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "non-blocking: The artifacts line claims 'the same 4 (failures) at head' for tests/test_skill_contracts.py while citing skill-contracts-base.log, whose header reads '# arm: base'; no head-arm log for that file is named anywhere in the run, so that half of the done-when's 'adds no failure against the base revision' is claimed rather than recorded. I re-ran the file at af9f1022 and it reports the same 4 failure ids the base arm names (4 failed, 68 passed), so the claim is true but the receipt does not carry it."
+    },
+    {
+      "file": "tests/test_a_plan_review_judges_the_endpoint.py",
+      "line": 87,
+      "severity": "non-blocking",
+      "text": "non-blocking: The comment 'The base rubric's two method checks, which hard rule 9 removes' explains the assertions beside a removed revision and a numbered rule in another document, so a reader without skills/reckon-create/SKILL.md cannot resolve it and the number rots when that rule list is edited; the same comments should state the mechanism the checks are replaced by, which the test's own docstring already does."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit: fbcdaf87 changes reckon/crew/prompts/plan_review.md, plan_design_review.md, reckon/crew/review.py (a comment block only) and both skills, and adds the new 143-line test; af9f1022 adds only the 58-line evidence fragment, for 274 insertions and 29 deletions across 7 files.",
+    "done_when": "The done_when names tests/test_a_plan_review_judges_the_endpoint.py, both skills, a negative control that restores the base rubric text, and two fixture-plan reviews; the manifest records the named test (86 passed EXIT=0 at head, 79 passed EXIT=0 at base), the negative control (4 failed EXIT=1), ruff clean on the staged paths, and both fixture logs, so the gate asserts the measure it names.",
+    "goal": "The node goal is that the composed plan-review briefs judge each section against the endpoint-only rule; reckon/crew/prompts/plan_review.md:16-29 adds the 'endpoint, never a method' section and its items 5 and 7 (lines 56-74) now judge the endpoint, prescribed implementation and reference resolution, while reckon/crew/prompts/plan_design_review.md:14-23 puts the reuse map in the node brief.",
+    "manifest": "Read; it reports status complete, names both gate logs with their revisions and resolved module, the negative-control log and both fixture logs, and records under outside_scope the one test file it could not edit.",
+    "write_paths": "Read the manifest's thirteen declared paths against git diff --stat e0e37167..af9f1022; all seven changed files (both prompt files, reckon/crew/review.py, both skills, the new test and the evidence fragment) sit inside them, and nothing outside was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_plan_review_judges_the_endpoint.py:80 and :106 assert clause text the change introduces and :91, :92 and :101 assert the removed base clauses are absent, and the negative control in negative-control-base-rubric.log reddens exactly those four cases by restoring the base rubric text.",
+    "evidence": "gate-head.log closes '86 passed in 12.25s' then EXIT=0 at revision fbcdaf87 and gate-base.log closes '79 passed in 16.93s' then EXIT=0 at e0e37167, but the manifest attributes 4 failures at head to skill-contracts-base.log, which is the base arm alone, so that half of the claim is unrecorded.",
+    "fit": "The new test composes both briefs through the production composer (recovery._review_dispatch_fields with write=False) and asserts against the composed text, matching the surrounding review tests, though its comment at tests/test_a_plan_review_judges_the_endpoint.py:87 cites 'hard rule 9' from another document.",
+    "goal_fidelity": "reckon/crew/prompts/plan_review.md:68-74 replaces the two method checks with 'is the endpoint reachable and checkable' and 'does the section prescribe implementation', and reckon/crew/prompts/plan_design_review.md:20 states no finding asks the plan to name a module, which is the goal sentence's whole content.",
+    "reuse": "The change adds no production definition at all \u2014 the only Python hunk is a comment at reckon/crew/review.py:326-329 \u2014 and the test reuses the existing composer and prompt loaders rather than writing a second brief builder.",
+    "scope_discipline": "git diff --stat e0e37167f6..af9f102222 lists only the seven files named in the manifest's changed_paths, every one inside the thirteen declared write paths, and the review.py hunk is a comment block with no behaviour."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the composed plan-review briefs judge each section against the endpoint-only rule; reckon/crew/prompts/plan_review.md:16-29 adds that rule and its items at lines 56-74 judge the endpoint, while plan_design_review.md:14-23 puts the reuse map in the node brief.\nVERDICT done_when: the done_when names tests/test_a_plan_review_judges_the_endpoint.py, both skills, a negative control restoring the base rubric text and two fixture-plan reviews; the manifest records 86 passed EXIT=0 at head, 79 passed EXIT=0 at base, the control's 4 failed EXIT=1, ruff clean, and both fixture logs.\nVERDICT write_paths: all seven files in git diff --stat e0e37167..af9f1022 sit inside the thirteen declared write paths; nothing outside was written.\nVERDICT manifest: read; status complete, both arm logs named with their revisions and resolved module, the negative-control log, both fixture logs, and the out-of-scope test under outside_scope.\nVERDICT diff: read commit by commit; fbcdaf87 changes the two rubrics, a comment in reckon/crew/review.py and both skills and adds the test, af9f1022 adds only the evidence fragment \u2014 274 insertions, 29 deletions, 7 files.\nCALL_SITES: reckon/crew/recovery_review_subject.py:834, reckon/crew_dispatch_commands.py:3162, reckon/crew/recovery_review_dispatch.py:565\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/prompts/plan_review.md:68-74 replaces the two method checks with 'is the endpoint reachable and checkable' and 'does the section prescribe implementation', and plan_design_review.md:20 states no finding asks the plan to name a module.\nSCORE evidence: 16\nJUSTIFICATION evidence: gate-head.log closes '86 passed in 12.25s' then EXIT=0 at fbcdaf87 and gate-base.log closes '79 passed in 16.93s' then EXIT=0 at e0e37167, but the head arm of tests/test_skill_contracts.py is claimed from a base-only log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the seven changed files is named in the manifest's changed_paths and lies inside the thirteen declared write paths, and the review.py hunk is a comment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_plan_review_judges_the_endpoint.py:80 and :106 assert clause text the change introduces and :91, :92 and :101 assert the removed clauses are absent, and negative-control-base-rubric.log reddens exactly those four.\nSCORE fit: 16\nJUSTIFICATION fit: the test composes both briefs through recovery._review_dispatch_fields(write=False) as the surrounding review tests do, but tests/test_a_plan_review_judges_the_endpoint.py:87 cites 'hard rule 9' from another document.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no production definition \u2014 the only Python hunk is the comment at reckon/crew/review.py:326-329 \u2014 and the test reuses the existing composer rather than a second brief builder.\nFINDING tests/test_plan_review_prompt.py:83 non-blocking: the change removes the two clauses this case asserts verbatim, so the suite gains one red test at the head (re-run: 1 failed, 8 passed); the file was fenced out and recorded under outside_scope, but a follow-up node must rewrite it before the head is green.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T053117930051-a-plan-review-judges-the-endpoint/manifest.md:15 non-blocking: the head-arm figure for tests/test_skill_contracts.py is claimed while citing a log headed '# arm: base'; a re-run at af9f1022 confirms the same 4 ids, so the claim is true but the receipt does not carry it.\nFINDING tests/test_a_plan_review_judges_the_endpoint.py:87 non-blocking: the comment cites 'hard rule 9' in skills/reckon-create/SKILL.md and names the base rubric, which a reader without that document cannot resolve and which rots when the rule list changes.",
+  "report_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T053117930051-a-plan-review-judges-the-endpoint/review-records/r-20261111T053117930051-a-plan-review-judges-the-endpoint.json",
+  "review_run_id": "r-20261111T062454348059-review-of-a-plan-review-judges-the-endpoint-af9f102222c6",
+  "reviewed_base_sha": "e0e37167f6f4e01facfb4b95c2e9cb159c3ca273",
+  "reviewed_commits": [
+    "fbcdaf8741538462dc7d5a39b9896319d822090e",
+    "af9f102222c62274715c0eb6ebe563eda0f7b251"
+  ],
+  "reviewed_head_sha": "af9f102222c62274715c0eb6ebe563eda0f7b251",
+  "reviewed_run_id": "r-20261111T053117930051-a-plan-review-judges-the-endpoint",
+  "scores": {
+    "durability": 19,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T06:24:00Z",
+  "total": 110
+}
