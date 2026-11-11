@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-live-worker-is-never-drawn-halted">
+  <meta name="plan-title" content="The census instrument and sampler hold at head, with their control figures reproduced">
+  <meta name="plan-summary" content="The monitor census and its review-missing sampler are already committed at scripts/census/monitor_census.py beside death_census.py and carryover_census.py, with their co-located test. Re-run at this base the gate is 14 passed and the 48-hour negative control reproduces 242 carried halted rows, 38 process_alive, 128 returns_to_progress and 7 after_status_repair, with both recorded control rows counted under their kinds.">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-is-never-drawn-halted">
+  <meta name="plan-verifies" content="reckon:a-live-worker-is-never-drawn-halted#s11">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,monitor,census,sampler,negative-control">
+</head>
+<body>
+<main class="plan-doc">
+<h2 id="ab-omp-local-a-live-worker-is-never-dra-s11-census">Landing record — the census instrument and sampler verified at head</h2>
+
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-found">The done-when's module and test are already present at this base, committed by the earlier census node and then repaired by the sampler-remedy node: <code>scripts/census/monitor_census.py</code> (614 lines) and <code>scripts/census/test_monitor_census.py</code> (586 lines), beside <code>death_census.py</code> and <code>carryover_census.py</code>. No reimplementation was needed and none was done; this node verified the instrument, its test arms and its historical control against the live fleet data, and corrected one figure in the census fragment that the sampler repair had moved.</p>
+
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-arms">The test carries one arm per required count. A synthetic stream of 7 events holds exactly one row of each counted kind and asserts each count is 1 — <code>process_alive</code> 1 (<code>working-&gt;blocked</code>), <code>returns_to_progress</code> 1, <code>after_status_repair</code> 1, same-word <code>waiting → waiting</code> 1, and one grant/end/in-force each — beside a synthetic run directory whose <code>attempt-N.claim</code> mtimes and <code>status-repair.json</code> <code>repaired_at</code> place the claims outside the counted intervals. The sampler arms are one live review counted as the defect with both the duty entry and the review pointer copied, three snapshots at zero (pointer absent, pointer queued, pointer granted an older head than the duty names), and one snapshot computed before <code>launched_at</code> reading <code>defect</code> 0 with <code>stale_snapshot</code> 1. Second-granularity claim comparison is pinned by its own arm: claims in the same second as either bound leave the row counted.</p>
+
+<h3>Gate</h3>
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-gate"><code>PYTHONPATH=$PWD /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q scripts/census/test_monitor_census.py</code> at <code>42c70d80c9ff</code> — <strong>14 passed, <code>EXIT=0</code></strong> (<code>logs/head-gate.log</code>). The run directory is <code>r-20261111T074942597991-ab-omp-local-a-live-worker-is-never-dra-s11</code>.</p>
+
+<h3>Negative control — the 48 hours ending 2026-10-23T12:37Z</h3>
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-control">Re-run by this node on the fleet node against the live watch directory and run directory, over a window that predates any of this plan's producer repairs, so a zero there would mean the instrument cannot see its mechanism (<code>logs/historical-census.json</code>, <code>logs/historical-census.log</code>):</p>
+<table id="ab-omp-local-a-live-worker-is-never-dra-s11-control-table">
+<thead><tr><th>measure</th><th>figure</th></tr></thead>
+<tbody>
+<tr><td>transition events</td><td>13,325</td></tr>
+<tr><td>runs</td><td>1,335</td></tr>
+<tr><td>carried halted rows</td><td>242</td></tr>
+<tr><td><code>process_alive</code></td><td>38</td></tr>
+<tr><td><code>returns_to_progress</code></td><td>128</td></tr>
+<tr><td><code>after_status_repair</code></td><td>7</td></tr>
+<tr><td>same-word <code>waiting → waiting</code> rows</td><td>22</td></tr>
+<tr><td>lift ids with a counted transition</td><td>23 (worst: 271 granted / 270 ended)</td></tr>
+</tbody>
+</table>
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-control-alive">The first kind's breakdown by transition: <code>working→running</code> 24, <code>working→stalled</code> 6, <code>stalled→stalled</code> 5, <code>complete→stalled</code> 1, <code>completed_unpromoted→stalled</code> 1, <code>working→stopped</code> 1. The 38 matches the fifth content review's figure and §1's 24 <code>working → running</code> rows are one key among them.</p>
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-control-rows">Both recorded control rows are counted under their kinds. §3's <code>r-20261023T012524464845-a-plan-write-refuses-the-bucket</code> halted row at <strong>12:25:51Z</strong> counts under <code>returns_to_progress</code>, with progress at 12:27:34Z and no attempt claim between. §4's row of the same run at <strong>12:14:49Z</strong> (<code>complete→blocked</code>) counts under <code>after_status_repair</code>, its <code>repaired_at</code> 12:14:30Z inside the 60-second window and its <code>attempt-4.claim</code> at 12:14:49.398Z in the row's own second, therefore not between.</p>
+
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-sampler">The sampler is committed, not started: a crew worker gets no turn after its last one, and its background tasks end at a 600-second ceiling, so the day-long job belongs to the coordinator. Nothing in this node started it, and no snapshot sampling was run against the operator's live crew home.</p>
+
+<p id="ab-omp-local-a-live-worker-is-never-dra-s11-scope">This gate measures this node's own change — the census fragment and this record — and the verification of code that already sits at the base. Verifying the merged result belongs to a separately dispatched test node.</p>
+</main>
+</body>
+</html>
