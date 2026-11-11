@@ -217,7 +217,7 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
 def _context_use(
     session: str,
     transcript: Path | None,
-    windows: Sequence[tuple[str, int]],
+    windows: Sequence[tuple[str, int]] = (),
 ) -> dict[str, Any]:
     """The context one coordinator session had used at its last turn, and its window.
 
