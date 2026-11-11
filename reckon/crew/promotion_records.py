@@ -607,6 +607,125 @@ def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     return None
 
 
+def _newest_cited_commit(record: Mapping[str, Any], tree: Path | None) -> str:
+    """The newest commit the manifest cites by ancestry, or empty.
+
+    A manifest's ``commits:`` field is a citation list, not an ordered history:
+    a worker may write it newest-first, oldest-first or in the order the work
+    landed. Reading its last entry as the head therefore picks the oldest commit
+    of a newest-first list, so the candidates are compared by ancestry instead,
+    which holds whatever order they were written in. An entry that does not
+    resolve to a commit in ``tree`` is left out rather than guessed, and git
+    answering nothing leaves the caller its other readers.
+    """
+    manifest = Path(str(record.get("manifest_path") or ""))
+    try:
+        data = parse_manifest(manifest.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return ""
+    entries = data.get("commits") or []
+    if isinstance(entries, str):
+        entries = [entries]
+    if tree is None:
+        return ""
+    # Deferred: the review modules import this package's siblings, so the
+    # import is made where it is used rather than at load.
+    from reckon.crew.recovery_review_subject import _resolve_commit
+
+    revisions: list[str] = []
+    for entry in entries:
+        resolved = _resolve_commit(tree, str(entry).strip(), cached=True)
+        if resolved and resolved not in revisions:
+            revisions.append(resolved)
+    if len(revisions) < 2:
+        return revisions[0] if revisions else ""
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tree),
+                "rev-list",
+                "--topo-order",
+                "--max-count=1",
+                *revisions,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = result.stdout.split()
+    if result.returncode != 0 or not lines:
+        return ""
+    return lines[0]
+
+
+def _run_head(record: Mapping[str, Any]) -> str:
+    """The revision the run's work is delivered at, or empty when unreadable.
+
+    An after arm is evidence about the tree the run delivers, so the revision it
+    must record is the run's head. While the worktree is readable its ``HEAD``
+    is that answer, and ``_run_head_for_review`` reads it. Once the worktree has
+    been reclaimed the manifest's citations are the only evidence left, and the
+    newest of them by ancestry is the head — the review path reads the last
+    entry instead, which is right only for a list written in landing order.
+    An empty answer means no head could be read, and the caller then holds no
+    revision to compare against rather than refusing on one.
+    """
+    # Deferred: the review modules import this package's siblings, so the
+    # import is made where it is used rather than at load.
+    from reckon.crew.recovery_review_dispatch import (
+        _record_carried_head,
+        _run_head_for_review,
+        _worktree_reclaimed,
+    )
+    from reckon.crew.recovery_review_subject import _review_tree
+
+    if not _worktree_reclaimed(record):
+        return _run_head_for_review(record)
+    newest = _newest_cited_commit(record, _review_tree(record))
+    if newest:
+        return newest
+    return _record_carried_head(record)
+
+
+def _arm_revision_mismatch(
+    record: Mapping[str, Any],
+    arm_name: str,
+    observation: Mapping[str, Any],
+    head: str,
+) -> list[str]:
+    """Name an after arm recorded at a revision other than the run's head.
+
+    An arm compares against the head only when both revisions answer: ``head``
+    is read by the caller, and the revision the arm records must name a commit
+    in the run's tree. A head that could not be read and a citation that names
+    no commit are unreadable instruments rather than defects in the arm, so
+    neither is named here and the arm's other fields still decide the pair.
+
+    A citation that does resolve and differs from the head is the case this
+    check exists for: the arm measured a tree the run no longer delivers.
+    """
+    if arm_name != "after_suite" or not head:
+        return []
+    recorded = str(observation.get("revision") or "").strip()
+    if not recorded:
+        return []
+    # Deferred for the same reason as the head resolver above.
+    from reckon.crew.recovery_review_subject import _resolve_commit, _review_tree
+
+    tree = _review_tree(record)
+    if tree is None:
+        return []
+    resolved = _resolve_commit(tree, recorded, cached=True)
+    if not resolved or resolved == _resolve_commit(tree, head, cached=True):
+        return []
+    return [f"{arm_name}.revision_matches_head"]
+
+
 def _paths_present_in_tree(
     tree: Path | None, revision: str, paths: Sequence[str]
 ) -> set[str] | None:
@@ -850,7 +969,11 @@ def _arm_measured_nothing(
 
 
 def _arm_missing_fields(
-    record: Mapping[str, Any], arm_name: str, observation: Mapping[str, Any]
+    record: Mapping[str, Any],
+    arm_name: str,
+    observation: Mapping[str, Any],
+    *,
+    head: str = "",
 ) -> list[str]:
     """Name what an arm lacks to be evidence that it measured a suite.
 
@@ -865,6 +988,11 @@ def _arm_missing_fields(
     to one path whether written relative or absolute, and a leading ``cd`` into
     the arm's own tree allowed. A different test file, flag or interpreter is
     still a different suite.
+
+    The after arm is also held to the revision the run delivers: an arm recorded
+    at a revision behind the run's head measured a tree the run no longer ships,
+    so ``head`` — read by the caller — is compared with the revision the arm
+    records.
     """
     declared = " ".join(str(record.get("suite_command") or "").split())
     if SCOPED_SUITE_PLACEHOLDER not in declared:
@@ -877,6 +1005,7 @@ def _arm_missing_fields(
         ):
             missing.append(f"{arm_name}.command_matches_suite_command")
         missing.extend(_arm_collected_nothing(observation, arm_name))
+        missing.extend(_arm_revision_mismatch(record, arm_name, observation, head))
         return missing
     if _arm_measured_nothing(record, observation):
         if arm_name == "after_suite":
@@ -894,6 +1023,7 @@ def _arm_missing_fields(
     ):
         missing.append(f"{arm_name}.command_matches_suite_command")
     missing.extend(_arm_collected_nothing(observation, arm_name))
+    missing.extend(_arm_revision_mismatch(record, arm_name, observation, head))
     return missing
 
 
@@ -950,6 +1080,7 @@ def _evaluate_suite_delta(
             manifest = {}
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
+    head = _run_head(record)
     missing: list[str] = []
     if not manifest_present:
         missing.append("manifest")
@@ -965,7 +1096,7 @@ def _evaluate_suite_delta(
     ):
         if not isinstance(observation, Mapping):
             continue
-        for field in _arm_missing_fields(record, arm_name, observation):
+        for field in _arm_missing_fields(record, arm_name, observation, head=head):
             if field not in missing:
                 missing.append(field)
     base_sha = str(record.get("base_sha") or "").strip()
@@ -999,10 +1130,31 @@ def _evaluate_suite_delta(
             "missing_fields": missing,
             "added_failure_ids": [],
         }
+        detail = (
+            "armed promotion requires complete baseline and after suite evidence; "
+            "missing " + ", ".join(missing)
+        )
+        if "after_suite.revision_matches_head" in missing and isinstance(
+            after, Mapping
+        ):
+            recorded = str(after.get("revision") or "").strip()
+            head_command = _scoped_suite_command(
+                record, revision=head
+            ) or _scoped_suite_command(record)
+            refusal["after_suite_recorded_revision"] = recorded
+            refusal["run_head"] = head
+            if head_command:
+                refusal["head_suite_command"] = head_command
+            detail += (
+                f". The after arm was recorded at {recorded}, which is "
+                f"not the run's head {head}: re-run the armed command at that "
+                "head and record the after arm at the head's revision"
+            )
+            if head_command:
+                detail += f": {head_command}"
         _record_refusal(refusal)
         raise ledger.SuiteDeltaError(
-            "armed promotion requires complete baseline and after suite evidence; "
-            "missing " + ", ".join(missing),
+            detail,
             missing_fields=missing,
         )
     normalized_baseline = ledger.normalized_suite_observation(baseline)
