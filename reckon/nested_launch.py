@@ -139,24 +139,181 @@ def _explicit_single_step(tool: str, argv: Sequence[str]) -> bool:
     return _names_one_task(argv) or _names_a_job(argv)
 
 
+# Argument roles from Slurm src/common/slurm_opt.c: common_options filtered
+# by slurm_option_table_create for sbatch. Optional values attach to their
+# option; required values consume the next token even when it starts with a dash.
+
+_SBATCH_LONG_REQUIRED = frozenset(
+    {
+        "account",
+        "acctg-freq",
+        "array",
+        "autocomplete",
+        "batch",
+        "bb",
+        "bbf",
+        "begin",
+        "chdir",
+        "cluster",
+        "cluster-constraint",
+        "clusters",
+        "comment",
+        "constraint",
+        "container",
+        "container-id",
+        "context",
+        "core-spec",
+        "cores-per-socket",
+        "cpu-freq",
+        "cpus-per-gpu",
+        "cpus-per-task",
+        "deadline",
+        "delay-boot",
+        "dependency",
+        "distribution",
+        "error",
+        "exclude",
+        "export",
+        "extra",
+        "extra-node-info",
+        "gid",
+        "gpu-bind",
+        "gpu-freq",
+        "gpus",
+        "gpus-per-node",
+        "gpus-per-socket",
+        "gpus-per-task",
+        "gres",
+        "gres-flags",
+        "hint",
+        "input",
+        "job-name",
+        "kill-on-invalid-dep",
+        "licenses",
+        "mail-type",
+        "mail-user",
+        "mcs-label",
+        "mem",
+        "mem-bind",
+        "mem-per-cpu",
+        "mem-per-gpu",
+        "mincpus",
+        "network",
+        "nodefile",
+        "nodelist",
+        "nodes",
+        "ntasks",
+        "ntasks-per-core",
+        "ntasks-per-gpu",
+        "ntasks-per-node",
+        "ntasks-per-socket",
+        "ntasks-per-tres",
+        "open-mode",
+        "output",
+        "partition",
+        "power",
+        "prefer",
+        "priority",
+        "profile",
+        "qos",
+        "reservation",
+        "signal",
+        "sockets-per-node",
+        "switches",
+        "tasks-per-node",
+        "thread-spec",
+        "threads-per-core",
+        "time",
+        "time-min",
+        "tmp",
+        "tres-bind",
+        "tres-per-task",
+        "uid",
+        "wait-all-nodes",
+        "wckey",
+        "wrap",
+    }
+)
+
+_SBATCH_SHORT_REQUIRED = frozenset("ABCDFGJLMNSabcdeimnopqtwx")
+
+_SBATCH_LONG_OPTIONAL = frozenset(
+    {
+        "exclusive",
+        "get-user-env",
+        "nice",
+        "no-kill",
+        "propagate",
+    }
+)
+
+_SBATCH_SHORT_OPTIONAL = frozenset("k")
+
+_SBATCH_LONG_FLAGS = frozenset(
+    {
+        "contiguous",
+        "help",
+        "hold",
+        "ignore-pbs",
+        "no-requeue",
+        "overcommit",
+        "oversubscribe",
+        "parsable",
+        "quiet",
+        "reboot",
+        "requeue",
+        "spread-job",
+        "test-only",
+        "usage",
+        "use-min-nodes",
+        "verbose",
+        "version",
+        "wait",
+    }
+)
+
+_SBATCH_SHORT_FLAGS = frozenset("HOQVWhsv")
+
+
 def _explicit_partition_submission(tool: str, argv: Sequence[str]) -> bool:
-    """Whether sbatch explicitly selects a partition for its separate job."""
+    """Read scheduler option roles without interpreting values or script args.
+
+    Unknown options are refused because their value boundaries are unknown.
+    The real scheduler still validates option values on a forwarded launch.
+    """
     if tool != "sbatch":
         return False
-    for index, argument in enumerate(argv):
-        if argument == "--":
+    arguments = iter(argv)
+    partition = ""
+    for argument in arguments:
+        if argument in ("--", "-") or not argument.startswith("-"):
             break
-        if argument.startswith("--partition="):
-            value = argument.removeprefix("--partition=")
-        elif argument in ("--partition", "-p"):
-            value = argv[index + 1] if index + 1 < len(argv) else ""
-        elif argument.startswith("-p"):
-            value = argument[2:]
+        if argument.startswith("--"):
+            name, attached, value = argument[2:].partition("=")
+            if name in _SBATCH_LONG_REQUIRED:
+                if not attached:
+                    value = next(arguments, "")
+            elif name in _SBATCH_LONG_FLAGS:
+                if attached:
+                    return False
+            elif name not in _SBATCH_LONG_OPTIONAL:
+                return False
+            if name == "partition":
+                partition = value
         else:
-            continue
-        if value.strip() and not value.startswith("-"):
-            return True
-    return False
+            for index, name in enumerate(argument[1:], 2):
+                if name in _SBATCH_SHORT_REQUIRED:
+                    value = argument[index:] or next(arguments, "")
+                elif name in _SBATCH_SHORT_OPTIONAL:
+                    value = argument[index:]
+                elif name in _SBATCH_SHORT_FLAGS:
+                    continue
+                else:
+                    return False
+                if name == "p":
+                    partition = value
+                break
+    return bool(partition.strip()) and not partition.startswith("-")
 
 
 def refuses_implicit_launch(
