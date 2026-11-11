@@ -29,6 +29,22 @@
 
 version: 1
 
+# The context window each harness model runs in, by model-id prefix, in
+# tokens. The crew directory divides a coordinator's last measured context use
+# by its model's window to report how close a session sits to its limit.
+#
+# The Claude 5 family's window is 1,000,000 tokens. The figure is bounded from
+# below by this workstation's own transcripts: over 116 session transcripts the
+# largest charged input was 967,427 tokens, on claude-opus-5-5, so the window is
+# at least that and the family's published figure is what remains above it. A
+# model absent from this table carries no window rather than a guessed one.
+model_windows:
+  claude-fable-5: 1000000
+  claude-opus-5: 1000000
+  claude-sonnet-5: 1000000
+  claude-haiku-5: 1000000
+  claude-haiku-4: 1000000
+
 backends:
   # The default codex workhorse. Rates are unpriced here because their
   # subscription publishes no per-token price; a catalogue entry without rates

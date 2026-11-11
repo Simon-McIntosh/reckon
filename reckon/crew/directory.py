@@ -40,27 +40,71 @@ _TRANSCRIPT_ROOT = Path.home() / ".claude" / "projects"
 #: a forward scan gives.
 _TRANSCRIPT_TAIL_SIZES = (256 * 1024, 1024 * 1024, 4 * 1024 * 1024)
 
-#: The context window each harness model runs in, by model-id prefix, in tokens.
-#:
-#: The Claude 5 family's window is 1,000,000 tokens. The figure is bounded from
-#: below by this workstation's own transcripts: over 116 session transcripts the
-#: largest charged input was 967,427 tokens, on claude-opus-5-5, so the window is
-#: at least that and the family's published figure is what remains above it. A
-#: model absent from this table carries no window rather than a guessed one.
-_CONTEXT_WINDOWS = (
-    ("claude-fable-5", 1_000_000),
-    ("claude-opus-5", 1_000_000),
-    ("claude-sonnet-5", 1_000_000),
-    ("claude-haiku-5", 1_000_000),
-    ("claude-haiku-4", 1_000_000),
-)
+#: The catalogue key carrying each model's context window, keyed by model-id
+#: prefix and valued in tokens. Routing configuration rather than source: a
+#: checkout that carries no catalogue reports a session's window unmeasured
+#: rather than guessing one from a model id.
+_WINDOWS_KEY = "model_windows"
 
 
-def _context_window(model: str | None) -> int | None:
+def _context_windows(project: str | None) -> tuple[tuple[str, int], ...]:
+    """The resolved context window of each model, longest prefix first.
+
+    Every layer that may carry the table is read in the resolution's own
+    precedence — shipped defaults, catalogue, host, project — and each is
+    schema-validated before its entries are taken, so a host or project layer
+    that declares ``model_windows`` is read rather than silently dropped. The
+    table is read here rather than from the resolved config because the
+    catalogue layer's non-backend keys are not copied into that config. A tree
+    carrying none of them — a wheel install, or the isolated test that points
+    the catalogue at an absent file — leaves a row unmeasured rather than
+    against a figure nothing supplied.
+
+    Longest prefix first, so a specific model id wins over the family prefix
+    it also starts with.
+    """
+    from reckon.flight import (
+        host_config_path,
+        model_catalogue_path,
+        project_config_path,
+        read_layer_file,
+        shipped_defaults_path,
+        validate_layer,
+    )
+
+    sources: list[Path] = [shipped_defaults_path(), model_catalogue_path()]
+    sources.append(host_config_path())
+    if project and project != "*":
+        sources.append(project_config_path(project))
+    declared: dict[str, Any] = {}
+    for source in sources:
+        data = read_layer_file(source)
+        if not data:
+            continue
+        validate_layer(data, source)
+        layer = data.get(_WINDOWS_KEY)
+        if isinstance(layer, Mapping):
+            declared.update(layer)
+    if not declared:
+        return ()
+    windows: list[tuple[str, int]] = []
+    for prefix, entry in declared.items():
+        if isinstance(entry, int):
+            tokens = entry
+        else:
+            tokens = entry.get("tokens") if isinstance(entry, Mapping) else None
+        if isinstance(tokens, int) and tokens > 0:
+            windows.append((str(prefix), tokens))
+    return tuple(sorted(windows, key=lambda item: len(item[0]), reverse=True))
+
+
+def _context_window(
+    model: str | None, windows: Sequence[tuple[str, int]]
+) -> int | None:
     """The context window a model id runs in, or ``None`` where none is declared."""
     if not model:
         return None
-    for prefix, window in _CONTEXT_WINDOWS:
+    for prefix, window in windows:
         if model.startswith(prefix):
             return window
     return None
@@ -170,7 +214,11 @@ def _last_assistant_request(path: Path) -> dict[str, Any] | None:
     return latest
 
 
-def _context_use(session: str, transcript: Path | None) -> dict[str, Any]:
+def _context_use(
+    session: str,
+    transcript: Path | None,
+    windows: Sequence[tuple[str, int]] = (),
+) -> dict[str, Any]:
     """The context one coordinator session had used at its last turn, and its window.
 
     A session with no transcript, and a transcript that records no charged
@@ -199,7 +247,7 @@ def _context_use(session: str, transcript: Path | None) -> dict[str, Any]:
         }
     used = int(request["tokens"]["input_tokens"])
     model = request["model"] or None
-    window = _context_window(model)
+    window = _context_window(model, windows)
     measured: dict[str, Any] = {
         "status": "measured",
         "used_tokens": used,
@@ -789,9 +837,12 @@ def directory(
     transcripts = _session_transcripts(
         str(row.get("session") or "") for row in coordinators
     )
+    windows = _context_windows(project)
     for coordinator in coordinators:
         session = str(coordinator.get("session") or "")
-        coordinator["context_use"] = _context_use(session, transcripts.get(session))
+        coordinator["context_use"] = _context_use(
+            session, transcripts.get(session), windows
+        )
 
     result: dict[str, Any] = {
         "ok": True,

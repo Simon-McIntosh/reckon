@@ -276,6 +276,18 @@ slots:
     multivalued: true
     inlined: true
 
+  model_windows:
+    description: >-
+      The context window each harness model runs in, keyed by model-id prefix
+      and valued in tokens. Routing configuration rather than source: the crew
+      directory divides a coordinator's measured context use by its model's
+      window, so the figures live beside the models they describe. A checkout
+      carrying no catalogue declares none, and a session reads its window
+      unmeasured rather than against a guessed figure.
+    range: ModelWindow
+    multivalued: true
+    inlined: true
+
   aliases:
     description: >-
       Old backend names, mapped to the lane and model key they name. A stored
@@ -490,6 +502,14 @@ slots:
   spelling:
     description: The display suffix rendered for an effort level's word.
     range: string
+
+  tokens:
+    description: >-
+      A size in tokens, such as the context window a model runs in. Declared
+      as a positive integer: a window of zero would make every session read
+      as overflowing, so the schema refuses one.
+    range: integer
+    minimum_value: 1
 
   floor:
     description: >-
@@ -1194,6 +1214,7 @@ classes:
       - unprotected_paths
       - backends
       - lanes
+      - model_windows
       - model_catalogue
       - aliases
       - roles
@@ -1378,6 +1399,15 @@ classes:
       - models
       - served_models
       - probe_new_models
+
+  ModelWindow:
+    description: >-
+      One model-id prefix and the context window that model runs in, in
+      tokens. The prefix is the map key, so a specific model id and its family
+      can each be declared without this table naming a provider.
+    slots:
+      - name
+      - tokens
 
   ModelCatalogueConfig:
     description: Public source and watch rules for model notices.
