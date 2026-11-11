@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling,spa">
   <meta name="plan-after" content="crew-state-stays-bounded">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;done&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;s2&quot;,&quot;s4&quot;],&quot;s4&quot;:[&quot;s2&quot;],&quot;s5&quot;:[&quot;s3&quot;,&quot;s4&quot;]}">
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="2">
+<meta name="plan-version" content="4">
 <meta name="plan-modified" content="2026-11-11">
 </head>
 <body>
@@ -83,7 +83,7 @@
 <p><strong>Deliverable.</strong> The hourly retention sweep (<a href="/reckon/crew-state-stays-bounded#s7">crew-state-stays-bounded §7</a>) reaches the reports store.</p>
 <p><strong>Expiry rule.</strong> A report item that is neither persisted nor cited expires at whichever comes first:</p>
 <ul>
-  <li>the moment its plan reaches a terminal status, when the item can be attributed to a plan;</li>
+  <li>the moment its plan reaches a terminal status, when the item can be attributed to a plan. An item is attributed to a plan when its folder name equals the slug of a plan in its project, or when a ledger run of its project names that plan and has a report path inside the item. An item matching neither rule is unattributable and takes only the 30-day ceiling;</li>
   <li>30 days after the item's newest file was last written.</li>
 </ul>
 <p><strong>What counts as an item.</strong> An item is a child folder of a project's reports directory, or a file directly inside one.</p>
@@ -98,8 +98,8 @@
 <p><strong>Output.</strong> A dry run prints every candidate with its reason, its age and the rule that applies. <code>--apply</code> prints every removal.</p>
 <p><strong>Done when</strong> a new <code>tests/test_an_unpersisted_report_expires.py</code> shows, on a synthetic crew home with a mounted synthetic project:</p>
 <ul>
-  <li>An unreferenced item 31 days old is removed. A 29-day-old item is kept unless its plan is closed, and is removed once it is.</li>
-  <li>A persisted item, an item whose own path is cited in a plan document, an item cited only through the path of a file inside it, and an item named by a live pointer are each kept at 90 days.</li>
+  <li>An unreferenced item 31 days old is removed. A 29-day-old item attributed by folder name is kept until its plan closes, and is removed once it does. The same holds for a 29-day-old item attributed only through a ledger run's report path. A 29-day-old item that matches neither rule is kept whatever any plan's status.</li>
+  <li>Each of these is kept at 90 days: a persisted item; an item whose own path is cited in a plan document; an item cited only through a file inside it; one item cited only from a research document, and another only from an evidence fragment; and an item named by a live pointer.</li>
   <li>None of the four reckon-written folders is removed at any age.</li>
   <li>An expired symlinked item has its target and its symlink removed. A symlink whose target lies outside the permitted roots is kept and reported.</li>
   <li>The dry run's candidate list equals the set <code>--apply</code> removes.</li>
@@ -125,7 +125,7 @@
 <p>Every figure added or changed for the surface is rendered and inspected, as the figure review rule requires. Negative control: a listing payload whose classes are swapped makes the default view show the working figures and fail the test. The parity check that compares surfaces gains the retention class. Write paths: the JSX component that renders a plan's figures, its CSS in <code>docs/_shared/</code>, and the new browser test.</p>
 
     <h2 id="s6">§6 — The existing backlog leaves home and is expired by §4</h2>
-<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p><strong>Deliverable.</strong> An operational record, carried out by the coordinator on 11 November at the lead's instruction. imas-efit's and nova's report trees are copied to the staging root <code>/work/projects/imas_gpu/crew-reports/&lt;project&gt;</code> and verified.</p>
 <p>Each settled child folder is then replaced by a symlink to its copy. A folder qualifies as settled when all of these hold:</p>
 <ul>
@@ -138,6 +138,15 @@
 
     <section data-reckon="decisions" id="decisions" class="r-decisions">
 <h2><span class="sec">§</span> Decisions</h2>
+<div class="r-dec" data-key="existing-backlog" data-choice="move-then-expire" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">What happens to the existing 330 GB before the policy lands?</p>
+    <p class="r-dec-opts">
+      <button class="r-opt chosen" data-value="move-then-expire">Move to /work now; §4 expires it later, keeping plan-cited items</button>
+      <button class="r-opt" data-value="expire-now">Expire now, keeping plan-cited items</button>
+      <button class="r-opt" data-value="hand-triage">Triage by hand first</button>
+      </p>
+    <p class="r-dec-rat">This frees home at once with nothing deleted, and leaves the deletion to a rule that has a test and a dry run.</p>
+    </div>
 <div class="r-dec" data-key="figure-data" data-choice="per-item" data-by="Simon McIntosh" data-when="2026-11-11">
     <p class="r-dec-q">When a figure is persisted, what happens to the data files behind it?</p>
     <p class="r-dec-opts">
@@ -146,15 +155,6 @@
       <button class="r-opt" data-value="always">Data always persisted with the figure</button>
       </p>
     <p class="r-dec-rat">A figure from a long solver run cannot be rebuilt cheaply, so its data can be kept deliberately. The default keeps the 49 GB of .nc and .h5 in imas-efit from being persisted by reflex.</p>
-    </div>
-<div class="r-dec" data-key="unpersisted-lifetime" data-choice="plan-close-or-30-days" data-by="Simon McIntosh" data-when="2026-11-11">
-    <p class="r-dec-q">How long does a report nobody persisted stay in the crew home?</p>
-    <p class="r-dec-opts">
-      <button class="r-opt" data-value="7-days">7 days after the run ends</button>
-      <button class="r-opt chosen" data-value="plan-close-or-30-days">Until its plan closes or 30 days, whichever comes first</button>
-      <button class="r-opt" data-value="plan-close">Until its plan closes</button>
-      </p>
-    <p class="r-dec-rat">Slow plans keep their working evidence for a month, and the 30-day ceiling stops a long-lived plan from growing without bound. The lead asked in the same answer for an SPA filter for retained images, which is §5.</p>
     </div>
 <div class="r-dec" data-key="persist-root" data-choice="per-project-flight" data-by="Simon McIntosh" data-when="2026-11-11">
     <p class="r-dec-q">Where does persisted large data go?</p>
@@ -165,14 +165,14 @@
       </p>
     <p class="r-dec-rat">Projects outside the GPU allocation can point elsewhere, and reckon keeps no project name or host path in code.</p>
     </div>
-<div class="r-dec" data-key="existing-backlog" data-choice="move-then-expire" data-by="Simon McIntosh" data-when="2026-11-11">
-    <p class="r-dec-q">What happens to the existing 330 GB before the policy lands?</p>
+<div class="r-dec" data-key="unpersisted-lifetime" data-choice="plan-close-or-30-days" data-by="Simon McIntosh" data-when="2026-11-11">
+    <p class="r-dec-q">How long does a report nobody persisted stay in the crew home?</p>
     <p class="r-dec-opts">
-      <button class="r-opt chosen" data-value="move-then-expire">Move to /work now; §4 expires it later, keeping plan-cited items</button>
-      <button class="r-opt" data-value="expire-now">Expire now, keeping plan-cited items</button>
-      <button class="r-opt" data-value="hand-triage">Triage by hand first</button>
+      <button class="r-opt" data-value="7-days">7 days after the run ends</button>
+      <button class="r-opt chosen" data-value="plan-close-or-30-days">Until its plan closes or 30 days, whichever comes first</button>
+      <button class="r-opt" data-value="plan-close">Until its plan closes</button>
       </p>
-    <p class="r-dec-rat">This frees home at once with nothing deleted, and leaves the deletion to a rule that has a test and a dry run.</p>
+    <p class="r-dec-rat">Slow plans keep their working evidence for a month, and the 30-day ceiling stops a long-lived plan from growing without bound. The lead asked in the same answer for an SPA filter for retained images, which is §5.</p>
     </div>
 </section>
 
