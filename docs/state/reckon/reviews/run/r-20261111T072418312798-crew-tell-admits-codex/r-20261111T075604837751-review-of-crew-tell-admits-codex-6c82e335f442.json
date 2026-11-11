@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T08:06:50.342Z",
+  "dispatched_at": "2026-11-11T07:58:26Z",
+  "findings": [
+    {
+      "file": "tests/test_crew_tell_codex.py",
+      "line": 87,
+      "severity": "non-blocking",
+      "text": "tests/test_crew_tell_codex.py:87 _codex_argv hand-writes the override format production composes, so test_the_codex_predicate_reads_the_overrides_the_dialect_composes (line 266) and the acceptance case validate the predicate against the test's own copy; if reckon/_backends.py:1443 changes its format those tests stay green while every live codex run is refused."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 2519,
+      "severity": "non-blocking",
+      "text": "reckon/crew_run_commands.py:2519 the predicate hard-codes the hooks.PostToolUse, hooks.state and trusted_hash shapes owned by reckon/_backends.py:1443, so the live path and the composer can drift apart without a failing test."
+    },
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 2598,
+      "severity": "non-blocking",
+      "text": "reckon/crew_run_commands.py:2598 the codex branch no longer consults record[\"fenced\"], so an unfenced codex run carrying both overrides is now admitted where the previous code refused every unfenced run; no test covers that case and the fragment does not record the widening."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that crew tell reach a live codex run whose recorded launch argv carries both overrides; reckon/crew_run_commands.py:2598 branches on dialect and admits a codex run only when _codex_inbox_override_gap finds both overrides on record[\"argv\"].\nVERDICT done_when: the done-when names tests over the codex and Claude cases plus a clean ruff on the staged paths; after-suite.log records 64 passed with EXIT=0 at eee1a677 and baseline-suite.log 51 passed with EXIT=0 at e70e9be2, and I measured ruff clean on both staged paths under the repository's declared config.\nVERDICT write_paths: read the reviewed manifest's four declared paths; the three paths the diff touches are all inside them, and the figures directory went unused because the done-when names no artifact.\nVERDICT manifest: read; it reports 64 passed at the head arm against 51 passed at the base arm, the negative control at 5 failed with EXIT=1, status complete, and a landing line naming the per-dialect decision.\nVERDICT diff: read both commits against e70e9be2, eee1a67746 (the source change plus a 273-line test file) and 6c82e335f4 (the evidence fragment only); no path outside the declared scope is touched.\nCALL_SITES: reckon/crew_run_commands.py:2501 crew_tell (the CLI verb that runs the predicate, with no internal caller), reckon/crew/dispatch.py:3407 (writes the record's \"argv\" the predicate reads), reckon/_backends.py:1443 _inbox_hook_flags (composes the two overrides the predicate matches)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:2598 admits a codex run only when both overrides are on the recorded argv, refuses naming the missing one, and leaves the Claude branch's settings test unchanged.\nSCORE evidence: 17\nJUSTIFICATION evidence: after-suite.log and baseline-suite.log record 64 against 51 passing with EXIT=0 and negative-control.log records 5 failed with EXIT=1, though the ruff clause of the done-when is asserted only in the fragment and has no recorded log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff's three files, reckon/crew_run_commands.py, tests/test_crew_tell_codex.py and docs/evidence/fragments/a-live-worker-can-be-reached/crew-tell-admits-codex.html, are all inside the manifest's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: negative-control.log shows the five refusal cases redden when the codex branch accepts any run, but tests/test_crew_tell_codex.py:87 builds its own copy of the override format, so the acceptance side cannot detect a drift in reckon/_backends.py:1443.\nSCORE fit: 18\nJUSTIFICATION fit: the helper sits at reckon/crew_run_commands.py:2495 beside the verb with the function-local import idiom the surrounding commands already use, and no name carries a plan or ticket label.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/_backends.py:1443 owns the composition of the two overrides and this addition restates that format as prefix checks at reckon/crew_run_commands.py:2519 instead of deriving from it; I searched reckon/ for an existing reader of recorded codex overrides and found only the composer sites.\nFINDING tests/test_crew_tell_codex.py:87 non-blocking: _codex_argv hand-writes the override format production composes, so test_the_codex_predicate_reads_the_overrides_the_dialect_composes (line 266) and the acceptance case validate the predicate against the test's own copy; if reckon/_backends.py:1443 changes its format those tests stay green while every live codex run is refused.\nFINDING reckon/crew_run_commands.py:2519 non-blocking: the predicate hard-codes the hooks.PostToolUse, hooks.state and trusted_hash shapes owned by reckon/_backends.py:1443, so the live path and the composer can drift apart without a failing test.\nFINDING reckon/crew_run_commands.py:2598 non-blocking: the codex branch no longer consults record[\"fenced\"], so an unfenced codex run carrying both overrides is now admitted where the previous code refused every unfenced run; no test covers that case and the fragment does not record the widening.\n",
+  "review_run_id": "r-20261111T075604837751-review-of-crew-tell-admits-codex-6c82e335f442",
+  "reviewed_base_sha": "e70e9be2c7edd21d688b26976f5fc37ab98ce195",
+  "reviewed_head_sha": "6c82e335f442b63c73fb37cb5fa652a17ae7145d",
+  "reviewed_run_id": "r-20261111T072418312798-crew-tell-admits-codex",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T10:55:57.360687+00:00",
+  "total": 103
+}

@@ -21,7 +21,7 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="43">
+<meta name="plan-version" content="44">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
@@ -266,6 +266,9 @@ The document half and the guard are done; the inbox is what remains of the locke
 <div class="r-comment" data-section="s1" data-id="c-run-r-20260915T055338893744-worker-channel-attempt-census" data-who="session-4dbe861e20e6f9c77514" data-when="2026-09-15T08:08:54.977Z">
     <div class="r-comment-body"><p>2,232 send attempts across 98 of 1,026 interactive transcripts; 0 delivered into 3,971 worker streams against a 1,204-record positive control; 84 percent of classifiable coordinators stood down believing delivery. No file-based inbox exists in any of 3,979 run directories, confirming the missing channel empirically.</p></div>
 </div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261111T075239727624-review-of-inbox-view-reports-failures-ea424d464852" data-who="reckon-build" data-when="2026-11-11T08:01:19.891Z">
+    <div class="r-comment-body"><p>review of r-20261111T072301959253-inbox-view-reports-failures at head ea424d46485226449eda8625e308f10d8e1088de from base 19ee9d35e1148b66060284d250b7ee3659d2c476 stored parsed, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with added_failure_count 0 and two non-blocking findings</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="guard-landed-and-verified" data-who="Simon McIntosh" data-when="2026-09-15">
     <div class="r-comment-body">The guard is merged and verified at the merged head: zero failures added against a twenty-failure base, identical failure ids either side by set difference, and 505 passing before against 518 after. None of the twenty pre-existing failures touches the hook, the CLI wiring or the guard tests. An independent review scored it 20 goal fidelity, 20 scope discipline, 19 evidence, 19 durability, 19 fit. The worker wrote the quiet half first and added, unprompted, a test that a live pointer launched on a different host is not matched — the pointer directory is shared across login nodes, so a pid from another host reads alive or dead by coincidence. The ledger row is still outstanding: promotion is refused by a defect in the gate's own log check, which greps a cited log for a shell diagnostic that the gate's own test file writes as fixture data. That is reproduced, owned elsewhere and has a repair in flight.</div>
 </div>
@@ -311,8 +314,8 @@ The document half and the guard are done; the inbox is what remains of the locke
 <div class="r-comment" data-section="s9" data-id="c-s9-node-landed" data-who="reckon-build" data-when="2026-11-11T07:25:00Z">
     <div class="r-comment-body"><p>Node <code>codex-inbox-trust</code> landed at <code>8e7c6981e88e</code> (review 120/120): the codex argv carries the inbox hook and the exact trust record discovered through the <code>BudgetProbe</code> app-server client, as an inline <code>hooks.state</code> table; a dotted override stayed untrusted. Its gate ran two direct headless codex runs: with trust the message was claimed, one receipt written and the codeword quoted; with the trust override removed, nothing was claimed. No codex config file is written. The section closes on its live check, which waits on §11.</p></div>
 </div>
-<div class="r-comment" data-section="s10" data-id="c-run-r-20261111T075239727624-review-of-inbox-view-reports-failures-ea424d464852" data-who="reckon-build" data-when="2026-11-11T08:01:19.891Z">
-    <div class="r-comment-body"><p>review of r-20261111T072301959253-inbox-view-reports-failures at head ea424d46485226449eda8625e308f10d8e1088de from base 19ee9d35e1148b66060284d250b7ee3659d2c476 stored parsed, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with added_failure_count 0 and two non-blocking findings</p></div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T075604837751-review-of-crew-tell-admits-codex-6c82e335f442" data-who="reckon-build" data-when="2026-11-11T08:06:50.342Z">
+    <div class="r-comment-body"><p>The review of r-20261111T072418312798-crew-tell-admits-codex is stored as a parsed record at its head 6c82e335 with base e70e9be2, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 15, fit 18, reuse 14, with three non-blocking findings and 0 added failures.</p></div>
 </div>
 </section>
 </main>
