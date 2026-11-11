@@ -1,0 +1,72 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T02:34:35.683Z",
+  "dispatched_at": "2026-11-11T02:24:30Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:902",
+      "id": "done_when-1",
+      "reason": "a node rebuilding \u00a712 from this text recreates the forbidden out-of-repo read that already cost a repair round, and the plan would keep claiming a drift guard that a static fixture cannot provide.",
+      "text": "\u00a712's done-when requires \"a test asserts that every heading the role mapping names exists in the canonical source\", but the delivered test (`tests/test_worker_digest_headings_exist.py`, case `test_every_mapped_heading_exists_in_the_canonical_source`) asserts against a hand-pinned `POLICY` fixture in the same file, so a rename of the canonical heading \u2014 exactly the failure this section exists to prevent \u2014 leaves that test green and only `worker_digest --check` reddens; the same wording also asks a test to read `~/.agents/AGENTS.md`, which this repository's own rule forbids, which is why the worker had to deviate (6 skipped \u2192 6 passed in a clean home) and why the deviation is now unrecorded",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:906",
+      "id": "reasoning-1",
+      "reason": "a later node taking \u00a713 literally would delete the opt-in sentence from the refusal and break the requirement \u00a79's test pins, and the plan would be the authority that ordered it.",
+      "text": "\u00a713's deliverable says the refusal text names the explicit-partition form \"in place of the opt-in\", but \u00a79 (declared done) requires that same refusal to name `RECKON_ALLOW_NESTED_LAUNCH=1` as the explicit opt-in with a test asserting both routes, and the landed `refusal_message` in `reckon/nested_launch.py:337-374` keeps both, so \u00a713 shipped by contradicting its own text and \u00a79's tested requirement",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-worker-is-charged-to-a-job.html:1085",
+      "id": "evidence_paths-1",
+      "reason": "the evidence is already on a durable, openable path and the runs are named, so adding the link improves a reader's audit trail without changing any instruction a node follows.",
+      "text": "the \u00a712 and \u00a713 close records name a run id but no evidence link, while the durable fragments `docs/evidence/fragments/a-worker-is-charged-to-a-job/worker-digests-carry-partition-rule.html` and `.../partition-sbatch-passes-the-fence.html` already exist (\u00a713's run comment cites the second as a bare path in prose), and the \u00a710/\u00a711 closes by contrast link `/reckon/evidence/archive/a-worker-is-charged-to-a-job-landed.html#s10|#s11`",
+      "type": "evidence_paths",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "01f3d394ee1b632623bdfd6cd24b108d5e44cf5a",
+  "plan_fingerprint": "54c0a8ce13c65e914dbd930d4f8c177c31e08a593f5360defb8dccecaa875e24",
+  "plan_slug": "a-worker-is-charged-to-a-job",
+  "plan_version": 83,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T022047997794-plan-review-of-a-worker-is-charged-to-a-job",
+  "reviewed_blob_sha": "7d05f60d6ec0db8d3c8563be7ac986e58e55c992",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the two section records' cited commits, the dotfiles commit, the \u00a713 fragment path with its `#partition-sbatch-passes-the-fence-option-roles` anchor, and the digest heading a reader would check all resolve; \"monitor \u00a723\" in \u00a713 names no document but the run id beside it does.",
+    "done_when": "a finding \u2014 \u00a712's done-when requires a test asserting mapped headings exist \"in the canonical source\", but the landed test asserts against a pinned in-repo fixture, so the arm is met only nominally and as written demands an out-of-repo test read.",
+    "evidence_paths": "a finding \u2014 both new close records name a run id with no evidence link, although durable fragments for each already exist at `docs/evidence/fragments/a-worker-is-charged-to-a-job/`, unlike the \u00a710 and \u00a711 closes which link their archive anchor.",
+    "naming": "pass \u2014 the new headings and prose describe mechanism (\"Worker digests carry the partition rule\", \"An sbatch naming a partition passes the nested-launch fence\") with no plan labels, stage names or ticket numbers; the `(binding, lead directive 2026-11-10)` text is quoted canonical policy, not naming introduced by the plan.",
+    "reasoning": "a finding \u2014 \u00a713's deliverable orders the opt-in removed from the refusal text, which contradicts \u00a79's landed done-when that requires the refusal to name the opt-in, and the code kept both, so the plan's text is what is now wrong.",
+    "single_goal": "pass \u2014 \u00a712 carries one deliverable (select the block by its new heading and regenerate the role digests, with the heading test) and \u00a713 carries one (let an explicit-partition `sbatch` through the fence while `srun` and a partitionless `sbatch` stay refused).",
+    "wiring": "pass \u2014 `s12` and `s13` are both present in `plan-section-declarations` as `done` and each has its own `<section data-reckon=\"section\" data-id=\"s1N\">` element, so the roadmap resolves both; the only relationship the changed unit alters is textual (\u00a713 amends the refusal text \u00a79 and \u00a710 own), which the plan records as prose rather than as an edge for every section."
+  },
+  "section_digests": {
+    "_document": "915bb86ed84b73b3db26f4f6c64262ca1fd2d7c6cf6cce7802af4516411f1b4d",
+    "s-contract": "6c2b86636b5d6c1f87051d9d3f776896057e3f539cd1ddacd2be71dcb8a94200",
+    "s0": "684e9d028bd94c15a6f23c838815a01d6f51c5f3100fa847b8134ec9232ec0df",
+    "s1": "e5f377a019315c5f8e8d019bf5caed7ee4eb0ee12f35bbc0bc0a9889940cda85",
+    "s10": "bb83ceb5fa0455b401cc70e106fd1c709dee32357bc8258f635417008f72fa53",
+    "s11": "d23b69334fa91ffaab10aec58a8416d929b5898bc2bd8b4c324d01f346577319",
+    "s12": "272c546674036473a21e022ca02374bfc561d00a2e867500263fefd3198cd89a",
+    "s13": "1e64c489fa1d6a9000c627308ac79e1528b9e6216767587e08a94e5336da02e0",
+    "s2": "d2a6c7aa20c956f1d5cfbfabc0fec3210fad1df400fe0ea8e73c163e6a9a8b51",
+    "s2b": "fedf3e8e34497454f9ed3ad04693376d980447b2290b0216701ed1a6858cbbd8",
+    "s3": "4581863bc7044f5e9e9677ce3a54c9b5aaf92025cf2b32c4d4973e4e6b8881a0",
+    "s4": "6c1927e32109c00db5fdccd88bee4f743f8e9828e62490c11c4ad46a74720f44",
+    "s5": "0838626070b0f7c934aa09ee6663f71434a715619089d65e487ab76bf8d0c8df",
+    "s6": "5bea8900e9fded0b44d31c5f9267cd7550998d8c6861398aa5ba9e61dd27d228",
+    "s7": "a8e38789e85f0eb9fc677ba1ebe1ceb231d9333df7660618a1198313f10bb213",
+    "s8": "bce275f8870a562d83a7640171c814c79e6cb0ab0e2eaa8252ed072f522b3be0",
+    "s9": "e929fc5d2971a64d971ebfa0dc025df6808da0b054d096bcb39f3d5f2b0ba841"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T02:43:11.721880+00:00",
+  "total": null
+}
