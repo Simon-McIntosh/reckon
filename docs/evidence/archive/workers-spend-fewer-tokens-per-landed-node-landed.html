@@ -167,6 +167,11 @@
     and retains both the reproduction log and the passing focused log.</p>
   </section>
 
+  <section id="s7-omp-worker-backend" data-evidence-origin="append">
+    <h2>§7 — oh-my-pi runs as a crew worker backend on the local lane</h2>
+    <p>The omp worker backend is built from three landed nodes and closed on a live run.</p><ul><li><strong><code>omp-worker-dialect</code></strong> (head <code>bbfc574eb4b0</code>): the <code>omp</code> dialect — headless <code>-p --mode=json</code> argv with stdin closed, a <code>--config</code> overlay disabling task, browser, computer, web search, fetch and project MCP, a <code>--tools</code> allowlist, the run home relocated through <code>HOME</code> with the operator's git identity carried in, and usage folded from real totals rather than the zero first record. Reviews 105 and 95 of 120. Its fixture moved to <code>docs/research/fixtures/</code> to avoid the armed-suite defect now filed as §9.</li><li><strong><code>omp-agent-context</code></strong> (head <code>1ac50de0e1fe</code>): the first live dispatch failed with <code>unsupported agent: omp</code> in <code>reckon/agent_context.py</code>; the layout now resolves <code>~/.omp/agent</code> with an <code>AGENTS.md</code> entrypoint. Review 109/120.</li><li><strong><code>omp-models-path</code></strong> (head <code>3d615da8ddde</code>): the second live dispatch found <code>models.yml</code> seeded at <code>&lt;run home&gt;/agent</code> while omp, with <code>HOME</code> relocated, read <code>&lt;run home&gt;/.omp/agent</code>; the launch now sets <code>PI_CODING_AGENT_DIR=&lt;run home&gt;/agent</code>. Review 114/120.</li></ul><p><strong>Live check</strong> (run <code>r-20261111T035722040991-omp-live-check-2</code>, <code>--backend omp-local</code>, oh-my-pi 18.13.2 with DeepSeek V4.1 Flash): completed in 9 minutes with a complete manifest and an accurate note (all four dialects with cited lines); <code>prompt.txt</code> kept its 16 KB brief; the run record carries input 1,014,036 and output 15,240 tokens, peak context 52,348, from 4,895 events. The host flight entry <code>omp-local</code> lives in the operator's <code>~/.config/reckon/flight.yaml</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
