@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "3a5fceb44c0538bfcaee3334ab72dd27ebc5d729",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/run_store.py:697",
+    "reckon/run_store.py:873",
+    "reckon/ledger.py:2936",
+    "reckon/budget.py:543",
+    "reckon/budget.py:579"
+  ],
+  "completed_at": "2026-11-11T07:45:11.684Z",
+  "dispatched_at": "2026-11-11T07:36:11Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py",
+      "line": "181",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion `{\"run_id\", \"payload\", \"base_sha\"} <= columns` bundles two columns the test itself writes in _LEGACY_RUNS with the one the migration adds, so only \"payload\" can fail and the other two hold whatever the migration does."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T065450937880-a-promotion-does-not-migrate-the-run-store-every-call/logs/repro-after.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the header names revision 3a5fceb44c0538bfcaee3334ab72dd27ebc5d729 although the after-measurement ran in the worktree at 78b91378df, so a reader dating the fix from the header attributes the after-open figures to the base commit."
+    },
+    {
+      "file": "reckon/run_store.py",
+      "line": "129",
+      "severity": "non-blocking",
+      "text": "non-blocking: _STORE_SCHEMA_VERSION hashes only the schema declarations, so a later repair to the backfill logic in _migrate_runs that changes no declaration will not re-run against an already-recorded store and leaves those rows migrated by the earlier logic."
+    }
+  ],
+  "head_log_revision": "78b91378df",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against base 3a5fceb44c0538bfcaee3334ab72dd27ebc5d729; 78b91378df adds a store_meta table to _AUX_SCHEMA, a sha256 _STORE_SCHEMA_VERSION over the declarations at reckon/run_store.py:129, the record check at :288 and two private helpers, plus the 220-line test file, and ae97d1d95a adds the evidence fragment.",
+    "done_when": "the done_when asks for a new test showing a promotion on an already-migrated temporary home calls no migration step counted by a wrapper, and a home without the record migrating once; tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:113 and :122 assert exactly that against a wrapper installed on run_store.RunStore._migrate_runs at :75, and I re-ran the file and got 4 passed.",
+    "goal": "the node's goal is that a promotion on an already-migrated home runs no run-store migration step; reckon/run_store.py:288 returns from RunStore._create once the recorded declaration version matches, so a second open on the same home skips _migrate_runs entirely.",
+    "manifest": "read; it records status complete, the two commits, the base and head arms at EXIT=0 (51 and 55 passed), the importer arms at 5 failed / 472 and 476 passed, and the negative control at 3 failed 1 passed EXIT=1, each naming its log under the run directory.",
+    "write_paths": "the manifest declares reckon/run_store.py, tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py, the evidence fragment and a figures directory; git show --stat over 3a5fceb..ae97d1d95a lists only the first three, and no figure was written because the done-when names none."
+  },
+  "justifications": {
+    "durability": "dropping the record check from RunStore._create makes tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:113 fail on a counted pass of 1 where 0 is owed, but :181's column assertion carries two members the test itself created.",
+    "evidence": "logs/gate-base.log and logs/gate-head.log record the wrapper-counted measure with an EXIT= line, but logs/repro-after.log:1 stamps the base revision on a measurement taken in the head worktree.",
+    "fit": "the change extends the module's own _AUX_SCHEMA declaration and the with self._conn: transaction idiom used by RunStore.append at reckon/run_store.py:352, and names its new symbols by mechanism with no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/run_store.py:288 checks the recorded version before calling _migrate_runs and :289 records it only after the pass returns, which is the deliverable the section states.",
+    "reuse": "no owner of a versioned migration record exists here - reckon/crew/station_store.py:394 tracks columns by PRAGMA rather than by a recorded version, and no module in reckon/ uses PRAGMA user_version - so reckon/run_store.py:110 adds the first and extends the existing declaration rather than forking a store.",
+    "scope_discipline": "every path in the diff (reckon/run_store.py, tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-migrate-the-run-store-every-call.html) is inside the manifest's declared write paths, and the change adds no companion-table work beyond the one store_meta row."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a promotion on an already-migrated home runs no run-store migration step; reckon/run_store.py:288 returns from RunStore._create once the recorded declaration version matches, so a second open on the same home skips _migrate_runs entirely.\nVERDICT done_when: the done_when asks for a new test showing a promotion on an already-migrated temporary home calls no migration step counted by a wrapper, and a home without the record migrating once; tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:113 and :122 assert exactly that against a wrapper installed on run_store.RunStore._migrate_runs at :75, and I re-ran the file and got 4 passed.\nVERDICT write_paths: the manifest declares reckon/run_store.py, tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py, the evidence fragment and a figures directory; git show --stat over 3a5fceb..ae97d1d95a lists only the first three, and no figure was written because the done-when names none.\nVERDICT manifest: read; it records status complete, the two commits, the base and head arms at EXIT=0 (51 and 55 passed), the importer arms at 5 failed / 472 and 476 passed, and the negative control at 3 failed 1 passed EXIT=1, each naming its log under the run directory.\nVERDICT diff: read commit by commit against base 3a5fceb44c0538bfcaee3334ab72dd27ebc5d729; 78b91378df adds a store_meta table to _AUX_SCHEMA, a sha256 _STORE_SCHEMA_VERSION over the declarations at reckon/run_store.py:129, the record check at :288 and two private helpers, plus the 220-line test file, and ae97d1d95a adds the evidence fragment.\nCALL_SITES: reckon/run_store.py:697, reckon/run_store.py:873, reckon/ledger.py:2936, reckon/budget.py:543, reckon/budget.py:579\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/run_store.py:288 checks the recorded version before calling _migrate_runs and :289 records it only after the pass returns, which is the deliverable the section states.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/gate-base.log and logs/gate-head.log record the wrapper-counted measure with an EXIT= line, but logs/repro-after.log:1 stamps the base revision on a measurement taken in the head worktree.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/run_store.py, tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-migrate-the-run-store-every-call.html) is inside the manifest's declared write paths, and the change adds no companion-table work beyond the one store_meta row.\nSCORE durability: 17\nJUSTIFICATION durability: dropping the record check from RunStore._create makes tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:113 fail on a counted pass of 1 where 0 is owed, but :181's column assertion carries two members the test itself created.\nSCORE fit: 19\nJUSTIFICATION fit: the change extends the module's own _AUX_SCHEMA declaration and the with self._conn: transaction idiom used by RunStore.append at reckon/run_store.py:352, and names its new symbols by mechanism with no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner of a versioned migration record exists here - reckon/crew/station_store.py:394 tracks columns by PRAGMA rather than by a recorded version, and no module in reckon/ uses PRAGMA user_version - so reckon/run_store.py:110 adds the first and extends the existing declaration rather than forking a store.\nFINDING tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py:181 non-blocking: the assertion `{\"run_id\", \"payload\", \"base_sha\"} <= columns` bundles two columns the test itself writes in _LEGACY_RUNS with the one the migration adds, so only \"payload\" can fail and the other two hold whatever the migration does.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T065450937880-a-promotion-does-not-migrate-the-run-store-every-call/logs/repro-after.log:1 non-blocking: the header names revision 3a5fceb44c0538bfcaee3334ab72dd27ebc5d729 although the after-measurement ran in the worktree at 78b91378df, so a reader dating the fix from the header attributes the after-open figures to the base commit.\nFINDING reckon/run_store.py:129 non-blocking: _STORE_SCHEMA_VERSION hashes only the schema declarations, so a later repair to the backfill logic in _migrate_runs that changes no declaration will not re-run against an already-recorded store and leaves those rows migrated by the earlier logic.",
+  "review_run_id": "r-20261111T073446428253-review-of-a-promotion-does-not-migrate-the-run-store-every-call-ae97d1d95a8d",
+  "reviewed_base_sha": "3a5fceb44c0538bfcaee3334ab72dd27ebc5d729",
+  "reviewed_head": "ae97d1d95a",
+  "reviewed_head_sha": "ae97d1d95a8d0ad0cc35f27ede004522d0fbc4fd",
+  "reviewed_run_id": "r-20261111T065450937880-a-promotion-does-not-migrate-the-run-store-every-call",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:13:46.517930+00:00",
+  "total": 111
+}
