@@ -72,7 +72,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _plan_html
+from reckon import _plan_html, file_memo
 from reckon._plan_html import DOCUMENT_UNIT, landed_section_ids
 from reckon._store import write_json_atomically
 from reckon.crew import review as _review_store
@@ -1419,14 +1419,18 @@ def _load(path: Path) -> dict[str, Any] | None:
 
 
 def _read_record(path: Path) -> dict[str, Any] | None:
-    """Read one stored record from disk."""
-    if not path.is_file():
-        return None
-    try:
-        payload = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, json.JSONDecodeError):
-        return None
-    return dict(payload) if isinstance(payload, Mapping) else None
+    """Return a mutable copy of a stored record, decoding it once per change."""
+
+    def read() -> dict[str, Any] | None:
+        if not path.is_file():
+            return None
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            return None
+        return dict(payload) if isinstance(payload, Mapping) else None
+
+    return file_memo.memoized("plan_review_record", path, read, mutable=True)
 
 
 def read_plan_review(
