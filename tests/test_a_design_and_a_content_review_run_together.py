@@ -10,6 +10,13 @@ The check is now keyed on the plan and the rubric, so one review per rubric may
 be in flight for a plan. Two reviews of the same rubric still exclude each
 other, so a second content review is refused while the first is running.
 
+A composed plan review's node id carries its rubric, so the two rubrics are two
+node ids at dispatch as well: the design review composes under
+``plan-review-of-<slug>-design`` while a content review keeps the bare
+``plan-review-of-<slug>`` that every stored pointer and store reader already
+carries. ``round_node_source`` strips the suffix, so a reader recovering the
+plan slug from either id still resolves it.
+
 Every case drives the real compose, not a helper: a helper-level assertion is
 how a check that never consulted the rubric would stay green. The first case
 composes a content review through the same path a coordinator's ``crew review``
@@ -33,13 +40,16 @@ import pytest
 
 from reckon import flight
 from reckon.crew import recovery, runs
+from reckon.crew.recovery_review_subject import PLAN_REVIEW_NODE_PREFIX
+from reckon.crew.repair import PLAN_REVIEW_RUBRIC_SUFFIX, round_node_source
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 PROJECT = "sample"
 PLAN_SLUG = "fixture"
 PLAN_VERSION = 3
-PLAN_REVIEW_NODE = f"plan-review-of-{PLAN_SLUG}"
+PLAN_REVIEW_NODE = f"{PLAN_REVIEW_NODE_PREFIX}{PLAN_SLUG}"
+PLAN_REVIEW_DESIGN_NODE = f"{PLAN_REVIEW_NODE}{PLAN_REVIEW_RUBRIC_SUFFIX}"
 
 CONFIG = {
     "default_backend": "worker",
@@ -128,7 +138,10 @@ def _live_plan_reviews() -> list[dict]:
     return [
         pointer
         for pointer in runs.list_live(project=PROJECT)
-        if str((pointer.get("node") or {}).get("id") or "") == PLAN_REVIEW_NODE
+        if round_node_source(
+            str((pointer.get("node") or {}).get("id") or ""), PLAN_REVIEW_NODE_PREFIX
+        )
+        == PLAN_SLUG
     ]
 
 
@@ -147,16 +160,46 @@ def test_a_design_review_composes_while_a_content_review_works(
     live = _live_plan_reviews()
     assert [str(pointer["run_id"]) for pointer in live] == [content["review_run_id"]]
     assert "review the content of plan" in str(live[0]["node"]["goal"])
+    assert str(live[0]["node"]["id"]) == PLAN_REVIEW_NODE
 
     design = _compose(repo, monkeypatch, tmp_path, "design")
 
     assert design["dispatched"] is True, design.get("reason")
     assert design["review_run_id"] != content["review_run_id"]
-    goals = sorted(str(pointer["node"]["goal"]) for pointer in _live_plan_reviews())
+    pointers = _live_plan_reviews()
+    goals = sorted(str(pointer["node"]["goal"]) for pointer in pointers)
     assert goals == [
         f"review the content of plan {PLAN_SLUG}",
         f"review the design of plan {PLAN_SLUG}",
     ], goals
+    # The two rubrics are two node ids, which is what lets dispatch's existing-run
+    # check tell them apart without a change of its own.
+    assert sorted(str(pointer["node"]["id"]) for pointer in pointers) == [
+        PLAN_REVIEW_NODE,
+        PLAN_REVIEW_DESIGN_NODE,
+    ]
+
+
+# ── a reader of either node id still recovers the plan slug ──────────────────
+
+
+def test_a_reader_of_the_existing_content_node_id_still_resolves_it() -> None:
+    """The bare content id every stored pointer carries still reads as the plan.
+
+    A reader that recovers the plan slug from a plan-review node id goes through
+    ``round_node_source``. The design rubric's suffix must come off without a
+    head before it, and the content id must resolve to the same slug untouched.
+    """
+    assert round_node_source(PLAN_REVIEW_NODE, PLAN_REVIEW_NODE_PREFIX) == PLAN_SLUG
+    assert (
+        round_node_source(PLAN_REVIEW_DESIGN_NODE, PLAN_REVIEW_NODE_PREFIX) == PLAN_SLUG
+    )
+    # A slug that is the rubric word itself is recovered whole: only a suffix that
+    # follows something is a suffix.
+    assert (
+        round_node_source(f"{PLAN_REVIEW_NODE_PREFIX}design", PLAN_REVIEW_NODE_PREFIX)
+        == "design"
+    )
 
 
 # ── a second content review of the same plan is still refused ────────────────

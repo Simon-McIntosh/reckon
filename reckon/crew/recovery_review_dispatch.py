@@ -758,7 +758,11 @@ def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) 
     prefix = PLAN_REVIEW_NODE_PREFIX
     if not node_id.startswith(prefix):
         return ""
-    slug = node_id[len(prefix) :]
+    # A design review's id carries its rubric after the slug, so the slug comes
+    # from the reader that owns that grammar rather than from a prefix strip.
+    from reckon.crew.repair import round_node_source
+
+    slug = round_node_source(node_id, prefix)
     project = str(pointer.get("project") or "")
     if not (slug and project and launched_run_id):
         return ""
@@ -2119,6 +2123,22 @@ def _resolved_review_config(
     return runs.resolved_tick_config(project, config)
 
 
+def _plan_review_pointer_slug(pointer: Mapping[str, Any]) -> str:
+    """The plan a live plan-review pointer names, or "" when it names none.
+
+    A design review's node id carries its rubric after the plan slug, so the
+    slug is recovered through the reader that owns that grammar rather than by
+    stripping the prefix here: one spelling of the identity, written by the
+    composer and read by the same rule.
+    """
+    from reckon.crew.repair import round_node_source
+
+    node = pointer.get("node")
+    if not isinstance(node, Mapping):
+        return ""
+    return round_node_source(str(node.get("id") or ""), PLAN_REVIEW_NODE_PREFIX)
+
+
 def _plan_review_rubric(pointer: Mapping[str, Any]) -> str:
     """The rubric a live plan-review pointer composes for, or "" when unread.
 
@@ -2174,7 +2194,7 @@ def _standing_plan_review(
         node = pointer.get("node")
         if not isinstance(node, Mapping):
             continue
-        if node.get("id") != f"{PLAN_REVIEW_NODE_PREFIX}{plan_slug}":
+        if _plan_review_pointer_slug(pointer) != plan_slug:
             continue
         if session and str(pointer.get("session") or "") != session:
             continue
