@@ -13,8 +13,10 @@ from reckon.crew import plan_review, queue_admission, runs
 from reckon.crew.queue_admission import LaneHeld
 from reckon.roadmap import build_roadmap
 from tests import test_a_queued_request_waits_on_its_dependencies as fixtures
+from tests import test_codex_inbox_trust as trust_tests
 
 dispatch_module = importlib.import_module("reckon.crew.dispatch")
+hook_probe = trust_tests.hook_probe
 
 
 @pytest.fixture()
@@ -133,7 +135,11 @@ def test_dispatch_holds_only_the_sections_the_open_decision_names(
     ids=["scoped-open", "whole-open", "scoped-locked", "whole-locked"],
 )
 def test_admission_uses_the_same_decision_hold(
-    decision_repo: Path, sections: list[str], choice: str, held_sections: set[str]
+    decision_repo: Path,
+    sections: list[str],
+    choice: str,
+    held_sections: set[str],
+    hook_probe,
 ) -> None:
     _seed(decision_repo, sections, choice)
     stored = queue_admission.queue_requests(
@@ -150,10 +156,18 @@ def test_admission_uses_the_same_decision_hold(
         )
         assert pointer["phase"] == expected, pointer
     launched: list[str] = []
-    queue_admission.admit_once(
+    result = queue_admission.admit_once(
         config_for=fixtures._config_for(), launcher=fixtures._launcher(launched)
     )
-    assert len(launched) == 2 - len(held_sections)
+    expected_runs = {
+        run_id
+        for run_id, pointer in stored.items()
+        if pointer["section"] not in held_sections
+    }
+    assert not result["failed"], result.get("failure_detail")
+    assert set(result["launched"]) == expected_runs, result
+    assert len(launched) == len(expected_runs), result
+    assert len(hook_probe) == len(launched)
     for pointer in runs.list_live(project=fixtures.PROJECT):
         if pointer["section"] in held_sections:
             assert pointer["phase"] == "awaiting-upstream", pointer
