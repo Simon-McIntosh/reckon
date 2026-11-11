@@ -244,9 +244,32 @@ def test_the_parallel_safety_excerpt_keeps_the_worker_duties():
 
     for role in wd.ROLES:
         digest = wd.generate(role, policy)
-        assert "one exclusive write scope" in digest
+        assert "- One worker, one worktree." in digest
+        assert "one exclusive write scope" not in digest
         assert "never push the" in digest
         assert "Durable delivery" in digest
+
+
+@requires_canonical
+def test_a_digest_carries_the_concurrent_edit_rule_without_merge_duties():
+    canonical = CANONICAL.read_text(encoding="utf-8")
+    merge_duty_markers = (
+        "The orchestrator merges sequentially",
+        "git merge-tree --write-tree",
+    )
+
+    for role in wd.ROLES:
+        digest = wd.generate(role, canonical)
+        assert "Concurrent edits to one file from separate" in digest, (
+            f"{role}: the concurrent-edit rule is absent"
+        )
+        assert "one exclusive write scope" not in digest, (
+            f"{role}: the superseded exclusive-scope bullet is present"
+        )
+        for marker in merge_duty_markers:
+            assert marker not in digest, (
+                f"{role}: coordinator merge duty present: {marker}"
+            )
 
 
 def _committed_digest_hashes() -> dict[str, str]:
