@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from collections.abc import Callable
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
@@ -1179,73 +1180,116 @@ def record_names_worktree(record: Mapping[str, Any], worktree: Path) -> bool:
     session the node id alone would resolve to whichever same-named tree
     registers first, which may be a peer session's.
     """
-    retained = _retained_worktree(record)
-    if retained is not None and retained == worktree:
-        return True
-    node_id, session = _node_worktree_identity(record)
-    if not node_id or worktree.name != node_id:
-        return False
-    return not session or worktree.parent.name == session
+    return bool(
+        set(WorktreeRecordIndex.record_keys(record))
+        & set(WorktreeRecordIndex.worktree_keys(worktree))
+    )
+
+
+_UNRESOLVED_RETAINED_WORKTREE = object()
 
 
 class WorktreeRecordIndex:
-    """Run records filed by the trees they name, so each tree is one lookup.
+    """Records indexed by retained path and session-qualified node identity.
 
-    ``record_names_worktree`` is the one rule for what names a tree, and this
-    index is built from the same key derivation rather than restating it, so an
-    index answer and the rule cannot disagree. Each record is filed once under
-    the retained path it carries and once under the node id it names, and a
-    tree is matched by consulting those buckets instead of comparing every
-    record against it: the work is proportional to records plus trees rather
-    than to their product. A retained path is resolved once, when its record is
-    filed.
+    Replacement returns the naming keys it changed, allowing a caller to
+    rematch only affected trees. Retained paths are resolved once per filing.
     """
 
     def __init__(self) -> None:
-        self._by_path: dict[Path, list[tuple[int, Mapping[str, Any]]]] = {}
-        self._by_session_node: dict[
-            tuple[str, str], list[tuple[int, Mapping[str, Any]]]
-        ] = {}
-        self._by_node: dict[str, list[tuple[int, Mapping[str, Any]]]] = {}
+        self._rows: dict[Any, Mapping[str, Any]] = {}
+        self._keys: dict[Any, tuple[Any, ...]] = {}
+        self._buckets: dict[Any, set[Any]] = {}
+        self._positions: dict[Any, tuple[Any, int]] = {}
         self._filed = 0
+        self.order_key: Callable[[Mapping[str, Any]], Any] | None = None
+
+    @staticmethod
+    def record_keys(
+        record: Mapping[str, Any], *, retained: Any = _UNRESOLVED_RETAINED_WORKTREE
+    ) -> tuple[Any, ...]:
+        """The naming rule's keys, optionally reusing an already resolved path."""
+        if retained is _UNRESOLVED_RETAINED_WORKTREE:
+            retained = _retained_worktree(record)
+        keys: list[Any] = []
+        if retained is not None:
+            keys.append(("path", retained))
+        node_id, session = _node_worktree_identity(record)
+        if node_id:
+            keys.append(("node", session, node_id))
+        return tuple(keys)
+
+    @staticmethod
+    def worktree_keys(worktree: Path) -> tuple[Any, ...]:
+        """The retained-path, session-node and sessionless-node lookup keys."""
+        return tuple(
+            dict.fromkeys(
+                (
+                    ("path", worktree),
+                    ("node", worktree.parent.name, worktree.name),
+                    ("node", "", worktree.name),
+                )
+            )
+        )
 
     def add(self, record: Mapping[str, Any]) -> None:
-        """File one record under every key by which it names a tree."""
-        position = self._filed
-        self._filed += 1
-        retained = _retained_worktree(record)
-        if retained is not None:
-            self._by_path.setdefault(retained, []).append((position, record))
-        node_id, session = _node_worktree_identity(record)
-        if not node_id:
-            return
-        if session:
-            self._by_session_node.setdefault((session, node_id), []).append(
-                (position, record)
-            )
+        """Append a record, preserving distinct filings of the same object."""
+        self.replace(object(), record)
+
+    def remove(self, key: Any) -> tuple[Any, ...]:
+        """Remove a filing and return the naming keys that lost it."""
+        names = self._keys.pop(key, ())
+        for name in names:
+            bucket = self._buckets[name]
+            bucket.remove(key)
+            if not bucket:
+                del self._buckets[name]
+        self._rows.pop(key, None)
+        self._positions.pop(key, None)
+        return names
+
+    def replace(
+        self,
+        key: Any,
+        record: Mapping[str, Any],
+        *,
+        retained: Any = _UNRESOLVED_RETAINED_WORKTREE,
+        position: Any = None,
+    ) -> tuple[Any, ...]:
+        """Replace one filing and return its previous and current naming keys.
+
+        Replacements keep their filing order. A caller reconstructing source
+        order may supply mutually comparable positions; ``order_key`` applies
+        a stable ordering to the matched records when configured.
+        """
+        previous_position = self._positions.get(key)
+        previous_names = self.remove(key)
+        if position is not None:
+            filing_position = (position, self._filed)
+        elif previous_position is not None:
+            filing_position = previous_position
         else:
-            self._by_node.setdefault(node_id, []).append((position, record))
+            filing_position = (self._filed, self._filed)
+        self._filed += 1
+        names = self.record_keys(record, retained=retained)
+        self._rows[key] = record
+        self._keys[key] = names
+        self._positions[key] = filing_position
+        for name in names:
+            self._buckets.setdefault(name, set()).add(key)
+        return tuple(dict.fromkeys((*previous_names, *names)))
 
     def records_naming(self, worktree: Path) -> list[Mapping[str, Any]]:
-        """The filed records that name ``worktree``, each once, in filing order.
-
-        ``worktree`` is the resolved path, as every caller resolves one; a path
-        the record retained is compared resolved, and the node id is matched
-        against the tree's own directories. A record naming a tree by both keys
-        is filed under both, so the buckets are merged on each record's filing
-        position: a tree two records name is attributed to the one filed later,
-        which is the order the reader that gathered the records would give.
-        """
-        buckets = (
-            self._by_path.get(worktree),
-            self._by_session_node.get((worktree.parent.name, worktree.name)),
-            self._by_node.get(worktree.name),
-        )
-        found: dict[int, Mapping[str, Any]] = {}
-        for bucket in buckets:
-            for position, record in bucket or ():
-                found.setdefault(position, record)
-        return [found[position] for position in sorted(found)]
+        """Return matching records once each, in filing then optional key order."""
+        found: set[Any] = set()
+        for name in self.worktree_keys(worktree):
+            found.update(self._buckets.get(name, ()))
+        records = [
+            self._rows[key] for key in sorted(found, key=self._positions.__getitem__)
+        ]
+        if self.order_key is not None:
+            records.sort(key=self.order_key)
+        return records
 
     def names(self, record: Mapping[str, Any], worktree: Path) -> bool:
         """Whether ``record`` names ``worktree``, by the rule's own keys."""

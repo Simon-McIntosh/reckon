@@ -58,7 +58,6 @@ from reckon.crew.recovery_review_dispatch import supersedes_head
 from reckon.crew.reports import TERMINAL_MANIFEST_STATUSES
 from reckon.crew.routing import (
     WorktreeRecordIndex,
-    _node_worktree_identity,
     _registered_worktrees,
     _retained_worktree,
     record_names_worktree,
@@ -2142,7 +2141,7 @@ def _row_may_name_a_tree(
 
 def _holding_record(
     worktree: Path,
-    index: WorktreeRecordIndex | _HeldRecordIndex,
+    index: WorktreeRecordIndex,
 ) -> Mapping[str, Any] | None:
     """The run the whole-ledger reader attributes a tree to, or None.
 
@@ -2397,38 +2396,13 @@ def _held_registry_changes(repository: Path, signature: tuple[Any, ...]) -> list
         return sorted(base | set(paths.values()))
 
 
-def _held_row_keys(row: Mapping[str, Any], retained: Path | None) -> tuple[Any, ...]:
-    """The shared naming rule's retained path and session-qualified node keys."""
-    node, session = _node_worktree_identity(row)
-    keys: list[Any] = []
-    if retained is not None:
-        keys.append(("path", retained))
-    if node:
-        keys.append(("node", session, node))
-    return tuple(keys)
-
-
-def _held_tree_keys(tree: Path) -> tuple[Any, ...]:
-    return tuple(
-        dict.fromkeys(
-            (
-                ("path", tree),
-                ("node", tree.parent.name, tree.name),
-                ("node", "", tree.name),
-            )
-        )
-    )
-
-
-class _HeldRecordIndex:
-    """Mutable naming buckets; changing one row touches only its named trees."""
+class _HeldWorktreeState:
+    """Track affected trees around the shared record naming index."""
 
     def __init__(self, aggregate_rows: Sequence[Mapping[str, Any]]) -> None:
-        self.rows: dict[Any, Mapping[str, Any]] = {}
-        self.keys: dict[Any, tuple[Any, ...]] = {}
-        self.buckets: dict[Any, set[Any]] = {}
+        self.records = WorktreeRecordIndex()
         self.aggregate = {
-            str(row.get("run_id")): row for row in aggregate_rows if row.get("run_id")
+            str(row.get("run_id")) for row in aggregate_rows if row.get("run_id")
         }
         self.extra: set[str] = set()
         self.trees: dict[Any, set[Path]] = {}
@@ -2438,45 +2412,30 @@ class _HeldRecordIndex:
     def replace(
         self, key: Any, row: Mapping[str, Any] | None, retained: Path | None = None
     ) -> set[Path]:
-        affected: set[Path] = set()
-        for name in self.keys.pop(key, ()):
-            affected.update(self.trees.get(name, ()))
-            bucket = self.buckets[name]
-            bucket.discard(key)
-            if not bucket:
-                del self.buckets[name]
-        self.rows.pop(key, None)
-        if row is not None:
-            self.rows[key] = row
-            self.keys[key] = _held_row_keys(row, retained)
-            for name in self.keys[key]:
-                self.buckets.setdefault(name, set()).add(key)
-                affected.update(self.trees.get(name, ()))
-        return affected
-
-    def records_naming(self, tree: Path) -> list[Mapping[str, Any]]:
-        candidates = set().union(
-            *(self.buckets.get(name, set()) for name in _held_tree_keys(tree))
+        names = (
+            self.records.remove(key)
+            if row is None
+            else self.records.replace(key, row, retained=retained, position=key)
         )
-        ordered = sorted(candidates)
-        if self.extra:
-            ordered.sort(key=lambda key: ledger.promotion_order_key(self.rows[key]))
-        return [self.rows[key] for key in ordered]
+        affected: set[Path] = set()
+        for name in names:
+            affected.update(self.trees.get(name, ()))
+        return affected
 
     def refresh_trees(self, inspected: set[Path], affected: set[Path]) -> None:
         for tree in self.inspected - inspected:
             self.held.pop(tree, None)
-            for name in _held_tree_keys(tree):
+            for name in self.records.worktree_keys(tree):
                 self.trees[name].discard(tree)
                 if not self.trees[name]:
                     del self.trees[name]
         for tree in inspected - self.inspected:
-            for name in _held_tree_keys(tree):
+            for name in self.records.worktree_keys(tree):
                 self.trees.setdefault(name, set()).add(tree)
             affected.add(tree)
         self.inspected = inspected
         for tree in affected & inspected:
-            record = _holding_record(tree, self)
+            record = _holding_record(tree, self.records)
             release = record.get("release") if record is not None else None
             if record is None or (
                 isinstance(release, Mapping)
@@ -2533,7 +2492,7 @@ def _held_worktree_records_read(
                 )[0]["runs"]
             except Exception:  # noqa: BLE001 - unreadable aggregates contribute no rows
                 aggregate_rows = []
-            index = _HeldRecordIndex(aggregate_rows)
+            index = _HeldWorktreeState(aggregate_rows)
             aggregate_order: dict[Any, deque[int]] = defaultdict(deque)
             for ordinal, row in enumerate(aggregate_rows):
                 aggregate_order[
@@ -2589,6 +2548,7 @@ def _held_worktree_records_read(
                 )
             if had_extra != bool(index.extra):
                 affected.update(inspected)
+        index.records.order_key = ledger.promotion_order_key if index.extra else None
         index.refresh_trees(inspected, affected)
         if reusable:
             _held_remember(

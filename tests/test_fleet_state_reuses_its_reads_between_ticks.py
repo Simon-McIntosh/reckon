@@ -246,6 +246,16 @@ def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkey
         )
     counts = Counter()
     bindings = {}
+    for method in ("replace", "remove"):
+        original_method = getattr(routing.WorktreeRecordIndex, method)
+
+        def counted_method(
+            self, *args, _method=method, _original=original_method, **kwargs
+        ):
+            counts["owner_" + _method] += 1
+            return _original(self, *args, **kwargs)
+
+        monkeypatch.setattr(routing.WorktreeRecordIndex, method, counted_method)
     for label, original in (
         ("ledger_load", ledger.load),
         ("whole_ledger", obligations._run_namings),
@@ -268,6 +278,7 @@ def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkey
     expected = {f"held-run-{index}" for index in range(4)}
     assert refresh() == expected
     assert all(counts[label] > 0 for label in bindings), counts
+    assert counts["owner_replace"] > 0, counts
     first = dict(counts)
     counts.clear()
     row = ledger.build_record(
@@ -291,6 +302,7 @@ def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkey
     assert counts["whole_ledger"] == 0, counts
     assert counts["registry_listing"] == 0, counts
     assert counts["record_read"] == 1, counts
+    assert counts["owner_replace"] == 1, counts
     assert counts["tree_match"] == 1, counts
 
     counts.clear()
@@ -304,6 +316,7 @@ def test_unrelated_landing_and_registry_churn_do_only_changed_work(fleet, monkey
     source = ledger.run_path(PROJECT, "unrelated-landing", fleet.repo)
     source.unlink()
     assert refresh() == expected
+    assert counts["owner_remove"] == 1 and counts["owner_replace"] == 0, counts
     assert counts["record_read"] == 0 and counts["tree_match"] == 1, counts
 
     counts.clear()
@@ -360,3 +373,47 @@ def test_an_aggregate_rewrite_rebuilds_from_the_current_union(fleet):
     assert {item["run_id"] for item in aggregate_only.held_worktrees[SESSION]} == {
         "earlier-holder"
     }
+
+
+def test_the_shared_record_index_replaces_and_removes_naming_routes(tmp_path):
+    index = routing.WorktreeRecordIndex()
+    assert callable(getattr(index, "replace", None)), (
+        "the shared owner must support replacement"
+    )
+    assert callable(getattr(index, "remove", None)), (
+        "the shared owner must support removal"
+    )
+    first_tree = tmp_path / "first-session" / "node"
+    other_tree = tmp_path / "other-session" / "node"
+    retained_tree = tmp_path / "retained"
+    first = {"run_id": "first", "node": "node", "session": "first-session"}
+    second = {"run_id": "second", "node": "node", "session": "first-session"}
+    index.replace("first", first)
+    index.replace("second", second)
+    assert index.records_naming(first_tree) == [first, second]
+    assert index.records_naming(other_tree) == []
+    first = dict(first, gate="passed")
+    index.replace("first", first)
+    assert index.records_naming(first_tree) == [first, second]
+
+    changed = dict(
+        first,
+        session="other-session",
+        worktree_retention={"worktree": str(retained_tree)},
+    )
+    affected = index.replace("first", changed)
+    assert set(affected) & set(index.worktree_keys(first_tree))
+    assert set(affected) & set(index.worktree_keys(other_tree))
+    assert index.records_naming(first_tree) == [second]
+    assert index.records_naming(other_tree) == [changed]
+    assert index.records_naming(retained_tree) == [changed]
+    index.remove("first")
+    assert index.records_naming(other_tree) == index.records_naming(retained_tree) == []
+    assert index.records_naming(first_tree) == [second]
+    index.remove("second")
+    assert index.records_naming(first_tree) == []
+    assert index.remove("absent") == ()
+
+    index.add(first)
+    index.add(second)
+    assert index.records_naming(first_tree) == [first, second]
