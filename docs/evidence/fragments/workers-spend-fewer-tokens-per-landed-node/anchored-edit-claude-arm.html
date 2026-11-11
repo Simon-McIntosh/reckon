@@ -4,7 +4,8 @@
     fenced Claude-shaped launch with resolved flight configuration and no
     existing run settings registers <code>reckon-anchored-edit</code> in its own
     <code>.claude.json</code>. The server receives one repeated
-    <code>--root</code> argument per declared run write root. Its command uses the
+    <code>--root</code> argument per writable delivery root and includes the
+    detached worktree that the fence grants separately. Its command uses the
     launching Python interpreter with <code>-m reckon.anchored_edit</code>, so
     server startup does not depend on the worker's search path or a separately
     installed console script. A smoke test executes the registered command.</p>
@@ -54,4 +55,28 @@
     committed scoped arm passed all 71 cases. The generated module keeps the
     generator's exact bytes; formatting it separately would desynchronise it
     from the authoritative source.</p>
+  <h3 id="anchored-edit-claude-arm-worktree-roots">The server can edit the worktree it was launched to change</h3>
+  <p>The initial fixture supplied the worktree directly as a delivery root.
+    Production does not: <code>_fence_write_roots</code> omits declarations
+    inside the worktree because <code>fence_argv</code> binds that tree
+    separately. The initial 71-test arm therefore missed a treatment worker
+    whose built-in edits were disabled while its server refused every normal
+    source path.</p>
+  <p>The server roots now pass the delivery roots and worktree through
+    <code>fence_writable_roots</code>, which also withholds the sealed shared
+    stores. The fixture calls production <code>_fence_write_roots</code> and
+    asserts that no returned root contains the worktree. Its temporary root is
+    a disjoint scratch directory, so an ambient temporary ancestor cannot mask
+    an omitted worktree grant.</p>
+  <table id="anchored-edit-claude-arm-worktree-root-measures">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>New regression on the implementation without the worktree grant</td><td>2 failed, 20 deselected; both command dialects report source.py outside every server root</td></tr>
+      <tr><td>Corrected focused suite</td><td>22 passed; both dialects read and replace a source line through the configured roots, and refuse a path outside them</td></tr>
+      <tr><td>Ruff on the changed Python paths</td><td>2 existing findings at base and head, zero added; both files pass format --check</td></tr>
+    </tbody>
+  </table>
+  <p>The run manifest records the subsequent armed command at the committed
+    correction, using the shared interpreter path with no environment prefix,
+    and retains both the reproduction log and the passing focused log.</p>
 </section>

@@ -11,7 +11,9 @@ import pytest
 
 from reckon import _backends
 from reckon._flight_schema import BackendConfig
+from reckon.anchored_edit import AnchoredEditor
 from reckon.crew import dispatch_launch, runs
+from reckon.crew.dispatch_admission import _fence_write_roots
 
 BASE_SETTINGS = (
     '{\n  "enableAllProjectMcpServers": false,\n'
@@ -37,6 +39,19 @@ def launch_case(tmp_path, monkeypatch):
     run.mkdir(parents=True)
     worktree = tmp_path / "worktree"
     worktree.mkdir()
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    monkeypatch.setattr(_backends.tempfile, "gettempdir", lambda: str(scratch))
+    roots = _fence_write_roots(
+        backend={"sandbox": "worktree-full"},
+        repository=tmp_path / "repository",
+        run_directory=run,
+        manifest_path=run / "manifest.md",
+        worktree=worktree,
+        declared_write_paths=["source.py"],
+    )
+    assert worktree not in roots
+    assert not any(worktree.is_relative_to(root) for root in roots)
     monkeypatch.setattr(
         _backends, "fence_argv", lambda argv, **kwargs: ["fence", *argv]
     )
@@ -54,13 +69,14 @@ def launch_case(tmp_path, monkeypatch):
             "prompt": "node prompt",
             "worktree": worktree,
             "manifest_path": run / "manifest.md",
-            "writable_directories": [run, worktree],
+            "writable_directories": roots,
             "fence_home": home,
             "fence_config": {},
         }
         options.update(overrides)
         return _backends.launch_plan(**options)
 
+    compose.write_roots = roots
     return compose, home, run, worktree
 
 
@@ -115,8 +131,7 @@ def test_key_false_preserves_base_argv_and_settings_bytes(
         "--dangerously-skip-permissions",
         "--add-dir",
         str(worktree),
-        str(run),
-        str(worktree),
+        *(str(root) for root in _backends.fence_writable_roots(compose.write_roots)),
     ]
     assert json.dumps(plan.argv).encode() == json.dumps(expected).encode()
     assert (run / "harness" / "settings.json").read_bytes() == BASE_SETTINGS.encode()
@@ -133,13 +148,11 @@ def test_fresh_fenced_launch_registers_scoped_tools_and_records_treatment(
     config = json.loads((run / "harness" / ".claude.json").read_text())
     server = config["mcpServers"]["reckon-anchored-edit"]
     assert server["command"] == sys.executable
+    expected_roots = _backends.fence_writable_roots((*compose.write_roots, worktree))
     assert server["args"] == [
         "-m",
         "reckon.anchored_edit",
-        "--root",
-        str(run),
-        "--root",
-        str(worktree),
+        *(word for root in expected_roots for word in ("--root", str(root))),
     ]
     assert config["mcpServers"]["operator"] == {"command": "operator-server"}
     settings = json.loads((run / "harness" / "settings.json").read_text())
@@ -267,3 +280,31 @@ def test_the_registered_server_command_can_start_without_a_console_script(launch
     )
     assert result.returncode == 0, result.stderr
     assert "--root" in result.stdout
+
+
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_production_roots_allow_source_edits_inside_the_worktree(launch_case, command):
+    compose, home, run, worktree = launch_case
+    source = worktree / "source.py"
+    source.write_text("original value\n")
+    plan = compose(command=command)
+    assert plan.anchored_edit is True
+    assert "--disallowedTools" in plan.argv
+    config = json.loads((run / "harness" / ".claude.json").read_text())
+    args = config["mcpServers"]["reckon-anchored-edit"]["args"]
+    roots = [args[index + 1] for index, value in enumerate(args) if value == "--root"]
+    editor = AnchoredEditor(roots)
+    rendered = editor.read(str(source))
+    assert not rendered.startswith("refused:"), rendered
+    assert rendered.endswith("|original value")
+    anchor = rendered.split("|", 1)[0]
+    result = editor.edit(
+        str(source), [{"op": "replace", "anchor": anchor, "text": "edited value"}]
+    )
+    assert not result.startswith("refused:"), result
+    assert source.read_text() == "edited value\n"
+    outside = home / "outside.py"
+    outside.write_text("outside value\n")
+    refusal = editor.read(str(outside))
+    assert refusal.startswith("refused:"), refusal
+    assert "outside every --root" in refusal

@@ -2861,7 +2861,10 @@ def launch_plan(
                 and dialect.name == "claude"
                 and not resume_session
             ),
-            anchored_edit_roots=tuple(writable_directories),
+            # The fence grants the worktree separately from delivery roots.
+            anchored_edit_roots=fence_writable_roots(
+                (*writable_directories, worktree_path)
+            ),
             # A resolved flight configuration states which project this run
             # belongs to and so which servers its harness should start; a bare
             # composition carries none, so it names no project and seeds no
