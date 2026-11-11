@@ -4323,13 +4323,16 @@ def _fit_scopes(
 
 
 def run_inbox_messages(run_id: str) -> dict[str, Any] | None:
-    """One run's inbox, split into what is still waiting and what was delivered.
+    """One run's inbox, split into what is still waiting and what became of it.
 
     A message written by ``crew tell`` sits unclaimed until the run's next tool
     call, so a coordinator looking at the run needs to know whether its
     instruction is still queueing or already in front of the worker. Both halves
     read the run's own directory: the same store the hook claims from, so this
-    answer cannot disagree with the delivery. ``None`` when the run has no live
+    answer cannot disagree with the delivery. A message the hook could not hand
+    over is listed under ``failed`` and never under ``delivered``: the two are
+    different outcomes and a coordinator that cannot tell them apart reads a
+    lost instruction as a received one. ``None`` when the run has no live
     pointer or no manifest to locate that directory from — an ended run's
     directory is not what this view is for.
     """
@@ -4355,7 +4358,9 @@ def run_inbox_messages(run_id: str) -> dict[str, Any] | None:
     return {
         "unclaimed": unclaimed,
         "unclaimed_count": len(unclaimed),
-        "delivered": worker_inbox.receipts(run_directory),
+        "unreadable_count": sum(1 for entry in unclaimed if entry.get("unreadable")),
+        "delivered": worker_inbox.delivered_receipts(run_directory),
+        "failed": worker_inbox.failed_receipts(run_directory),
     }
 
 
@@ -4366,15 +4371,22 @@ def _unclaimed_message(path: Path) -> dict[str, Any] | None:
     land between them: the message is then delivered, not lost, and its receipt
     appears in the same answer. Reporting the race as an error would fail a
     coordinator's read of a run whose delivery was working.
+
+    Only the vanished file is that race. Any other read failure names a message
+    that is still queued and cannot be shown, which is a state the coordinator
+    must be able to see: it is reported as present and unreadable rather than
+    dropped, because a message that disappears from the view is indistinguishable
+    from one that was never written.
     """
+    entry: dict[str, Any] = {"message": path.name}
     try:
-        return {
-            "message": path.name,
-            "bytes": path.stat().st_size,
-            "text": path.read_text(encoding="utf-8", errors="replace"),
-        }
-    except OSError:
+        entry["bytes"] = path.stat().st_size
+        entry["text"] = path.read_text(encoding="utf-8", errors="replace")
+    except FileNotFoundError:
         return None
+    except OSError as exc:
+        entry["unreadable"] = f"{type(exc).__name__}: {exc}"
+    return entry
 
 
 def serve_crew_view(
