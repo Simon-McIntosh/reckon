@@ -50,15 +50,27 @@ def dispatch_merge_repair(
     from reckon.crew.dispatch import BudgetHold, LanePaused
 
     run_id = str(record.get("run_id") or "")
+    round_id = f"{run_id}:merge:{primary}@{head}"
+    receipt: dict[str, Any] = {
+        "outcome": "merge-conflict",
+        "paths": list(paths),
+        "main_revision": primary,
+        "head": head,
+        "round_id": round_id,
+        "status": "opened",
+    }
     settled = pending_landing._settled_landing(
         run_id, head, repository=Path(str(record.get("repo") or ""))
     )
     if settled:
-        receipt = {"status": "refused", "reason": settled, "head": head}
+        receipt.update(
+            status="refused",
+            reason=settled,
+            advice=f"Merge repair refused: {settled}. Do not resume this delivery.",
+        )
         runs._write_json(runs.run_dir(run_id) / "merge-repair.json", receipt)
         return receipt
     branch = merge._current_branch(Path(str(record.get("repo") or "")))
-    round_id = f"{run_id}:merge:{primary}@{head}"
     advice = (
         _repair_round_token(round_id) + "\n"
         f"Landing met a merge conflict against primary {branch} at {primary}.\n"
@@ -71,15 +83,7 @@ def dispatch_merge_repair(
         "the manifest citations. Already promoted runs finish through their "
         "pending landing by merge alone; do not promote them again.\n"
     )
-    receipt: dict[str, Any] = {
-        "outcome": "merge-conflict",
-        "paths": list(paths),
-        "main_revision": primary,
-        "head": head,
-        "round_id": round_id,
-        "advice": advice,
-        "status": "opened",
-    }
+    receipt["advice"] = advice
     receipt_path = runs.run_dir(run_id) / "merge-repair.json"
     fresh = _live_pointer_or_absent(run_id)
     if fresh is None and promoted:

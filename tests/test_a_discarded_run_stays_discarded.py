@@ -7,7 +7,15 @@ import json
 import pytest
 
 from reckon import ledger
-from reckon.crew import merge, pending_landing, promotion, resumption, runs
+from reckon.crew import (
+    merge,
+    pending_landing,
+    promotion,
+    queue_landing,
+    recovery,
+    resumption,
+    runs,
+)
 from reckon.crew.recovery_repair_dispatch import dispatch_merge_repair
 from tests.helpers.git import git
 
@@ -174,3 +182,90 @@ def test_unlanded_conflict_still_marks_and_resumes(delivery, route):
     assert head in resumed[0][1]["advice"]
     assert primary in resumed[0][1]["advice"]
     assert pending_landing._record_path(RUN_ID).is_file()
+
+
+def test_discarded_conflict_is_refused_through_the_landing_queue(delivery, monkeypatch):
+    repository, worker, pointer, head, _primary, resumed = delivery
+    pointer["role"] = "implement"
+    runs._write_json(runs.pointer_path(RUN_ID), pointer)
+    runs._write_json(promotion.discard_record_path(RUN_ID), {"reason": "withdrawn"})
+    monkeypatch.setattr(
+        recovery,
+        "classify_pointer",
+        lambda record: {"manifest_status": "complete", "manifest_commits": [head]},
+    )
+    monkeypatch.setattr(
+        recovery, "_review_head_and_tree", lambda record: (head, worker)
+    )
+    monkeypatch.setattr(queue_landing, "_owed_review_tiers", lambda record: [])
+    assert (
+        merge._run(repository, "merge-tree", "--write-tree", "main", head).returncode
+        == 1
+    )
+
+    result = queue_landing.land_once()
+
+    assert result["landed"] == []
+    assert len(result["obligations"]) == 1
+    assert "merge-conflict" in result["obligations"][0]["guard"]
+    attempt = runs.read_pointer(RUN_ID)["admission_landing"]
+    assert attempt["status"] == "refused"
+    assert "discarded" in attempt["remedy"]
+    receipt = json.loads((runs.run_dir(RUN_ID) / "merge-repair.json").read_text())
+    assert {
+        "outcome",
+        "paths",
+        "main_revision",
+        "head",
+        "round_id",
+        "status",
+        "advice",
+    } <= receipt.keys()
+    assert receipt["status"] == "refused"
+    assert receipt["advice"] == attempt["remedy"]
+    assert resumed == []
+
+
+@pytest.mark.parametrize("newer_attempt", [False, True])
+@pytest.mark.parametrize("route", ["direct", "pending-pass"])
+def test_settled_landing_releases_only_the_marked_attempt(
+    delivery, monkeypatch, newer_attempt, route
+):
+    repository, _worker, pointer, head, _primary, resumed = delivery
+    marked = pending_landing.mark_pending_landing_repair(RUN_ID, pointer)
+    if newer_attempt:
+        marked["attempt"] += 1
+        runs._write_json(runs.pointer_path(RUN_ID), marked)
+    before = runs.pointer_path(RUN_ID).read_bytes()
+    git(
+        repository,
+        "merge",
+        "--no-ff",
+        "-s",
+        "ours",
+        head,
+        "-m",
+        "test: integrate delivery",
+    )
+    git(repository, "push", "-q", "origin", "main")
+    primary_head = git(repository, "rev-parse", "HEAD")
+    released = []
+
+    def release(repo, integration, **kwargs):
+        assert not runs.pointer_path(RUN_ID).exists()
+        released.append((repo, integration, kwargs))
+
+    monkeypatch.setattr(merge, "release_landed_worktrees", release)
+
+    _repair(delivery, route)
+
+    assert not pending_landing._record_path(RUN_ID).exists()
+    assert resumed == []
+    if newer_attempt:
+        assert runs.pointer_path(RUN_ID).read_bytes() == before
+        assert released == []
+    else:
+        assert not runs.pointer_path(RUN_ID).exists()
+        assert released == [
+            (repository, primary_head, {"head": head, "projects": [PROJECT]})
+        ]

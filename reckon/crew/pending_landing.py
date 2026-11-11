@@ -97,10 +97,25 @@ def _settled_landing(
         return disposition
     try:
         repository = repository or merge.project_repository(project)
-        landed = merge.head_on_remote_branch(repository, head)["on_branch"] is True
+        remote = merge.head_on_remote_branch(repository, head)
     except (merge.MergeError, OSError):
         return disposition
-    if landed:
+    if remote["on_branch"] is True:
+        try:
+            pointer = runs.read_pointer(run_id)
+        except runs.CrewError:
+            pointer = None
+        if (
+            pointer is not None
+            and pointer.get("pending_landing_repair")
+            and _release_marked_pointer(run_id, pointer)
+        ):
+            merge.release_landed_worktrees(
+                repository,
+                str(remote["remote_head"]),
+                head=head,
+                projects=[project or str(pointer.get("project") or "")],
+            )
         clear_pending(run_id)
         return "already-landed"
     return disposition
