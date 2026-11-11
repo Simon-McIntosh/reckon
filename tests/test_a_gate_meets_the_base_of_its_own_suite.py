@@ -14,6 +14,7 @@ recording no further pair behaves as the default pair alone always did.
 
 from __future__ import annotations
 
+import hashlib
 import json
 from pathlib import Path
 
@@ -126,6 +127,50 @@ def test_a_second_pair_base_missing_an_id_reports_it(tmp_path: Path) -> None:
             "r-test", record, gate, verdict="passed"
         )
     assert INHERITED_IDS[-1] in str(raised.value)
+
+
+def test_a_digest_only_head_arm_selects_its_own_pair(tmp_path: Path) -> None:
+    """An arm naming its log by digest alone still selects the pair it belongs to.
+
+    A receipt may cite its log by digest rather than by path, and the gate cites
+    the same log by path. Matched on path alone the arm names no log, the gate
+    falls back to the default pair, and the second suite's inherited ids read as
+    added although the arm that measured them is right there in the manifest.
+    """
+    gate = _gate(tmp_path, "unit-head.log", INHERITED_IDS)
+    manifest = _two_pair_manifest(tmp_path, base_ids=list(INHERITED_IDS))
+    log_text = Path(gate["log_path"]).read_text(encoding="utf-8")
+    head = dict(manifest["suite_pairs"]["UNIT"]["head"])
+    head.pop("log_path")
+    head["log_digest"] = hashlib.sha256(log_text.encode("utf-8")).hexdigest()
+    manifest["suite_pairs"]["UNIT"]["head"] = head
+    record = _record(tmp_path, manifest)
+
+    assert promotion_evidence._red_base_uncovered_ids(record, gate) == set()
+    assert promotion_evidence._zero_added_against_a_red_base(record, gate) is True
+    promotion_evidence._require_verdict_matches_exit_status(
+        "r-test", record, gate, verdict="passed"
+    )
+
+
+def test_a_receipt_is_compared_with_the_selected_pairs_head(tmp_path: Path) -> None:
+    """The receipt checked against the gate's own log is the selected pair's head.
+
+    The default pair's ``after_suite`` describes another suite's run, so a
+    comparison against it either checks the wrong arm or checks nothing. The
+    second pair's head records a failure count of zero beside a log that names
+    three, and the refusal names that arm.
+    """
+    manifest = _two_pair_manifest(tmp_path, base_ids=list(INHERITED_IDS))
+    manifest["suite_pairs"]["UNIT"]["head"]["failure_count"] = 0
+    record = _record(tmp_path, manifest)
+    gate = _gate(tmp_path, "unit-head.log", INHERITED_IDS)
+
+    with pytest.raises(CrewError) as raised:
+        promotion_evidence._require_gate_log_agrees(
+            "r-test", gate, record, verdict="passed"
+        )
+    assert "suite_pairs.UNIT.head" in str(raised.value)
 
 
 def test_a_manifest_without_further_pairs_keeps_the_default_pair(

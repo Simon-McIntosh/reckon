@@ -1160,7 +1160,7 @@ def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
 
 
 def _arm_describes_the_cited_log(
-    arm: Mapping[str, Any], log_path: str, log_text: str
+    arm: Mapping[str, Any], log_path: str, log_text: str | None
 ) -> bool:
     """Whether a suite arm names the log the gate cites.
 
@@ -1168,14 +1168,24 @@ def _arm_describes_the_cited_log(
     names this log is compared with it: an arm describing another run's log
     answers about that run, and holding it to this log's figures would refuse a
     receipt for a fact it never claimed.
+
+    The two paths are compared by their resolved form, because the manifest and
+    the gate citation are written by different hands: one may spell a log
+    relatively and the other absolutely, and compared as text those are two
+    files. ``log_text`` is the cited log's own content, needed for the digest
+    comparison; ``None`` means the text could not be read here, so only the
+    path can match — an unread log must not be compared against the digest of
+    the empty string, which would name a log that has none of its content.
     """
     recorded_path = str(arm.get("log_path") or "").strip()
-    if recorded_path and (
-        Path(recorded_path).expanduser() == Path(log_path).expanduser()
-    ):
-        return True
+    if recorded_path and log_path:
+        same_file = os.path.realpath(
+            os.path.expanduser(recorded_path)
+        ) == os.path.realpath(os.path.expanduser(log_path))
+        if same_file:
+            return True
     recorded_digest = str(arm.get("log_digest") or "").strip()
-    if recorded_digest:
+    if recorded_digest and log_text is not None:
         digest = hashlib.sha256(log_text.encode("utf-8")).hexdigest()
         if recorded_digest == digest:
             return True
@@ -1279,11 +1289,14 @@ def _require_gate_log_agrees(
     routing would otherwise treat as evidence.
 
     The record is read for the one arm that carries the run's own figures for
-    that gate, its manifest's ``after_suite``. Those figures — the exit status,
-    the failure count and the failure ids — are the receipt, and the log is the
-    evidence they claim: a receipt copied from the first of two runs in one log
-    agrees with the tail's status while naming the other run's failures, which
-    every check that reads only the tail would accept.
+    that gate: the head arm of the suite pair the gate belongs to, selected by
+    :func:`_suite_pair_for_gate`, so a gate on a further recorded pair is
+    compared with that pair's head and not with the default pair's
+    ``after_suite``, which describes another suite's run. Those figures — the
+    exit status, the failure count and the failure ids — are the receipt, and
+    the log is the evidence they claim: a receipt copied from the first of two
+    runs in one log agrees with the tail's status while naming the other run's
+    failures, which every check that reads only the tail would accept.
 
     It refuses on the following observable shapes and names which it found:
 
@@ -1377,12 +1390,14 @@ def _require_gate_log_agrees(
             "or re-promote with the verdict the evidence actually shows"
         )
     manifest = _fresh_manifest(record)
-    arm = manifest.get("after_suite") if isinstance(manifest, Mapping) else None
+    selected = _suite_pair_for_gate(manifest, gate_check)
+    arm = selected[1] if selected is not None else None
     mismatches = _receipt_mismatches(arm, log_path, log_text)
     if mismatches:
+        arm_name = selected[3] if selected is not None else "after_suite"
         raise CrewError(
             f"run {run_id!r} asserts gate 'passed' and its cited log "
-            f"{log_path!r} does not agree with the after_suite arm that "
+            f"{log_path!r} does not agree with the {arm_name} arm that "
             f"describes it: {'; '.join(mismatches)}. Found: a receipt figure "
             "that disagrees with its log. The arm and the log are two records "
             "of one run, so a figure only the first of two runs in the log "
@@ -1404,6 +1419,30 @@ def _require_gate_log_agrees(
             )
 
 
+_SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
+
+
+def _gate_cited_log_text(gate_check: Mapping[str, Any] | None) -> str | None:
+    """The text of the log a gate cites, or ``None`` when it cannot be read here.
+
+    The pair selector and the failure-id reader both need the log the gate
+    cites: one to compare a digest against, the other to read its failing ids.
+    An absent citation and an unreadable one are the same absence of text, and
+    each caller decides what that means for its own comparison.
+    """
+    raw = (
+        str(gate_check.get("log_path") or "").strip()
+        if isinstance(gate_check, Mapping)
+        else ""
+    )
+    if not raw:
+        return None
+    try:
+        return Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return None
+
+
 def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] | None:
     """The failing ids the head arm's log reports, or ``None`` when it is unreadable.
 
@@ -1419,37 +1458,32 @@ def _head_arm_log_failure_ids(gate_check: Mapping[str, Any] | None) -> set[str] 
     format-aware reader directly: the two need the same ids but not the same
     reading of an unreadable log.
     """
-    if not isinstance(gate_check, Mapping):
-        return None
-    raw = str(gate_check.get("log_path") or "").strip()
-    if not raw:
-        return None
-    try:
-        log_text = Path(raw).expanduser().read_text(encoding="utf-8", errors="replace")
-    except OSError:
+    log_text = _gate_cited_log_text(gate_check)
+    if log_text is None:
         return None
     return review_module.gate_log_failure_ids(log_text)
 
 
-_DEFAULT_SUITE_PAIR = ("baseline_suite", "after_suite")
+def _head_arm_cites_gate(head: Any, gate_check: Mapping[str, Any] | None) -> bool:
+    """Whether a pair's head arm is the observation the gate's log records.
 
-
-def _same_cited_log(first: Any, second: Any) -> bool:
-    """Whether two cited log paths name one file.
-
-    A manifest and a gate citation are written by different hands, so one log
-    arrives spelled relatively on one side and absolutely on the other, or
-    through a home-relative form. Compared as text the two are different files
-    and the pair the gate belongs to never matches, so the comparison is made on
-    the resolved path. An empty citation names nothing and matches nothing.
+    The arm names its log by path or by digest, and the gate cites its log the
+    same two ways, so the match is asked on whichever the gate carries: a gate
+    that names a path is matched through :func:`_arm_describes_the_cited_log`,
+    which reads the log once for the digest leg, and a gate that cites only a
+    digest is matched against the arm's digest. An arm with neither, and a gate
+    citing neither, match nothing.
     """
-    left = str(first or "").strip()
-    right = str(second or "").strip()
-    if not left or not right:
+    if not isinstance(head, Mapping) or not isinstance(gate_check, Mapping):
         return False
-    return os.path.realpath(os.path.expanduser(left)) == os.path.realpath(
-        os.path.expanduser(right)
-    )
+    gate_log = str(gate_check.get("log_path") or "").strip()
+    if gate_log:
+        return _arm_describes_the_cited_log(
+            head, gate_log, _gate_cited_log_text(gate_check)
+        )
+    gate_digest = str(gate_check.get("log_digest") or "").strip()
+    recorded = str(head.get("log_digest") or "").strip()
+    return bool(gate_digest) and recorded == gate_digest
 
 
 def _recorded_suite_pairs(
@@ -1479,35 +1513,39 @@ def _recorded_suite_pairs(
 def _suite_pair_for_gate(
     manifest: Mapping[str, Any] | None, gate_check: Mapping[str, Any] | None
 ) -> tuple[Any, Any, str, str] | None:
-    """The suite pair a gate is measured against, as ``(base, head, base, head)``.
+    """The suite pair a gate is measured against.
 
-    The last two entries are the arm names the refusal quotes, so a reader is
-    sent to the field the base sits in rather than to a default pair the run
-    never recorded. A gate belongs to the pair whose head arm cites the gate's
-    own log: a run may measure several suites, each with its own inherited
-    failures, and judging a second suite's gate against the default pair's base
-    reads every one of those inherited ids as added.
+    Returns ``(base_arm, head_arm, base_name, head_name)``, and ``None`` when
+    there is no manifest to read. The two names are the fields the arms were
+    found in, quoted by the refusal so a reader is sent to the field the base
+    sits in rather than to a default pair the run never recorded — a further
+    pair's arm is named ``suite_pairs.<pair>.base`` or ``.head``.
+
+    A gate belongs to the pair whose head arm cites the gate's own log: a run
+    may measure several suites, each with its own inherited failures, and
+    judging a second suite's gate against the default pair's base reads every
+    one of those inherited ids as added. The arm is matched by the rule
+    :func:`_arm_describes_the_cited_log` already owns — by path, resolved so a
+    relative and an absolute spelling of one file agree, or by digest — so an
+    arm naming its log by digest alone is matched rather than silently falling
+    back to the default pair.
 
     The default ``baseline_suite``/``after_suite`` pair is asked first and stays
     the fallback, so a manifest that records no further pairs — and one whose
     head arms cite other logs — is measured exactly as it was before the field
-    existed. A gate that names no log selects the default pair, because there is
-    nothing to match a recorded pair's head against.
+    existed. A gate that cites neither a log path nor a digest selects the
+    default pair, because there is nothing to match a recorded pair's head
+    against.
     """
     if not isinstance(manifest, Mapping):
         return None
-    base_name, head_name = _DEFAULT_SUITE_PAIR
-    gate_log = gate_check.get("log_path") if isinstance(gate_check, Mapping) else None
+    base_name, head_name = _SUITE_ARM_NAMES
     for name, base, head in [
         (base_name, manifest.get(base_name), manifest.get(head_name)),
         *_recorded_suite_pairs(manifest),
     ]:
-        if (
-            gate_log
-            and isinstance(head, Mapping)
-            and _same_cited_log(head.get("log_path"), gate_log)
-        ):
-            if name in _DEFAULT_SUITE_PAIR:
+        if _head_arm_cites_gate(head, gate_check):
+            if name in _SUITE_ARM_NAMES:
                 return base, head, base_name, head_name
             return base, head, f"suite_pairs.{name}.base", f"suite_pairs.{name}.head"
     return manifest.get(base_name), manifest.get(head_name), base_name, head_name
@@ -1619,9 +1657,6 @@ def _arm_without_completion(
         if observation.get("completed") is not True:
             return name
     return None
-
-
-_SUITE_ARM_NAMES = ("baseline_suite", "after_suite")
 
 
 def _missing_suite_arms_clause(
