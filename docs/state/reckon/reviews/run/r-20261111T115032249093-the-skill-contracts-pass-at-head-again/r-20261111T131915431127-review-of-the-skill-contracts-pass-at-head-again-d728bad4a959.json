@@ -1,0 +1,70 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms, and recomputed rather than taken from the manifest: logs/base-fence-arm.log at the dispatch base bc6d7fd9 records 4 failed, 123 passed, 2 errors, EXIT=1, naming six ids (the four skill-contract tests and two test_staged_write_inventory errors); logs/head-fence-arm.log at the reviewed head d728bad4a9 records 130 passed, EXIT=0, with no FAILED or ERROR line. The set difference of the parsed ids is empty, so no id fails at head that does not fail at base. reviewed_base_sha is 27de9c24f75f, the head of the prior review of this run, because this review covers only the three commits gained since it; the run's own suite arms run from its dispatch base bc6d7fd9.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/directory.py:840 (directory() row assembly computes _context_windows(project) and sets each coordinator's context_use)",
+    "reckon/crew_run_commands.py:449 (crew directory CLI command)",
+    "reckon/mcp_views.py:4441 (MCP board view consuming directory())",
+    "reckon/crew/plan_coordinator.py:233 (ready-idle join reading the directory view)"
+  ],
+  "completed_at": "2026-11-11T13:31:14.897Z",
+  "dispatched_at": "2026-11-11T13:20:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/directory.py",
+      "line": "75",
+      "severity": "non-blocking",
+      "text": "non-blocking: the shipped, catalogue, host and project ordering is re-stated here while reckon/flight.py:2160-2184 owns the same precedence and the catalogue-between-shipped-and-host rule, so a change to resolution order must be made in two places and no test ties them together."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "line": "220",
+      "severity": "non-blocking",
+      "text": "non-blocking: `windows: Sequence[tuple[str, int]] = ()` exists only so tests/test_a_coordinators_context_use_is_on_the_board.py's sibling tests/test_a_torn_transcript_line_does_not_break_a_board_read.py:82 keeps compiling after the parameter arrived, so a future caller that omits it silently reports a measured used_tokens with no window instead of being refused."
+    },
+    {
+      "file": "docs/evidence/fragments/the-suite-is-green-at-head/the-skill-contracts-pass-at-head-again.html",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment asserts a ruff staged-path delta of 43 findings at base to 39 at head and no log under the run directory backs it, so a reader cannot check the claim the done_when makes on ruff."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites reaching the changed reader from the board row assembly and its CLI, MCP and plan-coordinator consumers at the reviewed head.",
+    "diff": "read the three gained commits 0bae01950f, 213fa57486 and d728bad4a9 as the diff 27de9c24f75f..d728bad4a9 \u2014 the layer-window read in reckon/crew/directory.py, the default window sequence that keeps the torn-transcript caller callable, the two board-test assertions and the evidence fragment update.",
+    "done_when": "the done_when names the section test with its negative control, the base/head window check and the importing-file arm; logs/head-fence-arm.log carries a d728bad4a9 header with 130 passed and EXIT=0, logs/base-fence-arm.log carries the four skill-contract ids red plus 2 errors at bc6d7fd9, logs/negative-control.log carries the same four red at EXIT=1, and the set difference of FAILED/ERROR ids between logs/base-importer-arm.log (82) and logs/head-importer-arm.log (75) is empty on the added side.",
+    "goal": "the node's goal is that the four skill contracts pass at head while every session row still reports a measured window; the gained commits fold both prior review findings, with tests/test_a_coordinators_context_use_is_on_the_board.py:118 declaring 123456 and :170 a host-layer 777000, and reckon/crew/directory.py:75 reading every layer that may carry the table.",
+    "manifest": "read; it records status complete, the eight commits including the reviewed head, after_suite revision d728bad4a9 matching the header of the log it cites, and a negative-control log whose four ids and EXIT=1 were read.",
+    "write_paths": "the manifest's declared paths cover all three files of the gained diff \u2014 reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py and docs/evidence/fragments/the-suite-is-green-at-head/the-skill-contracts-pass-at-head-again.html \u2014 and nothing outside them changed."
+  },
+  "justifications": {
+    "durability": "tests/test_a_coordinators_context_use_is_on_the_board.py:156 reddens on a reinstated hardcoded table because its declared 123456 is no window any in-tree table holds, and :175 reddens if only the catalogue layer is read, though no case covers a project layer or the shipped-defaults layer.",
+    "evidence": "every figure in the gained fragment \u2014 130 passed at d728bad4a9, 82 to 75 ids with none added, and the 4-failed/68-passed negative control \u2014 reconciles with the log it cites, but the ruff delta the fragment restates at :64 has no log.",
+    "fit": "reckon/crew/directory.py:62 follows the module's lazy-import idiom used at :96 and names the mechanism without a plan or ticket identifier, but the `windows=()` default at :220 is a test-shaped default carried into the production signature.",
+    "goal_fidelity": "reckon/crew/directory.py:75 reads shipped, catalogue, host and project layers in resolution's precedence and tests/test_a_coordinators_context_use_is_on_the_board.py:118 removes the 1000000 the finding objected to, so both prior findings are folded.",
+    "reuse": "reckon/crew/directory.py:73 composes flight.read_layer_file and flight.validate_layer rather than a second reader, but :75 restates the layer precedence that reckon/flight.py:2179 owns with no shared definition.",
+    "scope_discipline": "git diff --stat 27de9c24f75f d728bad4a9 touches exactly reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py and the evidence fragment, all inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the four skill contracts pass at head while every session row still reports a measured window; the gained commits fold both prior review findings, with tests/test_a_coordinators_context_use_is_on_the_board.py:118 declaring 123456 and :170 a host-layer 777000, and reckon/crew/directory.py:75 reading every layer that may carry the table.\nVERDICT done_when: the done_when names the section test with its negative control, the base/head window check and the importing-file arm; logs/head-fence-arm.log carries a d728bad4a9 header with 130 passed and EXIT=0, logs/base-fence-arm.log carries the four skill-contract ids red plus 2 errors at bc6d7fd9, logs/negative-control.log carries the same four red at EXIT=1, and the set difference of FAILED/ERROR ids between logs/base-importer-arm.log (82) and logs/head-importer-arm.log (75) is empty on the added side, which I recomputed myself.\nVERDICT write_paths: the manifest's declared paths cover all three files of the gained diff \u2014 reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py and docs/evidence/fragments/the-suite-is-green-at-head/the-skill-contracts-pass-at-head-again.html \u2014 and nothing outside them changed.\nVERDICT manifest: read; it records status complete, the eight commits including the reviewed head, after_suite revision d728bad4a9 matching the header of the log it cites, and a negative-control log whose four ids and EXIT=1 I read.\nVERDICT diff: read the three gained commits 0bae01950f, 213fa57486 and d728bad4a9 as the diff 27de9c24f75f..d728bad4a9 \u2014 the layer-window read in reckon/crew/directory.py, the default window sequence that keeps the torn-transcript caller callable, the two board-test assertions and the evidence fragment update.\nCALL_SITES: reckon/crew_run_commands.py:449, reckon/mcp_views.py:4441, reckon/crew/plan_coordinator.py:233, reckon/crew/directory.py:840\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/directory.py:75 reads shipped, catalogue, host and project layers in resolution's precedence and tests/test_a_coordinators_context_use_is_on_the_board.py:118 removes the 1000000 the finding objected to, so both prior findings are folded.\nSCORE evidence: 17\nJUSTIFICATION evidence: every figure in the gained fragment \u2014 130 passed at d728bad4a9 (docs/evidence/fragments/the-suite-is-green-at-head/the-skill-contracts-pass-at-head-again.html:61), 82 to 75 ids with none added, and the 4-failed/68-passed negative control \u2014 reconciles with the log it cites, but the ruff delta it restates at :64 has no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 27de9c24f75f d728bad4a9` touches exactly reckon/crew/directory.py, tests/test_a_coordinators_context_use_is_on_the_board.py and the evidence fragment, all inside the manifest's declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_coordinators_context_use_is_on_the_board.py:156 reddens on a reinstated hardcoded table because its declared 123456 is no window any in-tree table holds, and :175 reddens if only the catalogue layer is read, though no case covers a project layer or the shipped-defaults layer.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/directory.py:62 follows the module's lazy-import idiom used at :96 and names the mechanism without a plan or ticket identifier, but the `windows=()` default at :220 is a test-shaped default carried into the production signature.\nSCORE reuse: 16\nJUSTIFICATION reuse: reckon/crew/directory.py:73 composes flight.read_layer_file and flight.validate_layer rather than a second reader, but :75 restates the layer precedence that reckon/flight.py:2179 owns with no shared definition.\nFINDING reckon/crew/directory.py:75 non-blocking: the shipped, catalogue, host and project ordering is re-stated here while reckon/flight.py:2160-2184 owns the same precedence and the catalogue-between-shipped-and-host rule, so a change to resolution order must be made in two places and no test ties them together.\nFINDING reckon/crew/directory.py:220 non-blocking: `windows: Sequence[tuple[str, int]] = ()` exists only so tests/test_a_torn_transcript_line_does_not_break_a_board_read.py:82 keeps compiling after the parameter arrived, so a future caller that omits it silently reports a measured used_tokens with no window instead of being refused.\nFINDING docs/evidence/fragments/the-suite-is-green-at-head/the-skill-contracts-pass-at-head-again.html:64 non-blocking: the fragment asserts a ruff staged-path delta of 43 findings at base to 39 at head and no log under the run directory backs it, so a reader cannot check the claim the done_when makes on ruff.\n",
+  "review_run_id": "r-20261111T131915431127-review-of-the-skill-contracts-pass-at-head-again-d728bad4a959",
+  "reviewed_base_sha": "27de9c24f75f429fb76f59a02eb47058249173fe",
+  "reviewed_head_sha": "d728bad4a959e674de7a6b8e023005349ddbeb9f",
+  "reviewed_run_id": "r-20261111T115032249093-the-skill-contracts-pass-at-head-again",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T13:27:47.681191+00:00",
+  "total": 105
+}
