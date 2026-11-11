@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-10T23:52:21.277Z",
+  "dispatched_at": "2026-11-10T23:41:01Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "reasoning-1",
+      "reason": "the deliverable must also narrow the `_landing_test_files` fallback (or name it and its rule), else a node implementing s9 as written leaves the promotion-blocking failure in place on the landing arm.",
+      "text": "`_node_test_files` has a fourth consumer the plan does not name: `_landing_test_files` (reckon/crew/queue_landing.py:996) falls back to `is_test_path` over the delivery's changed paths whenever the narrowed list is empty, so a scope holding only `tests/fixtures/data.jsonl` \u2014 the exact case s9's second done-when bullet describes \u2014 resolves to an empty armed command and then has that fixture re-admitted into the landing pair's `{node_test_files}` (landing_measure.py:79, substituted at :299), which hands pytest the fixture and exits 4 exactly as before the fix; the landing pair is what promotes the run, so the defect survives on the path that matters most",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:113",
+      "id": "done_when-1",
+      "reason": "either the clause needs a named site and a done-when case, or it should be dropped so the node is not sent to invent unmeasured config resolution.",
+      "text": "the deliverable adds \"Where a project does declare `python_files`, the rule follows that declaration\", but no done-when bullet measures it and no site is named for reading that declaration (the function it changes, `_node_test_files` at reckon/crew/promotion_records.py:526, reads only write paths); a worker under the exact-spec contract must invent a config reader inside `promotion_records`, and nothing in the gate would show whether it works",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c6a1f171423b838a1b480cfe0be987b01b40ec55",
+  "plan_fingerprint": "17c27c99d6fa580acd4d2311919b3c35a9acf99e4d8ea249325b97225eb34258",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 15,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261110T233633647266-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "f19f9f42d92e8018c196b96abd4148bea14bf022",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_node_test_files` (reckon/crew/promotion_records.py:526), `is_test_path` (reckon/crew/node.py:1018), `_TEST_FILE_RE` (reckon/crew/node.py:1013) and the absent `python_files` in pyproject `[tool.pytest.ini_options]` (pyproject.toml:59) all resolve as cited.",
+    "done_when": "a finding \u2014 the done-when measures the widened rule (`tests/x.test.py` now in the mixed scope) but leaves the deliverable's `python_files` clause unmeasured and its site unnamed.",
+    "evidence_paths": "pass \u2014 s9 cites in-repo module paths and line anchors; it writes no evidence to a scratch path.",
+    "naming": "pass \u2014 no plan label, ticket number or changelog prose; the prose describes the mechanism (`is_test_path` as trigger, pytest's collection defaults).",
+    "reasoning": "a finding \u2014 the stated mechanism reads \"the armed command, each arm and `_scoped_suite_command` all read the same narrowed list\", but a fourth consumer of `_node_test_files` re-admits the fixture the change exists to exclude.",
+    "single_goal": "pass \u2014 s9 delivers one change: the suite command admits only pytest-collectible test files.",
+    "wiring": "pass \u2014 s9 carries no depends-on/informs/gates edge that its content now needs; it is a self-contained narrowing of `_node_test_files`."
+  },
+  "section_digests": {
+    "_document": "a9d507204defbfdeb314ce16077e5af01fcf91de1d69a8dc1e4462da50d23675",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "1c446ae4a199a19c6e7de97686d696708fd9dcc65c5e1093c5efc17872c3d288",
+    "s9": "f6b1b85eff4d1e3a641a04dc3148a3e6682ad8026c9ae215b49f4d445df008bb"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T00:19:42.539572+00:00",
+  "total": null
+}
