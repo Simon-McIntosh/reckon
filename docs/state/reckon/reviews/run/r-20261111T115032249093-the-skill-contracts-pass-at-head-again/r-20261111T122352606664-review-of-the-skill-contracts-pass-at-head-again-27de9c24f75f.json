@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite records exit_status 1, completed true, failure_count 6 with the four skill-contract ids and the two staged-write errors at bc6d7fd9 (logs/base-fence-arm.log: '4 failed, 123 passed, 2 errors'), and after_suite records exit_status 0, completed true, failure_count 0 at the reviewed head (logs/head-fence-arm.log: '129 passed', its # revision header reading 27de9c24f7). No id fails at the head arm that does not fail at the base arm.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/directory.py:811 (directory() row assembly sets context_use, reaching _context_use then _context_window)",
+    "reckon/crew_run_commands.py:446 (crew directory CLI command)",
+    "reckon/mcp_views.py:4441 (MCP board view consuming directory())",
+    "reckon/crew/plan_coordinator.py:49 (ready-idle join importing the directory module)"
+  ],
+  "completed_at": "2026-11-11T12:37:28.090Z",
+  "dispatched_at": "2026-11-11T12:25:22Z",
+  "findings": [
+    {
+      "file": "tests/test_a_coordinators_context_use_is_on_the_board.py",
+      "id": "fa3ade4b8ae",
+      "line": "115",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fixture declares 1000000, the exact figure the removed _CONTEXT_WINDOWS table returned, so the assertion at line 154 passes whether reckon/crew/directory.py reads the catalogue or a hardcoded table is reinstated; the guard cannot fail on the regression it exists to catch."
+    },
+    {
+      "file": "reckon/crew/directory.py",
+      "id": "fd32d85afa7",
+      "line": "62",
+      "severity": "non-blocking",
+      "text": "non-blocking: _context_windows reads only the catalogue layer through read_layer_file, while model_windows is declared on FlightConfig in reckon/schema/flight.yaml so any layer may carry it and flight._apply_catalogue never copies it into the resolved config; a host or project layer declaring model_windows passes validation and is silently ignored, and read_layer_file skips the schema validation flight.resolve performs."
+    },
+    {
+      "file": "manifest.md",
+      "id": "f1aab6c11ca",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: after_suite records revision ab669e44a3 while the log_path it names carries a run at 27de9c24f7, and commits: at manifest.md:6 omits 27de9c24f7, so the record does not name the head it landed at."
+    },
+    {
+      "file": "logs/head-importer-arm.log",
+      "id": "f560e8206ac",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the arm evidencing the done-when clause that importing test files add no failure ran at 081641604f, one commit before the reviewed head 27de9c24f7, and that last commit changes reckon/_flight_schema.py which three files in the arm import."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call sites reaching the changed reader from the board row assembly and its CLI and MCP consumers",
+    "diff": "read all five commits against bc6d7fd9: c5d2bc9a65 moves the window table from reckon/crew/directory.py into the catalogue's model_windows slot and adds a test fixture, 8f063a24cf re-anchors the landing-beat examples and documents crew tell, 081641604f adds the crew station exemption and the crew tell command-table row, ab669e44a3 adds the landing fragment, and 27de9c24f7 repairs the emitted schema shape from a list to a keyed map.",
+    "done_when": "the done_when names the section test with its negative control, the importing-file arm against base on all_debug, and ruff on staged paths; logs/base-fence-arm.log at bc6d7fd9 records the four skill-contract ids red and logs/head-fence-arm.log at 27de9c24f7 records 129 passed EXIT=0, but logs/head-importer-arm.log ran at 081641604f and ruff's staged-path delta is claimed in the manifest's artifacts with no log kept.",
+    "goal": "the node's goal is that the skill contracts pass at head again; the four ids that failed at bc6d7fd9 are green at 27de9c24f7 by documented skill text (skills/reckon-build/SKILL.md, skills/reckon-edit/SKILL.md), two table rows in tests/test_skill_contracts.py:1205 and :1379, and the model-window table leaving reckon/crew/directory.py:47 for docs/state/reckon/model-catalogue.yaml.",
+    "manifest": "read; it states the head arm 129 passed, the negative control's four reds, the window check's identical figures at base and head, and discloses the second test-table row beyond the exemption the section allows; its after_suite revision line disagrees with the log it cites and its commits list omits the reviewed head.",
+    "write_paths": "every path in git diff --stat bc6d7fd9 27de9c24f7 sits inside the declared write paths: skills/, reckon/crew/directory.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, docs/state/reckon/model-catalogue.yaml, both test files and the landing fragment, with no plan or state edit."
+  },
+  "justifications": {
+    "durability": "the four skill-contract assertions genuinely redden when the head is reverted, as logs/negative-control.log records, but tests/test_a_coordinators_context_use_is_on_the_board.py:115 supplies the same 1000000 the removed table returned so its guard cannot fail on a reinstated hardcode, and the schema repair at 27de9c24f7 has no test that validates the real catalogue (tests/test_flight_catalogue_layer.py:32 reads it through read_layer_file, which does not validate).",
+    "evidence": "logs/head-fence-arm.log carries a 27de9c24f7 header with 129 passed EXIT=0 and logs/base-fence-arm.log carries the four red ids at bc6d7fd9, but the importer arm was measured at 081641604f while the reviewed head changes reckon/_flight_schema.py.",
+    "fit": "reckon/crew/directory.py:50 follows the module's own lazy-import idiom used by _session_transcripts and states the mechanism rather than a ticket, with no plan or sprint identifier in any added name, though the emitted schema at docs/_shared/flight.schema.json accepts both a scalar and a ModelWindow object for one figure.",
+    "goal_fidelity": "the four red ids recorded in logs/base-skill-contracts.log are green in logs/head-fence-arm.log at 27de9c24f7, and the window table now lives in docs/state/reckon/model-catalogue.yaml with reckon/crew/directory.py:62 reading it.",
+    "reuse": "reckon/crew/directory.py:60 reuses the memoized flight.read_layer_file rather than a second YAML reader, but it reads around flight.resolve and flight._apply_catalogue, the owner of what a flight layer declares.",
+    "scope_discipline": "all ten files in git diff --stat bc6d7fd9 27de9c24f7 lie inside the declared write paths, generated artifacts were regenerated in the same commit, and the skills/reckon-build/SKILL.md overlap with a queued peer is disclosed in evidence_inputs."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the skill contracts pass at head again; the four ids red at bc6d7fd9 are green at 27de9c24f7 by skills/reckon-build/SKILL.md and skills/reckon-edit/SKILL.md text, two rows at tests/test_skill_contracts.py:1205 and :1379, and the model-window table leaving reckon/crew/directory.py:47 for docs/state/reckon/model-catalogue.yaml.\nVERDICT done_when: the done_when names the section test with its negative control, the importing-file arm against base on all_debug, and ruff on staged paths; logs/base-fence-arm.log at bc6d7fd9 records the four skill-contract ids red and logs/head-fence-arm.log at 27de9c24f7 records 129 passed EXIT=0, but logs/head-importer-arm.log ran at 081641604f and ruff's staged-path delta is claimed in the manifest's artifacts with no log kept.\nVERDICT write_paths: every path in git diff --stat bc6d7fd9 27de9c24f7 sits inside the declared write paths: skills/, reckon/crew/directory.py, reckon/schema/flight.yaml, reckon/_flight_schema.py, docs/_shared/flight.schema.json, docs/state/reckon/model-catalogue.yaml, both test files and the landing fragment, with no plan or state edit.\nVERDICT manifest: read; it states the head arm 129 passed, the negative control's four reds and the window check's identical figures, and discloses the second test-table row; its after_suite revision line disagrees with the log it cites and its commits list omits the reviewed head.\nVERDICT diff: read all five commits against bc6d7fd9; c5d2bc9a65 moves the window table into the catalogue and adds a fixture, 8f063a24cf re-anchors the landing-beat examples and documents crew tell, 081641604f adds the station exemption and the tell row, ab669e44a3 adds the fragment, and 27de9c24f7 repairs the emitted schema shape to a keyed map.\nCALL_SITES: reckon/crew/directory.py:811 (directory() row assembly calls _context_use), reckon/crew_run_commands.py:446 (crew directory CLI), reckon/mcp_views.py:4441 (MCP board view), reckon/crew/plan_coordinator.py:49 (ready-idle join)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the four red ids recorded in logs/base-skill-contracts.log are green in logs/head-fence-arm.log at 27de9c24f7, and the window table now lives in docs/state/reckon/model-catalogue.yaml with reckon/crew/directory.py:62 reading it.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/head-fence-arm.log carries a 27de9c24f7 header with 129 passed EXIT=0 and logs/base-fence-arm.log carries the four red ids at bc6d7fd9, but the importer arm was measured at 081641604f while the reviewed head changes reckon/_flight_schema.py.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all ten files in git diff --stat bc6d7fd9 27de9c24f7 lie inside the declared write paths, generated artifacts were regenerated in the same commit, and the skills/reckon-build/SKILL.md overlap with a queued peer is disclosed in evidence_inputs.\nSCORE durability: 12\nJUSTIFICATION durability: the four skill-contract assertions genuinely redden when the head is reverted, as logs/negative-control.log records, but tests/test_a_coordinators_context_use_is_on_the_board.py:115 supplies the same 1000000 the removed table returned so its guard cannot fail on a reinstated hardcode, and the schema repair at 27de9c24f7 has no test that validates the real catalogue.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/directory.py:50 follows the module's own lazy-import idiom used by _session_transcripts and states the mechanism rather than a ticket, though docs/_shared/flight.schema.json accepts both a scalar and a ModelWindow object for one figure.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/directory.py:60 reuses the memoized flight.read_layer_file rather than a second YAML reader, but it reads around flight.resolve and flight._apply_catalogue, the owner of what a flight layer declares.\nFINDING tests/test_a_coordinators_context_use_is_on_the_board.py:115 non-blocking: the fixture declares 1000000, the exact figure the removed _CONTEXT_WINDOWS table returned, so the assertion at line 154 passes whether reckon/crew/directory.py reads the catalogue or a hardcoded table is reinstated; the guard cannot fail on the regression it exists to catch.\nFINDING reckon/crew/directory.py:62 non-blocking: _context_windows reads only the catalogue layer through read_layer_file, while model_windows is declared on FlightConfig in reckon/schema/flight.yaml so any layer may carry it and flight._apply_catalogue never copies it into the resolved config; a host or project layer declaring model_windows passes validation and is silently ignored, and read_layer_file skips the schema validation flight.resolve performs.\nFINDING manifest.md:17 non-blocking: after_suite records revision ab669e44a3 while the log_path it names carries a run at 27de9c24f7, and commits: at manifest.md:6 omits 27de9c24f7, so the record does not name the head it landed at.\nFINDING logs/head-importer-arm.log:1 non-blocking: the arm evidencing the done-when clause that importing test files add no failure ran at 081641604f, one commit before the reviewed head 27de9c24f7, and that last commit changes reckon/_flight_schema.py which three files in the arm import.",
+  "review_run_id": "r-20261111T122352606664-review-of-the-skill-contracts-pass-at-head-again-27de9c24f75f",
+  "reviewed_base_sha": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "reviewed_head_sha": "27de9c24f75f429fb76f59a02eb47058249173fe",
+  "reviewed_run_id": "r-20261111T115032249093-the-skill-contracts-pass-at-head-again",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T12:40:00.000000+00:00",
+  "total": 93
+}
