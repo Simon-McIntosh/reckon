@@ -124,6 +124,36 @@ def _compose_burst_refusal(params: Mapping[str, Any]) -> str | None:
     return plan_review.compose_burst_refusal(project, plan_slug)
 
 
+def _session_delivery_refusal(params: Mapping[str, Any]) -> str | None:
+    """The delivery refusal a review dispatch would meet, answered before it writes.
+
+    A review composes its brief and its report directory before the dispatch
+    that carries it away, and the dispatch is the first place a session's
+    delivery is judged. A session that would hear nothing is therefore refused
+    over a directory already composed, which is how a refused review left one
+    behind. Every condition is answered here, from the same source the dispatch
+    reads, so the refusal arrives before anything is written.
+
+    An answer or an accepted edit stores a record and launches nothing, and a
+    preview writes nothing at all, so neither is judged: the refusal is about a
+    composition that would be written.
+    """
+    from reckon.crew import plan_review
+
+    if params.get("dry_run"):
+        return None
+    if str(params.get("answer") or "").strip():
+        return None
+    if str(params.get("accept_edits") or "").strip():
+        return None
+    project = str(params.get("project") or "").strip()
+    if not project:
+        return None
+    return plan_review.session_delivery_refusal(
+        project, str(params.get("session") or "").strip()
+    )
+
+
 def _install_carried_answer() -> None:
     """Add the ``--carried`` answer flag to the review verb.
 
@@ -155,6 +185,12 @@ def _install_carried_answer() -> None:
             params.pop("pretty", None)
             return _answer_carried_finding(pretty, **params)
         refusal = _compose_burst_refusal(kwargs)
+        if refusal:
+            _emit(
+                {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)
+            )
+            raise click.exceptions.Exit(1)
+        refusal = _session_delivery_refusal(kwargs)
         if refusal:
             _emit(
                 {"error": "crew_error", "detail": refusal}, kwargs.get("pretty", False)

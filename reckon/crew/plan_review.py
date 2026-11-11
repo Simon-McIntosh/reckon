@@ -3736,6 +3736,46 @@ def compose_burst_refusal(
     return None
 
 
+def session_delivery_refusal(project: str, session: str) -> str | None:
+    """The refusal a review of this session would meet once composed, or None.
+
+    A plan review composes its brief, plan snapshot and sidecar into the plan's
+    report directory before the dispatch that carries it away, and the dispatch
+    is the first place a session's delivery is judged. So a session that would
+    hear nothing was refused only after its report directory had been written:
+    a composition refused that way leaves the directory behind when the caller
+    stops before the dispatch can discard it, and the next attempt reads a
+    report that no run backs.
+
+    The conditions answered here are the session's own — no session named, no
+    follower registered for it, a registered follower that is not delivering.
+    The project's producer is a separate, project-global condition that
+    :func:`_unmet_follower_conditions` also reports; it is judged where it is
+    measured, at dispatch, so this refusal answers only for the session it is
+    asked about.
+
+    Returns the text of the refusal the dispatch would raise, built by the same
+    chooser the dispatch uses, so a caller reads one wording whichever stage
+    refuses it.
+    """
+    from reckon.crew.dispatch_watch import (
+        _FollowerAdmissionUnmet,
+        _unmet_follower_conditions,
+    )
+
+    watch = runs.watch_state(project, session=session)
+    conditions = _unmet_follower_conditions(
+        project,
+        {**watch, "watcher_live": True},
+        session=session,
+    )
+    if not conditions:
+        return None
+    return str(
+        _FollowerAdmissionUnmet(project, watch, session=session, conditions=conditions)
+    )
+
+
 # ── The composition a quiet plan owes, and its would-not-change answers ─────
 # A coordinator must remember to compose a content review after authoring a
 # plan, and one paused at a rate limit cannot. The producer pass composes the
