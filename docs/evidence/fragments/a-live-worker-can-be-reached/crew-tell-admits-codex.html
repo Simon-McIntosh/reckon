@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
+  <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s11">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-11">
+  <meta name="evidence-commit" content="eee1a67746cc4b215b7abb094b605904be5190d2">
+  <title>crew tell reaches a codex run through its launch argv</title>
+</head>
+<body>
+<section id="crew-tell-admits-codex">
+  <h2>crew tell decides reachability per dialect, from the artifact that dialect's harness reads</h2>
+  <p><code>crew tell</code> admitted Claude-dialect run homes only, so it refused every codex run at
+  its dialect test, before the settings check was reached. Reachability is now decided per dialect:
+  a Claude-dialect run is reached through the inbox hook in its own run home's
+  <code>settings.json</code> (unchanged), a codex run through the hook override and its trust
+  override on the argv it was launched with, and any other dialect is refused naming why.
+  The codex predicate reads only the recorded argv, never the flight layer, for the same reason the
+  Claude test reads the settings file: a run launched before the overrides existed carries the argv
+  it was actually launched with.</p>
+
+  <h3 id="crew-tell-admits-codex-predicate">The predicate names the missing override</h3>
+  <p><code>_codex_inbox_override_gap</code> reads the <code>-c</code>/<code>--config</code> values on
+  the record's argv and requires both <code>hooks.PostToolUse</code> carrying reckon's own inbox
+  hook command and a <code>hooks.state</code> value carrying <code>trusted_hash</code>. It returns
+  <code>None</code> when both are present, else names the gap: <code>no trust override</code>,
+  <code>no inbox hook override</code>, or <code>neither the inbox hook override nor its trust
+  override</code>. A refusal states which one is missing and that a live run's argv is never
+  recomposed.</p>
+
+  <h3 id="crew-tell-admits-codex-measure">Gate</h3>
+  <p>Head arm <code>after-suite.log</code>: <strong>64 passed in 22.08s</strong>, <code>EXIT=0</code>
+  &mdash; the 13 new cases plus the repository's staged-write inventory. Baseline arm
+  <code>baseline-suite.log</code> at <code>e70e9be2c7</code>: <strong>51 passed in 21.03s</strong>,
+  <code>EXIT=0</code>. The new file covers a live codex run carrying both overrides writing one
+  queued message, each single-override gap refusing with nothing written, and three pre-override
+  records (a plain argv, an unrelated <code>-c</code> override, and no recorded argv) refusing;
+  an unreachable dialect refusing and naming itself; and the three Claude-dialect cases unchanged
+  (seeded home writes, home without the hook refuses, unfenced refuses). <code>ruff check</code>
+  and <code>ruff format --check</code> report no findings on both staged Python paths.</p>
+
+  <h3 id="crew-tell-admits-codex-negative">The check fails when the codex branch accepts anything</h3>
+  <p>Declared mutation: accept any codex run in the codex branch. With the gap refusal bypassed,
+  <code>negative-control.log</code> records <strong>5 failed, 8 passed in 3.71s</strong>,
+  <code>EXIT=1</code>, led by
+  <code>test_crew_tell_refuses_a_codex_run_whose_argv_lacks_the_trust_override</code>, with both
+  other refusal cases and all three pre-override cases alongside it. Every one passes in the head
+  arm. The mutation was reverted before the final commit.</p>
+
+  <h3 id="crew-tell-admits-codex-limits">Scope</h3>
+  <p>The direct live codex measure belongs to the codex delivery node's own gate; this node proves
+  the verb's decision over recorded argv, which is what the coordinator needs before dispatching
+  the plan's live check. Merge-time verification and that live dispatched-worker check belong to a
+  separately dispatched test node.</p>
+</section>
+</body>
+</html>

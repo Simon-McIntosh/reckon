@@ -2518,6 +2518,50 @@ def crew_resume(
 crew_redispatch = tombstone_command("redispatch")
 
 
+_CODEX_CONFIG_FLAGS = ("-c", "--config")
+
+
+def _codex_config_overrides(argv: Any) -> list[str]:
+    """The ``-c`` values carried by a recorded launch argv, in order."""
+    words = [str(word) for word in (argv or ())]
+    return [
+        words[index + 1]
+        for index, word in enumerate(words[:-1])
+        if word in _CODEX_CONFIG_FLAGS
+    ]
+
+
+def _codex_inbox_override_gap(argv: Any) -> str | None:
+    """Name the inbox override a recorded codex argv lacks, or None if it has both.
+
+    A codex run receives the inbox hook as ``-c hooks.PostToolUse=...`` and the
+    trust record for exactly that hook as ``-c hooks.state={...trusted_hash...}``,
+    both composed onto its launch argv. Delivery needs both, and the recorded
+    argv is the only evidence of what a live run was launched with: a run
+    launched before the overrides existed carries neither, whatever the flight
+    layer composes for a run dispatched today.
+    """
+    from reckon.hooks.install import worker_inbox_group
+
+    overrides = _codex_config_overrides(argv)
+    hook_command = str(worker_inbox_group()["hooks"][0]["command"])
+    has_hook = any(
+        override.lstrip().startswith("hooks.PostToolUse") and hook_command in override
+        for override in overrides
+    )
+    has_trust = any(
+        override.lstrip().startswith("hooks.state") and "trusted_hash" in override
+        for override in overrides
+    )
+    if has_hook and has_trust:
+        return None
+    if has_hook:
+        return "no trust override"
+    if has_trust:
+        return "no inbox hook override"
+    return "neither the inbox hook override nor its trust override"
+
+
 @crew.command(name="tell")
 @click.option(
     "--run",
@@ -2536,11 +2580,18 @@ def crew_tell(run_id, message, pretty):
     never a delivery.
 
     A run that has ended is refused, naming the channel that reaches a stopped
-    worker. A run whose own harness home carries no inbox hook is refused too,
-    rather than reported queued: a message written where nothing reads it is
-    exactly the false clearance this channel exists to remove. The test is the
-    run home's settings file — the harness reads that, and nothing re-seeds the
-    home of a run already launched.
+    worker. A live run is refused too when nothing it was launched with would
+    read the inbox, rather than reported queued: a message written where nothing
+    reads it is exactly the false clearance this channel exists to remove.
+
+    Reachability is decided per dialect, and each dialect's test is the artifact
+    that dialect's harness actually reads. A Claude-dialect run is reached
+    through the inbox hook in its own run home's settings file, and nothing
+    re-seeds the home of a run already launched. A codex run is reached through
+    the hook and trust overrides composed onto its launch argv, so its recorded
+    argv is the test — a run launched before those overrides existed carries
+    none of them whatever the flight layer composes now. Every other dialect is
+    refused, naming why.
     """
     import json as _json
 
@@ -2573,31 +2624,47 @@ def crew_tell(run_id, message, pretty):
             "directory to write an inbox into"
         )
     run_directory = Path(manifest_path).expanduser().parent
-    if record.get("fenced") is not True:
+    if dialect == "codex":
+        gap = _codex_inbox_override_gap(record.get("argv"))
+        if gap is not None:
+            raise click.ClickException(
+                f"run {run_id} is a codex-dialect run. The inbox hook is "
+                "registered in Claude-dialect run homes only; a codex run is "
+                "reached through the hook override and its trust override on "
+                "the argv it was launched with, and that argv carries "
+                f"{gap}. Such a run was launched before the overrides existed, "
+                "and a live run's argv is never recomposed; queue the message "
+                "for a run dispatched from now on, or steer this one on its "
+                "next turn"
+            )
+    elif dialect == "claude":
+        if record.get("fenced") is not True:
+            raise click.ClickException(
+                f"run {run_id} is not fenced (its record says fenced: "
+                f"{record.get('fenced')!r}), so it runs from the operator's own "
+                "harness home, which carries no inbox hook for this run; a "
+                "message written there would be read as queued and delivered "
+                "to nobody"
+            )
+        home = harness_home(dialect, run_directory)
+        settings = None if home is None else home / "settings.json"
+        if settings is None or not install.settings_carry_worker_inbox(settings):
+            where = "no run home" if home is None else f"the run home {home}"
+            raise click.ClickException(
+                f"run {run_id} is live but {where} carries no PostToolUse entry "
+                f"for reckon's inbox hook ({install.WORKER_INBOX_SCRIPT_NAME}), "
+                "so nothing would deliver this message. Such a run was launched "
+                "before the hook was seeded, and a live run's home is never "
+                "re-seeded; queue the message for a run dispatched from now on, "
+                "or steer this one on its next turn"
+            )
+    else:
         raise click.ClickException(
-            f"run {run_id} is not fenced (its record says fenced: "
-            f"{record.get('fenced')!r}), so it runs from the operator's own "
-            "harness home, which carries no inbox hook for this run; a message "
-            "written there would be read as queued and delivered to nobody"
-        )
-    if dialect != "claude":
-        raise click.ClickException(
-            f"run {run_id} is a {dialect or 'unknown'}-dialect run, and the "
-            "inbox hook is registered in Claude-dialect run homes only, so "
-            "there is no hook to deliver a message; write nothing and steer "
-            "the run another way"
-        )
-    home = harness_home(dialect, run_directory)
-    settings = None if home is None else home / "settings.json"
-    if settings is None or not install.settings_carry_worker_inbox(settings):
-        where = "no run home" if home is None else f"the run home {home}"
-        raise click.ClickException(
-            f"run {run_id} is live but {where} carries no PostToolUse entry "
-            f"for reckon's inbox hook ({install.WORKER_INBOX_SCRIPT_NAME}), so "
-            "nothing would deliver this message. Such a run was launched before "
-            "the hook was seeded, and a live run's home is never re-seeded; "
-            "queue the message for a run dispatched from now on, or steer this "
-            "one on its next turn"
+            f"run {run_id} is a {dialect or 'unknown'}-dialect run, and this "
+            "channel reaches only Claude-dialect runs, through their run home's "
+            "inbox hook, and codex runs, through the hook and trust overrides "
+            "on their launch argv; there is no hook to deliver a message here, "
+            "so write nothing and steer the run another way"
         )
     written = worker_inbox.write_message(message, run_directory)
     _emit(
