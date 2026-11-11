@@ -306,6 +306,57 @@ def _review_record_check(evidence: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _default_gate_log_from_manifest(
+    manifest: Mapping[str, Any], *, manifest_path: str
+) -> str:
+    """The log a passing gate defaults to when the caller names none, or "".
+
+    A run's own manifest already states which log carries its passing suite
+    evidence, so the default is read from there rather than guessed. The
+    ``after_suite`` arm's own log wins when the arm names one: that arm is the
+    run's statement of what it measured at its head. Otherwise the first
+    ``test_logs`` entry stands in, which is the order the worker wrote them in.
+
+    The manifest's ``negative_control_log`` is never taken as a default under
+    either rule. A negative control is a deliberately failing run kept to prove
+    the check can fail, so its failing ids are by construction ones the head
+    arm does not carry, and a gate read from it refuses every sound run. A
+    manifest that offers no log but its negative control therefore has no
+    default at all, and its refusal names the flag that supplies one.
+    """
+    negative = str(manifest.get("negative_control_log") or "").strip()
+    negative_path = (
+        _manifest_relative_path(negative, manifest_path=manifest_path).resolve()
+        if negative
+        else None
+    )
+    after = manifest.get("after_suite")
+    if isinstance(after, Mapping):
+        after_log = str(after.get("log_path") or "").strip()
+        if after_log:
+            resolved = _manifest_relative_path(after_log, manifest_path=manifest_path)
+            if negative_path is None or resolved.resolve() != negative_path:
+                return str(resolved)
+    logs = [
+        str(entry).strip()
+        for entry in (manifest.get("test_logs") or [])
+        if str(entry).strip()
+    ]
+    for entry in logs:
+        resolved = _manifest_relative_path(entry, manifest_path=manifest_path)
+        if negative_path is not None and resolved.resolve() == negative_path:
+            continue
+        return str(resolved)
+    if logs and negative_path is not None:
+        raise CrewError(
+            "the manifest's only test log is its negative_control_log "
+            f"({negative}), a deliberately failing run that cannot stand as a "
+            "gate; pass --gate-log-path naming the log holding the run's "
+            "passing gate evidence"
+        )
+    return ""
+
+
 def _default_gate_evidence_from_manifest(
     record: Mapping[str, Any],
     *,
@@ -353,15 +404,11 @@ def _default_gate_evidence_from_manifest(
         return resolved_gate, resolved_commits
     manifest_path = str(record.get("manifest_path") or "")
     if not str(resolved_gate.get("log_path") or "").strip():
-        logs = [
-            str(entry).strip()
-            for entry in (manifest.get("test_logs") or [])
-            if str(entry).strip()
-        ]
-        if logs:
-            resolved_gate["log_path"] = str(
-                _manifest_relative_path(logs[0], manifest_path=manifest_path)
-            )
+        default_log = _default_gate_log_from_manifest(
+            manifest, manifest_path=manifest_path
+        )
+        if default_log:
+            resolved_gate["log_path"] = default_log
     log_path = str(resolved_gate.get("log_path") or "").strip()
     log_text = ""
     if log_path:
