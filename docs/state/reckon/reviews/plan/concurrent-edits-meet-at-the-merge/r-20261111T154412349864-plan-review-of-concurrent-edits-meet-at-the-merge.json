@@ -1,0 +1,94 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T15:52:23.492Z",
+  "dispatched_at": "2026-11-11T15:46:53Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/runs.py:1673",
+      "id": "duplicate_owner-1",
+      "reason": "the section must name the one owner of the class list (extend the declaration reader in runs.py, or reuse path_classes with a stated reason for its narrower claim semantics) so the built-in default and the declaration cannot disagree.",
+      "text": "\u00a76 gives an undeclared project a built-in exclusive-class list (plan, cumulative evidence, generated state, figure topic, dependency lock) that is the same list the declaration already carries at docs/state/reckon/shared-write-paths.json:9-16, so the code default and reckon's declaration can drift with nothing failing; a second, overlapping path taxonomy already exists at reckon/path_classes.py:39 (`file_class` names plan_evidence_research_html, figures and docs_state)",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/promotion.py:2317",
+      "id": "reuse_search-1",
+      "reason": "the measure's own instrument decides whether a pair counts as open, and a wrong end turns \"still open\" into \"landed cleanly\".",
+      "text": "\u00a74 says \"the ledger keeps no separate landing stamp\" and therefore reads landing from `completed_at`, but `sweep_promoted_revisions` and `promotion._run_promoted_revision` already answer landed-ness from the run record and gate commits; a claim window ends at completion while a merge conflict is created at landing, so the pair census and the \"landed cleanly / landed after repair / still open\" column are computed from the wrong end of each run",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/digests/implement.md:236",
+      "id": "reuse_search-2",
+      "reason": "",
+      "text": "\u2014 the retired bullet reaches workers through four committed artefacts (implement.md:236, report.md:253, review.md:232, test.md:233), which \u00a77's write paths omit, so a node that fixes `EXCERPTS` generation leaves the same stale rule in every digest a worker reads; WOULD_CHANGE_THE_PLAN: yes \u2014 REASON: \u00a77 claims every worker stops carrying the old rule, and without the four regenerated digests in its write paths that claim is false when the node delivers.",
+      "type": "reuse_search",
+      "would_change": null
+    },
+    {
+      "anchor": "tests/test_worker_digest.py:301",
+      "id": "reuse_search-3",
+      "reason": "the done-when as written would replace a live-file comparison that is currently red with a snapshot comparison that cannot go red, hiding the next drift instead of reporting it.",
+      "text": "\u00a77 requires the new case and the generator to read \"a fixture copy committed with the test rather than the live file\", which removes the only check that detects drift between ~/.agents/AGENTS.md and the committed digests; that check is failing today in six visible cases (`test_the_committed_digests_are_current_on_this_host` among them, 6 failed / 16 passed at 317dbedd54), and it is what reports the defect \u00a77 exists to fix",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "skills/reckon-build/references/coordinator-reference.md:408",
+      "id": "reuse_search-4",
+      "reason": "a coordinator reading coordinator-reference.md keeps holding nodes the ruling says to dispatch, which is the defect \u00a78 exists to remove.",
+      "text": "\u00a78 names two skill files, but the retired remedy appears in four places: coordinator-reference.md:408 (\"Re-plan after the reported owning run releases its containing or contained path claim\"), :523, SKILL.md:212 (dispatch refuses containing or contained path claims) and SKILL.md:245 \u2014 and tests/test_skill_contracts.py:148 already owns a whole-tree census of a retired term, so the mechanism to assert this exists",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/runs.py:1673",
+      "id": "deep_module-1",
+      "reason": "one predicate on the declaration's contents replaces three states, and the plan currently specifies both ends of the cliff without saying which state an absent declaration resolves to relative to an empty one.",
+      "text": "the policy has three states with opposite meanings and they are distinguished by file presence, not by declaration: no `shared-write-paths.json` shares every source file (\u00a76), a file with `\"paths\": []` and no `shared_roots` shares nothing (\u00a72 done-when bullet), and a file with roots shares under them; creating an empty file therefore silently flips a project from sharing to refusing",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/worker_digest.py:412",
+      "id": "deep_module-2",
+      "reason": "the plan keeps the raise deliberately as its negative control, and header-level resilience is a module change the node brief can carry without altering what the section delivers.",
+      "text": "the excerpt layer resolves each span by exact prose (`_line_index` raises `DigestError: canonical source has no line at or after 1 for '- One worker, one worktree, one exclusive write scope.'`, reproduced on this host against the current ~/.agents/AGENTS.md); \u00a77 replaces the literals and adds a content assertion, so the next edit to any spanned sentence raises the same error for every role at once",
+      "type": "deep_module",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "cb38f60dda04ecf20462d8d9445c6c9414a2a767",
+  "plan_fingerprint": "7e7bcf90ebeac0665e9eb77dcf451f6aeadd13841fb7ca53a8bd60a65c5739fd",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 32,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T154412349864-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "70a166e55afe71e1453f0a54449e12a07a9f9581",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the claim policy's interface has three states with opposite outcomes (`_shared_write_paths`, reckon/crew/runs.py:1673), keyed on whether a declaration file exists rather than on what it declares.",
+    "duplicate_owner": "a finding \u2014 \u00a76's built-in exclusive classes would exist a second time beside the declaration's `exclusive_patterns` (docs/state/reckon/shared-write-paths.json:9) with no parity check, and a second path taxonomy already exists at reckon/path_classes.py:39.",
+    "interface_budget": "pass \u2014 public_definitions 2498, cli_options 473, mcp_views 15, refusal_families 25; none of the implementable sections (\u00a74 measurement, \u00a76 default policy, \u00a77 digest regeneration, \u00a78 skill text) adds a CLI option, an MCP view or a refusal family \u2014 \u00a76 and \u00a78 retire refusals and instruction instead.",
+    "reuse_search": "a finding \u2014 the measurement in \u00a74 derives landing status from `completed_at` while `sweep_promoted_revisions` / `_run_promoted_revision` (reckon/crew/promotion.py:2317, :482) already own it, and \u00a77 fixes digest generation without touching the four committed digests that actually deliver the retired rule to workers.",
+    "thin_wrapper": "pass \u2014 \u00a72, \u00a75 and \u00a76 all land in `_SharedWritePaths.__contains__` (reckon/crew/runs.py:1643), the single predicate every claim check already reaches (dispatch_claims.py:1539, promotion_scope.py:603, queue_admission.py:2290, queue_edit.py:240); no parallel wrapper is proposed."
+  },
+  "section_digests": {
+    "_document": "64f7f67e64cee414aaf885ff6e547fdba7487785f530b0a84b1844e016209020",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "760dfe678e5ad2445ce0123dfad18cb4d3230ed0c4a2346252b9c71642a0142e",
+    "s7": "8d36efde0719f77f11c941697b3d82ea4b7fcd298ed8a8964a3b2fbcb98f9d08",
+    "s8": "2a575eedfffb68ad206adbf763ffa4302fb8c9588e639efe2bb4a8564df368c1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:02:58.316934+00:00",
+  "total": null
+}
