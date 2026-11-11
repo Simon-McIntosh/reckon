@@ -35,11 +35,16 @@ from tests.helpers.git import git as _git
 def _seed_repository(root: Path, marker: str) -> str:
     """Two commits whose content differs per repository, so heads never collide."""
     root.mkdir(parents=True)
+    declaration = root / "docs" / "state" / "blank-worktree-fixture"
+    declaration.mkdir(parents=True)
+    (declaration / "shared-write-paths.json").write_text(
+        '{"shared_roots": []}', encoding="utf-8"
+    )
     (root / "file.txt").write_text(f"seed {marker}\n", encoding="utf-8")
     _git(root, "init", "-q", "-b", "main")
     _git(root, "config", "user.email", "worker@example.invalid")
     _git(root, "config", "user.name", "Worker")
-    _git(root, "add", "file.txt")
+    _git(root, "add", "file.txt", "docs")
     _git(root, "commit", "-q", "-m", f"seed {marker}")
     (root / "file.txt").write_text(f"seed {marker}\nwork {marker}\n", encoding="utf-8")
     _git(root, "add", "file.txt")
