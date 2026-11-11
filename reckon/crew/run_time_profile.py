@@ -44,7 +44,7 @@ import math
 import re
 import statistics
 from collections import defaultdict
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -340,6 +340,8 @@ def run_time_profile(
     project: str,
     days: int = 14,
     now: datetime | None = None,
+    *,
+    rows: Sequence[Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Derive per-lane run-time distributions over a trailing window.
 
@@ -352,6 +354,10 @@ def run_time_profile(
     otherwise be counted. A row carrying no readable completion stamp is kept,
     because the ledger's own ``since`` filter has already refused one.
 
+    ``rows`` supplies picker inputs already read by a caller, avoiding another
+    ledger read. Their completion stamps are selected against the same trailing
+    window, and their identities are normalized as on the ledger path.
+
     Returns the window boundaries it used, the number of rows it read, the
     per-shape ``groups`` table and the per-backend ``size_buckets`` table. Every
     figure that has no population behind it is ``None``.
@@ -361,7 +367,16 @@ def run_time_profile(
     if reference.tzinfo is None:
         reference = reference.replace(tzinfo=UTC)
     since = reference - timedelta(days=days)
-    rows = ledger.runs(project, since=since.isoformat())
+    if rows is None:
+        rows = ledger.runs(project, since=since.isoformat())
+    else:
+        rows = [
+            ledger.normalize_identity(row)
+            for row in rows
+            if isinstance(row, Mapping)
+            and (completed := parse_utc(row.get("completed_at"))) is not None
+            and completed >= since
+        ]
     selected = [
         row
         for row in rows

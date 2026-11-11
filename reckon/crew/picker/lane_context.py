@@ -49,7 +49,6 @@ from reckon.crew.run_time_profile import (
     _group_rows,
     _number,
     _size_class,
-    _size_table,
     local_lane_load,
     run_time_profile,
 )
@@ -864,37 +863,13 @@ def _indexed_profile_inputs(
         return None
 
 
-def _profile_from_inputs(
-    project: str, rows: Sequence[Mapping[str, Any]], moment: datetime
-) -> dict[str, Any]:
-    """Apply the closed trailing window and the shared statistical reducers."""
-
-    since = moment - timedelta(days=14)
-    selected = [
-        ledger.normalize_identity(row)
-        for row in rows
-        if isinstance(row, Mapping)
-        and (completed := parse_utc(row.get("completed_at"))) is not None
-        and since <= completed <= moment
-    ]
-    return {
-        "project": project,
-        "days": 14,
-        "since": since.isoformat(),
-        "until": moment.isoformat(),
-        "rows": len(selected),
-        "groups": _group_rows(selected),
-        "size_buckets": _size_table(selected),
-    }
-
-
 def refresh_run_time_profile(
     project: str, *, now: datetime | None = None
 ) -> Mapping[str, Any] | None:
     """Fold newly indexed rows into the stored profile, or build a missing base.
 
-    Exact quantiles need the contributing samples, so the entry retains picker
-    inputs beside its tables. Only added documents are decoded on a fold; the
+    Exact quantiles need the contributing samples, so a separate cache file
+    retains picker inputs while the served entry holds only the tables. Only added documents are decoded on a fold; the
     source and retained document signatures prove the stored sample is still its
     base. Missing, mismatched or rewritten bases take one full build. All reads
     finish before publishing the cache, and no ledger read region spans a write.
@@ -914,19 +889,21 @@ def refresh_run_time_profile(
     path = capabilities.pick_input_cache_path(
         project, root=_profile_cache_root(), filename=filename
     )
+    inputs_path = path.with_name(f"{project}-fold-inputs.json")
     entry = capabilities._read_pick_entry(path)
-    value = entry.get("value") if entry else None
-    previous = value.get("fold_inputs") if isinstance(value, Mapping) else None
+    inputs_entry = capabilities._read_pick_entry(inputs_path)
+    previous = inputs_entry.get("value") if inputs_entry else None
     inputs = None
     if (
         isinstance(previous, Mapping)
-        and previous.get("stamp") == entry.get("key")
+        and entry is not None
+        and inputs_entry.get("key") == entry.get("key")
         and previous.get("date") == moment.date().isoformat()
     ):
         inputs = _indexed_profile_inputs(project, previous)
     folded = inputs is not None
     if folded:
-        profile = _profile_from_inputs(project, inputs["rows"], moment)
+        profile = run_time_profile(project, now=moment, rows=inputs["rows"])
     else:
         profile = dict(run_time_profile(project, now=moment))
         inputs = _indexed_profile_inputs(project)
@@ -936,10 +913,12 @@ def refresh_run_time_profile(
             and profile.get("until") is not None
             and ledger._ledger_holds_content(project, None)
         ):
-            # A refused index update can leave the last-good snapshot behind
-            # the append. Build from the authoritative files in that case.
-            data, _version = ledger.load(project, use_index=False)
-            profile = _profile_from_inputs(project, data["runs"], moment)
+            # Only a refused refresh serves index_age_seconds. Missing samples
+            # alone cannot justify scanning every authoritative run document.
+            headers, _version = ledger.load(project, headers_only=True)
+            if "index_age_seconds" in headers:
+                data, _version = ledger.load(project, use_index=False)
+                profile = run_time_profile(project, now=moment, rows=data["runs"])
     profile["persisted_at"] = moment.isoformat()
     after = _profile_stamp(project, moment)
     if (
@@ -949,18 +928,25 @@ def refresh_run_time_profile(
     ):
         key = capabilities.pick_input_stamp_key(after)
         if inputs is not None:
-            # Keep future samples until they enter the window, but discard
-            # expired samples; exact medians cannot be recovered from medians.
+            # A fold is reused only on this date. No sample beyond the next
+            # day can enter its window before a full build supplies it again.
             since = moment - timedelta(days=14)
             inputs["rows"] = [
                 ledger.picker_record(row)
                 for row in inputs["rows"]
                 if isinstance(row, Mapping)
                 and (completed := parse_utc(row.get("completed_at"))) is not None
-                and completed >= since
+                and since <= completed <= moment + timedelta(days=1)
             ]
-            inputs.update(stamp=key, date=moment.date().isoformat())
-            profile["fold_inputs"] = inputs
+            inputs.update(date=moment.date().isoformat())
+            capabilities._write_pick_entry(
+                inputs_path,
+                {
+                    "version": capabilities.PICK_INPUT_CACHE_VERSION,
+                    "key": key,
+                    "value": inputs,
+                },
+            )
         capabilities._write_pick_entry(
             path,
             {

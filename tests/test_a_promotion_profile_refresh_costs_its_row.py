@@ -110,7 +110,14 @@ def test_a_refused_index_build_can_serve_a_snapshot_missing_the_append(
     monkeypatch.setattr(ledger, "_indexed_data", _refuse_index)
     fallback = Mock(wraps=ledger._last_good_index_data)
     monkeypatch.setattr(ledger, "_last_good_index_data", fallback)
+    load = Mock(wraps=ledger.load)
+    monkeypatch.setattr(ledger, "load", load)
     profile = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    raw = [
+        call for call in load.call_args_list if call.kwargs.get("use_index") is False
+    ]
+    print(f"raw_profile_fallbacks={len(raw)}")
+    assert len(raw) == 1
     print(f"last_good_reads={fallback.call_count} rows={profile['rows']}")
     assert fallback.call_count >= 1
     assert profile["rows"] == 51
@@ -196,3 +203,123 @@ def test_a_generation_move_during_a_fold_does_not_publish_mixed_inputs(
     monkeypatch.setattr(lane_context, "_indexed_profile_inputs", moved)
     assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 51
     assert history.read_bytes() == before
+
+
+def _fold_path(history):
+    return history.with_name(f"{PROJECT}-fold-inputs.json")
+
+
+def test_picks_never_decode_the_fold_inputs(history, monkeypatch):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    fold_path = _fold_path(history)
+    assert fold_path.exists(), "fold inputs need their own file"
+    fold_text = fold_path.read_text()
+    loads = lane_context.json.loads
+    decoded = []
+
+    def counted(value, *args, **kwargs):
+        if value == fold_text:
+            decoded.append("fold-inputs")
+        return loads(value, *args, **kwargs)
+
+    monkeypatch.setattr(lane_context.json, "loads", counted)
+    assert capabilities._read_pick_entry(fold_path) is not None
+    assert decoded == ["fold-inputs"], "the instrument must see the sidecar read"
+    decoded.clear()
+    ledger.append_run(PROJECT, _row(50))
+    lane_context._PROFILE_CACHE.clear()
+    profile, age = lane_context._cached_run_time_profile(PROJECT, now=NOW)
+    assert profile["rows"] == 50
+    assert age == 0
+    assert decoded == []
+    assert "fold_inputs" not in profile
+
+
+def test_served_profile_size_is_independent_of_history(history):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    before = history.stat().st_size
+    aggregate = ledger.ledger_path(PROJECT)
+    envelope = json.loads(aggregate.read_text())
+    envelope["data"]["runs"].extend(
+        _row(index, node={"brief": "x" * 2048}) for index in range(50, 550)
+    )
+    aggregate.write_text(json.dumps(envelope))
+    ledger._bump_generation(PROJECT)
+    profile = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    after = history.stat().st_size
+    print(f"served_profile_bytes={before}->{after}; rows={profile['rows']}")
+    assert profile["rows"] == 550
+    assert after <= before + 64, "served profile grew with individual run samples"
+    assert _fold_path(history).stat().st_size > 1_000_000
+    assert "fold_inputs" not in capabilities._read_pick_entry(history)["value"]
+
+
+def test_fold_samples_are_bounded_by_the_window_and_one_forward_day(history):
+    for index, completed in enumerate(
+        [NOW - timedelta(days=15), NOW + timedelta(hours=1), NOW + timedelta(days=2)],
+        start=50,
+    ):
+        ledger.append_run(PROJECT, _row(index, completed_at=completed.isoformat()))
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    entry = capabilities._read_pick_entry(_fold_path(history))
+    assert entry is not None
+    assert entry["key"] == capabilities._read_pick_entry(history)["key"]
+    rows = entry["value"]["rows"]
+    assert len(rows) == 51
+    assert {row["run_id"] for row in rows} & {"run-50", "run-51", "run-52"} == {
+        "run-51"
+    }
+
+
+@pytest.mark.parametrize("missing", ["absent", "generation", "projection"])
+def test_raw_file_fallback_is_not_a_cold_or_unusable_cache_route(
+    history, monkeypatch, missing
+):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    if missing == "absent":
+        history.unlink()
+    elif missing == "generation":
+        ledger.ledger_generation_path(PROJECT).unlink()
+    else:
+        monkeypatch.setattr(lane_context, "_indexed_profile_inputs", lambda *a: None)
+    load = Mock(wraps=ledger.load)
+    monkeypatch.setattr(ledger, "load", load)
+    assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 50
+    raw = [
+        call for call in load.call_args_list if call.kwargs.get("use_index") is False
+    ]
+    assert raw == []
+
+
+def test_profile_owner_accepts_supplied_rows_without_a_ledger_read(
+    history, monkeypatch
+):
+    expected = lane_context.run_time_profile(PROJECT, now=NOW)
+    rows = [
+        *ledger.runs(PROJECT),
+        _row(50, completed_at=(NOW - timedelta(days=15)).isoformat()),
+        _row(51, completed_at=(NOW + timedelta(days=1)).isoformat()),
+    ]
+    monkeypatch.setattr(ledger, "runs", Mock(side_effect=AssertionError("ledger read")))
+    actual = lane_context.run_time_profile(PROJECT, now=NOW, rows=rows)
+    assert actual == expected
+    ledger.runs.assert_not_called()
+
+
+@pytest.mark.parametrize("damage", ["stamp", "date", "missing"])
+def test_fold_inputs_must_match_the_served_stamp_and_date(history, monkeypatch, damage):
+    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    path = _fold_path(history)
+    if damage == "missing":
+        path.unlink()
+    else:
+        entry = json.loads(path.read_text())
+        if damage == "stamp":
+            entry["key"] = "unrelated-source"
+        else:
+            entry["value"]["date"] = (NOW - timedelta(days=1)).date().isoformat()
+        path.write_text(json.dumps(entry))
+    build = Mock(wraps=lane_context.run_time_profile)
+    monkeypatch.setattr(lane_context, "run_time_profile", build)
+    assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 50
+    assert build.call_count == 1
