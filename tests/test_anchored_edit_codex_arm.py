@@ -10,12 +10,15 @@ from __future__ import annotations
 
 import importlib
 import json
+import os
+import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
-from reckon import _backends
+import reckon.crew.dispatch_sessions as dispatch_sessions_module
+from reckon import _backends, capabilities, crew
 from reckon.crew import dispatch_launch, runs
 from reckon.crew.prompts import (
     ANCHORED_EDIT_HEADING,
@@ -311,8 +314,326 @@ def test_the_instruction_is_stated_only_for_an_enabled_codex_launch():
     )
 
 
-def test_dispatch_composes_through_the_instruction():
-    assert (
-        dispatch_module._with_anchored_edit_instruction
-        is with_anchored_edit_instruction
+PROJECT = "sample"
+PLAN = "plan-a"
+
+
+def _git(repository, *arguments):
+    return subprocess.run(
+        ["git", *arguments],
+        cwd=repository,
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.strip()
+
+
+@pytest.fixture
+def dispatch_case(tmp_path, monkeypatch):
+    """A throwaway mount, a stubbed fleet worktree, and two codex lanes.
+
+    ``treated`` carries the key; ``plain`` omits it, so one dispatch path is
+    shown to compose the instruction for the key's lane and not for the other.
+    """
+    home = tmp_path / "operator-home"
+    for name in (
+        ".claude",
+        ".codex",
+        ".ssh",
+        ".agents",
+        ".config/reckon",
+        ".config/git",
+        "public",
+        ".local/bin",
+    ):
+        (home / name).mkdir(parents=True, exist_ok=True)
+    for name in (".claude.json", ".gitconfig"):
+        (home / name).write_text("", encoding="utf-8")
+    (home / ".codex" / "config.toml").write_text(OPERATOR_CONFIG)
+    (home / ".codex" / "auth.json").write_text('{"token": "operator"}\n')
+    monkeypatch.setenv("HOME", str(home))
+
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    for name in ("codex", "claude", "clive"):
+        stub = bindir / name
+        stub.write_text("#!/bin/sh\nexec cat\n", encoding="utf-8")
+        stub.chmod(0o755)
+
+    def lane(anchored_edit):
+        settings = {
+            "launch": "cli",
+            "command": str(bindir / "codex"),
+            "sandbox": "worktree-full",
+            "time_budget": "25m",
+            "session_reuse": True,
+            "usable_input_window": 512_000,
+        }
+        if anchored_edit is not None:
+            settings["anchored_edit"] = anchored_edit
+        return settings
+
+    config = {
+        "default_backend": "treated",
+        "local_backend": "treated",
+        "backends": {
+            "treated": lane(True),
+            "plain": lane(None),
+        },
+        "roles": {"implement": {}},
+        "budget": {
+            "utilisation_ceiling_pct": 100,
+            "resume_reserve_pct": 5,
+            "exhausted_statuses": [],
+        },
+        "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+    }
+
+    root = tmp_path / "repo"
+    (root / "docs" / "plans").mkdir(parents=True)
+    (root / "docs" / "plans" / f"{PLAN}.html").write_text(
+        '<meta name="docs-project" content="sample">'
+        '<meta name="reckon-type" content="plan">'
+        f'<meta name="plan-slug" content="{PLAN}">'
+        '<h2 id="s5">A codex worker is steered to the anchored tool</h2>',
+        encoding="utf-8",
     )
+    (root / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for args in (
+        ("init", "-q", "-b", "main"),
+        ("config", "user.email", "worker@example.invalid"),
+        ("config", "user.name", "Worker"),
+        ("add", "seed.txt", f"docs/plans/{PLAN}.html"),
+        ("commit", "-q", "-m", "chore: seed"),
+    ):
+        _git(root, *args)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(root / "docs")}),
+        encoding="utf-8",
+    )
+    base_sha = _git(root, "rev-parse", "HEAD")
+
+    def prepare_worktree(_repo, session, node, base):
+        path = tmp_path / "worktrees" / f"{session}-{node}"
+        path.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            ["git", "worktree", "add", "--detach", "--force", str(path), base_sha],
+            cwd=root,
+            check=True,
+            capture_output=True,
+        )
+        return {"path": str(path), "base": base, "base_sha": base_sha}
+
+    monkeypatch.setattr(dispatch_module, "_create_worktree", prepare_worktree)
+    return config, root, config_home
+
+
+class _Recorder:
+    """Stands in for the spawn, recording the plan the launcher would run."""
+
+    def __init__(self):
+        self.argv = []
+        self.stdin_text = []
+
+    def __call__(self, plan, *, log_path, stderr_path, prompt_path):
+        self.argv.append([str(token) for token in plan.argv])
+        self.stdin_text.append(str(plan.stdin_text))
+        return os.getpid()
+
+
+def _node(config_home, run_id):
+    manifest = config_home / "manifests" / f"{run_id}.md"
+    manifest.parent.mkdir(parents=True, exist_ok=True)
+    return crew.TaskNode(
+        id="anchored-node",
+        goal="steer a codex worker to the anchored tool",
+        plan=PLAN,
+        section="§5",
+        done_when="tests/test_anchored_edit_codex_arm.py passes",
+        write_paths=["allowed.txt"],
+        time_budget="25m",
+        manifest_path=str(manifest),
+        spec_level="guided",
+        role="implement",
+    )
+
+
+@pytest.mark.parametrize(
+    ("lane", "stated"),
+    [
+        (
+            "treated",
+            True,
+        ),
+        ("plain", False),
+    ],
+)
+def test_dispatch_composes_the_instruction_for_the_keys_lane_only(
+    dispatch_case, lane, stated
+):
+    """The instruction is asserted on the prompt file the worker is fed.
+
+    An identity check on the composing function says only that dispatch calls
+    it; it cannot see whether the resolved backend reached it, so a lane whose
+    key is false would still pass.
+    """
+    config, repo, config_home = dispatch_case
+    recorder = _Recorder()
+    record = dispatch_module.dispatch(
+        node=_node(config_home, f"anchored-{lane}"),
+        project=PROJECT,
+        repo=repo,
+        config=config,
+        session=f"anchored-{lane}",
+        check_budget=False,
+        backend_override=lane,
+        launcher=recorder,
+    )
+    handed = (crew.run_dir(record["run_id"]) / "prompt.txt").read_text(encoding="utf-8")
+    assert (ANCHORED_EDIT_HEADING in handed) is stated, handed
+    assert (ANCHORED_EDIT_INSTRUCTION in handed) is stated
+    # The plan travels on argv's stdin, so the steered text has to be in it too.
+    assert (ANCHORED_EDIT_HEADING in recorder.stdin_text[0]) is stated
+
+
+def test_an_anchored_edit_is_a_write_only_when_it_landed():
+    """capabilities counts the anchored tool's edits when it measures time to
+    first write; a refused call wrote nothing and must not cut the figure."""
+    completed = {
+        "item": {
+            "id": "item_1",
+            "type": "mcp_tool_call",
+            "server": "anchored",
+            "tool": "edit_anchored",
+            "arguments": {"path": "stats.py"},
+            "status": "completed",
+            "error": None,
+        }
+    }
+    assert capabilities._event_write_targets(completed) == ("stats.py",)
+
+    refused = {
+        "item": {
+            "id": "item_2",
+            "type": "mcp_tool_call",
+            "server": "anchored",
+            "tool": "edit_anchored",
+            "arguments": {"path": "stats.py"},
+            "status": "completed",
+            "result": {"structured_content": {"result": "refused: nothing written"}},
+        }
+    }
+    assert capabilities._event_write_targets(refused) == ()
+
+    failed = {
+        "item": {
+            "id": "item_3",
+            "type": "mcp_tool_call",
+            "server": "anchored",
+            "tool": "edit_anchored",
+            "arguments": {"path": "stats.py"},
+            "status": "failed",
+        }
+    }
+    assert capabilities._event_write_targets(failed) == ()
+
+    # A read is not a write, and neither is a call to another server.
+    read = {
+        "item": {
+            "id": "item_4",
+            "type": "mcp_tool_call",
+            "server": "anchored",
+            "tool": "read_anchored",
+            "arguments": {"path": "stats.py"},
+            "status": "completed",
+        }
+    }
+    assert capabilities._event_write_targets(read) == ()
+    foreign = {
+        "item": {
+            "id": "item_5",
+            "type": "mcp_tool_call",
+            "server": "other",
+            "tool": "edit_anchored",
+            "arguments": {"path": "stats.py"},
+            "status": "completed",
+        }
+    }
+    assert capabilities._event_write_targets(foreign) == ()
+
+
+def test_the_anchored_counts_reach_the_run_pointer(tmp_path, monkeypatch):
+    """The run store is what a later comparison reads, so the counts must be
+    carried onto the pointer rather than only into the observation dict."""
+    config_home = tmp_path / "config"
+    config_home.mkdir()
+    monkeypatch.setenv("RECKON_HOME", str(config_home))
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    stub = bindir / "codex"
+    stub.write_text("#!/bin/sh\nexec cat\n", encoding="utf-8")
+    stub.chmod(0o755)
+    config = {
+        "default_backend": "codex",
+        "backends": {
+            "codex": {
+                "launch": "cli",
+                "command": str(stub),
+                "sandbox": "worktree-full",
+                "time_budget": "25m",
+            }
+        },
+        "roles": {"implement": {}},
+        "budget": {
+            "utilisation_ceiling_pct": 100,
+            "resume_reserve_pct": 5,
+            "exhausted_statuses": [],
+        },
+        "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+    }
+    run_id = "r-anchored-counts"
+    directory = crew.run_dir(run_id)
+    directory.mkdir(parents=True)
+    stream = directory / "stream.jsonl"
+    stream.write_text(FIXTURE.read_text(encoding="utf-8"), encoding="utf-8")
+    manifest = directory / "manifest.md"
+    manifest.write_text("node: anchored\nstatus: complete\n", encoding="utf-8")
+    pointer = {
+        "run_id": run_id,
+        "project": PROJECT,
+        "repo": str(tmp_path),
+        "worktree": str(tmp_path),
+        "launch": "cli",
+        "backend": "codex",
+        "dialect": "codex",
+        "role": "implement",
+        "pid": None,
+        "pid_start_time": None,
+        "session_id": "thread-1",
+        "session_harness": "codex",
+        "attempt": 1,
+        "base_sha": "HEAD",
+        "log_path": str(stream),
+        "manifest_path": str(manifest),
+        "phase": "working",
+        "agent": {"dialect": "codex", "model": "codex-model"},
+        "node": {"id": "anchored", "plan": PLAN, "section": "§5"},
+    }
+    crew._write_json(crew.pointer_path(run_id), pointer)
+
+    dispatch_sessions_module.observe(run_id, config=config)
+
+    stored = json.loads(crew.pointer_path(run_id).read_text(encoding="utf-8"))
+    assert stored["tools"] == {
+        "anchored": {
+            "calls": 4,
+            "read_anchored": 1,
+            "edit_anchored": 3,
+            "failed": 1,
+        },
+        "file_change": {"items": 0},
+    }

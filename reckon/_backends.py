@@ -1354,29 +1354,28 @@ ANCHORED_EDIT_SERVER = "anchored"
 ANCHORED_EDIT_TOOLS = ("read_anchored", "edit_anchored")
 
 
-def _count_anchored_tool_items(counts: dict[str, int], item: Mapping[str, Any]) -> bool:
+def _count_anchored_tool_items(counts: dict[str, int], item: Mapping[str, Any]) -> None:
     """Fold one codex stream item into the anchored-edit tool counters.
 
-    Returns whether the item was one of the two shapes counted here, so the
-    caller can leave every other item type alone. Calls are counted from the
-    completed item only: codex emits a ``started`` and a ``completed`` record
-    for the same call, and counting both would double every call.
+    Two shapes are counted: the harness's own ``file_change`` items, and calls
+    to the anchored server. Everything else moves nothing. A call is counted
+    from its completed record only — codex emits a ``started`` record for the
+    same call before it runs, and counting both would double every call.
     """
     item_type = item.get("type")
     if item_type == "file_change":
         counts["file_change_items"] = counts.get("file_change_items", 0) + 1
-        return True
+        return
     if item_type != "mcp_tool_call":
-        return False
+        return
     if str(item.get("server") or "") != ANCHORED_EDIT_SERVER:
-        return False
+        return
     counts["anchored_calls"] = counts.get("anchored_calls", 0) + 1
     tool = str(item.get("tool") or "")
     if tool in ANCHORED_EDIT_TOOLS:
         counts[tool] = counts.get(tool, 0) + 1
     if str(item.get("status") or "") == "failed" or item.get("error"):
         counts["anchored_failed"] = counts.get("anchored_failed", 0) + 1
-    return True
 
 
 class _CodexDialect(Dialect):
