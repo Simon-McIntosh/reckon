@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_launch_queued",
+    "reckon/crew/recovery_watch.py:format_watch_transition",
+    "reckon/crew/ticker.py:RowPolicy.feed"
+  ],
+  "completed_at": "2026-11-11T18:03:00.207Z",
+  "dispatched_at": "2026-11-11T17:46:32Z",
+  "emission": [
+    "VERDICT goal: the goal is that the admit pass writes one row of its own kind to the submitting session's watch stream as it launches; reckon/crew/queue_admission.py:497 calls _announce_submission on the launched-record branch and reckon/crew/watch_unit.py:452 builds the row naming run, plan, section, lane, model, advice and the crew tell command.",
+    "VERDICT done_when: tests/test_a_session_is_told_when_its_work_is_submitted.py carries the four arms and the negative control, 82 passed EXIT=0 at 5231455b83 against 77 passed EXIT=0 at 8ed04a011d is recorded and the red log reads 3 failed, 79 passed, EXIT=1; the ruff clause is unmeasured and does not hold.",
+    "VERDICT write_paths: read the manifest's declared paths; all six changed paths are inside them, with ticker.py and its pane arm granted after first being recorded out of scope.",
+    "VERDICT manifest: read; it reports complete status, both arms, the negative control and four rubric lines, and its ruff claim is contradicted by the measured delta.",
+    "VERDICT diff: read five commits against 8ed04a011d; 582 added lines over six files, all additive and in scope.",
+    "CALL_SITES: reckon/crew/queue_admission.py:_launch_queued, reckon/crew/recovery_watch.py:format_watch_transition, reckon/crew/ticker.py:RowPolicy.feed",
+    "SCORE goal_fidelity: 19",
+    "JUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:497 writes only where the launch returned an accepted record, and reckon/crew/watch_unit.py:452 takes the advice from the steering file the worker is launched with.",
+    "SCORE evidence: 12",
+    "JUSTIFICATION evidence: the suite pair and the red negative control are recorded and real, while the ruff clause at docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:19 cites no command or log and is false.",
+    "SCORE scope_discipline: 19",
+    "JUSTIFICATION scope_discipline: every changed path is inside the manifest's declared write paths and no plan file or shared index is touched.",
+    "SCORE durability: 17",
+    "JUSTIFICATION durability: tests/test_a_session_is_told_when_its_work_is_submitted.py:223 fails when the write is removed and tests/test_crew_ticker.py:1144 fails when the pane clause is removed, but the comment-fallback advice is unasserted.",
+    "SCORE fit: 18",
+    "JUSTIFICATION fit: reckon/crew/watch_unit.py:510 mirrors the adjacent announce_seat_moved writer's best-effort shape and the module's existing cycle-avoiding local import.",
+    "SCORE reuse: 13",
+    "JUSTIFICATION reuse: reckon/crew/watch_unit.py:526 reuses runs._append_watch_lines rather than forking a writer, but reckon/crew/ticker.py:3437 copies the layout of _reset_line and _lift_line with no shared helper.",
+    "FINDING tests/test_a_session_is_told_when_its_work_is_submitted.py:13 blocking: I001 is added by the node (7 findings at base, 8 at head) which makes the done_when's ruff clause and the fragment's clean-ruff statement false.",
+    "FINDING reckon/crew/ticker.py:3437 non-blocking: _submission_line duplicates the notice-line layout of _reset_line (3391) and _lift_line (3481) instead of sharing a helper.",
+    "FINDING reckon/crew/ticker.py:2159 non-blocking: the submission row records nothing in the pane's per-run memory, so a launch line for the same start can still print at ticker.py:1828 and the two lines are unlinked."
+  ],
+  "findings": [
+    {
+      "file": "tests/test_a_session_is_told_when_its_work_is_submitted.py",
+      "line": 13,
+      "severity": "blocking",
+      "text": "I001 import block is un-sorted: measured with the repo's ruff configuration, 8ed04a011d reports 7 I001 findings across the touched modules and 93e51942c7 reports 8, the eighth being this new file at line 13, so the node adds a finding and the done_when's 'ruff check adds no findings on the staged paths' clause and the fragment's claim that ruff is clean are false; ruff format --check is clean."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 3437,
+      "severity": "non-blocking",
+      "text": "_submission_line repeats the cell layout of _reset_line (3391) and _lift_line (3481) almost verbatim - clock, stage, job cell, elided clause, spend, stats, shadow paint - so a third notice renderer now carries a layout that a single helper parameterised by stage, job and clause would own."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": 2159,
+      "severity": "non-blocking",
+      "text": "RowPolicy.feed delivers the submission row without recording anything in the pane's per-run memory, so the launch branch at ticker.py:1828 can still release a launch line for the same run's first working transition; a session may see two lines for one submission and nothing links them."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_session_is_told_when_its_work_is_submitted.py:223 fails with len(rows) != 2 when the write is removed, and tests/test_crew_ticker.py:1144 fails when the pane clause is removed, but the comment-fallback advice and the refused-launch branch are unasserted.",
+    "evidence": "tests/test_a_session_is_told_when_its_work_is_submitted.py:210 shows the two-row case and negative-control.log shows the same assertion red with the write removed, but the done_when's ruff clause is claimed at docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:19 with no command or log and one finding is in fact added.",
+    "fit": "reckon/crew/watch_unit.py:510 mirrors the adjacent announce_seat_moved writer's try/except best-effort shape and the function-local import the module already uses to avoid a cycle.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:497 writes the row only where the launch returned a record it accepted, and reckon/crew/watch_unit.py:452 resolves the advice from the steering file the worker is launched with, so the row states what actually started.",
+    "reuse": "reckon/crew/watch_unit.py:526 reuses runs._append_watch_lines and announce_seat_moved's pattern rather than forking a stream writer, but reckon/crew/ticker.py:3437 copies the cell layout of _reset_line (3391) and _lift_line (3481) without a shared helper.",
+    "scope_discipline": "All six changed paths sit inside the manifest's declared write paths and no plan file or shared index is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T173926746856-review-of-session-told-of-submission-93e51942c74a",
+  "reviewed_base_sha": "8ed04a011d0c1d3b10ab32efb4e500982beda480",
+  "reviewed_head_sha": "93e51942c74a4917af2a879ae5eee9f239958b25",
+  "reviewed_run_id": "r-20261111T154613158051-session-told-of-submission",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:32:08.789131+00:00",
+  "total": 98,
+  "verdicts": {
+    "diff": "Read commit by commit (b1f3890a4d, 6f3721b1a7, 8f67a58358, 5231455b83, 93e51942c7) against 8ed04a011d: 582 added lines over six files, all additive, all inside the declared scope.",
+    "done_when": "Done_when names tests/test_a_session_is_told_when_its_work_is_submitted.py with four arms and a negative control; the manifest records 82 passed EXIT=0 at 5231455b83 against 77 passed EXIT=0 at 8ed04a011d, and I read both logs and the red negative-control log myself (3 failed, 79 passed, EXIT=1, led by assert 0 == 2); its ruff clause is asserted in the fragment with no log and does not hold.",
+    "goal": "The node's goal is that the admit pass writes one row of its own kind to the submitting session's watch stream as it launches; reckon/crew/queue_admission.py:497 calls _announce_submission on the branch where _require_launched_record accepted the record, and reckon/crew/watch_unit.py:452 builds the row naming run, plan, section, lane, model, advice and the crew tell command.",
+    "manifest": "Read; it records status complete, both arms with their revisions and EXIT lines, the negative control at the delivered head, and four rubric lines; its statement that ruff reports no findings on the committed paths is the one claim the diff does not support.",
+    "write_paths": "Every path in the diff - reckon/crew/queue_admission.py, reckon/crew/watch_unit.py, reckon/crew/ticker.py, tests/test_a_session_is_told_when_its_work_is_submitted.py, tests/test_crew_ticker.py and docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html - lies inside the manifest's declared write paths; the ticker and its pane arm were granted after the node first recorded them out of scope, which the manifest states."
+  }
+}
