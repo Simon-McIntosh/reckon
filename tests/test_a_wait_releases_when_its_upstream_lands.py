@@ -145,8 +145,10 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     assert Path(resolved).resolve() == repository.resolve(), (
         f"the guard resolves {resolved}, not the fixture checkout {repository}"
     )
-    assert Path(ledger.ledger_path(PROJECT)).resolve().is_relative_to(
-        config_home.resolve()
+    assert (
+        Path(ledger.ledger_path(PROJECT))
+        .resolve()
+        .is_relative_to(config_home.resolve())
     ), (
         f"the ledger the fixture writes and the guard reads is "
         f"{ledger.ledger_path(PROJECT)}, outside the fixture's config home; a "
@@ -295,9 +297,9 @@ def test_a_delivered_unlanded_run_holds_the_wait_until_merged_into_head(
     # decides, rather than as a phase further down.
     rows, _version = ledger.load(PROJECT)
     assert rows["runs"], "the promotion wrote a row the guard can read"
-    assert queue_admission._section_run_unlanded(
-        PROJECT, PLAN, UPSTREAM, live=[]
-    ), "the guard holds the wait from the ledger alone"
+    assert queue_admission._section_run_unlanded(PROJECT, PLAN, UPSTREAM, live=[]), (
+        "the guard holds the wait from the ledger alone"
+    )
     _release()
     assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
         "a promotion without the merge leaves the waiter waiting"
@@ -318,6 +320,37 @@ def test_a_delivered_unlanded_run_holds_the_wait_until_merged_into_head(
     assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE, (
         "the waiter is released once the upstream's head is in HEAD"
     )
+
+
+def test_a_ledger_index_built_before_the_promotion_still_holds_the_wait(
+    queue_repo: Path,
+) -> None:
+    """A warm index is refreshed by the write, so it cannot outvote the ledger."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    delivered = _deliver(queue_repo)
+
+    # Warm the index while it holds no promotion for this section, so the read
+    # the guard makes after the promotion is answered from an index that was
+    # built while the section was still unlanded.
+    before, _version = ledger.load(PROJECT, use_index=True)
+    assert not [row for row in before["runs"] if row.get("promoted_revision")], (
+        "the warm index carries no promotion yet"
+    )
+
+    _promote(delivered)
+
+    after, _version = ledger.load(PROJECT, use_index=True)
+    assert [
+        row["promoted_revision"]
+        for row in after["runs"]
+        if row.get("promoted_revision")
+    ], "the promotion is visible through the index it warmed"
+    assert queue_admission._section_run_unlanded(PROJECT, PLAN, UPSTREAM, live=[]), (
+        "a warm index built before the promotion does not release the wait"
+    )
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE
 
 
 def test_a_discarded_delivered_run_releases_the_wait(queue_repo: Path) -> None:

@@ -56,17 +56,22 @@
   cannot find. The unregistered-checkout hold applies only once a run of the
   section exists, so the release of the no-run case above is unchanged.
 
-  <p><strong>The ledger is read, not its index.</strong> The rows are taken
-  from <code>ledger.load(project, use_index=False)</code>, the same route the
-  drain's own derivation takes. The index is a cache of an earlier moment: a run
-  promoted after it was built is absent from it, and a read that consults it
-  answers as though nothing had been promoted — releasing the waiter. Reading
-  the run documents directly makes the answer a property of the ledger alone
-  rather than of a cache's vintage.
+  <p><strong>The index was checked, not assumed.</strong> A warm index is keyed
+  on the project's write generation, which every ledger write path bumps, so a
+  read made after a promotion is answered by an index that already carries it.
+  A case warms the index while the section is still unlanded, promotes,
+  then asserts that the index now carries the promoted revision and that the
+  guard still holds — so an index built before the promotion cannot be what
+  releases the wait. Flipping the read to <code>use_index=False</code> leaves
+  every case green, which is what established that <em>the index was not the
+  cause</em> of the failure reported against a clean tree; the read therefore
+  stays indexed, which is also the cheaper of the two.
 
   <p><strong>Cost.</strong> The ledger rows are read once per project per pass
-  and kept in the readiness cache beside the plan rows, so a release tick pays
-  one ledger read rather than one per waiting request.
+  and kept in the readiness cache beside the plan rows, and the drain's own
+  derivation — which reads the ledger itself — has its answer kept for the pass
+  too, so a release tick pays one read and one derivation rather than one of
+  each per waiting request.
   </section>
 
   <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-measure">
@@ -90,7 +95,10 @@
   waiter released. The third makes the ledger unreadable once its run has
   delivered and shows the waiter held. The fourth removes the project's
   registration and shows the waiter held. The fifth declares a section done
-  with no run at all and shows the waiter released at once.
+  with no run at all and shows the waiter released at once. The sixth warms the
+  ledger's index before the promotion and shows the waiter held after it,
+  because the write moved the generation the index is keyed on and the index
+  therefore carries the promotion rather than a view of the moment it was built.
 
   <p><strong>The test owns everything it reads.</strong> Three inputs resolve
   outside the fixture's temporary repository, and each one is pinned and then

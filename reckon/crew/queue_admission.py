@@ -3353,16 +3353,22 @@ def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
 #: paying a ledger read per request.
 _SECTION_RUNS_CACHE_KEY = "section-runs"
 
+#: The readiness cache key under which one pass keeps the drain's answer for a
+#: section. The derivation reads the project's ledger on its own, so without a
+#: per-pass answer every request waiting on the section would pay for it again.
+_UNLOADED_CACHE_KEY = "section-unloaded"
+
 
 def _ledger_run_rows(
     project: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
     """One project's committed run rows, or ``None`` when they cannot be read.
 
-    The rows are read straight from the ledger rather than through its index,
-    which is a cache of an earlier moment: a run promoted since the index was
-    built is absent from it, and a section whose promotion is the record being
-    asked about would answer as though nothing had been promoted.
+    The index is keyed on the project's write generation, which every ledger
+    write path bumps, so a promotion recorded before this read is in the index
+    this read gets back rather than only in the documents behind it. Reading
+    through it is therefore both current and cheaper than walking the project's
+    run documents on every pass.
     """
     from reckon import ledger
 
@@ -3370,7 +3376,7 @@ def _ledger_run_rows(
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project, use_index=False)
+        data, _version = ledger.load(project)
         rows: list[Mapping[str, Any]] | None = [
             row for row in data.get("runs") or () if isinstance(row, Mapping)
         ]
@@ -3461,12 +3467,19 @@ def _section_run_unlanded(
         # so in production this is the branch that answers. The landed state of
         # a promoted run is the queue's own: the drain names declared work with
         # no live request and no reachable promotion, so a section it does not
-        # name has landed and one it does name is still waiting.
-        unloaded = runs_module._unloaded_sections(
-            project,
-            live,
-            [(slug, {"section_declarations": {section: "implementable"}})],
-        )
+        # name has landed and one it does name is still waiting. The derivation
+        # reads the project's ledger itself, so its answer is kept for the pass
+        # rather than recomputed for every request waiting on the same section.
+        key = (_UNLOADED_CACHE_KEY, project, slug, wanted)
+        unloaded = cache.get(key) if cache is not None else None
+        if unloaded is None:
+            unloaded = runs_module._unloaded_sections(
+                project,
+                live,
+                [(slug, {"section_declarations": {section: "implementable"}})],
+            )
+            if cache is not None:
+                cache[key] = unloaded
         if any(section_record_id(name) == wanted for name in unloaded.get(slug) or ()):
             return True
 
