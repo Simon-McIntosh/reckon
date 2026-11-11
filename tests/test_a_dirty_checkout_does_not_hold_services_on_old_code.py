@@ -272,3 +272,74 @@ def test_a_stamp_the_supervisor_cannot_compare_is_reported_not_adopted(
     assert "already running as pid" not in output, (
         "the supervisor reported an uncompared copy as adopted"
     )
+
+
+def test_a_prune_after_the_restart_keeps_the_replacements_image(
+    home, monkeypatch
+) -> None:
+    """The replacement's image survives a prune taken while it is running.
+
+    A published image ranks past the retention the moment newer commits are
+    published, so a copy started from one holds its lease for its own life. The
+    prune here is the real one: four more identities are published after the
+    restart, the way a fleet that reloads on every landing publishes them.
+    """
+    repo = _make_checkout(home.tmp_path)
+    first = _stamp(repo)
+    table = _install(monkeypatch, repo)
+    old_pid = table.add_copy(first)
+    _seed_record(home, old_pid, first)
+    _move_main(repo)
+    (repo / "reckon" / "demo.py").write_text(
+        "VERSION = 'uncommitted-edit'\n", encoding="utf-8"
+    )
+
+    _manager(home, repo).reload()
+
+    image = Path(table.started[0][2]["PYTHONPATH"].split(os.pathsep)[0])
+    assert image.is_dir(), "the replacement was not started from a published image"
+
+    for step in range(4):
+        (repo / "reckon" / "demo.py").write_text(
+            f"VERSION = 'later-{step}'\n", encoding="utf-8"
+        )
+        _git(repo, "add", "reckon/demo.py")
+        _git(repo, "commit", "-q", "-m", f"later {step}")
+        time.sleep(0.02)
+        _target, _removed, _kept, pin = checkout_trust.materialize_committed_tree(
+            repo, _stamp(repo)
+        )
+        os.close(pin)
+
+    assert image.is_dir(), (
+        "a prune removed the image the replacement imports, so the running copy "
+        "loses its code"
+    )
+    assert (image / "reckon" / "demo.py").is_file(), (
+        "the replacement's module was removed with its image"
+    )
+
+
+def test_a_dirty_tree_after_a_moved_head_asks_for_a_service_reload() -> None:
+    """The request loop's duty is chosen from the verdict and the working tree."""
+    moved_untrusted = SimpleNamespace(
+        moved=True, trusted=False, detail="tracked files differ from HEAD"
+    )
+    moved_trusted = SimpleNamespace(moved=True, trusted=True, detail="")
+    unmoved = SimpleNamespace(moved=False, trusted=False, detail="")
+
+    assert (
+        fleet_supervisor.moved_checkout_action(moved_untrusted, tree_dirty=True)
+        == "service-reload"
+    ), "a dirty tree after a moved head does not ask for a service reload"
+    assert (
+        fleet_supervisor.moved_checkout_action(moved_untrusted, tree_dirty=False)
+        == "leave"
+    ), "a head whose committed tree cannot load was asked to restart services"
+    assert (
+        fleet_supervisor.moved_checkout_action(moved_trusted, tree_dirty=False)
+        == "reexec"
+    ), "a loadable moved checkout does not re-execute"
+    assert fleet_supervisor.moved_checkout_action(unmoved, tree_dirty=True) == "none", (
+        "an unmoved checkout asked for an action"
+    )

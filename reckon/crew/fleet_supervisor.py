@@ -1386,6 +1386,26 @@ def _stamp_or_unknown(read: Callable[[], str]) -> str:
         return checkout_trust.IDENTITY_UNKNOWN
 
 
+def _pin_image(image: Path | None) -> int | None:
+    """Lease a published image for the life of the copy that imports it.
+
+    A published image is prunable once it ranks past the newest few unless a
+    reader holds its lease, so a copy started from one takes the lease itself.
+    A lease that cannot be taken is reported and the copy is still started: it
+    runs now, and a prune that removes the tree afterwards is the failure the
+    report names rather than a start that silently never happened.
+    """
+    if image is None:
+        return None
+    from reckon import checkout_trust
+
+    try:
+        return checkout_trust.pin_materialized_tree(image)
+    except (OSError, RuntimeError) as exc:
+        log(f"could not lease published image {image}: {exc}")
+        return None
+
+
 class DeclaredServices:
     """The services a user config declares, run as children of the batch step.
 
@@ -1600,12 +1620,17 @@ class DeclaredServices:
                         # refused, and a lease-holding service would wait out
                         # the stale window for nothing.
                         replacement_argv = list(state.argv)
+                        start_image = state.start_image
                         self._stop_locked(name)
                         replacement = self._states.setdefault(
                             name, _ServiceState(argv=replacement_argv)
                         )
-                        replacement.start_image = state.start_image
-                        replacement.image_pin = state.image_pin
+                        # The stop gave up the image's lease along with the
+                        # state, so the replacement takes a fresh one: without
+                        # it a prune on this node would rank the image old and
+                        # remove the code the new copy is about to import.
+                        replacement.start_image = start_image
+                        replacement.image_pin = _pin_image(start_image)
                         self._start_or_backoff_locked(name, replacement_argv)
                         continue
                     state.pid = pid
@@ -2356,6 +2381,25 @@ def _source_code_stamp() -> str:
     return checkout_trust.source_code_identity(_checkout_root() / "reckon")
 
 
+def moved_checkout_action(verdict: Any, *, tree_dirty: bool) -> str:
+    """What a moved committed head asks of this image and its services.
+
+    A loadable tree is re-executed onto. A tree this image may not load still
+    leaves a duty when the only thing wrong with it is the working tree's
+    uncommitted edits: those edits are not the committed head, so the declared
+    services can be restarted from a published image of the same head while
+    this image keeps running. Any other refusal leaves everything as it is,
+    because the committed tree itself is what could not be loaded.
+    """
+    if not getattr(verdict, "moved", False):
+        return "none"
+    if getattr(verdict, "trusted", False):
+        return "reexec"
+    if tree_dirty:
+        return "service-reload"
+    return "leave"
+
+
 def _moved_checkout(running_stamp: str) -> served_code.MovedCheckout:
     """Whether the checkout's code moved off this image, and whether it may load.
 
@@ -2710,7 +2754,8 @@ def serve(
                 # moving -- dirt discarded, or an import probe that timed out.
                 tested_at = clock()
                 verdict = moved_checkout(recorded_stamp)
-                if verdict.moved and verdict.trusted:
+                action = moved_checkout_action(verdict, tree_dirty=tree_dirty())
+                if action == "reexec":
                     # The checkout carries code this image does not, and it may
                     # be run: replace the image in place through the same path a
                     # manual ``reload`` takes, so the declared services it
@@ -2722,7 +2767,7 @@ def serve(
                     )
                     recorded_stamp = current_stamp
                     _reexec(exec_, standby=is_standby)
-                elif verdict.moved and tree_dirty():
+                elif action == "service-reload":
                     # The committed head carries code this image does not, and
                     # the working tree holds edits that are not that code. This
                     # image cannot be replaced in place without importing the
@@ -2738,7 +2783,7 @@ def serve(
                             "restarted from the committed tree"
                         )
                     services.reload()
-                elif verdict.moved:
+                elif action == "leave":
                     # The checkout carries code this image does not and may not
                     # be loaded, so neither this image nor a declared service it
                     # runs is replaced: the refusal is recorded with its reason,
