@@ -1,0 +1,38 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T07:06:51.772Z",
+  "dispatched_at": "2026-11-11T07:00:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "4086",
+      "severity": "non-blocking",
+      "text": "the cited logs/negative-control.log was written at 05:18 local against the pre-refactor source, before c1879d05ec at 06:41 changed the code the control is meant to falsify; the control is still sound in shape because the refactor only deleted a dead union, but no log proves it fires on the source that now ships."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html",
+      "line": "10",
+      "severity": "non-blocking",
+      "text": "the landing record says _rederive_waits takes the request's own refs from node.after, which after c1879d05ec is true only of derive_wait_refs; a reader checking _rederive_waits finds no such line, so the sentence should name the function that builds the refs."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to make _rederive_waits keep a stored run wait only when the request named it through its own after; at 65441cf7fb reckon/crew/queue_admission.py:4092 compares section_waits_for against derive_wait_refs' result alone, and the redundant own set the previous review flagged (queue_admission.py:4092 before c1879d05ec) is gone, so the delta is exactly the reuse repair that was folded into this node.\nVERDICT done_when: the repair brief requires the three-case test to keep passing and after_suite to be re-recorded at the new head; logs/suite-after.log at 65441cf7fb ends `2 failed, 68 passed` EXIT=1 against logs/suite-baseline.log `4 failed, 66 passed` EXIT=1 at d98e22fb19, the two survivors are the same two ids in both arms, the three cases pass, ruff.log reads check_exit=0 format_exit=0 EXIT=0, and every log header names its revision and literal command.\nVERDICT write_paths: the original grant was reckon/crew/queue_admission.py and tests/test_a_dropped_request_strands_no_waiter.py; resume-2-advice.txt explicitly widens it to tests/test_a_queued_launch_keeps_the_run_record.py and tests/test_queue_landing.py, and git diff --stat 6b9af653a3..65441cf7fb changes exactly those two test files, reckon/crew/queue_admission.py and the landing fragment, so every changed path is inside the grant.\nVERDICT manifest: read manifest.md at the reviewed run; it records status complete, the five commits, the widened literal armed command, baseline_suite 4 failed with four ids and after_suite 2 failed with two ids, the negative-control log path, and a rubric line per dimension.\nVERDICT diff: read commit by commit from 6b9af653a3 to 65441cf7fb \u2014 c1879d05ec deletes the own comprehension and the union in _rederive_waits and rewrites the comment at queue_admission.py:4086-4091, 0e4743feb3 and 65441cf7fb extend the landing fragment with the importer delta and the three repaired fixtures, and 1f0ba4e796 adds one `node[\"after\"]` line to each of three fixtures (test_a_queued_launch_keeps_the_run_record.py:339,:376 and test_queue_landing.py:179).\nCALL_SITES: reckon/crew/queue_admission.py:_advance_waiting_requests, reckon/crew/queue_admission.py:advance_waiting_requests, reckon/crew/queue_admission.py:admit_once, reckon/crew/queue_admission.py:admit_until_stopped, reckon/crew_run_commands.py:4637\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:4092 now treats derive_wait_refs' result as the whole of a request's waits, which is the plan's deliverable and exactly the deletion the earlier review asked for.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/suite-baseline.log `4 failed, 66 passed` and logs/suite-after.log `2 failed, 68 passed` reconcile with the manifest, and I re-derived the importer claim from logs/importers-{baseline,after}-s*.log as 116 distinct ids in each arm with an identical set, though logs/negative-control.log is stamped 05:18 local and so predates c1879d05ec at 06:41.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6b9af653a3..65441cf7fb names four paths and every one is inside the widened grant recorded in resume-2-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_dropped_request_strands_no_waiter.py cases 1 and 2 redden when the stored-ref set is restored as the request's own (logs/negative-control.log), and the three repaired fixtures assert literal expectations at test_a_queued_launch_keeps_the_run_record.py:361 and test_queue_landing.py:223 rather than values they passed in.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/queue_admission.py:4086-4091 states the mechanism in the surrounding comment style, introduces no new symbol and carries no plan, sprint or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change deletes the duplicate and calls derive_wait_refs (reckon/crew/queue_admission.py:2712) directly, which builds the own run: refs from node.after on both its return paths, so the owner is extended by use rather than forked.\nFINDING reckon/crew/queue_admission.py:4086 non-blocking: the cited logs/negative-control.log was written at 05:18 local against the pre-refactor source, before c1879d05ec at 06:41 changed the code the control is meant to falsify, and the fragment at docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html restates the control as `own = {ref for ref in stored if ref.startswith(REQUEST_REF_PREFIX)}`; the control is still sound in shape because the refactor only deleted a dead union, but no log proves it fires on the source that now ships.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/keep-only-named-run-waits.html:10 non-blocking: the landing record still says _rederive_waits now takes the request's own refs from node.after, which after c1879d05ec is true only of derive_wait_refs; a reader checking _rederive_waits at reckon/crew/queue_admission.py:4041 finds no such line, so the sentence should name the function that actually builds the refs.\n",
+  "review_run_id": "r-20261111T065710551619-review-of-keep-only-named-run-waits-65441cf7fb3a",
+  "reviewed_base_sha": "6b9af653a307a6beb68589b9c463adc7209efca9",
+  "reviewed_head_sha": "65441cf7fb3a9505b28ea59de73c6890f2e61734",
+  "reviewed_run_id": "r-20261108T184647471418-keep-only-named-run-waits",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:18:38.374569+00:00",
+  "total": 114
+}
