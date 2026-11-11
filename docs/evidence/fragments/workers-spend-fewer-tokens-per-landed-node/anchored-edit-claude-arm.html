@@ -1,0 +1,82 @@
+<section id="anchored-edit-claude-arm-landing">
+  <h2>A worker records whether anchored editing actually ran</h2>
+  <p>The per-backend <code>anchored_edit</code> flight key defaults off. A fresh,
+    fenced Claude-shaped launch with resolved flight configuration and no
+    existing run settings registers <code>reckon-anchored-edit</code> in its own
+    <code>.claude.json</code>. The server receives one repeated
+    <code>--root</code> argument per writable delivery root and includes the
+    detached worktree that the fence grants separately. Its command uses the
+    launching Python interpreter with <code>-m reckon.anchored_edit</code>, so
+    server startup does not depend on the worker's search path or a separately
+    installed console script. A smoke test executes the registered command.</p>
+  <p>The seeded settings allow
+    <code>mcp__reckon-anchored-edit__read_anchored</code> and
+    <code>mcp__reckon-anchored-edit__edit_anchored</code>, preserve the operator's
+    existing hooks and servers, and leave the operator's source files untouched.
+    Only successful registration enables the argv restriction
+    <code>--disallowedTools Edit MultiEdit</code>. The built-in
+    <code>Write</code> remains available.</p>
+  <table id="anchored-edit-claude-arm-launches">
+    <caption>Both <code>claude</code> and <code>clive</code> use the same launch rule.</caption>
+    <thead><tr><th>Launch</th><th>Recorded anchored_edit</th><th>Reason</th><th>Built-in edits</th></tr></thead>
+    <tbody>
+      <tr><td>Key false or absent</td><td>false</td><td>disabled</td><td>Available; seeded settings and argv preserve the base bytes</td></tr>
+      <tr><td>Key true, fresh fenced home</td><td>true</td><td>None</td><td>Edit and MultiEdit disallowed</td></tr>
+      <tr><td>Key true, unfenced</td><td>false</td><td>unfenced</td><td>Available</td></tr>
+      <tr><td>Key true, resumed</td><td>false</td><td>resumed</td><td>Available; existing run settings preserved</td></tr>
+      <tr><td>Key true, existing run settings</td><td>false</td><td>operator-settings</td><td>Available; settings preserved byte for byte</td></tr>
+      <tr><td>Key true, no resolved flight config</td><td>false</td><td>no-flight-config</td><td>Available</td></tr>
+    </tbody>
+  </table>
+  <p>The actual result and its reason travel through <code>LaunchPlan</code>, the
+    supervisor specification beside <code>fenced</code>, and the spawned-worker
+    record. The supervisor publishes them to the current attempt's run pointer,
+    which supplies the run-store record. An older attempt cannot replace the
+    newer attempt's result. A treated run that resumes records false with
+    <code>resumed</code>, even though its prior seeded settings remain on disk.</p>
+  <p>The authoritative <code>reckon/schema/flight.yaml</code> declares the key.
+    The repository's existing generator regenerated both
+    <code>reckon/_flight_schema.py</code> and
+    <code>docs/_shared/flight.schema.json</code> in one invocation.</p>
+  <table id="anchored-edit-claude-arm-measures">
+    <caption>Run logs retain their literal commands and terminal exit statuses.</caption>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Base scoped arm at <code>e1c296ff16a4e6ba142b2e3248385ce24cd88997</code></td><td>51 passed; the new test file is absent at that revision</td></tr>
+      <tr><td>Committed scoped arm at <code>598c292c03345c91a45c5155f0e43be2b3ad3e9a</code></td><td>71 passed; 20 launch-treatment cases plus the 51 census cases</td></tr>
+      <tr><td>Declared mutation at <code>c0286290ec478eecafeba8295a38c58b7abdcc77</code>: add the Edit and MultiEdit disallow list unconditionally</td><td>4 failed, 15 deselected; every false-key or absent-key argv byte check fails for both command dialects</td></tr>
+      <tr><td>Ruff check over changed Python paths, including the generated module</td><td>41 findings at base and head; zero added</td></tr>
+      <tr><td>Ruff format --check over the same paths</td><td>One existing generated-module format failure in both arms; zero added</td></tr>
+    </tbody>
+  </table>
+  <p>The base launch probe, before implementation, recorded no registered
+    anchored server, no edit-tool restrictions, and no treatment receipt despite
+    <code>anchored_edit=true</code>. After the mutation was removed, the
+    committed scoped arm passed all 71 cases. The generated module keeps the
+    generator's exact bytes; formatting it separately would desynchronise it
+    from the authoritative source.</p>
+  <h3 id="anchored-edit-claude-arm-worktree-roots">The server can edit the worktree it was launched to change</h3>
+  <p>The initial fixture supplied the worktree directly as a delivery root.
+    Production does not: <code>_fence_write_roots</code> omits declarations
+    inside the worktree because <code>fence_argv</code> binds that tree
+    separately. The initial 71-test arm therefore missed a treatment worker
+    whose built-in edits were disabled while its server refused every normal
+    source path.</p>
+  <p>The server roots now pass the delivery roots and worktree through
+    <code>fence_writable_roots</code>, which also withholds the sealed shared
+    stores. The fixture calls production <code>_fence_write_roots</code> and
+    asserts that no returned root contains the worktree. Its temporary root is
+    a disjoint scratch directory, so an ambient temporary ancestor cannot mask
+    an omitted worktree grant.</p>
+  <table id="anchored-edit-claude-arm-worktree-root-measures">
+    <thead><tr><th>Check</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>New regression on the implementation without the worktree grant</td><td>2 failed, 20 deselected; both command dialects report source.py outside every server root</td></tr>
+      <tr><td>Corrected focused suite</td><td>22 passed; both dialects read and replace a source line through the configured roots, and refuse a path outside them</td></tr>
+      <tr><td>Ruff on the changed Python paths</td><td>2 existing findings at base and head, zero added; both files pass format --check</td></tr>
+    </tbody>
+  </table>
+  <p>The run manifest records the subsequent armed command at the committed
+    correction, using the shared interpreter path with no environment prefix,
+    and retains both the reproduction log and the passing focused log.</p>
+</section>
