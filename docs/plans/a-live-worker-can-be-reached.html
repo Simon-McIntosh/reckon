@@ -21,7 +21,7 @@
   <title>A Live Worker Can Be Reached | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="45">
+<meta name="plan-version" content="46">
 <meta name="plan-modified" content="2026-11-11">
 <meta name="plan-north-star" content="state-that-tells-the-truth">
 <meta name="plan-blocks" content="an-orchestrator-is-bound-by-its-inbox#s5">
@@ -270,10 +270,13 @@ The document half and the guard are done; the inbox is what remains of the locke
     <div class="r-comment-body"><p>review of r-20261111T072301959253-inbox-view-reports-failures at head ea424d46485226449eda8625e308f10d8e1088de from base 19ee9d35e1148b66060284d250b7ee3659d2c476 stored parsed, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 17, fit 19, reuse 20, with added_failure_count 0 and two non-blocking findings</p></div>
 </div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261111T072301959253-inbox-view-reports-failures" data-who="reckon-build" data-when="2026-11-11T07:44:29.317Z">
-    <div class="r-comment-body"><p>run view splits inbox receipts into `delivered` and `failed` through worker_inbox.delivered_receipts/failed_receipts, reports a queued message it cannot read as present with its error and an `unreadable_count`, and its race test now drives the real hook and asserts that hook&#x27;s receipt; head arm 75 passed EXIT=0, base arm 71 passed with 2 scaffolding errors, negative control fails the separation test</p></div>
+    <div class="r-comment-body"><p>run view splits inbox receipts into `delivered` and `failed` through worker_inbox.delivered_receipts/failed_receipts, reports a queued message it cannot read as present with its error and an `unreadable_count`, and its race test now drives the real hook and asserts that hook's receipt; head arm 75 passed EXIT=0, base arm 71 passed with 2 scaffolding errors, negative control fails the separation test</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261111T075604837751-review-of-crew-tell-admits-codex-6c82e335f442" data-who="reckon-build" data-when="2026-11-11T08:06:50.342Z">
     <div class="r-comment-body"><p>The review of r-20261111T072418312798-crew-tell-admits-codex is stored as a parsed record at its head 6c82e335 with base e70e9be2, scoring goal_fidelity 19, evidence 17, scope_discipline 20, durability 15, fit 18, reuse 14, with three non-blocking findings and 0 added failures.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T072418312798-crew-tell-admits-codex" data-who="reckon-build" data-when="2026-11-11T07:46:06.305Z">
+    <div class="r-comment-body"><p>crew tell now decides reachability per dialect: a live codex run is admitted when its recorded launch argv carries both the inbox hook override and its trust override, refused naming which override is missing when one or neither is present, and other dialects are refused naming why, with Claude-dialect cases unchanged; gate 64 passed (head) against 51 passed (base), and the declared negative control (accept any codex run) fails 5 refusal cases.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="guard-landed-and-verified" data-who="Simon McIntosh" data-when="2026-09-15">
     <div class="r-comment-body">The guard is merged and verified at the merged head: zero failures added against a twenty-failure base, identical failure ids either side by set difference, and 505 passing before against 518 after. None of the twenty pre-existing failures touches the hook, the CLI wiring or the guard tests. An independent review scored it 20 goal fidelity, 20 scope discipline, 19 evidence, 19 durability, 19 fit. The worker wrote the quiet half first and added, unprompted, a test that a live pointer launched on a different host is not matched — the pointer directory is shared across login nodes, so a pid from another host reads alive or dead by coincidence. The ledger row is still outstanding: promotion is refused by a defect in the gate's own log check, which greps a cited log for a shell diagnostic that the gate's own test file writes as fixture data. That is reproduced, owned elsewhere and has a repair in flight.</div>
