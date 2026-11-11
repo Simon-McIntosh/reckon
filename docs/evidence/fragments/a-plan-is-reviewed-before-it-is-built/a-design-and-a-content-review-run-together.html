@@ -9,46 +9,50 @@
 <meta name="plan-evidence-for" content="a-plan-is-reviewed-before-it-is-built">
 <meta name="plan-verifies" content="a-plan-is-reviewed-before-it-is-built#s48">
 <meta name="plan-recorded-at" content="2026-11-11">
-<meta name="plan-verdict" content="blocked">
+<meta name="plan-verdict" content="complete">
 <title>A design review and a content review of one plan can run together | reckon</title>
 <link rel="stylesheet" href="/_shared/foundation.css">
 <link rel="stylesheet" href="/_shared/dashboard.css">
 </head><body><main class="plan-doc">
 <section id="a-design-and-a-content-review-run-together-verification">
 <h1>A design review and a content review of one plan can run together</h1>
-<p>Two holds refuse a second plan review of one plan. The first is the compose's
-own in-flight check, <code>_standing_plan_review</code>, keyed on the plan alone;
-it now keys on the plan and the rubric, read from the composed node's goal line
+<p>Two holds refused a second plan review of one plan, and both are now settled.
+The first was the compose's own in-flight check,
+<code>_standing_plan_review</code>, keyed on the plan alone; it now keys on the
+plan and the rubric, read from the composed node's goal line
 (<code>review the &lt;rubric&gt; of plan &lt;slug&gt;</code>), and a pointer whose
-rubric cannot be read keeps standing for every rubric. That change is landed and
-measured below.</p>
-<p>The second hold is <code>dispatch()</code>'s existing-run answer,
+rubric cannot be read keeps standing for every rubric, so an unclassifiable
+record never admits a duplicate.</p>
+<p>The second was <code>dispatch()</code>'s existing-run answer,
 <code>_answer_existing_node_run</code> (<code>reckon/crew/dispatch.py:430</code>),
 which reads <code>runs.existing_node_run</code>
 (<code>reckon/crew/runs.py:670</code>) keyed on
 <code>(plan, section, node id)</code> (<code>reckon/crew/runs.py:544</code>).
-Both rubrics of a plan compose under the one node id
-<code>plan-review-of-&lt;slug&gt;</code>, so the design review passes the compose
-check and is then refused by dispatch with
+Both rubrics composed under the one node id
+<code>plan-review-of-&lt;slug&gt;</code>, so the design review passed the compose
+check and was refused by dispatch with
 <code>run r-…-plan-review-of-fixture is already starting for this node</code>.
-That guard sits outside this node's write scope: <code>reckon/crew/dispatch.py</code>
-belongs to the concurrent <code>a-concurrent-launch-is-refused</code> node, and
-the composed node identity is built in
-<code>reckon/crew/recovery_review_subject.py</code>. The section's done-when is
-therefore not met by this node's write paths.</p>
+The composed node id now carries the rubric for the design review —
+<code>plan-review-of-&lt;slug&gt;-design</code> — while a content review keeps the
+bare id every stored pointer and store reader already carries, so the two
+rubrics are two node ids and dispatch's check needs no change.
+<code>round_node_source</code> strips the rubric suffix from a plan-review id,
+and the compose's in-flight check and the admitted-review join recover the plan
+slug through it, so a reviewer, an obligations row and a queued request all
+resolve either spelling to the same plan.</p>
 <table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
-<tr><td>Defect reproduction at base</td><td>2 failed, 1 passed; the design case refuses with <code>a plan review is already in flight as a live run</code></td><td id="a-design-and-a-content-review-run-together-base-repro">base-reproduction.log; base revision extracted by <code>git archive</code> with this node's test copied in; the second content review already refuses at base, which is the behaviour that must be kept</td></tr>
-<tr><td>First hold after the change</td><td>Design review passes the compose check; second content review still refused naming the running review</td><td id="a-design-and-a-content-review-run-together-head-gate">head-suite.log; 1 failed, 53 passed, the one failure being the design case</td></tr>
-<tr><td>Second hold</td><td>Design compose refused by dispatch: <code>run r-20261111T014446288217-plan-review-of-fixture is already starting for this node</code></td><td id="a-design-and-a-content-review-run-together-second-hold">head-suite.log; <code>_answer_existing_node_run</code>, reached because both rubrics share one node id</td></tr>
-<tr><td>Unreadable rubric stays standing</td><td>A pointer with no goal answers no rubric and still refuses a design compose</td><td id="a-design-and-a-content-review-run-together-unreadable">third case of the test; passes at head</td></tr>
-<tr><td>Declared negative control</td><td>1 failed, 2 passed; the design case refuses with the compose message again</td><td id="a-design-and-a-content-review-run-together-negative-control">negative-control.log; the rubric narrowing removed from <code>_standing_plan_review</code> at the committed head</td></tr>
-<tr><td>Ruff</td><td><code>check</code> and <code>format --check</code> clean on both staged Python paths</td><td id="a-design-and-a-content-review-run-together-ruff">no findings, exit 0</td></tr>
+<tr><td>Defect reproduction at base</td><td>content review dispatches; the design review of the same plan is refused with <code>a plan review is already in flight as a live run</code></td><td id="a-design-and-a-content-review-run-together-base-repro">base-reproduction.log; base revision extracted by <code>git archive</code> and driven through the coordinator's dispatch path</td></tr>
+<tr><td>Both rubrics compose together</td><td>4 passed: the design review composes while the content review is live, under node id <code>plan-review-of-fixture-design</code>, and both goals are present beside the bare content id</td><td id="a-design-and-a-content-review-run-together-head-gate">head-suite.log; <code>tests/test_a_design_and_a_content_review_run_together.py</code></td></tr>
+<tr><td>A second content review is still refused</td><td>Refused, naming the live content review it waits on</td><td id="a-design-and-a-content-review-run-together-second-content">head-suite.log; the rubric narrowing keeps two reviews of one rubric exclusive</td></tr>
+<tr><td>Unreadable rubric stays standing</td><td>A pointer with no goal answers no rubric and still refuses a design compose</td><td id="a-design-and-a-content-review-run-together-unreadable">third case of the test</td></tr>
+<tr><td>A reader of the existing content node id still resolves it</td><td><code>round_node_source</code> returns the plan slug for the bare content id and for the design id, and leaves a slug that is the rubric word itself whole</td><td id="a-design-and-a-content-review-run-together-reader">test case <code>test_a_reader_of_the_existing_content_node_id_still_resolves_it</code>; the obligations view and the review-record key both read the slug through this function</td></tr>
+<tr><td>Declared negative control</td><td>1 failed, 3 passed: with the rubric narrowing removed from <code>_standing_plan_review</code> at the committed head, the design case refuses with the compose message</td><td id="a-design-and-a-content-review-run-together-negative-control">negative-control.log</td></tr>
+<tr><td>Regression beside the change</td><td>58 passed at head, 58 passed at base, zero added failures</td><td id="a-design-and-a-content-review-run-together-regression">head-importers.log, base-importers.log</td></tr>
+<tr><td>Ruff</td><td><code>check</code> and <code>format --check</code> clean on all four staged paths</td><td id="a-design-and-a-content-review-run-together-ruff">no findings, exit 0</td></tr>
 </tbody></table>
-<p id="a-design-and-a-content-review-run-together-next-step">What the section
-needs beyond this node's scope is a decision on where the two reviews are told
-apart at dispatch: either the composed plan review's node id carries its rubric
-(and the readers that recover a plan slug from that id recover it too), or
-<code>dispatch()</code>'s existing-run answer takes the rubric as a discriminator.
-Either change touches modules another node owns.</p>
+<p id="a-design-and-a-content-review-run-together-next-step">Nothing further is
+needed for this section: a design review and a content review of one plan compose
+and run together, two reviews of one rubric still exclude each other, and every
+reader of a plan-review node id resolves both spellings to the plan.</p>
 </section>
 </main></body></html>
