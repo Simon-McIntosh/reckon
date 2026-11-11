@@ -19,7 +19,10 @@ dispatch_module = importlib.import_module("reckon.crew.dispatch")
 
 @pytest.fixture()
 def decision_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    return fixtures.chain_repo.__wrapped__(tmp_path, monkeypatch)
+    repository = fixtures.chain_repo.__wrapped__(tmp_path, monkeypatch)
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(tmp_path / "config" / "mounts.json"))
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(repository / "docs" / "state"))
+    return repository
 
 
 def _seed(repository: Path, sections: list[str], choice: str = "") -> Path:
