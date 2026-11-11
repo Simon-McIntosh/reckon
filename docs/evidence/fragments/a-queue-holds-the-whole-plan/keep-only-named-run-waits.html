@@ -1,0 +1,48 @@
+<section id="keep-only-named-run-waits-landing">
+  <h2>A request keeps a stored run wait only when it named it</h2>
+
+  <p><strong>What changed.</strong> An admission pass re-derivation kept every
+  stored <code>_rederive_waits</code> <code>run:</code> ref as the request's own,
+  so a stored wait on a request the waiter never named was permanent. When that
+  request was dropped, the waiter was closed
+  <code>blocked-upstream</code> — a phase no pass lifts and the queue's own
+  <code>drop</code> refuses, so the request could only be thrown away.
+  <code>_rederive_waits</code> now takes the request's own refs from
+  <code>node.after</code>, the authored field it was dispatched with, so a
+  stored <code>run:</code> wait the request did not name is dropped by the next
+  pass, wherever it came from.
+
+  <p><strong>The defect, reproduced first.</strong> At the dispatch base
+  (<code>d98e22fb19</code>) a queued pointer carrying its plan's declared wait
+  plus <code>run:r-doomed-request</code>, with that request discarded, came out
+  of a pass with <code>waits=['plan-a#s1','run:r-doomed-request']</code> and
+  <code>phase=blocked-upstream</code> — and stayed there after the
+  declared wait landed. The pass could not remove the wait it had never been
+  asked for. Log: <code>logs/repro-defect-base.log</code>.
+
+  <p><strong>The three cases, at the head.</strong>
+  <code>tests/test_a_dropped_request_strands_no_waiter.py</code> shows
+  (1) an unnamed wait on a discarded request is removed by the next pass and
+  the waiter moves to <code>queued</code> once its declared wait lands;
+  (2) an unnamed wait on a still-queued request is removed and never waited on;
+  (3) a wait the request <em>did</em> name still turns the waiter
+  <code>blocked-upstream</code> when its run is discarded, as today.
+
+  <p><strong>The negative control.</strong> Restoring
+  <code>own = {ref for ref in stored if ref.startswith(REQUEST_REF_PREFIX)}</code>
+  fails cases 1 and 2 and passes case 3, exactly as declared. Log:
+  <code>logs/negative-control.log</code>.
+
+  <p><strong>Measure.</strong> The armed suite is green at the head — 54 passed
+  — against a base arm that fails the two defect cases, so this node adds no
+  failure. Ruff reports no findings on the staged paths. Logs:
+  <code>logs/suite-after.log</code>, <code>logs/suite-baseline.log</code>,
+  <code>logs/ruff.log</code>.
+
+  <p><strong>What it costs elsewhere.</strong> Two tests in
+  <code>tests/test_a_queued_launch_keeps_the_run_record.py</code> build a
+  stored <code>run:</code> wait without naming it in <code>after</code>, which
+  is the state this section removes: their fixtures need the ref added to the
+  node's <code>after</code>. That file is outside this node's scope and is
+  reported there rather than edited here.</p>
+</section>
