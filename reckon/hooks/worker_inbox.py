@@ -138,19 +138,23 @@ def message_name(now: float | None = None) -> str:
 def write_message(text: str, run_directory_path: Path) -> Path:
     """Write one message into a run's inbox, atomically and exclusively.
 
-    The message is composed inside the inbox directory and renamed into place
-    under a name no other writer can choose, so a reader never sees a partial
-    message and two coordinators writing at once both land.
+    The message is composed through the shared staged writer and renamed into
+    place under a name no other writer can choose, so a reader never sees a
+    partial message and two coordinators writing at once both land. Only the
+    coordinator's writer reaches this function — the hook itself never writes —
+    so the shared writer's import is paid once per message, not once per tool
+    call.
     """
+    from reckon._store import write_atomically
+
     inbox = Path(run_directory_path) / INBOX_DIRNAME
     inbox.mkdir(parents=True, exist_ok=True)
     destination = inbox / message_name()
-    temporary = inbox / f".{destination.name}.writing"
-    with open(temporary, "x", encoding="utf-8") as handle:
-        handle.write(text)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.rename(temporary, destination)
+    write_atomically(
+        destination,
+        lambda handle: handle.write(text),
+        fsync_directory=True,
+    )
     return destination
 
 

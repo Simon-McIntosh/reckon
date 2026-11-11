@@ -99,10 +99,11 @@
   runs in <code>crew check --manifest</code>, where the writer can still fix it — and the worker
   prompt's manifest contract (<code>reckon/crew/prompts.py</code>) does not yet name the
   <code>messages_received</code> field.</p>
-  <p>Two entries in the staged-write census also follow from this node:
-  <code>reckon/hooks/worker_inbox.py</code> joins the declared inventory of locally staged
-  replacements, with its reason — the hook runs as a subprocess on every tool call and cannot pay
-  the shared writer's module import — and the help census gains the writer's row.</p>
+  <p>The help census gains the writer's row. The inbox writer composes a message through the
+  shared staged writer rather than keeping a private temporary beside it — the hook itself only
+  reads and claims, so the shared writer's import is paid once per message by the coordinator's
+  command, never on the per-tool-call path — and the staged-write census therefore needs no entry
+  for it.</p>
 </section>
 </main>
 </body>
