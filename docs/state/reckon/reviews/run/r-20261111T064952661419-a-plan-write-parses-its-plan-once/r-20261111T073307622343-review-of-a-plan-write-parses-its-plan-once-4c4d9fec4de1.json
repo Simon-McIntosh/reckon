@@ -1,0 +1,77 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/serve.py:3909",
+    "reckon/tags.py:130",
+    "reckon/archive.py:132",
+    "reckon/_store.py:1717",
+    "reckon/_store.py:2450",
+    "reckon/_plan_html.py:2366"
+  ],
+  "completed_at": "2026-11-11T07:41:14.222Z",
+  "dispatched_at": "2026-11-11T07:34:31Z",
+  "findings": [
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "after_suite records revision 4c4d9fec but its cited log's header names 3a5fceb with 'worktree carries uncommitted node change', so the recorded revision cannot be reconciled against the log it points at."
+    },
+    {
+      "file": "manifest.md",
+      "line": 20,
+      "severity": "non-blocking",
+      "summary": "The 'ruff delta 0 findings' and the 517 KB soup-count measurement are stated in artifacts but no log path in test_logs records either, so both are claimed rather than recorded."
+    },
+    {
+      "file": "reckon/_plan_html.py",
+      "line": 424,
+      "severity": "non-blocking",
+      "summary": "_PlanDocumentParse.structural reconstructs the parser inline rather than extending _structural_spans at reckon/_plan_html.py:394, so one scan now has two construction sites that can drift."
+    },
+    {
+      "file": "after-arm.log",
+      "line": 2,
+      "severity": "non-blocking",
+      "summary": "The gate arms ran in the node worktree and a scratch extraction rather than on the all_debug partition the done-when named; both arms are single-process and under 20 s, so the deviation did not contend with peers."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_plan_write_parses_its_plan_once.py:136 asserts the actual parse count against a literal one and negative-control.log records 1 failed / 6 parses when the per-pass parse is restored, so the guard fails on the regression it names.",
+    "evidence": "The gate at tests/test_a_plan_write_parses_its_plan_once.py:127 measures the done-when and negative-control.log shows it reddening, but the manifest's after_suite revision disagrees with after-arm.log's header and the ruff result at manifest.md:20 is claimed without a log.",
+    "fit": "The added class at reckon/_plan_html.py:401 follows the module's private-helper idiom and names its mechanism rather than any plan or ticket label.",
+    "goal_fidelity": "reckon/_plan_html.py:2283 builds one _PlanDocumentParse and every pass at :2331, :2379, :2386 and :2365 reads it, so one landing's write parses the document once.",
+    "reuse": "The parse-sharing capability is new, but reckon/_plan_html.py:424 rebuilds the parser inline instead of extending _structural_spans at :394, leaving two construction sites for one scan.",
+    "scope_discipline": "Every path in the diff (reckon/_plan_html.py, tests/test_a_plan_write_parses_its_plan_once.py, the landing fragment) is inside the declared write paths and nothing else changed."
+  },
+  "negative_controls": [
+    "Independently re-ran the base revision's writer (3a5fceb, extracted to a scratch tree) over the node test's fixture and payload: its output equals the test's EXPECTED literal byte for byte, so the byte-identity assertion is not a mirror of the head implementation."
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261111T073307622343-review-of-a-plan-write-parses-its-plan-once-4c4d9fec4de1",
+  "reviewed_base_sha": "3a5fceb44c0538bfcaee3334ab72dd27ebc5d729",
+  "reviewed_gate_rerun": "PYTHONPATH=<node worktree> <root>/.venv/bin/python -m pytest -p no:cacheprovider -q <node worktree>/tests/test_a_plan_write_parses_its_plan_once.py -> 3 passed in 1.71s",
+  "reviewed_head_sha": "4c4d9fec4de1e069932f373a9f1f4f53b0f103f4",
+  "reviewed_run_id": "r-20261111T064952661419-a-plan-write-parses-its-plan-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:01:32.208616+00:00",
+  "total": 102,
+  "verdicts": {
+    "call_sites": "Production callers of write_state whose behaviour the change reaches were read: reckon/serve.py:3909, reckon/tags.py:130, reckon/archive.py:132, reckon/_store.py:1717, reckon/_store.py:2450 and reckon/_plan_html.py:2366; the signature is unchanged so none needs changing.",
+    "diff": "Read commit by commit against 3a5fceb; one commit 4c4d9fec adds the _PlanDocumentParse class and threads an optional parse through five private passes, moves the record splice ahead of the meta edits, adds a 150-line test, and adds a landing fragment.",
+    "done_when": "The done-when names a test that counts exactly one full parse and byte-identical output; tests/test_a_plan_write_parses_its_plan_once.py:127-139 counts document-sized soups and asserts one, and :141-142 compares against a literal EXPECTED, with the negative control at negative-control.log showing 1 failed under a restored per-pass parse.",
+    "goal": "The node goal is 'one landing's plan write parses its plan once'; reckon/_plan_html.py:401 adds _PlanDocumentParse and write_state (reckon/_plan_html.py:2283) builds one and hands it to every pass, which the gate measures as one document-sized soup.",
+    "manifest": "Read; it records status complete, one commit, the gate command and six logs, a baseline arm with two setup errors attributed to a git-less extraction, and an after arm of 54 passed exit 0.",
+    "write_paths": "The declared paths are reckon/_plan_html.py, reckon/_store.py, the node test, the landing fragment and a figure directory; the diff touches reckon/_plan_html.py, tests/test_a_plan_write_parses_its_plan_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once.html, all inside them."
+  }
+}
