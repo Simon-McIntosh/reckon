@@ -1,0 +1,140 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "after_suite": {
+    "command": "PYTHONPATH=/tmp/ledger-head-6VmS /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 4 <287 ledger-importing test paths, listed in arm-head-final.log>",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 69,
+    "failure_ids": [
+      "no head-only failure: comm -13 over arm-base-failures.txt and arm-head-final-failures.txt is empty; one base-only id passes at the head; 2956 passed, 4 skipped in 570.47s"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/arm-head-final.log",
+    "revision": "3eca4c75ba087cac1940b62fc86cd9af38c2466e"
+  },
+  "assertion_analysis": [
+    {
+      "file": "tests/test_a_ledger_read_does_not_walk_every_run.py",
+      "lines": "196-224",
+      "regression": "Revert _bump_generation to a bare _store.advance_write_generation: with the advance monkeypatched to a no-op the counter survives, so `assert not ledger.ledger_generation_path(PROJECT).exists()` at line 216 reds. The `gates[...] == 'failed'` at line 223 does not discriminate, because the write_run_file at line 214 adds a run document and changes the runs-directory stamp."
+    },
+    {
+      "file": "tests/test_a_ledger_read_does_not_walk_every_run.py",
+      "lines": "227-249",
+      "regression": "Remove the contextlib.suppress around the unlink in reckon/ledger.py:1242-1243 (require the removal): the read-only generation directory makes write_run_file raise, so the test errors instead of passing."
+    },
+    {
+      "file": "tests/test_a_ledger_read_does_not_walk_every_run.py",
+      "lines": "341-371",
+      "regression": "Remove the _bump_generation call in _split_project_runs (reckon/ledger.py:3328): the generation read before the split is None and stays None, so `ledger_generation(PROJECT) != before` at line 367 reds; mutation.log MUTATION1 records exactly that."
+    }
+  ],
+  "baseline_suite": {
+    "command": "PYTHONPATH=/tmp/ledger-base-6rkV /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q -n 4 <287 ledger-importing test paths, listed in arm-base.log>",
+    "completed": true,
+    "exit_status": 1,
+    "failure_count": 70,
+    "failure_ids": [
+      "70 ids read from arm-base-failures.txt; 2941 passed, 4 skipped in 569.50s"
+    ],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/arm-base.log",
+    "revision": "acfbdab8c1bb3d0ac8027ed85658a8344f82621a"
+  },
+  "call_sites": [
+    "reckon/ledger.py:write_run_file",
+    "reckon/ledger.py:append_run",
+    "reckon/ledger.py:_restore_run_files",
+    "reckon/ledger.py:_split_project_runs",
+    "reckon/ledger.py:_indexed_data",
+    "reckon/crew/promotion.py:_complete_locked"
+  ],
+  "completed_at": "2026-11-11T08:38:07.326Z",
+  "dispatched_at": "2026-11-11T08:28:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the failed-advance regression is discriminated by the path-absence assertion; the behavioural half is a second check, and a test that edits in place without adding a document would make it load-bearing",
+      "recorded_at": "2026-11-11T08:52:40.135039+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the node test file passes 14 of 14 at the reviewed head, as the review re-ran; the gate line's receipt is superseded by the armed arms the landing re-records",
+      "recorded_at": "2026-11-11T08:53:02.614020+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_ledger_read_does_not_walk_every_run.py",
+      "line": "223",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `gates[...] == \"failed\"` assertion cannot fail on the failed-advance regression, because the `write_run_file` at line 214 adds a run document, changing the runs-directory stamp the index also keys on, so the next read walks with or without the fix; only the path-absence assertion at line 216 discriminates. Edit the document in place without adding a run document to make the behavioural half load-bearing."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/manifest.md",
+      "line": "12",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `tests:` gate line names tests/test_a_ledger_read_does_not_walk_every_run.py plus tests/test_staged_write_inventory.py, but gate.log records 11 passed at 07:14 before the reviewed commits and no log on disk carries that two-file gate at 73c82cb8, so the manifest's 'gate 60 passed' is claimed rather than recorded; the node test file passes 14/14 when re-run at the reviewed head."
+    }
+  ],
+  "justifications": {
+    "durability": "mutation.log shows MUTATION1 reddening test_a_run_split_is_seen_by_the_next_read after its bump is removed and MUTATION2 reddening test_a_failed_advance_leaves_the_next_read_walking when _bump_generation is reduced to a bare advance, though in the latter only the path-absence assertion at tests/test_a_ledger_read_does_not_walk_every_run.py:216 discriminates (see FINDING).",
+    "evidence": "probe.log records STATS=2/2 at 3eca4c75 and arm-head-final.log records 0 added failures against arm-base.log, but gate.log's 11 passed predates the reviewed commits and no log holds the declared two-file gate at 73c82cb8.",
+    "fit": "the added block at reckon/ledger.py:1238-1243 follows the module's existing _store delegation and contextlib.suppress idiom (reckon/ledger.py:2228) and introduces no plan or ticket name.",
+    "goal_fidelity": "reckon/ledger.py:1238-1243 only hardens the generation bump so a failed advance cannot hide a write, leaving the constant-cost read at reckon/ledger.py:1708-1757 and the 2-at-20/2-at-200 measure intact (probe.log).",
+    "reuse": "the change extends _bump_generation on the store's existing read_write_generation/advance_write_generation owner (reckon/_store.py:1820,1829); a search of reckon/ found no other advance-and-verify mechanism to fork.",
+    "scope_discipline": "all three paths in the four-commit diff (reckon/ledger.py, tests/test_a_ledger_read_does_not_walk_every_run.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run.html) are declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is 'A warm ledger.load makes the same number of stat calls at 20 and at 200 run documents'; across the four commits since the prior review the reuse key and its constant-cost read are unchanged (reckon/ledger.py:1708-1757), and probe.log records STATS=2 at both populations at head 3eca4c75.\nVERDICT done_when: The done_when names tests/test_a_ledger_read_does_not_walk_every_run.py plus the ledger-importing population on all_debug at -n 4; arm-head-final.log at 3eca4c75 records 69 failed / 2956 passed with the node's test file absent from the failure list, and I re-ran the file at 73c82cb8 for 14 passed, but the declared gate's own log (gate.log) predates these commits.\nVERDICT write_paths: The run declares reckon/ledger.py, tests/test_a_ledger_read_does_not_walk_every_run.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run.html; the four-commit diff touches exactly those three and nothing else.\nVERDICT manifest: Read; it records status complete, both arms, the probe, the negative control and mutation.log, and its evidence_inputs claims a 'gate 60 passed' whose log is not on disk.\nVERDICT diff: Read commit by commit from c7daf421 to 73c82cb8: fc80b516 and 3eca4c75 change reckon/ledger.py:1238-1243 and add two tests, 1b013e39 and 73c82cb8 update only the evidence fragment.\nCALL_SITES: reckon/ledger.py:write_run_file, reckon/ledger.py:append_run, reckon/ledger.py:_restore_run_files, reckon/ledger.py:_split_project_runs, reckon/ledger.py:_indexed_data, reckon/crew/promotion.py:_complete_locked\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1238-1243 only hardens the generation bump so a failed advance cannot hide a write, leaving the constant-cost read at reckon/ledger.py:1708-1757 and the 2-at-20/2-at-200 measure intact (probe.log).\nSCORE evidence: 15\nJUSTIFICATION evidence: probe.log records STATS=2/2 at 3eca4c75 and arm-head-final.log records 0 added failures against arm-base.log, but gate.log's 11 passed predates the reviewed commits and no log holds the declared two-file gate at 73c82cb8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three paths in the four-commit diff are declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: mutation.log shows MUTATION1 reddening test_a_run_split_is_seen_by_the_next_read after its bump is removed and MUTATION2 reddening test_a_failed_advance_leaves_the_next_read_walking when _bump_generation is reduced to a bare advance, though in the latter only the path-absence assertion at tests/test_a_ledger_read_does_not_walk_every_run.py:216 discriminates (see FINDING).\nSCORE fit: 18\nJUSTIFICATION fit: the added block at reckon/ledger.py:1238-1243 follows the module's existing _store delegation and contextlib.suppress idiom (reckon/ledger.py:2228) and introduces no plan or ticket name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends _bump_generation on the store's existing read_write_generation/advance_write_generation owner (reckon/_store.py:1820,1829); a search of reckon/ found no other advance-and-verify mechanism to fork.\nFINDING tests/test_a_ledger_read_does_not_walk_every_run.py:223 non-blocking: the gates[...] == 'failed' assertion cannot fail on the failed-advance regression, because the write_run_file at line 214 adds a run document, changing the runs-directory stamp the index also keys on, so the next read walks with or without the fix; only the path-absence assertion at line 216 discriminates. Edit the document in place without adding a run document to make the behavioural half load-bearing.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/manifest.md:12 non-blocking: the tests: gate line names tests/test_a_ledger_read_does_not_walk_every_run.py plus tests/test_staged_write_inventory.py, but gate.log records 11 passed at 07:14 before the reviewed commits and no log on disk carries that two-file gate at 73c82cb8, so the manifest's 'gate 60 passed' is claimed rather than recorded; the node test file passes 14/14 when re-run at the reviewed head.",
+  "report_lines": [
+    "VERDICT goal: The node goal is 'A warm ledger.load makes the same number of stat calls at 20 and at 200 run documents'; across the four commits since the prior review the reuse key and its constant-cost read are unchanged (reckon/ledger.py:1708-1757), and probe.log records STATS=2 at both populations at head 3eca4c75.",
+    "VERDICT done_when: The done_when names tests/test_a_ledger_read_does_not_walk_every_run.py plus the ledger-importing population on all_debug at -n 4; arm-head-final.log at 3eca4c75 records 69 failed / 2956 passed with the node's test file absent from the failure list, and I re-ran the file at 73c82cb8 for 14 passed, but the declared gate's own log (gate.log) predates these commits.",
+    "VERDICT write_paths: The run declares reckon/ledger.py, tests/test_a_ledger_read_does_not_walk_every_run.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run.html; the four-commit diff touches exactly those three and nothing else.",
+    "VERDICT manifest: Read; it records status complete, both arms, the probe, the negative control and mutation.log, and its evidence_inputs claims a 'gate 60 passed' whose log is not on disk.",
+    "VERDICT diff: Read commit by commit from c7daf421 to 73c82cb8: fc80b516 and 3eca4c75 change reckon/ledger.py:1238-1243 and add two tests, 1b013e39 and 73c82cb8 update only the evidence fragment.",
+    "CALL_SITES: reckon/ledger.py:write_run_file, reckon/ledger.py:append_run, reckon/ledger.py:_restore_run_files, reckon/ledger.py:_split_project_runs, reckon/ledger.py:_indexed_data, reckon/crew/promotion.py:_complete_locked",
+    "SCORE goal_fidelity: 19",
+    "JUSTIFICATION goal_fidelity: reckon/ledger.py:1238-1243 only hardens the generation bump so a failed advance cannot hide a write, leaving the constant-cost read at reckon/ledger.py:1708-1757 and the 2-at-20/2-at-200 measure intact (probe.log).",
+    "SCORE evidence: 15",
+    "JUSTIFICATION evidence: probe.log records STATS=2/2 at 3eca4c75 and arm-head-final.log records 0 added failures against arm-base.log, but gate.log's 11 passed predates the reviewed commits and no log holds the declared two-file gate at 73c82cb8.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: all three paths in the four-commit diff are declared write paths.",
+    "SCORE durability: 18",
+    "JUSTIFICATION durability: mutation.log shows MUTATION1 reddening test_a_run_split_is_seen_by_the_next_read after its bump is removed and MUTATION2 reddening test_a_failed_advance_leaves_the_next_read_walking when _bump_generation is reduced to a bare advance, though in the latter only the path-absence assertion at tests/test_a_ledger_read_does_not_walk_every_run.py:216 discriminates (see FINDING).",
+    "SCORE fit: 18",
+    "JUSTIFICATION fit: the added block at reckon/ledger.py:1238-1243 follows the module's existing _store delegation and contextlib.suppress idiom (reckon/ledger.py:2228) and introduces no plan or ticket name.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: the change extends _bump_generation on the store's existing read_write_generation/advance_write_generation owner (reckon/_store.py:1820,1829); a search of reckon/ found no other advance-and-verify mechanism to fork.",
+    "FINDING tests/test_a_ledger_read_does_not_walk_every_run.py:223 non-blocking: the gates[...] == 'failed' assertion cannot fail on the failed-advance regression, because the write_run_file at line 214 adds a run document, changing the runs-directory stamp the index also keys on, so the next read walks with or without the fix; only the path-absence assertion at line 216 discriminates. Edit the document in place without adding a run document to make the behavioural half load-bearing.",
+    "FINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T031426866335-a-ledger-read-does-not-walk-every-run/manifest.md:12 non-blocking: the tests: gate line names tests/test_a_ledger_read_does_not_walk_every_run.py plus tests/test_staged_write_inventory.py, but gate.log records 11 passed at 07:14 before the reviewed commits and no log on disk carries that two-file gate at 73c82cb8, so the manifest's 'gate 60 passed' is claimed rather than recorded; the node test file passes 14/14 when re-run at the reviewed head."
+  ],
+  "review_run_id": "r-20261111T082656351362-review-of-a-ledger-read-does-not-walk-every-run-73c82cb8a6e2",
+  "reviewed_base_sha": "c7daf421afb44a34859a382ca4f838eee8b816e2",
+  "reviewed_commits": [
+    "fc80b5161c55c187f619935756c6c34df4bf3a67",
+    "3eca4c75ba087cac1940b62fc86cd9af38c2466e",
+    "1b013e3985acebea265111d17cfb39074c68729f",
+    "73c82cb8a6e2cd25892844aeef74cc5655d354c8"
+  ],
+  "reviewed_head_sha": "73c82cb8a6e2cd25892844aeef74cc5655d354c8",
+  "reviewed_run_id": "r-20261111T031426866335-a-ledger-read-does-not-walk-every-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:50:21.929893+00:00",
+  "total": 110,
+  "verdicts": {
+    "diff": "Read commit by commit from c7daf421 to 73c82cb8: fc80b516 and 3eca4c75 change reckon/ledger.py:1238-1243 and add two tests, 1b013e39 and 73c82cb8 update only the evidence fragment.",
+    "done_when": "The done_when names tests/test_a_ledger_read_does_not_walk_every_run.py plus the ledger-importing population on all_debug at -n 4; arm-head-final.log at 3eca4c75 records 69 failed / 2956 passed with the node's test file absent from the failure list, and I re-ran the file at 73c82cb8 for 14 passed, but the declared gate's own log (gate.log) predates these commits.",
+    "goal": "The node goal is 'A warm ledger.load makes the same number of stat calls at 20 and at 200 run documents'; across the four commits since the prior review the reuse key and its constant-cost read are unchanged (reckon/ledger.py:1708-1757), and probe.log records STATS=2 at both populations at head 3eca4c75.",
+    "manifest": "Read; it records status complete, both arms, the probe, the negative control and mutation.log, and its evidence_inputs claims a 'gate 60 passed' whose log is not on disk.",
+    "write_paths": "The run declares reckon/ledger.py, tests/test_a_ledger_read_does_not_walk_every_run.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-ledger-read-does-not-walk-every-run.html; the four-commit diff touches exactly those three and nothing else."
+  }
+}

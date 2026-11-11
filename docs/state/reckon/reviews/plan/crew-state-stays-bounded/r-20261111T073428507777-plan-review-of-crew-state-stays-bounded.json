@@ -1,0 +1,102 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T07:44:17.468Z",
+  "dispatched_at": "2026-11-11T07:39:35Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:220",
+      "id": "reasoning-1",
+      "reason": "without making the archive a place `import_ledger` reads before inserting (or excluding archived ids from the import), the sweep's effect is erased by the next promotion and the section ships a capability that does not hold.",
+      "text": "s12 archives rows for runs ended more than thirty days ago out of `runs` and `run_details`, but `run_store.import_ledger` walks the whole committed ledger and inserts every run \"absent from the store\" (reckon/run_store.py:734-784, `sync_run` inserting when `existing is None` at :351-364), and it is called on the production path by `record_gate_rerun_at_integrated_revision` (reckon/crew/promotion_gate.py:1056, reached from the crew verb at reckon/crew_run_commands.py:3854); the committed ledger `ledger.load` reads is not aged by s12 \u2014 \u00a71 places it with history-persists-as-detail-washes-out (plan.html:59-60) \u2014 so a single import pass re-inserts every archived run into the hot tables, which measured against today's store means 11,388 of 21,563 rows",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/crew-state-stays-bounded.html:220",
+      "id": "reasoning-2",
+      "reason": "the section names no per-pass row bound and no compaction condition, so as written the first hourly pass is an unbounded write plus a whole-file rewrite on the same pass \u00a710 measures to five minutes, and the plan should either cap rows per pass and compact only after a pass that removed rows, or state why that cost is acceptable.",
+      "text": "s12 hangs an unbounded row move and a store compaction on \u00a77's hourly `retention_sweep`, whose whole justification is that \"one pass stays short on shared storage\" with a fixed cap (\u00a77 plan.html:180-183) and which \u00a710 bounded to under five minutes; the first pass has to move 11,388 of the 21,563 rows (measured on today's store), and the store runs with `auto_vacuum=0` and `freelist_count=0`, so pages freed by the delete do not shrink the file without a full `VACUUM` that rewrites all 791,310,336 B under an exclusive lock while followers and the station page through the same file",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "66306f9b7813c9af38fb441da0355592d3755fa8",
+  "plan_fingerprint": "13a335c95cf7e36d58cc32733acff76088684723e6e71c2b96ea376c7b7737dd",
+  "plan_slug": "crew-state-stays-bounded",
+  "plan_version": 75,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "66306f9b7813c9af38fb441da0355592d3755fa8",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "The delivered s12 already guards this: inserts and the ledger import check _is_archived, so an archived run is not re-imported; the section text now says so and the test must cover an import_ledger pass after a retirement.",
+      "reason": "",
+      "when": "2026-11-11T07:56:43.744105+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "66306f9b7813c9af38fb441da0355592d3755fa8",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "The section now bounds each sweep pass to a fixed batch of rows and forbids a full VACUUM inside the hourly sweep; compaction is incremental and bounded per pass. The delivered s12, which ran VACUUM main unbounded, is resumed to meet that.",
+      "reason": "",
+      "when": "2026-11-11T07:56:55.211842+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "66306f9b7813c9af38fb441da0355592d3755fa8",
+      "commit_basis": "edit",
+      "note": "The delivered s12 already guards this: inserts and the ledger import check _is_archived, so an archived run is not re-imported; the section text now says so and the test must cover an import_ledger pass after a retirement.",
+      "reason": "",
+      "when": "2026-11-11T07:56:43.744105+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "66306f9b7813c9af38fb441da0355592d3755fa8",
+      "commit_basis": "edit",
+      "note": "The section now bounds each sweep pass to a fixed batch of rows and forbids a full VACUUM inside the hourly sweep; compaction is incremental and bounded per pass. The delivered s12, which ran VACUUM main unbounded, is resumed to meet that.",
+      "reason": "",
+      "when": "2026-11-11T07:56:55.211842+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/crew-state-stays-bounded/r-20261111T073428507777-plan-review-of-crew-state-stays-bounded.json",
+  "review_run_id": "r-20261111T073428507777-plan-review-of-crew-state-stays-bounded",
+  "reviewed_blob_sha": "a9c2d5b6877a433567fe874536268b64b2b588d3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `~/.config/reckon/crew/run_store.db` exists at 791,310,336 B, and both cited tables resolve with 21,563 rows each (`sqlite_master` lists runs, run_details, members, holds, refusals).",
+    "done_when": "pass \u2014 three measurable temporary-store clauses (hot-table membership, ledger and velocity fields readable through the archive, table page count falling) plus a declared negative control (\"at the base revision the old run stays in the hot tables\"), and `dbstat` is compiled into the store's SQLite so the page-count clause can be read (measured: runs 611,758,080 B, run_details 171,732,992 B).",
+    "evidence_paths": "pass \u2014 the live before/after measurement now goes to the node's evidence fragment rather than the run directory \u00a73 retires, which is the durable store \u00a73 itself names (plan.html:118).",
+    "naming": "pass \u2014 `tests/test_the_run_store_retires_old_runs.py` and the prose name the mechanism, with no plan label, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the archive is undone by an existing production caller, so the mechanism does not produce its own done-when in the real store.",
+    "single_goal": "pass \u2014 one deliverable: age-based retirement of run-store rows into a separate archive file, with the compaction that follows from it.",
+    "wiring": "pass \u2014 s12 declares `plan-section-depends-on crew-state-stays-bounded#s11` (plan.html:22), the one sibling that also edits `reckon/crew/gc.py`, and its mechanism is \u00a77's landed `retention_sweep` (reckon/crew/gc.py:1625), which exists and is installed hourly."
+  },
+  "section_digests": {
+    "_document": "adefd5e7af8cc73feaae325f75cd4c8c92b69a642637eab9205fd607e51adcc4",
+    "s1": "61be6bb6df8b986fbb68c3273e136fcef1b9fa13e7bcadb4fb62eab2fa4145ff",
+    "s10": "12c6b13006e1e29ba78ff8b4b1433daf63861ae2082f24a27887d4203a3903fa",
+    "s11": "8847ba87c7fb173087784a7ef2a3f06b409c3330469aa9bdcbfe4cf05d2c307e",
+    "s12": "724cb6a0a565ff2b200dcd16ceb59d507322c1c2424da33e95095b1e3c35f37f",
+    "s2": "0809becc839b3ed5586cc9018606732a929379de88ab524968574e8429943a9b",
+    "s3": "9aa4d5f5a6287b698b7d6011ac8fcc295589c20484d8892a3c86d88d629b8793",
+    "s4": "2681ac58d6ae7457bc800678db433ce359be271248b74a429b44ee4d817769b4",
+    "s5": "bba37241ec93e13e0fb1eb173abfd49db0b6e77d788aa2dbec1608d164852542",
+    "s6": "c491229cedc576a79a4628da53168b317ce14fef88d78739c48e86b16aaff17a",
+    "s7": "1f6a99e4b8834c4a8bea5559a1507e6da85988f873d5547c7804930237104694",
+    "s8": "bc03fa54cdefe8b48312fabda86a4fca8277e025db66430978900e888a969066",
+    "s9": "94c64e9a52c50d223769478a5aa73517f29bc51fd5a6b123d7978de2b35c4317"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:47:36.511658+00:00",
+  "total": null
+}

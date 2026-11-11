@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A promotion does not migrate the run store on every call">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s70">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A promotion does not migrate the run store on every call — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-does-not-migrate-the-run-store-every-call-landing" data-node="a-promotion-does-not-migrate-the-run-store-every-call" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="a-promotion-does-not-migrate-the-run-store-every-call-title">A promotion does not migrate the run store on every call</h2>
+  <p>Every promotion opens the run store to append its row. A store created under the earlier narrow-column declaration keeps those columns beside the ones the migration adds, so its shape never equals the current declaration and the backfill stayed owed forever: each open decoded and rewrote every row before the append could run. The migration now records the declaration version it brought the store to, in a <code>store_meta</code> row beside the store's own rows, and an open that finds that record skips the pass. The version hashes the schema declarations themselves, so a changed declaration changes the version and the pass runs again rather than being skipped against a store the new code cannot read.</p>
+  <table id="a-promotion-does-not-migrate-the-run-store-every-call-measures">
+    <tbody>
+      <tr><th scope="row">Reproduction at base</th><td>A 22-row store in the narrow-column shape, opened three times, ran the migration and decoded 22 rows on every open (22 / 22 / 22)</td></tr>
+      <tr><th scope="row">After the change</th><td>The same three opens: one migration pass and 22 decodes on the first, zero and zero on the second and third</td></tr>
+      <tr><th scope="row">Gate</th><td>4 passed; EXIT=0 (<code>tests/test_a_promotion_does_not_migrate_the_run_store_every_call.py</code>)</td></tr>
+      <tr><th scope="row">Negative control</th><td>The record check dropped from <code>RunStore._create</code>: 3 of the 4 tests fail, each on a migration pass counted where none is owed, EXIT=1</td></tr>
+      <tr><th scope="row">Base arm</th><td>51 passed, 0 failed, EXIT=0 on <code>all_debug</code></td></tr>
+      <tr><th scope="row">Head arm</th><td>55 passed, 0 failed, EXIT=0 on <code>all_debug</code> — the four added tests, nothing else changed</td></tr>
+      <tr><th scope="row">Run-store importers</th><td>The 24 other test files naming <code>run_store</code>: the same five failures at base and at head, 472 and 476 passing; no failure added</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>

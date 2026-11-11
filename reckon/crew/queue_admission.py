@@ -4083,11 +4083,12 @@ def _rederive_waits(
         if cache is not None:
             cache[key] = list(derived)
     stored = section_waits_for(pointer)
-    # The node's own ``--after`` refs are kept whatever the plan now says, so a
-    # re-derived list has to be compared as the union it is: the request's refs
-    # carrying the run: prefix are its own.
-    own = {ref for ref in stored if ref.startswith(REQUEST_REF_PREFIX)}
-    derived = list(dict.fromkeys([*derived, *own]))
+    # ``derived`` is the whole of what the request waits on: derive_wait_refs
+    # builds the request's own ``run:`` refs from the authored ``--after``, so
+    # a stored ref the request never named is absent from it and is dropped
+    # by the rewrite below. Keeping such a ref instead would make it
+    # permanent, and discarding the run it names would then strand this
+    # request blocked-upstream with no route back.
     if derived == stored:
         return False
     run_id = str(pointer.get("run_id") or "")

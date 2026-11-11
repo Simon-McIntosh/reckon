@@ -13,6 +13,7 @@ remove those stamps.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
 import os
@@ -93,7 +94,9 @@ _RUNS_UPDATE_SET = ", ".join(
 _RUNS_UPDATE = f'UPDATE "runs" SET {_RUNS_UPDATE_SET} WHERE "run_id" = ?'  # noqa: S608
 
 # The three companion tables have stable shapes of their own and never need
-# migrating; only the runs row has drifted across declarations.
+# migrating; only the runs row has drifted across declarations. The store also
+# keeps one keyed record of which schema declaration it was last brought up
+# to, beside those tables, so a later open can tell whether the pass is owed.
 _AUX_SCHEMA = """
 CREATE TABLE IF NOT EXISTS "run_details" (
     "run_id" TEXT PRIMARY KEY,
@@ -116,7 +119,26 @@ CREATE TABLE IF NOT EXISTS "retired_runs" (
     "project" TEXT NOT NULL
 );
 CREATE INDEX IF NOT EXISTS "idx_retired_runs_project" ON "retired_runs" ("project");
+CREATE TABLE IF NOT EXISTS "store_meta" (
+    "key" TEXT PRIMARY KEY,
+    "value" TEXT NOT NULL
+);
 """
+
+# The store_meta key holding the schema declaration version the store was last
+# migrated to.
+_SCHEMA_RECORD_KEY = "schema_version"
+
+# The version recorded once a migration has run. It hashes every declaration
+# the migration and the schema creation are built from, so a store carrying a
+# matching version is already at the shape this code expects and the pass is
+# skipped; a changed declaration changes the version, so the pass runs again
+# against the store the new code must handle. Hashing the declarations rather
+# than carrying a hand-maintained number is what stops the record from
+# outliving a schema change: there is no separate constant to forget to bump.
+_STORE_SCHEMA_VERSION = hashlib.sha256(
+    f"{_AUX_SCHEMA}\n{_RUNS_SCHEMA}\n{_RUNS_UPDATE}".encode()
+).hexdigest()
 
 
 # The single place the store's location is resolved. The default keeps the
@@ -295,9 +317,41 @@ class RunStore:
         gets its own index, so a reader routing through one of them is
         answered by an index search rather than by a scan plus a per-row JSON
         parse, and run_id is indexed by the table's primary key.
+
+        The run migration is owed only until it has run. Once it completes it
+        records ``_STORE_SCHEMA_VERSION`` beside the store's rows, and every
+        later open on a store carrying that record skips the pass: the
+        companion tables are cheap to re-assert, while the runs backfill
+        decodes and rewrites every row and is the whole cost of opening the
+        store. A store recorded against a different declaration version — an
+        older one, from before this record existed, or one written by code
+        whose schema has since changed — still migrates.
         """
         self._conn.executescript(_AUX_SCHEMA)
+        if self._recorded_schema_version() == _STORE_SCHEMA_VERSION:
+            return
         self._migrate_runs()
+        self._record_schema_version()
+
+    def _recorded_schema_version(self) -> str | None:
+        """Return the declaration version this store was last migrated to."""
+        row = self._conn.execute(
+            'SELECT "value" FROM "store_meta" WHERE "key" = ?', (_SCHEMA_RECORD_KEY,)
+        ).fetchone()
+        return None if row is None else str(row[0])
+
+    def _record_schema_version(self) -> None:
+        """Record that the store now carries the shape this code expects.
+
+        Written only after the migration returns, in its own transaction, so
+        an interrupted pass leaves no record and the next open runs it again.
+        """
+        with self._conn:
+            self._conn.execute(
+                'INSERT INTO "store_meta" ("key", "value") VALUES (?, ?) '
+                'ON CONFLICT("key") DO UPDATE SET "value" = excluded."value"',
+                (_SCHEMA_RECORD_KEY, _STORE_SCHEMA_VERSION),
+            )
 
     def _runs_columns(self) -> frozenset[str]:
         return frozenset(

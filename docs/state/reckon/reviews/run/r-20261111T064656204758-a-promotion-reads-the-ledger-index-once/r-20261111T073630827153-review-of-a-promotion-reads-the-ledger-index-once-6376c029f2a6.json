@@ -1,0 +1,60 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:3372",
+    "reckon/crew/recovery_review_acceptance.py:459",
+    "reckon/crew/recovery_review_acceptance.py:609",
+    "reckon/crew/promotion.py:732"
+  ],
+  "completed_at": "2026-11-11T07:45:33.185Z",
+  "dispatched_at": "2026-11-11T07:38:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the region closes before the append at this head; a test that pins the order inside one process is a durability improvement, not a defect in the landed change",
+      "recorded_at": "2026-11-11T08:30:50.112107+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_does_not_read_the_whole_ledger_index.py",
+      "line": 280,
+      "severity": "non-blocking",
+      "text": "test_a_read_after_the_append_sees_the_promoted_row asserts the row is visible only through a ledger.load made after the CLI call has returned, which decodes outside any region, so the test stays green if the region is closed after ledger.append_run instead of before it; the ordering its docstring claims is guarded by no assertion (the harness records after-append counts but no test reads them)."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against e77152e3 with whitespace ignored; f67f6551 adds the region and the ExitStack plumbing, 17b56a97 rewraps lines the deeper indentation pushes past the margin, and 1d336ed4f9 plus 6376c029 write and update the landing fragment.",
+    "done_when": "The done_when requires at most one full-index decode per read key before the append over a crew complete --gate not-run on a 2,000-row fixture plus a post-append read seeing the new row; tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:252 asserts the bound and :271 the row, and logs/index-decodes-base.log (4) and logs/index-decodes-head.log (1) record the figures.",
+    "goal": "The goal is one full-index decode per read key before a promotion's append; reckon/crew/promotion.py:602-607 and :1247-1252 wrap the pre-append reads in one ledger.index_reuse() region passed as an ExitStack, and :1846 closes it before ledger.append_run at :1853.",
+    "manifest": "Read; it records status complete, head 6376c029f2, base 4 versus head 1 before-append decodes, the negative control red at EXIT=1 with the intended test failing, 22 failed / 681 passed identically on both importing arms, and ruff clean over the staged paths.",
+    "write_paths": "The declared paths are reckon/crew/promotion.py, tests/test_a_promotion_does_not_read_the_whole_ledger_index.py, the landing fragment and the figures directory; git diff e77152e3..6376c029 changes exactly the first three and writes no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:265 fails on the reinstated regression (logs/negative-control.log records 4 decodes and 1 failed), but the after-append assertion at :280 cannot fail on the ordering its docstring claims.",
+    "evidence": "tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:265 asserts no read key decodes twice before the append over the 2,000-row fixture, and logs/index-decodes-base.log reads 4 against logs/index-decodes-head.log 1 with both EXIT=0 lines.",
+    "fit": "the added code follows the surrounding module idiom and names no plan label; the whitespace-insensitive diff of f67f6551 is 20 lines, the rest being the reindentation the region forces.",
+    "goal_fidelity": "reckon/crew/promotion.py:602 opens one ledger.index_reuse() region in complete(), :1250 hands it to _complete_locked, and :1846 exits it before ledger.append_run at :1853, so every pre-append read shares one decode per read key.",
+    "reuse": "ledger.index_reuse already exists at reckon/ledger.py:1577 at the base revision and is consumed rather than forked; no second index cache is added.",
+    "scope_discipline": "git diff e77152e3..6376c029 touches only reckon/crew/promotion.py, tests/test_a_promotion_does_not_read_the_whole_ledger_index.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is at most one full-index decode per read key before a promotion's append; reckon/crew/promotion.py:602 opens one ledger.index_reuse() region and :1846 exits it before ledger.append_run at :1853.\nVERDICT done_when: done_when names tests/test_a_promotion_does_not_read_the_whole_ledger_index.py over a crew complete --gate not-run on a 2,000-row fixture, which :252 and :271 assert, and the manifest records logs/index-decodes-base.log at 4 and logs/index-decodes-head.log at 1.\nVERDICT write_paths: declared paths are reckon/crew/promotion.py, tests/test_a_promotion_does_not_read_the_whole_ledger_index.py, the landing fragment and the figures directory; git diff e77152e3..6376c029 changes only the first three.\nVERDICT manifest: read; it states head 6376c029f2, base 4 versus head 1 decodes, EXIT=1 negative control with test_a_promotion_decodes_each_index_key_once_before_its_append failing, 22 failed / 681 passed identically on both importing arms, and ruff clean.\nVERDICT diff: read commit by commit against base e77152e3 with -w; f67f6551 is 20 real lines of region and ExitStack plumbing, 17b56a97 is formatter rewrapping, 1d336ed4f9 and 6376c029f2 write and then update the landing fragment.\nCALL_SITES: reckon/crew_run_commands.py:3372 (crew_complete), reckon/crew/recovery_review_acceptance.py:459, reckon/crew/recovery_review_acceptance.py:609, reckon/crew/promotion.py:732 (_complete_locked)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1250 passes the region to _complete_locked and :1846 closes it before the append, so the pre-append reads decode once per read key.\nSCORE evidence: 18\nJUSTIFICATION evidence: tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:265 asserts the per-key bound and the two arm logs record 4 versus 1 with EXIT=0, on separate all_debug jobs named in the run stream.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff e77152e3..6376c029 is inside the four declared write paths, and reckon/ledger.py was left untouched.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_promotion_does_not_read_the_whole_*:265 fails on the reinstated regression (logs/negative-control.log, 1 failed), while the after-append assertion at :280 passes whatever the region's exit point is.\nSCORE fit: 17\nJUSTIFICATION fit: the added comments in reckon/crew/promotion.py:603-607 and :1242-1247 state the mechanism and carry no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: ledger.index_reuse is the existing owner at reckon/ledger.py:1577 and is consumed, not re-implemented, with no second index cache added.\nFINDING tests/test_a_promotion_does_not_read_the_whole_ledger_index.py:280 non-blocking: the after-append test reads the ledger only after the command returns, so it stays green if the region closes after ledger.append_run rather than before it, leaving the ordering its docstring claims unguarded.",
+  "review_run_id": "r-20261111T073630827153-review-of-a-promotion-reads-the-ledger-index-once-6376c029f2a6",
+  "reviewed_base_sha": "e77152e3e38200c80927b6646b0b11e9bd4896a3",
+  "reviewed_head_sha": "6376c029f2a64f9a5bf75510488a659be3e486f2",
+  "reviewed_run_id": "r-20261111T064656204758-a-promotion-reads-the-ledger-index-once",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:29:14.855618+00:00",
+  "total": 109
+}

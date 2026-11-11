@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T07:12:39.756Z",
+  "dispatched_at": "2026-11-11T07:07:25Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261111T070018430342-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:126",
+      "id": "done_when-1",
+      "reason": "a worker whose base reproduction shows acceptance cannot then produce a control whose red log reads the bare line, so it either falsifies the control or blocks; the control has to name the base behaviour it actually produces, as the reproduction clause already does.",
+      "text": "\u00a716's negative control states unconditionally that removing the revision comparison \"makes the first case read the bare line again\", while the same done-when's reproduction clause now records what the base revision does \"verbatim, whether it refuses with the bare line or accepts it\"; the deliverable repeats the presumption with \"in place of the bare `command_matches_suite_command` line\", and the code supports the accepting branch, because `_arm_missing_fields` already accepts the command resolved at the arm's own recorded revision (`_scoped_suite_command(record, revision=revision)`, promotion_records.py:722\u2013725) \u2014 so a mid-run arm whose command matches its own revision's resolution is accepted today, and the control's stated red log would be unattainable",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261111T070018430342-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:122",
+      "id": "reasoning-1",
+      "reason": "a worker holding the declared scope cannot satisfy the \"every repair advice\" clause without editing a file it was not granted, so the deliverable must either add `reckon/crew/recovery_repair_dispatch.py` to the write paths and name `_repair_resume_advice`, or narrow the clause to the resume advice `resumption.py` composes.",
+      "text": "\u00a715's deliverable requires that \"Every resume or repair advice the crew composes\" name both revisions, but its write paths name only `reckon/crew/dispatch.py` and `reckon/crew/resumption.py`, and the repair advice is composed by `_repair_resume_advice` in `reckon/crew/recovery_repair_dispatch.py:750` (called at :1713); `resumption.py` holds the resume prompt writer and the refused-advice store, not the repair composer, so the section names no file for half its deliverable",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2de2fc85066587fbee9c1e90f3171c89a259d7cc",
+  "plan_fingerprint": "13938cde9a48eb29f9c68276599738de528113a2c6afb06a304fee60735552c9",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 87,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "80e65ba1ccfe6ba5b16a3fa9cfb6987ae9d1dccb",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a716's negative control now makes the first case behave as the base revision was recorded doing, and the deliverable replaces what the base revision does rather than a presumed bare line.",
+      "reason": "",
+      "when": "2026-11-11T07:32:01.213517+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "80e65ba1ccfe6ba5b16a3fa9cfb6987ae9d1dccb",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a715's write paths now include reckon/crew/recovery_repair_dispatch.py, where the repair advice is composed.",
+      "reason": "",
+      "when": "2026-11-11T07:32:43.198924+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "80e65ba1ccfe6ba5b16a3fa9cfb6987ae9d1dccb",
+      "commit_basis": "edit",
+      "note": "\u00a716's negative control now makes the first case behave as the base revision was recorded doing, and the deliverable replaces what the base revision does rather than a presumed bare line.",
+      "reason": "",
+      "when": "2026-11-11T07:32:01.213517+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "80e65ba1ccfe6ba5b16a3fa9cfb6987ae9d1dccb",
+      "commit_basis": "edit",
+      "note": "\u00a715's write paths now include reckon/crew/recovery_repair_dispatch.py, where the repair advice is composed.",
+      "reason": "",
+      "when": "2026-11-11T07:32:43.198924+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-promotion-reads-the-evidence-it-is-given/r-20261111T070018430342-plan-review-of-a-promotion-reads-the-evidence-it-is-given.json",
+  "review_run_id": "r-20261111T070018430342-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "f804d2285fdf9b9cbc3b46193f84ab048a4ad227",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_suite_gate_prompt_body` (dispatch.py:1491), `_compose_dispatch_prompt` (dispatch_claims.py:1245, called at dispatch.py:2955), `_arm_missing_fields` (promotion_records.py:686 at the plan's own commit; 690 today after fcec1e7f5b) and the record's `base_sha` at :109\u2013121 all resolve; the one anchor that does not cover what the section needs is reported under reasoning.",
+    "done_when": "a finding \u2014 \u00a716's negative control asserts a red outcome the section's own reproduction clause no longer permits.",
+    "evidence_paths": "pass \u2014 both done-whens put every log under the section's run directory with a revision-and-command header and a closing `EXIT=` line; no scratchpad path.",
+    "naming": "pass \u2014 no plan labels, ticket numbers or version tags reach a symbol, filename or comment in either unit, and neither new test name carries a plan identifier.",
+    "reasoning": "a finding \u2014 \u00a715's deliverable reaches a composer outside its declared write paths.",
+    "single_goal": "pass \u2014 \u00a715 carries one dispatch-time deliverable (base revision and after-arm rule in the brief, both revisions in advice), and \u00a716 carries the single trailing-revision refusal after the earlier split.",
+    "wiring": "pass \u2014 \u00a715's declared wait on `workers-spend-fewer-tokens-per-landed-node#s9` is satisfiable (that plan declares `s9` done), and \u00a716's wait on \u00a714 resolves; both sections write `promotion_records.py`, so the serialisation is right."
+  },
+  "section_digests": {
+    "_document": "bbd814c3f3f7bbcafdc1274385488eac996533259174374bc59e79f0f6a7e8f8",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "dfbabd1b999488a7b90baf00317fd271e2adeb7dd516e13f00dd71d75083d116",
+    "s16": "d7ce59d578c64daafd67d8efd8d4c5b188f1d74f2f04e7a74daf9b389d94dad8",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T07:26:19.667527+00:00",
+  "total": null
+}

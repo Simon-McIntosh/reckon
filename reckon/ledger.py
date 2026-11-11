@@ -944,6 +944,7 @@ def write_run_file(
         mode=mode,
         fsync=fsync,
     )
+    _bump_generation(project)
     return target
 
 
@@ -1173,6 +1174,73 @@ def _file_identity(path: Path) -> tuple[int, int, int, int] | None:
     except OSError:
         return None
     return info.st_mtime_ns, info.st_ctime_ns, info.st_size, info.st_ino
+
+
+# The write generation, and the two index metadata members that stand in for
+# the per-document stat walk. The generation is owned by the store, which keeps
+# one file per project under the crew home, keyed by the project alone. A path
+# keyed on the index directory would not do: a writer whose cache directory
+# falls back to the user cache and a reader using the configured directory
+# would then hold different files, and the write would never reach the reader.
+# Keying on the project alone also keeps the token out of the checkout, where a
+# marker no write commits would leave every session's tree dirty.
+_GENERATION_MEMBER = "generation"
+_RUNS_DIRECTORY_MEMBER = "runs_directory"
+# The store reads an absent counter as this value. The ledger reads it as "no
+# key": a project no ledger write has touched has nothing to compare, so its
+# index must go back to the documents rather than trust stamps it cannot check.
+_ABSENT_GENERATION = "none"
+
+
+def ledger_generation_path(project: str) -> Path:
+    """The file the store keeps one project's write generation in."""
+    return _store.write_generation_path(project)
+
+
+def ledger_generation(project: str) -> str | None:
+    """The project's write generation, or ``None`` when no write recorded one.
+
+    The store reads an absent counter as ``"none"``. That value must not key a
+    reuse: a ledger whose documents were all written by something that never
+    bumped — a project this code has not written since the key existed, or a
+    writer outside every ledger write path — has no generation to compare, and
+    the only safe reading of that is to walk the documents as before. ``None``
+    is the "read the documents" case, so absence keeps its old meaning while a
+    counter that exists is compared by equality.
+    """
+    generation = _store.read_write_generation(project)
+    return None if generation == _ABSENT_GENERATION else generation
+
+
+def _bump_generation(project: str) -> None:
+    """Advance the project's write generation after a ledger write.
+
+    Every ledger write path calls this once its own files are in place. A
+    reader compares the value it finds with the one its index recorded; an
+    unequal value sends it back to the documents, which is the only thing a
+    write has to signal. The advance is the store's own, so a write made by one
+    process is visible to every reader of the project on every node.
+
+    The store suppresses a failed advance so a plan write is never failed by its
+    cache key. A ledger write cannot afford that indifference: an unchanged
+    counter is indistinguishable from a write that never happened, and the next
+    read would reuse stamps for a document it no longer matches. So the advance
+    is verified here, and a counter that did not move is removed — an absent
+    counter reads as no key, which sends every reader back to the documents.
+
+    Removal is attempted, never required. A crew home that refuses writes is the
+    ordinary state of a fenced worker, and there the counter it protects is
+    absent anyway, so readers walk. Failing the write instead would break every
+    ledger write in such a process to defend against a stale counter it does not
+    have. The store keeps its own lenient behaviour for its other callers, which
+    is why the verification lives here and not in the owner.
+    """
+    before = _store.read_write_generation(project)
+    _store.advance_write_generation(project)
+    if _store.read_write_generation(project) != before:
+        return
+    with contextlib.suppress(OSError):
+        ledger_generation_path(project).unlink()
 
 
 def _run_snapshot(project: str, root: str | Path | None) -> list[tuple[Path, Any]]:
@@ -1711,7 +1779,14 @@ def _indexed_data(
         raise OSError("cannot resolve repository ledger") from exc
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
-    snapshot = _run_snapshot(project, root)
+    # The per-document stat walk is the index's cache key, and it costs one
+    # remote stat per run the project ever recorded. These two constant-cost
+    # facts stand in for it: the write generation, which every ledger write
+    # path bumps, and the run directory's own identity, which moves when a
+    # document is added or removed by any writer. A read that matches both
+    # reuses the stamps the index already holds.
+    generation = ledger_generation(project)
+    runs_stamp = json.dumps(_file_identity(aggregate.parent / "runs"))
     path = _run_index_path(project, root)
     index_source = str(ledger_path(project, root).resolve())
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -1750,6 +1825,17 @@ def _indexed_data(
                 "CREATE INDEX IF NOT EXISTS aggregate_activity ON aggregate_rows(activity)"
             )
             meta = dict(connection.execute("SELECT name, payload FROM metadata"))
+            recorded = dict(meta)
+            # A read whose generation and run directory still match the ones
+            # the index recorded reuses the stamps it holds, so it never walks
+            # the documents. Anything else — a bump, an addition or removal,
+            # or an index that recorded no generation — reads them as it
+            # always has.
+            reuse_documents = (
+                generation is not None
+                and recorded.get(_GENERATION_MEMBER) == generation
+                and recorded.get(_RUNS_DIRECTORY_MEMBER) == runs_stamp
+            )
             # The index records the ledger path it indexes, so a sweep can tell
             # an index whose checkout is gone from one merely stale: the path is
             # an identity, while a filename hash is opaque. Written here so any
@@ -1796,7 +1882,8 @@ def _indexed_data(
                 )
             stored = dict(connection.execute("SELECT name, stamp FROM records"))
             changed = []
-            for source, stamp in snapshot:
+            documents = [] if reuse_documents else _run_snapshot(project, root)
+            for source, stamp in documents:
                 if stamp is None:
                     raise OSError(f"cannot stat run: {source}")
                 encoded = json.dumps(stamp)
@@ -1829,9 +1916,10 @@ def _indexed_data(
                             json.dumps(picker_record(record), separators=(",", ":")),
                         ),
                     )
-            connection.executemany(
-                "DELETE FROM records WHERE name=?", [(name,) for name in stored]
-            )
+            if not reuse_documents:
+                connection.executemany(
+                    "DELETE FROM records WHERE name=?", [(name,) for name in stored]
+                )
             conflict = None
             conflict_sql = (
                 "SELECT r.name FROM records r JOIN aggregate_rows a ON a.run_id=r.name "
@@ -1860,6 +1948,19 @@ def _indexed_data(
                     "INSERT OR REPLACE INTO metadata VALUES ('refreshed_at', ?)",
                     (str(time.time()),),
                 )
+            # Record what this read observed, so the next read reuses the stamps
+            # rather than walking every document again. Written only when it
+            # moved, so a read that changed nothing writes nothing.
+            observed = (
+                (_GENERATION_MEMBER, generation),
+                (_RUNS_DIRECTORY_MEMBER, runs_stamp),
+            )
+            for member, value in observed:
+                if value is not None and recorded.get(member) != value:
+                    connection.execute(
+                        "INSERT OR REPLACE INTO metadata VALUES (?, ?)",
+                        (member, value),
+                    )
             result = _index_payload(
                 connection,
                 meta,
@@ -2215,7 +2316,9 @@ def _run_store_location() -> str:
     return str(run_store.store_path())
 
 
-def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
+def _restore_run_files(
+    snapshots: Sequence[tuple[Path, str]], project: str, root: str | Path | None
+) -> None:
     """Put each captured revision back, undoing a partly applied rewrite.
 
     Called when a later part of the same :func:`write` call fails, so the
@@ -2229,6 +2332,8 @@ def _restore_run_files(snapshots: Sequence[tuple[Path, str]]) -> None:
             _store.write_atomically(
                 target, lambda handle, text=text: handle.write(text), fsync=False
             )
+    if snapshots:
+        _bump_generation(project)
 
 
 def _keep_run_files_identical(
@@ -2275,7 +2380,7 @@ def _keep_run_files_identical(
                 continue
             write_run_file(project, row, root, fsync=False, mode=None)
         except OSError as exc:
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise LedgerError(
                 f"cannot keep run {run_id!r} readable for {project!r}: "
                 f"{target} could not be made identical to its ledger row, so "
@@ -2548,7 +2653,7 @@ def _write_state(
                 path, project, LEDGER_SLUG, payload, expected_version
             )
         except _store.VersionConflict as exc:
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise LedgerError(
                 f"ledger for {project!r} moved from version {exc.expected} to "
                 f"{exc.current} while this write was being prepared; re-read and retry"
@@ -2558,9 +2663,10 @@ def _write_state(
             # revision it read, so the files already brought forward must go back
             # with it; otherwise this write would hand the reader exactly the
             # disagreement the order above exists to avoid.
-            _restore_run_files(snapshots)
+            _restore_run_files(snapshots, project, root)
             raise
         rewritten = [path, *(target for target, _prior in snapshots)]
+        _bump_generation(project)
         if commit and obstruction is None:
             _commit_state_write(
                 project,
@@ -3210,6 +3316,7 @@ def append_run(
             stream.write(encoded)
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
+    _bump_generation(project)
     store_outcome = _index_append(project, stored_record)
     return {
         "path": str(target),
@@ -3297,6 +3404,8 @@ def _split_project_runs(project: str, docs: Path, *, dry_run: bool) -> dict[str,
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(serialize_run(row), encoding="utf-8")
         entry["written"] += 1
+    if entry["written"]:
+        _bump_generation(project)
 
     remaining = {key: value for key, value in data.items() if key != "runs"}
     try:

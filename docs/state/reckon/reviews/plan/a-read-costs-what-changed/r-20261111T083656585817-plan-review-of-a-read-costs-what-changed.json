@@ -1,0 +1,106 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T08:48:09.978Z",
+  "dispatched_at": "2026-11-11T08:41:22Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261111T083656585817-plan-review-of-a-read-costs-what-changed/plan.html:117",
+      "id": "reasoning-1",
+      "reason": "the node as written lands a correct memo on a function that costs 0.3% of the profile and leaves the measured hot spot untouched, so its gate would pass while the 30% chain does not move.",
+      "text": "the Why blames `plan_review._read_record` for the JSON decoding in its own profile, but counted from `station-profile-0810Z-50s.raw` (880 samples) the exact cited chain `compose_owed_plan_reviews > _owed_review_skip_reason > compose_burst_refusal > review_coverage` holds 265 samples (30.1%, matching the plan), `_read_record (plan_review` appears in 3 samples in the whole profile \u2014 all with leaves `open`/`isfile` \u2014 and in zero samples of that chain, while 111 of the chain's 124 JSON-decoding samples sit under `metadata_index._read_persisted_memo` (metadata_index.py:1998) and the remaining 13 under `_store.render`; that reader is the persisted memo `plan_review._snapshot_evidence` already uses (plan_review.py:929), so memoizing `_read_record` reaches no sample of the cost the section cites",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261111T083656585817-plan-review-of-a-read-costs-what-changed/plan.html:117",
+      "id": "done_when-1",
+      "reason": "a dispatch of s16 has no fence target and no file list for the ruff clause, so the node cannot be scoped or verified as written.",
+      "text": "s16 is the only section in the plan with no \"Write paths:\" sentence, yet its deliverable edits `reckon/crew/plan_review.py` and its done-when runs ruff \"on the staged paths\"; every sibling section ends by naming its files",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "59770af7b52c89ed22d4abd259a6107bd15efd01",
+  "plan_fingerprint": "0f64978d8dd7e7d98acae12d375bdcaeab5fef7847fc0639b6b4b09138193d3d",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 70,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "59770af7b52c89ed22d4abd259a6107bd15efd01",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "Agreed and re-targeted: \u00a716 now names metadata_index._read_persisted_memo, which holds 111 of the chain's 124 decoding samples. The running node is resumed to keep the decoded persisted memo in process by file stat identity, beside the _read_record memo it already built.",
+      "reason": "",
+      "when": "2026-11-11T08:56:44.024768+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "59770af7b52c89ed22d4abd259a6107bd15efd01",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a716 now names its write paths: reckon/metadata_index.py, reckon/crew/plan_review.py, its test file and its fragment.",
+      "reason": "",
+      "when": "2026-11-11T08:56:58.442765+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "59770af7b52c89ed22d4abd259a6107bd15efd01",
+      "commit_basis": "edit",
+      "note": "\u00a716 now names its write paths: reckon/metadata_index.py, reckon/crew/plan_review.py, its test file and its fragment.",
+      "reason": "",
+      "when": "2026-11-11T08:56:58.442765+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "59770af7b52c89ed22d4abd259a6107bd15efd01",
+      "commit_basis": "edit",
+      "note": "Agreed and re-targeted: \u00a716 now names metadata_index._read_persisted_memo, which holds 111 of the chain's 124 decoding samples. The running node is resumed to keep the decoded persisted memo in process by file stat identity, beside the _read_record memo it already built.",
+      "reason": "",
+      "when": "2026-11-11T08:56:44.024768+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-read-costs-what-changed/r-20261111T083656585817-plan-review-of-a-read-costs-what-changed.json",
+  "review_run_id": "r-20261111T083656585817-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "287a8e4b03ed92382047e98b7b85c6545c29c61c",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited profile, `plan_review._read_record` (plan_review.py:1421), `file_memo.memoized` (file_memo.py:358) and `docs/state/reckon/reviews/plan` all resolve; s15's close comment cites `da732632fa`, which exists. The record count reads 2,246 against 2,247 JSON files today \u2014 a moving figure, not a broken anchor, and not raised as a finding.",
+    "done_when": "a finding \u2014 s16's formatting clause measures \"ruff check and ruff format --check\" against \"the staged paths\", a set the section never declares, so the measure binds to nothing.",
+    "evidence_paths": "pass \u2014 the cited profile sits under `~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/`, a durable run directory that opens; s15's close-comment evidence fragment also resolves on disk.",
+    "naming": "pass \u2014 `tests/test_a_plan_review_record_is_decoded_once.py` names the mechanism; no plan labels, stage names or ticket numbers reach the section.",
+    "reasoning": "a finding \u2014 the Why's root cause does not match the cited profile: `plan_review._read_record` is 3 of 880 samples and appears in none of the 30% chain, while every JSON decode in that chain runs under `metadata_index._read_persisted_memo`.",
+    "single_goal": "pass \u2014 s16 carries one deliverable (`_read_record` served through `file_memo.memoized`) and one test file.",
+    "wiring": "pass \u2014 s16 declares no depends-on, informs or gates and needs none (it edits `plan_review._read_record` and shares no file with an open section); the `_document` declaration bump (s15 \u2192 done, s16 added) is consistent with the section's own status."
+  },
+  "section_digests": {
+    "_document": "9a5629b750d8cea04b64492e1a5f3b6512fcfc195fa5e306212831ef99a6188d",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "f29a6a09096e2f2074046c8ffad2386eb0c0cff3f345c7156c8f5f7b76d99e1b",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T08:54:33.136763+00:00",
+  "total": null
+}
