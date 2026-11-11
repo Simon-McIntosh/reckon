@@ -39,6 +39,11 @@
     <p>On 11 November at about 21:50 UTC the coordinator swept the live claims directory <code>~/.config/reckon/crew/claims</code> as SLURM job 1311094 on <code>all_debug</code>. Before: 120,468 identity files, of which 53 were under one hour old, 16,894 between one and 24 hours, 10,820 between 24 and 48 hours, and 92,701 older than 48 hours. The landed sweep judges liveness from the local <code>/proc</code>, while the directory is shared by every node (§19), so this run removed only files older than 48 hours, which no claim-holding execution outlives. It removed 92,701, printing each removal to <code>~/.cache/reckon-identity-sweep/apply-20261111.log</code>. After: 27,771 identity files, all younger than 48 hours. The script is <code>~/.cache/reckon-identity-sweep/sweep.py</code>, and its dry run is <code>dry-run-20261111.log</code> beside it.</p>
   </section>
 
+  <section id="s7-re-review-reads-what-changed" data-evidence-origin="append">
+    <h2>§7 — a re-review reads what changed since the review before it</h2>
+    <p>§7 landed at <code>f238d113fa</code> (reviewed head <code>2160ffdd</code>, run <code>r-20261111T185408798633-re-review-reads-what-changed</code>). A run's second or later code-review brief names the head the previous review read, the commits since it, and each finding that review raised with its disposition. It asks the reviewer to judge those commits and to say whether each earlier blocking finding is resolved; a first review's brief is unchanged. Its review raised one non-blocking finding, deferred at landing under §4: a stored finding with no claim is skipped, so the brief can call such a review empty.</p>
+  </section>
+
 </main>
 </body>
 </html>
