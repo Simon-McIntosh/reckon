@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T17:06:26.663Z",
+  "dispatched_at": "2026-11-11T16:58:22Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:126",
+      "id": "reasoning-1",
+      "reason": "the section's remedy and its whole gate rest on that cause, so a wrong one sends the node at a record the reporting surface does not read while the coordinator-visible symptom survives.",
+      "text": "\u00a716 says the duty \"came from the `session_refusal` the failed launches had recorded\", yet the obligations view builds a `queued-awaiting-session` duty only for a row whose classification is `queued` (`reckon/crew/obligations.py:3205`, classification taken from the pointer's `phase` by `reckon/crew/recovery_classification.py:792`), so a pointer the section itself describes as reading `working` or `starting` cannot produce that row however the refusal is stored \u2014 the cited observation therefore does not establish the named cause, and clearing the refusal at launch may leave whatever surface did produce the row untouched",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:126",
+      "id": "done_when-1",
+      "reason": "a gate none of whose assertions distinguishes the deliverable from an unrelated implementation, and whose control may already pass at base, cannot show the guard fires, so the node would be closed on a measure that proves nothing.",
+      "text": "\u00a716's gate asserts only that the obligations view and the stop hook \"list no queued duty\" after a launch and never that the request's recorded refusal is cleared, so a view-side filter of launched rows passes every assertion without the stated deliverable being done; and its negative control (\"leaving the refusal on the launched pointer makes the second assertion fail\") cannot fire if a launched pointer is not classified `queued` at all, which is what `reckon/crew/obligations.py:3205` requires before the row can be listed",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4a4bb0f17beb1c0e0644e5e4d4fa3786d858a0b4",
+  "plan_fingerprint": "85a0c75a0f42b2f659691ad92149659bb155c7e89ef7c5773635b60d1791c9e9",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 5,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T164955516827-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "b788477ac1647ca2c2e2a50075747731f9d025ce",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a715's cited commit `1ccf0a3829` resolves (`git cat-file -t` \u2192 commit), `reckon/crew/queue_admission.py` exists and carries `retry_at`, `held-on-retry-backoff` (line 125) and the back-off hold (line 1808), and `PlanVisibilityError` exists (`reckon/crew/node.py:650`); \u00a716's `session_refusal` (`reckon/crew/obligations.py:1421`), `queued-awaiting-session` (`obligations.py:208`), `obligations.py`, `obligation_snapshot.py` and the stop hook (`reckon/hooks/coordinator_obligations.py`) all resolve.",
+    "done_when": "a finding \u2014 \u00a716's done-when asserts only what the views show after a launch and never asserts that the request's recorded refusal is gone, so a view-side filter satisfies every assertion while the stated deliverable (the refusal is cleared when the request launches) is never measured; its negative control also presumes a launched run is listed at base, which `reckon/crew/obligations.py:3205` makes impossible for a pointer whose phase is not `queued`.",
+    "evidence_paths": "pass \u2014 both gates are repository test files under `tests/` measured on `all_debug`, and `_document`'s `plan-effort-hours` 13.5 reconciles with the sixteen section hours (0.5+1.0+0.75+1.25+1.0+1.0+1.0+1.5+0.5+1.0+0.5+0.75+0.75+0.5+0.75+0.75 = 13.5); no gate sits in a session scratchpad or a node-local path.",
+    "naming": "pass \u2014 `tests/test_a_plan_commit_releases_its_backed_off_requests.py` and `tests/test_a_launched_run_owes_no_queued_duty.py` name the behaviour, and neither the sections nor their write paths carry a plan label, ticket number or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a715's root cause holds (the dependency guard fingerprints the plan *file* stamp, `reckon/crew/queue_admission.py:1068`, which a `git commit` does not move, so the backoff cannot see the commit), but \u00a716 attributes the queued duty to the recorded `session_refusal` when its own evidence \u2014 the same runs' pointers reading `working` and `starting` at 16:19:51 \u2014 shows the row cannot have come from that pointer's classification, since the view lists a queued duty only for a row classified `queued` from the pointer's phase.",
+    "single_goal": "pass \u2014 \u00a715 delivers one behaviour (release a plan-visibility backoff on the plan's commit) and \u00a716 one behaviour (a launched request stops owing a queued duty), each with one gate.",
+    "wiring": "pass \u2014 \u00a715 and \u00a716 are declared implementable in `_document` and both are covered by the open followup f-wftl-002 (\"Build \u00a77, \u00a78 and \u00a710 to \u00a716\"); neither needs a `plan-section-depends-on` entry, and the `queue_admission.py` overlap with s3/s5/s6/s15 is concurrent work, not a dependency."
+  },
+  "section_digests": {
+    "_document": "af67975f8c77c5dbde7b4e6ec030dbf994a1fc36682907a9b855dd5e41fc8054",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "700171d0523fc2151286872f3ec0b22f2084bdf5b70abd2b4a51057778ba4217",
+    "s11": "bbbd97ae89fefab54447bc56845c4c2896256b68b96bc665c1ff5fdb3a23c33a",
+    "s12": "19c9eecdaabc1ac3fc743163567a30028d1d60155b3fe45a4da7a21fb6851d0e",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "6d2e063d7be900a87f2e35838933c4be318b30a3d3dd9ac63554ff8b49e2a0c7",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "05d6c3c5a188c40c588444a23f0088ab5fab5e97c90fbeb7627c9a2b7d4609fa",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "e3c7bc0d0096a6c0a8c522054cd48a1cd1c56da6259377c3e1f880aec6d01923",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "913bdbf23b4009bc3bfeda47ac2960dfee3a16c3109c0cbfb233d94b14c9cbd3",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:19:08.099902+00:00",
+  "total": null
+}
