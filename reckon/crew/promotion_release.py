@@ -338,14 +338,12 @@ def remove_cited_arms(record: Mapping[str, Any], *, gate: str = "") -> dict[str,
 def _released_tree_index(
     record: Mapping[str, Any], worktree: Path
 ) -> tuple[Path | None, str]:
-    """The ledger index the worktree published, and why it is withheld.
+    """The private path-keyed index owned only by this worktree.
 
-    A worktree resolves its own ledger path, so its reader publishes an index
-    keyed to a checkout that the release is about to remove and nothing
-    resolves again. The path is computed here, while the tree still exists, so
-    the key matches the one its reader built. No index is named when the
-    ledger resolves outside the tree — a checkout whose state is shared through
-    a link publishes the shared index, which the release must not take.
+    Repository-shared indexes outlive every linked worktree and are never
+    selected here. The checkout path identifies only a legacy private cache;
+    resolve it before releasing the tree so symlink identity is preserved.
+    A ledger resolving outside the tree has no private index this release owns.
     """
     project = str(record.get("project") or "").strip()
     if not project:
@@ -356,11 +354,11 @@ def _released_tree_index(
         return None, f"project {project!r} does not resolve a ledger"
     if Path(worktree).resolve() not in source.parents:
         return None, "the ledger resolves outside the released tree"
-    return ledger._run_index_path(project, worktree), ""
+    return ledger._checkout_index_path(project, worktree), ""
 
 
 def _unlink_released_tree_index(index: Path | None, withheld: str) -> dict[str, Any]:
-    """Remove a released worktree's index, keeping one a process holds open.
+    """Remove a released worktree's private index, keeping a locked one.
 
     The unlink is O(1): the index file is named by a hash of the ledger path
     alone, so no scan of the cache is involved and no other checkout's index
@@ -458,8 +456,8 @@ def _release_run_workspace(
                 classification, "unrecognised classification"
             )
         else:
-            # The index path is resolved while the tree still exists, so it is
-            # the key the tree's own reader published under.
+            # Resolve the private cache identity before releasing the checkout;
+            # repository-shared caches are never candidates for this removal.
             index, index_withheld = _released_tree_index(record, worktree)
             released = _release_worktree_whole(repo, worktree, run_id=run_id)
             if not released.get("released", True):

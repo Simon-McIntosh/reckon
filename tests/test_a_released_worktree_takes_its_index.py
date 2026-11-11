@@ -1,19 +1,13 @@
-"""A released worktree takes the ledger index it published with it.
+"""A worktree release retains shared caches and removes only private indexes.
 
-A worktree resolves its own ledger path, so every worktree's reader publishes
-a full-size index keyed to that checkout. The release path removed the tree and
-left the index behind, where nothing resolved it again until someone ran a
-sweep by hand, and none did: ``~/.cache/reckon`` held hundreds of gigabytes of
-indexes recording checkouts that were gone. The release now unlinks the index
-of the tree it releases, keeps one a live process holds open, and the run-less
-sweep still reaps the backlog.
-
-Every case works on a synthesised checkout and a temporary cache root under a
-temporary configuration home; no real fleet directory is read or written.
+The fixtures use temporary repositories and configuration homes. Shared indexes
+are built through the ledger reader; legacy indexes carry the path-based cache
+identity and source metadata that make them exclusive to one checkout.
 """
 
 from __future__ import annotations
 
+import hashlib
 import importlib
 import json
 import shutil
@@ -55,8 +49,20 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         ("init", "-q", "-b", "main"),
         ("config", "user.email", "worker@example.invalid"),
         ("config", "user.name", "Worker"),
-        ("add", "."),
-        ("commit", "-q", "-m", "test: seed the released-index fixture"),
+        (
+            "add",
+            ".gitignore",
+            "seed.txt",
+            *(f"tracked-{index}.txt" for index in range(4)),
+        ),
+        (
+            "commit",
+            "-q",
+            "-m",
+            "test: seed the released-index fixture",
+            "-m",
+            "Create tracked files for release checks.",
+        ),
     ):
         _git(repo, *arguments)
     (config_home / "mounts.json").write_text(
@@ -109,6 +115,48 @@ def _publish_index(checkout: Path) -> Path:
     return index
 
 
+def _publish_legacy_index(checkout: Path) -> Path:
+    """Plant the path-keyed index exclusive to this checkout."""
+    source = ledger.ledger_path(PROJECT, checkout).resolve()
+    identity = hashlib.sha256(str(source).encode()).hexdigest()
+    index = (
+        ledger._index_directory()
+        / f"ledger-{identity}-v{ledger._RUN_INDEX_VERSION}.sqlite"
+    )
+    index.parent.mkdir(parents=True, exist_ok=True)
+    with closing(sqlite3.connect(index)) as connection:
+        connection.execute(
+            "CREATE TABLE metadata (name TEXT PRIMARY KEY, payload TEXT)"
+        )
+        connection.execute(
+            "INSERT INTO metadata VALUES (?, ?)",
+            (ledger.LEDGER_INDEX_PATH_KEY, str(source)),
+        )
+        connection.commit()
+    return index
+
+
+def test_releasing_a_worktree_keeps_the_repository_shared_index(
+    repository: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    shared = _publish_index(repository)
+    released_tree = _worktree(repository, "released-shared")
+    kept_tree = _worktree(repository, "kept-shared")
+    assert _publish_index(released_tree) == _publish_index(kept_tree) == shared
+    before = shared.read_bytes()
+
+    result = promotion_release_module._release_run_workspace(
+        _record(repository, released_tree, "r-released-shared")
+    )
+
+    assert result["worktree_released"] is True, result
+    assert not released_tree.exists()
+    assert shared.is_file(), "worktree release removed the repository-shared cache"
+    assert shared.read_bytes() == before
+    assert "ledger_index_removed" not in result
+    assert "removed ledger index" not in capsys.readouterr().out
+
+
 @contextmanager
 def _held_open(index: Path) -> Iterator[None]:
     """Hold SQLite's write lock on ``index``, as a reader mid-refresh does."""
@@ -125,8 +173,9 @@ def test_releasing_a_worktree_removes_only_its_own_index(
 ) -> None:
     released_tree = _worktree(repository, "released")
     kept_tree = _worktree(repository, "kept")
-    released_index = _publish_index(released_tree)
-    kept_index = _publish_index(kept_tree)
+    shared_index = _publish_index(repository)
+    released_index = _publish_legacy_index(released_tree)
+    kept_index = _publish_legacy_index(kept_tree)
 
     result = promotion_release_module._release_run_workspace(
         _record(repository, released_tree, "r-20261110T000000000000-released")
@@ -137,12 +186,13 @@ def test_releasing_a_worktree_removes_only_its_own_index(
     assert result["ledger_index_removed"] == str(released_index), result
     assert not released_index.exists(), "the released tree's index outlived it"
     assert kept_index.is_file(), "a peer worktree lost its index"
+    assert shared_index.is_file(), "legacy cleanup removed the shared cache"
     assert f"removed ledger index {released_index}" in capsys.readouterr().out
 
 
 def test_an_index_a_live_process_holds_open_is_kept(repository: Path) -> None:
     tree = _worktree(repository, "held")
-    index = _publish_index(tree)
+    index = _publish_legacy_index(tree)
 
     with _held_open(index):
         result = promotion_release_module._release_run_workspace(

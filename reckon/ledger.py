@@ -1337,6 +1337,13 @@ def _run_index_path(project: str, root: str | Path | None) -> Path:
     return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
 
 
+def _checkout_index_path(project: str, root: str | Path | None) -> Path:
+    """The path-keyed private cache a checkout's release may remove."""
+    source = str(ledger_path(project, root).resolve())
+    identity = hashlib.sha256(source.encode()).hexdigest()
+    return _index_directory() / f"ledger-{identity}-v{_RUN_INDEX_VERSION}.sqlite"
+
+
 def recorded_ledger_path(index: str | Path) -> str | None:
     """The ledger path an index records, or ``None`` when it records none.
 
