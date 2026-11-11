@@ -45,6 +45,9 @@ from reckon.crew import (
     review_records,
     runs,
 )
+from reckon.crew import (
+    repair as repair_module,
+)
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
@@ -1746,6 +1749,43 @@ def _resolve_review_tier(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> 
         return review_tiers.FULL
 
 
+def _coordinator_resume_in_flight(
+    pointer: Mapping[str, Any],
+    repair: Mapping[str, Any],
+    review: Mapping[str, Any],
+) -> bool:
+    """Whether a resume a person started is answering this round right now.
+
+    A coordinator who answers a repair by handing the run advice and resuming
+    it works the round inside the reviewed run, because the finding is about
+    that run's own worktree and its commit claim. While the resumed attempt
+    runs, the reflex cannot open a second repair for the same run: it is
+    refused for the live worker. So a ``repair-owed`` row names a duty nobody
+    can act on, and the stop hook holds every turn end on the refusal the
+    reflex already recorded.
+
+    The reflex's own resume is not this case. It records the round it opened as
+    an opening status on the pointer, and that attempt keeps the in-flight
+    reading. A live resume whose round record carries no opening status is the
+    one a person started, and it stands in for this duty while it runs.
+
+    The round is matched on the reviewed head: a live resume of a later round
+    than the review's says nothing about the findings this review raised, so
+    the duty is left standing.
+    """
+    if str(repair.get("status") or "") in recovery.REPAIR_ROUND_OPENING_STATUSES:
+        return False
+    recorded_round = str(repair.get("round_id") or "")
+    if recorded_round and recorded_round != repair_module.repair_round_id(review):
+        return False
+    from reckon.crew.resumption import _attempt_kind, _live_attempt_number
+
+    attempt = _live_attempt_number(pointer)
+    if attempt is None:
+        return False
+    return _attempt_kind(pointer, attempt) == "resume"
+
+
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
@@ -1870,13 +1910,15 @@ def _review_duty_item(
     if review is not None:
         blocking = recovery_review_dispatch._undisposed_blocking_findings(review)
         if blocking:
+            repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
+            repair = repair if isinstance(repair, Mapping) else {}
+            if _coordinator_resume_in_flight(pointer, repair, review):
+                return None
             item = _live_item(row, kind="repair-owed", now=now)
             if head:
                 item["head"] = head
             if tier == review_tiers.NONE:
                 item["review_tier"] = tier
-            repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
-            repair = repair if isinstance(repair, Mapping) else {}
             status = str(repair.get("status") or "")
             item["reason"] = (
                 f"the newest review has {len(blocking)} open blocking finding(s); "

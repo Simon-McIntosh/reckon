@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-shows-the-work-it-watches">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-shows-the-work-it-watches">
+  <meta name="plan-verifies" content="reckon:the-monitor-shows-the-work-it-watches#s126">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A repair duty clears while a coordinator's resume is answering it | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e-landing" data-node="a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e" data-reckon="landed" data-when="2026-11-11">
+  <h2>A live coordinator resume stands in for the repair it is answering</h2>
+  <p>A run whose review raised a blocking finding read as <code>repair-owed</code> while the coordinator's own <code>crew resume</code> was answering that finding. The reflex cannot dispatch a second repair for a run with a live worker — it is refused for exactly that reason — so the row named a duty nobody could act on, and the stop hook held every turn end on the refusal the reflex had already recorded.</p>
+  <p><strong>Change.</strong> <code>reckon/crew/obligations.py</code> gains <code>_coordinator_resume_in_flight</code>, consulted in the repair branch of <code>_review_duty_item</code> before a row is built. It answers true when the run has an attempt whose own receipt shows its worker alive and whose kind is <code>resume</code>, and the round's recorded dispatch is not one of <code>REPAIR_ROUND_OPENING_STATUSES</code> — so the reflex's own running resume keeps the in-flight reading it already had, and only a resume that no repair record opened stands in for the duty. A recorded round naming a different head than the review's is not this round, so the duty is left standing. The suppression is scoped to the live attempt: once it ends, the duty is read again from what the run delivered, and a repair that landed a new head leaves the run owing its review rather than a repair of the old one.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py</code> drives a temporary crew home: a delivered run whose review carries one blocking finding, the reflex's refused repair dispatch naming that round, and the coordinator's resumed attempt whose receipt shows its worker running. While that attempt is live the obligations view reports no <code>repair-owed</code> row; once the attempt ends and the repair has landed a new head, it reports none either. Head arm <code>53 passed</code>, <code>EXIT=0</code>; base arm <code>51 passed</code>, <code>EXIT=0</code>. <code>ruff check</code> and <code>ruff format --check</code> add no findings on the two staged paths.</p>
+  <p><strong>Base and negative control.</strong> At the base revision <code>582277afab</code> the same case reports the row: <code>FAILED tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py::test_a_live_coordinator_resume_is_not_reported_as_owing_repair</code>, <code>1 failed, 1 passed</code>, <code>EXIT=1</code>, the assertion listing <code>['repair-owed']</code>. Keeping the refused dispatch as the duty's state — the helper returning false, applied verbatim in a scratch copy — reproduces that failure exactly.</p>
+</article>
+</body>
+</html>
