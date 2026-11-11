@@ -1206,12 +1206,24 @@
                     "description": "Public model list and watched id prefixes for model notices."
                 },
                 "model_windows": {
-                    "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
-                    "items": {
-                        "$ref": "#/$defs/ModelWindow"
+                    "additionalProperties": {
+                        "anyOf": [
+                            {
+                                "$ref": "#/$defs/ModelWindow__identifier_optional"
+                            },
+                            {
+                                "description": "A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.",
+                                "minimum": 1,
+                                "type": "integer"
+                            },
+                            {
+                                "type": "null"
+                            }
+                        ]
                     },
+                    "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
                     "type": [
-                        "array",
+                        "object",
                         "null"
                     ]
                 },
@@ -2451,6 +2463,10 @@
             "additionalProperties": false,
             "description": "One model-id prefix and the context window that model runs in, in tokens. The prefix is the map key, so a specific model id and its family can each be declared without this table naming a provider.",
             "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
                 "tokens": {
                     "description": "A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.",
                     "minimum": 1,
@@ -2460,6 +2476,30 @@
                     ]
                 }
             },
+            "required": [
+                "name"
+            ],
+            "title": "ModelWindow",
+            "type": "object"
+        },
+        "ModelWindow__identifier_optional": {
+            "additionalProperties": false,
+            "description": "One model-id prefix and the context window that model runs in, in tokens. The prefix is the map key, so a specific model id and its family can each be declared without this table naming a provider.",
+            "properties": {
+                "name": {
+                    "description": "Map key for an inlined entry.",
+                    "type": "string"
+                },
+                "tokens": {
+                    "description": "A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.",
+                    "minimum": 1,
+                    "type": [
+                        "integer",
+                        "null"
+                    ]
+                }
+            },
+            "required": [],
             "title": "ModelWindow",
             "type": "object"
         },
@@ -3336,12 +3376,24 @@
             "description": "Public model list and watched id prefixes for model notices."
         },
         "model_windows": {
-            "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
-            "items": {
-                "$ref": "#/$defs/ModelWindow"
+            "additionalProperties": {
+                "anyOf": [
+                    {
+                        "$ref": "#/$defs/ModelWindow__identifier_optional"
+                    },
+                    {
+                        "description": "A size in tokens, such as the context window a model runs in. Declared as a positive integer: a window of zero would make every session read as overflowing, so the schema refuses one.",
+                        "minimum": 1,
+                        "type": "integer"
+                    },
+                    {
+                        "type": "null"
+                    }
+                ]
             },
+            "description": "The context window each harness model runs in, keyed by model-id prefix and valued in tokens. Routing configuration rather than source: the crew directory divides a coordinator's measured context use by its model's window, so the figures live beside the models they describe. A checkout carrying no catalogue declares none, and a session reads its window unmeasured rather than against a guessed figure.",
             "type": [
-                "array",
+                "object",
                 "null"
             ]
         },

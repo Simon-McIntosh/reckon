@@ -64,7 +64,10 @@ def _context_windows() -> tuple[tuple[str, int], ...]:
         return ()
     windows: list[tuple[str, int]] = []
     for prefix, entry in declared.items():
-        tokens = entry.get("tokens") if isinstance(entry, Mapping) else None
+        if isinstance(entry, int):
+            tokens = entry
+        else:
+            tokens = entry.get("tokens") if isinstance(entry, Mapping) else None
         if isinstance(tokens, int) and tokens > 0:
             windows.append((str(prefix), tokens))
     return tuple(sorted(windows, key=lambda item: len(item[0]), reverse=True))

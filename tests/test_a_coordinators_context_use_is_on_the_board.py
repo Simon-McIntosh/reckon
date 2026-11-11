@@ -112,7 +112,7 @@ def _catalogue(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     """Point the catalogue at a fixture declaring the models' context windows."""
     path = tmp_path / "model-catalogue.yaml"
     windows = "".join(
-        f"  {prefix}:\n    tokens: 1000000\n" for prefix in _WINDOW_PREFIXES
+        f"  {prefix}: 1000000\n" for prefix in _WINDOW_PREFIXES
     )
     path.write_text(f"version: 1\nmodel_windows:\n{windows}", encoding="utf-8")
     monkeypatch.setenv("RECKON_MODEL_CATALOGUE", str(path))
