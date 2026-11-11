@@ -3357,14 +3357,20 @@ _SECTION_RUNS_CACHE_KEY = "section-runs"
 def _ledger_run_rows(
     project: str, cache: dict[str, Any] | None
 ) -> list[Mapping[str, Any]] | None:
-    """One project's committed run rows, or ``None`` when they cannot be read."""
+    """One project's committed run rows, or ``None`` when they cannot be read.
+
+    The rows are read straight from the ledger rather than through its index,
+    which is a cache of an earlier moment: a run promoted since the index was
+    built is absent from it, and a section whose promotion is the record being
+    asked about would answer as though nothing had been promoted.
+    """
     from reckon import ledger
 
     key = (_SECTION_RUNS_CACHE_KEY, project)
     if cache is not None and key in cache:
         return cache[key]
     try:
-        data, _version = ledger.load(project)
+        data, _version = ledger.load(project, use_index=False)
         rows: list[Mapping[str, Any]] | None = [
             row for row in data.get("runs") or () if isinstance(row, Mapping)
         ]

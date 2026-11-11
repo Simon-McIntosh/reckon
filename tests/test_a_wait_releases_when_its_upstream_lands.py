@@ -135,12 +135,22 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     # unnamed: the guard would read the host repository's HEAD instead of the
     # one built here.
     monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
+    # The cache home is pinned too: a lookup that resolved through the invoking
+    # checkout would answer from a tree this fixture never built.
+    monkeypatch.setenv("XDG_CACHE_HOME", str(config_home / "cache"))
     from reckon.crew.dispatch_sections import project_mount_repository
 
     resolved = project_mount_repository(PROJECT)
     assert resolved is not None, "the fixture registers its own checkout"
     assert Path(resolved).resolve() == repository.resolve(), (
-        "the guard resolves the fixture's checkout, not the host's"
+        f"the guard resolves {resolved}, not the fixture checkout {repository}"
+    )
+    assert Path(ledger.ledger_path(PROJECT)).resolve().is_relative_to(
+        config_home.resolve()
+    ), (
+        f"the ledger the fixture writes and the guard reads is "
+        f"{ledger.ledger_path(PROJECT)}, outside the fixture's config home; a "
+        "cached index or a stale home would answer from another tree"
     )
     return repository
 
@@ -280,6 +290,14 @@ def test_a_delivered_unlanded_run_holds_the_wait_until_merged_into_head(
     # Promotion records the revision, and the promotion's own release re-derives
     # the wait: the head is still unmerged, so the waiter keeps waiting.
     _promote(delivered)
+    # The ledger is now the only record of the run, so name it: a tree where
+    # this read resolves somewhere else fails here, at the component that
+    # decides, rather than as a phase further down.
+    rows, _version = ledger.load(PROJECT)
+    assert rows["runs"], "the promotion wrote a row the guard can read"
+    assert queue_admission._section_run_unlanded(
+        PROJECT, PLAN, UPSTREAM, live=[]
+    ), "the guard holds the wait from the ledger alone"
     _release()
     assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
         "a promotion without the merge leaves the waiter waiting"
