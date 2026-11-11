@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T18:12:22.669Z",
+  "dispatched_at": "2026-11-11T17:52:33Z",
+  "findings": [
+    {
+      "anchor": "plan.html:117",
+      "id": "done_when-1",
+      "reason": "the plan would carry one more open followup, as f-arcwc-002 does for \u00a79, so the re-profile's after-figure is tracked rather than silently dropped when the sections are declared done.",
+      "text": "\u00a716's done-when and \u00a717's (plan.html:121) both close by assigning a post-landing station re-profile to the coordinator, and the `_document` edit now declares \u00a718 done and records that \"the station re-profile follows \u00a718\", but \u00a718 has landed and no followup (only f-arcwc-001 and f-arcwc-002 are open, on \u00a77/\u00a79) carries that re-profile, so the plan reports every section done while the after-figure both measures rest on \u2014 the coverage chain's and the review dispatch's share of the station sweep \u2014 has no owner and may never be recorded",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "088ce5a6e2ed424231239555e3139563f9c76cfd",
+  "plan_fingerprint": "ea33235768b9c6a931bab4c03680a6f13b7ee5f8c6867501bcdcf5f446bc1a91",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 84,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T174449605018-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "57c17b76cac0dc96e49fa8aba535885bf2e570d3",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `tests/test_a_promotion_profile_refresh_costs_its_row.py:310` defines `test_fold_inputs_must_match_the_served_stamp_and_date` with the `stamp`/`date`/`missing` parametrisation s19 describes, the stamp and date comparisons it names are at `reckon/crew/picker/lane_context.py:899-900`, finding `fa46a14b865` resolves to the \u00a718 review record (`~/.config/reckon/crew/reviews/reckon/r-20261111T141432954806-promotion-profile-refresh-folds-its-row.at-2a8c93fc797d.json:80`), and the landed commits `b0720d03e4`, `2a8c93fc79`, `1f4d0fe396`, `f4aab3a5bc` all resolve and are ancestors of HEAD.",
+    "done_when": "a finding \u2014 the `_document` edit declares \u00a718 done and records that the station re-profile \"follows \u00a718\", while \u00a716 and \u00a717 each end by assigning that re-profile to the coordinator, and no followup carries it, so the plan reads complete with an after-figure it promised unrecorded.",
+    "evidence_paths": "pass \u2014 s19 records the two mutation runs in the manifest and its findings in \"the node's fragment\", the same durable `docs/evidence/fragments/a-read-costs-what-changed/` convention \u00a716\u2013\u00a718 use (that directory holds `promotion-profile-refresh-folds-its-row.html`), and names no scratchpad or node-local temporary path.",
+    "naming": "pass \u2014 s19's title, symbols and prose name the mechanism (a fold against a rebuild) and the test's own existing name; the only identifier it adds to the record is a review finding id, which is evidence, and no plan label or version tag reaches code.",
+    "reasoning": "pass \u2014 the Why's root cause matches its evidence: `test_fold_inputs_must_match_the_served_stamp_and_date` asserts only `rows == 50` and `build.call_count == 1`, and `run_time_profile` is called exactly once on both the fold and the rebuild branch (`lane_context.py:904-906`), so the count cannot tell them apart and removing either comparison leaves both assertions holding; the endpoint is checkable by the two declared mutations, and the section prescribes no product implementation \u2014 it states \"no product change unless the strengthened test exposes a defect\".",
+    "single_goal": "pass \u2014 s19's one deliverable is a strengthened test; the fragment is its record, not a second deliverable.",
+    "wiring": "pass \u2014 s19 declares no `depends-on` and needs none: it strengthens \u00a718's landed test, and \u00a718 is on main (`b0720d03e4` is an ancestor of HEAD, and the fold gate it tests is present at `reckon/crew/picker/lane_context.py:899-900`); `plan-informs` and the other section dependencies are unchanged by the `_document` edit."
+  },
+  "section_digests": {
+    "_document": "ccfdc8518895f6f05c3ceef347e8a78e726d9d7d95096332ed4233bb47064b56",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:21:38.195577+00:00",
+  "total": null
+}
