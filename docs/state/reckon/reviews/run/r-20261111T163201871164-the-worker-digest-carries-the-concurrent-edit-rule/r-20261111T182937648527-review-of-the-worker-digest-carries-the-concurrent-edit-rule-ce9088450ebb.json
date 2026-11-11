@@ -1,0 +1,89 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own arms: baseline_suite records 6 failed / 67 passed at 16bf78f0ef, after_suite records 74 passed at ce9088450e; no failure present in the head arm that the baseline arm lacks, so the delta is zero added failures.",
+  "assertion_audit": [
+    {
+      "fails_if": "The excerpt's first span is restored to the superseded key (generation raises DigestError), the concurrent-edit bullet is dropped from the span, the exclusive-scope bullet is re-admitted, or either coordinator merge duty enters the extracted span; logs/negative-control.log records this test FAILED under the first mutation.",
+      "file": "tests/test_worker_digest.py",
+      "lines": [
+        262,
+        263,
+        264,
+        268,
+        269,
+        270,
+        271,
+        272
+      ]
+    },
+    {
+      "fails_if": "The excerpt re-admits the superseded 'one exclusive write scope' bullet or stops carrying the current worktree bullet; the case asserts both directions.",
+      "file": "tests/test_worker_digest.py",
+      "lines": [
+        247,
+        248
+      ]
+    }
+  ],
+  "assertion_independence": "The added assertions compare generated digest text against literal markers defined in the test, not against canonical text the test itself passed into generate(), so reverting the input the code was handed does not leave the assertion true; the declared negative control demonstrates this by making the case fail.",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/worker_digest.py:__main__ (python -m reckon.crew.worker_digest)",
+    "reckon/crew/digests/implement.md:7 (regeneration line naming the CLI)"
+  ],
+  "completed_at": "2026-11-11T18:44:38.675Z",
+  "dispatched_at": "2026-11-11T18:33:10Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/the-worker-digest-carries-the-concurrent-edit-rule.html",
+      "line": "45",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head row cites revision 15c5e4dd67 while the stored head arm it points at (logs/head.log header and manifest after_suite) ran at ce9088450e; the code is identical between the two (the later commit is the docs fragment only) but a reader cross-checking the citation finds a revision the cited log was not run at."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T163201871164-the-worker-digest-carries-the-concurrent-edit-rule/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when requires ruff check and ruff format --check to add no findings on the staged paths, and the manifest's tests line records only the pytest command; this review re-ran both on reckon/crew/worker_digest.py and tests/test_worker_digest.py and both are clean, so the substance holds but the evidence for that clause is unrecorded."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against 16bf78f0ef: 15c5e4dd67 changes the excerpt spans and adds two forbidden markers in reckon/crew/worker_digest.py, regenerates four digests, and adds one test case plus an updated assertion in tests/test_worker_digest.py; ce9088450e adds the 60-line evidence fragment.",
+    "done_when": "The done_when names the generation-against-canonical check, test_the_committed_digests_are_current_on_this_host, a new case asserting the rule present and the superseded bullet and merge duties absent, a negative control that restores the old key, all_debug arms at -n<=4, and ruff clean; logs/baseline.log, logs/head.log and logs/negative-control.log record the first four, and ruff check/format on the two staged Python paths are clean (verified by this review, not recorded by the manifest).",
+    "goal": "The node's goal is that the worker digest carries the concurrent-edit rule; reckon/crew/worker_digest.py:212 re-anchors the worker-parallel-safety excerpt and all four committed digests now carry '- One worker, one worktree. **Concurrent edits to one file from separate worktrees are allowed ...'.",
+    "manifest": "Read; it reports status complete, commits 15c5e4dd67 and ce9088450e, the literal gate command, the three log paths, the baseline/after suite JSON and a negative_control_log path naming a red log with EXIT=1.",
+    "write_paths": "The reviewed manifest declares reckon/crew/worker_digest paths (worker_digest.py, digests/, tests/test_worker_digest.py, the node's evidence fragment and figure directory); the diff against 16bf78f0ef touches only files inside that set and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_worker_digest.py:262 asserts 'Concurrent edits to one file from separate' is in each generated digest and the merge-duty markers are absent; logs/negative-control.log shows that case FAILED under the declared mutation, so the assertion is falsified by the regression it guards.",
+    "evidence": "logs/baseline.log:48 quotes the reproduced DigestError and logs/head.log ends '74 passed ... EXIT=0', matching the done_when; the done_when's ruff clause is verified clean here but the reviewed manifest's tests line (manifest.md:11) records only the pytest command.",
+    "fit": "reckon/crew/worker_digest.py:368 extends the existing FORBIDDEN_CONTENT tuple and the excerpt's span/note shape rather than adding a new mechanism, and the added test follows the module's existing requires_canonical cases.",
+    "goal_fidelity": "reckon/crew/digests/implement.md:236 now carries the concurrent-edit bullet, which is the rule the goal names.",
+    "reuse": "No owner for excerpt-span or forbidden-content exclusion exists other than reckon/crew/worker_digest.py's EXCERPTS and FORBIDDEN_CONTENT, which the change extends in place; a search for a second excerpt/forbidden-content implementation found none.",
+    "scope_discipline": "git diff --stat 16bf78f0ef ce9088450e lists seven paths, every one inside the declared write paths, with no plan meta touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the worker digest carries the concurrent-edit rule; reckon/crew/worker_digest.py:212 re-anchors the worker-parallel-safety excerpt so all four digests carry the current bullet.\nVERDICT done_when: the done_when names generation-against-canonical, test_the_committed_digests_are_current_on_this_host, a new case, a negative control, all_debug arms and ruff; logs/baseline.log, logs/head.log and logs/negative-control.log record the first four, ruff is clean but unrecorded in the manifest.\nVERDICT write_paths: the manifest declares worker_digest.py, digests/, tests/test_worker_digest.py, the fragment and a figure directory; every path in the diff is inside them.\nVERDICT manifest: read; status complete, two commits, the literal gate command, three log paths, baseline/after suite JSON and a red negative_control_log.\nVERDICT diff: read commit by commit against 16bf78f0ef; two commits, seven files, all inside the declared scope, the second only the evidence fragment.\nCALL_SITES: reckon/crew/worker_digest.py:__main__ (python -m reckon.crew.worker_digest), reckon/crew/digests/implement.md:7\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/digests/implement.md:236 now carries the concurrent-edit bullet the goal names.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/baseline.log:48 quotes the reproduced DigestError and logs/head.log ends 74 passed EXIT=0; the done_when's ruff clause is clean but unrecorded at manifest.md:11.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 16bf78f0ef ce9088450e lists seven paths, every one inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_worker_digest.py:262 fails under the declared mutation, as logs/negative-control.log records.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/worker_digest.py:368 extends the existing FORBIDDEN_CONTENT tuple and excerpt span shape.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends EXCERPTS and FORBIDDEN_CONTENT in reckon/crew/worker_digest.py; no other excerpt-exclusion owner was found.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/the-worker-digest-carries-the-concurrent-edit-rule.html:45 non-blocking: the head row cites 15c5e4dd67 while the stored head log and manifest ran at ce9088450e.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T163201871164-the-worker-digest-carries-the-concurrent-edit-rule/manifest.md:11 non-blocking: the done_when's ruff clause is not recorded; this review verified both ruff commands clean on the staged Python paths.",
+  "review_run_id": "r-20261111T182937648527-review-of-the-worker-digest-carries-the-concurrent-edit-rule-ce9088450ebb",
+  "reviewed_base_sha": "16bf78f0ef6d74fdf7116a441da200a5c13ebf8d",
+  "reviewed_commits": [
+    "15c5e4dd67b22d43b2e72fde3e805dfee9e568d6",
+    "ce9088450ebb49f06540bf67248969428cc12137"
+  ],
+  "reviewed_head_sha": "ce9088450ebb49f06540bf67248969428cc12137",
+  "reviewed_run_id": "r-20261111T163201871164-the-worker-digest-carries-the-concurrent-edit-rule",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_delta_source": "reviewed manifest baseline_suite and after_suite (both logs opened: logs/baseline.log 6 failed/67 passed EXIT=1, logs/head.log 74 passed EXIT=0)",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:49:09.034537+00:00",
+  "total": 113
+}
