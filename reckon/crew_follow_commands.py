@@ -2665,9 +2665,7 @@ _FOLLOW_LIVE_CLOSE = "── end live ──"
 _FOLLOW_LIVE_NONE = "none"
 
 
-def _follow_live_snapshot_rows(
-    project: str, session: str
-) -> list[dict[str, str]]:
+def _follow_live_snapshot_rows(project: str, session: str) -> list[dict[str, str]]:
     """The runs one session owns right now, as state rather than movement.
 
     A pointer in the session's live view is work it holds, whatever the run is
@@ -2702,9 +2700,9 @@ def _follow_live_snapshot_rows(
     # and a failure there must not cost the reader the live rows it already
     # holds.
     try:
-        duties = obligations_module.obligations(project, session).get(
-            "obligations"
-        ) or ()
+        duties = (
+            obligations_module.obligations(project, session).get("obligations") or ()
+        )
     except Exception:  # noqa: BLE001 - a snapshot is never worth a crash
         duties = ()
     for duty in duties:
@@ -2717,6 +2715,19 @@ def _follow_live_snapshot_rows(
             "node": str(duty.get("node") or ""),
         }
     return [rows[run_id] for run_id in sorted(rows)]
+
+
+def _follow_pane_word(state: str) -> str:
+    """The word the pane draws in its left column for a fleet classification.
+
+    The delivered record is written from the rows the pane drew, so it holds
+    the pane's vocabulary ('working', 'delivered'), while a snapshot row
+    carries the fleet's classification ('running'). Reading one against the
+    other as plain strings would call every live run moved.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    return ticker_module._bucket_of(state, state) or state
 
 
 def _follow_live_snapshot_line(row: Mapping[str, str]) -> str:
@@ -2764,9 +2775,12 @@ def _follow_resume_output(
     The stored history stays terminal-only. A pipe is handed the framed live
     snapshot in place of nothing: a re-arm whose runs have all moved draws their
     rows itself, and adding a state frame to those would draw the pane twice.
-    So the frame is written only when the replay will draw nothing — either the
-    session owns no run, or every run it owns already stands at the state the
-    pane last drew, which is the case the replay drops as a repeat.
+    So a run the pane has not been shown at its current word is left to its own
+    row, and the frame names only the runs the replay drops as repeats — the
+    ones a blank pane would otherwise never show. When every run moved there is
+    nothing left to name and the frame is withheld; a session owning no run is
+    named as owning none, so an empty pane always means the frame was not
+    reached.
     """
     if _follow_replay_visible():
         from reckon.crew import follow_checkpoint as history_module
@@ -2780,18 +2794,23 @@ def _follow_resume_output(
         return _follow_history_burst(restored, dim=dim)
     rows = _follow_live_snapshot_rows(project, session)
     remembered = delivered or {}
-    if rows and any(
-        remembered.get(row["run_id"]) != row["state"] for row in rows
-    ):
-        # A row is already coming for a run that moved, so the pane is not
+    # The record names the word the pane draws, and a snapshot row carries the
+    # fleet's classification, so the two are compared through the pane's own
+    # bucket rather than directly: 'working' and 'running' are one word in one
+    # column, and comparing them as strings would read every live run as moved.
+    undrawn = [
+        row
+        for row in rows
+        if remembered.get(row["run_id"]) == _follow_pane_word(row["state"])
+    ]
+    if rows and not undrawn:
+        # Every run moved, so each is drawn by its own row: the pane is not
         # blank and a state frame would be a second drawing of it.
         return ""
-    return _follow_live_snapshot(project, session, rows=rows)
-
+    return _follow_live_snapshot(project, session, rows=undrawn)
 
 
 _HISTORY_FRAME = "── history · {count} rows ──"
-
 
 
 def _follow_history_burst(rows, *, dim=_dim_history_line) -> str:

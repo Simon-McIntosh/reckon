@@ -161,11 +161,19 @@ def fleet(repository: Path) -> Path:
 
 
 def _delivered_states() -> dict[str, str]:
-    """The states the pane drew last: every run standing where it already was."""
-    return {
-        row["run_id"]: row["state"]
+    """The record the follower's own writer leaves: one pane word per run.
+
+    Written through ``runs.write_delivered`` and read back, so the case feeds
+    the resume branch the words production actually writes ('working',
+    'delivered') rather than the fleet's classification, and a comparison that
+    conflates the two cannot pass here.
+    """
+    states = {
+        row["run_id"]: follow_module._follow_pane_word(row["state"])
         for row in follow_module._follow_live_snapshot_rows(PROJECT, SESSION)
     }
+    runs.write_delivered(PROJECT, SESSION, states)
+    return dict(runs.read_delivered(PROJECT, SESSION).get("states") or {})
 
 
 def _snapshot(
@@ -240,16 +248,23 @@ def test_a_pipe_rearm_shows_the_sessions_live_work(
 def test_a_run_that_moved_is_drawn_by_its_own_row_not_the_frame(
     fleet: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """The frame stands in place of nothing, so a replay that draws is left alone.
+    """A moved run is left to its own row; the frame still names what it omits.
 
-    A re-arm whose run has moved already draws that run's row. Writing the
-    state frame beside it would draw the pane twice, so the resume branch
-    writes nothing and the row stands alone.
+    A re-arm whose run has moved already draws that run's row, so the frame
+    must not re-state it. The runs the pane would otherwise never show are
+    still named — withholding the whole frame because one run moved would hand
+    a pipe reader a pane that omits the rest of the session's live work.
     """
     delivered = _delivered_states()
+    # Production's word for a live run, not the classification it is drawn from.
     delivered[RUN_QUEUED] = "working"
 
-    assert _snapshot(monkeypatch, delivered=delivered) == ""
+    output = _snapshot(monkeypatch, delivered=delivered)
+
+    assert RUN_QUEUED not in output, "the moved run's own row draws it"
+    assert "── live · 2 runs" in output, output
+    assert RUN_WORKING in output
+    assert RUN_REVIEW in output
 
 
 def test_the_snapshot_agrees_with_the_live_and_obligation_views(
