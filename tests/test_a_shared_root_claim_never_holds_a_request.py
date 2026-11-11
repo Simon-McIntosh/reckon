@@ -15,6 +15,7 @@ pattern still fences, and so does a directory claim that is or contains one.
 from __future__ import annotations
 
 import json
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +64,24 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
             }
         )
     )
+    # The launch check compares claim repositories by the identity it derives
+    # from git, so the temporary tree must be a repository of its own; without
+    # one, the identity walks up to an enclosing checkout and no claim matches.
+    for arguments in (
+        ["init", "-q"],
+        ["add", "--", "docs"],
+        [
+            "-c",
+            "user.email=worker@local",
+            "-c",
+            "user.name=worker",
+            "commit",
+            "-q",
+            "-m",
+            "seed",
+        ],
+    ):
+        subprocess.run(["git", "-C", str(repo), *arguments], check=True)
     return repo
 
 
