@@ -930,7 +930,12 @@ def refresh_run_time_profile(
     else:
         profile = dict(run_time_profile(project, now=moment))
         inputs = _indexed_profile_inputs(project)
-        if inputs is None and ledger._ledger_holds_content(project, None):
+        if (
+            inputs is None
+            and profile.get("since") is not None
+            and profile.get("until") is not None
+            and ledger._ledger_holds_content(project, None)
+        ):
             # A refused index update can leave the last-good snapshot behind
             # the append. Build from the authoritative files in that case.
             data, _version = ledger.load(project, use_index=False)
