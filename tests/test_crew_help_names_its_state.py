@@ -59,10 +59,11 @@ STATE_PHRASES: dict[CommandPath, str] = {
     ("supersede-review",): "a misattributed row's review",
     ("suite", "run"): "the project's declared suite",
     ("suite", "waive"): "standing-suite hold",
+    ("tell",): "a live run's inbox",
     ("verify-gate",): "one run's gate at the integrated revision",
     ("view",): "one crew read view",
     ("watch",): "project-wide live runs",
-    ("widen",): "run whose worker process has stopped",
+    ("widen",): "a stopped run, or to the run's own worker",
 }
 
 NEAR_NAMESAKE_DISTINCTIONS: dict[CommandPath, str] = {

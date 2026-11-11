@@ -74,6 +74,13 @@ def test_every_staged_write_reaches_the_owner(trees):
         # flock it writes the seen-lag map to a .tmp sibling of the seen path
         # and os.replace-s it there, beside the append-only lag log.
         ("reckon/crew/obligations.py", "_record_index_lag"),
+        # write_message stages its replacement: the inbox hook is a subprocess
+        # spawned on every tool call, so it cannot pay the shared writer's
+        # module import, and it writes the message to a dot-prefixed sibling
+        # under a name no other writer can choose and then renames it in. That
+        # rename is what makes the message visible whole to the claim, so a
+        # reader never delivers half of one.
+        ("reckon/hooks/worker_inbox.py", "write_message"),
     }, sorted(observed)
 
 

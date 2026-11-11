@@ -8,7 +8,7 @@
   <meta name="artifact-kind" content="evidence">
   <meta name="plan-evidence-for" content="reckon:a-live-worker-can-be-reached">
   <meta name="plan-verifies" content="reckon:a-live-worker-can-be-reached#s8">
-  <meta name="evidence-verdict" content="pass-with-unreconciled-scope">
+  <meta name="evidence-verdict" content="pass">
   <meta name="evidence-date" content="2026-11-11">
   <meta name="evidence-commit" content="78218ee3f8">
 </head>
@@ -63,26 +63,46 @@
 
   <h3 id="worker-inbox-hook-measure">Measure</h3>
   <p>Gate, after arm: <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
-  tests/test_worker_inbox.py tests/test_staged_write_inventory.py</code> —
-  <strong>70 passed</strong>, <code>EXIT=0</code>. Base arm, resolved over the base tree (which
+  tests/test_worker_inbox.py tests/test_staged_write_inventory.py
+  tests/test_run_home_hooks_are_interpreter_bound.py
+  tests/test_harness_home_carries_the_operator_config.py
+  tests/test_anchored_edit_claude_arm.py tests/test_crew_help_names_its_state.py</code> —
+  <strong>112 passed</strong>, <code>EXIT=0</code>. Base arm, resolved over the base tree (which
   carries no <code>tests/test_worker_inbox.py</code>): 49 passed with two errors in the inventory
   test, both scaffolding — the extracted base tree is not a git repository and that test resolves
-  staged paths through git — so the delta adds no failure. Logs:
-  <code>gate-after.log</code>, <code>gate-base.log</code>.</p>
+  staged paths through git — so the delta adds no failure. The help census alone was also run in
+  the base tree, where it failed on a stale row for an existing verb with no relation to this
+  change; that row is corrected in the same commit, and the failing base run is kept as the proof
+  that it was red before this work touched it. Logs: <code>gate-after-final.log</code>,
+  <code>gate-base.log</code>, <code>gate-base-census.log</code>.</p>
 
-  <h3 id="worker-inbox-hook-unreconciled">What this node could not finish inside its fence</h3>
-  <p>Four assertions of the old seeding contract sit outside this node's write scope and now fail
-  because every seeded Claude home carries one more <code>PostToolUse</code> entry:
-  <code>tests/test_run_home_hooks_are_interpreter_bound.py</code> (exact seeded-hooks equality),
-  <code>tests/test_harness_home_carries_the_operator_config.py</code> (four cases asserting the
-  seeded hooks equal the operator's), <code>tests/test_anchored_edit_claude_arm.py</code> (five
-  byte-preservation cases), and the crew help census
-  <code>tests/test_crew_help_names_its_state.py</code>, which needs one row for the new verb. Each
+  <h3 id="worker-inbox-hook-read">A coordinator can see a message it has queued</h3>
+  <p>The <code>runs</code> view answers a named run with its inbox, split into what is still
+  waiting and what already carries a receipt, both read from the run's own directory — the store
+  the hook claims from, so the view cannot report a message as queued after a tool call has taken
+  it. A case drives the real sequence: queue with <code>crew tell</code>, see the message listed
+  unclaimed, run the hook once, and see the listing empty with the message named in the receipts.</p>
+
+  <h3 id="worker-inbox-hook-reconciled">Reconciling the seeding contract</h3>
+  <p>Every seeded Claude home now carries one more <code>PostToolUse</code> entry, so four files
+  that asserted the seeded hooks equal the operator's own were updated — without loosening what
+  each one checks. Each keeps the comparison over the operator's groups <em>exact</em> and names
+  the one addition beside it, because a looser comparison would stop seeing a change in any other
+  group, which is the property those cases exist to protect. The byte-for-byte equality with the
+  operator's file is replaced by that group equality plus the operator's file still being compared
+  unchanged, since the seed now writes a document that is not identical to it. Each
   is a consequence of this section's requirement rather than a defect in it, and none belongs to
-  a concurrent node. Also outside the fence: the run view does not yet list an unclaimed inbox
-  message (<code>reckon/mcp_views.py</code>), and promotion-time enforcement of the manifest's
+  a concurrent node.</p>
+  <p>Two integration points remain outside it, and both are named so a reader does not mistake
+  "the check exists" for "the check is enforced": promotion-time enforcement of the manifest's
   messages field would live in <code>reckon/crew/reports.py</code> — the check implemented here
-  runs in <code>crew check --manifest</code>, where the writer can still fix it.</p>
+  runs in <code>crew check --manifest</code>, where the writer can still fix it — and the worker
+  prompt's manifest contract (<code>reckon/crew/prompts.py</code>) does not yet name the
+  <code>messages_received</code> field.</p>
+  <p>Two entries in the staged-write census also follow from this node:
+  <code>reckon/hooks/worker_inbox.py</code> joins the declared inventory of locally staged
+  replacements, with its reason — the hook runs as a subprocess on every tool call and cannot pay
+  the shared writer's module import — and the help census gains the writer's row.</p>
 </section>
 </main>
 </body>

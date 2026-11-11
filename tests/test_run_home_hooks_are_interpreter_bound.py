@@ -124,14 +124,23 @@ def test_bare_reckon_hooks_are_bound_and_others_are_left_alone(tmp_path: Path):
     assert source.read_bytes() == operator_bytes
 
 
-def test_a_run_home_seeded_from_a_bound_file_is_identical(tmp_path: Path):
-    """Seeding from a file already holding the bound commands changes nothing."""
+def test_a_run_home_seeded_from_a_bound_file_keeps_every_operator_group(
+    tmp_path: Path,
+):
+    """Re-binding already-bound commands adds nothing but the run's delivery hook.
+
+    The seed also registers the run's inbox hook, because a run home seeded
+    before that hook existed would otherwise read as reachable while carrying no
+    channel. So the operator's own groups are compared exactly, and that one
+    addition is named beside the comparison rather than absorbed into it.
+    """
     bound = install.build_hook_snippet(include_git_guard=True)["hooks"]
     home, source, operator_bytes = _seed(tmp_path, {"hooks": bound})
 
-    seeded = (home / "settings.json").read_bytes()
-    assert json.loads(seeded) == {"hooks": bound}
-    assert seeded == operator_bytes
+    seeded = json.loads((home / "settings.json").read_text())
+    carried = dict(seeded["hooks"])
+    assert carried.pop(install.INBOX_EVENT) == [install.worker_inbox_group()]
+    assert carried == bound
     assert source.read_bytes() == operator_bytes
 
 
