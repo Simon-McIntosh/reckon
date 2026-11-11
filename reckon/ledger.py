@@ -1702,10 +1702,6 @@ def _indexed_data(
     picker_only: bool = False,
     activity_since: float | None = None,
 ) -> tuple[dict[str, Any], int]:
-    try:
-        root = _shared_index_root(project, root)
-    except subprocess.SubprocessError as exc:
-        raise OSError("cannot resolve repository ledger") from exc
     reuse = _INDEX_REGION.get()
     index_key = (
         str(project),
@@ -1718,6 +1714,10 @@ def _indexed_data(
         data, version, damaged = reuse[index_key]
         _report_damaged_run_records(project, damaged)
         return data, version
+    try:
+        root = _shared_index_root(project, root)
+    except subprocess.SubprocessError as exc:
+        raise OSError("cannot resolve repository ledger") from exc
     aggregate = ledger_path(project, root)
     aggregate_stamp = json.dumps(_file_identity(aggregate))
     snapshot = _run_snapshot(project, root)
