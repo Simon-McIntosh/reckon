@@ -1,0 +1,39 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-11T19:26:36.172Z",
+  "dispatched_at": "2026-11-11T19:12:33Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html",
+      "line": 44,
+      "severity": "non-blocking",
+      "text": "non-blocking: the after-arm row now reads 'worktree head, revision on the log's first line' where it previously named 443958da, but logs/head-arm.log lives in the run directory outside the repository, so a reader of the landed evidence cannot identify the revision the 61-passed arm measured; the arm's sha is a fact about a past measurement rather than a live pointer, so removing it lost evidence rather than avoiding staleness."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html",
+      "line": 53,
+      "severity": "non-blocking",
+      "text": "non-blocking: the closing paragraph states the base arm 'records six failures, and release, live-holder and sweep arms', but logs/base-arm.log's six FAILED ids are one import arm (test_importing_the_module_publishes_no_identity), one release arm, one live-holder arm and three sweep arms, so that enumeration covers five of the six and omits the import failure the node exists to fix; the clause also carries no verb, reading as an incomplete list of the six."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta reviewed is fbfa4152f1..232f77ede3, four docs(evidence) commits, 10 insertions and 6 deletions in one file; the source node's goal is that an execution identity file is published only when a process takes a node dispatch claim, removed with the last claim, and swept for a dead pid (prompt.txt GOAL), and the delta's own aim is to make the landing record's base-arm statements match its manifest and logs.\nVERDICT done_when: the source node's done_when names tests/test_an_execution_identity_is_published_with_its_claim.py and both suite arms; the manifest records the base arm as 6 failed / 53 passed / 2 setup errors / EXIT=1 at d5df5102 and the after arm as 61 passed / EXIT=0 at 232f77ede3, and logs/base-arm.log and logs/head-arm.log print exactly those summary lines.\nVERDICT write_paths: the declared fence is reckon/crew/dispatch_claims.py, reckon/crew/gc.py, tests/test_an_execution_identity_is_published_with_its_claim.py, the work-flows-to-the-lane fragment and its figures directory; the delta touches only docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html, which is inside that set.\nVERDICT manifest: read at the run root; it records status complete, head 232f77ede3 after arm 61 passed, base arm 6 failed / 53 passed / 2 setup errors, the negative control, and the two earlier findings as folded into this node.\nVERDICT diff: read commit by commit (a4919a703f, 68cdbe5536, fabea5d371, 232f77ede3); the base-row count moves 52 passed / 2 errors to 6 failed / 53 passed / 2 errors as the arm is re-recorded over three test files, the after row drops its sha for a pointer to the log, and the closing paragraph is rewritten to state six base failures and cite the two logs.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:42 now states 6 failed / 53 passed / 2 setup errors EXIT=1, which is logs/base-arm.log's own summary, so the table and prose agree with the log the manifest records.\nSCORE evidence: 16\nJUSTIFICATION evidence: the table row at line 42, the closing paragraph at line 53 and the six FAILED ids in logs/base-arm.log agree on one count, and checks/finding_fddc131d752.py is shown red on the pre-repair record and green at head, but the after row at line 44 no longer names the revision it measured.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --numstat fbfa4152f1..232f77ede3 lists one path, docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html, inside the declared fragment scope.\nSCORE durability: 13\nJUSTIFICATION durability: the agreement check exists only at checks/finding_fddc131d752.py in the run directory and is not committed, so nothing in the repository fails if a later edit reintroduces the table/prose/log disagreement it was written to catch.\nSCORE fit: 18\nJUSTIFICATION fit: the changed rows and paragraph at docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:40-58 keep the fragment's table and strong-lead idiom and carry no plan or ticket identifier, though the new closing sentence at line 53 is missing a verb.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module and cites the existing logs/base-arm.log and logs/head-arm.log, matching the logs/ citation idiom already used across docs/evidence/fragments.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:44 non-blocking: the after-arm row now reads 'worktree head, revision on the log's first line' where it previously named 443958da, but logs/head-arm.log lives in the run directory outside the repository, so a reader of the landed evidence cannot identify the revision the 61-passed arm measured; the arm's sha is a fact about a past measurement rather than a live pointer, so removing it lost evidence rather than avoiding staleness.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/identity-published-with-its-claim.html:53 non-blocking: the closing paragraph states the base arm 'records six failures, and release, live-holder and sweep arms', but logs/base-arm.log's six FAILED ids are one import arm (test_importing_the_module_publishes_no_identity), one release arm, one live-holder arm and three sweep arms, so that enumeration covers five of the six and omits the import failure the node exists to fix; the clause also carries no verb, reading as an incomplete list of the six.\n",
+  "review_run_id": "r-20261111T190957476120-review-of-identity-published-with-its-claim-232f77ede381",
+  "reviewed_base_sha": "fbfa4152f1f9ee93c721685d756aa05f495333b1",
+  "reviewed_head_sha": "232f77ede381b8c01689f382d59f71d26eb4d3b1",
+  "reviewed_run_id": "r-20261111T154129120140-identity-published-with-its-claim",
+  "scores": {
+    "durability": 13,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T19:45:20.733460+00:00",
+  "total": 104
+}
