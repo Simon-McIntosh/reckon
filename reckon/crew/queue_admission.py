@@ -3403,16 +3403,6 @@ def _section_run_unlanded(
     from reckon.crew.dispatch_sections import project_mount_repository
     from reckon.crew.promotion_scope import _revision_is_ancestor
 
-    checkout = project_mount_repository(project)
-    if checkout is None:
-        return False
-
-    def landed(revision: str) -> bool:
-        try:
-            return _revision_is_ancestor(checkout, revision, "HEAD")
-        except Exception:  # noqa: BLE001 - a broken probe proves no landing
-            return False
-
     def identifies(record: Mapping[str, Any]) -> bool:
         node = record.get("node")
         if not isinstance(node, Mapping):
@@ -3430,6 +3420,9 @@ def _section_run_unlanded(
         if revision and identifies(row):
             promoted[str(row.get("run_id") or "")] = revision
 
+    # The runs of this section that may still land, each with the revision it
+    # records. A delivered run carries none until a promotion writes it.
+    candidates: list[tuple[str, str]] = []
     for pointer in live:
         if not isinstance(pointer, Mapping):
             continue
@@ -3443,13 +3436,32 @@ def _section_run_unlanded(
             continue
         if _discarded(run_id):
             continue
-        revision = str(pointer.get("promoted_revision") or "").strip()
-        revision = revision or promoted.pop(run_id, "")
+        candidates.append((run_id, str(pointer.get("promoted_revision") or "").strip()))
+
+    if not candidates and not promoted:
+        return False
+
+    checkout = project_mount_repository(project)
+    if checkout is None:
+        # A project with no registered checkout offers no HEAD to read, so a
+        # run's landing is unknown rather than absent. Releasing would put a
+        # waiter onto a base the queue cannot show carries its upstream, so the
+        # wait is held -- the answer :func:`_request_state` gives a run ref whose
+        # project no mount names.
+        return True
+
+    def landed(revision: str) -> bool:
+        try:
+            return _revision_is_ancestor(checkout, revision, "HEAD")
+        except Exception:  # noqa: BLE001 - a broken probe proves no landing
+            return False
+
+    for run_id, candidate in candidates:
+        revision = candidate or promoted.pop(run_id, "")
         if revision:
-            if landed(revision):
-                continue
-            return True
-        if _manifest_status(run_id) in RUN_DELIVERED_STATUSES:
+            if not landed(revision):
+                return True
+        elif _manifest_status(run_id) in RUN_DELIVERED_STATUSES:
             return True
     for run_id, revision in promoted.items():
         if not run_id or _discarded(run_id):

@@ -130,6 +130,18 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     (config_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repository / "docs")}), encoding="utf-8"
     )
+    # The mounts registry wins over the config home wherever both are consulted,
+    # and a host that exports it would otherwise leave this fixture's checkout
+    # unnamed: the guard would read the host repository's HEAD instead of the
+    # one built here.
+    monkeypatch.setenv("RECKON_MOUNTS_PATH", str(config_home / "mounts.json"))
+    from reckon.crew.dispatch_sections import project_mount_repository
+
+    resolved = project_mount_repository(PROJECT)
+    assert resolved is not None, "the fixture registers its own checkout"
+    assert Path(resolved).resolve() == repository.resolve(), (
+        "the guard resolves the fixture's checkout, not the host's"
+    )
     return repository
 
 
@@ -298,6 +310,23 @@ def test_a_discarded_delivered_run_releases_the_wait(queue_repo: Path) -> None:
     _release()
     assert _phase_of(WAITER) == queue_admission.QUEUED_PHASE, (
         "a discarded run no longer holds the section's waiters"
+    )
+
+
+def test_a_run_with_no_registered_checkout_holds_the_wait(
+    queue_repo: Path,
+) -> None:
+    """A landing that cannot be read is unknown, not absent."""
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    _deliver(queue_repo)
+
+    mounts = Path(os.environ["RECKON_MOUNTS_PATH"])
+    mounts.write_text("{}", encoding="utf-8")
+
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
+        "an unreadable landing holds the waiter rather than releasing it"
     )
 
 
