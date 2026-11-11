@@ -1,0 +1,40 @@
+<section id="a-brief-names-the-armed-suite-command-landing">
+  <h2>A brief and a resume advice name the revisions each suite arm must record</h2>
+
+  <p><strong>What changed.</strong> The implement brief and every resume or
+  repair advice now state the two revisions the suite arms must record, with the
+  armed command resolved separately over each. <code>_suite_gate_prompt_body</code>
+  (<code>reckon/crew/dispatch.py</code>) takes a <code>base_revision</code> and
+  states it beside the resolution it already printed — the worktree's head is
+  the base revision at dispatch, so that resolution is the baseline arm's
+  command — together with the after-arm rule: record the after arm at the run's
+  head, with the command resolved over that head. A new
+  <code>_revision_suite_block</code> in <code>reckon/crew/resumption.py</code>
+  resolves the declaration at both revisions from the run record's
+  <code>base_sha</code> and the worktree's current <code>HEAD</code>, and
+  <code>_resume</code> appends it to the advice before the prompt is built, so
+  both the stdin and the argv prompt channels carry it. The repair advice
+  reaches the same writer, so it carries the block without a second change.</p>
+
+  <p><strong>The guard.</strong> <code>tests/test_a_brief_names_the_armed_suite_command.py</code>
+  shows two cases. The first composes the real dispatch brief through
+  <code>_compose_dispatch_prompt</code> and asserts it names the base revision,
+  the command resolved there, and the after-arm rule. The second drives
+  <code>resumption._resume</code> over a run whose head adds
+  <code>tests/test_y.py</code> absent at its base revision, captures the advice a
+  worker would read, and asserts both revisions are named with two different
+  resolved commands.</p>
+
+  <h3 id="a-brief-names-the-armed-suite-command-measured">Measured</h3>
+
+  <p>Base arm at <code>067c8035e4</code>, the new test file copied into that
+  tree: <code>2 failed</code>, exit 1. The brief case fails with
+  <code>TypeError: _suite_gate_prompt_body() got an unexpected keyword argument
+  'base_revision'</code>; the resume case fails with the advice reading
+  <code>'the catalog is stale; continue'</code> alone, naming neither revision.
+  Head arm at the same revision plus this change: <code>2 passed</code>, exit 0.</p>
+
+  <p><strong>Negative control.</strong> Dropping the revisions from the brief and
+  from the resume advice makes both cases fail: <code>2 failed</code>, exit 1, in
+  <code>negative-control.log</code>.</p>
+</section>

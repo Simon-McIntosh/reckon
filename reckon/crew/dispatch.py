@@ -1488,8 +1488,10 @@ _SUITE_TEMPLATE_SPELLING = "<node tests>"
 REVIEW_FOLLOWS_RUN_ORIGIN = "review-follows-run"
 
 
-def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
-    """The FENCE — SUITE body for a run's prompt: template, rule, resolution.
+def _suite_gate_prompt_body(
+    declared: str | None, resolved: str, *, base_revision: str = ""
+) -> str:
+    """The FENCE — SUITE body for a run's prompt: template, rule, both revisions.
 
     A worker told only the resolved file list is told a list its own change
     invalidates: a node that deletes a test leaves the head arm naming a file
@@ -1498,17 +1500,40 @@ def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
     the resolution this node's whole scope produces, and the worker resolves
     the template over each tree it runs against.
 
+    The brief is composed at dispatch, when the worktree's head is the base
+    revision, so the resolution above is the baseline arm's command and the
+    base revision is the one that arm records. The after arm cannot be resolved
+    here — its tree does not exist yet — so the brief names it as the rule that
+    the arm is recorded at the run's head, with the command resolved there. A
+    worker that reconstructs both resolutions from one statement of the
+    template records an arm at a revision promotion never asked for, and the
+    landing is refused for it.
+
     An unscoped declaration has nothing to resolve, so it is stated as the one
     command both arms run.
     """
     from reckon.crew.promotion_records import SCOPED_SUITE_PLACEHOLDER
 
     template = " ".join(str(declared or "").split())
+    revision_line = (
+        f"  Base revision: {base_revision}. Record the baseline arm at this\n"
+        "  revision, which is the worktree's head as this brief is composed.\n"
+        if base_revision
+        else ""
+    )
     if SCOPED_SUITE_PLACEHOLDER not in template:
-        return f"  {resolved}\n  Run exactly this command, unedited, for both arms.\n"
+        return (
+            revision_line + f"  {resolved}\n"
+            "  Run exactly this command, unedited, for both arms: its\n"
+            "  arguments are declared rather than scoped, so the base and the\n"
+            "  head revision resolve the same command.\n"
+            "  Record the after arm at the run's head once your work is\n"
+            "  complete, and record `revision` on each arm as the revision it\n"
+            "  ran at.\n"
+        )
     shown = template.replace(SCOPED_SUITE_PLACEHOLDER, _SUITE_TEMPLATE_SPELLING)
     return (
-        "  Template, as the project arms it, with "
+        revision_line + "  Template, as the project arms it, with "
         f"{_SUITE_TEMPLATE_SPELLING} standing for the test files in this node's\n"
         "  write scope that pytest collects (`test_*.py` and `*_test.py`) and\n"
         "  that exist in the tree the command runs against:\n"
@@ -1520,6 +1545,10 @@ def _suite_gate_prompt_body(declared: str | None, resolved: str) -> str:
         "  `command` the string you actually ran.\n"
         "  With this node's whole write scope substituted it reads:\n"
         f"    {resolved}\n"
+        "  Record the after arm at the run's head once your work is complete,\n"
+        "  with the command resolved over that head. A test file your change\n"
+        "  adds or deletes makes the two arms' commands differ, so each arm\n"
+        "  records the command resolved at its own revision.\n"
         "  Promotion compares each arm's command with this template resolved\n"
         "  over that arm's own tree, and refuses an after arm left naming no\n"
         "  test file, or an arm that exited having collected none.\n"
@@ -2965,9 +2994,19 @@ def dispatch(
             # resolution, so the worker can resolve it over each arm's tree
             # rather than run a file list its own change invalidates. The record
             # keeps the resolved command itself, which is the string promotion
-            # substitutes when no tree answers what an arm holds.
+            # substitutes when no tree answers what an arm holds. The base
+            # revision is named with it because the worktree's head is that
+            # revision at this moment, so this resolution is the baseline arm's
+            # and a worker given only the command cannot tell which revision to
+            # record it at.
             suite_command=(
-                _suite_gate_prompt_body(suite_command, suite_command_resolved)
+                _suite_gate_prompt_body(
+                    suite_command,
+                    suite_command_resolved,
+                    base_revision=str(
+                        worktree.get("base_sha") or worktree.get("base") or ""
+                    ),
+                )
                 if suite_command_resolved
                 else ""
             ),
