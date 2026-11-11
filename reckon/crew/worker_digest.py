@@ -212,11 +212,18 @@ EXCERPTS: dict[str, Excerpt] = {
     ),
     "worker-parallel-safety": Excerpt(
         header="## Parallel Agent Safety",
-        note="the worker's own worktree and delivery duties, without the coordinator's",
+        note=(
+            "the worker's own worktree and delivery duties, without the"
+            " coordinator's merge order"
+        ),
         spans=(
             (
-                "- One worker, one worktree, one exclusive write scope.",
-                "`git show --stat` against the declared scope.",
+                "- One worker, one worktree.",
+                "hold or defer a node because another live run writes a file it needs.",
+            ),
+            (
+                "- Exclusive write scope remains only where git cannot merge:",
+                "and the like), which is spliced, never rewritten.",
             ),
             (
                 "- Workers commit locally (conventional subject AND a body), never push the",
@@ -360,6 +367,14 @@ FORBIDDEN_CONTENT: tuple[tuple[str, str], ...] = (
     (
         "message-a-worker",
         "Never message a CLI-launched worker as a peer session.",
+    ),
+    (
+        "orchestrator-merge-order",
+        "The orchestrator merges sequentially",
+    ),
+    (
+        "merge-tree-precheck",
+        "git merge-tree --write-tree",
     ),
 )
 

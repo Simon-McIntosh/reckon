@@ -1,0 +1,60 @@
+<section id="the-worker-digest-carries-the-concurrent-edit-rule-landing">
+  <h2>The worker digest reads the concurrent-edit rule from the current policy</h2>
+
+  <p><strong>What changed.</strong> The parallel-safety excerpt in
+  <code>reckon/crew/worker_digest.py</code> anchored its first span on
+  <q>- One worker, one worktree, one exclusive write scope.</q>, a bullet the
+  global rules replaced with one allowing concurrent edits to one file from
+  separate worktrees. Generation therefore raised
+  <code>DigestError: canonical source has no line at or after 1 for '- One
+  worker, one worktree, one exclusive write scope.'</code>, and every worker
+  kept a digest still carrying the superseded rule. The span now opens on the
+  current bullet and stops before the coordinator's merge order; a second span
+  keeps where exclusive scope remains (a figure topic directory, generated
+  receipts, a cumulative evidence record). The merge-order sentence and the
+  <code>merge-tree</code> pre-check are added to the forbidden coordinator
+  content, so a digest carrying either is refused rather than shipped.</p>
+
+  <p>The four role digests under <code>reckon/crew/digests/</code> are
+  regenerated from the canonical file. Their excerpt now reads:</p>
+
+  <pre id="the-worker-digest-carries-the-concurrent-edit-rule-excerpt">- One worker, one worktree. **Concurrent edits to one file from separate
+  worktrees are allowed (lead ruling 2026-10-24, restated 2026-11-11): never
+  hold or defer a node because another live run writes a file it needs.**
+- Exclusive write scope remains only where git cannot merge:
+  - a figure topic directory: figures are replaced wholesale, never combined;
+  - binary or generated receipts;
+  - a cumulative evidence record (`docs/evidence/archive/&lt;plan&gt;-landed.html`
+    and the like), which is spliced, never rewritten.</pre>
+
+  <h3 id="the-worker-digest-carries-the-concurrent-edit-rule-measured">Measured</h3>
+
+  <p>The defect reproduces at the base revision and the gate is green at the
+  change. Both arms ran the same two test files over a scratch tree extracted
+  from the revision, on the <code>all_debug</code> partition, one arm at a
+  time, through the root environment's interpreter.</p>
+
+  <table id="the-worker-digest-carries-the-concurrent-edit-rule-arms">
+    <caption>Each log's first line names its revision, tree and command, and
+    its last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>baseline</td><td><code>16bf78f0ef</code></td>
+        <td>6 failed, 67 passed, <code>EXIT=1</code>; every failure is the
+        <code>DigestError</code> above</td></tr>
+      <tr><td>head</td><td><code>15c5e4dd67</code></td>
+        <td>74 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td><td><code>15c5e4dd67</code>, old key restored</td>
+        <td>8 failed, 15 passed, <code>EXIT=1</code>; names
+        <code>test_a_digest_carries_the_concurrent_edit_rule_without_merge_duties</code>,
+        which the head arm passes</td></tr>
+    </tbody>
+  </table>
+
+  <p>The new case asserts, for every role, that the generated digest carries
+  <q>Concurrent edits to one file from separate</q>, carries no <q>one
+  exclusive write scope</q>, and carries neither <q>The orchestrator merges
+  sequentially</q> nor <code>git merge-tree --write-tree</code>. Restoring the
+  old key makes generation raise <code>DigestError</code> and the case fails,
+  which is the declared mutation.</p>
+</section>
