@@ -36,19 +36,25 @@ The composed node id now carries the rubric for the design review —
 <code>plan-review-of-&lt;slug&gt;-design</code> — while a content review keeps the
 bare id every stored pointer and store reader already carries, so the two
 rubrics are two node ids and dispatch's check needs no change.
-<code>round_node_source</code> strips the rubric suffix from a plan-review id,
-and the compose's in-flight check and the admitted-review join recover the plan
-slug through it, so a reviewer, an obligations row and a queued request all
-resolve either spelling to the same plan.</p>
+<code>round_node_source</code> strips the rubric suffix from a plan-review id — only
+under that prefix, since it is the one grammar that writes it — and every
+reader of a plan-review id recovers the plan slug through it: the compose's
+in-flight check, the admitted-review join, the obligations view, the
+review-record key, and the four promotion readers that resolve a delivered
+review's report from the plan its run names. A reviewer, an obligations row, a
+queued request and a promotion all resolve either spelling to the same plan,
+and a review of a layout whose own name ends in the same word keeps it.</p>
 <table><thead><tr><th>Measure</th><th>Result</th><th>Receipt or qualification</th></tr></thead><tbody>
 <tr><td>Defect reproduction at base</td><td>content review dispatches; the design review of the same plan is refused with <code>a plan review is already in flight as a live run</code></td><td id="a-design-and-a-content-review-run-together-base-repro">base-reproduction.log; base revision extracted by <code>git archive</code> and driven through the coordinator's dispatch path</td></tr>
-<tr><td>Both rubrics compose together</td><td>4 passed: the design review composes while the content review is live, under node id <code>plan-review-of-fixture-design</code>, and both goals are present beside the bare content id</td><td id="a-design-and-a-content-review-run-together-head-gate">head-suite.log; <code>tests/test_a_design_and_a_content_review_run_together.py</code></td></tr>
+<tr><td>Both rubrics compose together</td><td>7 passed: the design review composes while the content review is live, under node id <code>plan-review-of-fixture-design</code>, and both goals are present beside the bare content id</td><td id="a-design-and-a-content-review-run-together-head-gate">head-suite.log; <code>tests/test_a_design_and_a_content_review_run_together.py</code></td></tr>
 <tr><td>A second content review is still refused</td><td>Refused, naming the live content review it waits on</td><td id="a-design-and-a-content-review-run-together-second-content">head-suite.log; the rubric narrowing keeps two reviews of one rubric exclusive</td></tr>
 <tr><td>Unreadable rubric stays standing</td><td>A pointer with no goal answers no rubric and still refuses a design compose</td><td id="a-design-and-a-content-review-run-together-unreadable">third case of the test</td></tr>
 <tr><td>A reader of the existing content node id still resolves it</td><td><code>round_node_source</code> returns the plan slug for the bare content id and for the design id, and leaves a slug that is the rubric word itself whole</td><td id="a-design-and-a-content-review-run-together-reader">test case <code>test_a_reader_of_the_existing_content_node_id_still_resolves_it</code>; the obligations view and the review-record key both read the slug through this function</td></tr>
 <tr><td>Declared negative control</td><td>1 failed, 3 passed: with the rubric narrowing removed from <code>_standing_plan_review</code> at the committed head, the design case refuses with the compose message</td><td id="a-design-and-a-content-review-run-together-negative-control">negative-control.log</td></tr>
-<tr><td>Regression beside the change</td><td>58 passed at head, 58 passed at base, zero added failures</td><td id="a-design-and-a-content-review-run-together-regression">head-importers.log, base-importers.log</td></tr>
-<tr><td>Ruff</td><td><code>check</code> and <code>format --check</code> clean on all four staged paths</td><td id="a-design-and-a-content-review-run-together-ruff">no findings, exit 0</td></tr>
+<tr><td>A delivered design review promotes and finds its report</td><td>Promotion composes the outcome from the report: <code>1 finding(s)</code>, one of which would change the plan</td><td id="a-design-and-a-content-review-run-together-promotion">test case <code>test_a_delivered_design_review_promotes_and_finds_its_report</code>; at the previous revision the same case reads the plan as <code>fixture-design</code> and refuses with <code>no delivered report</code></td></tr>
+<tr><td>The suffix is stripped only under the plan-review prefix</td><td><code>review-of-layout-design</code> and <code>repair-of-layout-design</code> keep their source whole, and the design review of a plan named <code>layout-design</code> resolves to that slug</td><td id="a-design-and-a-content-review-run-together-prefix">two test cases; the previous revision failed the first of them</td></tr>
+<tr><td>Regression beside the change</td><td>58 passed at head, 58 passed at base on the related set; the 38-file importer population gives 313 passed and the same 4 failures at both revisions, so zero added</td><td id="a-design-and-a-content-review-run-together-regression">head-importers.log, base-importers.log, head-importers-population.log, base-importers-population.log</td></tr>
+<tr><td>Ruff</td><td><code>check</code>: 3 findings on <code>promotion_checks.py</code> at both the previous revision and this one (two <code>UP017</code>, one import-order finding in an untouched function), and clean on the two added files; <code>format --check</code> clean on the two added files, the remaining diff in <code>promotion_checks.py</code> unchanged from its baseline</td><td id="a-design-and-a-content-review-run-together-ruff">zero findings added by this change</td></tr>
 </tbody></table>
 <p id="a-design-and-a-content-review-run-together-next-step">Nothing further is
 needed for this section: a design review and a content review of one plan compose
