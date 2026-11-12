@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A promotion's review lookups cost the same at any store size">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s76">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,promotion,review-store,index,latency">
+  <title>A promotion's review lookups cost the same at any store size — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-s-review-lookups-cost-the-same-at-any-store-size-landing" data-node="a-promotion-s-review-lookups-cost-the-same-at-any-store-size" data-reckon="landed" data-when="2026-11-12">
+  <h2 id="a-promotion-s-review-lookups-cost-the-same-at-any-store-size-title">A promotion's review lookups cost the same at any store size</h2>
+  <p>A one-shot <code>crew complete</code> starts with no in-process review-store index. The index it loads from the node-local cache was re-derived from a listing of the whole store on every cold load, so each of the two review reads a promotion makes — once under the review gate through <code>classify_pointer</code>, once through <code>select_review_for_head</code> — paid a stat per stored record.</p>
+  <p>The persisted index document now records the store directory's stat identity at the moment its entries were read. A reader that loads it adopts the entries as they stand when that identity is still current, because no record has been added, removed or atomically replaced since — which is every write the store's own writers make. A document whose store has moved is listed and updated as before, and the whole-store revalidation stays for an index this process built or updated itself, which is the case where a record rewritten in place is the change it exists to see.</p>
+  <table id="a-promotion-s-review-lookups-cost-the-same-at-any-store-size-measures">
+    <tbody>
+      <tr><th scope="row">Store accesses, 700 → 7,000 records</th><td>33 → 138 at base; 20 → 20 at head (a promotion's review lookups, cold process, index warmed by another process)</td></tr>
+      <tr><th scope="row">Absent-review refusal, 700 → 7,000</th><td>50 → 260 at base; flat at head</td></tr>
+      <tr><th scope="row">Behaviour kept</th><td>the review at the promoted revision is still selected; a record filed under the reviewer's run id is still found and flagged <code>misfiled</code>; a run with no stored review still reads as none</td></tr>
+      <tr><th scope="row">Gate</th><td>2 passed; EXIT=0 (<code>tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py</code>)</td></tr>
+      <tr><th scope="row">Negative control</th><td>the same test against the base tree: 2 failed; EXIT=1; the two count assertions are the failures</td></tr>
+      <tr><th scope="row">Importer suite (46 files)</th><td>base 2 failed / 2 errors / 316 passed; head identical ids; no added failure</td></tr>
+      <tr><th scope="row">ruff</th><td>changed module 2 → 0 findings; new test file clean; both formatted</td></tr>
+    </tbody>
+  </table>
+</article>
+</body>
+</html>
