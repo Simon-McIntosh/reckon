@@ -32,9 +32,22 @@
       "finding": "wiring-1",
       "reason": "s33 was dispatched directly as critical work and landed at 6d1e39b578 before this review returned, so no build entry point is owed",
       "when": "2026-11-12T10:33:29.502163+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "evidence_paths-1",
+      "reason": "the restart cadence and pid age were read with ps by two sessions at the time and were never saved; station.log carries no timestamps, which is the gap. What the log does carry is one traceback per crash, each naming a different review run. That count is the evidence the section rests on, and the landed test reproduces the cause",
+      "when": "2026-11-12T10:33:44.884294+00:00"
     }
   ],
   "responses": {
+    "evidence_paths-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "the restart cadence and pid age were read with ps by two sessions at the time and were never saved; station.log carries no timestamps, which is the gap. What the log does carry is one traceback per crash, each naming a different review run. That count is the evidence the section rests on, and the landed test reproduces the cause",
+      "when": "2026-11-12T10:33:44.884294+00:00"
+    },
     "wiring-1": {
       "action": "declined",
       "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
