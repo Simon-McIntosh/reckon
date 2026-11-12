@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-gate-halts-only-on-substance#s7&quot;],&quot;s9&quot;:[&quot;work-flows-to-the-lane#s2&quot;,&quot;work-flows-to-the-lane#s3&quot;,&quot;work-flows-to-the-lane#s4&quot;,&quot;work-flows-to-the-lane#s5&quot;,&quot;work-flows-to-the-lane#s6&quot;],&quot;s22&quot;:[&quot;work-flows-to-the-lane#s23&quot;,&quot;work-flows-to-the-lane#s24&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;implementable&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;implementable&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s27&quot;:&quot;implementable&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="103">
+<meta name="plan-version" content="104">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -358,6 +358,9 @@
 </div>
 <div class="r-comment" data-section="s24" data-id="c-run-r-20261112T191121862711-review-of-split-dispatch-57f62e1751cf" data-who="reckon-build" data-when="2026-11-12T19:26:29Z">
     <div class="r-comment-body"><p>Independent review stored for af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670..57f62e1751cfacb0818d824710e9f568e2a06387; no blocking findings, one non-blocking reuse finding; added failures 0.</p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261112T203635840485-review-of-split-dispatch-27e092194d09" data-who="reckon-build" data-when="2026-11-12T20:45:04Z">
+    <div class="r-comment-body"><p>Independent incremental review 57f62e1751cfacb0818d824710e9f568e2a06387..27e092194d09336b984dd2692d367b5bb60f033b: six scores 20/20, zero findings and zero added failures; prior reuse finding answered by inherited shared forwarding.</p></div>
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0" data-who="reckon-build" data-when="2026-11-12T15:29:29.896Z">
     <div class="r-comment-body"><p>Reviewed base fe9af3caa98c11d9fed1c9215a25ce570d3294d8 against head 5bc11377cbc06e6aabd7d19a4da02ff534a75547: the sweep now dispatches every review it owes before handing each promotion to a bounded worker, and six cases in tests/test_a_sweep_never_waits_on_a_promotion.py show the ordering, the width, the retry and the in-process claim; the head arm adds two failure ids against the base arm where the done_when requires none, and the ordering fixture at tests/test_one_run_cannot_stop_a_sweep.py:97 is a real one caused by concurrency, so that finding is blocking.</p></div>
