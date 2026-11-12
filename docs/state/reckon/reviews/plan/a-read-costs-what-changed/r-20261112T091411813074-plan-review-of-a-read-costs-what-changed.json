@@ -1,0 +1,69 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T09:23:39.133Z",
+  "dispatched_at": "2026-11-12T09:17:19Z",
+  "findings": [
+    {
+      "anchor": "plan.html:23",
+      "id": "wiring-1",
+      "reason": "the dependency record would say \u00a721 waits on \u00a718, the same edge this plan already records for \u00a719's identical relationship with \u00a718, and its absence leaves the queue unable to hold \u00a721 if \u00a718's work is ever reopened.",
+      "text": "`plan-section-depends-on` declares no entry for `s21`, though \u00a721 exists only because \u00a718 landed the fold, its deliverable removes the fallback \u00a718 wrote, and it edits `reckon/crew/picker/lane_context.py` and `reckon/crew/promotion.py`, which \u00a718 changed",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:137",
+      "id": "done_when-1",
+      "reason": "a node that folds the promoted row inside `refresh_run_time_profile` turns three \u00a718 tests red and is fenced out of updating them, so it must either block for a scope change or narrow the fix to a route the plan never distinguishes, and the file that pins the outside-the-lock behaviour belongs in \u00a721's write paths.",
+      "text": "\u00a721's done-when requires \"the test files importing the changed modules add no failure against the base revision\", but `tests/test_a_promotion_profile_refresh_costs_its_row.py` (the file \u00a718 landed) asserts the behaviour \u00a721 removes: `test_a_refused_index_build_can_serve_a_snapshot_missing_the_append` requires one `use_index=False` load and at least one `_last_good_index_data` read, and `test_an_unusable_stored_profile_gets_one_full_build` and `test_changed_history_refuses_a_fold_and_builds_once` each assert one full `run_time_profile` build; the natural fix site, `refresh_run_time_profile`, is in \u00a721's write paths while that test file is not",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "b6dd3e6484737907291d71a6569df1a5b1cc3567",
+  "plan_fingerprint": "8733124f8e5c7bb9a86b6ccbdb1f6bd5b550d913d391edbab9124079621cadcb",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 95,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T091411813074-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "16814f3a96bc753192d12073b00a4ceeada27f99",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion.py:1887` is the `refresh_run_time_profile(project)` call and `reckon/crew/picker/lane_context.py:920` is the `ledger.load(project, use_index=False)` line, exactly as cited; `f-arcwc-003`'s prompt names \u00a721, which exists and is declared `implementable`; the `~/.cache/reckon/ledger-181814ae\u2026-v5.sqlite` cited by the post-reload census is present at 481 MB and appears 32,928 times in the cited strace.",
+    "done_when": "a finding \u2014 \u00a721's closing clause at plan.html:137 (\"the test files importing the changed modules add no failure against the base revision\") meets `tests/test_a_promotion_profile_refresh_costs_its_row.py`, the \u00a718 test that pins `_last_good_index_data` and the full-build fallback \u00a721 removes, while that file is outside \u00a721's write paths; the negative control itself is sound (the stale-index branch really does produce document merges).",
+    "evidence_paths": "pass \u2014 the Why cites a dated profile copy at `~/.cache/reckon-promotion-stall/promotion-profile-20261112T0910Z.txt` and the gate logs go under the run directory; the two new `_document` census comments cite `station-strace-after-s20.txt` and `station-strace-0036Z-after-reload.txt` under the station run's `logs/`, and all four files exist.",
+    "naming": "pass \u2014 the new test name and the plan's language describe the mechanism (`a promotion holds no profile build`); section ids and `s21` live only in plan metadata, and no ticket or version tag reaches code or prose.",
+    "reasoning": "pass \u2014 the profile supports the stated cause: 723 of 780 samples are under `_complete_locked` \u2192 `refresh_run_time_profile`, `_indexed_data` holds 281 and `_last_good_index_data` 309 of the 590 samples on the rebuild path, and 24 samples sit at `lane_context.py:920` \u2192 `_merge_run_documents`, which is exactly the merge the negative control restores. Two figures are slightly off but not load-bearing: \"about 75%\" is the two decode sums (583/780) rather than the call's 92.7% share of samples, and the cited 277/306 differ from 281/309 measured here.",
+    "single_goal": "pass \u2014 \u00a721 has one deliverable (a promotion pays no profile build), and the clause requiring a pick to hold every promoted row is a correctness guard on that same endpoint, not a second deliverable.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` at plan.html:23 now declares `s19: [s18]` but carries no entry for `s21`, although \u00a721's Why and deliverable both rest on \u00a718's landed fold and \u00a721 edits `reckon/crew/picker/lane_context.py`, which \u00a718 changed."
+  },
+  "section_digests": {
+    "_document": "3d7a2666de922527b56cc905f4d3349ab5c19757ae949b2821321af890a60e76",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s21": "d824d4989e4528a2669836e9cd920d151590495a9ee30e911c2cf0348c31b3d7",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:34:17.818695+00:00",
+  "total": null
+}
