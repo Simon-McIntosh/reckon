@@ -229,7 +229,12 @@ def test_unverified_registration_is_spared(processes, change):
     _write(path, record)
     report = census_module.census()
     assert report["orphaned"] == []
-    assert [row["pid"] for row in report["spared"]] == [child.pid]
+    if change == "missing-lease":
+        assert [row["pid"] for row in report["spared"]] == [child.pid]
+    else:
+        assert child.pid not in {row["pid"] for row in report["spared"]}
+        assert report["unrecorded_count"] >= 1
+    assert child.poll() is None
 
 
 def test_follower_environment_carries_its_original_owner(processes):
@@ -358,3 +363,137 @@ def test_conflicting_ownership_for_one_process_is_spared(processes):
     )
     assert census_module.apply_census(report) == []
     assert child.poll() is None
+
+
+@pytest.mark.parametrize("source", ["environment", "follower", "run"])
+@pytest.mark.parametrize("collision", ["foreign-host", "reused-pid"])
+def test_unrelated_registration_does_not_mask_recorded_owner(
+    processes, source, collision
+):
+    owner = _dead_owner(processes)
+    if source == "environment":
+        stamps = {"RECKON_OWNER_PID": str(owner)}
+    elif source == "follower":
+        stamps = {"RECKON_FOLLOWER_OWNER": json.dumps({"pid": owner, "start_time": ""})}
+    else:
+        stamps = {"RECKON_RUN_ID": "orphan-run"}
+    child = processes(stamps)
+    if source == "run":
+        _registered(crew_home(), child, owner, "run", live=False)
+    path = _registered(crew_home(), child, os.getpid(), "producer", live=True)
+    record = json.loads(path.read_text())
+    if collision == "foreign-host":
+        record["host"] = "a-different-host"
+    else:
+        record["pid_start_time"] = "a-reused-pid"
+    _write(path, record)
+    report = census_module.census()
+    assert [row["pid"] for row in report["orphaned"]] == [child.pid]
+    assert (
+        report["orphaned"][0]["owner"]["kind"]
+        == {
+            "environment": "stamped",
+            "follower": "follower",
+            "run": "run",
+        }[source]
+    )
+
+
+def test_process_snapshot_uses_the_owned_environment_reader(processes, monkeypatch):
+    from reckon.crew import process_signal
+
+    owner = _dead_owner(processes)
+    child = processes()
+    reader = process_signal._process_environment
+    seen = []
+
+    def read_environment(pid):
+        seen.append(pid)
+        if pid == child.pid:
+            return {"RECKON_OWNER_PID": str(owner)}
+        return reader(pid)
+
+    monkeypatch.setattr(process_signal, "_process_environment", read_environment)
+    report = census_module.census()
+    assert child.pid in seen
+    assert [row["pid"] for row in report["orphaned"]] == [child.pid]
+
+
+def test_follower_stamp_uses_the_owned_decoder(processes, monkeypatch):
+    from reckon.crew import follower_registration
+
+    owner = _dead_owner(processes)
+    child = processes({"RECKON_FOLLOWER_OWNER": "opaque-owner"})
+    seen = []
+
+    def decode(raw):
+        seen.append(raw)
+        return owner, ""
+
+    monkeypatch.setattr(follower_registration, "_parse_follower_owner", decode)
+    report = census_module.census()
+    assert seen == ["opaque-owner"]
+    assert [row["pid"] for row in report["orphaned"]] == [child.pid]
+
+
+@pytest.mark.parametrize(
+    ("renewed", "expected"),
+    [
+        (999.0, 9.0),
+        (990.0, 0.0),
+        (989.0, -1.0),
+        (1001.0, 11.0),
+        (None, None),
+        (True, None),
+        ("999", None),
+        (float("nan"), None),
+        (float("inf"), None),
+    ],
+)
+def test_producer_lease_snapshot_uses_record_and_clock(monkeypatch, renewed, expected):
+    from reckon.crew import runs
+
+    def unexpected_read(*_args):
+        pytest.fail("a supplied registration and clock must need no live read")
+
+    monkeypatch.setattr(runs, "read_watch_registration", unexpected_read)
+    monkeypatch.setattr(runs, "_utc_epoch_seconds", unexpected_read)
+    assert (
+        runs.watch_lease_remaining_from_record(
+            {"lease_renewed_at": renewed}, now=1000.0, lease_seconds=10.0
+        )
+        == expected
+    )
+
+
+@pytest.mark.parametrize("remaining", [1.0, 0.0, -1.0, None])
+def test_census_uses_the_owned_producer_lease_reading(monkeypatch, remaining):
+    from reckon.crew import runs
+
+    owner = {"kind": "producer", "lease_renewed_at": 0.0}
+    seen = []
+
+    def lease_reading(record, *, now=None, lease_seconds=None):
+        seen.append((record, now, lease_seconds))
+        return remaining
+
+    monkeypatch.setattr(runs, "watch_lease_remaining_from_record", lease_reading)
+    alive, _reason = census_module._owner_alive(owner, now=1000.0)
+    assert alive is (None if remaining is None else remaining > 0)
+    assert seen == [(owner, 1000.0, None)]
+
+
+def test_live_producer_lease_reader_uses_the_snapshot_primitive(monkeypatch):
+    from reckon.crew import runs
+
+    record = {"lease_renewed_at": 990.0}
+    seen = []
+
+    def lease_reading(snapshot, *, now=None, lease_seconds=None):
+        seen.append((snapshot, now, lease_seconds))
+        return 7.0
+
+    monkeypatch.setattr(runs, "read_watch_registration", lambda _project: record)
+    monkeypatch.setattr(runs, "watch_lease_remaining_from_record", lease_reading)
+    assert runs.watch_lease_remaining("fixture-project", lease_seconds=20.0) == 7.0
+    assert seen == [(record, None, 20.0)]

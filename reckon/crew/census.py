@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-import json
-import math
 import os
 import platform
 import select
@@ -32,6 +30,8 @@ def _integer(value: Any) -> int | None:
 
 def _processes() -> dict[int, dict[str, Any]]:
     """Read this user's local processes; argv never establishes ownership."""
+    from reckon.crew.process_signal import _process_environment
+
     processes = {}
     uptime = float(Path("/proc/uptime").read_text().split()[0])
     ticks = os.sysconf("SC_CLK_TCK")
@@ -45,14 +45,7 @@ def _processes() -> dict[int, dict[str, Any]]:
             fields = _process_stat_fields(pid)
             if len(fields) < 20:
                 continue
-            environment = {}
-            try:
-                for token in (path / "environ").read_bytes().split(b"\0"):
-                    key, separator, value = token.partition(b"=")
-                    if separator:
-                        environment[os.fsdecode(key)] = os.fsdecode(value)
-            except OSError:
-                pass
+            environment = _process_environment(pid) or {}
             try:
                 cwd = os.readlink(path / "cwd")
             except OSError:
@@ -122,7 +115,7 @@ def _owner(
         if record.get("host") == socket.gethostname()
         and str(record.get("pid_start_time") or "") == process["start_time"]
     ]
-    record = matching[0] if matching else next(iter(choices), None)
+    record = matching[0] if matching else None
     if record:
         owner = {
             "kind": record["kind"],
@@ -135,10 +128,6 @@ def _owner(
                 **owner,
                 "unknown": "multiple registrations claim this process identity",
             }
-        if record.get("host") != socket.gethostname():
-            return {**owner, "unknown": "registration is not on this host"}
-        if str(record.get("pid_start_time") or "") != process["start_time"]:
-            return {**owner, "unknown": "registration process identity is unverified"}
         if record["kind"] == "producer":
             return {**owner, "lease_renewed_at": record.get("lease_renewed_at")}
         return {
@@ -167,17 +156,14 @@ def _owner(
             "session": session,
         }
     if "RECKON_FOLLOWER_OWNER" in environment:
-        try:
-            value = json.loads(environment["RECKON_FOLLOWER_OWNER"])
-        except (ValueError, TypeError):
-            value = None
-        if not isinstance(value, dict):
-            value = {}
+        from reckon.crew.follower_registration import _parse_follower_owner
+
+        value = _parse_follower_owner(environment["RECKON_FOLLOWER_OWNER"])
         return {
             "kind": "follower",
             "source": "RECKON_FOLLOWER_OWNER",
-            "pid": value.get("pid"),
-            "start_time": value.get("start_time"),
+            "pid": value[0] if value is not None else None,
+            "start_time": value[1] if value is not None else None,
             "session": session,
         }
     run_id = environment.get("RECKON_RUN_ID")
@@ -202,16 +188,12 @@ def _owner_alive(owner: Mapping[str, Any], now: float) -> tuple[bool | None, str
     if owner.get("unknown"):
         return None, owner["unknown"]
     if owner["kind"] == "producer":
-        from reckon.crew.runs import producer_lease_seconds
+        from reckon.crew.runs import watch_lease_remaining_from_record
 
-        renewed = owner.get("lease_renewed_at")
-        if (
-            isinstance(renewed, bool)
-            or not isinstance(renewed, (float, int))
-            or not math.isfinite(renewed)
-        ):
+        remaining = watch_lease_remaining_from_record(owner, now=now)
+        if remaining is None:
             return None, "producer lease is unreadable"
-        alive = now - renewed < producer_lease_seconds()
+        alive = remaining > 0
         return alive, "producer lease is live" if alive else "producer lease expired"
     pid = _integer(owner.get("pid"))
     if pid is None:

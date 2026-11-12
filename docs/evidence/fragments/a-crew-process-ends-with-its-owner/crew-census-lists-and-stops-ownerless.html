@@ -43,4 +43,48 @@
   registrations are spared as unknown ownership. The repaired census/help gate
   reports 28 passed in 24.11 s. The final armed gate and importer receipt are
   retained with the manifest.</p>
+  <section id="crew-census-lists-and-stops-ownerless-recorded-owner-resolution">
+    <h4>Unrelated registrations cannot mask a recorded owner</h4>
+    <p>The added regression reproduced six missed orphans: a foreign-host or
+    reused-pid registration made <code>orphaned</code> empty despite a valid
+    environment, follower or run-pointer owner. Two existing matching-record
+    controls passed in the same run (6 failed, 2 passed, 21 deselected in
+    8.67 s). Registrations now contribute ownership only when both their host
+    and process start time match. Otherwise resolution continues through the
+    environment stamp, follower stamp and run pointer. A process with no
+    remaining ownership evidence stays unrecorded and cannot be stopped.</p>
+    <p>Environment reads use
+    <code>process_signal._process_environment</code>; follower stamps use
+    <code>follower_registration._parse_follower_owner</code>. The producer owner
+    provides <code>runs.watch_lease_remaining_from_record</code>, which accepts
+    a captured registration, epoch clock and optional lease interval. Both
+    <code>watch_lease_remaining</code> and the census use that calculation.
+    Tests cover expiry boundaries, unknown timestamps, forwarding the snapshot
+    and clock, and using the existing owner helpers.</p>
+    <table>
+      <caption>Repair verification on all_debug</caption>
+      <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
+      <tbody>
+        <tr><td>Armed baseline</td><td>129 passed in 17.92 s, exit 0;
+        unchanged baseline receipt retained.</td></tr>
+        <tr><td>Armed repaired head</td><td>174 passed in 25.74 s, exit 0;
+        all 45 census cases pass, zero added failures.</td></tr>
+        <tr><td>Producer lifecycle</td><td>Baseline 3 passed in 14.07 s;
+        repaired head 3 passed in 15.02 s, both exit 0.</td></tr>
+        <tr><td>Isolated census/runs imports</td><td>Baseline 1 passed,
+        213 deselected in 24.91 s; repaired head 2 passed, 213 deselected in
+        28.36 s, both exit 0. Census is absent at the original baseline;
+        runs is the positive control.</td></tr>
+        <tr><td>Remove owner-liveness selection</td><td>4 failed,
+        41 deselected in 1.49 s, exit 1.</td></tr>
+        <tr><td>Restore unrelated-registration fallback</td><td>6 failed,
+        39 deselected in 0.98 s, exit 1.</td></tr>
+        <tr><td>Bypass shared environment/decoder/lease helpers</td><td>
+        6 failed, 39 deselected in 0.61 s, exit 1.</td></tr>
+      </tbody>
+    </table>
+    <p>The run's <code>ownership-review/</code> logs retain the commands,
+    imported module paths and source digests. Mutation trees were isolated
+    snapshots, removed after the job. No production process sweep was run.</p>
+  </section>
 </section>
