@@ -242,3 +242,27 @@ def test_a_request_with_no_backlog_records_no_waiver(admit_repo: Path) -> None:
         runs.dispatch_field(runs.read_pointer("r-clean"), "unreconciled_override")
         is None
     )
+
+
+def test_the_stored_override_does_not_govern_the_admission_launch(
+    admit_repo: Path,
+) -> None:
+    """The value recorded when the request was queued does not decide its launch.
+
+    A request can wait days for a lane, so the waiver its dispatch stored then
+    describes that moment. The backlog that matters at launch is the one the
+    lane frees into, and the admission launch is what answers for it.
+    """
+    home = Path(os.environ["RECKON_HOME"])
+    _write_overdue_run(home, "r-delivered")
+    _, resolve = _config_for()
+    request = _queue(admit_repo, node_id="stored", run_id="r-stored")
+    request["dispatch_options"]["allow_unreconciled_runs"] = False
+    runs.queue_dispatch(request)
+
+    result = queue_admission.admit_once(config_for=resolve, launcher=_launcher([]))
+
+    assert result["launched"] == ["r-stored"], json.dumps(result, default=str)
+    waiver = runs.dispatch_field(runs.read_pointer("r-stored"), "unreconciled_override")
+    assert waiver["source"] == "admission-launch"
+    assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]

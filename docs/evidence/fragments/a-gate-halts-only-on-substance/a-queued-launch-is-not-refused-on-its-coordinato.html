@@ -1,0 +1,41 @@
+<section id="a-queued-launch-is-not-refused-on-its-coordinato-landing">
+  <h2>A queued launch is not refused on its coordinator's backlog</h2>
+
+  <p><strong>What this node found.</strong> §7's deliverable is already in this
+  tree. Commit <code>1bd720c73e</code>, an ancestor of the node's base
+  <code>c4eff77070</code>, passes <code>unreconciled_override=True</code> at the
+  admission launch site (<code>reckon/crew/queue_admission.py:461</code>) and
+  has <code>dispatch</code> record the exception as a waiver
+  (<code>reckon/crew/dispatch.py:2011&ndash;2023</code>) whose
+  <code>source</code> is <code>admission-launch</code> and whose
+  <code>waived_runs</code> carries the runs it covered. A direct dispatch
+  keeps the refusal, and the waiver is written only when a backlog was
+  actually waived.</p>
+
+  <p><strong>What changed here.</strong> One property the delivered test did
+  not cover: a request queued with <code>allow_unreconciled_runs</code> stored
+  false still launches on admission. That field describes the moment the
+  request was queued, not the lane that frees days later, and it is exactly
+  what the declared mutation re-reads at the launch site.</p>
+
+  <h3 id="a-queued-launch-is-not-refused-on-its-coordinato-measured">Measured</h3>
+
+  <table id="a-queued-launch-is-not-refused-on-its-coordinato-arms">
+    <caption>Every arm is a log whose header names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base</td><td>c4eff77070</td><td>54 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head</td><td>this node's commit</td><td>55 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control</td><td>base with <code>unreconciled_override=bool(options.get("allow_unreconciled_runs"))</code> at the launch site</td><td>2 failed, 53 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p>The negative control reddens exactly the two waiver arms
+  (<code>test_an_admission_launch_waives_its_coordinator_backlog</code> and
+  <code>test_the_stored_override_does_not_govern_the_admission_launch</code>)
+  with <code>UnreconciledRuns: project has 1 unreconciled run(s) older than the
+  5m grace: r-delivered</code>, and leaves the direct-dispatch refusal arm
+  green, which separates an admission waiver from a refusal that never
+  happened to fire.</p>
+</section>
