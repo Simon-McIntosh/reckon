@@ -1,0 +1,63 @@
+<section id="split-dispatch">
+  <h3>Dispatch concern extraction with compatibility facade</h3>
+  <p>The base revision <code>af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670</code>
+    reproduced the size problem: <code>wc -l reckon/crew/dispatch.py</code>
+    returned <strong>4405</strong>. The product split is committed at
+    <code>2bad2244f503ae6f7cb22ea0e299f93b3ce088b9</code>. The facade now has
+    <strong>662 lines</strong>; every new module is below 2000 lines.</p>
+  <p>The frozen surface inventory covers all <strong>603 original bindings</strong>.
+    Each resolves to its concern's identical object; facade patches and their
+    restoration reach each concern that reads the binding. The implementation
+    follows the existing crew facade's override forwarding. Request storage,
+    previews and context refusals, comparison arms, suite instructions, claim
+    restoration, preflight and launch composition have separate source homes.
+    The main dispatch crosses the preflight/launch boundary through explicit
+    keyword arguments.</p>
+  <table id="split-dispatch-modules">
+    <thead><tr><th>Module</th><th>Lines</th></tr></thead>
+    <tbody>
+      <tr><td><code>reckon/crew/dispatching/__init__.py</code></td><td>6</td></tr>
+      <tr><td><code>reckon/crew/dispatching/_imports.py</code></td><td>754</td></tr>
+      <tr><td><code>reckon/crew/dispatching/claims.py</code></td><td>41</td></tr>
+      <tr><td><code>reckon/crew/dispatching/comparisons.py</code></td><td>636</td></tr>
+      <tr><td><code>reckon/crew/dispatching/fences.py</code></td><td>337</td></tr>
+      <tr><td><code>reckon/crew/dispatching/launch.py</code></td><td>1139</td></tr>
+      <tr><td><code>reckon/crew/dispatching/preparation.py</code></td><td>1475</td></tr>
+      <tr><td><code>reckon/crew/dispatching/requests.py</code></td><td>399</td></tr>
+      <tr><td><code>reckon/crew/dispatching/suite.py</code></td><td>183</td></tr>
+    </tbody>
+  </table>
+  <p>A mechanical source comparison found all <strong>28 helper bodies</strong>
+    unchanged after normalizing import grouping and order. The public dispatch
+    signature is unchanged, and concatenating the preflight and launch bodies
+    reproduces the original body under the same normalization.</p>
+  <table id="split-dispatch-measurements">
+    <thead><tr><th>Measure</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Armed inventory and surface gate, all_debug</td><td>51 passed</td><td>56 passed</td></tr>
+      <tr><td>284 existing dispatch test importers, all_debug, sequential arms, at most four workers</td><td>130 failed, 2538 passed, 2 skipped</td><td>132 failed, 2536 passed, 2 skipped</td></tr>
+      <tr><td>Importer failure-ID comparison</td><td colspan="2">129 shared; 3 added; 1 removed</td></tr>
+      <tr><td>Missing-export negative control</td><td colspan="2">2 failed, 3 passed; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>Removing <code>queue_requests</code> from the facade's export table produced
+    <code>AssertionError: missing dispatch re-export: queue_requests</code>.
+    Both the original-binding check and the patch-forwarding check failed.
+    The scratch mutation was restored before the importer measurement.
+    A focused existing watcher-arming dispatch test also passed.</p>
+  <p><strong>Delivery is blocked on importer parity.</strong> The added failures
+    are existing source-inventory checks tied to the former physical source
+    location. The worker's manifest records the exact tests and required scope
+    extension in <code>outside_scope</code>. Existing tests were not modified;
+    the section is not declared complete. The one removed baseline failure is
+    recorded without claiming that this extraction repaired it.</p>
+  <p>Durable receipts are under
+    <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch</code>:
+    <code>baseline-armed.log</code>, <code>head-armed.log</code>,
+    <code>baseline-importers-exact-git.log</code>,
+    <code>head-importers-absolute-git.log</code>,
+    <code>negative-control.log</code>, <code>importer-comparison.json</code>
+    and <code>mechanical-equivalence.log</code>. Ruff check and format are clean
+    on the staged Python paths. The interrupted initial runner logs are retained
+    separately and are excluded from the comparison.</p>
+</section>
