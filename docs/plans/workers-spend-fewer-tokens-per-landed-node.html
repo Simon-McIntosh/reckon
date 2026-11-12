@@ -20,12 +20,12 @@
   <meta name="plan-tags" content="crew,reckon-tooling">
   <meta name="plan-informs" content="a-live-worker-can-be-reached">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;],&quot;s5&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s3&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;],&quot;s7&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s6&quot;],&quot;s8&quot;:[&quot;workers-spend-fewer-tokens-per-landed-node#s4&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s5&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s7&quot;,&quot;workers-spend-fewer-tokens-per-landed-node#s10&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="55">
+<meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -243,6 +243,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-11T06:45:00Z">
     <div class="r-comment-body"><p>§9 landed at <code>fcec1e7f5b06</code>: a node writing a data fixture under <code>tests/</code> can now be promoted. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s9-armed-suite-collectible-tests">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T231038123370-review-of-a-lane-change-drops-the-anchored-instruction-282be918cf52" data-who="reckon-build" data-when="2026-11-11T23:38:29.475Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction at head 282be918cf529959271976eeb0ea2a493476b6b3 against base f238d113fa89569f42ef7e54e4b6dd28a021bebe. Two commits land the goal exactly: with_anchored_edit_instruction strips a carried anchored block first on every at_launch call (reckon/crew/prompts.py:669-670, reusing the existing prompt_without_anchored_edit_instruction at :691) and launch_plan now asks the owner unconditionally rather than only under &#x27;if anchored_edit&#x27; (reckon/_backends.py:3118-3120), so a lane change off an anchored backend hands its worker no instruction for tools the new launch does not seed, while a seeding launch keeps exactly one copy (reckon/crew/prompts.py:687-688). Scores: goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20. Two non-blocking findings: tests/test_anchored_edit_claude_arm.py:298 asserts the strip at the launch seam only and never drives the lane-change composition at reckon/crew/dispatch_sessions.py:1620, and logs/baseline-suite.log:4 omits the RECKON_INVENTORY_REVISION assignment the manifest&#x27;s baseline_suite.command carries. Added-failure count 0, derived from logs/baseline-suite.log (84 passed, EXIT=0, failure_ids []) and logs/after-suite.log (92 passed, EXIT=0, failure_ids []).</p></div>
 </div>
 </section>
 </main>
