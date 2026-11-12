@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+import time
 from collections.abc import Callable
 from contextvars import ContextVar
 from datetime import UTC, datetime, timedelta, timezone
@@ -2361,6 +2362,61 @@ def _create_worktree(
     return payload
 
 
+# A held shared-configuration lock is almost always another dispatch finishing
+# its own write, so a brief wait recovers the write instead of refusing.
+_WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS = 5.0
+_WORKTREE_CONFIG_LOCK_POLL_SECONDS = 0.05
+
+
+def _shared_worktree_config_enabled(repo: Path) -> bool:
+    """Whether the shared configuration already enables per-worktree config."""
+    result = _git(
+        repo, "config", "--bool", "--get", "extensions.worktreeConfig", check=False
+    )
+    return result.returncode == 0 and result.stdout.strip() == "true"
+
+
+def _shared_config_lock(repo: Path) -> Path:
+    """The lock git takes to write the shared configuration."""
+    result = _git(repo, "rev-parse", "--git-common-dir", check=False)
+    common = Path(result.stdout.strip()) if result.returncode == 0 else Path(".git")
+    if not common.is_absolute():
+        common = repo / common
+    return common / "config.lock"
+
+
+def _enable_shared_worktree_config(repo: Path) -> bool:
+    """Enable ``extensions.worktreeConfig`` on the shared configuration once.
+
+    Returns whether this call wrote it. The setting is a property of the shared
+    checkout, not of the worktree being created, so it reads ``true`` on every
+    checkout that has dispatched before. Writing it again anyway contends for
+    the shared configuration lock with every concurrent dispatch, and one of
+    them is refused outright while another holds it.
+
+    When the write is needed, a lock another git process holds for a moment is
+    waited out for a bounded time. A lock still held at the bound is named in
+    the refusal, because a dispatch that failed at this step otherwise reports
+    only that the worktree could not be created.
+    """
+    if _shared_worktree_config_enabled(repo):
+        return False
+    lock = _shared_config_lock(repo)
+    deadline = time.monotonic() + _WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS
+    while True:
+        result = _git(repo, "config", "extensions.worktreeConfig", "true", check=False)
+        if not result.returncode:
+            return True
+        detail = result.stderr.strip() or result.stdout.strip()
+        if "could not lock config file" in detail and time.monotonic() < deadline:
+            time.sleep(_WORKTREE_CONFIG_LOCK_POLL_SECONDS)
+            continue
+        raise CrewError(
+            f"worktree creation failed: git config extensions.worktreeConfig true at "
+            f"{repo}: {detail} (waited for the configuration lock {lock})"
+        )
+
+
 def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
     """Have a new worktree compare whole-second mtime, ctime and size only.
 
@@ -2376,23 +2432,16 @@ def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
     once ``extensions.worktreeConfig`` is enabled on the shared configuration.
     Enabling it there leaves the main checkout at the default comparison.
     """
-    for arguments in (
-        ("config", "extensions.worktreeConfig", "true"),
-        ("config", "--worktree", "core.checkStat", "minimal"),
-    ):
-        where = repo if arguments[1] != "--worktree" else path
-        result = subprocess.run(
-            ["git", "-C", str(where), *arguments],
-            capture_output=True,
-            text=True,
-            check=False,
+    _enable_shared_worktree_config(repo)
+    result = _git(
+        path, "config", "--worktree", "core.checkStat", "minimal", check=False
+    )
+    if result.returncode:
+        detail = result.stderr.strip() or result.stdout.strip()
+        raise CrewError(
+            f"worktree creation failed: git config --worktree core.checkStat minimal "
+            f"at {path}: {detail}"
         )
-        if result.returncode:
-            detail = result.stderr.strip() or result.stdout.strip()
-            raise CrewError(
-                f"worktree creation failed: git {' '.join(arguments)} at {where}: "
-                f"{detail}"
-            )
 
 
 def _remove_worktree(repo: Path, path: str) -> None:
