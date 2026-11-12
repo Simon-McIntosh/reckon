@@ -1,9 +1,8 @@
 """Compute, store and export each session's obligations once per change.
 
 The station is the node's one writer, so the derivation that every coordinator's
-prompt hook and every ``crew view obligations`` call used to run for itself now
-runs here: the fleet is read once, each session's duties are sliced from that
-one reading, and the result is kept in the station's node-local store. A reader
+prompt hook and every ``crew view obligations`` call need is computed here:
+the fleet is read once, each session's duties are sliced from that one reading, and the result is kept in the station's node-local store. A reader
 on the node queries that store and pays no derivation at all.
 
 A reader off the node cannot open the store -- it is node-local by
@@ -26,8 +25,10 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shlex
 import socket
 import sys
+import threading
 import traceback
 from collections.abc import Iterable, Mapping
 from dataclasses import dataclass
@@ -75,6 +76,64 @@ class _Memory:
 
 _REFRESHES: dict[tuple[str, str], _Memory] = {}
 _EXPORTS: dict[tuple[str, str], _Memory] = {}
+_SWEEP_REPORT_LOCK = threading.Lock()
+
+
+def _sweep_failure_key(project: str) -> str:
+    return f"sweep-failures:{project}"
+
+
+def record_sweep_report(
+    store: Any, project: str, session: str, report: Mapping[str, Any]
+) -> None:
+    """Persist run failures until a completed review pass supersedes them.
+
+    A whole-pass error says nothing about whether an earlier failed run now
+    succeeds. Keep that run's error until the review pass returns its per-run
+    outcomes. Session sweeps run concurrently, so their read-modify-write of
+    the project's record is serialised here.
+    """
+    reviews = report.get("reviews")
+    if (
+        not isinstance(reviews, Mapping)
+        or "error" in reviews
+        or "failed" not in reviews
+    ):
+        return
+    failures = list(reviews["failed"] or ())
+    key = _sweep_failure_key(project)
+    with _SWEEP_REPORT_LOCK:
+        before = store.station_value(key) or "{}"
+        sessions = json.loads(before)
+        if failures:
+            sessions[session] = failures
+        else:
+            sessions.pop(session, None)
+        after = json.dumps(sessions, sort_keys=True)
+        if before != after:
+            store.set_station_value(key, after)
+
+
+def _with_sweep_failures(
+    payload: Mapping[str, Any], failures: Iterable[Mapping[str, Any]]
+) -> dict[str, Any]:
+    rows = list(payload.get("obligations") or ())
+    for failure in failures:
+        run_id = str(failure["run_id"])
+        command = f"reckon crew observe --run {shlex.quote(run_id)}"
+        rows.append(
+            {
+                "kind": "sweep-failed",
+                "run_id": run_id,
+                "age_seconds": 0,
+                "detail": f"station sweep failed: {failure['error']}",
+                "next_command": command,
+                "action": {"verb": "inspect", "command": command},
+            }
+        )
+    summary = dict(payload.get("summary") or {})
+    summary["count"] = len(rows)
+    return {**payload, "obligations": rows, "summary": summary}
 
 
 def _utc_now() -> datetime:
@@ -149,6 +208,7 @@ def refresh(
     project: str,
     changed: bool = True,
     now: datetime | None = None,
+    sweep_failures: Mapping[str, Any] | None = None,
 ) -> list[str]:
     """Derive and store each live session's obligations when the fleet moved.
 
@@ -161,8 +221,11 @@ def refresh(
     instant = _utc_now() if now is None else now
     key = (str(getattr(store, "root", "")), project)
     memory = _REFRESHES.get(key)
+    sweep_failures = sweep_failures or {}
+    sweep_record = json.dumps(sweep_failures, sort_keys=True)
     due = (
-        changed
+        (memory is not None and memory.identity != sweep_record)
+        or changed
         or memory is None
         or (instant - memory.at).total_seconds() >= REFRESH_FLOOR_SECONDS
     )
@@ -171,7 +234,8 @@ def refresh(
 
     registrations = follower_rows(project)
     sessions = sorted(
-        {
+        set(sweep_failures)
+        | {
             str(row.get("session") or "")
             for row in registrations
             if row.get("live") and row.get("session")
@@ -186,7 +250,10 @@ def refresh(
     producer = _station_producer(store)
     written: list[str] = []
     for session in sessions:
-        payload = obligation_snapshot.payload_for(state, session)
+        payload = _with_sweep_failures(
+            obligation_snapshot.payload_for(state, session),
+            sweep_failures.get(session, ()),
+        )
         identity = payload_identity(payload)
         stored = store.read_obligation(session)
         document = stored_document(stored) or {}
@@ -222,7 +289,7 @@ def refresh(
             )
         except Exception:  # noqa: BLE001 - one session's rewrite costs one session
             _report_failure(project, "absent-snapshot")
-    _REFRESHES[key] = _Memory(at=instant)
+    _REFRESHES[key] = _Memory(at=instant, identity=sweep_record)
     return written
 
 
@@ -359,7 +426,7 @@ def export_snapshot(
         ):
             # The beat moved, but the file is younger than the refresh
             # interval, which keeps an unchanged fleet from writing inside the
-            # sixty seconds the plan promises. The record of the last write is
+            # heartbeat refresh interval. The record of the last write is
             # left untouched so the interval keeps running from it.
             return None
 
@@ -398,7 +465,14 @@ def publish(
     does, and the next tick tries again.
     """
     try:
-        refresh(store, project=project, changed=changed, now=now)
+        sweep_record = store.station_value(_sweep_failure_key(project)) or "{}"
+        refresh(
+            store,
+            project=project,
+            changed=changed,
+            now=now,
+            sweep_failures=json.loads(sweep_record),
+        )
     except Exception:  # noqa: BLE001 - one project's input costs one pass
         _report_failure(project, "refresh")
         return None
