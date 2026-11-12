@@ -2542,7 +2542,7 @@ def sweep(
                 session=session,
                 pointers=live,
             )
-        except (CrewError, OSError) as exc:
+        except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
             # A review pass that cannot run must not take the resume pass's
             # record down with it: the recoveries it did perform are already
             # durable on each resumed run.
@@ -2567,7 +2567,7 @@ def sweep(
             dry_run=dry_run,
             pointers=live,
         )
-    except (CrewError, OSError) as exc:
+    except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
         plan_reviews = {"error": str(exc)}
 
     report = {
