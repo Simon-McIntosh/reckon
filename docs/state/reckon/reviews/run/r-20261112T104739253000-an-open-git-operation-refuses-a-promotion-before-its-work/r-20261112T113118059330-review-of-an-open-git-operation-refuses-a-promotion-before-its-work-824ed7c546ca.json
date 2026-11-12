@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:3582",
+    "reckon/crew/merge.py:174",
+    "reckon/crew/promotion_checks.py:2389"
+  ],
+  "completed_at": "2026-11-12T11:51:07.541Z",
+  "dispatched_at": "2026-11-12T11:41:13Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "437",
+      "severity": "non-blocking",
+      "text": "non-blocking: the early refusal runs outside `_require_independently` (reckon/crew/promotion_checks.py:1356), so a run whose checkout has an open operation and also fails another independent check now reports only the open operation where the base reported every refusal in one message, costing one further full promotion attempt to learn the rest."
+    },
+    {
+      "file": "reckon/crew/promotion.py",
+      "line": "315",
+      "severity": "non-blocking",
+      "text": "non-blocking: `_landing_checkout` restates the mount-then-record-repo resolution that promotion.py:457 and promotion.py:589 already carry; three copies can drift, and a drift would have the early check name a different checkout than the landing commit writes into."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T104739253000-an-open-git-operation-refuses-a-promotion-before-its-work/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded gate covers the ledger/store counters, the negative control and the importer delta, but the plan section's timing measure (five calls at base and five at head on all_debug, median wall time under 30 s, each logged with its load average) was never run, so the latency half of the deliverable is asserted from the counters alone."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read both commits against base 3801df115cb7; 6abbe8a784 adds the 16-line `_landing_checkout` resolver and a single early guard call plus a 329-line test, and 824ed7c546 adds only the 41-line evidence fragment, so the behavioural change is one call and the test is its measure.",
+    "done_when": "the recorded gate is `pytest ... tests/test_an_open_operation_refuses_a_promotion_first.py tests/test_staged_write_inventory.py` (58 passed at head, 51 at base) plus the importer sweep, and it asserts zero ledger loads and zero run-store constructions before the refusal with the two controls proving those counters see real reads; the plan's five-call base/head wall-time clause is not measured anywhere.",
+    "goal": "the goal is that an open git operation refuses a promotion before its work; reckon/crew/promotion.py:437 calls `_require_committable_checkout(_landing_checkout(record, root), run_id)` at the top of `complete`, ahead of the ledger read and every store construction, so an open merge, rebase, cherry-pick or revert refuses there.",
+    "manifest": "read; it records status complete, both commits, the 58-passed head arm and 51-passed base arm with their log paths, the negative-control log (5 failed, 2 passed), and an importer delta of zero against 38 pre-existing failures.",
+    "write_paths": "the declared scope was promotion.py, promotion_scope.py, crew_run_commands.py, the new test, and an evidence fragment plus figure dir; the diff at 6abbe8a784 and 824ed7c546 touches only reckon/crew/promotion.py, tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/an-open-git-operation-refuses-a-promotion-before-its-work.html, all inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_an_open_operation_refuses_a_promotion_first.py:297 reddens when the early call is removed (logs/negative-control.log records 5 failed), and its counter is proved live by the clean-checkout control at line 314, though line 300's run-store count is not discriminating under that mutation.",
+    "evidence": "the recorded arms in the manifest and logs/reproduction-base.log (assert 2 == 0) prove the counter clause and the negative control, but no recorded run measures the plan section's five-call base/head wall time under 30 s with load averages.",
+    "fit": "promotion.py:315 follows the module's docstring-and-comment idiom and reuses the existing `_require_committable_checkout` rather than restating it; ruff check and format are clean on both staged files when I ran them.",
+    "goal_fidelity": "promotion.py:437 refuses at the top of `complete`, and tests/test_an_open_operation_refuses_a_promotion_first.py:297 measures zero ledger loads where the base reproduction records 2.",
+    "reuse": "promotion.py:315 resolves the landing checkout with a third copy of the resolution that promotion.py:457 and promotion.py:589 already perform inline, so nothing is forked from a named owner but nothing is shared with it either.",
+    "scope_discipline": "the two commits touch only three files, each inside the write paths declared at the source manifest's orientation_write_paths, and promotion_scope.py and crew_run_commands.py are left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that an open git operation refuses a promotion before its work; reckon/crew/promotion.py:437 calls `_require_committable_checkout(_landing_checkout(record, root), run_id)` at the top of `complete`, ahead of the ledger read and every store construction, so an open merge, rebase, cherry-pick or revert refuses there.\nVERDICT done_when: the recorded gate is `pytest ... tests/test_an_open_operation_refuses_a_promotion_first.py tests/test_staged_write_inventory.py` (58 passed at head, 51 at base) plus the importer sweep, and it asserts zero ledger loads and zero run-store constructions before the refusal with the two controls proving those counters see real reads; the plan's five-call base/head wall-time clause is not measured anywhere.\nVERDICT write_paths: the declared scope was promotion.py, promotion_scope.py, crew_run_commands.py, the new test, and an evidence fragment plus figure dir; the diff at 6abbe8a784 and 824ed7c546 touches only reckon/crew/promotion.py, tests/test_an_open_operation_refuses_a_promotion_first.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/an-open-git-operation-refuses-a-promotion-before-its-work.html, all inside it.\nVERDICT manifest: read; it records status complete, both commits, the 58-passed head arm and 51-passed base arm with their log paths, the negative-control log (5 failed, 2 passed), and an importer delta of zero against 38 pre-existing failures.\nVERDICT diff: read both commits against base 3801df115cb7; 6abbe8a784 adds the 16-line `_landing_checkout` resolver and a single early guard call plus a 329-line test, and 824ed7c546 adds only the 41-line evidence fragment, so the behavioural change is one call and the test is its measure.\nCALL_SITES: reckon/crew_run_commands.py:3582, reckon/crew/merge.py:174, reckon/crew/promotion_checks.py:2389\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: promotion.py:437 refuses at the top of `complete`, and tests/test_an_open_operation_refuses_a_promotion_first.py:297 measures zero ledger loads where the base reproduction records 2.\nSCORE evidence: 13\nJUSTIFICATION evidence: the recorded arms in the manifest and logs/reproduction-base.log (assert 2 == 0) prove the counter clause and the negative control, but no recorded run measures the plan section's five-call base/head wall time under 30 s with load averages.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the two commits touch only three files, each inside the write paths declared at the source manifest's orientation_write_paths, and promotion_scope.py and crew_run_commands.py are left untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_open_operation_refuses_a_promotion_first.py:297 reddens when the early call is removed (logs/negative-control.log records 5 failed), and its counter is proved live by the clean-checkout control at line 314, though line 300's run-store count is not discriminating under that mutation.\nSCORE fit: 19\nJUSTIFICATION fit: promotion.py:315 follows the module's docstring-and-comment idiom and reuses the existing `_require_committable_checkout` rather than restating it; ruff check and format are clean on both staged files when I ran them.\nSCORE reuse: 16\nJUSTIFICATION reuse: promotion.py:315 resolves the landing checkout with a third copy of the resolution that promotion.py:457 and promotion.py:589 already perform inline, so nothing is forked from a named owner but nothing is shared with it either.\nFINDING reckon/crew/promotion.py:437 non-blocking: the early refusal runs outside `_require_independently` (reckon/crew/promotion_checks.py:1356), so a run whose checkout has an open operation and also fails another independent check now reports only the open operation where the base reported every refusal in one message, costing one further full promotion attempt to learn the rest.\nFINDING reckon/crew/promotion.py:315 non-blocking: `_landing_checkout` restates the mount-then-record-repo resolution that promotion.py:457 and promotion.py:589 already carry; three copies can drift, and a drift would have the early check name a different checkout than the landing commit writes into.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T104739253000-an-open-git-operation-refuses-a-promotion-before-its-work/manifest.md:11 non-blocking: the recorded gate covers the ledger/store counters, the negative control and the importer delta, but the plan section's timing measure (five calls at base and five at head on all_debug, median wall time under 30 s, each logged with its load average) was never run, so the latency half of the deliverable is asserted from the counters alone.",
+  "review_run_id": "r-20261112T113118059330-review-of-an-open-git-operation-refuses-a-promotion-before-its-work-824ed7c546ca",
+  "reviewed_base_sha": "3801df115cb7339aac1039419dd0b7e94cf34620",
+  "reviewed_head_sha": "824ed7c546caa47f3c3b09511c1b6f29d450b326",
+  "reviewed_run_id": "r-20261112T104739253000-an-open-git-operation-refuses-a-promotion-before-its-work",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:59:15.248629+00:00",
+  "total": 104
+}
