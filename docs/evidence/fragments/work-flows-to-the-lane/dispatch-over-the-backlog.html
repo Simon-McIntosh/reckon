@@ -32,21 +32,30 @@
     a session holding one overdue unreconciled run both succeed and name that
     run on the record they write, a session with no overdue run records none,
     and the overdue run is still listed by the session's obligations. The node's
-    whole gate, resolved at head, reports <strong>59 passed</strong>; the same
-    set minus the new test file, resolved at base <code>7aa21029e0</code>,
-    reports <strong>55 passed</strong>. The negative control — reinstating the
-    refusal inside the backlog reader — makes the direct-dispatch case raise
-    <code>UnreconciledRuns</code>: <strong>4 failed, 4 passed</strong>.
+    whole gate, resolved at head <code>d366c92e51</code>, reports
+    <strong>9 failed, 247 passed</strong>; the same set minus the new test file,
+    resolved at base <code>7aa21029e0</code>, reports
+    <strong>9 failed, 243 passed</strong>, and the nine failures are the same
+    nine test for test on both sides — sandbox effects, not this change. The
+    negative control — reinstating the refusal inside the backlog reader —
+    makes the direct-dispatch case raise <code>UnreconciledRuns</code>:
+    <strong>4 failed, 4 passed</strong>.
   </p>
   <p id="dispatch-over-the-backlog-outside-scope">
-    Two test files outside this node's write scope still assert the superseded
-    refusal and turn red at head:
-    <code>tests/test_crew.py::test_dispatch_refuses_every_unreconciled_run_past_the_grace</code>,
-    <code>tests/test_crew.py::test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code</code>
+    Three test files outside this node's write scope still assert the
+    superseded refusal and turn red at head, each with
+    <code>pytest.raises(dispatch_module.UnreconciledRuns)</code> around a
+    dispatch this section now lets through:
+    <code>tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py::test_a_run_without_a_current_reflex_wait_still_refuses_dispatch</code>
+    (both parametrised cases),
+    <code>tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_is_still_refused</code>
     and
-    <code>tests/test_closure_fence_agreement.py::test_dispatch_refuses_only_the_unreconciled_subset</code>.
-    Each asserts a refusal this section removes, so each needs the same
-    rewrite as the queued-launch test: assert the recorded backlog instead of
-    the exception.
+    <code>tests/test_review_reflex_sweep.py::test_the_fence_refuses_the_same_run_without_the_waiver</code>.
+    The importer arm reads 1 failed / 31 passed at base and 5 failed / 27 passed
+    at head. Each needs the same rewrite as the queued-launch test: assert the
+    recorded backlog instead of the exception. The two cases in
+    <code>tests/test_crew.py</code> and the subset case in
+    <code>tests/test_closure_fence_agreement.py</code>, rewritten once their
+    paths were granted, pass at head.
   </p>
 </section>
