@@ -75,6 +75,8 @@
       <tr><td>Killed worker, five capture repetitions</td><td>5 passed</td><td>5 passed</td></tr>
       <tr><td>Killed worker, ten capture repetitions</td><td>8 passed, 2 failed</td><td>10 passed</td></tr>
       <tr><td>Own-session follower, requested three repetitions</td><td>3 passed</td><td>3 passed</td></tr>
+      <tr><td>Own-session follower, fixed twenty repetitions</td><td>20 passed</td><td>19 passed, 1 failed</td></tr>
+      <tr><td>Own-session follower, base reproduction search, stopping on matching failure</td><td>1 failed on first invocation; maximum 100</td><td>Not sampled</td></tr>
     </tbody>
   </table>
   <p>The base failure receipts contain a real worker PID, one emitted worker
@@ -84,13 +86,22 @@
     therefore pre-existing intermittent behavior. The supervisor implementation
     is unchanged between the measured revisions. No product repair or test
     patch-target migration was indicated, and no assertion was changed.</p>
+  <p>The follower symptom also reproduced at the base. Both captured failures
+    contain a <code>working → blocked</code> transition followed by a
+    <code>blocked → working</code> reconciliation for the same run. The base
+    log quotes <code>AssertionError: the owning session's row is delivered
+    exactly once</code> and <code>assert 2 == 1</code>. This is a pre-existing
+    intermittent extra transition; the follower implementation is unchanged.
+    The base-only reproduction search stopped at its first invocation and is
+    not a frequency estimate.</p>
   <p>The requested two-ID comparison has no head-only failure after including
-    the baseline stability evidence. The follower duplicate symptom was not
-    reproduced in the requested repetitions; this is not a claim that it can
-    never recur. <code>diagnosis-comparison.json</code> retains every requested
-    and supplemental observation, including the initial head failure, and links
-    the captured base receipts. The final expanded exact-command arm receipts
-    and their full revisions are recorded in the run manifest.</p>
+    these baseline reproductions. No product or test repair was indicated,
+    and no assertion changed. <code>diagnosis-comparison.json</code> retains
+    the requested and supplemental observations, including every head failure.
+    Its base receipts include <code>capture-detail-base-1.json</code>,
+    <code>capture-detail-base-10.json</code> and
+    <code>follower-base-repro-base-1.json</code>. The final expanded exact-command
+    arm receipts and full revisions are recorded in the run manifest.</p>
   <p>Durable receipts are under
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch</code>:
     <code>baseline-armed.log</code>, <code>head-armed.log</code>,
