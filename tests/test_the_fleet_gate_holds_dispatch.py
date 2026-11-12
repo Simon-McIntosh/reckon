@@ -796,7 +796,7 @@ def test_launch_callers_reach_the_shared_gate() -> None:
     # gate of everything that reaches _spawn, so a door that stops going
     # through _resume loses its gate coverage and the assertion below fails.
     assert launchers >= {
-        ("reckon/crew/dispatch.py", "dispatch"),
+        ("reckon/crew/dispatching/launch.py", "_launch_dispatch"),
         ("reckon/crew/dispatch_launch.py", "supervised_launch"),
         ("reckon/crew/resumption.py", "_resume"),
     }
