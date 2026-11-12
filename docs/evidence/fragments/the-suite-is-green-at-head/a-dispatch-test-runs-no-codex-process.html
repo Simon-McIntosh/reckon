@@ -13,10 +13,10 @@
   </table>
   <h3 id="a-dispatch-test-runs-no-codex-process-measure">Measure</h3>
   <ul>
-    <li id="a-dispatch-test-runs-no-codex-process-head-arm">Head arm: <span id="a-dispatch-test-runs-no-codex-process-head-figure">pending</span>.</li>
-    <li id="a-dispatch-test-runs-no-codex-process-base-arm">Base arm: <span id="a-dispatch-test-runs-no-codex-process-base-figure">pending</span>.</li>
-    <li id="a-dispatch-test-runs-no-codex-process-dispatch-file"><code>tests/test_a_source_file_is_shared_by_default.py</code> at head: <span id="a-dispatch-test-runs-no-codex-process-dispatch-figure">pending</span>.</li>
-    <li id="a-dispatch-test-runs-no-codex-process-negative-control">Negative control, with the guard removed: the first case fails because the argv build reaches a spawn.</li>
-    <li id="a-dispatch-test-runs-no-codex-process-importers">Importers of <code>reckon._backends</code>: <span id="a-dispatch-test-runs-no-codex-process-importers-figure">pending</span>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-head-arm">Head arm, the two gate files at head: 53 passed, <code>EXIT=0</code>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-base-arm">Base arm: 49 passed and 2 errors, both <code>Not a valid object name HEAD</code> — the base tree is a <code>git archive</code> extraction with no repository history for the census to read, so this is a scaffolding failure of the measurement tree rather than a code failure. The census file is byte-identical at base and head and passes at head.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-dispatch-file"><code>tests/test_a_source_file_is_shared_by_default.py</code> at head: 14 passed, where the 12 dispatching cases are the ones that failed at base with <code>codex inbox hook trust could not be established by hooks/list</code>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-negative-control">Negative control, <code>RECKON_TEST_DISABLE_ACCOUNT_PROBE_GUARD=1</code> removing the isolation: <code>test_a_codex_argv_is_built_without_spawning_a_probe</code> fails, <code>EXIT=1</code>, because the argv build reaches the spawn entry point the guard had stood in for.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-importers">Importers of <code>reckon._backends</code> (166 files, one arm at a time, <code>-n 4</code>): base 257 failed and 1941 passed, head 38 failed and 2162 passed, with every head failure id present at base and 219 base failures gone — no failure added at head.</li>
   </ul>
 </section>
