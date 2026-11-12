@@ -423,3 +423,20 @@ def test_two_threads_missing_at_once_raise_nothing(reviewed_store, monkeypatch):
     assert not failures, failures
     assert len(paths) == 40
     assert answers == {index: {"index": index} for index in range(readers)}
+
+    def refuse():
+        raise AssertionError("a held answer must be served without recomputing")
+
+    def recompute():
+        return {"recomputed": True}
+
+    monkeypatch.setattr(file_memo, "_MAX_ENTRIES", 64)
+    later = recovery_memo._read_review_once(
+        {"project": "sample", "run_id": run_id}, ("head", "head-later"), recompute
+    )
+    assert later == {"recomputed": True}
+    assert recovery_memo._read_review_once(
+        {"project": "sample", "run_id": run_id}, ("head", "head-later"), refuse
+    ) == {"recomputed": True}, (
+        "the store must serve what the race stored without recomputing"
+    )
