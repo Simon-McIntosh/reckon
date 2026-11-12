@@ -53,7 +53,10 @@
   </p>
   <p>
     Negative control: reading the receipt only as the log's last line again
-    makes the red-base case unreadable and the run case refuse.
+    makes the red-base case unreadable and the run case refuse. With
+    <code>_EXIT_RECEIPT</code> reverted to <code>^EXIT=(\d+)\n?\Z</code> the
+    new file reads <code>3 failed, 2 passed</code>, <code>EXIT=1</code>, the
+    red-base, run and disagreeing-receipt cases among the three.
   </p>
   <p>
     Suite arms, one at a time: base revision <code>9b577c60</code> over the
