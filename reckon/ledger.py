@@ -1389,10 +1389,19 @@ def _index_directory() -> Path:
 def _ledger_repository(
     project: str, root: str | Path | None
 ) -> tuple[Path, Path, Path] | None:
-    """The common git directory, checkout and tree-relative ledger path."""
+    """The common git directory, checkout and tree-relative ledger path.
+
+    A checkout claims the ledger only when its own state path for the project
+    is this same file. A resolution from the configured home can sit beneath a
+    checkout that does not own it — a home inside a repository, a temporary
+    directory a test's fixture builds inside one — and re-homing that ledger to
+    ``<checkout>/docs/state`` would read an index of a history nobody wrote.
+    """
     source = ledger_path(project, root).resolve()
     for checkout in source.parents:
         if not (checkout / ".git").exists():
+            continue
+        if ledger_path(project, checkout).resolve() != source:
             continue
         git_dir = _git_directory(checkout)
         if git_dir is not None:
