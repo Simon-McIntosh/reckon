@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="82">
+<meta name="plan-version" content="83">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -385,6 +385,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0" data-who="reckon-build" data-when="2026-11-12T15:29:29.896Z">
+    <div class="r-comment-body"><p>Reviewed base fe9af3caa98c11d9fed1c9215a25ce570d3294d8 against head 5bc11377cbc06e6aabd7d19a4da02ff534a75547: the sweep now dispatches every review it owes before handing each promotion to a bounded worker, and six cases in tests/test_a_sweep_never_waits_on_a_promotion.py show the ordering, the width, the retry and the in-process claim; the head arm adds two failure ids against the base arm where the done_when requires none, and the ordering fixture at tests/test_one_run_cannot_stop_a_sweep.py:97 is a real one caused by concurrency, so that finding is blocking.</p></div>
 </div>
 </section>
 </main>
