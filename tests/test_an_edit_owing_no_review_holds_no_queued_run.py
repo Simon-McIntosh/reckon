@@ -197,3 +197,38 @@ def test_an_unmeasured_change_is_owed_by_both_readings(
     else:
         assert detail is not None
         assert "uncovered units: delivery;" in detail
+
+
+def test_a_missing_snapshot_invalidates_the_shared_decision(queued_edit, monkeypatch):
+    monkeypatch.setattr(
+        review_need,
+        "judge",
+        lambda changes, **_kwargs: {
+            change.identity: review_need.Verdict(False, 0.0, "fixture")
+            for change in changes
+        },
+    )
+    response = _edit(queued_edit)
+    assert response["review_owed"] == []
+    assert _admission(queued_edit[2]) is None
+    snapshot = (
+        plan_review.review_report_directory("sample", "fixture", "review-queued-edit")
+        / "plan.html"
+    )
+    snapshot.unlink()
+    from reckon.mcp_deadlines import _review_owed_fields
+
+    response = _review_owed_fields(
+        "sample", "fixture", str(queued_edit[1]), uncovered_before=set()
+    )
+    assert response["review_owed"] == [{"unit": "delivery", "change": None}]
+    assert "uncovered units: delivery;" in _admission(queued_edit[2])
+
+
+def test_an_unpersisted_decision_is_reported_as_unknown(queued_edit, monkeypatch):
+    from reckon import metadata_index
+
+    monkeypatch.setattr(metadata_index, "_write_persisted_memo", lambda *_args: None)
+    response = _edit(queued_edit)
+    assert response["review_owed"] is None
+    assert "could not be persisted" in response["review_owed_error"]

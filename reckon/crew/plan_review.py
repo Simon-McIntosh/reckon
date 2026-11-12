@@ -1147,6 +1147,76 @@ def review_coverage(
     base_dir: str | Path | None = None,
     config: Mapping[str, Any] | None = None,
 ) -> tuple[list[dict[str, Any]], set[str], dict[str, float | None]]:
+    """Share one coverage decision for the exact content and review evidence.
+
+    A judge can answer a write and be unavailable when admission reads it.
+    Holding the complete decision, including deterministic fallback answers,
+    keeps both readers on that answer until an input changes. Plan bytes,
+    review records, snapshot bytes and resolved configuration all participate
+    in its identity; an absent snapshot cannot reuse a measured decision.
+    """
+    from reckon import _store, metadata_index
+
+    if config is None:
+        config = runs.resolved_tick_config(project)
+    document = _as_document(plan)
+    content = document if document is not None else plan
+    records = list_plan_reviews(project, plan_slug, base_dir=base_dir)
+    snapshots = []
+    for record in records:
+        snapshot = _review_snapshot(project, plan_slug, record)
+        snapshots.append(
+            None if snapshot is None else file_memo.content_digest(snapshot)
+        )
+    identity = _digest(
+        {
+            "plan": content,
+            "reviews": records,
+            "snapshots": snapshots,
+            "config": config,
+        }
+    )
+
+    def compute() -> list[Any]:
+        contributing, uncovered, changes = _compute_coverage(
+            project,
+            plan_slug,
+            plan=content,
+            base_dir=base_dir,
+            config=config,
+            _records=records,
+        )
+        return [contributing, sorted(uncovered), changes]
+
+    memo_args = (
+        "plan-review-coverage",
+        1,
+        (project, plan_slug, str(_review_store.review_store_root(base_dir)), identity),
+        (sys.modules[__name__], _plan_html, review_need),
+    )
+    cache_path = metadata_index._persisted_cache_path(*memo_args[:2], *memo_args[2])
+    # Concurrent readers share the first decision, and a write can promise it
+    # only once the durable receipt is readable by the next process.
+    with _store._serialized_path_lock(cache_path, "plan-review-coverage"):
+        held = metadata_index.persisted_memo(*memo_args, compute=compute)
+        if (
+            metadata_index.persisted_memo(*memo_args)
+            is metadata_index._PERSISTED_MISSING
+        ):
+            raise OSError("the review coverage decision could not be persisted")
+    contributing, uncovered, changes = held
+    return copy.deepcopy(contributing), set(uncovered), dict(changes)
+
+
+def _compute_coverage(
+    project: str,
+    plan_slug: str,
+    *,
+    plan: Mapping[str, Any] | str | Path,
+    base_dir: str | Path | None = None,
+    config: Mapping[str, Any] | None = None,
+    _records: list[dict[str, Any]] | None = None,
+) -> tuple[list[dict[str, Any]], set[str], dict[str, float | None]]:
     """Return contributing reviews, uncovered units and their measured change.
 
     A unit is covered by a stored review when it existed in that review and its
@@ -1185,7 +1255,11 @@ def review_coverage(
     content = document if document is not None else plan
     records = [
         record
-        for record in list_plan_reviews(project, plan_slug, base_dir=base_dir)
+        for record in (
+            list_plan_reviews(project, plan_slug, base_dir=base_dir)
+            if _records is None
+            else _records
+        )
         if not _review_is_incomplete(record)
     ]
     forms = _fingerprint_forms(content)
