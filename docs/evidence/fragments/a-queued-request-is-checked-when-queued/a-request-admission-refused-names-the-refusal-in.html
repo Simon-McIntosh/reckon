@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-title" content="A refused request names its refusal in its obligation — both remedies, evidenced">
+  <meta name="plan-summary" content="The contract-refusal reading of a queued request was already in the tree; what was not evidenced is the editable remedy that keeps the request's place, and the capacity refusal that must stay a wait. Both arms are added and the declared mutation reddens them.">
+  <meta name="plan-evidence-for" content="reckon:a-queued-request-is-checked-when-queued">
+  <meta name="plan-verifies" content="reckon:a-queued-request-is-checked-when-queued#s8">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,obligations">
+  <title>A refused request names its refusal in its obligation | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="a-request-admission-refused-names-the-refusal-in-note" class="r-note" data-node="a-request-admission-refused-names-the-refusal-in" data-reckon="landed" data-when="2026-11-12">
+  <h2 id="a-request-admission-refused-names-the-refusal-in-head">A refused request names its refusal in its obligation — both remedies, evidenced</h2>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-found"><strong>What this node found.</strong> §8's implementation is already in the tree at the node's base. Commit <code>77129c667f</code>, an ancestor of base <code>f6144b120b</code>, adds <code>QUEUED_CONTRACT_REFUSED_DUTY_KIND</code> and <code>_queued_contract_refusal</code> to <code>reckon/crew/obligations.py</code>, and the test file the section names exists and passes. The section was still declared <code>implementable</code>, so the dispatch is a repeat of landed work.</p>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-gap"><strong>What was missing.</strong> The landed test evidenced one of the two remedies the section requires. Its refusal names only plan-owned properties, so it exercises <code>reckon crew queue drop</code>. The deliverable's other half — "<code>crew queue edit</code> for a field the edit can set, otherwise drop and requeue" — had no arm at all, and neither did the branch that keeps a capacity refusal on the waiting reading: the two share the refusal's opening words, so a regression there would publish a contract-repair duty for a request an occupying run is about to release.</p>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-changed"><strong>What changed here.</strong> No product source. Two arms are added to the section's test file, so both remedies and the exclusion are evidenced against the current code rather than reimplemented: an editable refusal (<code>fully-specifie</code>, <code>scoped</code>) yields <code>queued-contract-refused</code> with the field behind each property named in the reason and <code>reckon crew queue edit --run &lt;id&gt;</code> as its next command; a capacity refusal is not read as a contract repair, keeps the classifier's own <code>queued-awaiting-session</code> reading, and publishes neither the edit nor the drop.</p>
+
+  <h3 id="a-request-admission-refused-names-the-refusal-in-measured">Measured</h3>
+
+  <table id="a-request-admission-refused-names-the-refusal-in-arms">
+    <caption>Every arm is a log whose header names its revision, tree and command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>gate</td><td>head (base plus this node's 2 arms)</td><td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>base</td><td>f6144b120b, archive of the base tree</td><td>52 passed, 2 errors, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control</td><td>head with <code>_queued_contract_refusal</code> ignoring <code>failure</code></td><td>2 failed, 3 passed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-control">The declared mutation makes <code>_queued_contract_refusal</code> return immediately without reading the pointer's failure. It reddens exactly the two arms that assert a refusal is named — <code>test_a_contract_refusal_is_named_in_its_row</code> and <code>test_an_editable_refusal_names_the_queue_edit</code> — and leaves the waiting arm and the capacity arm green, which is what distinguishes a row built from the refusal from one built regardless of it.</p>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-basearm">The base arm's two errors are scaffolding, not code under test: the base arm runs over a <code>git archive</code> extraction, so <code>tests/test_staged_write_inventory.py</code>'s module fixture fails at setup on <code>git ls-tree HEAD</code> in a tree with no repository. That fixture is in the promotion template rather than this node's scope; the same file passes in the head arm, which runs in the worktree's own repository.</p>
+
+  <p id="a-request-admission-refused-names-the-refusal-in-logs">Logs in the run directory: <code>baseline-arm.log</code>, <code>head-arm.log</code>, <code>negative-control.log</code>. Ruff check and ruff format --check report no finding on the staged paths.</p>
+</article>
+</body>
+</html>

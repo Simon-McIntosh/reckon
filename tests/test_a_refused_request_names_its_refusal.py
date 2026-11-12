@@ -45,6 +45,22 @@ CONTRACT_REFUSAL = (
     "must fail against"
 )
 
+#: A refusal whose named properties all sit behind a field ``crew queue edit``
+#: can set, so the remedy keeps the request's place in the queue.
+EDITABLE_CONTRACT_REFUSAL = (
+    "CrewError: node is not dispatchable — fully-specified: the done-when names "
+    "no command that measures it; scoped: the write paths reach a directory the "
+    "plan does not name"
+)
+
+#: A full lane opens with the same words but names an occupying run, which the
+#: request's own repair cannot clear: that one is a wait, not a duty.
+CAPACITY_CONTRACT_REFUSAL = (
+    "CrewError: node is not dispatchable — backend 'local' is at its ceiling; "
+    "Resolve with `reckon crew observe` and `reckon crew complete` on an "
+    "occupying run, then `reckon crew dispatch`."
+)
+
 
 @pytest.fixture()
 def mounted_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
@@ -118,6 +134,39 @@ def test_a_waiting_request_keeps_the_queued_row(mounted_home: Path) -> None:
     row = rows[0]
     assert row["kind"] == "run-queued"
     assert str(row["next_command"]).startswith("waiting for a lane slot")
+
+
+def test_an_editable_refusal_names_the_queue_edit(mounted_home: Path) -> None:
+    """A property the queue edit sets is repaired in place, keeping its place."""
+    _write_queued_pointer(REFUSED_RUN, failure=EDITABLE_CONTRACT_REFUSAL)
+
+    rows = _obligations()
+
+    assert len(rows) == 1, rows
+    row = rows[0]
+    assert row["kind"] == "queued-contract-refused"
+    reason = str(row["reason"])
+    assert "fully-specified" in reason
+    assert "scoped" in reason
+    # The row names the field behind each property, so the edit is actionable.
+    assert "steering" in reason
+    assert "write-paths" in reason
+    assert str(row["next_command"]) == f"reckon crew queue edit --run {REFUSED_RUN}"
+
+
+def test_a_full_lane_is_not_read_as_a_contract_repair(mounted_home: Path) -> None:
+    """An occupying run clears this refusal, so it is not a repair duty."""
+    _write_queued_pointer(REFUSED_RUN, failure=CAPACITY_CONTRACT_REFUSAL)
+
+    rows = _obligations()
+
+    assert len(rows) == 1, rows
+    row = rows[0]
+    assert row["kind"] != "queued-contract-refused"
+    assert "queue edit" not in str(row["next_command"])
+    assert "queue drop" not in str(row["next_command"])
+    # The classifier's own reading of the occupying run stands unchanged.
+    assert row["kind"] == "queued-awaiting-session"
 
 
 def test_ignoring_the_failure_leaves_the_plain_waiting_row(
