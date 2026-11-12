@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s32">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="blocked">
+  <title>Ledger records are published complete and damaged rows stay visible</title>
+</head>
+<body>
+<article id="a-torn-ledger-row-is-reported-landing" data-node="a-torn-ledger-row-is-reported" data-reckon="landed" data-when="2026-11-12">
+  <h2>Complete publication and damaged-row reporting</h2>
+  <p id="a-torn-ledger-row-is-reported-reproduction">The assigned base already routes truncated JSON through <code>DamagedRunRecordError</code>: indexed and uncached reads return both healthy rows, report the damaged path, and a review pass promotes all three healthy review runs. Those three cases pass at base; the stated bare <code>JSONDecodeError</code> does not reproduce. The remaining writer defect does reproduce: a write paused after half its bytes exposes the final run path. The base control reports <strong>5 failed, 3 passed</strong>, including <code>reader can see an incomplete run document</code>.</p>
+  <p id="a-torn-ledger-row-is-reported-change">Commit <code>5038d1be654d74d5c28c84e180a4c4a799506120</code> adds <code>_create_run_file</code> in <code>reckon/ledger.py</code>. Promotion and aggregate splitting render through the existing store atomic writer inside a private temporary directory, then publish the complete file through an exclusive hard link. A competing destination is refused without changing its bytes. Interrupted writes leave no final document or temporary directory. The existing tolerant reader is retained.</p>
+  <p id="a-torn-ledger-row-is-reported-measure">The new regression file reports <strong>8 passed</strong>; the baseline staged-write inventory reports <strong>51 passed</strong>. Matched importer arms run sequentially on <code>all_debug</code> over the same <strong>302 test files</strong>. Base: <strong>84 failed, 3064 passed, 4 skipped, 4 errors</strong>. Head: <strong>86 failed, 3062 passed, 4 skipped, 4 errors</strong>. The identity comparison finds <strong>3 added failing test ids</strong> and 2 base failing ids absent at head; therefore the no-added-failure measure is not met.</p>
+  <p id="a-torn-ledger-row-is-reported-receipts">The worker manifest carries the final combined gate, imported module paths, exact commands, matched failure identities, negative-control log and remaining scope boundary. Logs and receipts are in <code>r-20261112T032907957995-a-torn-ledger-row-is-reported</code>: <code>negative-control.log</code>, <code>base-importers.log</code>, <code>head-importers.log</code>, and <code>importer-comparison.json</code>. This record reports the node; it does not close the live section.</p>
+</article>
+</body>
+</html>
