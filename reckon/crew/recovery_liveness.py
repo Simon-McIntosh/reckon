@@ -467,9 +467,7 @@ def _process_reading(
 
 def _record_newest_stream(record: Mapping[str, Any]) -> tuple[Path, float] | None:
     """A record's newest stream, through the shared reader."""
-    return newest_stream(
-        _run_directory(record), include=(record.get("log_path"),)
-    )
+    return newest_stream(_run_directory(record), include=(record.get("log_path"),))
 
 
 def _run_stream_mtime(record: Mapping[str, Any]) -> float | None:
@@ -702,6 +700,24 @@ def _stranded_launch_age_seconds(
     return now_seconds - started
 
 
+def _launch_claim_holder_is_alive(record: Mapping[str, Any]) -> bool:
+    """Whether this host can prove the claim still belongs to a live process."""
+    from reckon.crew.dispatch_claims import read_claim
+    from reckon.crew.gc import _process_start_epoch
+
+    claim = read_claim(_run_directory(record), str(record.get("run_id") or ""))
+    if claim.get("holder_host") != _reading_host():
+        return False
+    pid = claim.get("holder_pid")
+    launched = parse_utc(str(claim.get("launched_at") or ""))
+    if not isinstance(pid, int) or pid <= 0 or launched is None:
+        return False
+    if process_alive(pid) is not True:
+        return False
+    started = _process_start_epoch(pid)
+    return started is not None and started <= launched.timestamp()
+
+
 def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     """Whether a launch that recorded nothing stopped happening past the bound.
 
@@ -710,10 +726,10 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     what separates the two is evidence. A spawned worker leaves a worker record,
     a stream, or a launch log in the run directory, so a pointer whose session
     wrote any of them is somewhere in flight whatever its phase says. With none
-    of them written and the clock past the bound, there is nothing to wait for:
-    the launch was cut off between composing the record and spawning the
-    worker, and a pointer that holds a phase as though something were coming
-    holds it forever.
+    of them written and the clock past the bound, the claim holder decides:
+    a live local process that began no later than the claim is still composing
+    the launch. A newer process with the same pid does not own that claim.
+    A holder on another host supplies no local liveness evidence.
 
     The clock is the current attempt's own start, which the launch composes on
     the pointer before spawning anything, and failing that the claim or creation
@@ -734,12 +750,12 @@ def _stranded_launch(record: Mapping[str, Any], *, now_seconds: float) -> bool:
     age = _stranded_launch_age_seconds(record, now_seconds=now_seconds)
     if age is None:
         return False
-    return age > STRANDED_LAUNCH_BOUND_SECONDS
+    return age > STRANDED_LAUNCH_BOUND_SECONDS and not _launch_claim_holder_is_alive(
+        record
+    )
 
 
-def _run_stream_quiet_seconds(
-    record: Mapping[str, Any], *, now_seconds: float
-) -> int:
+def _run_stream_quiet_seconds(record: Mapping[str, Any], *, now_seconds: float) -> int:
     """Quiet time for a run, from its current attempt's own log and launch.
 
     Two clocks bound the reading, and the later of them decides. One is the
@@ -966,9 +982,7 @@ def _manifest_wait(
         if reason
     )
     if files and declared_probe:
-        missing.append(
-            "either wait_probe or wait_file, not both: a wait has one shape"
-        )
+        missing.append("either wait_probe or wait_file, not both: a wait has one shape")
     if declared_probe and _wait_probe_cannot_fail(declared_probe):
         # A probe that runs but cannot differ is satisfied unconditionally, so
         # a wait resting on it reads the same however the awaited work is

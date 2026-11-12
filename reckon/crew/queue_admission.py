@@ -1941,6 +1941,7 @@ def _release_stranded_launches(
     stopped. So the order is record, pointer, directory.
     """
     from reckon.crew import dispatch_claims, dispatch_refusals, recovery_liveness
+    from reckon.crew.recovery_review_delivery import _resolved_reviewed_run_id
 
     moment = time.time() if now_seconds is None else now_seconds
     released: list[str] = []
@@ -1956,6 +1957,11 @@ def _release_stranded_launches(
             key: claim.get(key)
             for key in ("holder_pid", "holder_host", "launched_at", "step", "step_at")
         }
+        reviewed_run = _resolved_reviewed_run_id(
+            pointer, str(pointer.get("project") or ""), pointers=live
+        )
+        if reviewed_run:
+            holder["reviewed_run_id"] = reviewed_run
         dispatch_refusals.record_launch_refusal(run_id=run_id, step=step, holder=holder)
         dispatch_claims._release_launch_claim(run_id)
         released.append(run_id)
