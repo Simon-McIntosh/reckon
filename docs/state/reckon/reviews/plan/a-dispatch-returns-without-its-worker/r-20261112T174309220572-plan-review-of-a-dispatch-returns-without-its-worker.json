@@ -1,0 +1,159 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s29": "9e5f8cbbe7799f02f10a6a4857dff226a334655f7b9a2e40e31a6629deaf33f1"
+      },
+      "reason": "the edits make exactly the three acted answers' changes: the superseded path leaves the newer attempt's state alone, no new lock, and s29 waits on s28",
+      "units": [
+        "s29"
+      ],
+      "when": "2026-11-12T18:01:30.081194+00:00"
+    }
+  ],
+  "completed_at": "2026-11-12T17:52:48.977Z",
+  "dispatched_at": "2026-11-12T17:45:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#s29",
+      "id": "reasoning-1",
+      "reason": "as written the node can pass its gate (it asserts only \"starts no supervisor and leaves its attempt's exit receipt\", which holds while nothing else uses the run) and still convert \"two supervisors\" into \"one worker whose pointer, run directory and worktree were deleted under it\", which is worse than the defect being repaired.",
+      "text": "\"the same abandon-and-write-receipt behaviour the relaunch path has\" is not sufficient in dispatch.py: a CrewError raised at dispatch.py:3666 is caught by the `except Exception` at dispatch.py:3761, whose unwind calls `_release_launch_claim(run_id)` (dispatch.py:3837 -> dispatch_claims.py:1156, which unlinks `pointer_path(run_id)` at :1176 and `shutil.rmtree`s `run_dir(run_id)` at :1177) and then `_remove_worktree(repo_root, worktree[\"path\"])` (dispatch.py:3843, routing.py:2447, whose guard at routing.py:2457 keys on a live pointer this unwind has just deleted) \u2014 so the superseded fresh dispatch destroys the relaunched attempt's pointer, its run directory (reservations, receipts, prompt) and the shared worktree, where the relaunch path in `supervised_launch` (dispatch_launch.py:3305-3396) only writes an exit receipt and re-raises",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#s29",
+      "id": "reasoning-2",
+      "reason": "a worker told to join a lock the relaunch path does not hold will either hunt for one that does not exist or hold `_reservation_hold_lock` across `_start_supervisor`, widening the placement-admission critical section over a process spawn \u2014 and the plan's own \"No second fence is written\" forbids inventing one, so the sentence sets the node a requirement it cannot satisfy in the form stated.",
+      "text": "the deliverable requires the fresh-dispatch fence be taken \"under the same lock\" the relaunch path has, but `supervised_launch` holds no lock across its `_refuse_superseded_launch` call at dispatch_launch.py:3389 (the function spans 3305-3396 with no lock), `_refuse_superseded_launch` itself takes none (dispatch_launch.py:2773-2809), and the only reservation-scoped lock in the tree is `_reservation_hold_lock` in placement.py:159, used solely by the fleet-slot path at placement.py:886 and :998",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html#_document",
+      "id": "wiring-1",
+      "reason": "the queue orders on these edges and the plan already declares exactly this kind of edge for s4, s7, s9, s15 and s27; omitting it leaves s29's wait on \u00a728 undeclared, so a re-run of \u00a728 or a rollback of its landing would not hold s29.",
+      "text": "`plan-section-depends-on` lists only s4, s7, s9, s15, s21, s24, s25 and s27, with no `s29` entry, although \u00a729 is unimplementable without \u00a728's landed fence and bound",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+  "plan_fingerprint": "4234a98c5f6146f9b46082615fdd041fbefb0c82e85bebdc0335f3c9d9813b0e",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 232,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a729 now requires a superseded fresh dispatch to leave through a path that writes only its own attempt's exit receipt and touches neither the run's pointer, its run directory nor its worktree, which belong to the newer attempt; a test asserts the newer attempt's pointer, run directory and worktree survive.",
+      "reason": "",
+      "when": "2026-11-12T17:58:38.787688+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "The lock claim is removed: \u00a729's fence is the same unlocked re-read immediately before _start_supervisor that the relaunch path makes at dispatch_launch.py:3389, and no new lock is introduced.",
+      "reason": "",
+      "when": "2026-11-12T17:58:57.748149+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "plan-section-depends-on now declares s29 waiting on a-dispatch-returns-without-its-worker#s28.",
+      "reason": "",
+      "when": "2026-11-12T17:59:10.304164+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "note": "\u00a729 now requires a superseded fresh dispatch to leave through a path that writes only its own attempt's exit receipt and touches neither the run's pointer, its run directory nor its worktree, which belong to the newer attempt; a test asserts the newer attempt's pointer, run directory and worktree survive.",
+      "reason": "",
+      "when": "2026-11-12T17:58:38.787688+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "note": "The lock claim is removed: \u00a729's fence is the same unlocked re-read immediately before _start_supervisor that the relaunch path makes at dispatch_launch.py:3389, and no new lock is introduced.",
+      "reason": "",
+      "when": "2026-11-12T17:58:57.748149+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "51f88d07f23a9ee7299d986c2a8fc05737557edb",
+      "commit_basis": "edit",
+      "note": "plan-section-depends-on now declares s29 waiting on a-dispatch-returns-without-its-worker#s28.",
+      "reason": "",
+      "when": "2026-11-12T17:59:10.304164+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-dispatch-returns-without-its-worker.v232.json",
+  "review_run_id": "r-20261112T174309220572-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "3168b429aea4bfb79e08adbc63b0adb4fba02a72",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/dispatch.py`, `reckon/crew/dispatch_launch.py`, `_refuse_superseded_launch` (dispatch_launch.py:2773), `_start_supervisor` (dispatch.py:3666, matching the quoted line), `UNREACHED_LAUNCH_BOUND_SECONDS` (dispatch_launch.py:4436) and the cited commit c754051286 all resolve.",
+    "done_when": "pass \u2014 the first case asserts the fresh dispatch starts no supervisor and leaves its attempt's exit receipt, and the negative control (\"at the base revision the first case starts a supervisor\") goes red only because the fence is absent: at base dispatch.py:3663-3666 starts a supervisor unconditionally once the three existing checks pass.",
+    "evidence_paths": "pass \u2014 each arm's log is written under the run directory and the arms are submitted to `all_debug` through `env -u SLURM_JOB_ID -u SLURM_JOBID sbatch`, both durable and off the fleet node.",
+    "naming": "pass \u2014 the deliverable's test file and mechanism names are descriptive and carry no plan label, stage name, ticket number or version tag.",
+    "reasoning": "a finding \u2014 the abandon behaviour \u00a729 adopts is dispatch's full rollback, which removes the pointer, run directory and worktree of the very relaunch it is yielding to; and the \"same lock\" it names is one the relaunch path does not hold.",
+    "single_goal": "pass \u2014 \u00a729 carries one endpoint, routing the fresh-dispatch supervisor start through the existing fence; the docstring correction names that same fence.",
+    "wiring": "a finding \u2014 the document's `plan-section-depends-on` carries no `s29` entry although \u00a729 consumes \u00a728's `_refuse_superseded_launch` and `UNREACHED_LAUNCH_BOUND_SECONDS`, which the queue orders on."
+  },
+  "section_digests": {
+    "_document": "8a3df4e9085e475c9f2128eb4033cf7cfa2151be824fe1485194ea329336dd7c",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "cc23505f11a53b6805235d1291e66a2c125b10d71645b70b50b7c29a9e2de0ee",
+    "s26": "ca859de70832b19bd595ec082b963a83ad8cda76b0f083eeb7178ddb47771957",
+    "s27": "eac4a3e04958e98f59e51c91d4bc2a9b689284ffd6b314309af2e6ec6b206808",
+    "s28": "d8ae29323972b12bcdfe13dc0c83467f079a5c2ac64bfb3a8d684bbce498e7df",
+    "s29": "c20a6d7d35a9e957454335d304c295daa694c2f254cf7d6b5b3e551aefd00c5d",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T17:54:26.842921+00:00",
+  "total": null
+}
