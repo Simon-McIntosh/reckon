@@ -43,8 +43,42 @@
   or gate log changes; promotion after a remote push; coordinator completion
   between judgement and promotion; and refusal to promote an earlier
   judgement after the head, attempt or review changes.</p>
-  <p>The focused behaviour is verified, but the no-added-failures importer
-  measure is not met. The manifest records the out-of-scope failure for the
-  coordinator; this delivery makes no repair or attribution beyond its
-  granted paths.</p>
+  <p>At the initial delivery, the focused behaviour was verified, but the
+  no-added-failures importer measure was not met. That manifest recorded the
+  out-of-scope failure for the coordinator without a repair or attribution
+  beyond the granted paths.</p>
+  <section id="acceptance-check-holds-no-lease-resumed-verification">
+    <h3>Unchanged-head invalidation and launcher stability</h3>
+    <p>The launcher case was repeated five times at the original base and five
+    times at <code>b14ce992a874b994f2bf8457549de86afed4a8f7</code>, on
+    <code>all_debug</code> with one log per arm. All ten repetitions passed.
+    The earlier importer failure was not reproduced, so it is not attributed
+    as pre-existing, and no launcher assertion or timing seam was changed.</p>
+    <p>Two explicit acceptance cases first establish that three unchanged
+    sweeps make one commit judgement. One then changes only the stored review
+    and observes a second judgement while the head, remote primary branch and
+    manifest stay unchanged. The other publishes the missing commits to the
+    primary branch and observes a second judgement and promotion while the
+    reviewed head, review bytes and manifest bytes stay unchanged.</p>
+    <table id="acceptance-check-holds-no-lease-resumed-controls">
+      <thead><tr><th>Measure before the evidence commit</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Expanded base armed command: launcher tests and staged-write inventory</td>
+          <td>57 passed, <code>EXIT=0</code>.</td></tr>
+        <tr><td>All acceptance cases, including the two explicit unchanged-head cases</td>
+          <td>12 passed, <code>EXIT=0</code>.</td></tr>
+        <tr><td>Take the promotion lease before commit judgement</td>
+          <td>Coordinator-completion case: 1 failed, <code>EXIT=1</code>.</td></tr>
+        <tr><td>Omit the stored review from the refusal key</td>
+          <td>Unchanged-head review case: 1 failed, <code>EXIT=1</code>.</td></tr>
+        <tr><td>Omit the remote primary branch from the refusal key</td>
+          <td>Unchanged-head publication case: 1 failed, <code>EXIT=1</code>.</td></tr>
+      </tbody>
+    </table>
+    <p>This evidence is committed before the final run. The run's manifest
+    records the final head's full commit identity, the exact expanded armed
+    command, and the final armed and importer receipts. The resumed importer
+    comparison uses the same 135 files in both arms, with at most four workers
+    and one arm running at a time.</p>
+  </section>
 </section>
