@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="86">
+<meta name="plan-version" content="87">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -331,6 +331,9 @@
 </div>
 <div class="r-comment" data-section="s25" data-id="c-run-r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0" data-who="reckon-build" data-when="2026-11-12T15:29:29.896Z">
     <div class="r-comment-body"><p>Reviewed base fe9af3caa98c11d9fed1c9215a25ce570d3294d8 against head 5bc11377cbc06e6aabd7d19a4da02ff534a75547: the sweep now dispatches every review it owes before handing each promotion to a bounded worker, and six cases in tests/test_a_sweep_never_waits_on_a_promotion.py show the ordering, the width, the retry and the in-process claim; the head arm adds two failure ids against the base arm where the done_when requires none, and the ordering fixture at tests/test_one_run_cannot_stop_a_sweep.py:97 is a real one caused by concurrency, so that finding is blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261112T160851648816-review-of-sweep-never-waits-on-a-promotion-69c254beac7d" data-who="reckon-build" data-when="2026-11-12T16:21:58.854Z">
+    <div class="r-comment-body"><p>Independent review of r-20261112T122615079791-sweep-never-waits-on-a-promotion over the two commits it gained since its last review, 5bc11377cb..69c254beac: a parsed record scoring goal_fidelity 19, evidence 13, scope_discipline 20, durability 19, fit 19, reuse 20, added_failure_count 0 over the run&#x27;s own repair arms (base 51 passed EXIT=0 at fe9af3ca, head 57 passed EXIT=0 at 9d38672eed), with three non-blocking findings and no blocking finding; the repaired guard was independently falsified, reddening the vanished-pointer fixture 3 of 3 runs when removed and passing 2 of 2 at the head.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
