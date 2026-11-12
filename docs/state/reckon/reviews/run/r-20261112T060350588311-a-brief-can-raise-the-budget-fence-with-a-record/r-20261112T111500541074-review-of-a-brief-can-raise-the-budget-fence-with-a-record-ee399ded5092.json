@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T11:25:20.302Z",
+  "dispatched_at": "2026-11-12T11:17:09Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "the arms table's after row still records b1754bab and 60 passed while the log the table's own caption points a reader at, logs/after-arm.log, carries '# revision: ee399ded5092744e1a24ecbcb91ffb5477ac6179' and ends '61 passed'; the paragraph four lines below now says the after arm 'adds three passing tests', so the page disagrees with its receipt and with itself about how many arms ran at which revision. The same row was reported non-blocking by the previous review and was left untouched by the commit that made it stale in count as well. No repair node is owed: the receipts are sound, the table is not."
+    },
+    {
+      "file": "tests/test_a_budget_may_exceed_its_fence_with_a_reason.py",
+      "line": 319,
+      "severity": "non-blocking",
+      "text": "test_a_queued_request_keeps_the_reason_it_recorded duplicates a capability the repository already owns: tests/test_a_queued_node_keeps_every_field.py:81-84 asserts, for every TaskNode field except manifest_path and write_paths, that the rebuilt value equals the dispatched value, and its fixture sets over_fence_reason='the gate runs a long suite' at :52, so a rebuild that dropped the field already reddened here; :126-140 owns the 'field absent, so the dataclass default stands' half. The new arm extends no owner and, if the second half is wanted for this field specifically, belongs in that file. The fragment's claim at :53-54 that the statement is 'tested rather than asserted' was already true before this commit."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:399 rebuilds the queued node through _node_from_pointer on the launch path, and the rebuilt over_fence_reason is what reckon/crew/node.py:1508 reads at the bounded check; the option is declared at reckon/crew_dispatch_commands.py:1346.",
+    "diff": "read commit by commit against ea4b01e2b0; one commit, ee399ded50, touching two files (+49/-11): the fragment's outside-scope paragraph is replaced by an account of the withdrawn claim, an arms-count paragraph is added, and one test with two assertions is appended at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:319.",
+    "done_when": "the done_when requires tests/test_a_budget_may_exceed_its_fence_with_a_reason.py to show a 240 m node with a reason passing the bounded check, the same node refused by name without it, an in-fence budget unaffected, and no added failure against c4eff770; the manifest's baseline_suite (c4eff770, 58 passed, EXIT=0) and after_suite (ee399ded, 61 passed, EXIT=0) carry that command and those figures, and logs/base-arm.log and logs/after-arm.log each end in a bare EXIT=0 line.",
+    "goal": "the source node's goal is that a brief can raise the budget fence with a recorded reason; the commit gained since the previous review (ee399ded50) repairs that node's record rather than its behaviour, withdrawing a claim the code refutes, and the behaviour itself still lives at reckon/crew/node.py:1508 and reckon/crew_dispatch_commands.py:1346.",
+    "manifest": "read; it claims the false claim is withdrawn and replaced by a checked arm, cites base 58 / after 61 / a declared control at 3 failed 57 passed / a strip probe at 1 failed 8 passed / a round-trip control at 1 failed with a passing twin, and its outside_scope line now reads none \u2014 every one of those figures reconciles with the log under logs/ that it names.",
+    "write_paths": "the source node was fenced to reckon/crew/node.py, tests/test_a_budget_may_exceed_its_fence_with_a_reason.py, the a-gate-halts-only-on-substance fragment and its figure directory; the gained commit touches only the test file and the fragment, and node.py is unchanged because the behaviour predated the node."
+  },
+  "justifications": {
+    "durability": "tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:343 reddens if _node_from_pointer stops carrying over_fence_reason, shown by logs/nc-roundtrip.log (1 failed, EXIT=1) against its unmutated twin logs/nc-roundtrip-positive.log (1 passed, EXIT=0), and both sides of that assertion come from outside the rebuild \u2014 REASON at :36 is passed in and the empty string at :348 is TaskNode's declared default.",
+    "evidence": "logs/base-arm.log (58 passed, EXIT=0) and logs/after-arm.log (61 passed, EXIT=0) are recorded receipts, but the fragment's own table at docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:33 still states 60 passed at b1754bab and so contradicts the log it cites.",
+    "fit": "the added arm builds a TaskNode and calls _node_from_pointer the way tests/test_a_queued_node_keeps_every_field.py:79 already does, imports the private rebuild by module as that file does at :18, and introduces no plan, ticket or version identifier.",
+    "goal_fidelity": "the gained commit's stated purpose is met at docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:43-55, which states the claim was wrong, names reckon/crew/queue_admission.py:198 as the code that refutes it, and records that no repair node is owed.",
+    "reuse": "tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:319 restates a property tests/test_a_queued_node_keeps_every_field.py:81-84 already owns generically over fields(TaskNode), and its absent-field half restates :126-140, so the addition extends no existing owner.",
+    "scope_discipline": "the only two paths in the diff are the test file and the fragment, both inside the source node's declared write paths, and no production module is touched by this commit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal and the one gained commit; the goal is a brief raising the budget fence with a recorded reason and the commit repairs that node's record, with the behaviour at reckon/crew/node.py:1508.\nVERDICT done_when: read the done_when against the manifest's baseline_suite and after_suite; logs/base-arm.log ends 58 passed/EXIT=0 at c4eff770 and logs/after-arm.log ends 61 passed/EXIT=0 at ee399ded, so no failure is added.\nVERDICT write_paths: read the source node's declared paths and the diff; the commit touches only tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html, both declared.\nVERDICT manifest: read; its figures and its withdrawn outside_scope claim reconcile with the six logs it names.\nVERDICT diff: read commit ee399ded50 against ea4b01e2b0; two files, +49/-11, one test appended and one paragraph replaced, no production code touched.\nCALL_SITES: reckon/crew/queue_admission.py:399, reckon/crew/node.py:1508, reckon/crew_dispatch_commands.py:1346\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:43-55 withdraws the false claim and states what refutes it.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after-arm.log records 61 passed at ee399ded while the fragment's table at :33 still states 60 passed at b1754bab.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is one of the source node's declared write paths and no production module is touched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:343 reddens under the mutation recorded in logs/nc-roundtrip.log and both sides of the assertion are independent of the rebuild.\nSCORE fit: 17\nJUSTIFICATION fit: the added arm follows the TaskNode and _node_from_pointer idiom of tests/test_a_queued_node_keeps_every_field.py:79.\nSCORE reuse: 5\nJUSTIFICATION reuse: tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:319 duplicates the per-field round-trip already owned by tests/test_a_queued_node_keeps_every_field.py:81-84 without extending it.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:33 non-blocking: the arms table's after row still reads b1754bab and 60 passed while the cited logs/after-arm.log reads ee399ded and 61 passed, contradicting the prose at :39.\nFINDING tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:319 non-blocking: the added arm restates the per-field round-trip that tests/test_a_queued_node_keeps_every_field.py:81-84 already owns, including over_fence_reason at :52.\n",
+  "review_run_id": "r-20261112T111500541074-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ee399ded5092",
+  "reviewed_base_sha": "ea4b01e2b07cb1a2c66c20b9e4ad5891616b02e4",
+  "reviewed_head_sha": "ee399ded5092744e1a24ecbcb91ffb5477ac6179",
+  "reviewed_run_id": "r-20261112T060350588311-a-brief-can-raise-the-budget-fence-with-a-record",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T12:18:34.185208+00:00",
+  "total": 89
+}

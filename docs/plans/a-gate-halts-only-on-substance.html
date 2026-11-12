@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="29">
+<meta name="plan-version" content="30">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -101,6 +101,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261112T072045378458-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ea4b01e2b07c" data-who="reckon-build" data-when="2026-11-12T07:37:25.958Z">
     <div class="r-comment-body"><p>reviewed r-20261112T060350588311-a-brief-can-raise-the-budget-fence-with-a-record at base c4eff770..head ea4b01e2 — the two added arms are independent guards (blank reason refused, whitespace-padded reason admits) and both redden under the recorded mutations, and the review adds one blocking finding: the landed evidence fragment asserts a queue_admission defect that does not exist</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261112T111500541074-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ee399ded5092" data-who="reckon-build" data-when="2026-11-12T11:25:20.302Z">
+    <div class="r-comment-body"><p>review only, no plan edit — the one commit gained since the prior review (ee399ded50) is reviewed at ea4b01e2b0..ee399ded50 and scores 16/15/19/17/17/5 with two non-blocking findings.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>
 </div>
@@ -117,7 +120,7 @@
     <div class="r-comment-body"><p>Verified the resume budget door is already implemented at base: `crew_resume` takes `--time-budget`/`--over-fence`, refuses an allowance above the resolved fence unless a reason is given, records the new allowance with a `budget_changes` entry, and re-reads the pointer so the resumed attempt composes its fence from the new figure; measured 3/3 cases pass (45m on a 25m run composes deadline 2031-01-01T01:45:00Z and stores 45m), the declared mutation leaves the resumed deadline on the stored budget, and the two suite arms are 51 passed each at their own revision.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261112T072500411417-review-of-a-resume-can-change-the-run-s-budget-ddcb5079d9b0" data-who="reckon-build" data-when="2026-11-12T07:40:08.874Z">
-    <div class="r-comment-body"><p>independent review of r-20261112T060433796107-a-resume-can-change-the-run-s-budget at base c4eff7707068362553dc49173df280fd5cbdf254 and head ddcb5079d9b0a408338ab3c013901d22c40dc354 stored as a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 108), added_failure_count 0 with added_failure_ids [], two non-blocking findings (manifest outside_scope breakdown undercounts tests/test_crew.py by one; importer-arm.log&#x27;s command header is not a re-runnable literal command), no blocking findings.</p></div>
+    <div class="r-comment-body"><p>independent review of r-20261112T060433796107-a-resume-can-change-the-run-s-budget at base c4eff7707068362553dc49173df280fd5cbdf254 and head ddcb5079d9b0a408338ab3c013901d22c40dc354 stored as a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 108), added_failure_count 0 with added_failure_ids [], two non-blocking findings (manifest outside_scope breakdown undercounts tests/test_crew.py by one; importer-arm.log's command header is not a re-runnable literal command), no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T191342033961-review-of-picker-budget-floor-from-brief-1d6855ed0ee7" data-who="reckon-build" data-when="2026-11-07T19:31:46.536Z">
     <div class="r-comment-body"><p>reviewed picker-budget-floor-from-brief at base 5a444bc33b → head 1d6855ed0e; the landed diff does what the goal states (lane_context.py:190 node_budget floors the picker size at the resolved fence and both size readers call it), the gate asserts it (2 failed/180 passed at base vs 2 failed/185 passed at head, same two pre-existing ids, added_failure_count 0), the negative control reddens exactly the two fence cases; three non-blocking findings recorded (weak same-value assertion at test:76, partition-name duplication at lane_context.py:76/175, broad `partition|gpu` prose match at :174), no blocking findings.</p></div>
