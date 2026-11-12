@@ -1,0 +1,22 @@
+<section id="a-dispatch-test-runs-no-codex-process" data-reckon="fragment">
+  <h2 id="a-dispatch-test-runs-no-codex-process-heading">A dispatch test runs no codex process</h2>
+  <p id="a-dispatch-test-runs-no-codex-process-why">Since the inbox hook's trust was made a launch precondition, composing a codex worker's argv asks the app server to list the workspace's hooks and refuses when no trusted listing comes back. The suite's probe guard answered every probe with no answer, so every codex-backend dispatch test refused with <code>BackendError: codex inbox hook trust could not be established by hooks/list</code>; all 12 dispatching tests in <code>tests/test_a_source_file_is_shared_by_default.py</code> failed that way, making any armed gate over claim tests unmeasurable on any node.</p>
+  <p id="a-dispatch-test-runs-no-codex-process-what">The guard now answers that one listing itself, echoing the hook command the probe is already loading and carrying a key and hash of its own making, so the trust overrides still reach the argv while nothing is spawned. A live launch is untouched: the product still takes the key and hash from the harness's own <code>hooks/list</code> answer, as the inbox-hook section requires.</p>
+  <table id="a-dispatch-test-runs-no-codex-process-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>tests/conftest.py</code></td><td>The autouse probe guard answers a <code>hooks/list</code> request with a trusted listing derived from <code>worker_inbox_group()</code>, and every other probe as before.</td></tr>
+      <tr><td><code>tests/test_a_dispatch_test_runs_no_codex.py</code></td><td>Two cases: building a codex argv under the guard enters no spawn entry point; and a trusted listing still puts the hook definition and the <code>hooks.state</code> trust override on the argv.</td></tr>
+    </tbody>
+  </table>
+  <h3 id="a-dispatch-test-runs-no-codex-process-measure">Measure</h3>
+  <ul>
+    <li id="a-dispatch-test-runs-no-codex-process-head-arm">Head arm: <span id="a-dispatch-test-runs-no-codex-process-head-figure">pending</span>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-base-arm">Base arm: <span id="a-dispatch-test-runs-no-codex-process-base-figure">pending</span>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-dispatch-file"><code>tests/test_a_source_file_is_shared_by_default.py</code> at head: <span id="a-dispatch-test-runs-no-codex-process-dispatch-figure">pending</span>.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-negative-control">Negative control, with the guard removed: the first case fails because the argv build reaches a spawn.</li>
+    <li id="a-dispatch-test-runs-no-codex-process-importers">Importers of <code>reckon._backends</code>: <span id="a-dispatch-test-runs-no-codex-process-importers-figure">pending</span>.</li>
+  </ul>
+</section>
