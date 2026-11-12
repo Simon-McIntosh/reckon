@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="80">
+<meta name="plan-version" content="81">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -218,6 +218,9 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261112T072339728484-review-of-batch-entry-carries-review-waiver-ad8f34b7d081" data-who="reckon-build" data-when="2026-11-12T07:43:06.712Z">
     <div class="r-comment-body"><p>Reviewed run r-20261112T053103325903-batch-entry-carries-review-waiver at head ad8f34b7d08125a4ae564c233729a1b1c127606b against base 6fd868ab8a3fc2b830877f6400b5eebf20f27d47; the batch entry field, its validation and its dispatch_options stamping are the goal as stated and the four cases guard the waiver; one blocking finding (the fence-arm logs cited by the manifest, baseline_suite and after_suite are absent from the run directory and readable only from node-local scratch) plus two non-blocking findings; added_failure_count 0, added_failure_ids []</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261112T053103325903-batch-entry-carries-review-waiver" data-who="reckon-build" data-when="2026-11-12T14:19:40Z">
+    <div class="r-comment-body"><p>A batch entry may set allow_unreviewed_plan; the waiver rides the stored request&#x27;s dispatch_options so admission admits it instead of holding it on the review gate, an entry without it is held by the gate, and a misspelt field is refused by name; the node gate read 55 passed at head and 51 passed at baseline with no failure on either arm, and the importer population read 40 failed/699 passed at head against 40 failed/695 passed at base with identical failing ids.</p></div>
+</div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261111T200747600010-review-of-refused-review-writes-nothing-e46e82f0cb78" data-who="reckon-build" data-when="2026-11-11T20:25:05.929Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T185754655706-refused-review-writes-nothing at head e46e82f0cb7895edc5419fc55886a8eb6e8a5797: the session guard does run before composition and the test fails when it regresses, but the node's own done_when importer-arm clause is unmet (8 added failures at head, 167 vs 159) and the guard's placement ahead of `_run_review`'s argument validation masks argument-error messages — recorded as one blocking and three non-blocking findings.</p></div>
 </div>
@@ -312,7 +315,7 @@
     <div class="r-comment-body"><p>review-of-landing-reads-recorded-control-61624f058320: an independent review of run r-20261112T053204533907-landing-reads-recorded-control at head 61624f058320, scoring goal_fidelity 18, evidence 15, scope_discipline 17, durability 18, fit 18, reuse 16 over base b8585860, with two non-blocking findings and no added suite failure.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261112T053204533907-landing-reads-recorded-control" data-who="reckon-build" data-when="2026-11-12T14:21:49Z">
-    <div class="r-comment-body"><p>landing-reads-recorded-control: the negative-control gate now reads the log the manifest names, then a log of the declared mutation in the run&#x27;s own directory (control-named files first), then runs the mutation itself over the base tree; it records control_log_source and resolved_log. Measure: new test 6 passed at head; declared mutation 6 failed at EXIT=1; arms run with the exact armed command: base 6 failed and 51 passed (EXIT=1, completed) with the head&#x27;s new test copied into a base-revision tree, and head 57 passed (EXIT=0).</p></div>
+    <div class="r-comment-body"><p>landing-reads-recorded-control: the negative-control gate now reads the log the manifest names, then a log of the declared mutation in the run's own directory (control-named files first), then runs the mutation itself over the base tree; it records control_log_source and resolved_log. Measure: new test 6 passed at head; declared mutation 6 failed at EXIT=1; arms run with the exact armed command: base 6 failed and 51 passed (EXIT=1, completed) with the head's new test copied into a base-revision tree, and head 57 passed (EXIT=0).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
