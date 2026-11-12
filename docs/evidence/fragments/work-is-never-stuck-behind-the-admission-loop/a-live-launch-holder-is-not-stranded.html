@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-title" content="A live launch holder retains its claim">
+  <meta name="plan-summary" content="Local holder liveness protects slow launches; release traces retain review subjects. Six new cases pass; the importer delta needs adjudication.">
+  <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="blocked">
+  <title>A live launch holder retains its claim | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <section id="a-live-launch-holder-is-not-stranded-result">
+    <h2>A live launch holder retains its claim</h2>
+    <p>Commit <code>818458882af791127f7d3303503766c58bd7d5be</code>
+      reads the launch claim through the shared claim reader and reuses the
+      process start-time reader. A live holder on this host protects the launch
+      only when its process began no later than <code>launched_at</code>.
+      The admission pass preserves its pointer and run directory beyond the
+      stranded-launch bound. Dead holders and reused pids release; foreign
+      holders follow the existing release rule.</p>
+    <p>Release traces retain <code>holder.reviewed_run_id</code>, resolved
+      through the existing review-subject resolver before removing the run
+      directory. Both a run id and a node id in the review identity resolve
+      to the reviewed run.</p>
+    <table>
+      <thead><tr><th>Measurement</th><th>Base</th><th>Repair</th></tr></thead>
+      <tbody>
+        <tr><td>New regression cases</td><td>3 failed, 3 passed</td><td>6 passed</td></tr>
+        <tr><td>Armed scoped gate</td><td>51 passed</td><td>57 passed</td></tr>
+        <tr><td>Importer population on all_debug</td><td>129 failed, 834 passed</td><td>131 failed, 838 passed</td></tr>
+      </tbody>
+    </table>
+    <p>The negative control ran the new checks against product code at
+      <code>b770ff474971136579a565932036a37a4c76f0b8</code>:
+      admission released <code>r-held-launch</code> despite its live local
+      holder, and both review traces lacked their subject. The live-holder
+      assertion failed with <code>['r-held-launch'] != []</code>.
+      The repair passes all six cases; ruff check and format check pass on
+      the changed Python paths.</p>
+    <p>The matched importer arms cover 130 existing files, with the new file
+      added at the repair head. They add two failing test ids and remove none,
+      so the importer measure remains unmet. The worker manifest records the
+      required out-of-scope adjudication under <code>outside_scope</code>.
+      This record does not claim a merged-head or live-service verification.</p>
+  </section>
+</main>
+</body>
+</html>
