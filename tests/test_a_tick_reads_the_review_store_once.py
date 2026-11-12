@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import sys
+import threading
 import time
 from collections import Counter
 from contextlib import contextmanager, suppress
@@ -14,7 +15,7 @@ from unittest.mock import Mock
 
 import pytest
 
-from reckon import flight, ledger
+from reckon import file_memo, flight, ledger
 from reckon.crew import (
     model_catalogue,
     plan_review,
@@ -380,3 +381,45 @@ def test_a_live_runs_growing_stream_reads_no_review(reviewed_store):
         **dict.fromkeys((f"read:{run_id}" for run_id in paths), 1),
     }
     assert second == {"enumerations": 1}
+
+
+def test_two_threads_missing_at_once_raise_nothing(reviewed_store, monkeypatch):
+    """The review reflex reads on its own thread, beside the tick's own read.
+
+    Two readers that miss at the same instant must both answer and leave the
+    store usable. The holding is the store's locked LRU rather than a
+    dictionary whose eviction is a check followed by an act, so a reader that
+    arrives while another is evicting cannot raise out of a producer tick.
+    """
+    paths, _counts, _bindings, _observed = reviewed_store
+    run_id = "r-author-00"
+    # A cache only two entries deep makes every store in the race evict.
+    monkeypatch.setattr(file_memo, "_MAX_ENTRIES", 2)
+    readers = 8
+    barrier = threading.Barrier(readers, timeout=30)
+    answers = {}
+    failures = []
+
+    def read(index):
+        def compute():
+            barrier.wait()
+            return {"index": index}
+
+        try:
+            answers[index] = recovery_memo._read_review_once(
+                {"project": "sample", "run_id": run_id},
+                ("head", f"head-{index}"),
+                compute,
+            )
+        except BaseException as exc:  # noqa: BLE001 - the whole point of the case
+            failures.append(exc)
+
+    threads = [threading.Thread(target=read, args=(index,)) for index in range(readers)]
+    for thread in threads:
+        thread.start()
+    for thread in threads:
+        thread.join(timeout=60)
+    assert not any(thread.is_alive() for thread in threads)
+    assert not failures, failures
+    assert len(paths) == 40
+    assert answers == {index: {"index": index} for index in range(readers)}

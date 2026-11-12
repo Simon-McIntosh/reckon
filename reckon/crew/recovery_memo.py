@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 import contextlib
-import copy
 import hashlib
 import json
 import re
@@ -542,7 +541,7 @@ def _review_read_inputs(
     if project and run_id:
         identities.update(_review_input_identities(record))
         identities.update(_review_annotation_identities(record))
-        identities[f"git-head:{tree}"] = _worktree_head_identity(tree)
+    identities[f"git-head:{tree}"] = _worktree_head_identity(tree)
     if run_id and tick_inputs is not None:
         tick_inputs[key] = identities
     return identities
@@ -591,16 +590,6 @@ def _classification_key(identities: Mapping[str, str]) -> str:
     return hashlib.sha256(rendered.encode("utf-8")).hexdigest()
 
 
-# One stored review per run each time the inputs of its answer change. The key
-# is the run and the selection asked for -- the record describing a named head,
-# or the newest record -- never the classification's wider input set, so a run
-# whose stream or pointer moved still answers its review from the last read.
-# Answers are held for the process that took them and bounded, because a long
-# lived producer sees every run the fleet ever had.
-_READ_REVIEW_ANSWERS: dict[tuple[str, ...], tuple[str, Any]] = {}
-_READ_REVIEW_ANSWERS_LIMIT = 1024
-
-
 def _read_review_once(
     record: Mapping[str, Any],
     selector: tuple[str, ...],
@@ -610,31 +599,29 @@ def _read_review_once(
 ) -> Any:
     """Answer one stored-review selection, re-reading only when an input moved.
 
-    ``reader`` performs the selection and its return value is the answer.
-    The answer is kept beside the digest of the inputs it was read against, so
-    a later reader of the same run answers from it while those inputs are
-    unchanged and asks again the moment one of them moves -- a record rewritten
-    in place, a new copy of it, a reviewed manifest rewritten, or a gate log it
-    names rewritten. The answer is copied in and out because a caller may
-    annotate or normalise the record it was given, and a cache that served the
-    caller's own edits to the next reader would report a review nobody stored.
+    ``reader`` performs the selection and its return value is the answer. The
+    key is the run, the selection asked for -- the record describing a named
+    head, or the newest record -- and the digest of the inputs that answer
+    depends on, never the classification's wider input set, so a run whose
+    stream or pointer moved still answers its review from the last read. A
+    record rewritten in place, a new copy of it, a reviewed manifest rewritten
+    or a gate log it names rewritten all move the digest and force the read.
+
+    The holding is :func:`reckon.file_memo.memoized_key`, the store's own
+    bounded LRU behind its lock: it copies in and out, so a caller that
+    annotates or normalises the record it was given cannot alter what the store
+    reports to the next reader, and two readers that miss at once -- the review
+    reflex on its own thread beside the tick -- cannot race on the cache's own
+    structure.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
         return reader()
     digest = _classification_key(_review_read_inputs(record, tree=tree))
-    key = (project, run_id, *selector)
-    held = _READ_REVIEW_ANSWERS.get(key)
-    if held is not None and held[0] == digest:
-        return copy.deepcopy(held[1])
-    answer = reader()
-    if len(_READ_REVIEW_ANSWERS) >= _READ_REVIEW_ANSWERS_LIMIT and (
-        key not in _READ_REVIEW_ANSWERS
-    ):
-        _READ_REVIEW_ANSWERS.pop(next(iter(_READ_REVIEW_ANSWERS)), None)
-    _READ_REVIEW_ANSWERS[key] = (digest, copy.deepcopy(answer))
-    return answer
+    return file_memo.memoized_key(
+        "stored_review_answer", (project, run_id, *selector, digest), reader
+    )
 
 
 # Tokens a terminal message carries that belong to the run rather than to the
