@@ -81,8 +81,10 @@
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
   tests/test_a_wait_releases_when_its_upstream_lands.py
   tests/test_staged_write_inventory.py</code> reports
-  <code>57 passed</code>, <code>EXIT=0</code> at the head, run on the
-  <code>all_debug</code> partition. The base arm of the same template, resolved
+  <code>58 passed</code>, <code>EXIT=0</code> at the head, run on the
+  <code>all_debug</code> partition in a fresh tree with the suite's
+  <code>TMPDIR</code> inside that tree, which is the layout the fixture now
+  answers. The base arm of the same template, resolved
   over the base tree where the new file does not exist, reports
   <code>51 passed</code>, <code>EXIT=0</code>: the six added tests are the
   only difference and no base failure is added.
@@ -99,26 +101,66 @@
   ledger's index before the promotion and shows the waiter held after it,
   because the write moved the generation the index is keyed on and the index
   therefore carries the promotion rather than a view of the moment it was built.
+  The seventh is the layout case: it moves <code>TMPDIR</code> inside the
+  fixture's checkout, confirms that path lies inside a work tree, and asserts
+  that the ledger still resolves its own checkout, still reads the promotion it
+  wrote, and still holds the wait. That is the case that fails when the read
+  escapes, and it is what the earlier head failed on a host whose temp path sat
+  inside the tree.
 
-  <p><strong>The test owns everything it reads.</strong> Three inputs resolve
-  outside the fixture's temporary repository, and each one is pinned and then
-  asserted rather than assumed. The mounts registry outranks the config home
-  wherever both are consulted, so a host that exports
-  <code>RECKON_MOUNTS_PATH</code> would leave the fixture's repository unnamed
-  and the guard would read another tree's HEAD; it is pinned at the fixture's
-  own <code>mounts.json</code>. The ledger resolves through the configuration
-  home, so that home is pinned and the ledger's path is asserted to be inside
-  it. The cache home is pinned too, since an index or a pick-input cache written
-  by another run would otherwise answer for this one. The fixture then asserts
+  <p><strong>The test owns everything it reads.</strong> Four inputs can resolve
+  outside the fixture, and each one is pinned and then asserted rather than
+  assumed. The mounts registry outranks the config home wherever both are
+  consulted, so a host that exports <code>RECKON_MOUNTS_PATH</code> would leave
+  the fixture's repository unnamed and the guard would read another tree's HEAD;
+  it is pinned at the fixture's own <code>mounts.json</code>. The configuration
+  home, the state root and the pick cache are pinned inside the fixture. The
+  state root is the fixture checkout's own <code>docs/state</code>, which is the
+  path the ledger's work-tree resolution re-roots to, and the ledger's path is
+  asserted to be inside the checkout and its resolved work tree to be that
+  checkout. <code>HOME</code> and the XDG directories are pinned to the
+  fixture's temp path as well, so nothing falls back to the invoking user's live
+  configuration. The fixture then asserts
   that <code>project_mount_repository</code> resolves the checkout it built.
-  After the promotion it names the ledger row the guard must read and calls
-  <code>_section_run_unlanded</code> directly, so a tree where any of these
+  After the promotion each test names the ledger row the guard must read and
+  calls <code>_section_run_unlanded</code> directly, so a tree where any of these
   resolves elsewhere fails at the component that decides rather than as a phase
   assertion further down.
 
+  <p><strong>A temp path inside a work tree.</strong> The failure reported
+  against a head that passed in this worker's own runs had one cause, and it was
+  neither the index nor the write generation nor the guard. The ledger resolves
+  the git work tree above its own path and reads a project's runs through that
+  tree's checkout, so a suite whose temp tree sits inside the tree under test —
+  a <code>basetemp</code> beneath the checkout, which a run from a freshly
+  extracted tree produces — had every ledger read answered from that tree while
+  the fixture's promotion wrote under its own state root. The read came back
+  with no runs at all, which is what both reported failures asserted.
+
+  <p><strong>The cure, and a cure that is not one.</strong> Bounding git's own
+  discovery does not reach this: the ledger finds the tree by reading a
+  <code>.git</code> marker in each ancestor directory, never by asking git, so
+  <code>GIT_CEILING_DIRECTORIES</code> leaves the walk unchanged. That was
+  measured rather than reasoned: with the variable set at a temp root inside a
+  checkout, the resolved work tree is still the enclosing checkout
+  (<code>shared → …/Code/reckon</code>). The variable is set in the fixture all
+  the same, because it does bound the git subprocesses the fixture and the
+  ancestry check start, but the boundary that fixes the read is nearer. The
+  walk's answer is the nearest ancestor carrying a marker, and the path it then
+  reads is <code>&lt;tree&gt;/docs/state/&lt;project&gt;/&lt;ledger&gt;</code>;
+  so the fixture makes its own checkout a repository, which is the nearest
+  marker, and points the ledger's state root at that checkout's own
+  <code>docs/state</code>, which is the path the resolution reads. Written and
+  read are then one file wherever the temp path sits, with no relocation and no
+  dependence on a writable directory outside the tree. The round trip in the
+  fixture asserts it on a project name of its own, so an escaping read fails at
+  the fixture instead of surfacing as a phase assertion further down.
+
   <p><strong>Fresh trees.</strong> Runs of the gate command in a tree of their
-  own report <code>57 passed</code>, <code>EXIT=0</code> at the head, and
-  <code>56 passed</code>, <code>EXIT=0</code> at the revision whose failure was
+  own report <code>58 passed</code>, <code>EXIT=0</code> at the head with
+  <code>TMPDIR</code> inside that tree, <code>57 passed</code>, <code>EXIT=0</code>
+  at the same head in the ordinary layout, and <code>56 passed</code>,
+  <code>EXIT=0</code> at the revision whose failure was
   reported, the latter with the host's real mounts registry exported and the
   fixture's config home unset, which is the hostile case the pinning exists for.
   A literal
