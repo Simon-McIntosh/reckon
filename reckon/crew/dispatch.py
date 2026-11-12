@@ -226,6 +226,7 @@ def _queued_request_record(
     queued_at: str,
     admitted_from: str = "",
     local: bool = True,
+    backlog: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The request record a held local dispatch stores as one queued pointer.
 
@@ -262,6 +263,11 @@ def _queued_request_record(
             record[key] = value
     if admitted_from:
         record["admitted_from"] = admitted_from
+    if backlog is not None:
+        # A request held at dispatch records the backlog it was made over just
+        # as a launched run does, so the pointer says the same thing whichever
+        # way the request went.
+        record["unreconciled_override"] = dict(backlog)
     return record
 
 
@@ -376,26 +382,38 @@ def queue_requests(
     )
     stored: dict[str, Any] = {}
     cache: dict[str, Any] = {}
+    # Queuing a request succeeds over its session's backlog exactly as a direct
+    # dispatch does, and records the backlog on the request it stores, so both
+    # routes say which unreconciled runs the work was chosen over.
+    backlog = _recorded_backlog(
+        project=project,
+        session=session,
+        config=config,
+        requested=False,
+        source="coordinator",
+    )
     for index, node in enumerate(nodes):
         run_id = assigned_ids[node.id]
+        record = _queued_request_record(
+            run_id=run_id,
+            project=project,
+            node=node,
+            repo_root=Path(str(repo_root)),
+            session=session,
+            backend_name=lane,
+            launch_kind=launch_kind,
+            lane_allowance={},
+            dispatch_options={
+                "project": project,
+                "session": session,
+                "no_watch": True,
+                "allow_unreviewed_plan": allow_unreviewed_plan,
+            },
+            queued_at=_utc_now(),
+            backlog=backlog,
+        )
         queued, position, phase = _queue_validated_waits(
-            _queued_request_record(
-                run_id=run_id,
-                project=project,
-                node=node,
-                repo_root=Path(str(repo_root)),
-                session=session,
-                backend_name=lane,
-                launch_kind=launch_kind,
-                lane_allowance={},
-                dispatch_options={
-                    "project": project,
-                    "session": session,
-                    "no_watch": True,
-                    "allow_unreviewed_plan": allow_unreviewed_plan,
-                },
-                queued_at=_utc_now(),
-            ),
+            record,
             refs=refs_by_run[run_id],
             wait_projects=projects_by_run[run_id],
             max_requests=flight.queue_max_requests(config),
@@ -1650,6 +1668,40 @@ def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) ->
         raise _SupersededLaunchError(str(superseded)) from superseded
 
 
+def _recorded_backlog(
+    *,
+    project: str,
+    session: str,
+    config: Mapping[str, Any],
+    requested: bool,
+    source: str,
+) -> dict[str, Any] | None:
+    """The overdue terminal runs a session's dispatch is made over, or None.
+
+    A session's unreconciled runs do not hold new work back: they are owed
+    duties, listed by the obligations view, and dispatch records them on the
+    run it writes rather than refusing. Only this session's own rows are named;
+    another session's backlog is neither counted nor copied.
+    """
+    from reckon.crew.recovery import _partition_session_rows, overdue_unreconciled_runs
+
+    grace = str((config.get("fences") or {}).get("unreconciled_run_grace") or "")
+    unreconciled, _peer_unreconciled = _partition_session_rows(
+        overdue_unreconciled_runs(project=project, grace=grace),
+        session,
+    )
+    if not unreconciled:
+        return None
+    return {
+        "requested": bool(requested),
+        # Which kind of command was made over the backlog: a coordinator's own
+        # dispatch or a queue admission continuing a request it admitted.
+        "source": source,
+        "grace": grace,
+        "waived_runs": unreconciled,
+    }
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -1720,9 +1772,11 @@ def dispatch(
     the matched measure and resolved role stay on the run record so the exception
     remains visible after the request that supplied it is gone.
 
-    An unreconciled-run override is narrower: it waives only the terminal
-    backlog observed by this dispatch. The exact runs and resolving commands
-    are copied onto the new record so the exception survives its command line.
+    A session's overdue unreconciled runs never refuse a dispatch. They are
+    duties, listed by the obligations view, and this dispatch copies the exact
+    runs it was made over onto the new record so a later reader sees the work
+    was started over unreconciled runs. ``--allow-unreconciled-runs`` still
+    parses and is still recorded, and gates nothing.
 
     Dispatch arms the project watcher before creating a worktree when watcher
     policy is enabled. The producer is detached from the caller and keeps a
@@ -2020,39 +2074,20 @@ def dispatch(
         raise CompetenceLimit(competence)
 
     fences = config.get("fences") or {}
-    unreconciled_grace = str(fences.get("unreconciled_run_grace") or "")
-    from reckon.crew.recovery import (
-        _partition_session_rows,
-        overdue_unreconciled_runs,
-    )
-
-    project_unreconciled = overdue_unreconciled_runs(
+    # A session's terminal backlog is recorded, not enforced. The rows are copied
+    # onto the run as a field rather than referenced, so the record states which
+    # runs the dispatch was made over instead of pointing at the ledger's state
+    # in a later moment. The flag still parses and still says whether the
+    # coordinator asked for an exception; it changes no gate, because there is
+    # no gate left to change.
+    backlog = _recorded_backlog(
         project=project,
-        grace=unreconciled_grace,
+        session=session,
+        config=config,
+        requested=unreconciled_override,
+        source="admission-launch" if admission_launch else "coordinator",
     )
-    unreconciled, peer_unreconciled = _partition_session_rows(
-        project_unreconciled, session
-    )
-    if unreconciled and not unreconciled_override:
-        raise _session_unreconciled_refusal(
-            unreconciled, peer_unreconciled, unreconciled_grace
-        )
-    waiver = (
-        {
-            "requested": True,
-            # Which kind of command asked for the exception: a coordinator's own
-            # dispatch or a queue admission continuing a request it admitted.
-            "source": "admission-launch" if admission_launch else "coordinator",
-            # The waived backlog is copied as a field rather than referenced, so
-            # the record states exactly which runs the exception covered rather
-            # than pointing at the ledger's state in a later moment.
-            "grace": unreconciled_grace,
-            "waived_runs": unreconciled,
-        }
-        if unreconciled_override and unreconciled
-        else None
-    )
-    # A waived plan review is narrower than the unreconciled waiver: it excuses
+    # A waived plan review is narrower than the recorded backlog: it excuses
     # only the missing review of the plan this node builds, and is recorded with
     # the plan it waived so the exception names what was let through.
     plan_review_waiver = (
@@ -2152,6 +2187,7 @@ def dispatch(
                             queued_at=_utc_now(),
                             local=resolution.backend
                             == str(config.get("local_backend") or ""),
+                            backlog=backlog,
                         ),
                         max_requests=flight.queue_max_requests(config),
                     )
@@ -2387,6 +2423,7 @@ def dispatch(
                 queued_at=_utc_now(),
                 admitted_from=admitted_from,
                 local=is_local,
+                backlog=backlog,
             ),
             refs=validated_refs,
             wait_projects=wait_projects,
@@ -2465,6 +2502,7 @@ def dispatch(
                 dispatch_options=dispatch_options,
                 queued_at=_utc_now(),
                 local=queued_backend_name == local_backend,
+                backlog=backlog,
             ),
             backend=backend,
             lane_allowance=lane_allowance,
@@ -2509,6 +2547,7 @@ def dispatch(
                     dispatch_options=dispatch_options,
                     queued_at=_utc_now(),
                     admitted_from=admitted_from,
+                    backlog=backlog,
                 ),
                 max_requests=flight.queue_max_requests(config),
             )
@@ -2580,6 +2619,7 @@ def dispatch(
                         lane_allowance=lane_allowance,
                         dispatch_options=dispatch_options,
                         queued_at=_utc_now(),
+                        backlog=backlog,
                     ),
                     max_requests=flight.queue_max_requests(config),
                 )
@@ -3393,7 +3433,7 @@ def dispatch(
                 if paired_shadow_run_id
                 else {}
             ),
-            "unreconciled_override": waiver,
+            "unreconciled_override": backlog,
             "unreviewed_plan_override": plan_review_waiver,
             "watch_override": watcher_waiver,
             "watch": {
@@ -4273,7 +4313,6 @@ from .dispatch_plan import (  # noqa: E402
     _repairs_ledger_root as _repairs_ledger_root,
     _require_repairs_target as _require_repairs_target,
     _resolved_wave_id as _resolved_wave_id,
-    _session_unreconciled_refusal as _session_unreconciled_refusal,
     continue_hold_on_its_offered_local_lane as continue_hold_on_its_offered_local_lane,
     open_endedness_score as open_endedness_score,
     plan_dispatch as _raw_plan_dispatch,

@@ -1,0 +1,114 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the recorded baseline_suite and after_suite logs; both completed with EXIT=0 and no FAILED ids. Supplemental comparison is recorded separately, not folded into this armed pair.",
+  "assertion_analysis": {
+    "112": "Fails if the stored queue contract loses or misidentifies its section; the expected delivery literal is independent.",
+    "113,130": "Fail if crew home resolves outside the fixture home; routing is checked against the independent temporary root.",
+    "122,129": "Fail if observed atomic writes escape both fixture roots; 129 restates the same enforced invariant and is supporting isolation evidence.",
+    "128": "Fails if the atomic-write instrument observes no writes; positive control against a silent instrument.",
+    "131": "Fails if a guarded Path.open write targets the operator crew directory; the guard records the attempt before raising.",
+    "145": "Fails if the real edit entry point refuses or errors instead of completing.",
+    "178,179": "Fail if a zero-debt judged edit reports debt or newly uncovered units.",
+    "180": "Fails when admission computes independently and later judge unavailability holds delivery; the own-coverage mutation log demonstrates this.",
+    "181": "Fails if the before/write/admission route asks the changed-text judge more than once.",
+    "190": "Fails if either writer debt field omits delivery or identifies any other unit, with an independent literal set.",
+    "191": "Fails if admission admits the owed edit; the different-revision mutation demonstrates this.",
+    "192": "Fails if admission holds units different from the writer; 190 independently pins writer units to delivery, so this is a parity check rather than sole semantic evidence.",
+    "210": "Fails if missing snapshot debt is covered, measured spuriously, or assigned to the wrong unit; expected unit and None are literal.",
+    "211": "Compares two returned fields and would survive both fields being identically wrong; it is a parity-only assertion, supported by independent literal assertion 210, not a self-supplied-input oracle.",
+    "213,214": "Fail if admission admits the unmeasured change or does not name delivery; unmeasured-as-covered mutation demonstrates this independently of the writer.",
+    "227,228": "Fail if the initial served no-review decision is not covered by either writer or admission.",
+    "239,240": "Fail if removing a previously available snapshot reuses covered state instead of producing unmeasured delivery debt in either reader; the identity must change.",
+    "249,250": "Fail if failed memo persistence is reported as known debt/coverage or loses the persistence error; augmented base fails 249."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:_uncovered_before_write",
+    "reckon/mcp_deadlines.py:_review_owed_fields",
+    "reckon/crew/admission/reviews.py:_build_plan_review_record",
+    "reckon/crew/routing.py:require_plan_reviewed"
+  ],
+  "completed_at": "2026-11-12T19:38:21Z",
+  "dispatched_at": "2026-11-12T19:30:34Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44-01daa884928c",
+      "recorded_at": "2026-11-12T20:07:33.371447+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": "1195",
+      "severity": "blocking",
+      "text": "blocking: The persisted decision validates plan_review, _plan_html and review_need Python source but omits review_need.PROMPT_PATH and the judge model identity; after a prompt checklist or model change with the plan/reviews/config unchanged, a fresh process returns the old covered decision without reaching review_need.judge, bypassing the existing prompt/model-sensitive key in review_need.py:179-196 and potentially admitting work that the current rubric would require to be reviewed."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44/isolated-after-armed.log",
+      "revision": "01daa884928c2ed1200ab4cb5466afac1ec8f739"
+    },
+    "baseline_suite": {
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44/baseline-armed.log",
+      "revision": "9e65a8831693bca84d10a14be9040ebe07a803eb"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read fb4f4ae2, 91efe75c, 6be5f079 and 01daa884 against 9e65a8831693bca84d10a14be9040ebe07a803eb; the diff adds shared persisted coverage, captured-document admission, six regression cases and one evidence fragment.",
+    "done_when": "The live plan s44 and source dispatch-detail.json require three semantic cases and three controls; isolated-after-armed.log records 57 passed and the three isolated-negative logs record 1, 3 and 3 failures on the intended cases.",
+    "goal": "The source goal in dispatch-detail.json is to leave no queued run waiting on a review the edit owes nothing; reckon/crew/plan_review.py:1142 shares the decision and admission/reviews.py:343 consumes it, but prompt changes do not invalidate it.",
+    "manifest": "The source manifest.md identifies four commits and complete gate receipts, candidly distinguishes controlled reproduction from the historical cause, and reports two supplemental added failures separately from the armed zero delta.",
+    "write_paths": "The four changed paths match the source manifest orientation grants, including admission/reviews.py explicitly granted in resume-1-advice.txt; no unrelated implementation file changed."
+  },
+  "justifications": {
+    "durability": "tests/test_an_edit_owing_no_review_holds_no_queued_run.py:180 fails when admission bypasses shared coverage, :192 fails on different document input, and :214 fails when unmeasured debt is treated as covered, but no assertion checks prompt invalidation.",
+    "evidence": "The source isolated-after-armed.log ends with 57 passed and EXIT=0 at 01daa884928c, and isolated-baseline-augmented.log demonstrates two failures at 9e65a883, while the supplemental dependent logs disclose two added test failures.",
+    "fit": "reckon/crew/plan_review.py:1200 uses the existing serialization and persisted_memo idiom and admission/reviews.py:341 captures one document without changing the facade or adding forbidden source names.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1171 and admission/reviews.py:343 unify the readings for the tested inputs, but the memo identity omits a real judge input in prompts/review_need.json.",
+    "reuse": "The extracted _compute_coverage remains in plan_review.py:1211, while the added wrapper extends that owner and reuses metadata_index.py:1992 and review_need.py:231 rather than duplicating their persistence or judgment mechanisms.",
+    "scope_discipline": "The source manifest.md and resume-1-advice.txt authorize all four paths shown by the exact base-to-head diff, including the evidence fragment and admission owner."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source goal in dispatch-detail.json is to leave no queued run waiting on a review the edit owes nothing; reckon/crew/plan_review.py:1142 shares the decision and admission/reviews.py:343 consumes it, but prompt changes do not invalidate it.\nVERDICT done_when: The live plan s44 and source dispatch-detail.json require three semantic cases and three controls; isolated-after-armed.log records 57 passed and the three isolated-negative logs record 1, 3 and 3 failures on the intended cases.\nVERDICT write_paths: The four changed paths match the source manifest orientation grants, including admission/reviews.py explicitly granted in resume-1-advice.txt; no unrelated implementation file changed.\nVERDICT manifest: The source manifest.md identifies four commits and complete gate receipts, candidly distinguishes controlled reproduction from the historical cause, and reports two supplemental added failures separately from the armed zero delta.\nVERDICT diff: Read fb4f4ae2, 91efe75c, 6be5f079 and 01daa884 against 9e65a8831693bca84d10a14be9040ebe07a803eb; the diff adds shared persisted coverage, captured-document admission, six regression cases and one evidence fragment.\nCALL_SITES: reckon/mcp_edit_plan.py:_uncovered_before_write, reckon/mcp_deadlines.py:_review_owed_fields, reckon/crew/admission/reviews.py:_build_plan_review_record, reckon/crew/routing.py:require_plan_reviewed\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1171 and admission/reviews.py:343 unify the readings for the tested inputs, but the memo identity omits a real judge input in prompts/review_need.json.\nSCORE evidence: 18\nJUSTIFICATION evidence: The source isolated-after-armed.log ends with 57 passed and EXIT=0 at 01daa884928c, and isolated-baseline-augmented.log demonstrates two failures at 9e65a883, while the supplemental dependent logs disclose two added test failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The source manifest.md and resume-1-advice.txt authorize all four paths shown by the exact base-to-head diff, including the evidence fragment and admission owner.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_edit_owing_no_review_holds_no_queued_run.py:180 fails when admission bypasses shared coverage, :192 fails on different document input, and :214 fails when unmeasured debt is treated as covered, but no assertion checks prompt invalidation.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/plan_review.py:1200 uses the existing serialization and persisted_memo idiom and admission/reviews.py:341 captures one document without changing the facade or adding forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The extracted _compute_coverage remains in plan_review.py:1211, while the added wrapper extends that owner and reuses metadata_index.py:1992 and review_need.py:231 rather than duplicating their persistence or judgment mechanisms.\nFINDING reckon/crew/plan_review.py:1195 blocking: The persisted decision validates plan_review, _plan_html and review_need Python source but omits review_need.PROMPT_PATH and the judge model identity; after a prompt checklist or model change with the plan/reviews/config unchanged, a fresh process returns the old covered decision without reaching review_need.judge, bypassing the existing prompt/model-sensitive key in review_need.py:179-196 and potentially admitting work that the current rubric would require to be reviewed.\n",
+  "reuse_search": "Read the extracted existing coverage implementation and searched persistence/judgment capabilities; metadata_index.persisted_memo (1992) owns durable memoization and review_need.judge (231) owns judgment, and both are reused. New nested compute is serialization for the owner, not a second coverage algorithm. Test helpers reuse the project fixture and production edit/admission entry points.",
+  "review_run_id": "r-20261112T191034978351-review-of-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44-01daa884928c",
+  "reviewed_base_sha": "9e65a8831693bca84d10a14be9040ebe07a803eb",
+  "reviewed_head_sha": "01daa884928c2ed1200ab4cb5466afac1ec8f739",
+  "reviewed_run_id": "r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "supplemental_added_failure_ids": [
+    "tests/test_a_pass_computes_coverage_once.py::test_a_pass_reads_one_plans_evidence_once_for_three_requests",
+    "tests/test_an_edit_that_answers_a_review_is_covered.py::test_ignoring_the_acceptance_leaves_the_section_uncovered"
+  ],
+  "supplemental_evidence": {
+    "base": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44/coverage-dependents-base.log",
+    "base_summary": "7 failed, 130 passed in 25.66s",
+    "head": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44/coverage-dependents-head.log",
+    "head_summary": "9 failed, 128 passed in 23.36s",
+    "interpretation": "The state-read counter instruments read_state_file, which the captured-document path no longer calls; the acceptance negative control mutates a helper in memory without invalidating an existing persisted decision."
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T19:46:18.883542+00:00",
+  "total": 113
+}
