@@ -200,7 +200,7 @@ def _review_ready_run(
     run_id: str,
     node_id: str,
 ) -> Path:
-    """Record one completed review run, whose duty action names no run.
+    """Record one completed review run, whose duty promotes that run's record.
 
     A review run's deliverable is the review it wrote, so a complete manifest
     under the review role is promotable rather than scoring.
@@ -796,15 +796,15 @@ def test_each_held_worktree_keeps_its_own_run_scoped_line(
     assert len(lines) == HELD_ITEMS + 5
 
 
-def test_two_review_ready_items_sharing_a_run_less_command_keep_their_own_lines(
+def test_two_review_ready_items_carry_their_own_run_command(
     repository: Path, tmp_path: Path
 ) -> None:
-    """Two completed review runs share one promotion sentence and keep two lines.
+    """Each completed review run's duty names its own run and keeps its line.
 
-    A review run's duty action names no run, so the two duties carry identical
-    command text while being two different reviews to read. Collapsing them
-    would hide one run's review behind a count, so each keeps its own line
-    carrying its own run id.
+    A review run's remedy is the promotion of that run's own record, so the
+    command names the run. Two reviews therefore carry two different commands
+    and there is nothing for a shared-command collapse to fold, so each keeps
+    its own line carrying its own run id and its own command.
     """
     _review_ready_run(repository, tmp_path, run_id=FIRST_RUN_ID, node_id=FIRST_NODE_ID)
     _review_ready_run(
@@ -822,16 +822,12 @@ def test_two_review_ready_items_sharing_a_run_less_command_keep_their_own_lines(
     review = [line for line in lines if line.startswith("- [review-ready]")]
     assert len(review) == 2, checklist
     commands = {line.split("): ", 1)[1] for line in review}
-    assert len(commands) == 1, (
-        "the two duties must share one command for this case to bite"
+    assert len(commands) == 2, (
+        "each duty names its own run, so no two duties share a command"
     )
-    shared = commands.pop()
-    assert FIRST_RUN_ID not in shared and SECOND_RUN_ID not in shared, (
-        "the shared command must name no run, so only the renderer separates the lines"
-    )
-    assert sorted(line.split()[2] for line in review) == sorted(
-        [FIRST_RUN_ID, SECOND_RUN_ID]
-    )
+    for run_id in (FIRST_RUN_ID, SECOND_RUN_ID):
+        line = next(item for item in review if item.split()[2] == run_id)
+        assert f"reckon crew complete --run {run_id} " in line, line
     assert lines[0].startswith(
         f"reckon obligations for session {SESSION} (project {PROJECT}): "
         "2 outstanding, oldest "
