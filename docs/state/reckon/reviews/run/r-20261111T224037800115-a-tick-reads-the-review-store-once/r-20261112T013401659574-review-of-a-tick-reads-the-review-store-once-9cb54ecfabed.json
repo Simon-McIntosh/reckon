@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_review_subject.py:145 select_review_for_head reads the named-head review through _read_review_once",
+    "reckon/crew/recovery_review_subject.py:158 select_review_for_head reads the newest review through _read_review_once",
+    "reckon/crew/recovery_review_subject.py:1461 newest_review_for_headless_run reads through _read_review_once",
+    "reckon/crew/recovery_memo.py:581 _classification_inputs consumes _review_read_inputs for the classification key",
+    "reckon/crew/obligations.py:1668 _selected_review memoises select_review_for_head through the same file_memo.memoized_key owner"
+  ],
+  "completed_at": "2026-11-12T01:48:01.410Z",
+  "dispatched_at": "2026-11-12T01:37:51Z",
+  "findings": [
+    {
+      "file": "tests/test_a_tick_reads_the_review_store_once.py",
+      "line": "425",
+      "severity": "non-blocking:",
+      "text": "non-blocking: `assert answers == {index: {\"index\": index} for index in range(readers)}` compares each answer against the same value the test's own `compute` closure returned, and every reader carries a distinct cache key, so the assertion holds whatever the holding does. The cases that do bite are `assert not failures` at :423 and the refusal at :438."
+    },
+    {
+      "file": "tests/test_a_tick_reads_the_review_store_once.py",
+      "line": "397",
+      "severity": "non-blocking:",
+      "text": "non-blocking: `monkeypatch.setattr(file_more._MAX_ENTRIES, 2)` (file_memo) only reaches `file_memo`'s bound, so restoring the private 1024-entry dictionary that the commit replaced leaves this case green: the eight readers then store eight entries under the old limit and nothing pops. The manifest's concurrency-mutation.log confirms the case passes against the pre-refactor holding, so the race fix itself has no test that reddens if it regresses; the case is a property guard on the new holding, as the evidence fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-reads-the-review-store-once.html honestly states."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "622",
+      "severity": "non-blocking:",
+      "text": "non-blocking: the memo key now carries the input digest, so a run whose named gate log or manifest moves stores a new entry for the same (project, run_id, selector) on every move, where the replaced holding overwrote one entry per selection. Footprint is bounded by file_memo's shared 50,000-entry LRU, but each entry holds a deep copy of a whole review record, so a busy fleet's store churn now accumulates full records rather than one per run."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 534c4912d7: 0b18b5697b replaces the private _READ_REVIEW_ANSWERS dict with file_memo.memoized_key and moves the git-head identity out of the project/run guard, e648ab9f8d adds the refuse-after-the-race assertions, 9cb54ecfab rewrites three paragraphs of the landing fragment to describe the shared holding and the eighth case; three files, all inside scope.",
+    "done_when": "the node's measure is a per-tick read of the review store keyed on the review's own inputs; the new case drives eight readers through one miss with the cache bound at two entries and the node's recorded gate at logs/after-arm-git.log ends `59 passed in 9.90s` / `EXIT=0` at revision e648ab9f8d, which is the last code revision under the tree head 9cb54ecfab (docs only).",
+    "goal": "the gained commits answer the prior review's two findings: the stored-review answer read at reckon/crew/recovery_memo.py:593-623 now goes through reckon/file_memo.py:439 memoized_key (the owner obligations.py:1668 already uses for this selection) instead of a private dictionary, and the gate gains a concurrent-miss case at tests/test_a_tick_reads_the_review_store_once.py:386-442.",
+    "manifest": "read the reviewed run's manifest.md: it records status complete, the six commits, the base arm 51 passed/6 errors EXIT=1 at e8c403db, the head arm 59 passed EXIT=0 at e648ab9f8d, the negative control 2 failed/6 passed EXIT=1, and states that the negative control's second failure is the new case hitting a function absent at base rather than a reproduction of the race.",
+    "write_paths": "the review brief names docs/evidence/fragments/the-monitor-reads-each-fact-once/a-tick-reads-the-review-store-once.html, tests/test_a_tick_reads_the_review_store_once.py and reckon/crew/recovery_memo.py; `git diff --stat 534c4912d7..9cb54ecfab` lists exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_reads_the_review_store_once.py:397 patches file_memo's bound, which a reverted private dictionary does not consult, so the race's own fix has no test that reddens on reversion; the growing-stream case at :382 does reproduce the input-keying defect, as logs/negative-control.log shows.",
+    "evidence": "logs/after-arm-git.log ends `59 passed in 9.90s` / `EXIT=0` at revision e648ab9f8d with the extra case counted, logs/base-arm-git.log records 51 passed/6 errors EXIT=1 at e8c403db, and logs/negative-control.log shows test_a_live_runs_growing_stream_reads_no_review failing EXIT=1 for the declared reason.",
+    "fit": "reckon/crew/recovery_memo.py:622 uses the module's already-imported file_memo owner with a mechanism-named kind (\"stored_review_answer\") and the new case follows the file's fixture and counter idiom with no plan or stage label.",
+    "goal_fidelity": "reckon/crew/recovery_memo.py:622 routes the answer through file_memo.memoized_key with the digest in the key, so an unchanged review answers from the store while a moved input still re-reads.",
+    "reuse": "reckon/crew/recovery_memo.py:622 extends reckon/file_memo.py:439 memoized_key, the owner reckon/crew/obligations.py:1668 already applies to the same selection, rather than re-implementing a bounded memo.",
+    "scope_discipline": "`git diff --stat 534c4912d755d9de5ee3d0d5fe58a9c3cb14ca4f..9cb54ecfabedcda7a6bc525ab711ea6eedab37e0` lists only the fragment, the test file and reckon/crew/recovery_memo.py, the three files the goal names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the gained commits answer the prior review's two findings \u2014 the stored-review answer at reckon/crew/recovery_memo.py:593-623 now goes through reckon/file_memo.py:439 memoized_key instead of a private dictionary, and the gate gains a concurrent-miss case at tests/test_a_tick_reads_the_review_store_once.py:386-442.\nVERDICT done_when: the node's measure is a per-tick read keyed on the review's own inputs; the new case drives eight readers through one miss at a two-entry bound and logs/after-arm-git.log ends `59 passed in 9.90s` / `EXIT=0` at revision e648ab9f8d, the last code revision under the docs-only head 9cb54ecfab.\nVERDICT write_paths: the brief names the landing fragment, tests/test_a_tick_reads_the_review_store_once.py and reckon/crew/recovery_memo.py; `git diff --stat 534c4912d7..9cb54ecfab` lists exactly those three and nothing else.\nVERDICT manifest: read; it records the six commits, base 51 passed/6 errors EXIT=1 at e8c403db, head 59 passed EXIT=0 at e648ab9f8d, and states that the control's second failure is the new case hitting an absent function rather than a reproduction of the race.\nVERDICT diff: read commit by commit against 534c4912d7 \u2014 0b18b5697b swaps the private dict for file_memo.memoized_key and lifts the git-head identity out of the project/run guard, e648ab9f8d adds the refuse-after-the-race assertions, 9cb54ecfab rewrites three paragraphs of the landing fragment; all inside scope.\nCALL_SITES: reckon/crew/recovery_review_subject.py:145, reckon/crew/recovery_review_subject.py:158, reckon/crew/recovery_review_subject.py:1461, reckon/crew/recovery_memo.py:581, reckon/crew/obligations.py:1668\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_memo.py:622 routes the answer through file_memo.memoized_key with the input digest in the key, so an unchanged review answers from the store and a moved input still re-reads.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm-git.log ends `59 passed in 9.90s` / `EXIT=0` at e648ab9f8d, logs/base-arm-git.log records 51 passed/6 errors EXIT=1 at e8c403db, and logs/negative-control.log reddens the growing-stream case for the declared reason.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat 534c4912d755d9de5ee3d0d5fe58a9c3cb14ca4f..9cb54ecfabedcda7a6bc525ab711ea6eedab37e0` lists only the fragment, the test file and reckon/crew/recovery_memo.py.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_tick_reads_the_review_store_once.py:397 patches file_memo's bound, which a reverted private dictionary does not consult, so the race fix itself has no test that reddens on reversion, though the growing-stream case at :382 does reproduce the input-keying defect.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_memo.py:622 uses the module's already-imported file_memo owner with a mechanism-named kind (\"stored_review_answer\"), and the new case follows the file's fixture and counter idiom.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:622 extends reckon/file_memo.py:439 memoized_key, the owner reckon/crew/obligations.py:1668 already applies to the same selection, rather than re-implementing a bounded memo.\nFINDING tests/test_a_tick_reads_the_review_store_once.py:425 non-blocking: the answers assertion compares each answer with the same value the test's own compute closure returned, on distinct keys, so it holds whatever the holding does; the biting assertions are `assert not failures` at :423 and the refusal at :438.\nFINDING tests/test_a_tick_reads_the_review_store_once.py:397 non-blocking: the _MAX_ENTRIES monkeypatch reaches only file_memo's bound, so restoring the private dictionary the commit replaced leaves this case green and the race fix has no guard that reddens on reversion.\nFINDING reckon/crew/recovery_memo.py:622 non-blocking: the memo key carries the digest, so each input move stores another entry for the same selection where the replaced holding overwrote one, accumulating deep-copied review records against the shared 50,000-entry LRU.\n",
+  "review_run_id": "r-20261112T013401659574-review-of-a-tick-reads-the-review-store-once-9cb54ecfabed",
+  "reviewed_base_sha": "534c4912d755d9de5ee3d0d5fe58a9c3cb14ca4f",
+  "reviewed_head_sha": "9cb54ecfabedcda7a6bc525ab711ea6eedab37e0",
+  "reviewed_run_id": "r-20261111T224037800115-a-tick-reads-the-review-store-once",
+  "reviewer_run_id": "r-20261112T013401659574-review-of-a-tick-reads-the-review-store-once-9cb54ecfabed",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:54:05.119471+00:00",
+  "total": 109
+}
