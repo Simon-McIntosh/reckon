@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import json
 import math
 import os
 import re
@@ -88,6 +89,149 @@ _SCOPED_PLACEHOLDER = "{node_test_files}"
 _ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 _RUN = subprocess.run
+_SCHEDULER_RUN = subprocess.run
+
+# The limit covers whole measurements, including their isolated re-runs.
+MEASUREMENT_WIDTH_ENV = "RECKON_LANDING_MEASUREMENT_WIDTH"
+DEFAULT_MEASUREMENT_WIDTH = 2
+_ACTIVE_JOB_STATES = frozenset(
+    {"PENDING", "RUNNING", "CONFIGURING", "COMPLETING", "SUSPENDED", "REQUEUED"}
+)
+
+
+class MeasurementJobError(ValueError):
+    """A terminal scheduler job cannot supply evidence for its landing."""
+
+
+def measurement_width() -> int:
+    """The number of scheduler measurements the lander may have in flight."""
+    try:
+        return max(1, int(os.environ.get(MEASUREMENT_WIDTH_ENV, "2")))
+    except ValueError:
+        return DEFAULT_MEASUREMENT_WIDTH
+
+
+def submit_measurement(
+    request_path: Path, *, config: Mapping[str, Any], bound: float
+) -> dict[str, Any]:
+    """Submit a whole measurement and return its durable scheduler identity."""
+    import sys
+
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    log = request_path.parent / "job.log"
+    source = Path(__file__).resolve().parents[2]
+    invocation = shlex.join(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path; import sys; "
+                "from reckon.crew.queue_landing import run_measurement_request; "
+                "run_measurement_request(Path(sys.argv[1]))"
+            ),
+            str(request_path),
+        ]
+    )
+    script = f"""set -euo pipefail
+scratch=
+trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\\n" "$status"' EXIT
+export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+scratch=$(mktemp -d "$TMPDIR/$USER-landing-job-XXXXXX")
+export TMPDIR="$scratch" RECKON_WORKER_SCRATCH_ROOT="$scratch"
+export PYTHONPATH={shlex.quote(str(source))}
+{invocation}
+"""
+    landing = config.get("landing") or {}
+    selected, argv, environment = partition_submission(
+        script=script,
+        partition=str(landing.get("measure_partition") or "all_debug"),
+        long_partition=str(landing.get("measure_long_partition") or "rigel"),
+        bound_seconds=bound,
+        chdir=Path(request["pointer"]["repo"]),
+        log_path=log,
+    )
+    argv.remove("--wait")
+    finished = _SCHEDULER_RUN(
+        argv, capture_output=True, text=True, check=False, timeout=30, env=environment
+    )
+    match = re.fullmatch(r"(\d+)(?:;[^\n]+)?\n?", finished.stdout or "")
+    if finished.returncode or not match:
+        raise ValueError(
+            f"measurement submission failed; log {log}: "
+            f"{finished.stderr or finished.stdout or finished.returncode}"
+        )
+    return {
+        "job_id": match.group(1),
+        "log_path": str(log),
+        "request_path": str(request_path),
+        "result_path": str(request_path.parent / "result.json"),
+        "partition": selected,
+        "bound_seconds": bound,
+        "submitted_at": time.time(),
+        "status": "pending",
+        "head": request["head"],
+        "primary": request["primary"],
+        "command": request["pointer"]["suite_command"],
+    }
+
+
+def measurement_job_state(job: Mapping[str, Any]) -> str:
+    """Read one scheduler observation; an absent accounting row is unknown."""
+    job_id = str(job["job_id"])
+    for argv in (
+        ["squeue", "-h", "-j", job_id, "-o", "%T"],
+        ["sacct", "-n", "-X", "-j", job_id, "--format=State", "--parsable2"],
+    ):
+        finished = _SCHEDULER_RUN(
+            argv, capture_output=True, text=True, check=False, timeout=10
+        )
+        if finished.returncode:
+            raise ValueError(
+                f"job {job_id}, log {job['log_path']}: scheduler query failed: "
+                f"{finished.stderr or finished.stdout}"
+            )
+        states = (finished.stdout or "").strip().splitlines()
+        if states:
+            return states[0].strip().split("|")[0].split()[0].rstrip("+")
+    return "UNKNOWN"
+
+
+def read_measurement_job(job: Mapping[str, Any]) -> Measurement | None:
+    """A terminal job needs both a successful receipt and a matching result."""
+    job_id, log_path = str(job["job_id"]), str(job["log_path"])
+    state = measurement_job_state(job)
+    if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+        return None
+    if state != "COMPLETED":
+        raise MeasurementJobError(
+            f"measurement job {job_id} ended {state}; log {log_path}"
+        )
+    try:
+        output = Path(log_path).read_text(encoding="utf-8")
+        record = json.loads(Path(str(job["result_path"])).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as exc:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {exc}"
+        ) from exc
+    error = ""
+    if not re.search(r"^EXIT=0\n?\Z", output, re.MULTILINE):
+        error = "the job has no terminal EXIT=0 receipt"
+    elif not isinstance(record, Mapping):
+        error = "the job result is not a measurement record"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    measured = Measurement.from_dict(record)
+    if measured.head != job["head"] or measured.command != job["command"]:
+        error = "the job result names a different delivery"
+    elif measured.population.get("main_sha") != job["primary"]:
+        error = "the job result names a different primary"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    return measured
 
 
 @dataclass(frozen=True)

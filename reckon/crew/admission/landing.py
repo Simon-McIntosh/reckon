@@ -18,8 +18,10 @@ class _LandingWorker:
     """Run one landing action at a time beside the admission pass.
 
     The landing pass lives in a thread of its own rather than a stage of the
-    pass, so a landing that is slow — a suite measurement, a merge — delays
-    only the next landing. The lock is the whole of the exclusion and it is
+    pass, so a landing that is slow — a merge or publication — delays
+    only the next landing. Scheduler measurements submit and return within
+    that action; subsequent ticks adopt their persisted job records.
+    The lock is the whole of the exclusion and it is
     taken without blocking, so a tick that finds an action in flight leaves it
     alone instead of stacking a second behind it.
 
