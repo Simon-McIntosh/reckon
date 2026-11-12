@@ -114,15 +114,16 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     inside the second the resume was stamped in cannot be ordered against it.
 
     Every leg fails closed toward withholding — the direction the wait exists
-    for: no resume stamp, no readable manifest, a status outside the delivered
-    pair, or a manifest not written by this attempt all read as an attempt
-    still in flight, and the head stands superseded. The comparison is against
+    for: neither a generation nor a resume stamp, no readable manifest, a status
+    outside the delivered pair, or a manifest not written by this attempt all
+    read as an attempt still in flight, and the head stands superseded. The comparison is against
     the manifest's own write rather than anything a worker states about
     itself, because the status word alone cannot tell a fresh delivery from the
     head-reset copy the resume itself left behind.
     """
     resumed_at = resume_superseded_at(record)
-    if resumed_at is None:
+    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
+    if resumed_at is None and not baseline_known:
         return False
     from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
 
@@ -134,8 +135,11 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     # anywhere inside the second the resume was stamped in cannot be told from
     # the one the resume itself rewrote: a delivery is read only once the write
     # is clear of that whole second.
-    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
-    resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+    resumed_ns = (
+        int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+        if resumed_at is not None
+        else 0
+    )
 
     node = record.get("node")
     candidates: list[Path] = []
@@ -2958,7 +2962,41 @@ def dispatch_review_for_run(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Dispatch the text review and, when needed, its separate figure review."""
-    refusal = _resume_superseded_refusal(record, dry_run=dry_run)
+    lifecycle = record
+    if record.get("subject") != "plan" and not _is_review_run(record):
+        from reckon.crew import obligations, resumption
+
+        run_id = str(record.get("run_id") or "")
+        # A sweep's snapshot can predate a resume begun during classification.
+        # Guards read the current attempt; composition keeps caller inputs.
+        try:
+            lifecycle = read_pointer(run_id)
+        except CrewError:
+            if runs.pointer_path(run_id).exists():
+                raise
+        record = {**lifecycle, **record}
+        launching = lifecycle.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
+        reason = ""
+        if isinstance(launching, Mapping):
+            reason = "the run has a resume launching; its delivery is not settled"
+        elif runs.record_process_alive(lifecycle) is True:
+            reason = "the run's recorded process is still running; its delivery is not settled"
+        elif lifecycle.get(
+            "attempt_kind"
+        ) == "resume" and not _resumed_attempt_delivered(lifecycle):
+            reason = "the resumed attempt has not delivered; no review is composed"
+        elif run_id in obligations._acknowledgements_in_force(
+            str(lifecycle.get("project") or ""), now=datetime.now(UTC)
+        ):
+            reason = "the run's obligations are deferred; no review is composed"
+        if reason:
+            return {
+                "run_id": run_id,
+                "dispatched": False,
+                "refused": True,
+                "reason": reason,
+            }
+    refusal = _resume_superseded_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal
     refusal = _open_review_refusal(record, dry_run=dry_run)
