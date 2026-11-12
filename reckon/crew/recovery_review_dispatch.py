@@ -176,7 +176,13 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
             present, fresh = runs._manifest_freshness(
                 {**record, "manifest_path": str(manifest)}
             )
-            return present and fresh
+            # A repair round rewrites the manifest while it runs, so its
+            # delivery can fail the baseline ordering while still being the
+            # attempt's own last word. The supervisor's exit record for that
+            # attempt settles it, and the classifier already reads the same
+            # delivery as the run's own; without this the two readers split and
+            # the delivery is never reviewed.
+            return present and (fresh or _attempt_ended_after(record, written_ns))
         return written_ns > resumed_ns
     return False
 
@@ -2901,6 +2907,89 @@ def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     }
 
 
+def _attempt_ended_after(record: Mapping[str, Any], written_ns: int) -> bool:
+    """Whether the attempt the pointer names ended and wrote this manifest.
+
+    A resumed attempt's delivery is normally ordered against the manifest
+    baseline the resume recorded. Repair tooling rewrites the manifest while an
+    attempt runs, so a delivery written after a rewrite can fail that ordering
+    while still being the attempt's own last word. The supervisor's exit record
+    for the attempt is independent evidence that the attempt is over, so it
+    settles the delivery when the manifest was written during or after the
+    attempt's own launch.
+    """
+    attempt = record.get("attempt")
+    if not isinstance(attempt, int) or isinstance(attempt, bool):
+        return False
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return False
+    path = runs.run_dir(run_id) / f"attempt-{attempt}-exit.json"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return False
+    if not isinstance(data, Mapping):
+        return False
+    if int(data.get("attempt") or 0) != attempt:
+        return False
+    launched = parse_utc(data.get("launched_at"))
+    if launched is None:
+        return False
+    return written_ns >= int(launched.timestamp() * 1_000_000_000)
+
+
+def _settled_delivery_refusal(
+    record: Mapping[str, Any], *, dry_run: bool
+) -> dict[str, Any] | None:
+    """Why no review is composed because the run's delivery is not settled.
+
+    These guards sit before composition, so a reader holding only the open
+    review refusal could not see them: a duty then promised the reflex would
+    compose, while every sweep refused for a reason the duty never read. Both
+    the dispatch and the read-only predicate ask this one question, and the
+    dispatch records the refusal so a duty can name it.
+
+    Every leg fails toward withholding: a resume still launching, a process the
+    pointer says is running, a resumed attempt that has not delivered, or a
+    deferred obligation all leave the review undispatched until the state
+    clears.
+    """
+    if record.get("subject") == "plan" or _is_review_run(record):
+        return None
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return None
+    from reckon.crew import obligations, resumption
+
+    launching = record.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
+    reason = ""
+    if isinstance(launching, Mapping):
+        reason = "the run has a resume launching; its delivery is not settled"
+    elif runs.record_process_alive(record) is True:
+        reason = (
+            "the run's recorded process is still running; its delivery is not settled"
+        )
+    elif record.get("attempt_kind") == "resume" and not _resumed_attempt_delivered(
+        record
+    ):
+        reason = "the resumed attempt has not delivered; no review is composed"
+    elif run_id in obligations._acknowledgements_in_force(
+        str(record.get("project") or ""), now=datetime.now(UTC)
+    ):
+        reason = "the run's obligations are deferred; no review is composed"
+    if not reason:
+        return None
+    if not dry_run:
+        _record_review_dispatch(run_id, status="refused", reason=reason)
+    return {
+        "run_id": run_id,
+        "dispatched": False,
+        "refused": True,
+        "reason": reason,
+    }
+
+
 def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The refusal :func:`dispatch_review_for_run` would return, read without writing.
 
@@ -2910,6 +2999,9 @@ def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     dispatch itself records a refusal on the run it acted for; a reader that
     only reports must not write, so this form leaves the record untouched.
     """
+    settled = _settled_delivery_refusal(record, dry_run=True)
+    if settled is not None:
+        return settled
     return _open_review_refusal(record, dry_run=True)
 
 
@@ -2964,8 +3056,6 @@ def dispatch_review_for_run(
     """Dispatch the text review and, when needed, its separate figure review."""
     lifecycle = record
     if record.get("subject") != "plan" and not _is_review_run(record):
-        from reckon.crew import obligations, resumption
-
         run_id = str(record.get("run_id") or "")
         # A sweep's snapshot can predate a resume begun during classification.
         # Guards read the current attempt; composition keeps caller inputs.
@@ -2975,27 +3065,9 @@ def dispatch_review_for_run(
             if runs.pointer_path(run_id).exists():
                 raise
         record = {**lifecycle, **record}
-        launching = lifecycle.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
-        reason = ""
-        if isinstance(launching, Mapping):
-            reason = "the run has a resume launching; its delivery is not settled"
-        elif runs.record_process_alive(lifecycle) is True:
-            reason = "the run's recorded process is still running; its delivery is not settled"
-        elif lifecycle.get(
-            "attempt_kind"
-        ) == "resume" and not _resumed_attempt_delivered(lifecycle):
-            reason = "the resumed attempt has not delivered; no review is composed"
-        elif run_id in obligations._acknowledgements_in_force(
-            str(lifecycle.get("project") or ""), now=datetime.now(UTC)
-        ):
-            reason = "the run's obligations are deferred; no review is composed"
-        if reason:
-            return {
-                "run_id": run_id,
-                "dispatched": False,
-                "refused": True,
-                "reason": reason,
-            }
+    refusal = _settled_delivery_refusal(lifecycle, dry_run=dry_run)
+    if refusal is not None:
+        return refusal
     refusal = _resume_superseded_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal

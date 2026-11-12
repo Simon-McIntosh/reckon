@@ -1066,7 +1066,7 @@ def _reflex_review_command(
 
 
 def _reflex_open_refusal(
-    project: str, pointer: Mapping[str, Any], *, age: int
+    project: str, pointer: Mapping[str, Any], *, age: int, dispatch: str = ""
 ) -> dict[str, str] | None:
     """The refusal the reflex's own dispatch rule would return, once overdue.
 
@@ -1094,7 +1094,17 @@ def _reflex_open_refusal(
     ]
     run_id = str(pointer.get("run_id") or "")
     if not indices or not run_id or not reason:
-        return {"reason": reason, "next_command": reason}
+        # A refusal that names no finding is a state the reflex must wait out:
+        # a resume still launching, a recorded process not yet gone, a deferred
+        # obligation. The duty names the refusal and the command that starts
+        # the review by hand, so its reader acts instead of waiting on a sweep
+        # that will keep refusing for the same reason.
+        return {
+            "reason": reason or "the reflex refused this review's dispatch",
+            "next_command": dispatch
+            or f"dispatch the review by hand: `reckon crew dispatch --project "
+            f"{project} --role review` for run {run_id}",
+        }
     fold, exempt = recovery_review_dispatch._finding_dispose_commands(
         project,
         run_id,
@@ -2383,7 +2393,12 @@ def _review_duty_item(
             # A reflex already refused is not a wait, so once its window has
             # passed the duty carries the refusal's own reason and the dispose
             # command that lifts it instead of a follower to inspect.
-            held = _reflex_open_refusal(project, pointer, age=age)
+            held = _reflex_open_refusal(
+                project,
+                pointer,
+                age=age,
+                dispatch=str(item.get("next_command") or ""),
+            )
             if held is not None:
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
