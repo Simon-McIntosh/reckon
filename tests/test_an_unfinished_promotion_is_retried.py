@@ -180,6 +180,23 @@ def test_a_record_written_moments_ago_is_not_yet_treated_as_ended(
     assert read_pointer(RUN_ID)["admission_landing"]["status"] == "attempting"
 
 
+def test_a_record_beside_no_unanswered_attempt_is_left_alone(
+    home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Without an unanswered attempt the record holds nothing back."""
+    _unfinished(home, monkeypatch, age=10 * 60)
+    pointer = read_pointer(RUN_ID)
+    pointer["admission_landing"] = {**pointer["admission_landing"], "status": "refused"}
+    _write_json(pointer_path(RUN_ID), pointer)
+
+    assert _sweep(now=1000.0) == []
+
+    assert [path.stem for path in pending_landing.pending_dir().glob("*.json")] == [
+        RUN_ID
+    ]
+    assert read_pointer(RUN_ID)["admission_landing"]["status"] == "refused"
+
+
 def test_a_record_whose_run_is_gone_is_still_dropped_when_it_is_old(
     home: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:

@@ -11,9 +11,10 @@ that directory every pass. A record whose run has a promotion row in the ledger
 and whose reviewed head is not on the primary branch is finished with the same
 ``merge.land`` call ``--land`` makes. A record whose run never promoted is
 dropped once it is old and its run is gone. A record whose run is still live,
-carries no promoted row and whose promotion holds no lease names a promotion
-that ended between the record and its ledger row: the pass clears it and
-retires the interrupted land attempt, so the reflex promotes the run again. A
+whose pointer carries an unanswered land attempt, which has no promoted row and
+whose promotion holds no lease names a promotion that ended between the record
+and its ledger row: the pass clears it and retires the attempt, so the reflex
+promotes the run again. A
 merge that fails is recorded on the record and retried on later passes, up to a
 bound, so a conflicting head stops costing a pass and stays visible.
 """
@@ -238,6 +239,16 @@ def _promotion_lease_held(run_id: str) -> bool:
     return lease.holder() is not None
 
 
+def _land_attempt_unanswered(run_id: str) -> bool:
+    """Whether the run's live pointer carries a land attempt with no receipt."""
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        return False
+    attempt = pointer.get("admission_landing")
+    return isinstance(attempt, Mapping) and attempt.get("status") == "attempting"
+
+
 def _retire_interrupted_landing(run_id: str) -> bool:
     """Retire the land attempt a promotion that ended never answered for.
 
@@ -378,12 +389,16 @@ def finish_pending_landings(
                     results.append({"run_id": run_id, "status": "dropped-unpromoted"})
                 continue
             # A promotion that ended between writing this record and its ledger
-            # row leaves a live pointer with no promoted row and no lease. Left
-            # alone it is a hold nothing lifts: the record outlives every pass.
+            # row leaves a live pointer carrying an unanswered land attempt, no
+            # promoted row and no lease. Left alone it is a hold nothing lifts:
+            # the record outlives every pass and the attempt refuses every
+            # landing. Only that unanswered attempt is retried, because without
+            # one the record blocks nothing and the reflex already re-promotes.
             if (
                 age > UNFINISHED_PROMOTION_SECONDS
                 and _promoted_row_absent(project, run_id)
                 and not _promotion_lease_held(run_id)
+                and _land_attempt_unanswered(run_id)
             ):
                 clear_pending(run_id)
                 results.append(
