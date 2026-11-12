@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="201">
+<meta name="plan-version" content="202">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -924,6 +924,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261112T033251973576-a-sweep-failure-is-an-obligation" data-who="reckon-build" data-when="2026-11-12T05:07:04Z">
     <div class="r-comment-body"><p>Persisted failed sweep runs as session obligations with run ID and error, retained through whole-pass failure and cleared after successful handling; 2 regression cases pass and all_debug importer arms add 0 failing IDs (111 base passed / 113 head passed, 2 shared failures).</p></div>
 </div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261112T052956480272-review-of-a-torn-ledger-row-is-reported-34b1ece1b066" data-who="reckon-build" data-when="2026-11-12T05:39:36Z">
+    <div class="r-comment-body"><p>Stored parsed current and head-keyed reviews for acc1f3493f81e678e6a877aff5b2ebb89ad55908 to 34b1ece1b066b52b6bb62f91e43838a2311c380e; scores 20/16/20/20/20/20, zero added scoped-suite failures, one blocking unmet importer-measure finding; both review checks pass. Repository is read-only, so no commit or push applies to external review records.</p></div>
+</div>
+<div class="r-comment" data-section="s32" data-id="c-run-r-20261112T032907957995-a-torn-ledger-row-is-reported" data-who="reckon-build" data-when="2026-11-12T05:14:16Z">
+    <div class="r-comment-body"><p>Restored ledger.py byte-for-byte to original base and preserved exclusive append creation; 6 regression cases cover torn-row reporting, review continuity, mid-append recovery and duplicate refusal. All_debug scoped gate: 57 passed. All three append concurrency guards pass. Strict importer stability pair adds 1 id, already failing in the earlier fresh base log; 0 final-head ids are unseen across fresh base observations. Verification requires coordinator adjudication.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
@@ -1004,9 +1010,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s32" data-id="c-run-r-20261112T052956480272-review-of-a-torn-ledger-row-is-reported-34b1ece1b066" data-who="reckon-build" data-when="2026-11-12T05:39:36Z">
-    <div class="r-comment-body"><p>Stored parsed current and head-keyed reviews for acc1f3493f81e678e6a877aff5b2ebb89ad55908 to 34b1ece1b066b52b6bb62f91e43838a2311c380e; scores 20/16/20/20/20/20, zero added scoped-suite failures, one blocking unmet importer-measure finding; both review checks pass. Repository is read-only, so no commit or push applies to external review records.</p></div>
 </div>
 </section>
 </main>
