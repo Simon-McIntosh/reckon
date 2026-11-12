@@ -1,0 +1,31 @@
+<section id="wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44-coverage">
+  <h3>Write responses and queued admission share a coverage decision</h3>
+  <p>The reproduced split returned <code>review_owed: []</code> to the writer,
+  then held <code>delivery</code> at admission with an 85% measured word change.
+  Plan bytes and stored reviews were unchanged. The controlled difference was
+  judge availability: the first answer was served, its optional cache write was
+  suppressed, and the second request failed. This reproduces the failure shape;
+  it does not establish the historical incident's exact cause.</p>
+  <p>Coverage now persists one serialized decision keyed by plan content, review
+  records, snapshot identities and resolved configuration. The before-write read,
+  write response and admission use that public predicate. Admission derives its
+  coverage, digests and state from one captured document; the facade remains a
+  facade. A missing snapshot invalidates a stored decision, and an unpersisted
+  decision is reported as unknown.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Armed base</td><td>51 passed</td></tr>
+      <tr><td>New test copied into base</td><td>2 failed, 55 passed</td></tr>
+      <tr><td>Armed implementation head</td><td>57 passed</td></tr>
+      <tr><td>Admission bypasses shared coverage</td><td>1 failed, 5 passed</td></tr>
+      <tr><td>Admission reads another revision</td><td>3 failed, 3 passed</td></tr>
+      <tr><td>Unmeasured changes count as covered</td><td>3 failed, 3 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The six regression cases cover admissibility, matching owed units, both
+  unmeasured readings, snapshot invalidation and failed receipt persistence.
+  The test also guards the operator's crew home against writes. Durable logs and
+  source/cwd receipts are retained in the run directory; the manifest carries
+  the exact revisions, commands and supplemental comparison findings.</p>
+</section>

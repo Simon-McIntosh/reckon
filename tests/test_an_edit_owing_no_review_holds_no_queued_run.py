@@ -15,12 +15,26 @@ from reckon.crew import (
     runs,
 )
 from reckon.crew.node import TaskNode
+from tests.conftest import real_store_home
 from tests.test_review_plan_command import project as project  # noqa: PLC0414
 
 
 @pytest.fixture
 def queued_edit(project, monkeypatch):
     home, repo, path = project
+    operator_crew = real_store_home().resolve() / "crew"
+    operator_writes = []
+    open_path = Path.open
+
+    def guard_operator_store(target, mode="r", *args, **kwargs):
+        if any(flag in mode for flag in "wax+") and target.resolve().is_relative_to(
+            operator_crew
+        ):
+            operator_writes.append(target)
+            raise AssertionError(f"attempted write to the real crew home: {target}")
+        return open_path(target, mode, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "open", guard_operator_store)
     original = " ".join(f"original{index}" for index in range(40))
     replacement = " ".join(f"replacement{index}" for index in range(40))
     text = path.read_text().replace(
@@ -113,7 +127,8 @@ def queued_edit(project, monkeypatch):
     yield repo, path, pointer, original, replacement, sidecar
     assert writes, "the write guard must observe the real plan write"
     assert all(p.is_relative_to(home) or p.is_relative_to(repo) for p in writes)
-    assert runs.crew_home() == home / "crew", "the real crew home was untouched"
+    assert runs.crew_home() == home / "crew"
+    assert operator_writes == [], "the real crew home was untouched"
 
 
 def _edit(fixture):
