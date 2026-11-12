@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="84">
+<meta name="plan-version" content="85">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -279,7 +279,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261111T213729775225-worktree-leaves-shared-config over bf5030fbe80d8b99a0bf3ae8a7553466e169da62..4e51a70c77d97d4c19e52321e28d85789263eac6: parsed record scoring goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 17, reuse 5 (total 92), added_failure_count 0 over base arm 4 failed/51 passed at bf5030f and head arm 55 passed at f782679b0d, with two non-blocking findings — the lock-wait loop at routing.py:2422 duplicates merge.py:658's bounded-lock-wait owner, and the retry at routing.py:2432 keys on git's stderr prose though the lock path is already resolved at :2390. No blocking finding; the node's done_when is met.</p></div>
 </div>
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261111T213729775225-worktree-leaves-shared-config" data-who="reckon-build" data-when="2026-11-12T15:40:58Z">
-    <div class="r-comment-body"><p>§18 implemented in reckon/crew/routing.py — the shared extensions.worktreeConfig is read first and written only when absent, a needed write retries a held configuration lock for 5 s and then refuses naming the lock, and the worktree&#x27;s own core.checkStat=minimal is still set; every git call on that path uses the module&#x27;s existing runner; the new test&#x27;s four arms pass at the head (55 passed) and fail four at the base revision, reproducing &quot;could not lock config file .git/config: File exists&quot;</p></div>
+    <div class="r-comment-body"><p>§18 implemented in reckon/crew/routing.py — the shared extensions.worktreeConfig is read first and written only when absent, a needed write retries a held configuration lock for 5 s and then refuses naming the lock, and the worktree's own core.checkStat=minimal is still set; every git call on that path uses the module's existing runner; the new test's four arms pass at the head (55 passed) and fail four at the base revision, reproducing "could not lock config file .git/config: File exists"</p></div>
 </div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261111T224736111945-review-of-identity-judged-on-its-host-2254607a7a0b" data-who="reckon-build" data-when="2026-11-11T23:05:56.634Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T214015365474-identity-judged-on-its-host at 2254607a7a0b (base a4ca8b6c) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, with three non-blocking findings and no blocking finding.</p></div>
@@ -370,6 +370,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261112T050444787926-review-of-shared-root-claim-never-holds-bb32611df2b7" data-who="reckon-build" data-when="2026-11-12T05:13:08.528Z">
     <div class="r-comment-body"><p>review only — no landing, the review record is the deliverable.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261111T154857625015-shared-root-claim-never-holds" data-who="reckon-build" data-when="2026-11-12T15:44:28Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/work-flows-to-the-lane/shared-root-claim-never-holds.html</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261111T195720389925-review-of-re-review-reads-what-changed-2160ffdd95d5" data-who="reckon-build" data-when="2026-11-11T20:17:16.716Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T185408798633-re-review-reads-what-changed at head 2160ffdd scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 19, fit 17, reuse 20, with added_failure_count 0 derived from the run's own baseline-suite (51 passed, EXIT=0 at 3f096bce) and after-suite (55 passed, EXIT=0 at f4b12ee2) arms and one non-blocking finding at reckon/crew/recovery_review_subject.py:559.</p></div>
