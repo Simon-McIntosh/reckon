@@ -1796,6 +1796,25 @@ ADDED_FAILURES_TOTAL_CAP = REVIEW_MAX_SCORE // 4
 _SUMMARY_REASON_SEPARATOR = " - "
 _GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(.+)$", re.MULTILINE)
 
+# What a pytest failure line's id looks like: a test address carrying pytest's
+# ``::`` separator, or the file path a collection error names. A test's own
+# captured log output reaches the same lines looking like ``ERROR
+# package.module:file.py:3553 message`` — a logger, a filename and a line
+# number, separated by single colons — and that shape is a message a test
+# printed, never a test that failed.
+_FAILURE_FILE_ID_RE = re.compile(r"^\S+\.py$")
+
+
+def _is_failure_node_id(candidate: str) -> bool:
+    """Whether a failure line's id name is a test pytest reported.
+
+    The short-summary id is a node id (``tests/test_x.py::TestY::test_z``, with
+    any parametrisation in brackets) or, for a collection error, the file pytest
+    could not import. A captured logging record carries neither shape.
+    """
+    return "::" in candidate or _FAILURE_FILE_ID_RE.match(candidate) is not None
+
+
 # A ctest gate log's failure summary. Every entry under the block header is a
 # failure, so a test reported ``(Not Run)`` counts as one. The entry shape is
 # ``<index> - <name> (<reason>)``, where the reason may itself contain spaces,
@@ -2203,8 +2222,13 @@ def _pytest_failure_ids(
     for raw in log_text.splitlines():
         match = _GATE_FAILURE_RE.match(raw.strip())
         if match:
-            node_id = match.group(1).partition(_SUMMARY_REASON_SEPARATOR)[0]
-            ids.add(canonical_node_id(node_id.strip(), arm_directory))
+            node_id = match.group(1).partition(_SUMMARY_REASON_SEPARATOR)[0].strip()
+            # A line a test prints carries its own prefix-shaped text and is
+            # not a failure pytest reported, so only a node-id-shaped name
+            # counts.
+            if not _is_failure_node_id(node_id):
+                continue
+            ids.add(canonical_node_id(node_id, arm_directory))
     return ids
 
 
