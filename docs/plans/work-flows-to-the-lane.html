@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -186,6 +186,12 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261111T231623205497-review-of-refused-review-writes-nothing-bd99c3d11ef5" data-who="reckon-build" data-when="2026-11-11T23:48:13.510Z">
     <div class="r-comment-body"><p>review record for r-20261111T185754655706-refused-review-writes-nothing at head bd99c3d11e: status parsed, six dimension scores (goal_fidelity 17, evidence 12, scope_discipline 20, durability 17, fit 14, reuse 5), added_failure_count 0, and two findings — one blocking (ruff format --check fails on tests/test_a_refused_plan_review_writes_nothing.py:106) and one non-blocking (plan_review._review_launch_kind duplicates routing.resolve_role's backend selection).</p></div>
 </div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261111T185831299202-plan-commit-releases-backoff" data-who="reckon-build" data-when="2026-11-11T19:58:35.509Z">
+    <div class="r-comment-body"><p>§15 — a plan commit releases the requests backing off on it: `reckon/crew/queue_admission.py` now records the plan's committed blob at HEAD (`failure_plan_commit`) when a launch refusal is a `PlanVisibilityError`, and `_retry_backoff_hold` attempts the request on the pass that finds it changed, before `retry_at`; the stamp is kept only for that refusal so any other failure keeps its back-off. Gate `tests/test_a_plan_commit_releases_its_backed_off_requests.py` 3 passed, `EXIT=0`, against 1 failed / `EXIT=1` under the declared mutation; suite arms base 51 passed `EXIT=0`, head 54 passed `EXIT=0`.</p></div>
+</div>
+<div class="r-comment" data-section="s15" data-id="c-run-r-20261112T014720661916-review-of-plan-commit-releases-backoff-5740f22d0740" data-who="reckon-build" data-when="2026-11-12T02:20:15.112Z">
+    <div class="r-comment-body"><p>reviewed r-20261111T185831299202-plan-commit-releases-backoff at 5740f22d074062f0be15d1f642f05b9f7a7b299f against 81250b3e98d19f94f02cb035eac29f9d57a8e135 and recorded a parsed record scoring goal_fidelity 19, evidence 15, scope_discipline 20, durability 16, fit 17, reuse 18, with added_failure_count 0 and four non-blocking findings; all five checklist verdicts and the CALL_SITES line are present</p></div>
+</div>
 <div class="r-comment" data-section="s16" data-id="c-run-r-20261111T200729034046-review-of-launched-run-owes-no-queued-duty-b99ca93fa084" data-who="reckon-build" data-when="2026-11-11T20:21:44.422Z">
     <div class="r-comment-body"><p>§16 review of r-20261111T185852834144: b99ca93fa084 against base 2e4cf597da81 scores goal_fidelity 17, evidence 15, scope_discipline 19, durability 17, fit 16, reuse 14, with three non-blocking findings and no added test failures.</p></div>
 </div>
@@ -284,9 +290,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s15" data-id="c-run-r-20261111T185831299202-plan-commit-releases-backoff" data-who="reckon-build" data-when="2026-11-11T19:58:35.509Z">
-    <div class="r-comment-body"><p>§15 — a plan commit releases the requests backing off on it: `reckon/crew/queue_admission.py` now records the plan&#x27;s committed blob at HEAD (`failure_plan_commit`) when a launch refusal is a `PlanVisibilityError`, and `_retry_backoff_hold` attempts the request on the pass that finds it changed, before `retry_at`; the stamp is kept only for that refusal so any other failure keeps its back-off. Gate `tests/test_a_plan_commit_releases_its_backed_off_requests.py` 3 passed, `EXIT=0`, against 1 failed / `EXIT=1` under the declared mutation; suite arms base 51 passed `EXIT=0`, head 54 passed `EXIT=0`.</p></div>
 </div>
 </section>
 </main>
