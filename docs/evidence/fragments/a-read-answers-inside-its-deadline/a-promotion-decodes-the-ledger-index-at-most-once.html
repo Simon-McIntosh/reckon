@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-read-answers-inside-its-deadline">
+  <meta name="plan-title" content="A promotion decodes the ledger index at most once">
+  <meta name="plan-evidence-for" content="reckon:a-read-answers-inside-its-deadline">
+  <meta name="plan-verifies" content="reckon:a-read-answers-inside-its-deadline#s75">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A promotion decodes the ledger index at most once — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-promotion-decodes-the-ledger-index-at-most-once-landing" data-node="a-promotion-decodes-the-ledger-index-at-most-once" data-reckon="landed" data-when="2026-11-12">
+  <h2>A promotion decodes the ledger index at most once before its append</h2>
+
+  <p id="a-promotion-decodes-the-ledger-index-at-most-once-what">The reuse region and its
+  close-before-append already sat in the tree at the base revision. This node supplies the
+  measure the section asks for, over both shapes a promotion takes, and holds the region to
+  the freshness it must not cost. A review promotion and an implement landing are each
+  driven over a 2,000-row ledger, and every ledger-index decode is counted per read key
+  before the append: <strong>4</strong> when the region serves nothing, <strong>1</strong>
+  with it in place.</p>
+
+  <table id="a-promotion-decodes-the-ledger-index-at-most-once-counts">
+    <caption>Index decodes per read key before the append, 2,000-row ledger</caption>
+    <thead><tr><th>case</th><th>base revision, region not shared</th><th>head</th></tr></thead>
+    <tbody>
+      <tr><td>review promotion</td><td>4</td><td>1</td></tr>
+      <tr><td>implement landing</td><td>4</td><td>1</td></tr>
+    </tbody>
+  </table>
+
+  <p id="a-promotion-decodes-the-ledger-index-at-most-once-freshness">The freshness half is
+  shown too. A peer process appends its own row to the same ledger between the promotion's
+  append and the read after it; that read returns both the promoted row and the peer's row.
+  A mutant that lets the region survive its own close fails this case with
+  <em>the read after the append missed the promoted row</em>, so the check is known to
+  discriminate rather than merely to pass.</p>
+
+  <p id="a-promotion-decodes-the-ledger-index-at-most-once-parity">The decode the region
+  saves is not bought with a different answer: the landing preconditions and the
+  fleet-state reading answer byte-identical results through the region and with the region
+  removed. The section's test file and the promotion decode measure beside it pass together;
+  the fence's suite arm is 51 passed before and after.</p>
+</article>
+</body>
+</html>
