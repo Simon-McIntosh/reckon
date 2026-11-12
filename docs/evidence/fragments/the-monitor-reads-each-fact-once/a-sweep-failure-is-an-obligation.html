@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A failed sweep run reaches its session</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-sweep-failure-is-an-obligation-landing" data-node="a-sweep-failure-is-an-obligation" data-reckon="landing" data-when="2026-11-12">
+  <h2>A sweep failure is a published duty</h2>
+  <p>The station stores each session's failed review-sweep runs in its guarded node-local store. Publication adds a duty naming the run, exception type and error message, with an observation command. A changed report triggers refresh even when the fleet has no transition. A whole-pass error retains the earlier failures; a completed pass replaces them, clearing runs that succeed. Sessions with failed runs receive a published answer even without a live follower. Sweep threads use separate store connections, and concurrent session report updates are serialised.</p>
+  <p>The regression drives <code>resumption.sweep</code> with three review pointers and makes one run's promotion raise <code>ValueError: unreadable ledger row</code>. It reads the real exported station answer, requires exactly one duty for <code>r-review-first</code> with that error, checks retention through a failed whole pass, reopens the writer, and checks removal after a successful pass. Both live-follower and absent-follower cases pass. At base, the live session instead publishes <code>obligations: []</code>, failing <code>0 == 1</code>; the absent session has no published answer.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered code</th></tr></thead>
+    <tbody>
+      <tr><td>Importer arms on all_debug</td><td>111 passed, 2 failed; 19 files</td><td>113 passed, 2 failed; 20 files</td></tr>
+      <tr><td>Added failing importer IDs</td><td>Reference population</td><td>0</td></tr>
+      <tr><td>Declared mutation: new tests on base product code</td><td>2 failed; EXIT=1</td><td>Both cases pass</td></tr>
+    </tbody>
+  </table>
+  <p>Base is <code>53700e2c012fd47bfcf5be2ba77492df6d04c58e</code>; measured delivered code is <code>216401ee290e09a18e51baabc3a94c7fe6e16dfd</code>, following implementation <code>8d6adceb4db5d3ecf679f559b87e50c9503b13f9</code>. Importer arms use sequential base and head runs, four pytest workers, a per-test timeout, extracted source trees and the shared project environment. Logs name each imported module and working directory. The first importer head exposed four lightweight-store regressions; moving report reading to publication and passing outcomes explicitly into refresh removes all four added failures.</p>
+  <p>Receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T033251973576-a-sweep-failure-is-an-obligation/</code>: <code>importers-base.log</code>, <code>importers-repaired-head.log</code>, <code>importer-results-repaired.json</code>, and <code>negative-control-final.log</code>. The manifest records the final armed gate and staged-path lint checks. Shared baseline failures and their exact IDs are recorded under its <code>outside_scope</code> field. Integration and plan-state changes remain with the coordinator.</p>
+</article>
+</body>
+</html>
