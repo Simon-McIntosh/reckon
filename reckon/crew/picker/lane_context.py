@@ -917,12 +917,14 @@ def _promotion_fold_inputs(
     A promotion already holds the run it wrote, so it needs no ledger read to
     fold: the samples a previous refresh stored are this ledger's history before
     the append, provided the ledger state still matches what that refresh keyed
-    on. Anything else -- no stored profile, a source or date that moved, a
-    history rewritten since -- returns ``None``, and the promotion leaves the
-    served profile where it is rather than paying a ledger scan while it holds
-    the promotion lock. The samples' recorded source is carried unchanged
-    because this fold could not re-read the index; the next refresh outside a
-    promotion then sees a moved source and takes its own full build.
+    on. A base this fold cannot extend -- a source that moved, an aggregate
+    rewritten since, a missing sample set -- returns ``None``, because folding
+    onto it would serve quantiles drawn from a history that is no longer the
+    ledger's. There is no refresh outside a promotion to rebuild that base: a
+    promotion is the only writer of this profile, and a pick never rebuilds one,
+    so the caller rebuilds it rather than leaving the served profile stranded.
+    The samples' recorded source is carried unchanged because this fold could
+    not re-read the index.
     """
 
     if served_entry is None or inputs_entry is None:
@@ -931,7 +933,14 @@ def _promotion_fold_inputs(
         return None
     if inputs_entry.get("key") != served_entry.get("key"):
         return None
-    if previous.get("date") != moment.date().isoformat():
+    # A base written on an earlier date still folds. Every row reaches the
+    # aggregate through a promotion, and each promotion folds its own row into
+    # these samples, so the sample set spans the history whichever day it was
+    # last written on; the tail's window filter is what advances the date. A
+    # base dated after the promotion's own day is refused, because its window
+    # has already dropped rows this fold cannot reinstate.
+    stored_date = previous.get("date")
+    if not isinstance(stored_date, str) or stored_date > moment.date().isoformat():
         return None
     if not _stored_profile_extends_anchor(anchor, served_entry.get("key")):
         return None
@@ -981,8 +990,9 @@ def refresh_run_time_profile(
     serialises the appends, so those samples are this history minus the very
     rows supplied. No index decode and no run-document read happens here, which
     is what keeps a promotion's cost from growing with the ledger. A base the
-    anchor does not account for returns ``None`` and leaves the served profile
-    untouched; the refresh that rebuilds it runs outside any promotion.
+    anchor does not account for is rebuilt instead of being left in place,
+    because a promotion is the only writer of this profile and nothing else
+    would ever replace it.
     """
 
     moment = now if now is not None else datetime.now(UTC)
@@ -1015,14 +1025,14 @@ def refresh_run_time_profile(
             anchor=anchor,
         )
         if inputs is None:
-            if entry is not None:
-                # A stored profile this fold cannot extend is left alone rather
-                # than rebuilt while the promotion lock is held; a refresh
-                # outside the promotion owns that build.
-                return None
-            # A project with no published profile has nothing to fold into, and
-            # nothing else in the system builds one. This one build is the cost
-            # of a cold home, paid once per project rather than per promotion.
+            # Nothing else builds this profile: a promotion is its only writer,
+            # a pick serves one and never rebuilds it, and no refresh runs
+            # outside a promotion. So a base the fold cannot extend is rebuilt
+            # here rather than left in place -- leaving it would pin the served
+            # profile to a history that has moved on, and once ``persisted_at``
+            # passes its maximum age no pick is served one at all. This is the
+            # cost of a cold home or of a base the anchor no longer accounts
+            # for, not of an ordinary append.
             previous = None
     elif (
         isinstance(previous, Mapping)

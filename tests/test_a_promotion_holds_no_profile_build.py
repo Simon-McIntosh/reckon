@@ -182,6 +182,23 @@ def _build_review_run(tmp_path: Path, repository: Path, sequence: int) -> str:
     return run_id
 
 
+def _stored_entries() -> tuple[Path, Path]:
+    """The served profile and the fold-inputs sidecar a promotion folds into."""
+    capabilities = lane_context.capabilities
+    served = capabilities.pick_input_cache_path(
+        PROJECT,
+        root=lane_context._profile_cache_root(),
+        filename=lane_context._profile_filename(PROJECT),
+    )
+    return served, served.with_name(f".{PROJECT}-fold-inputs.json")
+
+
+def _rewrite_entry(path: Path, **changes: object) -> None:
+    entry = dict(lane_context.capabilities._read_pick_entry(path))
+    entry.update(changes)
+    lane_context.capabilities._write_pick_entry(path, entry)
+
+
 def _in_profile_path() -> bool:
     """Whether the running call was made by the profile refresh."""
     frame = sys._getframe(1)
@@ -289,3 +306,73 @@ def test_a_promotion_folds_its_row_without_a_ledger_decode(
     assert {group["backend"] for group in served["groups"]} >= {
         f"promoted-backend-{sequence}" for sequence in range(1, 4)
     }
+
+
+def test_a_fold_carries_the_samples_across_the_date_roll(
+    seeded_ledger, repository, tmp_path, monkeypatch
+):
+    """A base written yesterday still folds: the first promotion after UTC
+    midnight must not decline, or every later promotion declines with it.
+
+    The samples span the history whichever day they were written on, because
+    every row reaches the aggregate through a promotion and each promotion
+    folds its own row. Folding one day later therefore stays exact, and the
+    write moves the recorded date on.
+    """
+    now = seeded_ledger
+    _served_path, inputs_path = _stored_entries()
+    yesterday = (now - timedelta(days=1)).date().isoformat()
+    stored = dict(lane_context.capabilities._read_pick_entry(inputs_path))
+    stored["value"] = dict(stored["value"], date=yesterday)
+    lane_context.capabilities._write_pick_entry(inputs_path, stored)
+    lane_context._PROFILE_CACHE.clear()
+
+    run_id = _build_review_run(tmp_path, repository, 1)
+    with _profile_decode_counter(monkeypatch) as calls:
+        _promote(run_id, repository)
+    profile_calls = [call for call in calls if call["in_lock"] and call["in_profile"]]
+    assert profile_calls == [], (
+        "the profile refresh decoded the ledger while the promotion lock was held: "
+        f"{profile_calls}"
+    )
+
+    lane_context._PROFILE_CACHE.clear()
+    served, _age = lane_context._cached_run_time_profile(PROJECT, now=now)
+    print(f"served_rows={served.get('rows')} served_date={served.get('date')}")
+    assert served["rows"] == SEEDED_ROWS + 1
+    assert {group["backend"] for group in served["groups"]} >= {"promoted-backend-1"}
+    rolled = lane_context.capabilities._read_pick_entry(inputs_path)["value"]
+    assert rolled["date"] == now.date().isoformat()
+    assert rolled["rows"] and len(rolled["rows"]) == SEEDED_ROWS + 1
+
+
+def test_a_base_the_fold_cannot_extend_is_rebuilt_not_stranded(
+    seeded_ledger, repository, tmp_path
+):
+    """A base describing a history that moved on is rebuilt inside the promotion.
+
+    Nothing else writes this profile and a pick never rebuilds one, so leaving
+    the base in place would freeze the served profile and, once its age passes
+    the maximum, leave picks with none at all.
+    """
+    now = seeded_ledger
+    served_path, inputs_path = _stored_entries()
+    served = dict(lane_context.capabilities._read_pick_entry(served_path))
+    stored = json.loads(served["key"])
+    members = stored[0] if isinstance(stored[0], list) else stored
+    members[2] = "an-aggregate-this-home-never-had"
+    served["key"] = json.dumps(stored)
+    lane_context.capabilities._write_pick_entry(served_path, served)
+    _rewrite_entry(inputs_path, key=served["key"])
+
+    run_id = _build_review_run(tmp_path, repository, 1)
+    _promote(run_id, repository)
+
+    lane_context._PROFILE_CACHE.clear()
+    profile, age = lane_context._cached_run_time_profile(PROJECT, now=now)
+    print(f"served_rows={profile.get('rows')} age={age}")
+    assert age < 60, "the promotion must leave a profile that is still served"
+    assert profile["rows"] == SEEDED_ROWS + 1, (
+        "the promoted row is missing from a profile left stranded by the decline"
+    )
+    assert {group["backend"] for group in profile["groups"]} >= {"promoted-backend-1"}
