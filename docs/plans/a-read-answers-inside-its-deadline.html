@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="645">
+<meta name="plan-version" content="646">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -1668,7 +1668,10 @@
     <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once at head 4c28ca09b597 scores goal_fidelity 18, evidence 12, scope_discipline 19, durability 13, fit 17, reuse 5, with one blocking finding — the fleet half of the parity assertion in the landed test compares two empty (None, 0) readings and cannot fail — and three non-blocking findings on forked test helpers, the unrecorded all_debug partition, and an unlogged second mutant; the record is stored at review-records/ under the reviewed run's directory</p></div>
 </div>
 <div class="r-comment" data-section="s75" data-id="c-run-r-20261112T214204772466-review-of-a-promotion-decodes-the-ledger-index-at-most-once-ecc1e701d046" data-who="reckon-build" data-when="2026-11-12T22:21:05.867Z">
-    <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once over the delta 4c28ca09b5..ecc1e701d0 scored goal_fidelity 19, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 18 (total 111) with two non-blocking findings (a vacuous landing positive control at tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:333 and an unused DIVERGENT_RUN_ID at :55); added_failure_count 0 from the reviewed run&#x27;s baseline_suite and after_suite logs (0 failures each arm)</p></div>
+    <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once over the delta 4c28ca09b5..ecc1e701d0 scored goal_fidelity 19, evidence 19, scope_discipline 20, durability 16, fit 19, reuse 18 (total 111) with two non-blocking findings (a vacuous landing positive control at tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:333 and an unused DIVERGENT_RUN_ID at :55); added_failure_count 0 from the reviewed run's baseline_suite and after_suite logs (0 failures each arm)</p></div>
+</div>
+<div class="r-comment" data-section="s75" data-id="c-run-r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once" data-who="reckon-build" data-when="2026-11-12T21:10:57Z">
+    <div class="r-comment-body"><p>tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py measures a review promotion and an implement landing over a 2,000-row ledger and counts one index decode per read key before each append (4 under a mutant that drops the region&#x27;s reuse); a read after the append returns the promoted row and a row a peer process appended in between; and the fleet-state reading and landing preconditions answer identical values through the region and outside it, each given the ledger it actually resolves, with the fleet value shown non-empty before comparison and a divergence case that fails when a row moves the reading</p></div>
 </div>
 <div class="r-comment" data-section="s76" data-id="c-run-r-20261112T202541381748-review-of-a-promotion-s-review-lookups-cost-the-same-at-any-store-size-2eb0a1124135" data-who="reckon-build" data-when="2026-11-12T20:48:27.502Z">
     <div class="r-comment-body"><p>Independent review of r-20261112T192244510547-a-promotion-s-review-lookups-cost-the-same-at-any-store-size over f4c910599c515cac68f47acb00f2ed0b10dd93cf..2eb0a1124135ff857289e2b8bb6d56a3f7ee15ec scores goal_fidelity 19, evidence 16, scope_discipline 20, durability 17, fit 18, reuse 20, carries added_failure_count 0 with no added failure ids, and records three non-blocking findings: the persisted index stamps the directory identity at persist time rather than at the read it describes, the head-sha assertion is not independent of the value the test supplied, and the negative-control log header names the head worktree's module while the run imported the base tree.</p></div>
