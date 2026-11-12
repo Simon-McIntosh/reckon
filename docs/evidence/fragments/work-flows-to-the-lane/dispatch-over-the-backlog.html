@@ -1,0 +1,52 @@
+<section id="dispatch-over-the-backlog" class="evidence-fragment">
+  <h2>§3 — A dispatch is not refused on its session's backlog</h2>
+  <p>
+    A session that had fallen behind on reconciling the runs it delivered was
+    refused both a direct dispatch and a queue-time check. The check read the
+    session's overdue terminal runs and raised <code>UnreconciledRuns</code>
+    before any worktree existed, so the only way past it was
+    <code>--allow-unreconciled-runs</code>. The backlog those rows describe is a
+    set of duties the coordinator owes, already listed by the obligations view,
+    and refusing new work on it left a session's queued work stranded behind an
+    unattended coordinator.
+  </p>
+  <p>
+    Dispatch now reads the rows on the other side of the decision instead of in
+    front of it: it copies this session's overdue terminal runs onto the run
+    record it writes, under <code>unreconciled_override</code>, on the live
+    pointer and on the committed ledger row, so a later reader sees the work was
+    started over unreconciled runs. The batch queue writer records the same
+    backlog on each request it stores, so a batch entry says the same thing a
+    direct dispatch says. Only this session's own rows are copied; another
+    session's backlog is neither counted nor recorded. The
+    <code>--allow-unreconciled-runs</code> flag still parses and is still
+    recorded in the field's <code>requested</code> value, and gates nothing,
+    because no gate is left for it to open. The project-wide queue bound
+    <code>queue.max_requests</code> is untouched and still refuses a dispatch
+    past it.
+  </p>
+  <p id="dispatch-over-the-backlog-measure">
+    Measure: the new
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dispatch_is_not_refused_on_its_backlog.py</code>
+    reports <strong>4 passed</strong>: a direct dispatch and a batch entry from
+    a session holding one overdue unreconciled run both succeed and name that
+    run on the record they write, a session with no overdue run records none,
+    and the overdue run is still listed by the session's obligations. The node's
+    whole gate, resolved at head, reports <strong>59 passed</strong>; the same
+    set minus the new test file, resolved at base <code>7aa21029e0</code>,
+    reports <strong>55 passed</strong>. The negative control — reinstating the
+    refusal inside the backlog reader — makes the direct-dispatch case raise
+    <code>UnreconciledRuns</code>: <strong>4 failed, 4 passed</strong>.
+  </p>
+  <p id="dispatch-over-the-backlog-outside-scope">
+    Two test files outside this node's write scope still assert the superseded
+    refusal and turn red at head:
+    <code>tests/test_crew.py::test_dispatch_refuses_every_unreconciled_run_past_the_grace</code>,
+    <code>tests/test_crew.py::test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code</code>
+    and
+    <code>tests/test_closure_fence_agreement.py::test_dispatch_refuses_only_the_unreconciled_subset</code>.
+    Each asserts a refusal this section removes, so each needs the same
+    rewrite as the queued-launch test: assert the recorded backlog instead of
+    the exception.
+  </p>
+</section>
