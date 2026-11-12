@@ -17,6 +17,13 @@ Last, they check that the fleet-state reading and the landing preconditions
 answer the same values through the region as they do without it, so the decode
 the region saves is not bought with a different answer.
 
+Each reading is given the ledger it actually reads. The landing preconditions
+take the checkout root the promotion hands them; the fleet-state reading takes
+no root and resolves through the config-home state directory, so its ledger is
+seeded there rather than at the checkout. A reading that resolved an empty
+ledger would answer nothing on either side of the comparison and the equality
+could not fail.
+
 Nothing here touches the operator's store: the crew home, the ledger and the
 checkout are all built under the test's own temporary directory.
 """
@@ -27,6 +34,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from pathlib import Path
 from unittest import mock
 
@@ -44,24 +52,53 @@ PLAN = fixture.PLAN
 ROW_COUNT = fixture.ROW_COUNT
 REVIEW_RUN_ID = "r-20261111T070100000000-review-a"
 PEER_RUN_ID = "r-20261111T070200000000-peer-b"
+DIVERGENT_RUN_ID = "r-20261111T070300000000-divergent-c"
+FLEET_BACKEND = "native"
+FLEET_MODEL = "a-model"
+FLEET_SAMPLE_COUNT = 12
+
+# The owner module's fixtures, reused rather than copied: one fixture body is
+# one place a change to the crew-home isolation has to be made.
+home = pytest.fixture(fixture.home.__wrapped__)
+repository = pytest.fixture(fixture.repository.__wrapped__)
 
 
-@pytest.fixture()
-def home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
-    config_home = tmp_path / "config"
-    config_home.mkdir()
-    monkeypatch.setenv("RECKON_HOME", str(config_home))
-    monkeypatch.delenv("RECKON_RUN_ID", raising=False)
-    return config_home
+def _fleet_row(position: int, rate: float, *, completed_at: str) -> dict:
+    """One completed run row the fleet-state reading can draw a rate from."""
+    return {
+        "run_id": f"r-20261110T{position // 3600 % 24:02d}{position // 60 % 60:02d}"
+        f"{position % 60:02d}000000-fleet-{position:04d}",
+        "project": PROJECT,
+        "node": f"fleet-node-{position:04d}",
+        "plan": PLAN,
+        "role": "implement",
+        "backend": FLEET_BACKEND,
+        "agent": {"model": FLEET_MODEL},
+        "completed_at": completed_at,
+        "throughput": {"tokens_per_second": rate},
+    }
 
 
-@pytest.fixture()
-def repository(tmp_path: Path, home: Path) -> Path:
-    root = fixture._build_checkout(tmp_path / "repo")
-    (home / "mounts.json").write_text(
-        json.dumps({PROJECT: str(root / "docs")}), encoding="utf-8"
-    )
-    return root
+def _seed_fleet_ledger() -> None:
+    """Seed the ledger the fleet-state reading resolves without a root.
+
+    ``_historical_reference_rate`` calls ``ledger.load(project)`` with no root,
+    which resolves through the config-home state directory. Seeding at the
+    checkout instead leaves that reading empty, and an empty reading answers
+    nothing on either side of a comparison.
+    """
+    now = time.time()
+    rows = [
+        _fleet_row(
+            position,
+            20.0 + position,
+            completed_at=time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime(now - 600 - position * 60)
+            ),
+        )
+        for position in range(FLEET_SAMPLE_COUNT)
+    ]
+    ledger.write(PROJECT, {"members": [], "runs": rows, "holds": []}, 0)
 
 
 def _write_role_run(root: Path, home: Path, run_id: str, role: str) -> None:
@@ -88,7 +125,7 @@ def _write_role_run(root: Path, home: Path, run_id: str, role: str) -> None:
             "base_sha": fixture._git(root, "rev-parse", "HEAD"),
             "launch": "in-harness",
             "role": role,
-            "backend": "native",
+            "backend": FLEET_BACKEND,
             "created_at": "2026-11-11T06:59:00Z",
             "manifest_path": str(manifest),
             "node": {
@@ -191,6 +228,14 @@ def _assert_one_decode_per_key(counter: fixture._DecodeCounter) -> None:
     )
 
 
+def _fleet_reading() -> tuple[float | None, int]:
+    """The fleet-state reading, taken with no region and no warm cache."""
+    recovery_stream._historical_reference_rate.cache_clear()
+    return recovery_stream._historical_reference_rate(
+        PROJECT, FLEET_BACKEND, FLEET_MODEL, int(time.time() // 300)
+    )
+
+
 def test_a_review_promotion_decodes_each_index_key_once_before_its_append(
     repository: Path, tmp_path: Path
 ) -> None:
@@ -245,13 +290,13 @@ def test_a_read_after_the_append_sees_the_promoted_row_and_a_peer_row(
 
 
 def test_the_fleet_reading_and_landing_preconditions_match_without_the_region(
-    repository: Path, tmp_path: Path, monkeypatch
+    repository: Path, tmp_path: Path
 ) -> None:
     """Serving reads from one region answers what the unshared reads answer."""
     fixture._seed_ledger(repository)
+    _seed_fleet_ledger()
     _write_role_run(repository, tmp_path, REVIEW_RUN_ID, "review")
     record = json.loads(pointer_path(REVIEW_RUN_ID).read_text(encoding="utf-8"))
-    bucket = int(recovery_stream._utc_seconds() // 300)
 
     def landing() -> str:
         return json.dumps(
@@ -277,23 +322,50 @@ def test_the_fleet_reading_and_landing_preconditions_match_without_the_region(
         )
 
     def fleet() -> str:
-        recovery_stream._historical_reference_rate.cache_clear()
-        return json.dumps(
-            recovery_stream._historical_reference_rate(
-                PROJECT, "native", "a-model", bucket
-            )
-        )
-
-    def unshared(reader) -> str:
-        recovery_stream._historical_reference_rate.cache_clear()
-        return reader()
+        return json.dumps(_fleet_reading())
 
     with ledger.index_reuse():
         shared_landing = landing()
         shared_fleet = fleet()
-    alone_landing = unshared(landing)
-    alone_fleet = unshared(fleet)
+    alone_landing = landing()
+    alone_fleet = fleet()
 
     assert shared_landing, "the landing preconditions answered nothing"
     assert shared_landing == alone_landing
+    # A reading that resolved an empty ledger answers (None, 0) on both sides
+    # and the equality below could never fail, so the value is shown to carry
+    # a rate and a cohort before it is compared.
+    rate, count = json.loads(shared_fleet)
+    assert rate is not None and count >= FLEET_SAMPLE_COUNT, shared_fleet
     assert shared_fleet == alone_fleet
+
+
+def test_the_fleet_reading_equality_detects_a_divergence(repository: Path) -> None:
+    """The fleet equality fails when the two readings differ.
+
+    The negative control for the comparison above: a row appended between the
+    two readings moves the median, and the test asserts the two answers are
+    then different. An equality that held against a moving reading would be
+    comparing constants rather than what the region served.
+    """
+    _seed_fleet_ledger()
+    before = _fleet_reading()
+
+    ledger.append_run(
+        PROJECT,
+        _fleet_row(
+            FLEET_SAMPLE_COUNT + 1,
+            1000.0,
+            # Inside the reading's window: its end is the bucket start, which
+            # trails the present by up to one bucket, so "now" is not in it.
+            completed_at=time.strftime(
+                "%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() - 900)
+            ),
+        ),
+        allow_create=True,
+    )
+    after = _fleet_reading()
+
+    assert before[0] is not None, before
+    assert after[0] is not None, after
+    assert before != after, f"the reading did not move: {before} == {after}"
