@@ -1041,10 +1041,11 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 #
 # Every other kind is left alone, whatever its run's pointer state. A
 # ``worktree-held`` row is raised from the project's retained ledger records,
-# and a review the derivation finds missing, a hold, a refusal or a blocked row
-# names state the run's record still carries after its pointer is gone. A
-# missing pointer says nothing about any of them, and hiding one on a ``stat``
-# would be a silent omission rather than a settlement.
+# and a hold, a refusal or a blocked row names state the run's record still
+# carries after its pointer is gone. A missing pointer says nothing about any
+# of them, and hiding one on a ``stat`` would be a silent omission rather than
+# a settlement. A ``review-missing`` row is the one exception, and it is
+# settled on more than the ``stat``: see :data:`REVIEW_MISSING_DUTY_KIND`.
 LIVE_POINTER_DUTY_KINDS = frozenset(
     {"landing-refused", "review-ready", "promotable-stale"}
 )
@@ -1064,17 +1065,30 @@ QUEUED_POINTER_DUTY_KINDS = frozenset(
     {"run-queued", "queued-awaiting-session", "queued-contract-refused"}
 )
 
+# The duty of a run whose current head is owed a review, and the two facts that
+# settle it at the answer's own read time. A station can hold an answer for
+# minutes, and both facts move inside them: the run releases its live pointer
+# when it lands or ends, leaving no tree to review, and its pointer records a
+# dispatch when a review of that head is started, leaving nothing missing.
+REVIEW_MISSING_DUTY_KIND = "review-missing"
+
+# The pointer fields that record a review dispatch, one per rubric: a figure
+# review is recorded beside the text review rather than in its place. Spelled
+# here rather than imported from the dispatch module for the reason above --
+# this file is loaded by path, so it may reach no derivation.
+REVIEW_DISPATCH_FIELDS = ("review_dispatch", "figure_review_dispatch")
+
 # A pointer file present but unreadable is not evidence that its run left the
 # phase, so the duty it raised stands.
 _UNREADABLE_POINTER = object()
 
 
-def _live_pointer_phase(run_id: str) -> Any:
-    """The phase a run's live pointer reads now, or a sentinel.
+def _live_pointer_document(run_id: str) -> Any:
+    """A run's live pointer as stored now, ``None``, or a sentinel.
 
-    ``None`` means no live pointer remains, which for a queued duty is the
-    request leaving the queue by any route; :data:`_UNREADABLE_POINTER` means
-    one is there and cannot be parsed, so nothing here may conclude it moved.
+    ``None`` means no live pointer remains; :data:`_UNREADABLE_POINTER` means
+    one is there and cannot be read as a JSON object, so nothing here may
+    conclude anything about the run from it.
     """
     try:
         text = live_pointer_path(run_id).read_text(encoding="utf-8")
@@ -1088,7 +1102,77 @@ def _live_pointer_phase(run_id: str) -> Any:
         return _UNREADABLE_POINTER
     if not isinstance(document, Mapping):
         return _UNREADABLE_POINTER
+    return document
+
+
+def _live_pointer_phase(run_id: str) -> Any:
+    """The phase a run's live pointer reads now, or a sentinel.
+
+    ``None`` means no live pointer remains, which for a queued duty is the
+    request leaving the queue by any route; :data:`_UNREADABLE_POINTER` means
+    one is there and cannot be parsed, so nothing here may conclude it moved.
+    """
+    document = _live_pointer_document(run_id)
+    if document is None or document is _UNREADABLE_POINTER:
+        return document
     return str(document.get("phase") or "")
+
+
+def _same_revision(left: Any, right: Any) -> bool:
+    """Whether two spellings name the same commit, abbreviated or full.
+
+    The shared spelling is one rule and lives in the review-subject module,
+    which this file may not import while the hook loads it by path.
+    """
+    left = str(left or "").strip().lower()
+    right = str(right or "").strip().lower()
+    if not left or not right:
+        return False
+    return left == right or left.startswith(right) or right.startswith(left)
+
+
+def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
+    """Whether the run's pointer records a standing review dispatch for ``head``.
+
+    A dispatch entry is written for every attempt, so only the status
+    ``dispatched`` stands for a review that was started: a refusal, a skip or a
+    withdrawal leaves the review still owed, and those are the entries a duty
+    must keep naming. An entry that records no head speaks for any head the
+    duty names, because the dispatch was composed before the figure existed;
+    ``head`` unknown on the duty's side is read the same way.
+    """
+    for field in REVIEW_DISPATCH_FIELDS:
+        entry = document.get(field)
+        if not isinstance(entry, Mapping):
+            continue
+        if str(entry.get("status") or "") != "dispatched":
+            continue
+        if not str(entry.get("run_id") or ""):
+            continue
+        dispatched_head = entry.get("head")
+        if head and dispatched_head and not _same_revision(head, dispatched_head):
+            continue
+        return True
+    return False
+
+
+def _review_duty_survives_read(row: Mapping[str, Any]) -> bool:
+    """Whether a ``review-missing`` row still holds at this read.
+
+    False when the run has no live pointer, or when that pointer records a
+    review dispatched for the head the duty names. An unreadable pointer keeps
+    the duty, as it does everywhere else here: a file that cannot be read is
+    not evidence the condition moved.
+    """
+    run_id = str(row.get("run_id") or "")
+    if not run_id:
+        return True
+    document = _live_pointer_document(run_id)
+    if document is None:
+        return False
+    if document is _UNREADABLE_POINTER:
+        return True
+    return not _review_dispatch_for_head(document, row.get("head"))
 
 
 def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
@@ -1108,9 +1192,16 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     stalled out has left that phase even though its pointer is alive, so the
     row is dropped on the phase rather than on the pointer's existence.
 
+    A ``review-missing`` row is settled on either of two facts read now: the
+    run has released its live pointer, so no tree is left to review; or that
+    pointer records a review dispatched for the head the duty names, so the
+    review is no longer missing. A review owed is owed against a tree that
+    still exists and that no dispatch has yet read.
+
     A duty of any other kind is kept, whatever its pointer state: its evidence
-    is a ledger record, a review the derivation found missing or nothing at
-    all, so a missing pointer says nothing about it. That includes a duty that
+    is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
+    a tree still held -- so a missing pointer says nothing about it. That
+    includes a duty that
     names no run. The summary is recomputed so the header counts the rows
     actually shown.
     """
@@ -1130,6 +1221,13 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
             run_id
             and kind in LIVE_POINTER_DUTY_KINDS
             and not live_pointer_path(run_id).exists()
+        ):
+            dropped = True
+            continue
+        if (
+            run_id
+            and kind == REVIEW_MISSING_DUTY_KIND
+            and not _review_duty_survives_read(row)
         ):
             dropped = True
             continue
