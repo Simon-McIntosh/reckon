@@ -784,6 +784,97 @@ def _require_no_undisposed_blocking_figure_finding(
     )
 
 
+def _declared_dimension_floors(project: str, root: str | Path | None) -> dict[str, int]:
+    """The dimension floors the project's resolved flight config declares.
+
+    A config that cannot be resolved declares nothing, so a promotion on a host
+    whose flight layer is unreadable reports no owed repair rather than refusing
+    over a lookup it cannot make. The resolution is the one the rest of
+    promotion makes, so the standard an owed repair is read against is the
+    standard the project declared rather than one compiled in here.
+    """
+    from reckon.crew import review_dispositions
+
+    try:
+        config = flight.resolve(project or None, checkout_path=root).config
+    except (flight.FlightConfigError, OSError, ValueError):
+        return {}
+    return review_dispositions.declared_dimension_floors(config)
+
+
+def owed_floor_repair(
+    run_id: str,
+    record: Mapping[str, Any],
+    reviewed: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    """The sub-floor dimensions a promotion lands with no repair answering them.
+
+    A dimension below its declared floor is a finding with a disposition of its
+    own, so a review's total can be high while that dimension sits unanswered.
+    The review reflex composes one repair round for such a record, and no floor
+    repair round starts for a run once its promotion has begun — so a promotion
+    that lands the run while the round is still owed settles a run whose floor
+    repair will never be opened. Naming it here is what tells the coordinator
+    the work is still owed, rather than leaving it to surface later as commits
+    in a worktree with no landing path.
+
+    The floors come from the project's resolved flight config and the scores
+    from the ledger block the promotion already read. A block with no dimension
+    below a declared floor — the ordinary case — answers with no further store
+    read. Where one does, the stored record is read to honour dispositions: a
+    dimension answered as folded or exempted is no longer owed, and that answer
+    is recorded on the record rather than on the block.
+
+    Returns ``{}`` when nothing is owed, and otherwise
+    ``{"dimensions": [...], "note": "..."}``, each dimension row carrying its
+    name, its score and its floor. A record that cannot be read keeps the
+    dimensions the block already showed: an unreadable answer is not an answer,
+    and the promotion gate refuses an unreadable review before this is reached.
+    """
+    project = str(record.get("project") or "")
+    block = reviewed if isinstance(reviewed, Mapping) else {}
+    if not project or not block:
+        return {}
+    floors = _declared_dimension_floors(project, record.get("repo"))
+    if not floors:
+        return {}
+    from reckon.crew import review_dispositions
+
+    rows = review_dispositions.sub_floor_dimensions(block, floors)
+    if not rows:
+        return {}
+    from reckon.crew.recovery_review_subject import select_review_for_head
+
+    head = str(block.get(review_module.REVIEWED_HEAD_KEY) or "").strip()
+    if run_id and head:
+        try:
+            stored, _other = select_review_for_head(project, run_id, head)
+        except (OSError, ValueError):
+            stored = None
+        if isinstance(stored, Mapping):
+            rows = review_dispositions.sub_floor_dimensions(stored, floors)
+            if not rows:
+                return {}
+    named = "; ".join(
+        f"{row['dimension']} scored {row['score']} below its floor {row['floor']}"
+        for row in rows
+    )
+    return {
+        "dimensions": [
+            {
+                "dimension": str(row["dimension"]),
+                "score": int(row["score"]),
+                "floor": int(row["floor"]),
+            }
+            for row in rows
+        ],
+        "note": (
+            f"the review leaves {named}. No floor repair round starts once a run is "
+            "promoted, so this obligation needs a node of its own"
+        ),
+    }
+
+
 def _require_worker_stopped_before_promotion(
     run_id: str,
     record: Mapping[str, Any],
@@ -955,9 +1046,7 @@ def _capability_risk_of(capability: Any) -> str:
     return str(requirements.get("risk") or "").strip()
 
 
-def _run_capability_risk(
-    record: Mapping[str, Any], *, root: str | Path | None
-) -> str:
+def _run_capability_risk(record: Mapping[str, Any], *, root: str | Path | None) -> str:
     """The capability risk the run's plan or its section declares.
 
     A section's own declaration is read first because a plan can carry a
@@ -1189,14 +1278,18 @@ def _require_review_waiver(
         # promotion is one flag rather than a search for which of two revisions
         # the store meant.
         cite_reviewed_head = ""
-        if stale_head and promoted_head and not any(
-            str(candidate).strip()
-            and (
-                str(candidate).strip() == stale_head
-                or stale_head.startswith(str(candidate).strip())
-                or str(candidate).strip().startswith(stale_head)
+        if (
+            stale_head
+            and promoted_head
+            and not any(
+                str(candidate).strip()
+                and (
+                    str(candidate).strip() == stale_head
+                    or stale_head.startswith(str(candidate).strip())
+                    or str(candidate).strip().startswith(stale_head)
+                )
+                for candidate in manifest_commits
             )
-            for candidate in manifest_commits
         ):
             cite_reviewed_head = stale_head
         raise CrewError(
@@ -1290,8 +1383,8 @@ def _require_domain_invariant_checks(
     cannot be read raises rather than promoting a node whose rules were never
     matched.
     """
-    from reckon.crew.domain_rules import rules_for
     from reckon.crew import promotion_gate
+    from reckon.crew.domain_rules import rules_for
 
     if not project or not node or repository is None:
         return None
@@ -1302,7 +1395,9 @@ def _require_domain_invariant_checks(
         checkout_path=str(checkout),
     )
     checks = tuple(
-        invariant for invariant in rules.invariants if str(invariant.check or "").strip()
+        invariant
+        for invariant in rules.invariants
+        if str(invariant.check or "").strip()
     )
     if not checks:
         return None
@@ -3064,9 +3159,10 @@ def _delivered_review_payloads_for_commit(
     delivered_bytes: bytes | None = None
     if delivered_path is not None:
         delivered_payload = _read_json_object(delivered_path)
-        if delivered_payload and not str(
-            delivered_payload.get("review_run_id") or ""
-        ).strip():
+        if (
+            delivered_payload
+            and not str(delivered_payload.get("review_run_id") or "").strip()
+        ):
             delivered_payload = {**delivered_payload, "review_run_id": run_id}
         include(delivered_payload)
         try:
@@ -3141,7 +3237,6 @@ def _delivered_review_payloads_for_commit(
         # id is the remaining way to reach it.
         include(_staging_review_record_by_run(project, run_id, record))
     return payloads
-
 
 
 from reckon.crew.promotion_evidence import (

@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="scoring-should-stop-a-promotion">
+  <meta name="plan-title" content="A floor-driven repair and a promotion never both proceed">
+  <meta name="plan-summary" content="A review that scores one dimension below its declared floor owes a repair round, and a promotion settles the run that round would have repaired. The two now read one signal: promotion's cross-host claim. The reflex's repair door holds a round while a claim is held and reports the holder, and the resume path refuses to launch under a foreign host's claim as it already refused under a local one. A promotion that lands a run whose floor is still owed names that obligation in its own receipt, so the work surfaces to a coordinator instead of as commits in a worktree no landing path reads. A floor answered by a disposition before promotion lands with no obligation named, so the naming is bound to the owed dimension rather than to the presence of a declared floor.">
+  <meta name="plan-evidence-for" content="scoring-should-stop-a-promotion">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <title>A floor-driven repair and a promotion never both proceed | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <h1>A floor-driven repair and a promotion never both proceed</h1>
+
+    <section id="a-floor-driven-repair-and-a-promotion-never-both-proceed-defect">
+      <h2>The defect</h2>
+      <p>A live repair worker already blocks promotion while its own round is open. The
+        window that remained is the other order: a round launched after a promotion has
+        begun. A promotion rewrites the run's record and removes its pointer as its last
+        step, so for the whole of a promotion any reader watching only the pointer or the
+        ledger block sees a run that looks untouched. The reflex's repair pass read exactly
+        those, opened a floor-driven round for a review scoring one dimension below its
+        declared floor, and the round then committed in a worktree the settled run no longer
+        had a landing path for.</p>
+    </section>
+
+    <section id="a-floor-driven-repair-and-a-promotion-never-both-proceed-change">
+      <h2>The change</h2>
+      <p><code>promotion.promotion_in_flight</code> reads the claim promotion takes before
+        <em>its</em> first write and releases after its landing — the cross-host lease, not
+        the pointer. A stale lease reads as unheld, so a holder that stopped renewing never
+        refuses work forever. The reflex's repair door asks it before dispatching and, when
+        it is held, reports the run in <code>repair_held</code> naming the holder instead of
+        opening a round. <code>resumption.hold_against_promotion</code> asks it too, so a
+        reopen refuses under a promotion on another host as it already refused under a local
+        flock.</p>
+      <p>The obligation is not dropped. A promotion that lands a run whose ledger block
+        carries a dimension below its declared floor names it in the receipt as
+        <code>owed_floor_repair</code>, listing each dimension with its score and floor. The
+        floors come from the project's resolved flight config and the scores from the block
+        the promotion already read, and the stored record is consulted only where a
+        dimension is below a floor, so a dimension answered as folded or exempted before
+        promotion is no longer owed and names nothing.</p>
+    </section>
+
+    <section id="a-floor-driven-repair-and-a-promotion-never-both-proceed-evidence">
+      <h2>Evidence</h2>
+      <p>Two cases are driven on a seeded run whose review scores one dimension below its
+        floor. While a promotion of the run holds its claim, the reflex's pass opens no
+        repair round, reports the run as held with its worktree untouched, and the promotion
+        that follows names the owed dimension with its score and floor. After it, a second
+        pass opens nothing and the repository gains no work. A run whose floor was answered
+        as folded before promotion lands with no obligation named.</p>
+      <p>The base revision is the negative control: it reads no claim, so its pass holds no
+        round and reports no holder, and the first case reddens there. The gate ran on a
+        compute partition, one arm at a time; log paths are recorded in the run manifest.</p>
+    </section>
+  </main>
+</body>
+</html>
