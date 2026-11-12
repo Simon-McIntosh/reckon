@@ -2,7 +2,6 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
-import math
 import os
 import re
 import shlex
@@ -46,19 +45,6 @@ _REPLAY_BOUND_CEILING_SECONDS = 1800.0
 _GATE_LOG_DURATION = re.compile(r"\bin (\d+(?:\.\d+)?)s\b")
 
 
-# A bound past this many seconds selects the flight's long partition.
-_LONG_PARTITION_BOUND_SECONDS = 3600.0
-
-
-_PARTITION_CPUS = 8
-
-
-_PARTITION_MEMORY = "32G"
-
-
-_PARTITION_TEMP_ROOT = "/tmp"  # noqa: S108
-
-
 # Room for the scheduler to start the job and reap it, over the job's own bound.
 _PARTITION_SUBMISSION_SLACK_SECONDS = 120.0
 
@@ -66,117 +52,52 @@ _PARTITION_SUBMISSION_SLACK_SECONDS = 120.0
 _PARTITION_RECEIPT = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
 
 
-def partition_bound_text(bound_seconds: float) -> str:
-    """A replay bound rendered the way the scheduler's ``--time`` reads it."""
-    seconds = max(1, math.ceil(bound_seconds))
-    hours, remainder = divmod(seconds, 3600)
-    minutes, seconds = divmod(remainder, 60)
-    return f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+# What a job's log states when its submission never reached the command, so a
+# missing receipt and a receipt that says so report the same status.
+_UNREADABLE_JOB_STATUS = 3
 
 
-def partition_job_argv(
-    *,
-    script: str,
-    partition: str,
-    bound_seconds: float,
-    chdir: Path,
-    log_path: Path,
-) -> list[str]:
-    """The one batch submission form every partitioned measure uses.
-
-    ``sbatch --wait`` submits a job of its own and blocks until that job ends,
-    and the job runs the script as an ``srun`` step inside itself. A bare
-    ``srun`` from the fleet node would stay inside the fleet allocation
-    whatever partition it named, so it is never used outside a batch job. The
-    job's ``--time`` is the caller's bound rendered as ``HH:MM:SS``, so the
-    scheduler ends an overrun rather than leaving it to a client-side timeout;
-    the job's output goes to ``log_path``.
-    """
-    bound = partition_bound_text(bound_seconds)
-    step = (
-        shlex.join(
-            [
-                "srun",
-                f"--partition={partition}",
-                f"--time={bound}",
-                "--ntasks=1",
-                "bash",
-                "-c",
-                script,
-            ]
-        )
-        + " > "
-        + shlex.quote(str(log_path))
-        + " 2>&1"
-    )
-    return [
-        "sbatch",
-        "--wait",
-        "--parsable",
-        f"--partition={partition}",
-        f"--time={bound}",
-        "--nodes=1",
-        "--ntasks=1",
-        f"--cpus-per-task={_PARTITION_CPUS}",
-        f"--mem={_PARTITION_MEMORY}",
-        f"--output={log_path}.scheduler",
-        f"--error={log_path}.scheduler",
-        f"--chdir={chdir}",
-        "--wrap",
-        step,
-    ]
-
-
-def partition_job_environment() -> dict[str, str]:
-    """The environment a batch submission runs under.
-
-    The caller's scheduler variables are removed: a job submitted from inside
-    an allocation otherwise inherits that allocation's identity, and the
-    submission is refused or attached to the wrong step. The nested launch is
-    the submission itself, which the fleet's own guard has to be told about.
-    """
-    environment = {
-        key: value
-        for key, value in os.environ.items()
-        if not key.startswith(("SLURM_", "SBATCH_"))
-    }
-    environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
-    environment["TMPDIR"] = _PARTITION_TEMP_ROOT
-    return environment
-
-
-def measure_partition_for(repository: Path, bound_seconds: float) -> str:
-    """The partition a gate replay of this repository runs on, or an empty string.
-
-    A project declares its measure partition in the flight layer that resolves
-    for it, so the replay reads the same declaration the landing measure does
-    rather than a second setting of its own. No declaration keeps the replay in
-    place. A bound past an hour takes the long partition, because the short
-    partitions refuse a job that outlives them.
-    """
+def _replay_landing(repository: Path) -> Mapping[str, Any]:
+    """The landing declaration the replayed repository's flight resolves to."""
     from reckon import flight
 
-    landing = (
+    return (
         flight.resolve(None, checkout_path=str(repository)).config.get("landing") or {}
     )
-    partition = str(landing.get("measure_partition") or "").strip()
-    if not partition:
-        return ""
-    if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
-        return str(landing.get("measure_long_partition") or "rigel").strip()
-    return partition
+
+
+def _job_log_receipt(text: str) -> int | None:
+    """The status a job's log records, from its last ``EXIT=`` line, or None.
+
+    Only the last record counts: a replayed command that prints an ``EXIT=``
+    line of its own is not the job's receipt. A log with no receipt is a job
+    that never reached its own status — refused at submission, killed before
+    the step ran, or cut off — and has no measurable verdict at all.
+    """
+    receipts = _PARTITION_RECEIPT.findall(text or "")
+    return int(receipts[-1]) if receipts else None
 
 
 def _replay_job_log(replay_log_path: str | Path | None) -> Path:
-    """Where a batch job writes its own output, durable when the caller names one."""
+    """Where a batch job writes its own output, durable when the caller names one.
+
+    The path is derived from the caller's replay log, so the same verify-gate
+    of a run lands on the same file on every attempt. It is therefore cleared
+    before each submission: a submission that never reaches its step leaves
+    the file empty, and an earlier attempt's verdict cannot be read back as
+    the verdict of a job that did not run.
+    """
     if replay_log_path is not None:
-        return (
+        path = (
             Path(replay_log_path)
             .expanduser()
             .with_name(Path(replay_log_path).name + ".job.log")
         )
-    directory = Path(tempfile.mkdtemp(prefix="reckon-gate-replay-"))
-    return directory / "job.log"
+    else:
+        path = Path(tempfile.mkdtemp(prefix="reckon-gate-replay-")) / "job.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    return path
 
 
 def _partition_replay_script(replayed: str) -> str:
@@ -923,38 +844,42 @@ def rerun_gate_at_integrated_revision(
             command, roots=worktree_roots, checkout=checkout_root
         )
         report["worktree_roots_rewritten"] = list(rewritten_roots)
-        partition = measure_partition_for(checkout_root, bound_seconds)
-        report["measure_partition"] = partition or "in-place"
+        landing = _replay_landing(checkout_root)
+        declared = str(landing.get("measure_partition") or "").strip()
+        selected = ""
+        executor = run or subprocess.run
+        job_log: Path | None = None
+        environment: dict[str, str] | None = None
+        if declared:
+            from reckon.crew.landing_measure import partition_submission
+
+            job_log = _replay_job_log(replay_log_path)
+            selected, argv, environment = partition_submission(
+                script=_partition_replay_script(replayed),
+                partition=declared,
+                long_partition=str(landing.get("measure_long_partition") or "rigel"),
+                bound_seconds=bound_seconds,
+                chdir=checkout_root,
+                log_path=job_log,
+            )
+            timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
+        else:
+            argv = ["sh", "-c", replayed]
+            timeout = bound_seconds
+        report["measure_partition"] = selected or "in-place"
         header = _replay_log_header(
             replay_command=replayed,
             checkout=checkout_root,
             checkout_revision=report["checkout_revision"],
             integrated_revision=report["integrated_revision"],
             rewritten_roots=rewritten_roots,
-            partition=partition,
+            partition=selected,
         )
         started = time.monotonic()
-        executor = run or subprocess.run
-        job_log: Path | None = None
-        environment: dict[str, str] | None = None
-        if partition:
-            job_log = _replay_job_log(replay_log_path)
-            argv = partition_job_argv(
-                script=_partition_replay_script(replayed),
-                partition=partition,
-                bound_seconds=bound_seconds,
-                chdir=checkout_root,
-                log_path=job_log,
-            )
-            environment = partition_job_environment()
-            timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
-        else:
-            argv = ["sh", "-c", replayed]
-            timeout = bound_seconds
         try:
             result = executor(
                 argv,
-                cwd=str(checkout_root if partition else repository),
+                cwd=str(checkout_root if job_log is not None else repository),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
@@ -966,7 +891,7 @@ def rerun_gate_at_integrated_revision(
             elapsed = time.monotonic() - started
             report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
             partial = expired.output if isinstance(expired.output, str) else ""
-            if partition and environment is not None:
+            if job_log is not None and environment is not None:
                 # sbatch --wait prints the id before waiting; stop that job only.
                 identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
                 if identifier:
@@ -1001,14 +926,16 @@ def rerun_gate_at_integrated_revision(
                 # stdout carries only the job id and whatever the scheduler
                 # printed. Its terminal receipt is the status this replay
                 # reports, because a client-side return code cannot tell a
-                # finished job from one the scheduler stopped.
+                # finished job from one the scheduler stopped, and a job that
+                # never reached its command leaves no receipt at all — that is
+                # an unmeasured replay, not a passing one.
                 replay_text = (
                     job_log.read_text(encoding="utf-8", errors="replace")
                     if job_log.exists()
-                    else (result.stdout or "")
+                    else ""
                 )
-                receipt = _PARTITION_RECEIPT.search(replay_text)
-                status = int(receipt.group(1)) if receipt else result.returncode
+                receipt = _job_log_receipt(replay_text)
+                status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
             else:
                 replay_text = result.stdout or ""
                 status = result.returncode
