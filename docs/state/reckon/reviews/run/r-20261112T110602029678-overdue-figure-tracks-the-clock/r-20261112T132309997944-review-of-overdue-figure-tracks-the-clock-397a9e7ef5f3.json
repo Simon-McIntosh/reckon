@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/obligation_snapshot.py:live_payload -> _row_with_age",
+    "reckon/hooks/coordinator_obligations.py:1351 live_payload",
+    "reckon/hooks/coordinator_obligations.py:1379 live_payload",
+    "reckon/hooks/coordinator_obligations.py:1617 live_payload",
+    "reckon/crew/obligations.py:2192 _reflex_review_command"
+  ],
+  "completed_at": "2026-11-12T13:31:42.254Z",
+  "dispatched_at": "2026-11-12T13:25:11Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/overdue-figure-tracks-the-clock.html",
+      "line": 15,
+      "severity": "non-blocking",
+      "text": "The landing fragment still describes the superseded shape: line 12 says the duty carries 'the reflex window' (removed from the remedy in 397a9e7) and line 15 says 'the figure is the duty's age past the reflex window', while the shipped figure is the duty's age \u2014 the fragment's own table at line 18-24 prints 33m 20s for a 2000 s age, contradicting its prose."
+    },
+    {
+      "file": "tests/test_an_overdue_figure_tracks_the_clock.py",
+      "line": 163,
+      "severity": "non-blocking",
+      "text": "The station-stage branch of the remedy is never exercised: the fixture's duty takes the no-stage text, so the stage-age recomposition at reckon/crew/obligations.py:847 (from the stage_measured_from instant written at line 836) has no assertion that would redden if it regressed to serving the writer's stage age."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T110602029678-overdue-figure-tracks-the-clock/logs/negative-control.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The negative-control log's header names revision f9c0b22 while its body is the head-era file: it prints 33m 20s (the full 2000 s age that only 397a9e7 produces; f9c0b22 subtracted the 120 s reflex window), so the log does not attest that the mutation was applied to the tree at 397a9e7 \u2014 the mutation touches _row_with_age, unchanged between the two commits, so the conclusion still holds."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Five production call sites reach the change: live_payload through _row_with_age in the snapshot module, three coordinator-obligations hook reads, and the single _reflex_review_command caller.",
+    "diff": "Read all three commits against e52a171: snapshot reader now calls refresh_overdue_remedy, the duty carries an overdue_remedy interval record, the figure is composed at read time, and the final commit settles the figure at the duty's age rather than age minus window.",
+    "done_when": "tests/test_an_overdue_figure_tracks_the_clock.py:180 asserts the two figures differ by exactly 120 s and :181-182 assert each figure equals its row's age_seconds at head (52 passed, EXIT=0); the dispatch done_when's 'minus the reflex window' clause is not what the gate asserts, and the worker recorded that deviation against the plan's own done-when, which says the figure matches age_seconds.",
+    "goal": "The node goal is 'Make the overdue figure move with the clock'; reckon/crew/obligation_snapshot.py:945 now recomposes the overdue text from the refreshed age at the read instant, and the recorded gate shows the second reading 120 s later moving by exactly 120 s.",
+    "manifest": "Read in full; it records the commits, the gate log (52 passed), the matched importer arms (base 50 failed/636 passed, head 50 failed/637 passed, identical failing ids) and the declared negative control with its log path.",
+    "write_paths": "The diff touches reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, tests/test_an_overdue_figure_tracks_the_clock.py and the scope's landing fragment; all four sit inside the declared paths plus the always-permitted fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is 'Make the overdue figure move with the clock'; reckon/crew/obligation_snapshot.py:945 recomposes the remedy text from the refreshed age at the reading instant.\nVERDICT done_when: tests/test_an_overdue_figure_tracks_the_clock.py:180-182 asserts the 120 s difference and each figure against its row's age_seconds, recorded green (52 passed, EXIT=0); the dispatch done_when's 'minus the reflex window' clause is not asserted and the manifest records that deviation against the plan's own done-when, which asks only that the figure match age_seconds.\nVERDICT write_paths: the four changed paths (reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, tests/test_an_overdue_figure_tracks_the_clock.py, the landing fragment) are all inside the declared scope.\nVERDICT manifest: read; it names the three commits, gate-worktree.log (52 passed EXIT=0), the matched arms base.log/head.log with identical failing ids, and negative-control.log.\nVERDICT diff: read commit by commit from e52a171c to 397a9e7e; the change adds an interval record on the duty (reckon/crew/obligations.py:812-838), composes the text at read time (obligations.py:864-884), and refreshes it in the snapshot reader (obligation_snapshot.py:934-945).\nCALL_SITES: reckon/crew/obligation_snapshot.py:live_payload -> _row_with_age, reckon/hooks/coordinator_obligations.py:1351 live_payload, reckon/hooks/coordinator_obligations.py:1379 live_payload, reckon/hooks/coordinator_obligations.py:1617 live_payload, reckon/crew/obligations.py:2192 _reflex_review_command\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:945 rebuilds the duty text at the reader's instant, so the figure tracks the age beside it, which the recorded gate confirms at two readings 120 s apart.\nSCORE evidence: 14\nJUSTIFICATION evidence: tests/test_an_overdue_figure_tracks_the_clock.py:180 is the measure and its run is logged at head, but the gate does not assert the dispatch done_when's window-subtracted figure and the negative-control log's header names f9c0b22 rather than the head it actually ran.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff's four paths are exactly reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, tests/test_an_overdue_figure_tracks_the_clock.py and the node's landing fragment.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_an_overdue_figure_tracks_the_clock.py:180 reddens under the declared mutation (recorded as assert (2000 - 2000) == 120), but the stage branch recomposed at reckon/crew/obligations.py:847 has no assertion exercising it.\nSCORE fit: 16\nJUSTIFICATION fit: the helpers at reckon/crew/obligations.py:790-884 follow the module's private-helper and docstring idiom, and no name carries a plan, ticket or version identifier.\nSCORE reuse: 17\nJUSTIFICATION reuse: _overdue_figure at reckon/crew/obligations.py:804 consolidates the module's own three inline '{m}m {s}s' sites; a searched-for owner (reckon/evidence.py:188 _format_seconds) is an HTML-rendering helper with different semantics and no crew-owned duration formatter existed.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/overdue-figure-tracks-the-clock.html:15 non-blocking: the fragment says the duty carries 'the reflex window' (removed at 397a9e7) and that the figure is 'the duty's age past the reflex window' (it is the age), contradicting the fragment's own table at lines 18-24.\nFINDING tests/test_an_overdue_figure_tracks_the_clock.py:163 non-blocking: the fixture takes the no-stage branch, so reckon/crew/obligations.py:847's stage-age recomposition has no assertion that would redden if it regressed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T110602029678-overdue-figure-tracks-the-clock/logs/negative-control.log:1 non-blocking: the header names f9c0b22 while the body prints 33m 20s, which only the head revision produces, so the log does not attest the mutation at 397a9e7.",
+  "review_run_id": "r-20261112T132309997944-review-of-overdue-figure-tracks-the-clock-397a9e7ef5f3",
+  "reviewed_base_sha": "e52a171c540d2c2b35e17015701a46f8c30e4e99",
+  "reviewed_head_sha": "397a9e7ef5f3ef54dbe3a74a16edacae6cadd73e",
+  "reviewed_run_id": "r-20261112T110602029678-overdue-figure-tracks-the-clock",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T13:39:02.744514+00:00",
+  "total": 101
+}

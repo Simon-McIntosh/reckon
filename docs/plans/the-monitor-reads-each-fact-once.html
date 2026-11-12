@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="212">
+<meta name="plan-version" content="213">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -960,6 +960,9 @@ staged paths.</p>
 <div class="r-comment" data-section="s33" data-id="c-run-r-20261112T085600397325-vanished-review-pointer-keeps-station-up" data-who="reckon-build" data-when="2026-11-12T09:27:59.218Z">
     <div class="r-comment-body"><p>A review pointer that vanished between the station view's listing and its read now reads as not in flight, and a tick that raises anything other than a lost lease prints a station-tick-failure line with its traceback and the loop continues; node gate 54 passed at head against 51 at base, negative control 2 failed at base, importer arms 48 identical failing ids at both revisions with none added.</p></div>
 </div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261112T131433755631-review-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7" data-who="reckon-build" data-when="2026-11-12T13:25:12.147Z">
+    <div class="r-comment-body"><p>Independent review of r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion at base e52a171c540d2c2b35e17015701a46f8c30e4e99 and head 01e38f1509b7c97728da9f6d2a613988de6b35dc: scores goal_fidelity 17, evidence 7, scope_discipline 18, durability 13, fit 16, reuse 5; one blocking finding that the recorded gate is not the done_when's matched importer arms on all_debug, and two non-blocking findings (duplicated review-pointer phase reader; no head comparison before reading review-awaiting-promotion).</p></div>
+</div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261112T123325581650-review-of-launched-run-is-never-queued-c5baa7d29bda" data-who="reckon-build" data-when="2026-11-12T12:53:40.979Z">
     <div class="r-comment-body"><p>Reviewed run r-20261112T110348511503-launched-run-is-never-queued (base 752a45069c12cfbcd25f2656fb9d774cf7b3ff9b, head c5baa7d29bdaa1f78f0021f0fda0f4999768b701); scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 15, fit 16, reuse 20; four non-blocking findings, zero added failures.</p></div>
 </div>
@@ -1053,8 +1056,8 @@ staged paths.</p>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
 </div>
-<div class="r-comment" data-section="s34" data-id="c-run-r-20261112T131433755631-review-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7" data-who="reckon-build" data-when="2026-11-12T13:25:12.147Z">
-    <div class="r-comment-body"><p>Independent review of r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion at base e52a171c540d2c2b35e17015701a46f8c30e4e99 and head 01e38f1509b7c97728da9f6d2a613988de6b35dc: scores goal_fidelity 17, evidence 7, scope_discipline 18, durability 13, fit 16, reuse 5; one blocking finding that the recorded gate is not the done_when&#x27;s matched importer arms on all_debug, and two non-blocking findings (duplicated review-pointer phase reader; no head comparison before reading review-awaiting-promotion).</p></div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261112T132309997944-review-of-overdue-figure-tracks-the-clock-397a9e7ef5f3" data-who="reckon-build" data-when="2026-11-12T13:31:42.254Z">
+    <div class="r-comment-body"><p>Independently reviewed run r-20261112T110602029678-overdue-figure-tracks-the-clock at base e52a171c540d2c2b35e17015701a46f8c30e4e99 to head 397a9e7ef5f3ef54dbe3a74a16edacae6cadd73e; the change does make the overdue figure track the clock (figure composed at the reader&#x27;s instant, gate 52 passed, negative control reddens at (2000 - 2000) == 120), and three non-blocking findings are recorded: stale landing-fragment prose, an unexercised station-stage branch, and a negative-control header naming f9c0b22 rather than the head it ran.</p></div>
 </div>
 </section>
 </main>
