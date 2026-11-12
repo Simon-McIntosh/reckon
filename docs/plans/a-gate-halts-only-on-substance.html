@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="32">
+<meta name="plan-version" content="33">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -122,6 +122,9 @@
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261112T072500411417-review-of-a-resume-can-change-the-run-s-budget-ddcb5079d9b0" data-who="reckon-build" data-when="2026-11-12T07:40:08.874Z">
     <div class="r-comment-body"><p>independent review of r-20261112T060433796107-a-resume-can-change-the-run-s-budget at base c4eff7707068362553dc49173df280fd5cbdf254 and head ddcb5079d9b0a408338ab3c013901d22c40dc354 stored as a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 108), added_failure_count 0 with added_failure_ids [], two non-blocking findings (manifest outside_scope breakdown undercounts tests/test_crew.py by one; importer-arm.log's command header is not a re-runnable literal command), no blocking findings.</p></div>
 </div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261112T060433796107-a-resume-can-change-the-run-s-budget" data-who="reckon-build" data-when="2026-11-12T06:42:03.716Z">
+    <div class="r-comment-body"><p>`crew resume --time-budget` (with `--over-fence REASON` above the resolved fence) is already present at base c4eff770 — a 25m run resumed at 45m composes the resumed fence at deadline 2031-01-01T01:45:00Z and stores 45m, an over-fence resume is refused without a reason and accepted with one, and the declared mutation reddens two of the three cases (2 failed, 1 passed, EXIT=1); the node changes no product source or test, only its landing fragment, and its gate reads 54 passed at base and 54 passed at head.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T191342033961-review-of-picker-budget-floor-from-brief-1d6855ed0ee7" data-who="reckon-build" data-when="2026-11-07T19:31:46.536Z">
     <div class="r-comment-body"><p>reviewed picker-budget-floor-from-brief at base 5a444bc33b → head 1d6855ed0e; the landed diff does what the goal states (lane_context.py:190 node_budget floors the picker size at the resolved fence and both size readers call it), the gate asserts it (2 failed/180 passed at base vs 2 failed/185 passed at head, same two pre-existing ids, added_failure_count 0), the negative control reddens exactly the two fence cases; three non-blocking findings recorded (weak same-value assertion at test:76, partition-name duplication at lane_context.py:76/175, broad `partition|gpu` prose match at :174), no blocking findings.</p></div>
 </div>
@@ -138,7 +141,7 @@
     <div class="r-comment-body"><p>Reviewer verdict for r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri at head da59df00ac from base c4eff77070: the node delivered an evidence fragment only, the picker budget floor it certifies is present at that revision and its guard is proven load-bearing by a red negative control (2 failed, 3 passed, EXIT=1); scored goal_fidelity 18, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 20, added_failure_count 0, two non-blocking findings on the fragment's log citation and an unreceipted ruff claim.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri" data-who="reckon-build" data-when="2026-11-12T06:30:58.352Z">
-    <div class="r-comment-body"><p>The picker budget floor is already carried at this revision and was verified rather than reimplemented: the base gate arm is 56 passed (EXIT=0), the 14-file importer cohort is 178 passed (EXIT=0), and the declared mutation (removing the floor) gives the H200 brief node &#x27;&#x27; / size_bucket up_to_30m with 2 failed, 3 passed (EXIT=1).</p></div>
+    <div class="r-comment-body"><p>The picker budget floor is already carried at this revision and was verified rather than reimplemented: the base gate arm is 56 passed (EXIT=0), the 14-file importer cohort is 178 passed (EXIT=0), and the declared mutation (removing the floor) gives the H200 brief node '' / size_bucket up_to_30m with 2 failed, 3 passed (EXIT=1).</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T221855825224-review-of-answer-only-edit-owes-no-review-0601bc4fc2f7" data-who="reckon-build" data-when="2026-11-07T22:56:40.043Z">
     <div class="r-comment-body"><p>review of run r-20261107T174332129120-answer-only-edit-owes-no-review at 162fcb20..0601bc4f read commit by commit: the accepted-edit coverage feature lands and its seven cases pass, with 0 added failures against the base; one blocking defect found — `crew review --plan X --accept-edits "&lt;reason&gt;" --dry-run` writes the accepted-edits entry and commits the record, reproduced with the node's own fixture (probe-dry-run.log, 1 failed, EXIT=1); scores goal_fidelity 18, evidence 17, scope_discipline 11, durability 15, fit 17, reuse 17</p></div>
