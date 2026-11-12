@@ -30,6 +30,7 @@ def git_stub(tmp_path, monkeypatch):
         "with calls.open('a') as stream:\n"
         "    stream.write(json.dumps([args, command]) + '\\n')\n"
         "if args[0] == 'config':\n"
+        "    if args[-1] == 'core.sshCommand': sys.exit(1)\n"
         "    print('git@example.test:repo')\n"
         "elif args[0] == os.environ.get('SLEEP_COMMAND'):\n"
         "    time.sleep(60)\n"
@@ -60,7 +61,11 @@ def test_failed_port_22_read_retries_over_443(git_stub, monkeypatch, error):
     repo, calls = git_stub
     monkeypatch.setenv("PORT_ERROR", error)
     head, env, detail = merge._read_remote_head(repo, "origin", "main")
-    attempts = [json.loads(line) for line in calls.read_text().splitlines()]
+    attempts = [
+        json.loads(line)
+        for line in calls.read_text().splitlines()
+        if json.loads(line)[0][0] == "ls-remote"
+    ]
     assert head == "a" * 40, (head, detail, attempts)
     assert len(attempts) == 2
     assert "Port=443" not in attempts[0][1]
@@ -75,7 +80,8 @@ def test_sleeping_git_returns_unreachable_within_bound(git_stub, monkeypatch, co
     (repo / "git").write_text(
         "#!/bin/sh\n"
         f'printf \'[["%s"],""]\\n\' "$3" >> {shlex.quote(str(calls))}\n'
-        'if [ "$3" = config ]; then echo git@example.test:repo; '
+        'if [ "$5" = core.sshCommand ]; then exit 1; '
+        'elif [ "$3" = config ]; then echo git@example.test:repo; '
         'elif [ "$3" = "$SLEEP_COMMAND" ]; then exec sleep 60; '
         "else printf '%040d\\trefs/heads/main\\n' 0; fi\n"
     )
@@ -177,3 +183,90 @@ def test_failed_port_22_fetch_retries_over_443(git_stub, monkeypatch, error):
     assert len(fetches) == 2
     assert "Port=443" not in fetches[0]
     assert "Port=443" in fetches[1]
+
+
+@pytest.mark.parametrize("configured_by", ["core.sshCommand", "GIT_SSH"])
+@pytest.mark.parametrize("command", ["ls-remote", "fetch"])
+def test_git_runs_its_configured_ssh_transport(
+    tmp_path, monkeypatch, configured_by, command
+):
+    repo = tmp_path / "repository"
+    origin = tmp_path / "origin.git"
+    calls = tmp_path / "ssh-argv.txt"
+    ssh = tmp_path / "configured-ssh"
+    git = shutil.which("git")
+    for name in ("GIT_SSH_COMMAND", "GIT_SSH"):
+        monkeypatch.delenv(name, raising=False)
+    monkeypatch.setenv("GIT_CONFIG_GLOBAL", os.devnull)
+    monkeypatch.setenv("GIT_CONFIG_NOSYSTEM", "1")
+    monkeypatch.setenv("GIT_SSH_VARIANT", "ssh")
+    subprocess.run([git, "init", "-q", str(repo)], check=True)
+    subprocess.run([git, "init", "--bare", "-q", str(origin)], check=True)
+    tree = subprocess.check_output(
+        [git, "-C", str(origin), "mktree"], input="", text=True
+    ).strip()
+    commit = subprocess.check_output(
+        [
+            git,
+            "-C",
+            str(origin),
+            "-c",
+            "user.name=Transport Test",
+            "-c",
+            "user.email=transport@example.test",
+            "commit-tree",
+            tree,
+        ],
+        input="Transport fixture\n",
+        text=True,
+    ).strip()
+    subprocess.run(
+        [git, "-C", str(origin), "update-ref", "refs/heads/main", commit], check=True
+    )
+    subprocess.run(
+        [git, "-C", str(repo), "remote", "add", "origin", "git@example.test:fixture"],
+        check=True,
+    )
+    ssh.write_text(
+        "#!/bin/sh\n"
+        f"printf '%s\\n' \"$@\" > {shlex.quote(str(calls))}\n"
+        f"exec {shlex.quote(git)} upload-pack {shlex.quote(str(origin))}\n"
+    )
+    ssh.chmod(0o755)
+    if configured_by == "core.sshCommand":
+        configured = (
+            f"{shlex.quote(str(ssh))} -i fixture-identity -o ProxyCommand=fixture-proxy"
+        )
+        subprocess.run(
+            [git, "-C", str(repo), "config", "core.sshCommand", configured], check=True
+        )
+    else:
+        monkeypatch.setenv("GIT_SSH", str(ssh))
+    # A default executable must fail locally if it shadows the configured one.
+    default = tmp_path / "ssh"
+    default.write_text("#!/bin/sh\nexit 97\n")
+    default.chmod(0o755)
+    monkeypatch.setenv("PATH", str(tmp_path) + os.pathsep + os.environ["PATH"])
+    result = merge._run(repo, command, "origin", "refs/heads/main")
+    assert result.returncode == 0, result.stderr
+    assert calls.exists(), "Git did not invoke its configured SSH executable"
+    argv = calls.read_text().splitlines()
+    assert "git@example.test" in argv
+    assert "git-upload-pack 'fixture'" in argv
+    assert not any("ConnectTimeout=" in arg for arg in argv)
+    if configured_by == "core.sshCommand":
+        assert argv[:4] == [
+            "-i",
+            "fixture-identity",
+            "-o",
+            "ProxyCommand=fixture-proxy",
+        ]
+    if command == "ls-remote":
+        assert commit in result.stdout
+    else:
+        assert (
+            subprocess.run(
+                [git, "-C", str(repo), "cat-file", "-e", commit], check=False
+            ).returncode
+            == 0
+        )

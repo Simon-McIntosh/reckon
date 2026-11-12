@@ -200,10 +200,19 @@ def _run(
     remote = bool(args) and args[0] in {"ls-remote", "fetch"}
     if remote:
         env = dict(os.environ if env is None else env)
-        ssh = (env.get("GIT_SSH_COMMAND") or "").strip() or "ssh"
-        env["GIT_SSH_COMMAND"] = (
-            f"{ssh} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
-        )
+        ssh = (env.get("GIT_SSH_COMMAND") or "").strip()
+        if ssh:
+            env["GIT_SSH_COMMAND"] = (
+                f"{ssh} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+            )
+        elif "GIT_SSH" not in env:
+            configured = _run(repo, "config", "--get", "core.sshCommand", env=env)
+            # Only an absent setting permits the default: Git owns configured
+            # identities, proxies and wrappers, and reports config errors itself.
+            if configured.returncode == 1:
+                env["GIT_SSH_COMMAND"] = (
+                    f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+                )
     command = ["git", "-C", str(repo), *args]
     try:
         return subprocess.run(
