@@ -241,6 +241,7 @@ class SweepBeat:
         start: Callable[[Callable[[], None]], None] | None = None,
         beat_seconds: float = SWEEP_BEAT_SECONDS,
     ) -> None:
+        self.on_report: Callable[[str, str, Mapping[str, Any]], None] | None = None
         self.sweep = resumption.sweep if sweep is None else sweep
         self.beat_seconds = beat_seconds
         self._start = _start_thread if start is None else start
@@ -283,6 +284,8 @@ class SweepBeat:
                 report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )
+                if isinstance(report, Mapping) and self.on_report is not None:
+                    self.on_report(project, session, report)
                 reviews = report.get("reviews") if isinstance(report, Mapping) else None
                 if isinstance(reviews, Mapping):
                     for failure in reviews.get("failed") or ():
@@ -561,6 +564,7 @@ class Station:
         # The review reflex and settle detection run here, once for every
         # session on the node, rather than in each follower.
         self.sweeps = SweepBeat() if sweeps is None else sweeps
+        self.sweeps.on_report = self._record_sweep_report
         # The arm that decides a sweep is due beats on a thread of its own, so a
         # tick held in a slow stage cannot hold a delivered run's review.
         self.reflex = ReflexBeat(
@@ -570,6 +574,17 @@ class Station:
         # only when its own home is the same one, because a store built from
         # another home holds another fleet's rows.
         self.store.set_station_value(station_store.CREW_HOME_KEY, str(self.home))
+
+    def _record_sweep_report(
+        self, project: str, session: str, report: Mapping[str, Any]
+    ) -> None:
+        # The sweep thread owns its connection; the tick and heartbeat keep
+        # their own handles to the same guarded store.
+        store = station_store.StationStore(self.store.root, guard=self.store.guard)
+        try:
+            station_obligations.record_sweep_report(store, project, session, report)
+        finally:
+            store.close()
 
     def _enter(self, stage: str, *, started: datetime | None = None) -> None:
         """Record the stage this tick has entered, and its start when it opens.
