@@ -190,6 +190,12 @@ DUTY_ROW_FIELDS = (
 # evidence about the reflex rather than an explanation for the duty, and the
 # duty returns to review-missing so the coordinator sees it again.
 REVIEW_QUEUED_DUTY_KIND = "review-queued"
+
+# A run whose review has been dispatched, delivered, and not yet landed reads
+# as awaiting promotion: the wait is a promotion, not a dispatch and not a
+# follower. A review holds its pointer after it delivers, so the pointer alone
+# cannot tell a finished review from a running one; the phase does.
+REVIEW_AWAITING_PROMOTION_DUTY_KIND = "review-awaiting-promotion"
 REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
 
 # The status the review reflex records on a run's pointer when the lane refused
@@ -599,6 +605,76 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
     return runs.list_live(project=project)
 
 
+#: The phases a review run's pointer carries once its subject's review exists
+#: and nothing but a promotion remains. A review holds its pointer through them,
+#: so it is still readable while it is no longer working on the revision.
+DELIVERED_REVIEW_PHASES = frozenset({"complete"})
+
+
+def _recorded_review_run_id(pointer: Mapping[str, Any]) -> str:
+    """The review run the run's own pointer records a dispatch of, or "".
+
+    Both rubric fields are read: a figure review is recorded beside the text
+    review rather than in its place, and a run may owe either. A withdrawn
+    attempt stands for nothing — the reviewed run's own resume moved the head
+    past it — so it names no review.
+    """
+    for field in (
+        recovery.REVIEW_DISPATCH_FIELD,
+        recovery_review_dispatch.FIGURE_REVIEW_DISPATCH_FIELD,
+    ):
+        recorded = pointer.get(field)
+        if not isinstance(recorded, Mapping):
+            continue
+        if str(recorded.get("status") or "") == "withdrawn":
+            continue
+        standing = str(recorded.get("run_id") or "")
+        if standing:
+            return standing
+    return ""
+
+
+def _delivered_review_run(pointer: Mapping[str, Any]) -> str:
+    """The review run the recorded dispatch names that has delivered, or "".
+
+    The review's own pointer is the only place its progress is written, so it
+    decides whether the review is still working on the revision or has finished
+    and left its record for a promotion to land.
+    """
+    standing = _recorded_review_run_id(pointer)
+    if not standing:
+        return ""
+    try:
+        review_pointer = runs.read_pointer(standing)
+    except (CrewError, OSError):
+        return ""
+    if not isinstance(review_pointer, Mapping):
+        return ""
+    if str(review_pointer.get("phase") or "") not in DELIVERED_REVIEW_PHASES:
+        return ""
+    return standing
+
+
+def _delivered_review_promotion_command(review_run_id: str) -> str:
+    """The command that lands a delivered review's record on the project.
+
+    Composed through the classifier's own promotion composition, so the
+    command offered here and the one a promotable run is offered cannot drift.
+    """
+    review_pointer: Mapping[str, Any] = {}
+    try:
+        read = runs.read_pointer(review_run_id)
+    except (CrewError, OSError):
+        read = None
+    if isinstance(read, Mapping):
+        review_pointer = read
+    return recovery_classification._promotion_command(
+        review_run_id,
+        review_pointer,
+        list(review_pointer.get("manifest_commits") or ()),
+    )
+
+
 def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether the reflex's own recorded review dispatch still holds a live run.
 
@@ -922,7 +998,16 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     the same head: a queued request beside a launched review would otherwise be
     able to answer for the head, and the duty would read missing while a review
     is working on it.
+
+    A review that has delivered has stopped working on the revision too: it
+    holds its pointer until a promotion lands it, so the run it reviewed is
+    waiting on that promotion rather than on the review. Suppressing the duty
+    here would leave the run with no duty at all while a landed review sat
+    unpromoted, so the duty is built and reads as
+    :data:`REVIEW_AWAITING_PROMOTION_DUTY_KIND`.
     """
+    if _delivered_review_run(pointer):
+        return False
     if _reflex_review_in_flight(pointer):
         return True
     launched = [
@@ -1893,6 +1978,12 @@ def _review_duty_item(
     refused it and the session's published worker slots, so the coordinator
     sees a wait the reflex owns rather than a dispatch nobody ran.
 
+    A review the run's own record names that has delivered, while no stored
+    record covers the head, reads review-awaiting-promotion: the run waits on
+    the promotion of that review run, which the duty names with the command
+    that lands it. It does not read review-missing, because the review exists
+    and the reflex will not compose a second one while it stands.
+
     A landing refusal for this head names its guard on the session's duty.
     It takes precedence over a ready review, since the stored review alone
     cannot explain why the automatic landing stopped.
@@ -2047,23 +2138,42 @@ def _review_duty_item(
         # No stored review covers the head, so the duty would read
         # review-missing. A review the coordinator has already dispatched is
         # the one exception: one the lane refused, or one it queued and has not
-        # launched, reads as queued inside its wait and the duty does not hold a
-        # turn open over a wait the coordinator cannot shorten. That holds
-        # whether or not an older stored record exists, because a review
+        # dispatched yet, reads as queued inside its wait and the duty does not
+        # hold a turn open over a wait the coordinator cannot shorten. That
+        # holds whether or not an older stored record exists, because a review
         # composed for the head after a test-driven repair is still a dispatch
         # already made.
+        #
+        # A review that has delivered is neither dispatch nor wait: its record
+        # is written and only a promotion lands it, so the run waits on the
+        # promotion and the duty names the review run that must be promoted
+        # rather than a dispatch nothing will run: the reflex composes no
+        # second review while the delivered one stands.
+        delivered = "" if superseded else _delivered_review_run(pointer)
         if live_pointers is None:
             live_pointers = _live_pointers(project)
         if placements is None:
             placements = queue_admission.queued_placements(live_pointers, now=now)
-        queued = _queued_review_fields(
-            pointer,
-            head=head,
-            now=now,
-            live_pointers=live_pointers,
-            placements=placements,
+        queued = (
+            None
+            if delivered
+            else _queued_review_fields(
+                pointer,
+                head=head,
+                now=now,
+                live_pointers=live_pointers,
+                placements=placements,
+            )
         )
-        if queued is not None:
+        if delivered:
+            item["kind"] = REVIEW_AWAITING_PROMOTION_DUTY_KIND
+            item["review_run_id"] = delivered
+            item["reason"] = (
+                f"the review {delivered} has been delivered and awaits "
+                "promotion; the run is not waiting on a dispatch"
+            )
+            item["next_command"] = _delivered_review_promotion_command(delivered)
+        elif queued is not None:
             item["kind"] = REVIEW_QUEUED_DUTY_KIND
             item.update(queued)
         elif superseded:
