@@ -2102,6 +2102,14 @@ class RowPolicy:
         if not run_id:
             return False
         if str(event.get("to_state") or "") == "withdrawn":
+            # A queued request has no run behind it, so a withdrawal is the
+            # admission pass taking an impossible launch back, never the work
+            # leaving the fleet. The request keeps its place and its word, and
+            # the row that follows it is a refusal naming the remedy; drawing
+            # the withdrawal would tell the coordinator the request had been
+            # dropped. This is a property of the row, not of how close the
+            # next row lands, so it holds whether or not a follower saw the
+            # request's pointer come back.
             return False
         if (
             str(event.get("to_state") or "") == "discarded"
