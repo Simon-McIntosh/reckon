@@ -27,6 +27,7 @@ PROJECT = "delivered-review-fixture"
 SESSION = "coordinator-fixture"
 OBSERVED_AT = datetime(2026, 11, 12, 10, 50, tzinfo=UTC)
 REVIEW_RUN_ID = "r-20261112T071728958783-review-of-the-delivered-run"
+FIGURE_RUBRIC = review_module.FIGURE_REVIEW_RUBRIC
 
 
 @pytest.fixture()
@@ -127,8 +128,8 @@ def _write_review_pointer(
     return pointer
 
 
-def _store_review(*, run_id: str, head: str) -> Path:
-    """Store one complete review of ``run_id`` at ``head``."""
+def _store_review(*, run_id: str, head: str, rubric: str | None = None) -> Path:
+    """Store one review of ``run_id`` at ``head``, under ``rubric``."""
     emitted = "\n".join(
         f"SCORE {dimension}: 20" for dimension in review_module.REVIEW_DIMENSIONS
     )
@@ -142,6 +143,8 @@ def _store_review(*, run_id: str, head: str) -> Path:
             "reviewed_head_sha": head,
         }
     )
+    if rubric is not None:
+        record["rubric"] = rubric
     return review_module.store_review(record)
 
 
@@ -185,14 +188,17 @@ def test_a_delivered_review_reads_awaiting_promotion(
     working = _duties(monkeypatch, [_score_row(run_id)])
     assert [item["kind"] for item in working] == ["review-in-flight"]
 
-    # The review delivers. Its record is not landed, so the run waits on a
-    # promotion rather than on a review that does not exist.
+    # The review delivers: it ends and stores its record for the head, which no
+    # promotion has landed yet. The by-head selection reads the text rubric
+    # only, so a figure review's record is exactly the sort of record that sits
+    # waiting to be landed while the run reads as owed nothing else.
     _write_review_pointer(
         review_run_id=REVIEW_RUN_ID,
         reviewed_run_id=run_id,
         head=head,
         phase="complete",
     )
+    _store_review(run_id=run_id, head=head, rubric=FIGURE_RUBRIC)
     delivered_row = _score_row(run_id)
     assert delivered_row["review_run_id"] is None
     duty = _review_duty(_duties(monkeypatch, [delivered_row]))
@@ -226,6 +232,31 @@ def test_a_promoted_delivered_review_reads_ready(
     assert duty["kind"] == "review-ready"
 
 
+def test_a_complete_review_with_no_stored_record_owes_no_promotion(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A review run that ended without filing has not delivered anything.
+
+    Its pointer is complete, but the store holds no record for the head, so
+    there is nothing to land: the base reading stands and the run is not told
+    to promote a record that does not exist.
+    """
+    run_id = "r-20261112T060543442651-delivered-run"
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(repository, tmp_path, run_id=run_id, head=head)
+    _record_review_dispatch(run_id, review_run_id=REVIEW_RUN_ID, head=head)
+    _write_review_pointer(
+        review_run_id=REVIEW_RUN_ID,
+        reviewed_run_id=run_id,
+        head=head,
+        phase="complete",
+    )
+
+    duties = _duties(monkeypatch, [_score_row(run_id)])
+
+    assert [item["kind"] for item in duties if "head" in item] == []
+
+
 def test_a_delivered_review_of_a_superseded_head_owes_a_new_review(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -235,8 +266,11 @@ def test_a_delivered_review_of_a_superseded_head_owes_a_new_review(
     the run still owes a review of the head it carries now.
     """
     run_id = "r-20261112T060543442651-delivered-run"
+    superseded_head = _git(repository, "rev-parse", "HEAD")
+    (repository / "later.txt").write_text("later\n", encoding="utf-8")
+    _git(repository, "add", "later.txt")
+    _git(repository, "commit", "-q", "-m", "test: a later revision")
     head = _git(repository, "rev-parse", "HEAD")
-    superseded_head = "0" * 40
     _write_delivered_run(repository, tmp_path, run_id=run_id, head=head)
     _record_review_dispatch(run_id, review_run_id=REVIEW_RUN_ID, head=superseded_head)
     _write_review_pointer(
@@ -245,11 +279,13 @@ def test_a_delivered_review_of_a_superseded_head_owes_a_new_review(
         head=superseded_head,
         phase="complete",
     )
+    _store_review(run_id=run_id, head=superseded_head, rubric=FIGURE_RUBRIC)
 
-    duty = _review_duty(_duties(monkeypatch, [_score_row(run_id)]))
+    duties = _duties(monkeypatch, [_score_row(run_id)])
 
-    assert duty["kind"] != "review-awaiting-promotion"
-    assert duty["kind"] == "review-missing"
+    kinds = [item["kind"] for item in duties if "head" in item]
+    assert "review-awaiting-promotion" not in kinds
+    assert REVIEW_RUN_ID not in str(duties)
 
 
 def test_a_completed_review_of_another_run_leaves_this_run_missing(

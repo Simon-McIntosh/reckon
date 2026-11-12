@@ -627,16 +627,40 @@ def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     return {}
 
 
+def _stored_review_at_head(project: str, run_id: str, head: str) -> bool:
+    """Whether the store holds a review record for ``head``, any rubric.
+
+    A review run that reached its end has delivered only if it left a record:
+    a run whose pointer is complete but whose store holds nothing for the
+    revision ended without filing, and the revision is owed a review again.
+    Every rubric counts, because the by-head selection reads one rubric at a
+    time and a record it passes over is still a record waiting to be landed.
+    """
+    if not project or not run_id or not head:
+        return False
+    try:
+        rows = review_module.stored_records_for_run(project, run_id)
+    except (OSError, ValueError):
+        return False
+    for _path, record in rows:
+        named = str(record.get("reviewed_head_sha") or "")
+        if named and recovery.same_revision(named, head):
+            return True
+    return False
+
+
 def _delivered_review(
     pointer: Mapping[str, Any], head: str
 ) -> tuple[str, Mapping[str, Any]]:
     """The run's delivered, unlanded review, as its id and its pointer.
 
-    Delivered means the review the run's own record names has finished and left
-    a record for a promotion to land. The review's pointer is read once here,
-    and its phase is judged by the classifier's own reading of that pointer, so
-    this surface cannot invent a second vocabulary for what a review's progress
-    is called.
+    Delivered means the review the run's own record names has finished and
+    left a record for a promotion to land, for the head the run carries now. A
+    review run that ended without storing a record has not delivered: nothing
+    is waiting to be landed, and the revision is owed a review again. The
+    review's pointer is read once here, and its phase is judged by the
+    classifier's own reading of that pointer, so this surface cannot invent a
+    second vocabulary for what a review's progress is called.
 
     A review of a revision the run has moved past is not this run's wait:
     promoting it would land evidence for work the run no longer carries, and
@@ -653,6 +677,10 @@ def _delivered_review(
         return "", {}
     review_pointer = recovery_review_dispatch._readable_standing_review(standing)
     if not recovery_classification._review_pointer_delivered(review_pointer):
+        return "", {}
+    if not _stored_review_at_head(
+        str(pointer.get("project") or ""), str(pointer.get("run_id") or ""), head
+    ):
         return "", {}
     return standing, review_pointer
 
@@ -1006,7 +1034,8 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     :data:`REVIEW_AWAITING_PROMOTION_DUTY_KIND` — or, when the review read a
     revision the run has since moved past, as the review the new head is owed.
     """
-    if _delivered_review(pointer, "")[0]:
+    delivered_head, _delivered_tree = recovery._review_head_and_tree(pointer)
+    if _delivered_review(pointer, delivered_head)[0]:
         return False
     if _reflex_review_in_flight(pointer):
         return True
