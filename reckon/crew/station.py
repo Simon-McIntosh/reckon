@@ -803,6 +803,13 @@ def run_station(
                     raise StationHeldError(
                         f"station lost its lease at {lease.path}: {lost}"
                     ) from None
+                except Exception as error:  # noqa: BLE001 - one tick costs one tick
+                    print(
+                        f"station-tick-failure: {error}",
+                        file=sys.stderr,
+                        flush=True,
+                    )
+                    traceback.print_exc(file=sys.stderr)
                 if renewal.lost():
                     break
                 if once:
