@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="artifact-kind" content="evidence">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s38">
+  <meta name="evidence-verdict" content="pass">
+  <meta name="evidence-date" content="2026-11-12">
+  <meta name="evidence-commit" content="5f81f71e4c">
+  <title>A promoted run is not landed until its head is merged | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+<section id="a-promoted-run-is-not-landed-until-merged">
+  <h2>A promoted run is not landed until its head is merged</h2>
+  <p><strong>The field the follower read <code>landed</code> from.</strong>
+  <code>_recorded_pointer_word</code> (<code>reckon/crew/recovery_watch.py</code>)
+  answers <code>promoted</code> the moment the run's ledger row exists, and the
+  pane maps <code>promoted</code> to its <code>landed</code> word
+  (<code>PANE_STATES</code>, <code>reckon/crew/ticker.py</code>). Promotion
+  writes that row before the delivered head is merged, so a landing interrupted
+  between its promotion and its merge read <code>landed</code> while its change
+  was on no branch.</p>
+  <p><strong>Change (commit <code>5f81f71e4c</code>).</strong>
+  <code>classify_pointer</code>
+  (<code>reckon/crew/recovery_classification.py</code>) now reads the landing's
+  own pending record — one file under the crew home that
+  <code>crew complete --land</code> writes before the promotion and removes only
+  once the run's delivered head is on the primary branch. While that record
+  exists the run reads <code>complete</code> (the pane's <code>delivered</code>
+  word) instead of <code>promoted</code>, and its detail names the landing's own
+  status: <code>awaiting-merge-repair</code> when the landing pass recorded a
+  merge conflict, <code>awaiting-merge</code> otherwise. The landed word returns
+  when the landing pass clears the record after the merge, and the run's
+  departure then carries it.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_promoted_run_is_not_landed_until_merged.py</code>
+  builds a real repository whose primary branch does not carry the delivered
+  head, plus a live pointer, a completion manifest and the run's ledger row. The
+  first case adds the pending landing record with a recorded merge conflict and
+  asserts the follower's own state is not <code>promoted</code>, is
+  <code>complete</code>, and its detail contains
+  <code>awaiting-merge-repair</code>. The second case merges the delivered head
+  into the primary branch locally and clears the record, as the landing pass
+  does, and asserts the state is <code>promoted</code>.
+  <code>tests/test_staged_write_inventory.py</code> also imports the changed
+  module. Matched arms on an <code>all_debug</code> partition job:
+  base arm (<code>0130129d36</code>) 51 passed,
+  <code>EXIT=0</code>; head arm
+  (<code>tests/test_staged_write_inventory.py</code> and the new file) 53
+  passed, <code>EXIT=0</code>. ruff <code>check</code> and
+  <code>format --check</code> report no finding on the staged paths.</p>
+  <p><strong>Declared mutation.</strong> Restoring the base reading — the
+  pending-landing record is ignored and the ledger row alone settles the run —
+  makes the first case read <code>landed</code> again:
+  <code>EXIT=1</code>, <code>test_a_promoted_run_awaiting_its_merge_does_not_read_landed</code>
+  fails on <code>assert 'promoted' != 'promoted'</code>, while the second case
+  passes. This gate measures this node's own change; verifying the merged result
+  belongs to a separately dispatched test node.</p>
+</section>
+</main>
+</body>
+</html>
