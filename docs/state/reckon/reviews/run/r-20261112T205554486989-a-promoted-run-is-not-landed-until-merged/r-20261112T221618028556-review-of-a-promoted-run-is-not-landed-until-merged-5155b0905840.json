@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T22:37:55.487Z",
+  "dispatched_at": "2026-11-12T22:21:26Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 827,
+      "severity": "non-blocking",
+      "text": "the helper consults only the pending-landing record, so a promoted run with no record still reads settled whatever its ancestry; the plan's deliverable names \"or whose head is not on the primary branch\", and its own second cited run read landed at 20:47Z while the section text records that run's record written at 21:06:57Z, so that population is not covered."
+    },
+    {
+      "file": "tests/test_a_promoted_run_is_not_landed_until_merged.py",
+      "line": 121,
+      "severity": "non-blocking",
+      "text": "only the merge-conflict shape is exercised, so the plain awaiting-merge branch at reckon/crew/recovery_classification.py:851 would pass both cases if it answered awaiting-merge-repair unconditionally or the two words were swapped."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promoted-run-is-not-landed-until-merged.html",
+      "line": 42,
+      "severity": "non-blocking",
+      "text": "the fragment records a three-step signal (ledger row to pending record to pane word) in prose only, though the node declared docs/figures/the-monitor-reads-each-fact-once/a-promoted-run-is-not-landed-until-merged as a write path and the mechanism is a decision graph a single state diagram carries better than paragraphs."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_promoted_run_is_not_landed_until_merged.py:131 fails at base for the awaiting-merge-repair case, but line 121 injects only the merge-conflict shape, leaving the no-conflict branch at reckon/crew/recovery_classification.py:851 unguarded.",
+    "evidence": "logs/negative-control.log reproduces the defect at base for the same case (assert 'promoted' != 'promoted', EXIT=1), and logs/base-arm.log and logs/after-arm.log record 51 and 53 passed with EXIT=0, though the second test case passes at base too (1 passed in that log), so it demonstrates a guard rather than the change.",
+    "fit": "reckon/crew/recovery_classification.py:827 keeps the module's comment style and lazy-import idiom and takes pending_landing's record through the same private helpers reckon/crew/recovery_repair_dispatch.py:93 already uses, with no plan or ticket label.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:827 makes the pending-landing record the whole test, so the deliverable's companion clause \"or whose head is not on the primary branch\" is not what the landed code reads.",
+    "reuse": "no owner for a local promoted-but-unmerged reading exists (pending_landing._settled_landing asks the remote branch and returns a disposition, _promoted_row reads the ledger row), and the addition consumes pending_landing's own record rather than forking a second signal.",
+    "scope_discipline": "git diff 0130129d36..5155b09058 touches only the three declared paths, and the declared reckon/crew/obligations.py and figures directory were left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal (\"Read a promoted run as landed only once its head is on the primary branch\") against the landed diff; reckon/crew/recovery_classification.py:2569 now consults the run's pending-landing record and, while it exists, publishes fleet state complete with the record's own status, so a promoted run whose merge is unfinished no longer reads promoted, which reckon/crew/ticker.py:483 maps to the pane word landed.\nVERDICT done_when: read the done_when in the plan's section text and the gate it names; tests/test_a_promoted_run_is_not_landed_until_merged.py:110 builds a temporary crew home and repository whose primary branch lacks the delivered head, adds an awaiting-merge-repair record, and asserts the run does not read promoted, reads complete and names the status, with a second case at line 135 asserting promoted once the head is merged and the record cleared; the manifest records matched arms (51 passed base, 53 passed head) and a negative control reading 1 failed, EXIT=1.\nVERDICT write_paths: read the declared write paths (reckon/crew/obligations.py, reckon/crew/recovery_classification.py, tests/test_a_promoted_run_is_not_landed_until_merged.py) and the plan's \"the node's fragment\"; the diff touches recovery_classification.py:34,827,2569, the new test file and the new evidence fragment, all inside the declared set, and obligations.py is declared but untouched.\nVERDICT manifest: read /home/.../manifest.md; it records status complete, base 0130129d36 with 51 passed EXIT=0 and head 5155b09058 with 53 passed EXIT=0, one negative-control log whose assertion is named, and the field the follower read landed from (_recorded_pointer_word answering promoted on the ledger row alone); the three logs it cites agree with those figures, and the worker's ruff claim reproduced clean on both staged source files.\nVERDICT diff: read 0130129d36..5155b09058 commit by commit; two commits, 275 insertions and one deletion across three files (reckon/crew/recovery_classification.py, tests/test_a_promoted_run_is_not_landed_until_merged.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promoted-run-is-not-landed-until-merged.html), each inside the declared scope and each carrying a body.\nCALL_SITES: reckon/crew/obligations.py:1310, reckon/crew/recovery.py:_watch_snapshot, reckon/crew/query.py:446, reckon/crew/directory.py:342, reckon/crew/forgotten_runs.py:94, reckon/crew/pending_landing.py:213, reckon/crew/promotion.py:498, reckon/crew/promotion_release.py:1045, reckon/crew/queue_landing.py:1518\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_classification.py:827 makes the pending-landing record the whole test, so the deliverable's companion clause \"or whose head is not on the primary branch\" is not what the landed code reads.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/negative-control.log reproduces the defect at base for the same case (assert 'promoted' != 'promoted', EXIT=1), and logs/base-arm.log and logs/after-arm.log record 51 and 53 passed with EXIT=0, though the second test case passes at base too (1 passed in that log), so it demonstrates a guard rather than the change.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 0130129d36..5155b09058 touches only the three declared paths, and the declared reckon/crew/obligations.py and figures directory were left untouched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_promoted_run_is_not_landed_until_merged.py:131 fails at base for the awaiting-merge-repair case, but line 121 injects only the merge-conflict shape, leaving the no-conflict branch at reckon/crew/recovery_classification.py:851 unguarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_classification.py:827 keeps the module's comment style and lazy-import idiom and takes pending_landing's record through the same private helpers reckon/crew/recovery_repair_dispatch.py:93 already uses, with no plan or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no owner for a local promoted-but-unmerged reading exists (pending_landing._settled_landing asks the remote branch and returns a disposition, _promoted_row reads the ledger row), and the addition consumes pending_landing's own record rather than forking a second signal.\nFINDING reckon/crew/recovery_classification.py:827 non-blocking: the helper consults only the pending-landing record, so a promoted run with no record still reads settled whatever its ancestry; the plan's deliverable names \"or whose head is not on the primary branch\", and its own second cited run read landed at 20:47Z while the section text records that run's record written at 21:06:57Z, so that population is not covered.\nFINDING tests/test_a_promoted_run_is_not_landed_until_merged.py:121 non-blocking: only the merge-conflict shape is exercised, so the plain awaiting-merge branch at reckon/crew/recovery_classification.py:851 would pass both cases if it answered awaiting-merge-repair unconditionally or the two words were swapped.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/a-promoted-run-is-not-landed-until-merged.html:42 non-blocking: the fragment records a three-step signal (ledger row to pending record to pane word) in prose only, though the node declared docs/figures/the-monitor-reads-each-fact-once/a-promoted-run-is-not-landed-until-merged as a write path and the mechanism is a decision graph a single state diagram carries better than paragraphs.\n",
+  "review_run_id": "r-20261112T221618028556-review-of-a-promoted-run-is-not-landed-until-merged-5155b0905840",
+  "reviewed_base_sha": "0130129d36725a70de5f5581925c6e3af2eee7e8",
+  "reviewed_head_sha": "5155b0905840af46054b445ede5966ba6a4b5c8a",
+  "reviewed_run_id": "r-20261112T205554486989-a-promoted-run-is-not-landed-until-merged",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:44:57.715234+00:00",
+  "total": 107
+}
