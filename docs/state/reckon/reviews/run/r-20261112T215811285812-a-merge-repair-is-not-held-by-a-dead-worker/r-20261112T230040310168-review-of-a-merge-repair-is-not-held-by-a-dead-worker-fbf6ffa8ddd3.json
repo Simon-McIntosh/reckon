@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "973df332883591683c909652345d1569fdf7f402",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_repair_dispatch.py:112 _sweep -> _reviewed_run_is_busy",
+    "reckon/crew/recovery_repair_dispatch.py:1338 repair reflex -> _reviewed_run_is_busy",
+    "reckon/crew/pending_landing.py:286 pending landing -> _reviewed_run_is_busy",
+    "reckon/crew/recovery.py:179 re-export consumed by pending_landing"
+  ],
+  "completed_at": "2026-11-12T23:17:43.401Z",
+  "dispatched_at": "2026-11-12T23:05:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "352",
+      "severity": "non-blocking",
+      "text": "non-blocking: the newly load-bearing pointer reading uses bare runs.record_process_alive, whose own docstring says it performs no host check and may be read only where the pid's presence on this host is established; on a crew home shared across login nodes a run launched elsewhere answers False here and the round is released onto a possibly-live worker, where recovery_liveness.local_liveness and _worker_record_liveness both refuse a foreign record."
+    },
+    {
+      "file": "docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-merge-repair-is-not-held-by-a-dead-worker.html",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed fragment quotes the head gate as '4 passed in 3.84s', but the run's own logs record 4 passed in 1.83s and the agent.prod.template carries no 3.84 anywhere, so the figure reconciles with no receipt a reader can re-check."
+    },
+    {
+      "file": "tests/test_a_merge_repair_is_not_held_by_a_dead_worker.py",
+      "line": "117",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unknown-liveness case asserts the exact prose of HELD_REASON, so rewording the user-facing hold sentence reddens a test that guards behaviour the sentence does not describe; asserting a non-empty hold, as the live-pid case does, would guard the same reading without binding it to text."
+    }
+  ],
+  "head_log_revision": "fbf6ffa8ddd3489298d2008783e6a981305050c3",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites: the repair sweep at recovery_repair_dispatch.py:112, the reflex at :1338, and pending_landing.py:284-286 which delegates from recovery._reviewed_run_is_busy.",
+    "diff": "read the three commits against 973df33: 2f6e077d51 conditions the stream reading on pointer/worker-record liveness and adds a 147-line test file; a07d40b5de switches the fixture import to request.getfixturevalue so ruff stops reporting a redefinition; fbf6ffa8dd adds the evidence fragment.",
+    "done_when": "the done_when asks for a dead-pid release, a live-pid hold, and a base-revision negative control, with the importing test files adding no failure and every log carrying revision, literal command and EXIT=; node.log (4 passed, EXIT=0), negative-control.log (2 failed, 2 passed, EXIT=1) and the two importer arms (184/188 passed, zero added failure ids) assert it, and sacct jobs 1312635-1312661 show the arms ran on all_debug at -n 4.",
+    "goal": "a merge repair held for a resumed turn is released once the process running that turn is gone; reckon/crew/recovery_repair_dispatch.py:352-366 now reads pointer and worker-record liveness before the stream and returns the empty reason when either is proved dead, so the reflex reaches the repair.",
+    "manifest": "read; status complete, commits 2f6e077d51/a07d40b5de/fbf6ffa8dd, baseline_suite and after_suite both exit 0 with zero failure ids on tests/test_a_staged_write_inventory.py, negative_control_log named, measurement_module and measurement_cwd recorded for the scratch base arm.",
+    "write_paths": "the node was fenced to reckon/crew/recovery_repair_dispatch.py and a new test file under tests/, with docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-merge-repair-is-not-held-by-a-dead-worker.html granted; git diff 973df33..fbf6ffa touches exactly those three and nothing else."
+  },
+  "justifications": {
+    "durability": "the negative control reddens exactly tests/test_a_merge_repair_is_not_held_by_a_dead_worker.py::test_a_dead_recorded_pid_does_not_hold_the_round and ::test_a_dead_worker_does_not_hold_the_repair_from_dispatch at the base module (EXIT=1), so restoring the stream-only reading fails the guarded behaviour.",
+    "evidence": "the node gate (4 passed, EXIT=0, node.log), the negative control (2 failed/2 passed, EXIT=1, negative-control.log) and both importer arms (184 at base, 188 at head, zero added failure ids) are recorded, and sacct jobs 1312635-1312661 show the arms ran on all_debug; only the fragment's quoted '4 passed in 3.84s' reconciles with no log.",
+    "fit": "the change follows the module's own liveness idiom but reads the pointer through bare runs.record_process_alive at recovery_repair_dispatch.py:352, missing the launching-host gate that _worker_record_liveness and recovery_liveness.local_liveness apply.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:352-366 releases the round when pointer_alive or worker_alive is False while a live pid still returns the hold and unknown liveness keeps the stream reading, which is the node's stated release.",
+    "reuse": "the change adds no helper and reuses the existing owners of liveness (runs.record_process_alive and recovery_liveness._worker_record_liveness) rather than forking a second probe.",
+    "scope_discipline": "git diff --stat 973df33..fbf6ffa lists only reckon/crew/recovery_repair_dispatch.py, the new tests/test_a_merge_repair_is_not_held_by_a_dead_worker.py and the granted evidence fragment, every one inside the manifest's declared or granted paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a merge repair held for a resumed turn is released once the process running that turn is gone; reckon/crew/recovery_repair_dispatch.py:352-366 now reads pointer and worker-record liveness before the stream and returns the empty reason when either is proved dead.\nVERDICT done_when: the done_when asks for a dead-pid release, a live-pid hold and a base-revision negative control with the importing tests adding no failure and every log carrying revision, literal command and EXIT=; node.log (4 passed, EXIT=0), negative-control.log (2 failed/2 passed, EXIT=1) and the importer arms (184 base, 188 head, zero added ids) record it, and sacct jobs 1312635-1312661 show the arms ran on all_debug at -n 4.\nVERDICT write_paths: the node was fenced to reckon/crew/recovery_repair_dispatch.py and a new test file under tests/ with the evidence fragment granted; git diff 973df33..fbf6ffa touches exactly those three.\nVERDICT manifest: read; status complete, three commits, both suite arms exit 0 with zero failure ids, negative control named, scratch-tree module and cwd recorded.\nVERDICT diff: read commit by commit against 973df33; the release is 15 lines in the busy check, a new 147-line test file, a fixture-import correction for ruff, and the evidence fragment.\nCALL_SITES: reckon/crew/recovery_repair_dispatch.py:112 _sweep -> _reviewed_run_is_busy, reckon/crew/recovery_repair_dispatch.py:1338 repair reflex -> _reviewed_run_is_busy, reckon/crew/pending_landing.py:286 pending landing -> _reviewed_run_is_busy, reckon/crew/recovery.py:179 re-export consumed by pending_landing\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:352-366 releases on a proved-dead pointer or worker-record pid and keeps the hold for a live pid and for unknown liveness.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate and negative-control logs reconcile with the manifest and sacct confirms the all_debug arms, but the fragment's '4 passed in 3.84s' at a-merge-repair-is-not-held-by-a-dead-worker.html:19 reconciles with no log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 973df33..fbf6ffa lies inside the declared or granted write paths.\nSCORE durability: 18\nJUSTIFICATION durability: the base-revision negative control reddens exactly the two dead-pid cases in tests/test_a_merge_repair_is_not_held_by_a_dead_worker.py:76 and :132, so reinstating the stream-only reading fails the guard.\nSCORE fit: 14\nJUSTIFICATION fit: reckon/crew/recovery_repair_dispatch.py:352 reads the pointer through the host-ungated primitive the module's own _worker_record_liveness and recovery_liveness.local_liveness decline to trust for a foreign record.\nSCORE reuse: 17\nJUSTIFICATION reuse: the change adds no helper and reuses runs.record_process_alive and recovery_liveness._worker_record_liveness, the existing owners of liveness.\nFINDING reckon/crew/recovery_repair_dispatch.py:352 non-blocking: the load-bearing pointer read uses bare runs.record_process_alive with no launching-host gate, so a run launched on another node of a shared crew home can read its pid dead here and be released onto a possibly-live worker.\nFINDING docs/evidence/fragments/concurrent-edits-meet-at-the-merge/a-merge-repair-is-not-held-by-a-dead-worker.html:19 non-blocking: the head-gate row quotes '4 passed in 3.84s' while the run's logs record 1.83s and 2.00s, so the metric cannot be checked against its receipt.\nFINDING tests/test_a_merge_repair_is_not_held_by_a_dead_worker.py:117 non-blocking: the unknown-liveness case asserts the exact hold sentence, so a message reword reddens a behavioural guard.\n",
+  "review_run_id": "r-20261112T230040310168-review-of-a-merge-repair-is-not-held-by-a-dead-worker-fbf6ffa8ddd3",
+  "reviewed_base_sha": "973df332883591683c909652345d1569fdf7f402",
+  "reviewed_head_sha": "fbf6ffa8ddd3489298d2008783e6a981305050c3",
+  "reviewed_run_id": "r-20261112T215811285812-a-merge-repair-is-not-held-by-a-dead-worker",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T230040310168-review-of-a-merge-repair-is-not-held-by-a-dead-worker-fbf6ffa8ddd3"
+  },
+  "reviewer_run_id": "r-20261112T230040310168-review-of-a-merge-repair-is-not-held-by-a-dead-worker-fbf6ffa8ddd3",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T23:47:09.213226+00:00",
+  "total": 103
+}
