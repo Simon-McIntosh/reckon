@@ -670,3 +670,33 @@ def test_cyclic_concern_bindings_are_the_facade_objects():
     for module in facade._CONCERN_MODULES:
         for name in getattr(module, "_FACADE_BINDINGS", ()):
             assert getattr(module, name) is getattr(facade, name), name
+
+
+def test_dispatch_patches_use_the_crew_facade_owner(monkeypatch, tmp_path):
+    crew = importlib.import_module("reckon.crew")
+    facade = dispatch_module()
+    owner = type(crew)
+    forward = owner.__setattr__
+    calls = []
+
+    def record_forward(module, name, value):
+        calls.append((module, name, value))
+        return forward(module, name, value)
+
+    monkeypatch.setattr(owner, "__setattr__", record_forward)
+    monkeypatch.setattr(facade, "run_dir", lambda run_id: tmp_path / run_id)
+    original = facade.ATTEMPT_RECORD_NAME
+    with monkeypatch.context() as patch:
+        patch.setattr(facade, "ATTEMPT_RECORD_NAME", "forwarded.receipt")
+        assert (
+            facade._attempt_record_for("sample")
+            == tmp_path / "sample/forwarded.receipt"
+        )
+        assert any(
+            module is facade
+            and name == "ATTEMPT_RECORD_NAME"
+            and value == "forwarded.receipt"
+            for module, name, value in calls
+        ), "dispatch assignment bypassed the crew facade's forwarding owner"
+    assert original == facade.ATTEMPT_RECORD_NAME
+    assert facade._attempt_record_for("sample") == tmp_path / "sample" / original
