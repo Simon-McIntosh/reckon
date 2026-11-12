@@ -20,14 +20,13 @@
     <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
     <tbody>
       <tr><td>Node suite, base and head on a partition node</td><td>Base
-      <code>51 passed in 10.26 s</code>; head <code>58 passed in 10.30 s</code>.
+      <code>51 passed in 10.26 s</code>; head at <code>d9195ad8be</code> <code>59 passed in 11.13 s</code> (<code>final-head-suite.log</code>).
       Both exit 0; zero added failures.</td></tr>
-      <tr><td>Negative control on the base source</td><td><code>6 failed, 1
-      passed</code>, exit 1, including <code>ownerless stub survived the station
+      <tr><td>Negative control on the base source</td><td><code>8 failed</code>, exit 1 (<code>negative-control.log</code>), including <code>ownerless stub survived the station
       beat</code>: the base station never runs the sweep at all.</td></tr>
-      <tr><td>Station and census importer arms</td><td>Base <code>1 failed, 228
-      passed in 73.79 s</code>; head <code>1 failed, 228 passed in 72.49 s</code>.
-      Identical failing identity, zero added and zero removed.</td></tr>
+      <tr><td>Station and census importer arms</td><td>Over 66 files, base <code>11 failed, 511
+      passed</code> and head <code>11 failed, 511 passed</code> (<code>baseline-importers.log</code>, <code>after-importers.log</code>).
+      Identical failing ids, zero added and zero removed.</td></tr>
       <tr><td>Opt-in guard</td><td>A station run with the sweep unrequested
       records no call to <code>census.census</code> or <code>apply_census</code>,
       constructs no census beat, and leaves no <code>station-census</code>
@@ -43,15 +42,13 @@
       default forwards <code>False</code>.</td></tr>
       <tr><td>Shutdown</td><td>A recording beat shows <code>start</code> then
       <code>stop</code> across a station run that opted in.</td></tr>
-      <tr><td>Lint and format</td><td>Ruff check and format check pass on every
-      staged Python path.</td></tr>
+      <tr><td>Lint and format</td><td>Ruff check and format check pass on
+      <code>reckon/crew/census.py</code>, <code>reckon/crew/station.py</code> and the test file. <code>reckon/crew_follow_commands.py</code> carries the same two findings (SIM103, SIM115) and format drift at head as at base; this change adds none.</td></tr>
     </tbody>
   </table>
   <p>Implementation commits <code>2bdded66a569614f4a93489e91b1dd1b36087a17</code>
   and its test repair. Durable receipts, the negative-control log and
   imported-module provenance are in run
   <code>r-20261112T043103964878-station-runs-the-census</code>; the arms ran on
-  an <code>all_debug</code> partition node, never on the fleet node. The station
-  CLI that would pass the opt-in option is another node's write scope, so
-  activating the sweep there belongs to the coordinator.</p>
+  an <code>all_debug</code> partition node, never on the fleet node. <code>crew station --census-sweep</code> landed in this node. The fleet supervisor still starts the station without it, so the sweep stays off in production until the coordinator turns it on.</p>
 </section>
