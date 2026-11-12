@@ -26,6 +26,13 @@ from reckon.crew.reports import (
     parse_manifest,
 )
 
+#: The word a promoted run reads while its delivered head is not on the primary
+#: branch. It is the delivered state rather than a landed one: promotion writes
+#: a ledger row, and only the merge puts the change on a branch. The word is
+#: shared by the lifecycle classification and the fleet verdict so a row cannot
+#: report the same run as two different outcomes.
+PROMOTED_UNMERGED_STATE = "complete"
+
 
 def _manifest_is_the_predecessor_attempts_report(
     record: Mapping[str, Any],
@@ -815,6 +822,34 @@ def _lane_admission_detail(
         "source": str(lane_reading.get("source") or ""),
         "observed_at": observed_at or None,
     }
+
+
+def _promoted_awaiting_merge(record: Mapping[str, Any]) -> str:
+    """The pending-landing status of a promoted run whose merge is unfinished.
+
+    ``crew complete --land`` writes one record per landing under the crew home
+    before it promotes and removes it only once the delivered head is on the
+    primary branch, so a record that still exists marks a promotion whose change
+    no branch carries. The status names repair when the landing pass recorded a
+    merge conflict on the record and a plain merge otherwise. An absent record
+    answers empty, which leaves the ledger's own word standing: only the record
+    made by a landing in flight says the merge is still owed.
+    """
+    run_id = str(record.get("run_id") or "")
+    if not run_id:
+        return ""
+    from reckon.crew import pending_landing
+
+    try:
+        record_path = pending_landing._record_path(run_id)
+    except (OSError, ValueError):
+        return ""
+    pending = pending_landing._read(record_path)
+    if pending is None:
+        return ""
+    return (
+        "awaiting-merge-repair" if pending.get("merge_conflict") else "awaiting-merge"
+    )
 
 
 def classify_pointer(
@@ -2531,7 +2566,29 @@ def classify_pointer(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
     settled = classified["fleet_verdict"]["state"]
-    if settled in FLEET_SETTLED_STATES:
+    pending_landing_status = (
+        _promoted_awaiting_merge(record) if settled in FLEET_SETTLED_STATES else ""
+    )
+    if pending_landing_status:
+        # A ledger row records the promotion; it does not put the delivered
+        # head on the primary branch. Until the landing record is gone the run
+        # is delivered and reads that way, naming the landing's own status, so
+        # a coordinator is not told to stop attending to a change no branch
+        # carries yet.
+        detail = (
+            "the run is promoted and awaits its merge: its pending landing "
+            f"reads {pending_landing_status}"
+        )
+        classified["fleet_verdict"] = {
+            **classified["fleet_verdict"],
+            "state": PROMOTED_UNMERGED_STATE,
+            "recovery_classification": PROMOTED_UNMERGED_STATE,
+            "detail": detail,
+        }
+        classified["classification"] = PROMOTED_UNMERGED_STATE
+        classified["detail"] = detail
+        classified["next_action"] = f"reckon crew observe --run {run_id}"
+    elif settled in FLEET_SETTLED_STATES:
         # The ledger's word also names the lifecycle reading, so a committed
         # completion cannot read as two different outcomes on one row.
         classified["classification"] = settled
