@@ -1,0 +1,69 @@
+<article class="r-evidence-fragment" id="attribute-a-live-promotion-s-time-by-stage">
+<h2 id="attribute-a-live-promotion-s-time-by-stage-title">Live promotion stage attribution</h2>
+<p>Thirteen live promotions the coordinator ran in the shared checkout qualify: twelve no-code review promotions and one implement landing, each with a receipt of at least 60 s ending <code>EXIT=0</code>, a promoted ledger row, and no live pointer left. Their receipts read 250 s to 810 s. Every note table names stages covering at least 93.7% of its receipt's wall time under the sampling-coverage check below. No product source or test changed.</p>
+<table id="attribute-a-live-promotion-s-time-by-stage-summary"><caption>Live profiles, verb and attribution coverage</caption><thead><tr><th>profile</th><th>verb</th><th>wall [s]</th><th>main-thread samples</th><th>sampling coverage</th><th>named share</th></tr></thead><tbody>
+<tr><td>20261112T175822Z-review-r-20261112T174908143447</td><td>review</td><td>268.3</td><td>26,454</td><td>98.61%</td><td>95.65%</td></tr>
+<tr><td>20261112T185637Z-review-r-20261112T181144203017</td><td>review</td><td>387.0</td><td>38,711</td><td>100.02%</td><td>95.48%</td></tr>
+<tr><td>20261112T201205Z-review-r-20261112T194338617413</td><td>review</td><td>810.4</td><td>81,006</td><td>99.96%</td><td>95.67%</td></tr>
+<tr><td>20261112T202204Z-review-r-20261112T195500222423</td><td>review</td><td>315.7</td><td>31,363</td><td>99.34%</td><td>95.23%</td></tr>
+<tr><td>20261112T204630Z-review-r-20261112T202831566877</td><td>review</td><td>578.2</td><td>57,438</td><td>99.34%</td><td>95.72%</td></tr>
+<tr><td>20261112T212231Z-review-r-20261112T202541381748</td><td>review</td><td>313.7</td><td>31,103</td><td>99.14%</td><td>95.04%</td></tr>
+<tr><td>20261112T212758Z-review-r-20261112T211418216445</td><td>review</td><td>348.3</td><td>34,363</td><td>98.65%</td><td>95.68%</td></tr>
+<tr><td>20261112T213123Z-land-r-20261112T192244510547</td><td>implement landing</td><td>431.5</td><td>43,092</td><td>99.87%</td><td>95.41%</td></tr>
+<tr><td>20261112T213838Z-review-r-20261112T205856616623</td><td>review</td><td>534.0</td><td>52,995</td><td>99.24%</td><td>95.34%</td></tr>
+<tr><td>20261112T213838Z-review-r-20261112T211654044851</td><td>review</td><td>321.3</td><td>32,133</td><td>100.00%</td><td>95.38%</td></tr>
+<tr><td>20261112T213838Z-review-r-20261112T211914074224</td><td>review</td><td>281.1</td><td>28,400</td><td>101.03%</td><td>95.07%</td></tr>
+<tr><td>20261112T213838Z-review-r-20261112T212242614878</td><td>review</td><td>529.8</td><td>52,872</td><td>99.80%</td><td>95.45%</td></tr>
+<tr><td>20261112T220053Z-review-r-20261112T213732636863</td><td>review</td><td>250.1</td><td>24,867</td><td>99.42%</td><td>95.35%</td></tr>
+</tbody></table>
+<p>Method. Each profile was recorded by the coordinator with <code>py-spy record --idle --format raw --subprocesses --threads --rate 100</code> and read in place under <code>~/.cache/reckon-promotion-rollout/live/</code>; none was copied. A stage's estimated wall time is the receipt's wall seconds multiplied by that stage's share of the original main thread's samples, and a stage's execution mode is subprocess wait when the stack holds <code>subprocess.py</code>, lock wait when it holds <code>_pointer_lock</code>, lock/thread-pool waits otherwise distinguished from CPU and filesystem waits by the leaf frame. Helper threads and child processes remain in the raw profile and are excluded from wall-time addition, because their samples overlap the parent's wait. The independent coverage check is min(1, main samples / 100 / wall) times the named share, and it must reach 90%; every table above reaches at least 93.7%.</p>
+<table id="attribute-a-live-promotion-s-time-by-stage-review"><caption>Review promotion 20261112T175822Z — 268.3 s</caption><thead><tr><th>stage</th><th>estimated wall [s]</th><th>wall share</th><th>execution mode</th><th>population reading</th></tr></thead><tbody>
+<tr><td>Classify live pointers from rollout streams</td><td>57.58</td><td>21.5%</td><td>filesystem wait, reading each live pointer's rollout stream</td><td>grows with the run population</td></tr>
+<tr><td>Classify live pointers from rollout streams</td><td>52.18</td><td>19.5%</td><td>CPU (json decode of the same streams)</td><td>grows with the run population</td></tr>
+<tr><td>Workspace release (worktree copy deletion)</td><td>48.61</td><td>18.1%</td><td>filesystem wait in <code>shutil.rmtree</code> on GPFS</td><td>worktree file count, not the ledger</td></tr>
+<tr><td>Validate landing preconditions</td><td>28.96</td><td>10.8%</td><td>subprocess wait (<code>git status --porcelain</code>)</td><td>checkout and index size</td></tr>
+<tr><td>Validate landing preconditions</td><td>26.67</td><td>9.9%</td><td>CPU</td><td>this run's commits and manifest</td></tr>
+<tr><td>Commit landing record and verify committed blobs</td><td>12.92</td><td>4.8%</td><td>subprocess wait (<code>git -C &lt;repo&gt; …</code>)</td><td>checkout and index size</td></tr>
+<tr><td>Review store index and record stat</td><td>10.35</td><td>3.9%</td><td>filesystem wait (<code>stat</code> per review record)</td><td>review-store record population</td></tr>
+<tr><td>Workspace release (subprocess arm)</td><td>7.55</td><td>2.8%</td><td>subprocess wait (<code>git rev-parse --verify HEAD</code>)</td><td>worktree file count</td></tr>
+<tr><td>Classify live pointers from rollout streams</td><td>3.91</td><td>1.5%</td><td>lock/thread-pool wait</td><td>grows with the run population</td></tr>
+<tr><td>Resolve review and validate promotion tier</td><td>3.70</td><td>1.4%</td><td>CPU</td><td>this run's review records</td></tr>
+<tr><td>Unlisted small stages</td><td>11.66</td><td>4.35%</td><td>mixed, none above 1.2%</td><td>no inference</td></tr>
+<tr><td><strong>Command total</strong></td><td><strong>268.26</strong></td><td><strong>100.00%</strong></td><td>receipt exit 0</td><td>named stages 95.65%</td></tr>
+</tbody></table>
+<table id="attribute-a-live-promotion-s-time-by-stage-landing"><caption>Implement landing 20261112T213123Z — 431.5 s</caption><thead><tr><th>stage</th><th>estimated wall [s]</th><th>wall share</th><th>execution mode</th><th>population reading</th></tr></thead><tbody>
+<tr><td>Validate landing preconditions</td><td>81.80</td><td>19.0%</td><td>CPU</td><td>this run's commits and manifest</td></tr>
+<tr><td>Workspace release (worktree copy deletion)</td><td>66.13</td><td>15.3%</td><td>filesystem wait in <code>shutil.rmtree</code> on GPFS</td><td>worktree file count</td></tr>
+<tr><td>Classify live pointers from rollout streams</td><td>39.10</td><td>9.1%</td><td>CPU</td><td>run population</td></tr>
+<tr><td>Classify live pointers from rollout streams</td><td>35.72</td><td>8.3%</td><td>filesystem wait</td><td>run population</td></tr>
+<tr><td>Workspace release</td><td>31.78</td><td>7.4%</td><td>subprocess wait (<code>git rev-parse --verify HEAD</code>, <code>git -C &lt;repo&gt; …</code>)</td><td>worktree file count</td></tr>
+<tr><td>Decode the ledger index</td><td>31.43</td><td>7.3%</td><td>CPU (json decode)</td><td>ledger rows</td></tr>
+<tr><td>Commit landing record and verify committed blobs</td><td>29.06</td><td>6.7%</td><td>subprocess wait (<code>git -C &lt;repo&gt; …</code>)</td><td>checkout and index size</td></tr>
+<tr><td>Validate landing preconditions</td><td>21.25</td><td>4.9%</td><td>subprocess wait (<code>git status --porcelain</code>, <code>git rev-parse --verify HEAD</code>)</td><td>checkout and index size</td></tr>
+<tr><td>Merge, push and verify the delivered change</td><td>15.71</td><td>3.6%</td><td>subprocess wait</td><td>checkout size and remote latency</td></tr>
+<tr><td>Read/write plan and append landing comment</td><td>10.98</td><td>2.5%</td><td>CPU</td><td>plan bytes</td></tr>
+<tr><td>Git revision/status queries</td><td>6.29</td><td>1.5%</td><td>subprocess wait</td><td>checkout and index size</td></tr>
+<tr><td>Resolve review and validate promotion tier</td><td>5.87</td><td>1.4%</td><td>CPU</td><td>this run's review records</td></tr>
+<tr><td>Validate landing preconditions</td><td>4.95</td><td>1.1%</td><td>lock/thread-pool wait</td><td>this run's commits and manifest</td></tr>
+<tr><td>Workspace release</td><td>3.75</td><td>0.9%</td><td>CPU</td><td>worktree file count</td></tr>
+<tr><td>File memo, flight layer and identity reads</td><td>3.07</td><td>0.7%</td><td>CPU</td><td>not run population</td></tr>
+<tr><td>Validate landing preconditions</td><td>2.75</td><td>0.6%</td><td>filesystem wait</td><td>this run's commits and manifest</td></tr>
+<tr><td>Read/write plan and append landing comment</td><td>2.61</td><td>0.6%</td><td>filesystem wait</td><td>plan bytes</td></tr>
+<tr><td>Load and update the ledger snapshot</td><td>4.27</td><td>1.0%</td><td>CPU and lock/thread-pool wait</td><td>ledger rows</td></tr>
+<tr><td>Unlisted small stages</td><td>19.80</td><td>4.59%</td><td>mixed, none above 1.2%</td><td>no inference</td></tr>
+<tr><td><strong>Command total</strong></td><td><strong>431.46</strong></td><td><strong>100.00%</strong></td><td>receipt exit 0</td><td>named stages 95.41%</td></tr>
+</tbody></table>
+<p>Across all thirteen profiles, four stages carry 82% of the named time: ledger-backed landing validation (1,331.9 s), rollout-stream pointer classification (1,321.8 s), worktree copy deletion (832.5 s) and a single 731.9 s pointer-lock wait. The lock wait is one profile, <code>20261112T201205Z-review-r-20261112T194338617413</code>, where the main thread spent 90% of its 810 s blocked in <code>_pointer_lock</code> (<code>reckon/crew/runs.py</code>) behind another promotion of the same run — a serial sweep's queued promotion, not work done in this process.</p>
+<table id="attribute-a-live-promotion-s-time-by-stage-totals"><caption>Stages summed over the thirteen live profiles</caption><thead><tr><th>stage</th><th>total [s]</th><th>share of named time</th></tr></thead><tbody>
+<tr><td>Validate landing preconditions</td><td>1331.9</td><td>26.0%</td></tr>
+<tr><td>Classify live pointers from rollout streams</td><td>1321.8</td><td>25.8%</td></tr>
+<tr><td>Workspace release (worktree copy deletion)</td><td>832.5</td><td>16.2%</td></tr>
+<tr><td>Acquire the promotion's pointer lock</td><td>731.9</td><td>14.3%</td></tr>
+<tr><td>Review store index and record stat</td><td>399.3</td><td>7.8%</td></tr>
+<tr><td>Commit landing record and verify committed blobs</td><td>249.8</td><td>4.9%</td></tr>
+<tr><td>Everything else, including the plan comment and the merge</td><td>~257</td><td>~5.0%</td></tr>
+</tbody></table>
+<p>Set against §71's seeded tables, the seeded run's largest single stage was interpreter startup, at 40–62% of a 1.6–8.3 s promotion, and it named no stage over 1.6 s. Live, interpreter startup does not reach the top ten. Fourteen stage/verb pairs are more than ten times their seeded time: landing preconditions 664x (review) and 437x (implement landing), git revision/status 304x (landing), plan comment 248x (review) and 157x (landing), review-tier resolution 38x and 55x, ledger index decode 41x (landing), commit landing record 25x and 49x, ledger snapshot 22x (landing), worktree copy deletion 13x and 12x, and the merge/push 10x. Five live stages have no seeded analogue at all: rollout-stream pointer classification, the review-store index and stat, the pointer lock, the file-memo reads and the fleet-state read. What the seed did not reproduce is what dominates live: shared-filesystem contention on the real checkout and index, concurrent promotions holding the same run's pointer lock, real review records and plan sizes, live peer pointers, and the network remote.</p>
+<p>Caveat that bounds the subprocess rows. None of the thirteen profiles contains a child-process sample, so a subprocess stage measures the parent's own wait and its argv is read from the profiled revision's source at the innermost product call site rather than observed: <code>_uncommitted_paths</code> issues <code>git status --porcelain</code>, <code>_tree_state</code> issues <code>git rev-parse --verify HEAD</code>, <code>run_git</code> issues <code>git -C &lt;repo&gt; &lt;args&gt;</code>. A short <code>git</code> call is not sampled before it exits. One further profile was recording while the analysis ran and is excluded: its receipt carries neither a wall time nor an exit status, and it has no raw file.</p>
+<p>Artifacts. The note and one table per profile are the run's <code>note.md</code> under the run directory <code>~/.config/reckon/crew/runs/r-20261112T214135903700-attribute-a-live-promotion-s-time-by-stage/</code>; <code>stage-summary.json</code> holds the same rows with per-stage call sites and every profile's SHA-256 and coverage. The analyser is <code>scripts/analyze_live.py</code> and the gate log is <code>logs/stage-attribution.log</code>, which starts with the checkout revision and the literal command and ends <code>EXIT=0</code>. The analysis ran on the all_debug partition, job 1312545, node 98dci4-clu-3141, load 1.69/2.39/2.29 at start. No profile was copied and no product source changed.</p>
+</article>
