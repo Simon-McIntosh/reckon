@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="83">
+<meta name="plan-version" content="84">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -278,6 +278,9 @@
 <div class="r-comment" data-section="s18" data-id="c-run-r-20261112T005735714647-review-of-worktree-leaves-shared-config-4e51a70c77d9" data-who="reckon-build" data-when="2026-11-12T01:12:37.122Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T213729775225-worktree-leaves-shared-config over bf5030fbe80d8b99a0bf3ae8a7553466e169da62..4e51a70c77d97d4c19e52321e28d85789263eac6: parsed record scoring goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 17, reuse 5 (total 92), added_failure_count 0 over base arm 4 failed/51 passed at bf5030f and head arm 55 passed at f782679b0d, with two non-blocking findings — the lock-wait loop at routing.py:2422 duplicates merge.py:658's bounded-lock-wait owner, and the retry at routing.py:2432 keys on git's stderr prose though the lock path is already resolved at :2390. No blocking finding; the node's done_when is met.</p></div>
 </div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261111T213729775225-worktree-leaves-shared-config" data-who="reckon-build" data-when="2026-11-12T15:40:58Z">
+    <div class="r-comment-body"><p>§18 implemented in reckon/crew/routing.py — the shared extensions.worktreeConfig is read first and written only when absent, a needed write retries a held configuration lock for 5 s and then refuses naming the lock, and the worktree&#x27;s own core.checkStat=minimal is still set; every git call on that path uses the module&#x27;s existing runner; the new test&#x27;s four arms pass at the head (55 passed) and fail four at the base revision, reproducing &quot;could not lock config file .git/config: File exists&quot;</p></div>
+</div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261111T224736111945-review-of-identity-judged-on-its-host-2254607a7a0b" data-who="reckon-build" data-when="2026-11-11T23:05:56.634Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T214015365474-identity-judged-on-its-host at 2254607a7a0b (base a4ca8b6c) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, with three non-blocking findings and no blocking finding.</p></div>
 </div>
@@ -322,6 +325,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-close-s21" data-who="reckon-build" data-when="2026-11-12T15:40:00Z">
     <div class="r-comment-body"><p>§21 landed at <code>db7f5f0b82</code>: a landing reads the control the run recorded, or runs the declared mutation itself. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s21-landing-reads-recorded-control">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s25" data-id="c-run-r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0" data-who="reckon-build" data-when="2026-11-12T15:29:29.896Z">
+    <div class="r-comment-body"><p>Reviewed base fe9af3caa98c11d9fed1c9215a25ce570d3294d8 against head 5bc11377cbc06e6aabd7d19a4da02ff534a75547: the sweep now dispatches every review it owes before handing each promotion to a bounded worker, and six cases in tests/test_a_sweep_never_waits_on_a_promotion.py show the ordering, the width, the retry and the in-process claim; the head arm adds two failure ids against the base arm where the done_when requires none, and the ordering fixture at tests/test_one_run_cannot_stop_a_sweep.py:97 is a real one caused by concurrency, so that finding is blocking.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
@@ -385,9 +391,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s25" data-id="c-run-r-20261112T151649535176-review-of-sweep-never-waits-on-a-promotion-5bc11377cbc0" data-who="reckon-build" data-when="2026-11-12T15:29:29.896Z">
-    <div class="r-comment-body"><p>Reviewed base fe9af3caa98c11d9fed1c9215a25ce570d3294d8 against head 5bc11377cbc06e6aabd7d19a4da02ff534a75547: the sweep now dispatches every review it owes before handing each promotion to a bounded worker, and six cases in tests/test_a_sweep_never_waits_on_a_promotion.py show the ordering, the width, the retry and the in-process claim; the head arm adds two failure ids against the base arm where the done_when requires none, and the ordering fixture at tests/test_one_run_cannot_stop_a_sweep.py:97 is a real one caused by concurrency, so that finding is blocking.</p></div>
 </div>
 </section>
 </main>
