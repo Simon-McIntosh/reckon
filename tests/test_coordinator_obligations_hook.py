@@ -1014,9 +1014,7 @@ def test_the_stop_hook_blocks_once_per_unchanged_duty_list(
         if not quiet.stdout.strip():
             assert quiet.stderr == ""
 
-    _blocked_run(
-        repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID
-    )
+    _blocked_run(repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID)
     with runs.follower_claim(PROJECT, SESSION):
         gained = _hook("stop", _stop_payload(repository, "harness-session"))
 
