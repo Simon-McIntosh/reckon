@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="806">
+<meta name="plan-version" content="807">
 <meta name="plan-modified" content="2026-11-12">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -2399,6 +2399,12 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261021T134540453751-the-drain-line-says-when-your-fleet-stops" data-who="reckon-build" data-when="2026-10-21T14:34:34.344Z">
     <div class="r-comment-body"><p>The follower's settle row now keeps its text — no live work in &lt;session&gt; since HH:MM — as its prefix and gains a tail saying the session's fleet is drained or how many of its runs need the coordinator, counted by reckon/crew/needs_you.py; tests/test_follow_drain_line.py 1 passed at head and 1 failed under the withheld-tail control.</p></div>
 </div>
+<div class="r-comment" data-section="s80" data-id="c-run-r-20261112T105038026012-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-00e65843b250" data-who="reckon-build" data-when="2026-11-12T11:26:08.657Z">
+    <div class="r-comment-body"><p>independent review of r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80 over reviewed_base_sha 8e200ea58cb1c0774997710a8808a7747ffeb5f2 and reviewed_head_sha 00e65843b250b46a279289b7679f0018828a2e4c; status parsed, six dimensions scored goal_fidelity 18, evidence 15, scope_discipline 19, durability 17, fit 18, reuse 10, added_failure_count 0 with an empty id list; six non-blocking findings recorded, none blocking.</p></div>
+</div>
+<div class="r-comment" data-section="s80" data-id="c-run-r-20261112T165225476373-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-18d04c1ee08a" data-who="reckon-build" data-when="2026-11-12T17:24:18.771Z">
+    <div class="r-comment-body"><p>Review of r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80 at head 18d04c1ee records a parsed record scoring goal_fidelity 16, evidence 11, scope_discipline 13, durability 10, fit 17, reuse 6, with 0 added failures and five non-blocking findings; the landed change does what the section&#x27;s goal states, but the request-keyed once-only memory added in this window is dead on real rows because the transition row carries no `section`, and the gate is green only because its fixture supplies that field.</p></div>
+</div>
 <div class="r-comment" data-section="s82" data-id="c-run-r-20261022T111724809709-review-of-the-pane-prints-no-line-that-asks-nothing-3c5a1d90f60e" data-who="reckon-build" data-when="2026-10-22T11:38:21.300Z">
     <div class="r-comment-body"><p>reviewed run r-20261022T100542325518-the-pane-prints-no-line-that-asks-nothing at base d513f542441f6b9aaa95458b7c52c1b982d646a6 / head 3c5a1d90f60e7749e90fabeedfb6164881a74f55; scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 19, fit 20, reuse 5 (total 100); added_failure_count 0, added_failure_ids empty; three follow-on findings; the parsed record is stored under the reviewed run's review-records directory.</p></div>
 </div>
@@ -2428,6 +2434,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s84" data-id="c-run-r-20261106T173310973892-end-a-stopped-runs-whole-process-tree-so-its-discard" data-who="reckon-build" data-when="2026-11-07T09:47:10Z">
     <div class="r-comment-body"><p>Ending a stopped run's whole tree: `terminate` resolves and prints the run's pids (target_pids), and after the 2 s settle escalates to SIGKILL by re-walking the run's own tree, so a discard after a stop finds no live pid. Measure: tests/test_stop_reaps_run_tree.py 2 passed at head; over the 49 files importing the changed modules base 1 failed/742 passed/2 skipped vs head 1 failed/744 passed/2 skipped, the same single failure in both (0 added); dropping the escalation fails the tree case with EXIT=1.</p></div>
+</div>
+<div class="r-comment" data-section="s87" data-id="c-run-r-20261112T095144096909-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-96689ac0367b" data-who="reckon-build" data-when="2026-11-12T10:10:38.037Z">
+    <div class="r-comment-body"><p>Reviewed r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87 at 96689ac0367b26da651d5682531d2a4a98f4f2c5 against b8585860d52c021656003c57ae94a58a291cf087: the obligations view now lists the runs its unreconciled count holds (ownerless plan-review pointers, reviewer duties with their per-run promote command, and admission-parked requests), and the count-equals-list invariant is guarded by six fixtures whose primary case reddens `assert 0 == 1` under the recorded separate-count mutation; scores goal_fidelity 18, evidence 13, scope_discipline 20, durability 17, fit 17, reuse 19; two non-blocking findings — the per-run command breaks tests/test_coordinator_obligations_hook.py (one added failure in the importer sweep, needs a follow-up node) and the base arm ran in a reconstructed tree whose hash differs from the revision its log names.</p></div>
 </div>
 <div class="r-comment" data-section="s89" data-id="c-run-r-20261023T085702846782-review-of-a-resume-that-delivers-at-the-same-head-is-reviewed-e913004ef254" data-who="reckon-build" data-when="2026-10-23T09:27:13.513Z">
     <div class="r-comment-body"><p>review of run r-20261023T081419340299-a-resume-that-delivers-at-the-same-head-is-reviewed at base ada5187d7 / head e913004ef scored 101/120 (goal_fidelity 19, evidence 18, scope_discipline 20, durability 14, fit 18, reuse 12), 0 added failures, two non-blocking findings on the untested baseline leg and the duplicated manifest-freshness comparison</p></div>
@@ -2545,12 +2554,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s87" data-id="c-run-r-20261112T095144096909-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-96689ac0367b" data-who="reckon-build" data-when="2026-11-12T10:10:38.037Z">
-    <div class="r-comment-body"><p>Reviewed r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87 at 96689ac0367b26da651d5682531d2a4a98f4f2c5 against b8585860d52c021656003c57ae94a58a291cf087: the obligations view now lists the runs its unreconciled count holds (ownerless plan-review pointers, reviewer duties with their per-run promote command, and admission-parked requests), and the count-equals-list invariant is guarded by six fixtures whose primary case reddens `assert 0 == 1` under the recorded separate-count mutation; scores goal_fidelity 18, evidence 13, scope_discipline 20, durability 17, fit 17, reuse 19; two non-blocking findings — the per-run command breaks tests/test_coordinator_obligations_hook.py (one added failure in the importer sweep, needs a follow-up node) and the base arm ran in a reconstructed tree whose hash differs from the revision its log names.</p></div>
-</div>
-<div class="r-comment" data-section="s80" data-id="c-run-r-20261112T105038026012-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-00e65843b250" data-who="reckon-build" data-when="2026-11-12T11:26:08.657Z">
-    <div class="r-comment-body"><p>independent review of r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80 over reviewed_base_sha 8e200ea58cb1c0774997710a8808a7747ffeb5f2 and reviewed_head_sha 00e65843b250b46a279289b7679f0018828a2e4c; status parsed, six dimensions scored goal_fidelity 18, evidence 15, scope_discipline 19, durability 17, fit 18, reuse 10, added_failure_count 0 with an empty id list; six non-blocking findings recorded, none blocking.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
