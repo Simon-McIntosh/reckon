@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A claim-refused review is composed again when the claim clears</title>
+</head>
+<body>
+<h1>A claim-refused review is composed again when the claim clears</h1>
+
+<p id="claim-refused-review-retried-when-claim-clears-where">A review dispatch refused on a write-scope claim is recorded on the reviewed
+run's live pointer under <code>review_dispatch</code> with <code>status: refused</code> and the
+refusal's own reason text. Before this change that record carried no machine-readable
+statement of <em>which</em> claim refused it, so no later sweep could tell a refusal whose
+cause still stood from one the release had already lifted; the reflex re-asked the same
+question on every sweep and recorded the same refusal, a rejection loop that read in the
+obligations view as a follower to inspect.</p>
+
+<p id="claim-refused-review-retried-when-claim-clears-deliverable">The attempt now records the holder's run id and the claimed path. The reflex asks that
+holder's own live pointer through the claim disposition every other claim reader uses:
+while it binds, the reflex composes nothing and records no second refusal; on the sweep
+after the holder is promoted, discarded or stopped with an empty worktree, the dispatch
+composes again. The obligations duty names the holder to clear rather than a follower.</p>
+
+<h2>Measure</h2>
+<p id="claim-refused-review-retried-when-claim-clears-measure">One test on a temporary crew home drives the reflex's review pass three times.
+Pass 1, with a live review of an older revision holding the reviewed run's record claim,
+is refused and records <code>claim.run_id</code> naming the holder. Pass 2, holder still
+live, dispatches nothing and records no new attempt. Pass 3, holder's pointer removed,
+dispatches the review. Negative control: a build that honours the stored refusal
+unconditionally fails the third pass.</p>
+
+<ul>
+<li>1 passed at the fix; the mutated build fails the third pass (<code>EXIT=1</code>).</li>
+<li>Ruff check and format add no finding on the three staged paths.</li>
+<li>Head arm: 52 passed, 0 failed (<code>tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py</code> and <code>tests/test_staged_write_inventory.py</code>).</li>
+</ul>
+</body>
+</html>

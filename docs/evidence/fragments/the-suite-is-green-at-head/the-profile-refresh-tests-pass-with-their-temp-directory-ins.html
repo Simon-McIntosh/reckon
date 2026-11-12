@@ -1,0 +1,22 @@
+<section id="the-profile-refresh-tests-pass-with-their-temp-directory-ins" data-reckon="fragment">
+  <h2 id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-heading">The profile-refresh tests pass wherever their temp directory sits</h2>
+  <p id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-why">The ledger resolved its run index by walking up from the ledger file to the nearest checkout. A ledger resolved from the configured home is legitimately outside any checkout, but when that home sits beneath one the walk found the enclosing checkout and re-homed the ledger to <code>&lt;checkout&gt;/docs/state/&lt;project&gt;/crew.json</code> — a file nobody wrote. The index under that key was empty, so the first read returned 0 rows where the fixture had written 50, and 16 of the file's cases failed. The suite reproduces this exactly: run against the base revision with <code>--basetemp</code> inside a scratch repository, <code>tests/test_a_promotion_profile_refresh_costs_its_row.py</code> reports 16 failed and 7 passed, with <code>assert 0 == 51</code> at the fold assertions.</p>
+  <p id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-what">A checkout now claims the ledger only when its own state path for the project resolves to that same file. The index and the reads served from it are then keyed on the ledger the caller named, wherever the temp directory happens to sit. The worktree-sharing case the walk exists for is unchanged: there the checkout's state path and the ledger are one file, so the shared index is still found.</p>
+  <table id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>reckon/ledger.py</code></td><td><code>_ledger_repository</code> skips a candidate checkout whose <code>ledger_path(project, checkout)</code> is not the resolved ledger path, so an enclosing checkout cannot adopt a config-home ledger.</td></tr>
+    </tbody>
+  </table>
+  <h3 id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-measure">Measure</h3>
+  <ul>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-head-outside">Head arm, <code>--basetemp</code> outside any checkout: 23 passed, <code>EXIT=0</code>.</li>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-head-inside">Head arm, <code>--basetemp</code> inside a scratch git repository: 23 passed, <code>EXIT=0</code>, and that repository's <code>git status --porcelain</code> is empty before and after the run.</li>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-negative-control">Negative control, the same inside-a-checkout run at the base revision: 16 failed and 7 passed, <code>EXIT=1</code>, naming ids the head arm passes.</li>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-family">Every test file importing <code>reckon.crew.picker.lane_context</code> (20 files, one arm at a time, <code>-n 4</code>): base 2 failed and 212 passed, head 2 failed and 212 passed with the same two ids, both in <code>tests/test_orchestrator_assessment_reaches_jev.py</code> — no failure added at head.</li>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-suite">The gate pair <code>tests/test_a_promotion_profile_refresh_costs_its_row.py tests/test_staged_write_inventory.py</code>: base 72 passed and 2 errors, head 74 passed, <code>EXIT=0</code>. Both base errors are the census reading <code>HEAD</code> in a <code>git archive</code> extraction with no history, so they are scaffolding of the measurement tree rather than code failures; the census passes at head.</li>
+    <li id="the-profile-refresh-tests-pass-with-their-temp-directory-ins-ruff"><code>ruff check</code> and <code>ruff format --check</code> on <code>reckon/ledger.py</code>: all checks passed, one file already formatted.</li>
+  </ul>
+</section>

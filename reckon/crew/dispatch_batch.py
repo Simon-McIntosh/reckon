@@ -54,6 +54,7 @@ BATCH_ENTRY_FIELDS = frozenset(
         "compares_with",
         "session",
         "backend",
+        "allow_unreviewed_plan",
     }
 )
 
@@ -473,6 +474,12 @@ def _entry_node(
         raise BatchEntryRefusedError(
             f"entry {index + 1} carries unknown field(s): {', '.join(unknown)}"
         )
+    # The waiver is read as a boolean, so a batch file that spells it "false"
+    # cannot waive the review by being a non-empty string.
+    if not isinstance(entry.get("allow_unreviewed_plan", False), bool):
+        raise BatchEntryRefusedError(
+            f"entry {index + 1} allow_unreviewed_plan must be true or false"
+        )
     project = str(entry.get("project") or "").strip()
     plan = str(entry.get("plan") or "").strip()
     section = str(entry.get("section") or "").strip()
@@ -739,6 +746,7 @@ def _queue_batch(
                 backend_name=backend,
                 launch_kind=launch_kind,
                 run_ids={node.id: run_id},
+                allow_unreviewed_plan=bool(entry.get("allow_unreviewed_plan")),
             )
             for stored_id in stored:
                 pointer = read_pointer(stored_id)

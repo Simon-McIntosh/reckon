@@ -2022,6 +2022,7 @@ _OP_VOCAB = {
     "resolve": "{op:'resolve', target:'followups'|'questions'|'findings', id, by, outcome|resolution} — sets resolved_at/by + outcome/resolution; finding status derives from resolved_at.",
     "lock": "{op:'lock', key, choice, rationale, by} — merges the lock into decisions[key], preserving authored title/context/choices.",
     "accept": "{op:'accept', key, by} — sets decisions[key].choice from its stored recommendation (recommended/recommended_by) in one action, recording when and by whom; refused when the decision carries no recommendation.",
+    "withdraw": "{op:'withdraw', key, reason, by} — withdraws an unlocked decision in one versioned write, keeping its reason and date in the plan and taking it out of the roadmap's blockers; a locked decision, an absent decision or a withdrawal with no reason is refused naming the decision.",
     "gate": "{op:'gate', id, section, gated_sections:[...], measure, required_evidence} — declares one open evidence gate.",
     "pass": "{op:'pass', id, evidence} — closes a declared gate as passed; evidence is required when gates.require_evidence is enabled.",
     "fail": "{op:'fail', id, evidence} — closes a declared gate as failed while preserving negative evidence.",

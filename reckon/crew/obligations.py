@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shlex
+import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -81,6 +82,16 @@ CLASSIFICATION_DUTY_KINDS = {
 # whose head moved past the revision its stored review recorded reads
 # review-missing naming both heads, whatever the classifier's own reading said.
 REVIEW_CLASSIFICATION_KINDS = frozenset({"scoring", "promotable"})
+#: The pointer phases in which the admission pass is holding a request rather
+#: than a worker running it. The closure counts a request in one of these for
+#: as long as its pointer stands — the pointer keeps its write fence — so the
+#: duty list has to name it too, and the phases are read from the admission
+#: pass rather than spelled here.
+WAITING_UPSTREAM_PHASES = queue_admission.WAITING_UPSTREAM_PHASES
+PARKED_REQUEST_PHASES = (
+    *queue_admission.WAITING_UPSTREAM_PHASES,
+    queue_admission.HELD_PHASE,
+)
 #: Recovery readings that owe their session a duty under a word the lifecycle
 #: classification does not carry.
 #:
@@ -149,6 +160,8 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
+    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    "overdue_remedy",
     "refused_at",
     "queued_at",
     "worker_slots",
@@ -190,6 +203,12 @@ DUTY_ROW_FIELDS = (
 # evidence about the reflex rather than an explanation for the duty, and the
 # duty returns to review-missing so the coordinator sees it again.
 REVIEW_QUEUED_DUTY_KIND = "review-queued"
+
+# A run whose review has been dispatched, delivered, and not yet landed reads
+# as awaiting promotion: the wait is a promotion, not a dispatch and not a
+# follower. A review holds its pointer after it delivers, so the pointer alone
+# cannot tell a finished review from a running one; the phase does.
+REVIEW_AWAITING_PROMOTION_DUTY_KIND = "review-awaiting-promotion"
 REVIEW_QUEUED_BOUND_SECONDS = 30 * 60
 
 # The status the review reflex records on a run's pointer when the lane refused
@@ -599,6 +618,109 @@ def _live_pointers(project: str) -> list[dict[str, Any]]:
     return runs.list_live(project=project)
 
 
+def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
+    """The review dispatch the run's own pointer records, or ``{}``.
+
+    Both rubric fields are read: a figure review is recorded beside the text
+    review rather than in its place, and a run may owe either. A withdrawn
+    attempt stands for nothing — the reviewed run's own resume moved the head
+    past it — so it names no review.
+    """
+    for field in (
+        recovery.REVIEW_DISPATCH_FIELD,
+        recovery_review_dispatch.FIGURE_REVIEW_DISPATCH_FIELD,
+    ):
+        recorded = pointer.get(field)
+        if not isinstance(recorded, Mapping):
+            continue
+        if str(recorded.get("status") or "") == "withdrawn":
+            continue
+        if str(recorded.get("run_id") or ""):
+            return recorded
+    return {}
+
+
+def _stored_review_recorded(project: str, run_id: str, head: str) -> bool:
+    """Whether the store holds a review record for ``head``, any rubric.
+
+    A review run that reached its end has delivered only if it left a record:
+    a run whose pointer is complete but whose store holds nothing for the
+    revision ended without filing, and the revision is owed a review again.
+    Every rubric counts, because the by-head selection reads one rubric at a
+    time and a record it passes over is still a record waiting to be landed.
+
+    An empty ``head`` asks whether any record of the run is stored at all, which
+    is the question a reader with no resolved head can still answer without
+    paying for the resolution.
+    """
+    if not project or not run_id:
+        return False
+    try:
+        rows = review_module.stored_records_for_run(project, run_id)
+    except (OSError, ValueError):
+        return False
+    for _path, record in rows:
+        if not head:
+            return True
+        named = str(record.get("reviewed_head_sha") or "")
+        if named and recovery.same_revision(named, head):
+            return True
+    return False
+
+
+def _delivered_review(
+    pointer: Mapping[str, Any], head: str
+) -> tuple[str, Mapping[str, Any]]:
+    """The run's delivered, unlanded review, as its id and its pointer.
+
+    Delivered means the review the run's own record names has finished and
+    left a record for a promotion to land, for the head the run carries now. A
+    review run that ended without storing a record has not delivered: nothing
+    is waiting to be landed, and the revision is owed a review again. The
+    review's pointer is read once here, and its phase is judged by the
+    classifier's own reading of that pointer, so this surface cannot invent a
+    second vocabulary for what a review's progress is called.
+
+    A review of a revision the run has moved past is not this run's wait:
+    promoting it would land evidence for work the run no longer carries, and
+    the run still owes a review of its new head. So the recorded head must
+    agree with the head the run carries now; where either is unknown the
+    dispatch is taken at its word rather than withheld.
+    """
+    recorded = _recorded_review_dispatch(pointer)
+    standing = str(recorded.get("run_id") or "")
+    if not standing:
+        return "", {}
+    reviewed = str(recorded.get("head") or "")
+    if reviewed and head and not recovery.same_revision(reviewed, head):
+        return "", {}
+    review_pointer = recovery_review_dispatch._readable_standing_review(standing)
+    if not recovery_classification._review_pointer_delivered(review_pointer):
+        return "", {}
+    if not _stored_review_recorded(
+        str(pointer.get("project") or ""), str(pointer.get("run_id") or ""), head
+    ):
+        return "", {}
+    return standing, review_pointer
+
+
+def _delivered_review_promotion_command(
+    review_run_id: str, review_pointer: Mapping[str, Any]
+) -> str:
+    """The command that lands a delivered review's record on the project.
+
+    Composed through the classifier's own promotion composition, so the
+    command offered here and the one a promotable run is offered cannot drift.
+    The review's pointer is handed in rather than read again: the duty already
+    read it to learn the review had delivered.
+    """
+    return recovery_classification._promotion_command(
+        review_run_id,
+        review_pointer,
+        list(review_pointer.get("manifest_commits") or ()),
+    )
+
+
 def _reflex_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     """Whether the reflex's own recorded review dispatch still holds a live run.
 
@@ -685,6 +807,23 @@ def _review_dispatch_refusal(
         return None
     if not _refusal_speaks_for_revision(recorded, row=row, head=head, now=now):
         return None
+    claim = recorded.get("claim")
+    if isinstance(
+        claim, Mapping
+    ) and recovery_review_dispatch.claim_refusal_still_holds(claim):
+        # The refusal's cause is another run's claim, and that run's own record
+        # says it still stands: the reflex is holding rather than retrying, so
+        # the duty names the claim to clear instead of a follower to inspect.
+        holder = str(claim.get("run_id") or "")
+        return {
+            "reason": str(recorded.get("reason") or "")
+            or "the review reflex refused this review's dispatch",
+            "next_command": (
+                f"the review is held while run {holder} claims its record; "
+                f"promote or release that run (`reckon crew observe --run "
+                f"{holder}`)"
+            ),
+        }
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
@@ -784,6 +923,103 @@ def _station_slow_stage(
     return stage, tick_age
 
 
+def _iso(instant: datetime) -> str:
+    """One instant as the UTC stamp the snapshot store reads back."""
+    return instant.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _age_of_instant(value: Any, *, now: datetime) -> int:
+    """The non-negative age in seconds of one stored instant."""
+    stamp = parse_utc(value)
+    if stamp is None:
+        return 0
+    return max(0, int((now - stamp).total_seconds()))
+
+
+def _overdue_figure(seconds: int) -> str:
+    """How an overdue interval is printed in a duty's remedy text."""
+    return f"{max(0, int(seconds)) // 60}m {max(0, int(seconds)) % 60}s"
+
+
+def _overdue_remedy(
+    project: str,
+    pointer: Mapping[str, Any],
+    *,
+    age: int,
+    dispatch: str,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """The time-dependent inputs of an overdue review duty's text.
+
+    An overdue figure belongs to the reader's clock, not to the instant the
+    snapshot was written. The figure is therefore kept as the interval it is
+    measured from — the duty's own age, and a station stage's age as the instant
+    that stage was observed — so a reader that refreshes the row's age can
+    compose the text again at its own instant instead of serving the figure the
+    writer printed. Returns ``None`` while the duty is still inside the reflex's
+    window, where its text carries no overdue figure.
+    """
+    window = _reflex_review_window_seconds()
+    if age <= window:
+        return None
+    remedy: dict[str, Any] = {
+        "session": str(pointer.get("session") or ""),
+        "dispatch": dispatch,
+    }
+    held = _station_slow_stage(project, pointer, now=now)
+    if held is not None:
+        stage, stage_age = held
+        remedy["stage"] = stage
+        remedy["stage_measured_from"] = _iso(now - timedelta(seconds=stage_age))
+    return remedy
+
+
+def _render_overdue_remedy(
+    remedy: Mapping[str, Any], *, age: int, now: datetime
+) -> str:
+    """Compose an overdue duty's text from its intervals at one clock reading."""
+    figure = _overdue_figure(int(age))
+    stage = str(remedy.get("stage") or "")
+    if stage:
+        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
+        text = (
+            f"review overdue by {figure}: the station's tick has run "
+            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
+            "the reflex's sweep"
+        )
+        dispatch = str(remedy.get("dispatch") or "")
+        if dispatch:
+            return f"{text}; dispatch the review now with: {dispatch}"
+        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
+    return (
+        f"review overdue by {figure}: session {remedy.get('session')!r} "
+        "has an armed follower, but its reflex has not dispatched this "
+        "run's review; inspect the follower's review pass"
+    )
+
+
+def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One duty row whose time-dependent remedy text is composed at ``now``.
+
+    A published snapshot stores a duty's age as the instant it is measured
+    from, and the reader turns it back into seconds against its own clock. The
+    remedy text beside it was composed once, at the writer's instant, so without
+    this the figure it prints stays at the value the snapshot was written with
+    while ``age_seconds`` grows — a stuck clock beside a moving one. The row
+    carries the intervals the figure is built from, so the text is composed
+    here at the reading instant, from the same refreshed age the row shows.
+    """
+    refreshed = dict(row)
+    remedy = refreshed.get("overdue_remedy")
+    if not isinstance(remedy, Mapping):
+        return refreshed
+    age = refreshed.get("age_seconds")
+    if isinstance(age, bool) or not isinstance(age, int):
+        return refreshed
+    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
+    return refreshed
+
+
 def _reflex_review_command(
     project: str,
     pointer: Mapping[str, Any],
@@ -791,7 +1027,7 @@ def _reflex_review_command(
     age: int,
     dispatch: str = "",
     now: datetime | None = None,
-) -> str:
+) -> tuple[str, dict[str, Any] | None]:
     """The duty's next action while an armed reflex owns the dispatch.
 
     Following the dispatch a missing review prints collides with the reflex's
@@ -806,33 +1042,26 @@ def _reflex_review_command(
     behind that stage: the duty carries the stage, its age and the dispatch
     that starts the review now, rather than sending the coordinator to inspect
     a follower whose pass has nothing wrong with it.
+
+    The second element is the overdue remedy's time-dependent inputs, carried
+    on the duty so the text can be composed again at a later reading; it is
+    ``None`` while the duty is still inside the reflex's window.
     """
+    instant = now if now is not None else _utc_now()
+    remedy = _overdue_remedy(project, pointer, age=age, dispatch=dispatch, now=instant)
+    if remedy is not None:
+        return _render_overdue_remedy(remedy, age=age, now=instant), remedy
     session = str(pointer.get("session") or "")
     window = _reflex_review_window_seconds()
-    if age > window:
-        held = _station_slow_stage(
-            project, pointer, now=now if now is not None else _utc_now()
-        )
-        if held is not None:
-            stage, stage_age = held
-            overdue = (
-                f"review overdue by {age // 60}m {age % 60}s: the station's tick "
-                f"has run {stage_age // 60}m {stage_age % 60}s in its {stage} "
-                "stage, which holds the reflex's sweep"
-            )
-            if dispatch:
-                return f"{overdue}; dispatch the review now with: {dispatch}"
-            return f"{overdue}; dispatch the review for session {session!r} now"
-        return (
-            f"review overdue by {age // 60}m {age % 60}s: session {session!r} "
-            "has an armed follower, but its reflex has not dispatched this "
-            "run's review; inspect the follower's review pass"
-        )
     return (
-        f"the review reflex owns this dispatch: session {session!r} has an armed "
-        "follower, which composes the review for this run on its next sweep — "
-        f"expected within about {window} s (the follower's sweep cadence); "
-        "no manual dispatch is needed"
+        (
+            "the review reflex owns this dispatch: "
+            f"session {session!r} has an armed follower, which composes the "
+            "review for this run on its next sweep — expected within about "
+            f"{window} s (the follower's sweep cadence); no manual dispatch is "
+            "needed"
+        ),
+        None,
     )
 
 
@@ -922,7 +1151,17 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     the same head: a queued request beside a launched review would otherwise be
     able to answer for the head, and the duty would read missing while a review
     is working on it.
+
+    A review that has delivered has stopped working on the revision too: it
+    holds its pointer until a promotion lands it, so the run it reviewed is
+    waiting on that promotion rather than on the review. Suppressing the duty
+    here would leave the run with no duty at all while a landed review sat
+    unpromoted, so the duty is built and reads as
+    :data:`REVIEW_AWAITING_PROMOTION_DUTY_KIND` — or, when the review read a
+    revision the run has since moved past, as the review the new head is owed.
     """
+    if _delivered_review(pointer, "")[0]:
+        return False
     if _reflex_review_in_flight(pointer):
         return True
     launched = [
@@ -933,7 +1172,13 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     review_run_id = _in_flight_review(pointer, launched)
     if not review_run_id:
         return False
-    review_pointer = runs.read_pointer(review_run_id)
+    try:
+        review_pointer = runs.read_pointer(review_run_id)
+    except CrewError:
+        # The view listed this review from its own snapshot, and the run left
+        # before this read: a review promoted or discarded during a slow tick
+        # is not working on anything and does not suppress the duty.
+        return False
     if not review_pointer:
         return False
     if str(review_pointer.get("phase") or "") == queue_admission.QUEUED_PHASE:
@@ -1050,7 +1295,19 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     """
     rows: list[dict[str, Any]] = []
     for pointer in _live_pointers(project):
-        row = recovery.classify_pointer(pointer)
+        # A pointer whose phase still reads queued while it carries
+        # ``launched_at`` was launched and never had its phase advanced, so the
+        # queued phase says nothing about the run. Classifying it as stored
+        # hides the duty the run actually owes -- a finished run's promotion --
+        # behind a queue wait that is already over, so the phase is left for
+        # the classifier to read from the run's own manifest and process.
+        subject = pointer
+        if (
+            not queue_admission.awaits_a_lane_slot(pointer)
+            and str(pointer.get("phase") or "") == queue_admission.QUEUED_PHASE
+        ):
+            subject = {**pointer, "phase": ""}
+        row = recovery.classify_pointer(subject)
         refusal = _queued_contract_refusal(pointer, row)
         if refusal is not None:
             row["contract_refusal"] = refusal
@@ -1887,6 +2144,16 @@ def _review_duty_item(
     refused it and the session's published worker slots, so the coordinator
     sees a wait the reflex owns rather than a dispatch nobody ran.
 
+    A review the run's own record names that has delivered, while no stored
+    record covers the head, reads review-awaiting-promotion: the run waits on
+    the promotion of that review run, which the duty names with the command
+    that lands it. It does not read review-missing, because the review exists
+    and the reflex will not compose a second one while it stands. The reading
+    holds only for a review of the head the run carries now: one whose reviewed
+    head the run has moved past is a record already earned for other work, and
+    promoting it would land evidence for a revision no longer delivered, so the
+    run still reads as owing a review of its new head.
+
     A landing refusal for this head names its guard on the session's duty.
     It takes precedence over a ready review, since the stored review alone
     cannot explain why the automatic landing stopped.
@@ -1919,8 +2186,20 @@ def _review_duty_item(
 
     if pointer is None or recovery._is_review_run(pointer):
         # No live tree to ask, or a reviewer whose own record is its
-        # deliverable: the classifier's own reading stands.
-        return _live_item(row, kind=_classification_kind(), now=now)
+        # deliverable: the classifier's own reading stands. A reviewer holding
+        # a live pointer also carries the promotion its record is settled by,
+        # composed from the pointer and the manifest's own citations through
+        # the one composer every promotion duty uses: the classifier has no
+        # pointer in hand and states that promotion in prose, so a duty built
+        # from its reading alone named no command the coordinator could run.
+        item = _live_item(row, kind=_classification_kind(), now=now)
+        if pointer is not None and classification in REVIEW_CLASSIFICATION_KINDS:
+            item["next_command"] = recovery_classification._promotion_command(
+                str(row.get("run_id") or ""),
+                pointer,
+                list(row.get("manifest_commits") or []),
+            )
+        return item
 
     if (
         classification == "scoring"
@@ -2041,23 +2320,46 @@ def _review_duty_item(
         # No stored review covers the head, so the duty would read
         # review-missing. A review the coordinator has already dispatched is
         # the one exception: one the lane refused, or one it queued and has not
-        # launched, reads as queued inside its wait and the duty does not hold a
-        # turn open over a wait the coordinator cannot shorten. That holds
-        # whether or not an older stored record exists, because a review
+        # dispatched yet, reads as queued inside its wait and the duty does not
+        # hold a turn open over a wait the coordinator cannot shorten. That
+        # holds whether or not an older stored record exists, because a review
         # composed for the head after a test-driven repair is still a dispatch
         # already made.
+        #
+        # A review that has delivered is neither dispatch nor wait: its record
+        # is written and only a promotion lands it, so the run waits on the
+        # promotion and the duty names the review run that must be promoted
+        # rather than a dispatch nothing will run: the reflex composes no
+        # second review while the delivered one stands.
+        delivered, delivered_pointer = (
+            ("", {}) if superseded else _delivered_review(pointer, head)
+        )
         if live_pointers is None:
             live_pointers = _live_pointers(project)
         if placements is None:
             placements = queue_admission.queued_placements(live_pointers, now=now)
-        queued = _queued_review_fields(
-            pointer,
-            head=head,
-            now=now,
-            live_pointers=live_pointers,
-            placements=placements,
+        queued = (
+            None
+            if delivered
+            else _queued_review_fields(
+                pointer,
+                head=head,
+                now=now,
+                live_pointers=live_pointers,
+                placements=placements,
+            )
         )
-        if queued is not None:
+        if delivered:
+            item["kind"] = REVIEW_AWAITING_PROMOTION_DUTY_KIND
+            item["review_run_id"] = delivered
+            item["reason"] = (
+                f"the review {delivered} has been delivered and awaits "
+                "promotion; the run is not waiting on a dispatch"
+            )
+            item["next_command"] = _delivered_review_promotion_command(
+                delivered, delivered_pointer
+            )
+        elif queued is not None:
             item["kind"] = REVIEW_QUEUED_DUTY_KIND
             item.update(queued)
         elif superseded:
@@ -2091,13 +2393,18 @@ def _review_duty_item(
                 # window it travels into the replacement so the coordinator is
                 # handed the command that starts the review rather than a
                 # follower to read.
-                item["next_command"] = _reflex_review_command(
+                item["next_command"], overdue_remedy = _reflex_review_command(
                     project,
                     pointer,
                     age=age,
                     dispatch=str(item.get("next_command") or ""),
                     now=now,
                 )
+                if overdue_remedy is not None:
+                    # Keep the intervals the overdue figure is built from, so
+                    # a reader of a published snapshot composes the text at its
+                    # own clock reading instead of serving a frozen figure.
+                    item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
@@ -3301,7 +3608,14 @@ def _obligations_view(
             item["held_path"] = held_path
         items.append(item)
     for row in classified:
-        if str(row.get("session") or "") != session:
+        owner = str(row.get("session") or "")
+        # A pointer with no recorded owner is counted toward every session by
+        # the closure, because an absent owner cannot prove the run belongs to
+        # a peer. Listing it only for an exact owner match is what let a
+        # complete plan-review run holding a live pointer be counted and yet
+        # appear nowhere: the count named a run the list did not. This view
+        # therefore takes the closure's own rule.
+        if owner and owner != session:
             continue
         if (
             pointers.get(str(row.get("run_id") or ""), {}).get("phase")
@@ -3373,6 +3687,60 @@ def _obligations_view(
             kind = CLASSIFICATION_DUTY_KINDS.get(classification, "")
         if kind:
             items.append(_live_item(row, kind=kind, now=now))
+    # A request the admission pass parks — waiting on an upstream section, or
+    # held for a lane, an allowance or a retry back-off — is counted by the
+    # closure for as long as its pointer stands, because it holds a write fence
+    # until it is settled. No branch above lists one, so a session told a count
+    # beside a shorter list was told that something is owed and shown nothing:
+    # each such request is listed here, carrying the remedy its own reader
+    # composed. A request waiting on an upstream section is built through the
+    # publisher's own builder, which is what keeps this list and a sweep's
+    # slice of it equal for the same files; anything else parked is listed
+    # under the classification its reader gave it.
+    listed = {str(item.get("run_id") or "") for item in items}
+    for row in classified:
+        run_id = str(row.get("run_id") or "")
+        if not run_id or run_id in listed:
+            continue
+        owner = str(row.get("session") or "")
+        if owner and owner != session:
+            continue
+        pointer = pointers.get(run_id)
+        if pointer is None:
+            continue
+        phase = str(pointer.get("phase") or "")
+        if phase not in PARKED_REQUEST_PHASES:
+            continue
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+        )
+        if recovery.closure_disposition_valid(
+            disposition, str(row.get("classification") or "")
+        ):
+            continue
+        if phase in WAITING_UPSTREAM_PHASES:
+            from reckon.crew import obligation_snapshot
+
+            items.append(
+                obligation_snapshot._upstream_hold_item(
+                    sys.modules[__name__],
+                    row,
+                    pointer=pointer,
+                    now=now,
+                    phase=phase,
+                    verdicts=verdicts,
+                )
+            )
+        else:
+            items.append(
+                _live_item(
+                    row,
+                    kind=str(row.get("classification") or "") or "unreconciled",
+                    now=now,
+                )
+            )
+        listed.add(run_id)
 
     items.extend(
         _sub_floor_items(

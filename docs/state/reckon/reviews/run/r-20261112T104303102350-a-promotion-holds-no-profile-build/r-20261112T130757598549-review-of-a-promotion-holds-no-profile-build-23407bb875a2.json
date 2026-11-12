@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2a507bb8e2b77bd25987074aa2c4dcb356b0ce39",
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/promotion.py:1911 _complete_locked -> lane_context.refresh_run_time_profile(appended=(run,), anchor=profile_anchor)"
+  ],
+  "completed_at": "2026-11-12T13:23:53.600Z",
+  "dispatched_at": "2026-11-12T13:13:54Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The comment is stale wording beside a correct guard; the section's tests pin the behaviour, and the wording is corrected when this function is next touched.",
+      "recorded_at": "2026-11-12T13:41:59.487288+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/picker/lane_context.py",
+      "line": "1077",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment 'A fold is reused only on this date' states the same-day equality the delta removes; a stored base from an earlier date is now reused (guard at line 943) and the stamped date is a lower bound, so a reader of this write path is told the opposite of what the guard enforces."
+    }
+  ],
+  "head_log_revision": "8cfa7fc9bd7886504bcdaf2cb7d1d0a892081f64",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the single production call site, reckon/crew/promotion.py:1911, passes appended=(run,) and anchor=profile_anchor; no other production module calls refresh_run_time_profile.",
+    "diff": "Read commit by commit against 2a507bb8e2: 8cfa7fc9bd relaxes the date guard and rebuilds a base the fold cannot extend in lane_context.py and adds two cases to the test; 23407bb875 adds one evidence paragraph.",
+    "done_when": "The done_when names tests/test_a_promotion_holds_no_profile_build.py passing with its negative control and no added importer failures; the manifest records after_suite 78 passed at 8cfa7fc9bd, repair-negative-control.log 2 failed EXIT=1, and importer arms 42 failed in both with identical ids in fail-base.txt and fail-head.txt.",
+    "goal": "The node goal is 'A promotion holds no profile build'; the delta repairs the fold so a base written on an earlier UTC day still folds (reckon/crew/picker/lane_context.py:942-944) and a base the fold cannot extend is rebuilt inside the promotion (lane_context.py:1027-1036).",
+    "manifest": "Read; status complete, six commits, baseline_suite 0 failures at 3801df115c, after_suite 0 failures at 8cfa7fc9bd, negative_control_log named, and a stated wall-time blocker.",
+    "write_paths": "The declared fence includes lane_context.py, the new test and the fragment; git diff --name-only 2a507bb8e2..23407bb875 lists exactly those three."
+  },
+  "justifications": {
+    "durability": "Reverting lane_context.py to 2a507bb8e2 makes both new cases fail at tests/test_a_promotion_holds_no_profile_build.py:311 and :349 (served_rows=200), so each fails if the repair regresses.",
+    "evidence": "logs/repair-after-arm.log records 78 passed EXIT=0 at 8cfa7fc9bd and logs/repair-negative-control.log records 2 failed EXIT=1 with both new case ids, and the importer arms show 42 failed in both with identical ids in fail-base.txt and fail-head.txt.",
+    "fit": "The added cases and docstrings name mechanisms and carry no plan or ticket identifier, but the surviving comment at reckon/crew/picker/lane_context.py:1077 still says a fold is reused only on this date.",
+    "goal_fidelity": "reckon/crew/picker/lane_context.py:942-944 makes an earlier-dated base fold and 1027-1036 rebuilds a base the fold cannot extend, so the ordinary promotion still folds with no ledger read while the profile no longer strands.",
+    "reuse": "The helpers at tests/test_a_promotion_holds_no_profile_build.py:185-199 call capabilities.pick_input_cache_path and _read/_write_pick_entry rather than reimplementing the store; the only overlap is a two-line path derivation also present in tests/test_a_promotion_profile_refresh_costs_its_row.py:208.",
+    "scope_discipline": "git diff --name-only 2a507bb8e2..23407bb875 lists only reckon/crew/picker/lane_context.py, tests/test_a_promotion_holds_no_profile_build.py and the fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is 'A promotion holds no profile build'; the delta repairs the fold so a base written on an earlier UTC day still folds (reckon/crew/picker/lane_context.py:942-944) and a base the fold cannot extend is rebuilt inside the promotion (lane_context.py:1027-1036).\nVERDICT done_when: the done_when names tests/test_a_promotion_holds_no_profile_build.py passing with its negative control and no added importer failures; the manifest records after_suite 78 passed at 8cfa7fc9bd, repair-negative-control.log 2 failed EXIT=1, and importer arms 42 failed in both with identical ids in fail-base.txt and fail-head.txt.\nVERDICT write_paths: the declared fence includes lane_context.py, the new test and the fragment; git diff --name-only 2a507bb8e2..23407bb875 lists exactly those three.\nVERDICT manifest: read; status complete, six commits, baseline_suite 0 failures at 3801df115c, after_suite 0 failures at 8cfa7fc9bd, negative_control_log named, and a stated wall-time blocker.\nVERDICT diff: read commit by commit against 2a507bb8e2: 8cfa7fc9bd relaxes the date guard and rebuilds a base the fold cannot extend in lane_context.py and adds two cases to the test; 23407bb875 adds one evidence paragraph.\nCALL_SITES: reckon/crew/promotion.py:1911 _complete_locked -> lane_context.refresh_run_time_profile(appended=(run,), anchor=profile_anchor)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: lane_context.py:942-944 makes an earlier-dated base fold and 1027-1036 rebuilds a base the fold cannot extend, so the ordinary promotion still folds with no ledger read while the profile no longer strands.\nSCORE evidence: 17\nJUSTIFICATION evidence: repair-after-arm.log records 78 passed EXIT=0 at 8cfa7fc9bd and repair-negative-control.log records 2 failed EXIT=1 with both new case ids, and the importer arms show 42 failed in both with identical ids in fail-base.txt and fail-head.txt.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 2a507bb8e2..23407bb875 lists only lane_context.py, tests/test_a_promotion_holds_no_profile_build.py and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reverting lane_context.py to 2a507bb8e2 makes both new cases fail at tests/test_a_promotion_holds_no_profile_build.py:311 and :349 (served_rows=200), so each fails if the repair regresses.\nSCORE fit: 15\nJUSTIFICATION fit: the added cases and docstrings name mechanisms and carry no plan or ticket identifier, but the surviving comment at lane_context.py:1077 still says a fold is reused only on this date.\nSCORE reuse: 18\nJUSTIFICATION reuse: the helpers at tests/test_a_promotion_holds_no_profile_build.py:185-199 call capabilities.pick_input_cache_path and _read/_write_pick_entry rather than reimplementing the store; the only overlap is a two-line path derivation also present in tests/test_a_promotion_profile_refresh_costs_its_row.py:208.\nFINDING reckon/crew/picker/lane_context.py:1077 non-blocking: the comment 'A fold is reused only on this date' states the same-day equality the delta removes; a stored base from an earlier date is now reused (guard at line 943) and the stamped date is a lower bound, so a reader of this write path is told the opposite of what the guard enforces.",
+  "review_run_id": "r-20261112T130757598549-review-of-a-promotion-holds-no-profile-build-23407bb875a2",
+  "reviewed_base_sha": "2a507bb8e2b77bd25987074aa2c4dcb356b0ce39",
+  "reviewed_head_sha": "23407bb875a2a79e4377f5dd41a242583a6f1f46",
+  "reviewed_run_id": "r-20261112T104303102350-a-promotion-holds-no-profile-build",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T130757598549-review-of-a-promotion-holds-no-profile-build-23407bb875a2"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 15,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T13:34:10.977878+00:00",
+  "total": 105
+}

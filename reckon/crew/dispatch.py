@@ -304,8 +304,15 @@ def queue_requests(
     launch_kind: str = "cli",
     run_ids: Mapping[str, str] | None = None,
     cap: int | None = None,
+    allow_unreviewed_plan: bool = False,
 ) -> dict[str, Any]:
-    """Validate a request batch, then use dispatch's queue writer for each."""
+    """Validate a request batch, then use dispatch's queue writer for each.
+
+    ``allow_unreviewed_plan`` carries the plan-review waiver the same way a
+    single dispatch does: it rides the request's ``dispatch_options``, which
+    admission reads before it holds the request on the review gate. A caller
+    that leaves it unset queues a request the gate judges on its own.
+    """
     from reckon.crew import queue_admission
     from reckon.crew.dispatch_admission import (
         _require_write_paths_in_authority,
@@ -385,6 +392,7 @@ def queue_requests(
                     "project": project,
                     "session": session,
                     "no_watch": True,
+                    "allow_unreviewed_plan": allow_unreviewed_plan,
                 },
                 queued_at=_utc_now(),
             ),

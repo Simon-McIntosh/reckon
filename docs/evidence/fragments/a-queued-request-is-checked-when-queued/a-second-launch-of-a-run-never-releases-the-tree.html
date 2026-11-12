@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-evidence-for" content="a-queued-request-is-checked-when-queued">
+  <title>A second launch of a run never releases the tree its first launch holds | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A second launch of a run never releases the tree its first launch holds</h1>
+      <p class="lead">A worktree path is named for its session and node, not for its run, so a duplicate launch of one run reaches the tree the first launch is using. Re-verified at base <code>364e934266454a84533877bd02b9a916463893e2</code>: the launch-side claim view is present, its four cases hold, and the declared mutation turns it red. This node needed no product change, so it carries the verification the section was reopened for rather than a second implementation of a working guard.</p>
+    </header>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-the-guard-as-found">
+      <h2>The guard as found</h2>
+      <p>The defect still reproduces when the guard is disabled, which is what the negative control below shows. With it in place, the two readers that decide a launch's fate judge a same-run pointer as a claim:</p>
+      <ul>
+        <li><code>_own_pointer_yields_its_tree</code> (<code>reckon/crew/routing.py</code>) yields the tree only when the pointer's phase is in <code>WAITING_REQUEST_PHASES</code> (<code>queued</code>, <code>awaiting-upstream</code>, <code>blocked-upstream</code>, <code>held</code>) or <code>local_liveness</code> proves the worker dead on this host; an unpoven verdict on another host stays a claim.</li>
+        <li><code>_launch_pointer_worktrees</code> reads every live pointer as <code>_live_pointer_worktrees</code> does, keeping the launching run's own pointer unless that predicate yields it.</li>
+        <li>The claims fed to <code>_inspect_workspace</code> by <code>_launch_tree_verdict</code> and the guard in <code>_remove_worktree</code> read that view; <code>gc</code>, <code>_save_and_release_worktree</code> and promotion release keep the wide view, and no path naming changed.</li>
+      </ul>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-the-gate">
+      <h2>The gate</h2>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Node gate at base and at head &mdash; <code>tests/test_a_second_launch_keeps_a_live_worktree.py</code> and <code>tests/test_staged_write_inventory.py</code></td><td>55 passed, <code>EXIT=0</code></td><td><code>logs/base-gate.log</code>, <code>logs/head-gate.log</code></td></tr>
+          <tr><td>Declared negative control at base plus the mutation</td><td>2 failed, 2 passed, <code>EXIT=1</code></td><td><code>logs/negative-control.log</code></td></tr>
+          <tr><td>92 test files importing <code>reckon.crew.routing</code>, <code>-n 4</code>, on <code>rigel</code></td><td>9 failed, 822 passed, <code>EXIT=1</code> (259 s)</td><td><code>logs/population-base.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The population arm is the source-equal base revision and the delivered head share every <code>.py</code> file, because this node's diff touches only <code>docs/evidence</code>. Logs live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060726347299-a-second-launch-of-a-run-never-releases-the-tree/logs/</code> and name the revision, the tree, the imported module path and the resolved working directory.</p>
+      <p>The nine failures in the population arm are base failures, all of them source-text or inventory assertions whose subject another landed change moved: <code>test_every_removal_path_reads_the_wide_claim.py</code> (an extra removal path, <code>landing_measure.py::base_checkout</code>, with no direct driver), <code>test_one_function_resolves_a_citation.py</code> (two extra <code>^{commit}</code> peel sites), <code>test_a_worktree_release_is_whole.py</code>, <code>test_every_module_fits_a_worker_window.py</code>, two in <code>test_orchestrator_assessment_reaches_jev.py</code>, <code>test_a_regenerated_path_is_charged_as_written.py</code>, <code>test_crew_orphan.py</code> and <code>test_a_stopped_run_ends_its_supervisor.py</code>. None names the launch claim view, and the delivered head changes none of them, so this node adds no failure to the population.</p>
+      <p>One neighbouring suite is red at this base and is not this node's: <code>tests/test_a_successful_launch_is_recorded.py</code> reports 9 failed, 7 passed on the untouched tree, none of them <code>test_a_queued_request_does_not_hold_its_own_launch_path</code>, which the earlier repair round fixed and which passes here. Those ids are recorded under <code>outside_scope</code> in the manifest rather than triaged here.</p>
+      <p>Ruff: <code>reckon/crew/routing.py</code> reports the same 8 findings at base and at head (none in this node's region, which is unchanged); the node's test file reports none under <code>ruff check</code> and none under <code>ruff format --check</code>.</p>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>making the new predicate treat a same-run pointer as not live makes the first case move the tree into <code>_trash</code> and fail</em>. Applied by making <code>_own_pointer_yields_its_tree</code> return <code>True</code> for every same-run pointer, the node's test file reports 2 failed with <code>EXIT=1</code>: <code>test_a_working_pointer_s_second_launch_keeps_the_tree</code> and <code>test_a_starting_pointer_s_second_launch_keeps_the_tree</code> both reach <code>DID NOT RAISE CrewError</code>, because the duplicate launch released the tree and created a replacement instead of refusing. The head arm fails neither id.</p>
+    </section>
+
+    <section id="a-second-launch-of-a-run-never-releases-the-tree-commits">
+      <h2>Commits</h2>
+      <p>This fragment's commit records the verification of the guard and its four-case test at the base revision. It changes no product source and no test, and it does not move the section's declaration or resolve its driving followup.</p>
+    </section>
+  </main>
+</body>
+</html>

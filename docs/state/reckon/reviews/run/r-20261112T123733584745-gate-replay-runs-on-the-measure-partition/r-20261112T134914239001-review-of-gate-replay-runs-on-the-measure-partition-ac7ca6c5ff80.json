@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:441 promotion_module.rerun_gate_at_integrated_revision",
+    "reckon/crew/promotion_checks.py:1309 promotion_gate.replay_domain_invariant_checks",
+    "reckon/crew/promotion.py:1034 rerun_gate_at_integrated_revision with replay_log_path=run_dir(run_id) / _REPLAY_GATE_LOG_NAME"
+  ],
+  "completed_at": "2026-11-12T14:01:58.903Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-gate-replay-runs-on-the-measure-partition-ac7ca6c5ff80",
+      "recorded_at": "2026-11-12T14:09:53.004854+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T13:53:41Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-gate-replay-runs-on-the-measure-partition-ac7ca6c5ff80",
+      "recorded_at": "2026-11-12T14:40:36.262054+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "1006",
+      "severity": "blocking",
+      "text": "the job log is read back without being cleared before submission: job_log = _replay_job_log(replay_log_path) at :938-941 derives a stable path from the caller's replay_log_path (reckon/crew/promotion.py:1034 passes run_dir(run_id) / _REPLAY_GATE_LOG_NAME, the same file on every verify-gate of that run), nothing truncates or unlinks it, and :1006 reads 'job_log.read_text(...) if job_log.exists() else result.stdout'. If the submission never starts the srun step (sbatch refusing the partition, a scheduler error, or a job cancelled before the step's '> log' redirect runs) the previous attempt's log is still on disk, :1010 finds its 'EXIT=0', and the replay reports integrated_verdict 'passed' for a gate that never ran. The sibling implementation the plan named guards against exactly this by truncating the log before submission (reckon/crew/landing_measure.py:664, log.write_text(\\\"\\\")); the landed code does not."
+    },
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "1011",
+      "severity": "non-blocking",
+      "text": "a job log carrying no EXIT= receipt falls back to status = result.returncode, so a job the scheduler stopped before its receipt, or one whose log was truncated, is judged by the sbatch client's return code. The owner idiom treats an absent receipt as unreadable whatever the submission's return code says (reckon/crew/landing_measure.py:699-704 sets status 3 when the receipt is missing, with the comment that a failed submission or a job killed before its receipt is unreadable even if stdout looks green). A gate that did not finish should not be able to read as passed."
+    },
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "66",
+      "severity": "non-blocking",
+      "text": "_PARTITION_RECEIPT is matched with .search over the whole job log, so the first line shaped like EXIT=<n> wins rather than the terminal one. The replayed command's own output is copied into that same log ahead of the receipt (_partition_replay_script at :190 appends 'EXIT placeholder' after the command), so a gate that itself prints an EXIT= line is misread; the same-module idiom is the last-line-anchored form the owner uses at reckon/crew/landing_measure.py:701."
+    },
+    {
+      "file": "reckon/crew/promotion_gate.py",
+      "line": "77",
+      "severity": "non-blocking",
+      "text": "partition_job_argv together with partition_job_environment (:130), partition_bound_text (:69) and measure_partition_for (:148) is a second construction of a capability reckon/crew/landing_measure.py:553 _partition_runner already owns inline: the same sbatch --wait --parsable --nodes=1 --ntasks=1 --cpus/--mem/--output/--chdir/--wrap form, the same srun step inside it, the same HH:MM:SS rendering (:583-586), the same long partition past 3600 s (:582), and the same SLURM_*/SBATCH_* strip with RECKON_ALLOW_NESTED_LAUNCH and TMPDIR (:657-663). The addition duplicates rather than extends the owner, and _partition_runner still builds its own copy, so the plan's 'one helper both callers use, so no second submission form exists' is not achieved and a change to the submission form now has two owners. The manifest declares this under outside_scope because landing_measure.py was outside the granted scope, and names the follow-up that would rewire it."
+    },
+    {
+      "file": "tests/test_a_gate_replay_runs_on_the_measure_partition.py",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "the recording runner makes the job log and the submission's stdout identical: it writes the same f'{output}EXIT={status}' text to the log (:71) and returns it as the CompletedProcess stdout. No assertion therefore distinguishes the job-log read-back at promotion_gate.py:999-1011 from the 'result.stdout' fallback; deleting the read-back, or the receipt parse, leaves every assertion in the file true, including test_the_replay_log_names_the_partition_it_ran_on, whose EXIT=0 tail _write_replay_log appends from the same value either way. The seven assertions do guard the submission argv, the bound rendering, the environment strip, the long partition and the in-place fallback, as the negative control shows (6 of 7 fail); the read-back and receipt handling have no guard."
+    },
+    {
+      "file": "tests/test_a_gate_replay_runs_on_the_measure_partition.py",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the module docstring is changelog prose: 'and it used to do so with sh -c in the coordinator's own process' describes what the code did before this change rather than the mechanism it implements, which the repository's naming and comment hygiene rule bans in source. The mechanism sentence that follows carries the meaning on its own."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261112T134914239001-review-of-gate-replay-runs-on-the-measure-partition-ac7ca6c5ff80",
+  "reviewed_base_sha": "0dee9730afa3b75d87cdd133c96ca6fb6c75ac59",
+  "reviewed_head_sha": "ac7ca6c5ff80fcdeead95ef2992bde4d8882c147",
+  "reviewed_run_id": "r-20261112T123733584745-gate-replay-runs-on-the-measure-partition",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 5,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T14:07:48.075331+00:00",
+  "total": 79
+}

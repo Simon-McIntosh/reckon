@@ -1,0 +1,203 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s19": "e8d7daed9d6888b81a9ff42a6ad86112a292a6c4f75f84be94b2c07163f5c9d2"
+      },
+      "reason": "edits make exactly the five changes the answered findings promised: sbatch submission via a shared helper, --time HH:MM:SS assertion, log contract, followup wiring, section title",
+      "units": [
+        "s19"
+      ],
+      "when": "2026-11-12T13:11:38.034811+00:00"
+    }
+  ],
+  "completed_at": "2026-11-12T12:47:37.613Z",
+  "dispatched_at": "2026-11-12T12:42:19Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:138",
+      "id": "reasoning-1",
+      "reason": "the plan would have a node implement a submission form the same repository already tested and rejected, sending every promotion's gate back onto the fleet node while the section claims it moved off it.",
+      "text": "\u00a719 tells the worker to submit the replayed command with `srun --partition=<p> --time=<bound> --chdir=<repository>` and states that clearing SLURM_JOB_ID and SLURM_JOBID makes it \"a new job and not a step of the fleet allocation\"; the cited precedent `landing_measure._partition_runner` (reckon/crew/landing_measure.py:625-629) carries the recorded finding \"srun from the fleet itself would stay inside the fleet allocation even when it names a different partition\" and submits through `sbatch --wait` with `--nodes`, `--mem`, `--cpus-per-task` and every `SLURM_*`/`SBATCH_*` variable stripped, not just the two ids \u2014 so the chosen verb cannot deliver the section's own endpoint and would run the replay on the cores the section exists to protect",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:138",
+      "id": "done_when-1",
+      "reason": "without an assertion on `--time` the node can deliver a run whose overrun safety silently fails by a factor of sixty, and the section's stated control that \"the scheduler ends an overrun\" is then untrue and untested.",
+      "text": "\u00a719's done-when asserts only that the recorded argv starts with `srun` and names `--partition=all_debug` and `--chdir`, the environment, the long-partition case and the in-place fallback; nothing asserts the submitted `--time` value, though the deliverable's only guarantee that an abandoned job stops is \"the job's `--time` equals the replay bound\", and SLURM reads a bare integer `--time` as minutes, so a bound carried in seconds would give the job sixty times its bound and pass every stated assertion",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:21",
+      "id": "wiring-1",
+      "reason": "a coordinator reading the plan has an invocation only for landed work and none for the one section a worker can build, so the new section cannot be dispatched without an out-of-band instruction and the two open followups would dispatch already-landed nodes.",
+      "text": "\u00a719 is declared the plan's only implementable section but appears nowhere in the followups: f-aprteig-017 and f-aprteig-018 are open and name \u00a717 and \u00a718, both declared done, while no open followup carries `/reckon-build a-promotion-reads-the-evidence-it-is-given \u00a719`",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:138",
+      "id": "evidence_paths-1",
+      "reason": "the dispatch manifest contract already requires the gate log path and a trailing exit line, so the omission changes no node's behaviour \u2014 but restoring the clause keeps \u00a719 self-contained.",
+      "text": "\u00a719 omits the clause every other section carries, that every log sits under the run directory, starts with its revision and the literal command and ends in `EXIT=`, so a node can satisfy the section with arm logs left wherever the test put them",
+      "type": "evidence_paths",
+      "would_change": false
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:136",
+      "id": "naming-1",
+      "reason": "the id is `s19` and the declarations key on it, so nothing else refers to the missing number; it is a display slip only.",
+      "text": "\u00a719's heading reads \"A gate replay runs on the measure partition, never on the fleet node\" where every other section is titled \"\u00a7<n> \u2014 \u2026\", so the section a followup must name by number is the one title that does not carry it",
+      "type": "naming",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+  "plan_fingerprint": "940ecb27ee414a701406efb5a05794b3ad678633b3e6c5bdb29bead0568405e3",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 124,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "The deliverable now submits the replay through sbatch --wait with --nodes=1, --ntasks=1, --mem and every SLURM_*/SBATCH_* variable stripped, by extracting the submission argv and environment from landing_measure._partition_runner into one helper both call; srun is named only as the step inside the batch job.",
+      "reason": "",
+      "when": "2026-11-12T13:05:31.746323+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "The done-when now asserts the submitted --time is the replay bound rendered as HH:MM:SS (a 450 s bound reads 00:07:30), and that the replay's stdout is read back from the job's log file.",
+      "reason": "",
+      "when": "2026-11-12T13:05:45.806658+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "Resolved f-aprteig-017 and f-aprteig-018, whose sections are landed, and appended a followup carrying /reckon-build a-promotion-reads-the-evidence-it-is-given \u00a719.",
+      "reason": "",
+      "when": "2026-11-12T13:05:58.005409+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "finding": "evidence_paths-1",
+      "note": "The done-when now requires every arm log under the run directory, opening with its revision and literal command and ending in EXIT=.",
+      "reason": "",
+      "when": "2026-11-12T13:06:08.279137+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "finding": "naming-1",
+      "note": "The section title now reads \u00a719 \u2014 A gate replay runs on the measure partition, never on the fleet node.",
+      "reason": "",
+      "when": "2026-11-12T13:06:19.747926+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "note": "The done-when now asserts the submitted --time is the replay bound rendered as HH:MM:SS (a 450 s bound reads 00:07:30), and that the replay's stdout is read back from the job's log file.",
+      "reason": "",
+      "when": "2026-11-12T13:05:45.806658+00:00"
+    },
+    "evidence_paths-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "note": "The done-when now requires every arm log under the run directory, opening with its revision and literal command and ending in EXIT=.",
+      "reason": "",
+      "when": "2026-11-12T13:06:08.279137+00:00"
+    },
+    "naming-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "note": "The section title now reads \u00a719 \u2014 A gate replay runs on the measure partition, never on the fleet node.",
+      "reason": "",
+      "when": "2026-11-12T13:06:19.747926+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "note": "The deliverable now submits the replay through sbatch --wait with --nodes=1, --ntasks=1, --mem and every SLURM_*/SBATCH_* variable stripped, by extracting the submission argv and environment from landing_measure._partition_runner into one helper both call; srun is named only as the step inside the batch job.",
+      "reason": "",
+      "when": "2026-11-12T13:05:31.746323+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "fe9af3caa98c11d9fed1c9215a25ce570d3294d8",
+      "commit_basis": "edit",
+      "note": "Resolved f-aprteig-017 and f-aprteig-018, whose sections are landed, and appended a followup carrying /reckon-build a-promotion-reads-the-evidence-it-is-given \u00a719.",
+      "reason": "",
+      "when": "2026-11-12T13:05:58.005409+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-promotion-reads-the-evidence-it-is-given.v124.json",
+  "review_run_id": "r-20261112T123819262292-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "bb62ae51e84e109237b60dd4a9b18ebc103ca449",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `rerun_gate_at_integrated_revision` (reckon/crew/promotion_gate.py:591), its single `subprocess.run` (:787), `replay_domain_invariant_checks` (:870), `landing_measure._partition_runner` (reckon/crew/landing_measure.py:553), `measure_partition`/`measure_long_partition` (landing_measure.py:751,792; reckon/flight.py:1415) and the station caller (reckon/crew_run_commands.py:4064) all resolve.",
+    "done_when": "a finding \u2014 \u00a719's four assertions and its negative control read only the recorded argv, and none asserts the `--time` value the deliverable rests on to end an overrun (plan.html:138).",
+    "evidence_paths": "a finding \u2014 \u00a719 is the only section that does not require its arm logs to sit under the run directory with a revision header and a trailing `EXIT=` line.",
+    "naming": "a finding \u2014 \u00a719's heading carries no section number, unlike every other section, so the plan's own `\u00a719` references resolve to a title that does not name itself.",
+    "reasoning": "a finding \u2014 \u00a719 prescribes `srun` and claims that removing SLURM_JOB_ID and SLURM_JOBID makes the replay \"a new job and not a step of the fleet node's allocation\", while the module it cites as its model records the opposite and submits with `sbatch` (reckon/crew/landing_measure.py:625-629).",
+    "single_goal": "pass \u2014 \u00a719 names one deliverable, the replay executor's execution target, and its checks all measure that.",
+    "wiring": "a finding \u2014 no open followup names \u00a719, the only implementable section, while f-aprteig-017 and f-aprteig-018 stay open for \u00a717 and \u00a718, which the declarations record as done (plan.html:21,178,183)."
+  },
+  "section_digests": {
+    "_document": "6fb4d54ecf0e23ecfe10083693436b18e43a86c87fa8a920e0e7fdb7bf960135",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "620380b3d79c245d6219424330ab9d9ed11e7ee01e3bc84d6609ee062bbe9303",
+    "s16": "9072354fb4ba67955dd864c1f84a0e417cfa37b331a0ba91b8ec8b7314ee5187",
+    "s17": "96bf0561074e260a1f48db854f1bcbf6fdb99d82aa4049f7cd9e736e05eb7dff",
+    "s18": "5dc81bcbd20aa17f3d5b7465567649c7326d05a1641bc37acea1c1c7433f076d",
+    "s19": "22dbf3a773655294405750643d4e6bd04a4f34c86492568543e9de8272a870c0",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T12:51:28.773291+00:00",
+  "total": null
+}

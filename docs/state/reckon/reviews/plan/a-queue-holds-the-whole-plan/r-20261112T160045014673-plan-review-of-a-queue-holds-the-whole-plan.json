@@ -1,0 +1,131 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T16:07:26.578Z",
+  "dispatched_at": "2026-11-12T16:03:09Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261112T160045014673-plan-review-of-a-queue-holds-the-whole-plan/plan.html:22",
+      "id": "wiring-1",
+      "reason": "the same omission was raised and acted on for s38 (and s35\u2013s37) on this plan, and it lets the section that measures the queue drain start before the queue-edit repair lands.",
+      "text": "adding \u00a741 as an implementable section leaves `s14`'s declared waits at `[#s40]` while \u00a714's text says the drain starts \"Once every other section has landed\" (plan.html:104); the dogfood week's own interventions include \"one hot edit of a queued section\", so a drain launched with \u00a741 still open runs that intervention against the queue-edit defect \u00a741 exists to repair",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-queue-holds-the-whole-plan/r-20261112T160045014673-plan-review-of-a-queue-holds-the-whole-plan/plan.html:211",
+      "id": "reasoning-1",
+      "reason": "a \u00a741 node would occupy the same position as the run it cites, writing outside its fence and needing an `--accept-path` override, so the plan should name the candidate modules it already lists in prose (`reckon/crew/queue_admission.py`, `reckon/crew/dispatch_batch.py`, `reckon/crew/dispatch_claims.py`) as write paths, or state that a scope extension is expected.",
+      "text": "\u00a741 declares its write paths as `reckon/crew/queue_edit.py`, \"the launch module the node identifies\", the new test and its fragment, but the module a worker would have to edit is only knowable after the investigation the Deliverable asks for; the granted scope of a dispatched run is the request's `node.write_paths`, as the cited run's own `dispatch-detail.json` shows (only the original two paths were granted, so `reckon/crew/landing_measure.py` was refused at landing)",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "336b9f518fc74cb8c97e5a36c1eb2fa82b3a5524",
+  "plan_fingerprint": "6ae397a3ff0c41480f508100e01b5086db603dc3cdf5a4b5663fb92d74c89879",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "plan_version": 348,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "336b9f518fc74cb8c97e5a36c1eb2fa82b3a5524",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "s14's declared waits now include #s41, so the drain measure starts only after the queue-edit repair lands.",
+      "reason": "",
+      "when": "2026-11-12T16:19:54.496916+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "336b9f518fc74cb8c97e5a36c1eb2fa82b3a5524",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a741's write paths now name every candidate module explicitly (queue_edit.py, queue_admission.py, dispatch_launch.py, dispatch.py, runs.py) instead of 'the launch module the node identifies', and its Why cites the reviewer's evidence that dispatch-detail.json granted only the original paths; the node is re-dispatched so the new paths are granted at dispatch.",
+      "reason": "",
+      "when": "2026-11-12T16:20:04.302153+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "336b9f518fc74cb8c97e5a36c1eb2fa82b3a5524",
+      "commit_basis": "edit",
+      "note": "\u00a741's write paths now name every candidate module explicitly (queue_edit.py, queue_admission.py, dispatch_launch.py, dispatch.py, runs.py) instead of 'the launch module the node identifies', and its Why cites the reviewer's evidence that dispatch-detail.json granted only the original paths; the node is re-dispatched so the new paths are granted at dispatch.",
+      "reason": "",
+      "when": "2026-11-12T16:20:04.302153+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "336b9f518fc74cb8c97e5a36c1eb2fa82b3a5524",
+      "commit_basis": "edit",
+      "note": "s14's declared waits now include #s41, so the drain measure starts only after the queue-edit repair lands.",
+      "reason": "",
+      "when": "2026-11-12T16:19:54.496916+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-queue-holds-the-whole-plan.v348.json",
+  "review_run_id": "r-20261112T160045014673-plan-review-of-a-queue-holds-the-whole-plan",
+  "reviewed_blob_sha": "8e656cf897691db389320562e8d968770ae2cde9",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/queue_edit.py`, `reckon/crew/landing_measure.py`, `reckon/crew/recovery_classification.py` and the `promotion_scope` module all resolve at the base revision (anchor-check.log, EXIT=0), `crew widen --write-path` exists as a command (`reckon/crew_run_commands.py:1752`), and both cited run records exist under `~/.config/reckon/crew/runs/`.",
+    "done_when": "pass \u2014 \u00a741's done-when names a stub worker that commits to the added path, asserts both the fence and the registered claims, and its declared negative control (the base revision names the added path as outside the declared scope) is one I confirmed the shipped code can produce: the cited run's admitted request carries `node.write_paths` of only the original two paths (`dispatch-detail.json` \u2192 `admit_request.node.write_paths`), so both assertions fail at base.",
+    "evidence_paths": "pass \u2014 \u00a741 puts each arm's log \"under the run directory\" and the section's fragment in the evidence tree, both durable; it names no scratchpad or node-local temporary path, and it is the only section in the plan that explicitly requires `env -u SLURM_JOB_ID -u SLURM_JOBID sbatch` and forbids the fleet node for its arms.",
+    "naming": "pass \u2014 the new test's name states the mechanism, and no plan label, stage name, ticket number or version tag reaches a symbol, filename or comment in \u00a741; the run identifiers in the Why are evidence data, which is what the plan's convention reserves them for.",
+    "reasoning": "a finding \u2014 \u00a741's endpoint is not reachable by a node dispatched on the plan as written: its write paths name \"the launch module the node identifies\", which is undetermined at dispatch, and the write scope a run is granted is derived from the request's declared paths.",
+    "single_goal": "pass \u2014 \u00a741 has one deliverable, an edited write path reaching the landing fence; recording where the loss occurs is evidence for that repair, not a second goal.",
+    "wiring": "a finding \u2014 `plan-section-depends-on` gives `s14` only `#s40`, while \u00a714's own first sentence says the drain begins \"Once every other section has landed\" and \u00a741 is now an implementable section of this plan (plan.html:22 vs plan.html:104)."
+  },
+  "section_digests": {
+    "_document": "0384d8d524994e9313e774a10e684413aa996712144ae0097953d877d36e332c",
+    "s1": "fb24c0e002fa9969e0ca173681e8f1dcea04b4f039e33a0fa1dd5ea373f593de",
+    "s10": "16609a44238dbb7645a90d45c150d317a07b1793b4cd9dfa9bb33f1b4e086a0c",
+    "s11": "5cf5ffce08aa5567c1bacc4682131c122ab49241a6b6867d3f8a859b9aeb336e",
+    "s12": "0d1d902926dbea2c5a6d51db22d9d538d2d1d08c571f68cfd85e7dfedbf2cf8e",
+    "s13": "b2f3a4dc4441527ebac138fcd2583e79959e677a2bb235937905ef5260c68abe",
+    "s14": "48fefdd9daf0a510f622d4efc2c33c5a3105e8f4dc9b719521fcd69460bd490a",
+    "s15": "088f32a17914862634f01581550d494a75aeccecd6f4b1ad7529c606614cd8f1",
+    "s16": "3baae65f9838c420131b091c23c8e0495b371ceb323b379111c27677117bfa36",
+    "s17": "e8d19190fe8ad7ac0ada9570da1e1403020d996fade35345888d232283a712f3",
+    "s18": "c41a5f40b44fad7c9170e75afe458887ecf383dfbdfbd87f44b1aba18db385ce",
+    "s19": "3bd989d1975e3410388984d6b187e73537eb6741a9325640197d88ec68579fac",
+    "s2": "6f40396130f7ded32c5a1af11477c8349c23419b986be7ea455def69278413e9",
+    "s20": "1650ed742b05d1b8454fbb0792d83df930c357b4929ce75b0b82b8574b007375",
+    "s21": "92ae2c978f0293fbe8f09066288ab258d7d810c4bedc3ce5fe964f064ca7310e",
+    "s22": "47e2cfd2937f003b333a5627f777e7bc72cb16eaf677da44f2683b7c2cbe138b",
+    "s23": "8b0cff55659bab7a4f30061f3adc4d4e822c8679c7c659a592a131c825a356a8",
+    "s24": "e41f5feee9ab0bd1cb7371a93fa8f654ccd277325b302e34421d3b0ea907d869",
+    "s25": "d156187078ac0ab4d87d1398fe13f74eee443a0f2e48ed45f963ef238d8737d9",
+    "s26": "abf23ffa47584798ae7c0303cda18d5e3ded7f690e2e692a13f35b2c021f2813",
+    "s27": "272f482e0766b56080b610bdbf7ac48bc9ddfa2ed1cfb8c8a85cd9ecd5b32d93",
+    "s28": "cd767c148ee02023bec11cd941361b5cc37e14d542a4c6a132a48261b3b2497b",
+    "s29": "e7851807f93e49d39fd9789aa3dd5638ecc35016f60f53bc0c4fe3413a6bcf20",
+    "s3": "afea9aff41cb2215f28079810dcc13a5df1c6eb744cbd74c37b09ed3114da92a",
+    "s30": "b3148b61a2b1805ec38f8705fedffdb786ccee3a47f4a8bebcd794ce6b0983cf",
+    "s31": "23ef7a8f162555218fc698e3569bcef26b43435845dbb6c5af88193a0e76166e",
+    "s32": "04cecab62796d354c65abbea09c54c3d37a9155ab0d83b7da53e5c481a8cf8c6",
+    "s33": "9db5479d0d5cb815819bdb4c45cebe9064b8b2b85c07514b9bd6689e07590ac3",
+    "s34": "28ec67c9ff9af2e77a8ceca28cfe58dda22acf33e78752ecdc0c93437ec47ddd",
+    "s35": "53659cabcb1f264ddcdacc4c1d9271f132812f7e63527176f2a850f9317197fb",
+    "s36": "3c14bcaafca65d0775675f39af63a2199a057de32633294444dc446aab5a1fba",
+    "s37": "6889a6da568c36055f4606baa4ab3e17b94fa4a9d1fd14faa24909c0fa9e3243",
+    "s38": "0c15038b408405c23aad25c08b3c665a64c029cc83dfe975274581f85a2359a7",
+    "s39": "2d4849df481c1704d8a10e424069f9a5fb6de9a853f0284cf2ba5bd7246d929e",
+    "s4": "903a94096df2ca117b8f5060f5de2c87e89549a4efa774b1fbbec134d7a46b63",
+    "s40": "b67e14fac669e26d4a727452d4e91d7ceae386acae6ecef50c9f87ec5fdce913",
+    "s41": "d26a1af3de8ba4ea295d36f5be10b2f2a0c67330b705ca6aa1f5e0907139a2b5",
+    "s5": "a00c22d22d70c8a2ed3e7b08d58ef99957f2613d76b12181c91bcbb2a3517ade",
+    "s6": "a81480c94db3372e03fb8862f58fcb5017c6a0d5c4471ceecbf3c71a6850ce93",
+    "s7": "dbc7a6a07a37d3070088479d5385db177893a680c91d69feeea5aa537d0217d2",
+    "s8": "0baa02deb68c4c0f5702a20bc5b40684841e6b87295760a1f835f27d114094ef",
+    "s9": "4e5362394123fc5c53f2d2c0702fd5df85854d91227c9782171176d0fbe23314"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T16:18:21.738103+00:00",
+  "total": null
+}

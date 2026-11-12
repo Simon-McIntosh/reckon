@@ -672,6 +672,25 @@ def _review_run_in_flight(
     return review_run_id, phase
 
 
+#: The phases a review run's pointer carries once its review is written and
+#: nothing but a promotion remains. A review holds its pointer through them, so
+#: it is still readable while it is no longer working on the revision.
+DELIVERED_REVIEW_PHASES = frozenset({"complete"})
+
+
+def _review_pointer_delivered(pointer: Mapping[str, Any] | None) -> bool:
+    """Whether a review run's own pointer records the review as delivered.
+
+    A delivered review holds its pointer until a promotion lands its record, so
+    the phase is what separates "still working on the revision" from "waiting
+    to be landed", and it is read here so both surfaces that ask share one
+    vocabulary.
+    """
+    if not isinstance(pointer, Mapping):
+        return False
+    return str(pointer.get("phase") or "") in DELIVERED_REVIEW_PHASES
+
+
 def _review_pointer_phase(review_run_id: str) -> str:
     """The phase a review run's own pointer records, or "" when unreadable.
 

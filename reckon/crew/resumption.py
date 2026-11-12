@@ -47,6 +47,7 @@ import json
 import os
 import re
 import subprocess
+import threading
 import time
 from collections.abc import Callable, Mapping, Sequence
 from contextlib import contextmanager, suppress
@@ -2060,6 +2061,172 @@ def _record_wait_probe_history(
         _write_json(pointer_path(run_id), current)
 
 
+# How many promotions one session's sweep runs beside itself. A promotion takes
+# minutes on a shared checkout, and a sweep that ran several of them one after
+# another held every newly delivered run's review for the sum of them.
+DEFAULT_PROMOTION_WIDTH = 2
+
+# How long a sweep waits for the promotions it handed to its workers. The wait
+# bounds the sweep rather than the promotion: a promotion still running when it
+# elapses keeps running in its own worker, and the claim below is what keeps a
+# later sweep from promoting the same run beside it.
+DEFAULT_PROMOTION_WAIT_SECONDS = 180.0
+
+# The runs this process is promoting right now. The cross-host lease excludes a
+# second host, but a lease taken by this host, pid and job reattaches rather
+# than refusing, so two sweeps in one process need a claim of their own.
+_PROMOTIONS_RUNNING: set[str] = set()
+_PROMOTION_CLAIM_LOCK = threading.Lock()
+
+
+def _promotion_settings(config: Mapping[str, Any] | None) -> tuple[int, float]:
+    """The width and the sweep's wait for it, read from the resolved config.
+
+    A caller that supplies no promotion block gets the defaults, which is what
+    a station's own sweep does: the width is a property of how many promotions
+    a session can usefully run beside itself, not something every layer must
+    repeat.
+    """
+    block: Any = None
+    if isinstance(config, Mapping):
+        block = config.get("promotion")
+        if not isinstance(block, Mapping):
+            review_block = config.get("review")
+            block = (
+                review_block.get("promotion")
+                if isinstance(review_block, Mapping)
+                else None
+            )
+
+    def _read(key: str, default: Any) -> Any:
+        return block.get(key, default) if isinstance(block, Mapping) else default
+
+    try:
+        width = int(_read("width", DEFAULT_PROMOTION_WIDTH))
+    except (TypeError, ValueError):
+        width = DEFAULT_PROMOTION_WIDTH
+    try:
+        wait_seconds = float(_read("wait_seconds", DEFAULT_PROMOTION_WAIT_SECONDS))
+    except (TypeError, ValueError):
+        wait_seconds = DEFAULT_PROMOTION_WAIT_SECONDS
+    return max(1, width), max(0.0, wait_seconds)
+
+
+class PromotionWorkers:
+    """Run a sweep's promotions and acceptances in bounded workers of its own.
+
+    A sweep hands the work off after the reviews it owed are dispatched, so one
+    promotion running for minutes delays no review and no other promotion. The
+    jobs run at most ``width`` at a time, each holding the run's cross-host
+    promotion lease and this process's claim on it, so the same run is never
+    promoted twice concurrently by two sweeps.
+
+    ``wait`` waits up to ``wait_seconds`` for the workers this sweep started and
+    returns their outcomes in submission order, whether or not each finished.
+    """
+
+    def __init__(self, *, width: int, wait_seconds: float) -> None:
+        self.width = max(1, int(width))
+        self.wait_seconds = max(0.0, float(wait_seconds))
+        self._slots = threading.BoundedSemaphore(self.width)
+        self._lock = threading.Lock()
+        self._threads: list[threading.Thread] = []
+        self._outcomes: dict[int, dict[str, Any]] = {}
+        self._submitted = 0
+
+    def submit(self, run_id: str, job: Callable[[], dict[str, Any] | None]) -> bool:
+        """Start the job on a worker of its own, or report the run in flight.
+
+        The claim is taken here rather than in the worker, so a second sweep
+        reaching the same run reports it as being promoted instead of queueing
+        behind it and promoting it again once the first finishes.
+        """
+        key = str(run_id)
+        if not key:
+            return False
+        with _PROMOTION_CLAIM_LOCK:
+            if key in _PROMOTIONS_RUNNING:
+                return False
+            _PROMOTIONS_RUNNING.add(key)
+        with self._lock:
+            index = self._submitted
+            self._submitted += 1
+            thread = threading.Thread(
+                target=self._run,
+                args=(index, key, job),
+                name=f"promotion-{key} / {self._submitted}",
+                daemon=True,
+            )
+            self._threads.append(thread)
+        thread.start()
+        return True
+
+    def _run(
+        self,
+        index: int,
+        run_id: str,
+        job: Callable[[], dict[str, Any] | None],
+    ) -> None:
+        from reckon.crew import promotion
+
+        outcome: dict[str, Any]
+        try:
+            with self._slots:
+                started = False
+                try:
+                    # The lease is taken for the whole job, including the
+                    # gate replay acceptance does before it promotes: two
+                    # sweeps must not spend the same minutes on one run.
+                    with promotion._promotion_host_lease(run_id):
+                        started = True
+                        # The job names its own outcome, which is what lets it
+                        # say whether the run accepted, promoted itself or
+                        # failed, and keeps one vocabulary with the pass that
+                        # runs the same work in its own thread.
+                        ran = job()
+                        outcome = (
+                            dict(ran)
+                            if isinstance(ran, Mapping)
+                            else {"run_id": run_id, "result": ran}
+                        )
+                except CrewError as exc:
+                    if started:
+                        outcome = {
+                            "run_id": run_id,
+                            "failed": {
+                                "run_id": run_id,
+                                "error": f"{type(exc).__name__}: {exc}",
+                            },
+                        }
+                    else:
+                        outcome = {
+                            "run_id": run_id,
+                            "in_flight": True,
+                            "reason": str(exc),
+                        }
+        except Exception as exc:  # noqa: BLE001 - one job's failure is its own
+            outcome = {
+                "run_id": run_id,
+                "failed": {"run_id": run_id, "error": f"{type(exc).__name__}: {exc}"},
+            }
+        finally:
+            with _PROMOTION_CLAIM_LOCK:
+                _PROMOTIONS_RUNNING.discard(run_id)
+        with self._lock:
+            self._outcomes[index] = outcome
+
+    def wait(self) -> list[dict[str, Any]]:
+        """Wait up to this sweep's budget for the workers it started."""
+        deadline = time.monotonic() + self.wait_seconds
+        with self._lock:
+            threads = list(self._threads)
+        for thread in threads:
+            thread.join(max(0.0, deadline - time.monotonic()))
+        with self._lock:
+            outcomes, self._outcomes = self._outcomes, {}
+        return [outcomes[index] for index in sorted(outcomes)]
+
+
 def sweep_status_path(project: str) -> Path:
     """Where one project's sweep status accumulates, one entry per writer."""
     return recovery_log_path(project).with_suffix(".status.json")
@@ -2535,12 +2702,14 @@ def sweep(
     reviews: dict[str, Any] = {}
     if not dry_run:
         try:
+            width, wait_seconds = _promotion_settings(config)
             reviews = dispatch_awaiting_reviews(
                 project=project,
                 config=config,
                 launcher=launch,
                 session=session,
                 pointers=live,
+                promotions=PromotionWorkers(width=width, wait_seconds=wait_seconds),
             )
         except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
             # A review pass that cannot run must not take the resume pass's

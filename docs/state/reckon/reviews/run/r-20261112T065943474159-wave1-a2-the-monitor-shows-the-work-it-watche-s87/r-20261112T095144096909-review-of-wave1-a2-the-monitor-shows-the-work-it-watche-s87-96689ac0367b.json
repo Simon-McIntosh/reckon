@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:193-225",
+    "reckon/mcp_views.py:4641"
+  ],
+  "completed_at": "2026-11-12T10:10:38.037Z",
+  "dispatched_at": "2026-11-12T09:59:10Z",
+  "findings": [
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "829",
+      "severity": "non-blocking",
+      "text": "the landed per-run promotion command makes this existing test fail: it asserts the two review-ready duties share one run-less 'reckon crew complete --gate' command, and a reviewer run's duty now carries its own '--run <id>' command, so the file appears as the one added failure in the module-importing sweep (importers_head.log: 18 failed) against the base arm (base_importer_failing.log: 17 failed), which is the done_when clause 'the test files importing the modules changed add no failure against a base arm'. The change looks intended and the test needs re-pointing at the per-run command shape, but the file is outside this node's write scope, so a follow-up node must carry it before the importer arm is green."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "baseline_suite records revision b8585860d52c and log base_arm.log repeats it, but the arm ran in /tmp/reckon-crew-scratch/.../arms/base whose HEAD is a synthetic commit b104b803490fdcc297da00662bd6ae06fd466d63 ('base arm tree at b8585860d52c') that does not resolve in this repository, and whose tree hash 6c5990e2... differs from b8585860's c0483df9... by 40 tracked .log files under docs/figures and docs/research that the reconstruction did not carry. Every reckon/ and tests/ blob is identical, so the pass/fail measurement stands, but the revision named on the line is not the tree that ran."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/hooks/coordinator_obligations.py:193-225 renders the payload's summary.unreconciled_runs and item list that the change makes agree, and reckon/mcp_views.py:4641 serves the same obligations() payload over MCP; no other production path reaches the changed code.",
+    "diff": "read the single commit 96689ac036 against b8585860d52c commit by commit: obligations.py +90/-3 adding PARKED_REQUEST_PHASES, the ownerless listing rule, the reviewer promotion command and the parked-request pass; a new 255-line test file; a 60-line evidence fragment; nothing outside the three paths and no unrelated edit.",
+    "done_when": "the measure asks a complete plan-review run holding a live pointer be counted once and listed once with its promote command, count == len(list) for every fixture, a negative control that restores the separate count, and no added failure in the importing test files; tests/test_obligation_count_equals_its_list.py:125-160 and the other five fixtures assert the first two, logs/negative_control.log records 1 failed 5 passed EXIT=1 with 'assert 0 == 1', but the importer clause is not met (18 head vs 17 base) and both mandated arms ran without the -n 8 the done_when names.",
+    "goal": "the goal is that every unreconciled run is an obligation with a remedy; reckon/crew/obligations.py:3330-3335 now lists an ownerless classified row toward every session as the closure counts it, :3418-3458 lists requests parked by admission, and :1930-1945 gives a reviewer run's duty the shared promotion command, closing the three counted-but-unlisted shapes the fragment names.",
+    "manifest": "read; it reads status complete, names commit 96689ac0367b26da651d5682531d2a4a98f4f2c5, records both mandated arms as EXIT=0 with their logs, and discloses the one added importer failure under failure_attribution plus the drain/closure divergence under outside_scope rather than claiming a clean sweep.",
+    "write_paths": "the node was fenced to reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py, the plan's evidence-fragment path and its figures directory; git diff --name-only b8585860d52c..96689ac036 lists exactly the first three, and no plan, index, sprint or figure path is touched."
+  },
+  "justifications": {
+    "durability": "tests/test_obligation_count_equals_its_list.py:127-131 compares the closure-derived summary.unreconciled_runs against len(obligations) built by a separate pass, and the recorded mutation (owner filter restored at obligations.py:3332) reddens it with 'assert 0 == 1'; the parked fixtures at :222-255 would likewise redden if the listing pass at :3418 were deleted, though that mutation is reasoned rather than run.",
+    "evidence": "the negative control in logs/negative_control.log reproduces (1 failed, 5 passed, EXIT=1, 'assert 0 == 1') and both mandated arms log EXIT=0, but importers_head.log:1-3 records 18 failed against base_importer_failing.log's 17, and the mandated arms' commands (head_arm.log:2) omit the done_when's -n 8.",
+    "fit": "the additions follow the module's own idiom of module-level phase constants and the existing _live_item/_promotion_command composers, with names stating the mechanism (PARKED_REQUEST_PHASES, listed); passing sys.modules[__name__] at obligations.py:3440 matches the duck-typed module contract _upstream_hold_item already declares at obligation_snapshot.py:1408.",
+    "goal_fidelity": "reckon/crew/obligations.py:3330-3335 and :3418-3458 make the duty list carry every shape the closure's count includes, and :1938-1945 gives the reviewer duty its per-run command, so the goal's remedy is present for each; the drain-versus-closure summary divergence the manifest reports under outside_scope is pre-existing and untouched.",
+    "reuse": "the change extends existing owners rather than forking them: queue_admission's phase constants at obligations.py:85-95, recovery_classification._promotion_command at :1939, obligation_snapshot._upstream_hold_item at :3440 and the module's own _live_item at :3452; a search of reckon/crew for another count-versus-list reconciler found none.",
+    "scope_discipline": "git diff --name-only b8585860d52c021656003c57ae94a58a291cf087 96689ac0367b26da651d5682531d2a4a98f4f2c5 lists only reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that every unreconciled run is an obligation with a remedy; reckon/crew/obligations.py:3330-3335 lists an ownerless classified row toward every session as the closure counts it, :3418-3458 lists requests parked by admission, and :1930-1945 gives a reviewer run's duty the shared promotion command, closing the three counted-but-unlisted shapes the fragment names.\nVERDICT done_when: the measure asks a complete plan-review run holding a live pointer be counted once and listed once with its promote command, count == len(list) for every fixture, a negative control that restores the separate count, and no added failure in the importing test files; tests/test_obligation_count_equals_its_list.py:125-160 and the other five fixtures assert the first two and logs/negative_control.log records 1 failed 5 passed EXIT=1 with 'assert 0 == 1', but the importer clause is not met (importers_head.log 18 failed against base_importer_failing.log 17) and both mandated arms ran without the -n 8 the done_when names.\nVERDICT write_paths: the node was fenced to reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py, the plan's evidence-fragment path and its figures directory; git diff --name-only b8585860d52c..96689ac036 lists exactly the first three and no plan, index, sprint or figure path is touched.\nVERDICT manifest: read; it reads status complete, names commit 96689ac0367b26da651d5682531d2a4a98f4f2c5, records both mandated arms as EXIT=0 with their logs, and discloses the one added importer failure under failure_attribution and the drain/closure divergence under outside_scope rather than claiming a clean sweep.\nVERDICT diff: read the single commit 96689ac036 against b8585860d52c commit by commit: obligations.py +90/-3 adding PARKED_REQUEST_PHASES, the ownerless listing rule, the reviewer promotion command and the parked-request pass; a new 255-line test file; a 60-line evidence fragment; nothing outside the three paths and no unrelated edit.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:193-225, reckon/mcp_views.py:4641\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:3330-3335 and :3418-3458 make the duty list carry every shape the closure's count includes, and :1938-1945 gives the reviewer duty its per-run command, so the goal's remedy is present for each; the drain-versus-closure summary divergence the manifest reports is pre-existing and untouched.\nSCORE evidence: 13\nJUSTIFICATION evidence: the negative control in logs/negative_control.log reproduces (1 failed, 5 passed, EXIT=1, 'assert 0 == 1') and both mandated arms log EXIT=0, but importers_head.log records 18 failed against base_importer_failing.log's 17, and the mandated arms' commands omit the done_when's -n 8.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only b8585860d52c021656003c57ae94a58a291cf087 96689ac0367b26da651d5682531d2a4a98f4f2c5 lists only reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_obligation_count_equals_its_list.py:127-131 compares the closure-derived summary.unreconciled_runs against len(obligations) built by a separate pass, and the recorded mutation (owner filter restored) reddens it with 'assert 0 == 1', while the parked fixtures' mutations are reasoned rather than run.\nSCORE fit: 17\nJUSTIFICATION fit: the additions follow the module's idiom of module-level phase constants and the existing _live_item/_promotion_command composers, with names stating the mechanism, and sys.modules[__name__] at obligations.py:3440 matches the duck-typed module contract _upstream_hold_item declares at obligation_snapshot.py:1408.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change extends existing owners rather than forking them \u2014 queue_admission's phases at obligations.py:85-95, recovery_classification._promotion_command at :1939, obligation_snapshot._upstream_hold_item at :3440 and the module's own _live_item at :3452 \u2014 and a search of reckon/crew found no other count-versus-list reconciler.\nFINDING tests/test_coordinator_obligations_hook.py:829 non-blocking: the landed per-run promotion command makes this existing test fail, since it asserts the two review-ready duties share one run-less 'reckon crew complete --gate' command while a reviewer run's duty now carries its own '--run <id>' command; that is the single added failure in the module-importing sweep (18 head against 17 base) and the done_when requires none, and the file is outside this node's write scope so a follow-up node must re-point it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87/manifest.md:22 non-blocking: baseline_suite records revision b8585860d52c but the arm ran in /tmp/reckon-crew-scratch/.../arms/base whose HEAD is a synthetic commit b104b803490fdcc297da00662bd6ae06fd466d63 absent from this repository and whose tree differs from b8585860's by 40 tracked .log files, so the revision named is not the tree that ran even though every reckon/ and tests/ blob is identical.\n",
+  "review_run_id": "r-20261112T095144096909-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-96689ac0367b",
+  "reviewed_base_sha": "b8585860d52c021656003c57ae94a58a291cf087",
+  "reviewed_head_sha": "96689ac0367b26da651d5682531d2a4a98f4f2c5",
+  "reviewed_run_id": "r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T095144096909-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-96689ac0367b"
+  },
+  "reviewer_run_id": "r-20261112T095144096909-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-96689ac0367b",
+  "scores": {
+    "durability": 17,
+    "evidence": 13,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:43:41.469914+00:00",
+  "total": 104
+}

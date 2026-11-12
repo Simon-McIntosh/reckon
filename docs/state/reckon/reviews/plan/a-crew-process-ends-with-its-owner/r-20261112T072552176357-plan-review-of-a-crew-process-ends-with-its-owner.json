@@ -1,0 +1,164 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T07:39:40.304Z",
+  "dispatched_at": "2026-11-12T07:30:15Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/census.py:1",
+      "id": "reuse_search-1",
+      "reason": "the plan's only live node must be marked done (or re-scoped to the missing half) before any dispatch, or the first implementation node duplicates a mechanism shipped eight days after this plan was revised.",
+      "text": "\u00a76's endpoint is already shipped: `reckon/crew/census.py` (354 lines, `census()` and `apply_census()`), the `crew census` command at reckon/crew_run_commands.py:34, tests/test_crew_census.py with 22 test functions, the evidence fragment docs/evidence/fragments/a-crew-process-ends-with-its-owner/crew-census-lists-and-stops-ownerless.html, and commits b9381df2b9, 944f8d0b40 and 568ec13c6c \u2014 yet plan-section-declarations still reads `s6: implementable` and the snapshot carries no landed record between \u00a76 and \u00a77. A node dispatched against \u00a76 as written would rebuild landed machinery and re-land the same tests.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/census.py:141",
+      "id": "reuse_search-2",
+      "reason": "the plan's stated mechanism is exactly the missing half, so the brief must carry the launcher write path (dispatch_launch, crew run/complete, producers) or the plan must stop claiming every process carries its owner and say which processes the census can actually see.",
+      "text": "the ownership stamp \u00a76 makes the foundation of the design has no writer in the product: `RECKON_OWNER_PID` and `RECKON_OWNER_HOST`/`RECKON_OWNER_START_TIME` are read at census.py:141-155 and set nowhere but tests/test_crew_census.py; `RECKON_SESSION_ID` and `RECKON_CREW_SESSION` are read at census.py:138 and set nowhere at all; the only stamp anything writes is `RECKON_FOLLOWER_OWNER` (reckon/crew/follower_registration.py:566). So \u00a76's claim that \"Every process reckon starts carries its owner in its environment \u2026 followers, producers, dispatch and complete loops, workers and their review nodes\" is unimplemented: such a process falls into `unrecorded_count` (census.py:261) and is never listed, and the done-when \"lists zero reckon processes whose owner is dead\" passes vacuously for them.",
+      "type": "reuse_search",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/census.py:301",
+      "id": "deep_module-1",
+      "reason": "the brief should require revalidation to read the table once for the whole apply (the shape process_signal.py:336 `_beat_marked_processes` already uses), which changes the work the node is asked to do.",
+      "text": "apply_census takes the report census() produced and then calls census(home=home) again inside its per-pid loop (census.py:318), so N listed orphans cost N full /proc walks plus N ownership resolves; the interface leaks the report shape as a required argument rather than hiding revalidation behind apply itself.",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/process_signal.py:307",
+      "id": "duplicate_owner-1",
+      "reason": "the brief should extend the owner (one table walk with the environment index, one signal path) instead of adding a fifth walk and a second signalling implementation, which is the duplicate the review exists to catch.",
+      "text": "the shared process-table reader already exists: `_walk_marked_processes` walks /proc once per beat, keys its readings by pid, start tick and executable identity through `_indexed_environment` (process_signal.py:220), and is used by the recovery liveness path. \u00a76's census adds independent walks rather than extending it: reckon/crew/census.py:38 (`_processes`, which also bypasses the shared index by calling the uncached `_process_environment` at census.py:48), reckon/crew/fleet_migrate.py:185, reckon/crew/fleet_migrate.py:488, and reckon/crew/dispatch_launch.py:4598 (`os.listdir(\"/proc\")`). The signalling half is a second path too: census.py:288-345 implements pidfd open/TERM/KILL escalation with identity revalidation, while reckon/crew/process_signal.py:529 `_signal_one` sends by pid or pgid with no pidfd and no revalidation \u2014 the two do the same job and neither knows of the other.",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html#s6",
+      "id": "interface_budget-1",
+      "reason": "at public_definitions 2541, cli_options 475, mcp_views 15, refusal_families 25 the section must account in its own text for the surface it adds, naming what it retires or merging `census --apply`'s stop path with the existing pointer-discard surface.",
+      "text": "\u00a76 adds `crew census` as a new subcommand with `--apply` and `--pretty` (reckon/crew_run_commands.py:34-45), and its text names nothing it retires, merges, or explains why nothing can be; the section also has the sweep completing stale live pointers where `crew discard` already exists, and does not say whether discard loses surface or is kept beside it.",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c2438582d18ff56d42cf2a04b3e78a2ac0b35c31",
+  "plan_fingerprint": "c5d9e422d4b560ff9d1adc10a39b661b1ddb35a2ae150326ef8f86df8d18e1c5",
+  "plan_slug": "a-crew-process-ends-with-its-owner",
+  "plan_version": 302,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c2438582d18ff56d42cf2a04b3e78a2ac0b35c31",
+      "commit_basis": "edit",
+      "finding": "reuse_search-1",
+      "note": "\u00a76 records the census landing (814aeaef04, comment dfd22a0ae6) and was reopened (9d8cfc92c6) only for the remaining node, station-runs-the-census, which runs the shipped census from the station; no node rebuilds census.py",
+      "reason": "",
+      "when": "2026-11-12T09:04:33.226280+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "reuse_search-2",
+      "reason": "true gap, kept out of the station-beat node: the census signals only processes whose stamp names a dead owner and counts unstamped ones without touching them, so missing writers make it do less, never harm; writing the owner stamp at each launch site is the next \u00a76 node, after the station beat lands",
+      "when": "2026-11-12T09:04:54.496644+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c2438582d18ff56d42cf2a04b3e78a2ac0b35c31",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "the station-runs-the-census resume advice requires apply to revalidate against one table read for the whole apply, in the shape of process_signal._beat_marked_processes, not one census() per listed pid",
+      "reason": "",
+      "when": "2026-11-12T09:05:08.833786+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "duplicate_owner-1",
+      "reason": "merging the four /proc walks onto process_signal._walk_marked_processes touches fleet_migrate and dispatch_launch, outside this section; the station-beat node reuses census.py as landed, and the consolidation is a separate refactor node",
+      "when": "2026-11-12T09:05:23.226078+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "interface_budget-1",
+      "reason": "crew census is already landed; the remaining node adds one opt-in station option and no verb; census --apply signals processes while crew discard removes pointers, different objects, so neither retires the other",
+      "when": "2026-11-12T09:05:38.163477+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c2438582d18ff56d42cf2a04b3e78a2ac0b35c31",
+      "commit_basis": "edit",
+      "note": "the station-runs-the-census resume advice requires apply to revalidate against one table read for the whole apply, in the shape of process_signal._beat_marked_processes, not one census() per listed pid",
+      "reason": "",
+      "when": "2026-11-12T09:05:08.833786+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "merging the four /proc walks onto process_signal._walk_marked_processes touches fleet_migrate and dispatch_launch, outside this section; the station-beat node reuses census.py as landed, and the consolidation is a separate refactor node",
+      "when": "2026-11-12T09:05:23.226078+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "crew census is already landed; the remaining node adds one opt-in station option and no verb; census --apply signals processes while crew discard removes pointers, different objects, so neither retires the other",
+      "when": "2026-11-12T09:05:38.163477+00:00"
+    },
+    "reuse_search-1": {
+      "action": "acted",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "commit": "c2438582d18ff56d42cf2a04b3e78a2ac0b35c31",
+      "commit_basis": "edit",
+      "note": "\u00a76 records the census landing (814aeaef04, comment dfd22a0ae6) and was reopened (9d8cfc92c6) only for the remaining node, station-runs-the-census, which runs the shipped census from the station; no node rebuilds census.py",
+      "reason": "",
+      "when": "2026-11-12T09:04:33.226280+00:00"
+    },
+    "reuse_search-2": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "true gap, kept out of the station-beat node: the census signals only processes whose stamp names a dead owner and counts unstamped ones without touching them, so missing writers make it do less, never harm; writing the owner stamp at each launch site is the next \u00a76 node, after the station beat lands",
+      "when": "2026-11-12T09:04:54.496644+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-crew-process-ends-with-its-owner/r-20261112T072552176357-plan-review-of-a-crew-process-ends-with-its-owner.json",
+  "review_run_id": "r-20261112T072552176357-plan-review-of-a-crew-process-ends-with-its-owner",
+  "reviewed_blob_sha": "97bcb4e52b8114a47bd3eac28c08d81900639897",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 census()/apply_census() hide the table walk well, but the split forces the caller to hand the whole report back and apply_census re-walks /proc once per listed pid.",
+    "duplicate_owner": "a finding \u2014 census.py adds a fourth independent /proc table walk beside the shared one in process_signal.py, and a second signalling path beside process_signal._signal_one.",
+    "interface_budget": "a finding \u2014 public_definitions 2541, cli_options 475, mcp_views 15, refusal_families 25; \u00a76 adds one subcommand and two options and names nothing it retires or merges, or why nothing can be.",
+    "reuse_search": "a finding \u2014 \u00a76's endpoint already exists as reckon/crew/census.py with a `crew census` CLI command, tests and an evidence fragment, while the plan still declares s6 implementable; and the environment-stamp mechanism \u00a76 depends on has no writer outside census.py and its test.",
+    "thin_wrapper": "pass \u2014 the new subcommand is a binding over census()/apply_census(), not a second implementation of the resolution; the work behind the interface is real."
+  },
+  "section_digests": {
+    "_document": "faa1fdc319e7a6aff23861a846330115e1da955845556751c1de073309922fb8",
+    "s1": "f2cf73b4b75452f4e26ec23c33d345a6d9f0882e3c249c672504cb94faf270be",
+    "s10": "db3ba4406fb1b342703301f8b9f92c0a132b63ba102ef58231cfaa7463d1544b",
+    "s11": "874f6e9ec0c827715ae91a719166f4cb791be181100902521ef27d1ac8a3558d",
+    "s12": "5f7484051e050ff1d0cf78c6969c72dad57a2807d74cd70453a35e9fa2e50217",
+    "s13": "1e34ec45e19d4678db8c6c6ceb355272e91b6dd8ff7369bf9a6a8ef9e749562e",
+    "s2": "359dc35121c32ab9afbda98d2eba6d66e66a62f4f2342da3c4ff84bae8a193c2",
+    "s3": "091161e8938e4c2e0a354ae9470577bbe982164f1e396701fb11937d2e76a446",
+    "s4": "75e237d42075e6ae07f0e5ea0d7f92a907315e4611738a3ff377774542743ec5",
+    "s5": "5d72ddcb76d7307082c6bdc9386bb2f551a7793e49b09d5a69838ad080a3b389",
+    "s6": "8792677c451e9a5211462ce8ed629ce6a44c648116b4df6a854f6f37e7079be7",
+    "s7": "e9faac8b27bb6715734c6563abbb96524c5d61592c30d3b6db6f5b1174a66b49",
+    "s8": "accab97eb8558917493f993b65db4a4f520b70461b2c1446e197b1621ba6cf3f",
+    "s9": "726d7dd725db69c2d9cc811af1f65ec31b0c85774b5f466cce61f428d2031c73"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T09:00:54.616821+00:00",
+  "total": null
+}

@@ -4156,6 +4156,57 @@ def _apply_accept(working: dict, op: dict, is_index: bool, warnings: list[str]) 
     }
 
 
+def _apply_withdraw(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
+    """Withdraw an unlocked decision, keeping its reason and date in the plan.
+
+    A withdrawal takes a decision out of the wait without pretending anyone
+    chose: the entry stays in the plan's record with its reason in
+    ``rationale`` and the date in ``when``, which are the fields the plan
+    reader renders and the roadmap already reads as holding no section. No
+    choice is recorded, so nothing reads a withdrawal as a decision that was
+    made.
+
+    A locked decision carries someone's answer, so withdrawing it is refused
+    naming the decision rather than silently discarding that answer, and a
+    withdrawal that states no reason is refused the way a descope without one
+    is: a record that says only "withdrawn" leaves the next reader unable to
+    tell why the block went.
+    """
+    if is_index:
+        raise OpError("withdraw op is plan-only")
+    key = op.get("key")
+    if not key:
+        raise OpError("withdraw op requires a 'key'")
+    reason = str(op.get("reason") or "").strip()
+    if not reason:
+        raise OpError(
+            f"withdrawing decision {key!r} requires a 'reason' saying why it goes"
+        )
+    decisions = working.setdefault("decisions", {})
+    if not isinstance(decisions, dict):
+        raise OpError("plan has no decisions map")
+    existing = decisions.get(key)
+    if not isinstance(existing, dict):
+        raise OpError(f"decision {key!r} does not exist")
+    if str(existing.get("choice") or "").strip():
+        raise OpError(
+            f"decision {key!r} is locked and cannot be withdrawn; only an "
+            "unlocked decision can be withdrawn"
+        )
+    decisions[key] = {
+        **existing,
+        "choice": "",
+        "rationale": reason,
+        "when": _utc_ts(),
+        "by": op.get("by", ""),
+        # A withdrawn decision governs nothing, and a recommendation left on it
+        # would let an ``accept`` op read the withdrawal back as a choice.
+        "sections": [],
+        "recommended": "",
+        "recommended_by": "",
+    }
+
+
 def _apply_gate(working: dict, op: dict, is_index: bool, warnings: list[str]) -> None:
     """Declare one evidence gate with a stable identity."""
     if is_index:
@@ -4406,6 +4457,7 @@ _OP_DISPATCH = {
     "resolve": _apply_resolve,
     "lock": _apply_lock,
     "accept": _apply_accept,
+    "withdraw": _apply_withdraw,
     "gate": _apply_gate,
     "pass": _apply_gate_verdict,
     "fail": _apply_gate_verdict,

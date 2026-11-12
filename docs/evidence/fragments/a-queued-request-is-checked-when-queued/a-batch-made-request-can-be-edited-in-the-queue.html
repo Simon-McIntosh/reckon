@@ -1,0 +1,17 @@
+<section class="evidence-record" id="a-batch-made-request-can-be-edited-in-the-queue-record">
+  <h2 id="a-batch-made-request-can-be-edited-in-the-queue-title">A batch-made request can be edited in the queue</h2>
+  <p id="a-batch-made-request-can-be-edited-in-the-queue-outcome"><code>_queue_batch</code> already stores <code>runs_dir()/&lt;run_id&gt;/manifest.md</code> for every queued entry that names none (landed at <code>f83af26ed2</code>), so <code>crew queue edit --time-budget 90m</code> on a batch-made request is stored on the same contract a single queued dispatch meets. This node confirmed the behaviour still reproduces at the base revision and hardened the one assertion that could not tell the contract from its helper.</p>
+  <table id="a-batch-made-request-can-be-edited-in-the-queue-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>tests/test_a_batch_request_can_be_edited.py</code></td><td>The stored-path assertion is spelled from <code>runs.runs_dir() / run_id / "manifest.md"</code> instead of the production <code>runs.run_dir(run_id)</code> helper, so a future redefinition of that helper cannot move the stored path while the check still agrees with it. The three behaviours are unchanged otherwise.</td></tr>
+      <tr><td><code>reckon/crew/dispatch_batch.py</code></td><td>Unchanged at this head: the manifest-path assignment was verified in place.</td></tr>
+    </tbody>
+  </table>
+  <h3 id="a-batch-made-request-can-be-edited-in-the-queue-gate">Gate</h3>
+  <p id="a-batch-made-request-can-be-edited-in-the-queue-gate-result"><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_batch_request_can_be_edited.py tests/test_staged_write_inventory.py</code> at the base revision <code>c4eff770</code> → <strong>54 passed</strong> (EXIT=0). The same command at this head → <strong>54 passed</strong> (EXIT=0). Ruff check and <code>ruff format --check</code> report no findings on the touched test.</p>
+  <h3 id="a-batch-made-request-can-be-edited-in-the-queue-negative-control">Negative control</h3>
+  <p id="a-batch-made-request-can-be-edited-in-the-queue-negative-control-result">Removing the manifest-path assignment from <code>_queue_batch</code> turns the gate red: <strong>3 failed</strong> (EXIT=1), and the queue itself refuses the entry naming <code>no manifest path is named, so completion could only be judged by reading the implementation</code>. Restoring the assignment returns the run to <strong>3 passed</strong>. A request whose stored pointer carries an empty <code>manifest_path</code> is refused by <code>crew queue edit</code> naming <code>independently-verifiable</code> and stores nothing.</p>
+</section>

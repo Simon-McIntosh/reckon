@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:2485",
+    "reckon/crew_run_commands.py:2488",
+    "reckon/crew/dispatch_sessions.py:1645"
+  ],
+  "completed_at": "2026-11-12T07:40:08.874Z",
+  "dispatched_at": "2026-11-12T07:27:40Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "the outside_scope breakdown lists tests/test_crew.py as 5 failures while importer-arm.log carries 6, so the enumerated ids total 18 against the 19 the same line states."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/importer-arm.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "the command header is not the literal command a shell was handed, because its cohort file names spill onto following lines, so a reader re-running the recorded command gets a different invocation."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "two commits, eba2066f5d adding 28 lines and ddcb5079 adding 1 line to a single new evidence fragment under docs/evidence/fragments/a-gate-halts-only-on-substance/, with no production source or test line changed.",
+    "done_when": "the done_when names tests/test_a_resume_can_change_its_budget.py, whose three cases at :125, :149 and :182 assert the 45m deadline 2031-01-01T01:45:00Z, the stored 45m, and the --over-fence refusal, and gate-base.log and gate-after.log both read 54 passed EXIT=0 over that file plus tests/test_staged_write_inventory.py.",
+    "goal": "the node goal is \"A resume can change the run's budget\"; reckon/crew_run_commands.py:2349 and :2355 declare --time-budget and --over-fence and :2249/:2276 implement the fence check and the record, all present at base c4eff770, so the landed diff adds no production line and only records the re-measurement at docs/evidence/fragments/a-gate-halts-only-on-substance/a-resume-can-change-the-run-s-budget.html:24.",
+    "manifest": "read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/manifest.md; its 54-passed arms, 2-failed negative control and 19-failed importer cohort match their logs, though its failure breakdown counts tests/test_crew.py as five where importer-arm.log carries six.",
+    "write_paths": "the dispatch names reckon/crew_run_commands.py, tests/test_a_resume_can_change_its_budget.py and the evidence fragment; the two-commit diff c4eff770..ddcb5079 touches only the fragment, and git diff --stat over reckon/ and tests/ is empty."
+  },
+  "justifications": {
+    "durability": "tests/test_a_resume_can_change_its_budget.py:143 fails when _record_resumed_time_budget is set aside, as the declared mutation shows, but this node adds no assertion of its own and its fragment's figures are gated by nothing.",
+    "evidence": "gate-after.log reads 54 passed EXIT=0 and negative-control.log 2 failed 1 passed EXIT=1, but the done-when's importer-cohort clause is measured only at base, substituted by the byte-identity of reckon/ and tests/ rather than a head arm.",
+    "fit": "the fragment repeats the meta set and r-note structure of its sibling docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html and introduces no forbidden plan or stage label in code.",
+    "goal_fidelity": "the door at reckon/crew_run_commands.py:2485 already delivered the goal before the base revision, so the landed fragment records a correct behaviour rather than adding it.",
+    "reuse": "no definition is added; the node verifies reckon/crew_run_commands.py:2249 and reckon/crew/dispatch_sessions.py:1645 instead of re-implementing the fence it describes.",
+    "scope_discipline": "the whole diff at ddcb5079 is the single assigned evidence fragment docs/evidence/fragments/a-gate-halts-only-on-substance/a-resume-can-change-the-run-s-budget.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"A resume can change the run's budget\"; reckon/crew_run_commands.py:2349 and :2355 declare --time-budget and --over-fence and :2249/:2276 implement the fence check and the record, all present at base c4eff770, so the landed diff adds no production line and only records the re-measurement at docs/evidence/fragments/a-gate-halts-only-on-substance/a-resume-can-change-the-run-s-budget.html:24.\nVERDICT done_when: the done_when names tests/test_a_resume_can_change_its_budget.py, whose three cases at :125, :149 and :182 assert the 45m deadline 2031-01-01T01:45:00Z, the stored 45m, and the --over-fence refusal, and gate-base.log and gate-after.log both read 54 passed EXIT=0 over that file plus tests/test_staged_write_inventory.py.\nVERDICT write_paths: the dispatch names reckon/crew_run_commands.py, tests/test_a_resume_can_change_its_budget.py and the evidence fragment; the two-commit diff c4eff770..ddcb5079 touches only the fragment, and git diff --stat over reckon/ and tests/ is empty.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/manifest.md; its 54-passed arms, 2-failed negative control and 19-failed importer cohort match their logs, though its failure breakdown counts tests/test_crew.py as five where importer-arm.log carries six.\nVERDICT diff: two commits, eba2066f5d adding 28 lines and ddcb5079 adding 1 line to a single new evidence fragment under docs/evidence/fragments/a-gate-halts-only-on-substance/, with no production source or test line changed.\nCALL_SITES: reckon/crew_run_commands.py:2485, reckon/crew_run_commands.py:2488, reckon/crew/dispatch_sessions.py:1645\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the door at reckon/crew_run_commands.py:2485 already delivered the goal before the base revision, so the landed fragment records a correct behaviour rather than adding it.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-after.log reads 54 passed EXIT=0 and negative-control.log 2 failed 1 passed EXIT=1, but the done-when's importer-cohort clause is measured only at base, substituted by the byte-identity of reckon/ and tests/ rather than a head arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff at ddcb5079 is the single assigned evidence fragment docs/evidence/fragments/a-gate-halts-only-on-substance/a-resume-can-change-the-run-s-budget.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_resume_can_change_its_budget.py:143 fails when _record_resumed_time_budget is set aside, as the declared mutation shows, but this node adds no assertion of its own and its fragment's figures are gated by nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment repeats the meta set and r-note structure of its sibling docs/evidence/fragments/a-gate-halts-only-on-substance/ab2-clive-anchored-a-gate-halts-s4.html and introduces no forbidden plan or stage label in code.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the node verifies reckon/crew_run_commands.py:2249 and reckon/crew/dispatch_sessions.py:1645 instead of re-implementing the fence it describes.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/manifest.md:22 non-blocking: the outside_scope breakdown lists tests/test_crew.py as 5 failures while importer-arm.log carries 6, so the enumerated ids total 18 against the 19 the same line states.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060433796107-a-resume-can-change-the-run-s-budget/importer-arm.log:3 non-blocking: the command header is not the literal command a shell was handed, because its cohort file names spill onto following lines, so a reader re-running the recorded command gets a different invocation.\n",
+  "review_run_id": "r-20261112T072500411417-review-of-a-resume-can-change-the-run-s-budget-ddcb5079d9b0",
+  "reviewed_base_sha": "c4eff7707068362553dc49173df280fd5cbdf254",
+  "reviewed_head_sha": "ddcb5079d9b0a408338ab3c013901d22c40dc354",
+  "reviewed_run_id": "r-20261112T060433796107-a-resume-can-change-the-run-s-budget",
+  "scores": {
+    "durability": 16,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T07:44:00+00:00",
+  "total": 108
+}

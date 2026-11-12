@@ -1159,6 +1159,130 @@ def _control_run_shows_a_failure(log_text: str, recorded: int | None) -> bool:
     return _runner_reports_a_failed_run(log_text)
 
 
+#: The largest file the control-log search will read. A run's directory carries
+#: session JSON and stream captures beside its logs; a candidate is a text log,
+#: so a file past this bound is not one and is skipped unread.
+_CONTROL_LOG_READ_LIMIT_BYTES = 8 * 1024 * 1024
+
+
+def _control_log_added_failure_ids(
+    log_text: str, reference_ids: set[str] | None
+) -> set[str]:
+    """The failing ids a control log adds to the arm it is compared against.
+
+    Admission rests on the facts the log's run recorded, never on its wording:
+    the run failed and the log names at least one failing test id the reference
+    arm passes. ``None`` for the reference means no arm was readable, so no
+    comparison can be made and nothing is added.
+    """
+    if reference_ids is None:
+        return set()
+    recorded = _recorded_exit_status(log_text)
+    if not _control_run_shows_a_failure(log_text, recorded):
+        return set()
+    ids = review_module.gate_log_failure_ids(log_text) or set()
+    return set(review_module.failure_ids_covered(reference_ids, ids))
+
+
+def _run_directory_control_log(
+    directory: Path | None,
+    *,
+    reference_ids: set[str] | None,
+    skip: Sequence[Path] = (),
+) -> tuple[str, str] | None:
+    """The first readable log beside the run's manifest that admits its control.
+
+    A worker commonly keeps the red log in its run directory without naming it
+    on the manifest line, and the declaration is discharged by the run it
+    recorded rather than by the field's spelling. Every text file beside the
+    manifest is offered to the same test the named log is held to — the run
+    failed and it adds a failing id to the reference arm — so a log of the
+    wrong mutation, or one whose run passed, is passed over rather than used.
+
+    Files whose name carries ``control`` are offered first, then the rest in
+    name order, so the choice among several admissible logs is deterministic
+    and prefers the one a worker named for the purpose. ``skip`` holds paths
+    already read, so a log that was offered and refused is not read twice.
+    """
+    if directory is None:
+        return None
+    try:
+        if not directory.is_dir():
+            return None
+        entries = list(directory.iterdir())
+    except OSError:
+        return None
+    skipped = {os.path.realpath(str(path)) for path in skip if str(path)}
+    candidates: list[Path] = []
+    for path in entries:
+        try:
+            if not path.is_file():
+                continue
+            if path.stat().st_size > _CONTROL_LOG_READ_LIMIT_BYTES:
+                continue
+        except OSError:
+            continue
+        if os.path.realpath(str(path)) in skipped:
+            continue
+        candidates.append(path)
+    candidates.sort(
+        key=lambda path: (0 if "control" in path.name.lower() else 1, path.name)
+    )
+    for path in candidates:
+        try:
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeError):
+            continue
+        if _control_log_added_failure_ids(text, reference_ids):
+            return text, str(path)
+    return None
+
+
+def _measured_control(
+    run_id: str, record: Mapping[str, Any], test_files: Sequence[str]
+) -> dict[str, Any] | None:
+    """Run the declared mutation on the landing's measurement partition.
+
+    A run that kept no log of its declared mutation has not produced the
+    evidence its own landing needs, so the landing takes the reading itself:
+    the node's tests are run over a checkout of the run's base revision, where
+    the repair is absent, and the failure they report there is the control the
+    log would have recorded. The reading is submitted to the configured
+    measurement partition, the way an armed arm is.
+
+    ``None`` means the run cannot be measured here — it names no worktree, base
+    revision or armed command, or the base checkout fails — so the caller keeps
+    the refusal it had.
+    """
+    from reckon.crew import landing_measure, queue_landing
+
+    worktree = str(record.get("worktree") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    base_sha = str(record.get("base_sha") or "").strip()
+    command = str(record.get("suite_command") or "").strip()
+    tree = Path(worktree) if worktree else Path(repository)
+    repo = Path(repository) if repository else tree
+    if not (worktree and base_sha and command and tree.is_dir() and repo.is_dir()):
+        return None
+    try:
+        timeout = queue_landing._measure_timeout(record)
+        config = queue_landing._measure_config(record)
+        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+            return landing_measure.control_mutation_observation(
+                command=command,
+                tree=tree,
+                base_tree=base_tree,
+                base_sha=base_sha,
+                logs_dir=run_dir(run_id) / "landing-measure" / "control",
+                test_files=test_files,
+                timeout=timeout,
+                project=str(record.get("project") or ""),
+                config=config,
+            )
+    except (OSError, ValueError, landing_measure.BaseCheckoutError):
+        return None
+
+
 def _arm_describes_the_cited_log(
     arm: Mapping[str, Any], log_path: str, log_text: str | None
 ) -> bool:

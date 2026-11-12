@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:4958 (crew admit -> admit_until_stopped)",
+    "reckon/crew/queue_admission.py:398 (_launch_queued reads the pointer's dispatch_options)",
+    "reckon/crew/queue_admission.py:461 (unreconciled_override=True into dispatch)",
+    "reckon/crew/queue_admission.py:6800 (admit_until_stopped calls admit_once)",
+    "reckon/crew/dispatch.py:2006 (refusal when the override is false)",
+    "reckon/crew/dispatch.py:2022 (admission waiver recorded naming the covered runs)"
+  ],
+  "completed_at": "2026-11-12T07:22:42.362Z",
+  "dispatched_at": "2026-11-12T07:08:23Z",
+  "findings": [
+    {
+      "file": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+      "line": "260",
+      "severity": "non-blocking",
+      "text": "the case sets request[\"dispatch_options\"][\"allow_unreconciled_runs\"] = False but never asserts that value survives queue_dispatch into the launched pointer's dispatch_options, so if the queue ever stopped carrying it the case would still pass while no longer exercising a stored override; reckon/crew/queue_admission.py:398 reads the pointer's options verbatim today, which is what makes the premise true now, and asserting it would keep the guard exercising the field it names."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060223167057-a-queued-launch-is-not-refused-on-its-coordinato/manifest.md",
+      "line": "20",
+      "severity": "non-blocking",
+      "text": "baseline_suite.command records PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python while the base arm's own log header at logs/base.log:2 names PYTHONPATH=. .venv/bin/python, so the field is not the literal command that ran; the two spellings resolve to one interpreter and promotion_records._canonical_suite_command accepts the pair, but the record of the run and the field that cites it disagree."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060223167057-a-queued-launch-is-not-refused-on-its-coordinato/manifest.md",
+      "line": "21",
+      "severity": "non-blocking",
+      "text": "the arms measure tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and tests/test_staged_write_inventory.py, while the done_when's delta clause names every test file importing reckon.crew.queue_admission (about two dozen); the node changes no product source so no added failure is possible there, but the stated population was not the one measured."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read the single commit f3051809fd against base c4eff77070 \u2014 65 insertions, no deletions, no product source: a 41-line landing fragment and one 23-line test that sets a stored allow_unreconciled_runs false and asserts the admission launch still proceeds and records the waiver.",
+    "done_when": "the done_when names the three cases, the stored-override negative control and a base delta; tests/test_a_queued_launch_ignores_the_coordinator_backlog.py carries those three cases plus the new fourth, and the manifest records base 54 passed EXIT=0 (logs/base.log at c4eff77070), head 55 passed EXIT=0 (logs/after.log at f3051809fd) and the declared mutation 2 failed / 53 passed EXIT=1 (logs/negative-control.log).",
+    "goal": "the goal is that a queued launch is not refused on its coordinator's backlog; reckon/crew/queue_admission.py:461 passes unreconciled_override=True at the admission launch site and reckon/crew/dispatch.py:2006-2023 records the exception as an admission waiver with source admission-launch naming the runs it covered, so the landed tree delivers the goal, via commit 1bd720c73e which is an ancestor of the node's base.",
+    "manifest": "read; status complete, commits f3051809fd, changed_paths the two landed files, tests naming the literal pytest command, test_logs naming the base, after and negative-control logs, and baseline_suite/after_suite both recording completed runs with 0 failures.",
+    "write_paths": "the node's fence was reckon/crew/dispatch.py, reckon/crew/queue_admission.py, tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and the evidence fragment's directory; git diff between c4eff77070 and f3051809fd touches exactly the test file and the fragment, both inside the fence."
+  },
+  "justifications": {
+    "durability": "the declared mutation reinstating bool(options.get(\"allow_unreconciled_runs\")) at reckon/crew/queue_admission.py:398 reddens the new case at tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:265 in logs/negative-control.log, so the added assertion fails if the launch site reads the stored override again.",
+    "evidence": "logs/base.log reads 54 passed EXIT=0 at c4eff77070, logs/after.log reads 55 passed EXIT=0 at f3051809fd and logs/negative-control.log reads 2 failed / 53 passed EXIT=1, all recorded in the manifest's baseline_suite and after_suite; the arms measure two files where the done_when names every test file importing reckon.crew.queue_admission.",
+    "fit": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:246 follows the file's sentence-shaped test names and composes its existing _queue, _write_overdue_run and _launcher helpers, adding no abstraction and carrying no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:461 passes unreconciled_override=True on every admission launch and reckon/crew/dispatch.py:2022 records the admission waiver with the runs it covered, so the goal holds in the delivered tree; the node's own contribution is the one uncovered stored-override case at tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:246.",
+    "reuse": "no capability is forked: the case extends the owner of the queued-launch waiver behaviour, the file created at 1bd720c73e alongside reckon/crew/queue_admission.py:461 and reckon/crew/dispatch.py:2022, and no other test in the repository covers an admission waiver over an unreconciled backlog.",
+    "scope_discipline": "git diff --stat c4eff77070..f3051809fd lists only tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and docs/evidence/fragments/a-gate-halts-only-on-substance/a-queued-launch-is-not-refused-on-its-coordinato.html, both declared write paths, and touches no product source."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a queued launch is not refused on its coordinator's backlog; reckon/crew/queue_admission.py:461 passes unreconciled_override=True at the admission launch site and reckon/crew/dispatch.py:2006-2023 records the exception as an admission waiver with source admission-launch naming the runs it covered, so the landed tree delivers the goal, via commit 1bd720c73e which is an ancestor of the node's base.\nVERDICT done_when: the done_when names the three cases, the stored-override negative control and a base delta; tests/test_a_queued_launch_ignores_the_coordinator_backlog.py carries those three cases plus the new fourth, and the manifest records base 54 passed EXIT=0 (logs/base.log at c4eff77070), head 55 passed EXIT=0 (logs/after.log at f3051809fd) and the declared mutation 2 failed / 53 passed EXIT=1 (logs/negative-control.log), so the gate asserts the measure.\nVERDICT write_paths: the node's fence was reckon/crew/dispatch.py, reckon/crew/queue_admission.py, tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and the evidence fragment; git diff --stat c4eff77070..f3051809fd touches only the test file and the fragment, both inside the fence.\nVERDICT manifest: read; status complete, commits f3051809fd, changed_paths the two landed files, tests naming the literal pytest command, test_logs naming the base, after and negative-control logs, and baseline_suite/after_suite both recording completed runs with 0 failures.\nVERDICT diff: read the single commit f3051809fd against base c4eff77070 \u2014 65 insertions, no deletions, no product source: a 41-line landing fragment and one 23-line test that sets a stored allow_unreconciled_runs false and asserts the admission launch still proceeds and records the waiver.\nCALL_SITES: reckon/crew_run_commands.py:4958 (crew admit -> admit_until_stopped), reckon/crew/queue_admission.py:398 (_launch_queued reads the pointer's dispatch_options), reckon/crew/queue_admission.py:461 (unreconciled_override=True into dispatch), reckon/crew/queue_admission.py:6800 (admit_until_stopped calls admit_once), reckon/crew/dispatch.py:2006 (refusal when the override is false), reckon/crew/dispatch.py:2022 (admission waiver recorded naming the covered runs)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:461 passes unreconciled_override=True on every admission launch and reckon/crew/dispatch.py:2022 records the admission waiver with the runs it covered, so the goal holds in the delivered tree; the node's own contribution is the one uncovered stored-override case at tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:246.\nSCORE evidence: 16\nJUSTIFICATION evidence: logs/base.log reads 54 passed EXIT=0 at c4eff77070, logs/after.log reads 55 passed EXIT=0 at f3051809fd and logs/negative-control.log reads 2 failed / 53 passed EXIT=1, all recorded in the manifest's baseline_suite and after_suite; the arms measure two files where the done_when names every test file importing reckon.crew.queue_admission.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat c4eff77070..f3051809fd lists only tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and the evidence fragment, both declared write paths, and touches no product source.\nSCORE durability: 18\nJUSTIFICATION durability: the declared mutation reinstating bool(options.get(\"allow_unreconciled_runs\")) at reckon/crew/queue_admission.py:398 reddens the new case at tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:265 in logs/negative-control.log, so the added assertion fails if the launch site reads the stored override again.\nSCORE fit: 19\nJUSTIFICATION fit: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:246 follows the file's sentence-shaped test names and composes its existing _queue, _write_overdue_run and _launcher helpers, adding no abstraction and carrying no plan or ticket identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: no capability is forked: the case extends the owner of the queued-launch waiver behaviour, the file created at 1bd720c73e alongside reckon/crew/queue_admission.py:461 and reckon/crew/dispatch.py:2022, and no other test in the repository covers an admission waiver over an unreconciled backlog.\nFINDING tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:260 non-blocking: the case sets request[\"dispatch_options\"][\"allow_unreconciled_runs\"] = False but never asserts that value survives queue_dispatch into the launched pointer's dispatch_options, so if the queue ever stopped carrying it the case would still pass while no longer exercising a stored override; reckon/crew/queue_admission.py:398 reads the pointer's options verbatim today, which is why the premise is true now.\nFINDING manifest.md:20 non-blocking: baseline_suite.command records the absolute interpreter while logs/base.log:2 names PYTHONPATH=. .venv/bin/python, so the field is not the literal command that ran; the two spellings resolve to one path and promotion's canonicaliser accepts them, but the record and the field that cites it disagree.\nFINDING manifest.md:21 non-blocking: the arms measure two files while the done_when's delta clause names every test file importing reckon.crew.queue_admission; no added failure is possible because the node changes no product source, but the stated population was not the one measured.",
+  "review_run_id": "r-20261112T065718769578-review-of-a-queued-launch-is-not-refused-on-its-coordinato-f3051809fdff",
+  "reviewed_base_sha": "c4eff7707068362553dc49173df280fd5cbdf254",
+  "reviewed_head_sha": "f3051809fdffbb2919af11cea7dee8f4dd629f71",
+  "reviewed_run_id": "r-20261112T060223167057-a-queued-launch-is-not-refused-on-its-coordinato",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T09:14:35.354556+00:00",
+  "total": 112
+}

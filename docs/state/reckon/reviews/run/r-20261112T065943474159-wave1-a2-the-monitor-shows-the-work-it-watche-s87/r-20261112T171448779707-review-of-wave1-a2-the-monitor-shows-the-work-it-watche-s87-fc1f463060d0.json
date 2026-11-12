@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:_work_lines",
+    "reckon/hooks/coordinator_obligations.py:format_checklist",
+    "reckon/crew/obligations.py:_review_duty_item",
+    "reckon/crew/recovery_classification.py:_promotion_command"
+  ],
+  "completed_at": "2026-11-12T17:31:19.407Z",
+  "dispatched_at": "2026-11-12T17:20:38Z",
+  "findings": [
+    {
+      "file": "tests/test_coordinator_obligations_hook.py",
+      "line": "825",
+      "severity": "non-blocking",
+      "text": "the reviewed commit changes only this file, which is outside the node's declared write paths and outside the promotion suite template's arms, so its assertions run only in the ad-hoc importer sweep whose head log exits 1 on 17 pre-existing failures; promotion therefore cannot read a green gate for the one file this commit changed, and the fix is to wire coordinator-authorised paths into the fence and the suite template rather than to change this test."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/hooks/coordinator_obligations.py:836-864 renders the duty lines and their collapse on a shared next_command, and reckon/crew/obligations.py:2090-2100 plus reckon/crew/recovery_classification.py:2521 compose the per-run command the test asserts.",
+    "diff": "read the single commit fc1f463060 against 96689ac036: one file, +12/-16, renaming and rewriting one test, its docstring and one helper docstring, with no other change.",
+    "done_when": "the done_when asks a test proving one counted run is one listed run with its promote command, a negative control that restores the separate count, and no added failure in the files importing the changed modules; the reviewed commit's own gate is recorded in the importer arms at /tmp/reckon-crew-scratch/r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87/logs/importers_{base,head}.log (17 failed on each, identical id sets) plus head_arm.log EXIT=0, and I re-ran tests/test_coordinator_obligations_hook.py at fc1f463060 for 17 passed EXIT=0.",
+    "goal": "the node goal is that every unreconciled run is an obligation with a remedy; the reviewed increment fc1f463060 re-points tests/test_coordinator_obligations_hook.py at the per-run remedy that 96689ac036 landed, so the test now asserts 'reckon crew complete --run <id>' rather than the run-less command it pinned before.",
+    "manifest": "read; it reads status complete, names both commits, records the base and head arms with their log paths and EXIT=0, discloses the 17-failure importer arms as identical between revisions with comm empty on both sides, and records the hook test's re-pointing and its 17 passes in failure_attribution.",
+    "write_paths": "the node was fenced to reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py, the evidence fragment and its figures dir; the reviewed commit changes only tests/test_coordinator_obligations_hook.py, outside that list, which the manifest's scope_note records as written on the coordinator's explicit instruction after the earlier review and which this dispatch was raised to review."
+  },
+  "justifications": {
+    "durability": "reinstating the run-less command at reckon/crew/obligations.py:2090-2100 makes both duties share one next_command, so reckon/hooks/coordinator_obligations.py:840-859 collapses them to one '- [review-ready] 2 items' line and the test fails on len(review) == 2 at tests/test_coordinator_obligations_hook.py:822; were the collapse removed, len(commands) == 2 at :825 and the literal check at :830 fail instead.",
+    "evidence": "the changed file is in the importer head arm's command (/tmp/reckon-crew-scratch/r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87/logs/importers_head.log:2) and is absent from both arms' 17 FAILED ids, but the promotion pair's arms name only tests/test_obligation_count_equals_its_list.py and tests/test_staged_write_inventory.py.",
+    "fit": "tests/test_coordinator_obligations_hook.py:799-830 follows the file's idiom of literal expected command strings with a docstring stating why the case bites, and its names carry no plan, stage or ticket label.",
+    "goal_fidelity": "tests/test_coordinator_obligations_hook.py:799-830 now asserts each review duty carries its own run's promotion command, which is the remedy shape the goal names; the behaviour itself landed at 96689ac036 and is not this commit's.",
+    "reuse": "the commit adds no function, class or module; a search of tests/ for an existing promotion-command assertion found tests/test_crew_tool_carries_the_write_verbs.py:430 calls recovery_classification._promotion_command directly to test the builder, not a shared helper for rendered duty lines, so nothing is forked.",
+    "scope_discipline": "git show --stat fc1f463060 lists exactly tests/test_coordinator_obligations_hook.py, a path outside the fence whose out-of-scope write the manifest records under scope_note as coordinator-instructed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that every unreconciled run is an obligation with a remedy; fc1f463060 re-points tests/test_coordinator_obligations_hook.py:799 at the per-run promotion command 96689ac036 landed.\nVERDICT done_when: the done_when asks for a counting test, a negative control and no added importer failure; logs importers_{base,head}.log both read 17 failed with identical ids and I re-ran tests/test_coordinator_obligations_hook.py at fc1f463060 for 17 passed EXIT=0.\nVERDICT write_paths: the node was fenced to reckon/crew/obligations.py, tests/test_obligation_count_equals_its_list.py and the evidence paths; the commit changes only tests/test_coordinator_obligations_hook.py, recorded in the manifest scope_note as coordinator-instructed.\nVERDICT manifest: read; status complete, both commits named, base and head arms logged EXIT=0, the identical 17-failure importer arms disclosed, and the hook test's re-pointing stated.\nVERDICT diff: read fc1f463060 against 96689ac036: one file, +12/-16, the renamed test, its docstring and the helper docstring, nothing else.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:_work_lines, reckon/hooks/coordinator_obligations.py:format_checklist, reckon/crew/obligations.py:_review_duty_item, reckon/crew/recovery_classification.py:_promotion_command\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_coordinator_obligations_hook.py:799-830 asserts the per-run remedy command, which the goal's remedy shape requires; the product behaviour landed in the earlier commit under review.\nSCORE evidence: 15\nJUSTIFICATION evidence: the changed file is named in the command line of /tmp/reckon-crew-scratch/r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87/logs/importers_head.log:2 and is absent from both arms' 17 FAILED ids, but the promotion pair's arms do not name it.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: git show --stat fc1f463060 lists only tests/test_coordinator_obligations_hook.py, a path outside the fence written on the coordinator's instruction as the manifest scope_note records.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the run-less command makes reckon/hooks/coordinator_obligations.py:840-859 collapse the two duties into one line, failing len(review) == 2 at tests/test_coordinator_obligations_hook.py:822, and len(commands) == 2 at :825 fails too if the collapse were removed.\nSCORE fit: 18\nJUSTIFICATION fit: tests/test_coordinator_obligations_hook.py:799-830 follows the file's literal-expected-string idiom and its docstring states why the case bites, with no plan or ticket label in any name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the commit adds no definition; the search of tests/ found only tests/test_crew_tool_carries_the_write_verbs.py:430, which tests the builder rather than rendered duty lines, so no owner is forked.\nFINDING tests/test_coordinator_obligations_hook.py:825 non-blocking: the only changed file lies outside the node's write paths and outside the promotion suite arms, so its assertions run only in the ad-hoc importer sweep whose head log exits 1, and promotion cannot read a green gate for it.\n",
+  "review_run_id": "r-20261112T171448779707-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-fc1f463060d0",
+  "reviewed_base_sha": "96689ac0367b26da651d5682531d2a4a98f4f2c5",
+  "reviewed_head_sha": "fc1f463060d0758e7f52ec8b8055f74e27c01836",
+  "reviewed_run_id": "r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T171448779707-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-fc1f463060d0"
+  },
+  "reviewer_run_id": "r-20261112T171448779707-review-of-wave1-a2-the-monitor-shows-the-work-it-watche-s87-fc1f463060d0",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T17:44:54.483607+00:00",
+  "total": 100
+}

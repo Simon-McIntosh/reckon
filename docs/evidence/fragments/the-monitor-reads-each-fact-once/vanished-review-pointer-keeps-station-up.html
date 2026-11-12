@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A vanished review pointer never stops the station</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="vanished-review-pointer-keeps-station-up-landing" data-node="vanished-review-pointer-keeps-station-up" data-reckon="landing" data-when="2026-11-12">
+  <h2>A vanished review pointer costs one duty, not the tick</h2>
+  <p>The station derives its view over a snapshot of the live pointers and then reads each listed review's own pointer from disk. A review promoted or discarded during a slow tick is listed by the snapshot and gone by the read, and <code>runs.read_pointer</code> raises <code>CrewError</code> for a missing file. <code>_current_review_in_flight</code> expected a falsy value for that case, so the exception escaped the derivation, ended <code>station.tick()</code>, and — through <code>run_station</code>'s loop — ended the station process. Every project lost that tick, and the same run failed the same way on the next one.</p>
+  <p>That read now catches <code>CrewError</code> and answers <code>False</code>, as the sibling reader of a refused delivery already does. <code>run_station</code> prints any other exception a tick raises as a <code>station-tick-failure</code> line with its traceback and goes on to the next tick; a lost lease still ends the process with <code>StationHeldError</code>.</p>
+  <p>Implementation commit <code>27a85ee5c1</code> changes <code>reckon/crew/obligations.py</code> and <code>reckon/crew/station.py</code>. Three cases in <code>tests/test_a_vanished_review_pointer_does_not_stop_the_station.py</code> run on a temporary crew home and repository: the review pointer is published in the view's own snapshot and then deleted before the read, with a control that the same reader finds it in flight while the file exists; a first tick raises <code>CrewError</code> and the second runs and stops the station by its own signal handler; and a tick raising <code>StationLeaseLostError</code> still ends the station with <code>StationHeldError</code>.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered code</th></tr></thead>
+    <tbody>
+      <tr><td>Node gate</td><td>51 passed; EXIT=0</td><td>54 passed; EXIT=0</td></tr>
+      <tr><td>Importer arms on all_debug</td><td>48 failed, 579 passed; EXIT=1</td><td>48 failed, 582 passed; EXIT=1</td></tr>
+      <tr><td>Importer failing or erroring ids</td><td>48</td><td>48; none added, none cleared</td></tr>
+      <tr><td>Declared control: the node's test against base product code</td><td>2 failed, 1 passed; EXIT=1</td><td>3 passed; EXIT=0</td></tr>
+    </tbody>
+  </table>
+  <p>Base revision <code>8f00956ae50bc953348749fc077c968f5f90d6b2</code> raises <code>CrewError: no live run 'run-live-review'</code> out of the first case and ends <code>run_station</code> after its first tick in the second; the third case passes at base because the lost-lease path is unchanged. The base arm runs in a scratch tree at that revision carrying its own git metadata, since the staged-write inventory test reads the tracked file list. Both importer arms select the 66 test files that import either module by module path or by a <code>from reckon.crew import</code> line, each resolved over its own tree, and they run as one <code>all_debug</code> job against the base revision and the delivered head. The failing id sets are identical: none added, none cleared. The head arm collected three more passing cases than the base arm, the three cases of the new test file; every failing id is the same in both, so the difference is collection and not failure. The logs print the revision, tree, imported module path, working directory, command and a terminal exit status, and live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T085600397325-vanished-review-pointer-keeps-station-up/</code> as <code>head-arm.log</code>, <code>base-arm.log</code>, <code>negative-control.log</code>, <code>importer-base-arm.log</code> and <code>importer-head-arm.log</code>. Ruff check and format check pass on the three changed Python paths. Plan state and merged-head verification remain with the coordinator.</p>
+</article>
+</body>
+</html>

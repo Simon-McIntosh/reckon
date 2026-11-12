@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/routing.py:2333 _create_worktree -> _remove_worktree",
+    "reckon/crew/dispatch.py:3836 dispatch rollback -> _remove_worktree",
+    "reckon/crew/routing.py:2281 _tree_is_disposable_for_launch -> _launch_tree_verdict",
+    "reckon/crew/routing.py:2294 _stale_launch_tree_refusal -> _launch_tree_verdict"
+  ],
+  "completed_at": "2026-11-12T09:14:41.172Z",
+  "dispatched_at": "2026-11-12T09:06:17Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html",
+      "line": "39",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population row says \"92 test files importing reckon.crew.routing\" while logs/routing-importers.txt holds 90 lines and logs/population-head.log's own header reads \"collected targets: 90 test files\", so a reader cannot reconcile the table with the log it cites."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html",
+      "line": "42",
+      "severity": "non-blocking",
+      "text": "non-blocking: the text says the base arm and the delivered head report \"the same nine\" failures, but the node's own logs/population-head.log at revision 295536190e reads \"8 failed, 823 passed\", so the head arm differs from the claim; the no-added-failure conclusion still holds because the head failure set is a subset of the base set."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060726347299-a-second-launch-of-a-run-never-releases-the-tree/manifest.md",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population account classifies tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused among \"9 pre-existing source-inventory ids\", but that id passes at head over byte-identical .py code, so it is a flaky id rather than a source-inventory one, and test_logs names no population-head log where the difference shows."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified four production call sites that reach the launch claim view: _remove_worktree inside _create_worktree, the dispatch rollback's _remove_worktree, and the two _launch_tree_verdict readers _tree_is_disposable_for_launch and _stale_launch_tree_refusal.",
+    "diff": "read the single commit 295536190e against base 364e934266 \u2014 it adds 59 lines of evidence HTML and nothing else; git diff 364e934266 295536190e -- '*.py' is empty, so the commit lands a verified account of pre-existing code rather than code.",
+    "done_when": "the done_when's four cases, its same-inode/no-_trash/raises-naming-the-run assertions and its declared mutation all exist in tests/test_a_second_launch_keeps_a_live_worktree.py (added at b1cfbd7d30, verified as an ancestor of the reviewed base), and the manifest records base 55 passed EXIT=0 (logs/base-gate.log) and head 55 passed EXIT=0 (logs/head-gate.log), so the gate the worker ran asserts the measure.",
+    "goal": "the node's goal is that a second launch of a run never releases the tree its first launch holds; reckon/crew/routing.py:1122-1147 _launch_pointer_worktrees keeps a same-run pointer as a claim unless _own_pointer_yields_its_tree (:1104-1120) shows a waiting phase in WAITING_REQUEST_PHASES or proven local death, which is the behaviour the goal states.",
+    "manifest": "read; status complete, commits 295536190e, changed_paths the one fragment, tests the two-file pytest command, test_logs base-gate/head-gate/negative-control/population-base, baseline_suite and after_suite both 0 failures EXIT=0, negative_control_log logs/negative-control.log; it omits logs/population-head.log, so the head population arm can be read only from disk.",
+    "write_paths": "the fence was reckon/crew/routing.py, tests/test_a_second_launch_keeps_a_live_worktree.py, the evidence fragment and a figures directory; git diff --name-only 364e934266..295536190e lists only the fragment, inside the fence, and the tracked .py diff is empty (0 lines)."
+  },
+  "justifications": {
+    "durability": "tests/test_a_second_launch_keeps_a_live_worktree.py:95-103 raises around the call and asserts the refusal names the run, the tree survives and _trash stays empty against an inode read before the call, and the declared mutation reddens the call sites at :113 and :123 in logs/negative-control.log, so the cases fail if the guard regresses.",
+    "evidence": "logs/base-gate.log and logs/head-gate.log each carry revision, tree, module, cwd and a bare EXIT=0 under \"55 passed\", and logs/negative-control.log reads \"2 failed, 2 passed\" EXIT=1, but the manifest's test_logs omits the population head arm that exists on disk and the fragment's population row misstates that arm.",
+    "fit": "the fragment's section ids all begin with the node id (a-second-launch-of-a-run-never-releases-the-tree-the-guard-as-found, -the-gate, -negative-control, -commits) and its prose names mechanisms, with no ticket, plan-label or attribution in the body.",
+    "goal_fidelity": "reckon/crew/routing.py:1141 keeps a same-run pointer in the claims map unless _own_pointer_yields_its_tree (:1114-1120) yields it, which is the goal's behaviour; the node's own diff carries no product change, so the score reflects the behaviour present and now independently verified rather than newly landed.",
+    "reuse": "no definition is added; the node reused the landed _launch_pointer_worktrees/_own_pointer_yields_its_tree pair and the existing four-case test rather than forking a second claim view, and the wide view _live_pointer_worktrees at reckon/crew/routing.py:1080 keeps its other readers unchanged.",
+    "scope_discipline": "git diff --name-only 364e934266 295536190e names only docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html, inside the fence, with no plan edit, no product source and no figure."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a second launch of a run never releases the tree its first launch holds; reckon/crew/routing.py:1122-1147 _launch_pointer_worktrees keeps a same-run pointer as a claim unless _own_pointer_yields_its_tree (:1104-1120) shows a waiting phase in WAITING_REQUEST_PHASES or proven local death, which is the behaviour the goal states.\nVERDICT done_when: the done_when's four cases, its same-inode/no-_trash/raises-naming-the-run assertions and its declared mutation all exist in tests/test_a_second_launch_keeps_a_live_worktree.py (added at b1cfbd7d30, verified as an ancestor of the reviewed base), and the manifest records base 55 passed EXIT=0 (logs/base-gate.log) and head 55 passed EXIT=0 (logs/head-gate.log), so the gate the worker ran asserts the measure.\nVERDICT write_paths: the fence was reckon/crew/routing.py, tests/test_a_second_launch_keeps_a_live_worktree.py, the evidence fragment and a figures directory; git diff --name-only 364e934266..295536190e lists only the fragment, inside the fence, and the tracked .py diff is empty (0 lines).\nVERDICT manifest: read; status complete, commits 295536190e, changed_paths the one fragment, tests the two-file pytest command, test_logs base-gate/head-gate/negative-control/population-base, baseline_suite and after_suite both 0 failures EXIT=0, negative_control_log logs/negative-control.log; it omits logs/population-head.log, so the head population arm can be read only from disk.\nVERDICT diff: read the single commit 295536190e against base 364e934266 \u2014 it adds 59 lines of evidence HTML and nothing else; git diff 364e934266 295536190e -- '*.py' is empty, so the commit lands a verified account of pre-existing code rather than code.\nCALL_SITES: reckon/crew/routing.py:2333 _create_worktree -> _remove_worktree, reckon/crew/dispatch.py:3836 dispatch rollback -> _remove_worktree, reckon/crew/routing.py:2281 _tree_is_disposable_for_launch -> _launch_tree_verdict, reckon/crew/routing.py:2294 _stale_launch_tree_refusal -> _launch_tree_verdict\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1141 keeps a same-run pointer in the claims map unless _own_pointer_yields_its_tree (:1114-1120) yields it, which is the goal's behaviour; the node's own diff carries no product change, so the score reflects the behaviour present and now independently verified rather than newly landed.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-gate.log and logs/head-gate.log each carry revision, tree, module, cwd and a bare EXIT=0 under \"55 passed\", and logs/negative-control.log reads \"2 failed, 2 passed\" EXIT=1, but the manifest's test_logs omits the population head arm that exists on disk and the fragment's population row misstates that arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 364e934266 295536190e names only docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html, inside the fence, with no plan edit, no product source and no figure.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_second_launch_keeps_a_live_worktree.py:95-103 raises around the call and asserts the refusal names the run, the tree survives and _trash stays empty against an inode read before the call, and the declared mutation reddens the call sites at :113 and :123 in logs/negative-control.log, so the cases fail if the guard regresses.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment's section ids all begin with the node id (a-second-launch-of-a-run-never-releases-the-tree-the-guard-as-found, -the-gate, -negative-control, -commits) and its prose names mechanisms, with no ticket, plan-label or attribution in the body.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; the node reused the landed _launch_pointer_worktrees/_own_pointer_yields_its_tree pair and the existing four-case test rather than forking a second claim view, and the wide view _live_pointer_worktrees at reckon/crew/routing.py:1080 keeps its other readers unchanged.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html:39 non-blocking: the population row says \"92 test files importing reckon.crew.routing\" while logs/routing-importers.txt holds 90 lines and logs/population-head.log's own header reads \"collected targets: 90 test files\", so a reader cannot reconcile the table with the log it cites.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-second-launch-of-a-run-never-releases-the-tree.html:42 non-blocking: the text says the base arm and the delivered head report \"the same nine\" failures, but the node's own logs/population-head.log at revision 295536190e reads \"8 failed, 823 passed\", so the head arm differs from the claim; the no-added-failure conclusion still holds because the head failure set is a subset of the base set.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T060726347299-a-second-launch-of-a-run-never-releases-the-tree/manifest.md:1 non-blocking: the population account classifies tests/test_crew_orphan.py::test_an_orphaned_watcher_is_replaced_rather_than_refused among \"9 pre-existing source-inventory ids\", but that id passes at head over byte-identical .py code, so it is a flaky id rather than a source-inventory one, and test_logs names no population-head log where the difference shows.",
+  "review_run_id": "r-20261112T090408631416-review-of-a-second-launch-of-a-run-never-releases-the-tree-295536190e20",
+  "reviewed_base_sha": "364e934266454a84533877bd02b9a916463893e2",
+  "reviewed_head_sha": "295536190e202f662ec1c31d7cf85d1487eab0d6",
+  "reviewed_run_id": "r-20261112T060726347299-a-second-launch-of-a-run-never-releases-the-tree",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T090408631416-review-of-a-second-launch-of-a-run-never-releases-the-tree-295536190e20"
+  },
+  "reviewer_run_id": "r-20261112T090408631416-review-of-a-second-launch-of-a-run-never-releases-the-tree-295536190e20",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T12:10:34.761479+00:00",
+  "total": 109
+}

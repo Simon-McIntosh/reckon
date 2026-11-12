@@ -1738,21 +1738,73 @@ class _SharedWritePaths(frozenset[str]):
         normalized = _repository_relative_scope(path, self.repo)
         if normalized is None or self.exclusive_pattern(normalized):
             return False
-        absolute = self.repo / normalized
-        if absolute.is_dir():
-            return False
         if super().__contains__(normalized):
             return True
-        if not self.default_share and not any(
-            _scope_contains(root, normalized) for root in self.roots
-        ):
+        absolute = self.repo / normalized
+        under_root = any(_scope_contains(root, normalized) for root in self.roots)
+        if not (under_root or self.default_share):
             return False
+        if absolute.is_dir():
+            # A directory claim under a shared root shares as the files beneath
+            # it do: the worktree isolates the edits and the merge reconciles
+            # them. An exclusive region was refused above.
+            return True
         # An absent suffixless path names a directory, matching dispatch's
         # directory-claim interpretation; existing extensionless files are files.
         return absolute.is_file() or (
             not absolute.exists()
             and any(character.isalpha() for character in absolute.suffix)
         )
+
+    def shares_region(self, path: str) -> bool:
+        """Whether a directory here shares as the files beneath it do.
+
+        A directory that is, contains, or sits under an exclusive pattern does
+        not: its files are the ones a merge cannot reconcile, so a broad claim
+        over them fences a peer however deep the file it names. The default
+        classes are exclusive too where the project shares by default.
+        """
+        normalized = _repository_relative_scope(path, self.repo)
+        if normalized is None:
+            return False
+        patterns = self.exclusive_patterns
+        if self.default_share:
+            patterns = (*patterns, *DEFAULT_EXCLUSIVE_PATHS)
+        return not any(
+            _scopes_overlap(normalized, _pattern_root(pattern)) for pattern in patterns
+        )
+
+
+def _pattern_root(pattern: str) -> str:
+    """The directory a declared pattern is declared under.
+
+    ``docs/plans/*.html`` is a rule about files in ``docs/plans``, so a claim on
+    ``docs`` or on ``docs/plans`` covers paths the pattern keeps exclusive.
+    """
+    for index, character in enumerate(pattern):
+        if character in "*?[":
+            return pattern[:index].rstrip("/") or pattern
+    return pattern.rstrip("/") or pattern
+
+
+def _claim_paths_share(shared: frozenset[str], path: str, claim: str) -> bool:
+    """Whether two overlapping claim paths are both shareable under the policy.
+
+    The narrower of the two names the path the claims meet on, the broader names
+    the region holding it, and both must share: the path under a declared root
+    and outside an exclusive pattern, and the region not exclusive either. A
+    directory claim under a shared root therefore shares exactly as the files
+    beneath it do, while one that is or contains an exclusive pattern fences.
+    """
+    if not isinstance(shared, _SharedWritePaths):
+        return False
+    if _scope_contains(path, claim):
+        narrower, broader = claim, path
+    else:
+        narrower, broader = path, claim
+    if not _scope_contains(broader, narrower):
+        return False
+    return narrower in shared and shared.shares_region(broader)
 
 
 def _exclusive_write_pattern(shared: frozenset[str], path: str) -> str:
@@ -1766,13 +1818,15 @@ def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
     """Read the project's one file-sharing policy for every claim comparison.
 
     ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
-    repository-relative roots shareable, with ``exclusive_patterns`` taking
-    precedence over both declarations. A project that names no ``shared_roots``
-    key, or has no declaration at all, shares its source files by default: any
-    file is a candidate concurrent edit except the classes listed once in
+    repository-relative roots shareable, and a directory under such a root
+    shares as the files beneath it do, because the worktree isolates the edits
+    and the merge reconciles them. A project that names no ``shared_roots`` key,
+    or has no declaration at all, shares its source files by default: any file
+    is a candidate concurrent edit except the classes listed once in
     ``DEFAULT_EXCLUSIVE_PATHS`` and the binary files a textual merge cannot
-    reconcile. A declaration that cannot be read shares nothing, and a refusal
-    it causes names it. Directory claims remain exclusive.
+    reconcile. ``exclusive_patterns`` takes precedence over both declarations,
+    so a claim that is, contains, or sits under one still fences. A declaration
+    that cannot be read shares nothing, and a refusal it causes names it.
     """
     resolved = repo.resolve()
     if not project:

@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite (fe9af3caa98c11d9fed1c9215a25ce570d3294d8, logs/repair-base-arm.log, 51 passed, EXIT=0, 0 failure ids) and after_suite (9d38672eed78ae5e7d82e5c7984712c6304f5b82, logs/repair-head-arm.log, 57 passed, EXIT=0, 0 failure ids): the difference is empty. The pair is asymmetric because tests/test_a_sweep_never_waits_on_a_promotion.py is absent at the base revision, and it omits tests/test_one_run_cannot_stop_a_sweep.py, which is the finding recorded below.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:2706",
+    "reckon/crew/station.py:354",
+    "reckon/crew/runs.py:4680"
+  ],
+  "completed_at": "2026-11-12T16:21:58.854Z",
+  "dispatched_at": "2026-11-12T16:11:27Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T122615079791-sweep-never-waits-on-a-promotion/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "the repair round's baseline_suite and after_suite cover tests/test_staged_write_inventory.py plus the node's own test, so the file this commit repairs, tests/test_one_run_cannot_stop_a_sweep.py, is in neither arm, and neither arm is the importer population the done_when names; added_failure_count 0 therefore rests on a set that excludes the failing file. The review re-ran that fixture at the reviewed head in a scratch extraction of 69c254beac (2 passed) and confirmed the claim is true, so this is a receipt defect rather than a false claim, but a reader cannot verify it from the record alone."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html",
+      "line": "60",
+      "severity": "non-blocking",
+      "text": "the fragment states 'at this head it passes five of five' with no log behind it: logs/repair-negative-control.log records only the reverted tree (4 of 5 FAILED) and no file in the run's logs directory records the five passing runs, while the repair-arms table at :68 shows the head arm's test files and discloses the omission. An unlogged count in an evidence record is the shape a later reader cannot check; recording the five head runs under the same log that records the reverted ones would close it."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "915",
+      "severity": "non-blocking",
+      "text": "the re-read is gated on kind == 'review-self', so an acceptance job whose run's pointer vanished between the pass and the worker's turn still reaches promotion.complete, which rebuilds a missing pointer through _read_pointer_or_rebuild at reckon/crew/promotion.py:404 rather than raising; the same exposure the guard removes for review promotion therefore remains for acceptance, and a run withdrawn mid-sweep can be promoted from a reconstructed record. Widening the condition, or making the rebuild a refusal inside the deferred job, would close it."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/resumption.py:2706 constructs PromotionWorkers from _promotion_settings and is the single call into dispatch_awaiting_reviews, reckon/crew/station.py:354 is the station's per-session sweep, and reckon/crew/runs.py:4680 is the watch sweep that passes the resolved config; the guard sits on the path all three reach.",
+    "diff": "read both commits against 5bc11377cb: 9d38672eed adds a six-line pointer re-read inside the deferred review job at reckon/crew/recovery_review_acceptance.py:915 and gives the vanished-pointer fixture a width of one at tests/test_one_run_cannot_stop_a_sweep.py:95; 69c254beac extends the evidence fragment by 31 lines recording the repair and its arms. No other file is touched.",
+    "done_when": "the done_when requires a new tests/test_a_sweep_never_waits_on_a_promotion.py proving four behaviours plus no added failure over the test files importing the modified modules, measured on all_debug one arm at a time; the four behaviours are recorded at logs/head-gate.log (57 passed, EXIT=0) and the declared mutation reddens the ordering assertion at EXIT=1, but the repair round's arm pair at logs/repair-base-arm.log and logs/repair-head-arm.log covers only tests/test_staged_write_inventory.py plus the node's own test and neither the repaired fixture nor the importer population, so the no-added-failure clause is shown for a narrower set than the done_when names.",
+    "goal": "the source node's goal is that a session's sweep dispatches every review it owes and hands each promotion to a bounded worker of its own; the delta reviewed here repairs the one regression that goal's first implementation introduced, so reckon/crew/recovery_review_acceptance.py:915 re-reads the run's pointer at the moment a deferred review promotion would write and reports a run that is no longer live as vanished.",
+    "manifest": "read the reviewed run's manifest.md at its current head: status complete, commits 082b213e8f, 5bc11377cb, 9d38672eed, 69c254beac; baseline_suite and after_suite each carry revision, literal command, exit_status 0, completed true and an empty failure_ids; the repair's reverted-fix control is recorded at findings_negative_control with its log, and the note claiming five of five passing runs at the repairing head names no log.",
+    "write_paths": "the declared scope is reckon/crew/resumption.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/station.py, tests/test_a_sweep_never_waits_on_a_promotion.py, tests/test_one_run_cannot_stop_a_sweep.py, the evidence fragment and a figures directory; the two commits in the delta touch reckon/crew/recovery_review_acceptance.py, tests/test_one_run_cannot_stop_a_sweep.py and docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html, all inside it."
+  },
+  "justifications": {
+    "durability": "removing the guard at reckon/crew/recovery_review_acceptance.py:915 from a scratch extraction of the reviewed head reddens tests/test_one_run_cannot_stop_a_sweep.py::test_ledger_failure_and_vanished_pointer_leave_the_third_promoted[True] at EXIT=1 with assert [] == ['r-review-second'] while the same fixture passes 2 of 2 at the head, so the assertion fails exactly when the change regresses.",
+    "evidence": "logs/repair-base-arm.log (51 passed, EXIT=0) and logs/repair-head-arm.log (57 passed, EXIT=0) are recorded with revisions and literal commands, but neither runs tests/test_one_run_cannot_stop_a_sweep.py, the file this repair changes, and neither covers the importer population the done_when names.",
+    "fit": "the guard reads the same runs.pointer_path judgement the module already makes at reckon/crew/recovery_review_acceptance.py:821, and its comment names the mechanism rather than a finding or plan identifier.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:915 re-reads the pointer from the live store at the moment the deferred job would promote, so a review run settled by a peer's promotion is reported vanished instead of promoted from the mapping the sweep handed over.",
+    "reuse": "the delta adds no function, class or module: it calls the existing runs.pointer_path helper and returns the entry shape _apply already handles at reckon/crew/recovery_review_acceptance.py:721, so nothing forks a capability the repository owns.",
+    "scope_discipline": "the delta's two commits touch only reckon/crew/recovery_review_acceptance.py, tests/test_one_run_cannot_stop_a_sweep.py and the declared evidence fragment, adding one guard and one config argument."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a session's sweep dispatches every review it owes and hands each promotion to a bounded worker of its own; the delta reviewed here repairs the regression that goal's first implementation introduced, so reckon/crew/recovery_review_acceptance.py:915 re-reads the run's pointer at the moment a deferred review promotion would write and reports a run that is no longer live as vanished.\nVERDICT done_when: the done_when requires a new tests/test_a_sweep_never_waits_on_a_promotion.py proving four behaviours plus no added failure over the test files importing the modified modules, measured on all_debug one arm at a time; the four behaviours are recorded at logs/head-gate.log (57 passed, EXIT=0) and the declared mutation reddens the ordering assertion at EXIT=1, but the repair round's arm pair covers only tests/test_staged_write_inventory.py plus the node's own test and neither the repaired fixture nor the importer population, so the no-added-failure clause is shown for a narrower set than the done_when names.\nVERDICT write_paths: the declared scope is reckon/crew/resumption.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/station.py, tests/test_a_sweep_never_waits_on_a_promotion.py, tests/test_one_run_cannot_stop_a_sweep.py, the evidence fragment and a figures directory; the delta's two commits touch reckon/crew/recovery_review_acceptance.py, tests/test_one_run_cannot_stop_a_sweep.py and docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html, all inside it.\nVERDICT manifest: read the reviewed run's manifest.md at its current head: status complete, commits 082b213e8f, 5bc11377cb, 9d38672eed, 69c254beac; baseline_suite and after_suite each carry revision, literal command, exit_status 0, completed true and an empty failure_ids; the repair's reverted-fix control is recorded with its log, and the note claiming five of five passing runs at the repairing head names no log.\nVERDICT diff: read both commits against 5bc11377cb: 9d38672eed adds a six-line pointer re-read inside the deferred review job at reckon/crew/recovery_review_acceptance.py:915 and gives the vanished-pointer fixture a width of one at tests/test_one_run_cannot_stop_a_sweep.py:95; 69c254beac extends the evidence fragment by 31 lines. No other file is touched.\nCALL_SITES: reckon/crew/resumption.py:2706, reckon/crew/station.py:354, reckon/crew/runs.py:4680\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:915 re-reads the pointer from the live store at the moment the deferred job would promote, so a review run settled by a peer's promotion is reported vanished instead of promoted from the mapping the sweep handed over.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/repair-base-arm.log (51 passed, EXIT=0) and logs/repair-head-arm.log (57 passed, EXIT=0) are recorded with revisions and literal commands, but neither runs tests/test_one_run_cannot_stop_a_sweep.py, the file this repair changes, and neither covers the importer population the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the delta's two commits touch only reckon/crew/recovery_review_acceptance.py, tests/test_one_run_cannot_stop_a_sweep.py and the declared evidence fragment, adding one guard and one config argument.\nSCORE durability: 19\nJUSTIFICATION durability: removing the guard at reckon/crew/recovery_review_acceptance.py:915 from a scratch extraction of the reviewed head reddens tests/test_one_run_cannot_stop_a_sweep.py::test_ledger_failure_and_vanished_pointer_leave_the_third_promoted[True] in a run at EXIT=1 with assert [] == ['r-review-second'] while the fixture passes 2 of 2 at the head.\nSCORE fit: 19\nJUSTIFICATION fit: the guard reads the same runs.pointer_path judgement the module already makes at reckon/crew/recovery_review_acceptance.py:821, and its comment names the mechanism rather than a finding or plan identifier.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta adds no function, class or module: it calls the existing runs.pointer_path helper and returns the entry shape _apply already handles at reckon/crew/recovery_review_acceptance.py:721.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T122615079791-sweep-never-waits-on-a-promotion/manifest.md:18 non-blocking: the repair round's arm pair excludes tests/test_one_run_cannot_stop_a_sweep.py, the file this commit repairs, and excludes the importer population the done_when names, so added_failure_count 0 rests on a narrowed set; the fixture was re-run at the head in a scratch extraction (2 passed) so the claim is true but unverifiable from the record.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html:60 non-blocking: 'at this head it passes five of five' has no log behind it; logs/repair-negative-control.log records only the reverted tree, and the repair-arms table at :68 discloses that the head arm runs different files.\nFINDING reckon/crew/recovery_review_acceptance.py:915 non-blocking: the re-read is gated on kind == 'review-self', so an acceptance job whose run's pointer vanished still reaches promotion.complete, which rebuilds a missing pointer through _read_pointer_or_rebuild at reckon/crew/promotion.py:404 and promotes a withdrawn run.",
+  "review_checks": [],
+  "review_run_id": "r-20261112T160851648816-review-of-sweep-never-waits-on-a-promotion-69c254beac7d",
+  "reviewed_base_sha": "5bc11377cbc06e6aabd7d19a4da02ff534a75547",
+  "reviewed_head_sha": "69c254beac7ddcd2b567c44639368b4e5d2e3618",
+  "reviewed_run_id": "r-20261112T122615079791-sweep-never-waits-on-a-promotion",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T16:30:32.795404+00:00",
+  "total": 110
+}

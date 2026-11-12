@@ -1,0 +1,40 @@
+<section id="launched-run-is-never-queued">
+  <h3>A launched run is never read as queued</h3>
+  <p>Dispatch stores a request with <code>phase: queued</code> and the admission pass advances that
+  phase when it launches the request, writing <code>launched_at</code> on the pointer in a separate
+  write. A pointer therefore carries both for as long as the phase write has not followed, and the
+  run it names has launched — and may have finished — while its phase still says <code>queued</code>.
+  That is the stale field: <strong><code>phase: queued</code> surviving <code>launched_at</code></strong>.</p>
+  <p>Run <code>r-20261112T060747023508</code> read as <code>run-queued</code>, "position 1 of the
+  queued requests", with <code>launched_at</code> 06:55:24Z on its pointer and its manifest
+  complete. The queued phase was read before the run's own record, so the row hid the duty the run
+  actually owed — its promotion — behind a queue wait that was already over. The pointer now reads
+  <code>phase: complete</code>, which classifies correctly, so the phase is what went stale.</p>
+  <table>
+    <thead><tr><th>Reading of a pointer in phase queued carrying launched_at</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Its place in <code>queued_placements</code></td><td>position 1</td><td>no place</td></tr>
+      <tr><td>Its duty kind</td><td><code>run-queued</code></td><td>read from its own manifest</td></tr>
+      <tr><td>Next command published</td><td>wait for lane slot, position 1</td><td>the run's own duty</td></tr>
+    </tbody>
+  </table>
+  <p><code>queue_admission.awaits_a_lane_slot</code> names the one rule: a pointer is a request the
+  pass still has to launch only while its phase reads queued <em>and</em> it carries no
+  <code>launched_at</code> (or <code>launch_recorded_at</code>). The queued phase decides nothing on
+  its own. <code>queued_placements</code> orders by it, and <code>obligations</code> classifies such a
+  pointer with its phase left for the classifier to read from the run's manifest and process, so the
+  finished run's promotion is what a coordinator is told to act on.</p>
+  <p><strong>Gate.</strong> <code>tests/test_a_launched_run_is_never_queued.py</code> builds a
+  temporary crew home holding one launched pointer whose phase still reads queued and one genuinely
+  queued request. It asserts the launched pointer holds no queue place and owes no
+  <code>run-queued</code> duty, and that the genuinely queued request keeps position 1.
+  Negative control: at base revision <code>752a45069c</code> the same test reads
+  <code>{'kind': 'run-queued', ... 'next_command': "waiting for a lane slot: position 1 of the
+  queued requests"}</code> — <strong>3 failed</strong> there against <strong>3 passed</strong> at
+  head.</p>
+  <p><strong>Matched arms.</strong> The eight test files that import the changed modules read
+  <strong>9 failed, 72 passed, 2 errors</strong> at base and <strong>9 failed, 77 passed</strong> at
+  head, the same nine failure ids in both (a queue-time contract refusal and a
+  <code>local_backend</code> fixture refusal in peer tests), so the change adds no failure. Ruff
+  check and <code>ruff format --check</code> pass on the three staged paths.</p>
+</section>

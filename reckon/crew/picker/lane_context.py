@@ -863,8 +863,118 @@ def _indexed_profile_inputs(
         return None
 
 
+def _stored_profile_extends_anchor(anchor: Mapping[str, Any] | None, key: Any) -> bool:
+    """Whether a stored profile keys the ledger state a fold is about to extend.
+
+    A promotion's fold has the row it just wrote and must not read the ledger to
+    prove its base, so the caller hands it the ledger state it observed before
+    appending. The comparison is by member: the aggregate path, the index
+    version and the aggregate's identity must all be the ones the stored profile
+    was written against. The index's own identity is left out, because any read
+    refreshes that file while the history behind it is unchanged, and so is the
+    runs-directory identity, because the append this fold extends writes a run
+    document there.
+    """
+
+    if not isinstance(anchor, Mapping) or not isinstance(key, str):
+        return False
+    try:
+        stored = json.loads(key)
+    except ValueError:
+        return False
+    if not isinstance(stored, list) or not stored:
+        return False
+    # The key is the profile stamp: the ledger's member list beside the window's
+    # end date.
+    members = stored[0] if isinstance(stored[0], list) else stored
+    if not isinstance(members, list) or len(members) < 3:
+        return False
+    expected = json.loads(
+        json.dumps(
+            [
+                anchor.get("aggregate"),
+                anchor.get("version"),
+                anchor.get("aggregate_identity"),
+            ],
+            default=str,
+        )
+    )
+    return members[:3] == expected
+
+
+def _promotion_fold_inputs(
+    project: str,
+    *,
+    moment: datetime,
+    previous: Any,
+    served_entry: Mapping[str, Any] | None,
+    inputs_entry: Mapping[str, Any] | None,
+    appended: Sequence[Mapping[str, Any]],
+    anchor: Mapping[str, Any] | None,
+) -> dict[str, Any] | None:
+    """Stored samples extended by the rows one promotion appended.
+
+    A promotion already holds the run it wrote, so it needs no ledger read to
+    fold: the samples a previous refresh stored are this ledger's history before
+    the append, provided the ledger state still matches what that refresh keyed
+    on. A base this fold cannot extend -- a source that moved, an aggregate
+    rewritten since, a missing sample set -- returns ``None``, because folding
+    onto it would serve quantiles drawn from a history that is no longer the
+    ledger's. There is no refresh outside a promotion to rebuild that base: a
+    promotion is the only writer of this profile, and a pick never rebuilds one,
+    so the caller rebuilds it rather than leaving the served profile stranded.
+    The samples' recorded source is carried unchanged because this fold could
+    not re-read the index.
+    """
+
+    if served_entry is None or inputs_entry is None:
+        return None
+    if not isinstance(previous, Mapping):
+        return None
+    if inputs_entry.get("key") != served_entry.get("key"):
+        return None
+    # A base written on an earlier date still folds. Every row reaches the
+    # aggregate through a promotion, and each promotion folds its own row into
+    # these samples, so the sample set spans the history whichever day it was
+    # last written on; the tail's window filter is what advances the date. A
+    # base dated after the promotion's own day is refused, because its window
+    # has already dropped rows this fold cannot reinstate.
+    stored_date = previous.get("date")
+    if not isinstance(stored_date, str) or stored_date > moment.date().isoformat():
+        return None
+    if not _stored_profile_extends_anchor(anchor, served_entry.get("key")):
+        return None
+    stored_rows = previous.get("rows")
+    if not isinstance(stored_rows, list):
+        return None
+    samples = list(stored_rows)
+    known = {
+        str(row.get("run_id"))
+        for row in samples
+        if isinstance(row, Mapping) and row.get("run_id")
+    }
+    for row in appended:
+        if not isinstance(row, Mapping):
+            continue
+        picker = ledger.picker_record(row)
+        run_id = str(picker.get("run_id") or "")
+        if run_id and run_id in known:
+            continue
+        known.add(run_id)
+        samples.append(picker)
+    return {
+        "source": previous.get("source"),
+        "documents": previous.get("documents"),
+        "rows": samples,
+    }
+
+
 def refresh_run_time_profile(
-    project: str, *, now: datetime | None = None
+    project: str,
+    *,
+    now: datetime | None = None,
+    appended: Sequence[Mapping[str, Any]] | None = None,
+    anchor: Mapping[str, Any] | None = None,
 ) -> Mapping[str, Any] | None:
     """Fold newly indexed rows into the stored profile, or build a missing base.
 
@@ -873,6 +983,16 @@ def refresh_run_time_profile(
     source and retained document signatures prove the stored sample is still its
     base. Missing, mismatched or rewritten bases take one full build. All reads
     finish before publishing the cache, and no ledger read region spans a write.
+
+    ``appended`` names the rows a promotion has just written and ``anchor`` the
+    ledger state it observed before writing them. With those, the fold is made
+    from the stored samples and the appended rows alone: the promotion lock
+    serialises the appends, so those samples are this history minus the very
+    rows supplied. No index decode and no run-document read happens here, which
+    is what keeps a promotion's cost from growing with the ledger. A base the
+    anchor does not account for is rebuilt instead of being left in place,
+    because a promotion is the only writer of this profile and nothing else
+    would ever replace it.
     """
 
     moment = now if now is not None else datetime.now(UTC)
@@ -894,7 +1014,27 @@ def refresh_run_time_profile(
     inputs_entry = capabilities._read_pick_entry(inputs_path)
     previous = inputs_entry.get("value") if inputs_entry else None
     inputs = None
-    if (
+    if appended is not None:
+        inputs = _promotion_fold_inputs(
+            project,
+            moment=moment,
+            previous=previous,
+            served_entry=entry,
+            inputs_entry=inputs_entry,
+            appended=appended,
+            anchor=anchor,
+        )
+        if inputs is None:
+            # Nothing else builds this profile: a promotion is its only writer,
+            # a pick serves one and never rebuilds it, and no refresh runs
+            # outside a promotion. So a base the fold cannot extend is rebuilt
+            # here rather than left in place -- leaving it would pin the served
+            # profile to a history that has moved on, and once ``persisted_at``
+            # passes its maximum age no pick is served one at all. This is the
+            # cost of a cold home or of a base the anchor no longer accounts
+            # for, not of an ordinary append.
+            previous = None
+    elif (
         isinstance(previous, Mapping)
         and entry is not None
         and inputs_entry.get("key") == entry.get("key")

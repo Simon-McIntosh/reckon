@@ -215,9 +215,11 @@ def test_the_requeue_keeps_the_run_id_the_pane_keys_on() -> None:
     ``_requeued_request`` is where a refused attempt becomes a queued pointer
     again, and it writes the pointer back under the id the request already had.
     A fresh id there would make one request read as two to the pane, so the
-    guard is asserted at the write rather than assumed from the row shape.
+    guard is asserted at the write rather than assumed from the row shape. It is
+    read from the module that owns the re-queue, not through the compatibility
+    facade, because the facade forwards the names existing callers patch.
     """
-    from reckon.crew.queue_admission import _requeued_request
+    from reckon.crew.admission.launching import _requeued_request
 
     request = {"project": PROJECT, "node": {"plan": PLAN, "id": NODE}}
     restored = _requeued_request(request, "r-first")

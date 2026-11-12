@@ -142,8 +142,12 @@ def test_a_batch_entry_names_the_manifest_path_a_single_dispatch_would(
     run_id = _queued(batch_repo)
 
     stored = _pointer(run_id)["node"]
+    # Spelled from the run directory itself rather than through the ``run_dir``
+    # helper the production code uses, so a redefinition of that helper cannot
+    # move the stored path while this check still agrees with it.
+    expected = Path(runs.runs_dir()) / run_id / "manifest.md"
 
-    assert stored["manifest_path"] == str(runs.run_dir(run_id) / "manifest.md"), (
+    assert Path(stored["manifest_path"]) == expected, (
         "a queued batch entry names the same delivery path a single dispatch "
         f"stores, under its own run directory: {stored['manifest_path']}"
     )

@@ -312,6 +312,27 @@ def _promotion_host_lease(run_id: str) -> Iterator[HostLease]:
         lease.release()
 
 
+def _landing_checkout(
+    record: Mapping[str, Any], root: str | Path | None
+) -> Path | None:
+    """The checkout a promotion's landing commit would be written into.
+
+    Resolved the way the landing gate resolves it, so the early judgement of
+    the checkout's git state names the same repository the landing commit later
+    does: the project's registered mount decides it when one exists, and a run
+    whose record names none falls back to the repository the record carries.
+    """
+    project = str(record.get("project") or "")
+    landing_root: str | Path | None = root
+    if project and project_mount_repository(project) is not None:
+        landing_root = resolve_project_repository(project, root, flag="--checkout-path")
+    if landing_root is None:
+        landing_root = record.get("repo")
+    return (
+        Path(landing_root).expanduser().resolve() if landing_root is not None else None
+    )
+
+
 def complete(
     run_id: str,
     *,
@@ -406,6 +427,14 @@ def complete(
                     would_wait_for_pick=awaiting_pick,
                 )
             return _complete_withdrawn_run(run_id, record)
+        # Whether a landing commit can be written at all depends only on the
+        # checkout's git state, and nothing else promotion reads changes that
+        # answer. A checkout carrying a peer's open merge, rebase, cherry-pick
+        # or revert is refused here, before the ledger is read or any store is
+        # opened, rather than after the minutes of work whose only possible end
+        # is this same refusal — work that in a serial sweep delays every later
+        # promotion by as much.
+        _require_committable_checkout(_landing_checkout(record, root), run_id)
         # A run review delivers its record inside its own run directory and the
         # supervisor files it into the store when the worker ends. A supervisor
         # that died before that filing leaves the record where the reviewer
@@ -1116,6 +1145,22 @@ def _shadow_control_marks(
     if contamination:
         marks["shadow_contaminated"] = contamination
     return marks
+
+
+def _profile_fold_anchor(
+    project: str, ledger_root: str | Path | None
+) -> dict[str, Any] | None:
+    """The ledger state a promotion's profile fold may extend, or ``None``.
+
+    Read before the append, from file metadata alone, so the fold that follows
+    can compare it with the state the stored profile was written against
+    without opening the ledger's index or any run document.
+    """
+
+    try:
+        return ledger.index_state_stamp(project, ledger_root)
+    except (OSError, ValueError, TypeError):
+        return None
 
 
 def _budget_overrun_facts(
@@ -1849,6 +1894,11 @@ def _complete_locked(
         if comment.get("recorded"):
             run["outcome"] = ""
         already_promoted = False
+    # The ledger state the run-time profile fold may extend, read before the
+    # append moves it. A fold inside this promotion needs it to prove the
+    # samples a previous refresh stored are this history minus the row about to
+    # be written, so it can extend them without reading the ledger.
+    profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
     except ledger.LedgerError:
@@ -1877,14 +1927,19 @@ def _complete_locked(
         }
     # The promotion that moves a project's ledger is the one moment its profile
     # content changes, so it publishes the run-time profile the picks will later
-    # serve instead of letting a pick rebuild it. This runs after the append, for
-    # the promoted run's project, and never fails the promotion: the profile is
-    # an operational reading, and a build or cache write that fails leaves the
-    # previous reading in place rather than undoing a landed run.
+    # serve instead of letting a pick rebuild it. It hands the refresh the row it
+    # just wrote beside the ledger state it saw before writing it, so the fold
+    # extends the stored samples without decoding the ledger index or reading
+    # run documents; a promotion's cost therefore does not grow with the ledger.
+    # This never fails the promotion: the profile is an operational reading, and
+    # a cache write that fails leaves the previous reading in place rather than
+    # undoing a landed run.
     try:
         from reckon.crew.picker import lane_context as _lane_context
 
-        _lane_context.refresh_run_time_profile(project)
+        _lane_context.refresh_run_time_profile(
+            project, appended=(run,), anchor=profile_anchor
+        )
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
     committed_review_paths: list[Path] = []
