@@ -782,7 +782,12 @@ def _no_named_review_record_refusal(
     ]
     if families:
         family = families[0]
-        if family == review_module.FIGURE_REVIEW_RUBRIC:
+        if not family:
+            held = (
+                "its record is the text review, which this verb selects by "
+                "omitting --rubric"
+            )
+        elif family == review_module.FIGURE_REVIEW_RUBRIC:
             held = (
                 f"its record is the {family} review, which this verb selects "
                 f"with --rubric {family}"
