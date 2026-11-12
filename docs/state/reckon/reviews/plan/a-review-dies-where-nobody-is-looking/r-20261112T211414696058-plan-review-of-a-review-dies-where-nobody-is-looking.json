@@ -1,0 +1,71 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T21:21:47.877Z",
+  "dispatched_at": "2026-11-12T21:16:33Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:502",
+      "id": "reasoning-1",
+      "reason": "the endpoint must distinguish an ordinary resume (delivery intended) from a reopen that starts a new attempt after the subject completed, or the node removes a documented, deliberate mechanism to satisfy the gate.",
+      "text": "s15's deliverable \"A refused advice is never delivered to a later attempt\" contradicts the delivery the tree intends at the very file it cites: resumption.py:128-134 states the text \"is kept beside the run's resume records and delivered to the next resume of that run\", and dispatch_sessions.py:1330-1336 prepends it to the next resume's advice on purpose, while s15's blanket rule would license a node to delete that path \u2014 so an ordinary resume would stop carrying an answer the operator gave to the attempt that holds the run",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:502",
+      "id": "reasoning-2",
+      "reason": "the stated mechanism is refuted by its own anchor, so a node reading the section looks for a rename step that does not exist and may fix the wrong site.",
+      "text": "s15's Why says the refused advice was \"renamed to resume-3-advice.txt\", but nothing renames it: REFUSED_ADVICE_NAME exists precisely because, as the comment at resumption.py:131-134 says, \"a resume-<n>-advice.txt is named for a turn the refused attempt never reached, so its number is unknown at refusal time\", and the file is consumed and written into the next attempt's resume-<turn>-advice.txt at launch",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-review-dies-where-nobody-is-looking.html:498",
+      "id": "done_when-1",
+      "reason": "without a case that forces the refusal, the half of the deliverable that replaces today's uninformative duty is unmeasured, and the obligation could still name nothing when dispatch fails.",
+      "text": "s14's deliverable has two branches (\"reviewed by the reflex, or the obligation names why the reflex did not and what to run\"), but its done-when states two cases for the first branch only and its declared negative control (base revision, repair delivery) exercises no failure at all, so a node can pass by making both deliveries dispatch and never force a dispatch failure",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ea4fefcd442a8530b7f61a3c79f625728970133a",
+  "plan_fingerprint": "609c1ee06cc4cbcf358cc5feeaab6ca30901443c59eb57cfefd3ad7ef4e253fd",
+  "plan_slug": "a-review-dies-where-nobody-is-looking",
+  "plan_version": 112,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T211414696058-plan-review-of-a-review-dies-where-nobody-is-looking",
+  "reviewed_blob_sha": "f4cc618d63db499a4b488f493ce9f99d3e282442",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 resumption.py:135 resolves to REFUSED_ADVICE_NAME, the three cited run ids exist under ~/.config/reckon/crew/runs, 9ed2768368 and 425cb1ef56 resolve, and the s13 evidence fragment exists; the two module names absent from the tree (reckon/crew/reflex.py, reckon/crew/run_commands_resume.py) are hedged in the plan (\"if that is where the pass lives\", \"or the module holding the reopen verb\") and are not findings.",
+    "done_when": "a finding \u2014 s14's naming branch has no test case, so the node can pass without it.",
+    "evidence_paths": "pass \u2014 both sections put gate logs under the run directory with a revision header, the literal command and a closing EXIT= line, and neither writes to a session scratchpad.",
+    "naming": "pass \u2014 the new sections carry no plan labels, stage names or ticket numbers into code, and their prose states mechanisms rather than changelog narration.",
+    "reasoning": "a finding \u2014 s15's rule is wider than the defect and its cited line refutes its own account of the mechanism.",
+    "single_goal": "pass \u2014 s14 and s15 each state one endpoint (\"no silent unreviewed delivery\", \"a reopen never launches on a refused advice\"), and each done-when measures that endpoint rather than a second deliverable.",
+    "wiring": "pass \u2014 the document's plan-level edges are unchanged and each resolves (depends-on worker-death-is-recorded, informs scoring-should-stop-a-promotion, empty blocks after the earlier removal); the two new sections declare no edge the plan needs."
+  },
+  "section_digests": {
+    "_document": "0ce3a4f2c5c15e5b692a895ab5f4477dae2c4599c031233abcfaf7909fb3c568",
+    "s1": "b13bacdd3dd40a8e3cb226066b6660b6aebf8a50b7f0d135972dce72a067ff10",
+    "s10": "a5c034b4157c2223c785f33e695ea65b6b5a8d2715cc7920e0089851b40ee94d",
+    "s11": "ee506b104842ed50a3cea08abe395e6e43918cff0f3239ce091415fe2e98fe39",
+    "s12": "f34aff9875ad00ad0d781d7805d52889b986efe74f16afeb8b465b4b29ef6615",
+    "s13": "0d8216edfe080ceb87b3d564a43e360fb4b061ce5301280c96ee1588cf3ebe34",
+    "s14": "c51c4bfeced68d9abc47f301ef228f1fecf9cb6a292c8e26dae76ee96b063ff9",
+    "s15": "2de83d60d26daee1dd0d72871eac23a08e8fec26f0d41c9253dda3a527d42276",
+    "s2": "06b36b451d3e1f9cc4f3c7c8c54bc8f4a1c93efe0eab5a9d7dccde893ace0c54",
+    "s3": "017097c61e4fa1d5d2dc8f168b9f71610c2ae361ff0f2c1d5cffb2b68c7df410",
+    "s4": "dfa3413c15b5496e8adbcf0232faeb0066257492e10fbd4fa9aefccc0fb09e77",
+    "s5": "2a352f8bf478dcdf4e8b5b0125205012974807a199c4b04c43b93d0b94534685",
+    "s6": "a9509e66f17fcf2ce1a5c6f73f1bf69c9b8e9f0a5fc2c8828b680e6e533c8a89",
+    "s7": "7132004ffea77391601b22ef619715e5e1b92d1f216e8fa177ee601bd9d6b7dd",
+    "s8": "8b258458e56f488bec3ad12a01ff14bb102096e78b20d9099bb99ca2911f2964",
+    "s9": "059f92c7b3786222a361ca3a5049648fd0cccb17f00ec762e7bdfba6ee02e958"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:30:24.178712+00:00",
+  "total": null
+}
