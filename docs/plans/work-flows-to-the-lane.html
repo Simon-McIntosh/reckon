@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -166,7 +166,10 @@
     <div class="r-comment-body"><p>reviewed run r-20261111T185654778148-held-request-names-its-hold at head ba00d850d8d6511bccea4fb1081de773994f5779 from base 2e4cf597da81c04da1ae305ece1289fd6c74e47d; stored a parsed six-dimension review (goal_fidelity 17, evidence 13, scope_discipline 12, durability 15, fit 18, reuse 17) with zero added failure ids and six findings, two blocking: the evidence fragment landed one directory deeper than its granted path so reckon/evidence.py:745 never composes it, and the manifest's baseline_suite/after_suite are prose so reckon/crew/queue_landing.py:1218 refuses the run at landing.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261111T221150590216-review-of-held-request-names-its-hold-946e6d8ff1b5" data-who="reckon-build" data-when="2026-11-11T22:31:40.407Z">
-    <div class="r-comment-body"><p>reviewed the two commits the run gained after its first review (ba00d850d8..946e6d8ff1: the evidence-fragment rename and the section_hold_verdict change) and stored a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 16, reuse 13, added_failure_count 0, with two non-blocking findings — the duplicated kind-classification rule at queue_admission.py:3846 and the unasserted pass-side verdict derivation at queue_admission.py:2413; both are clean of blocking defects and the increment repairs the prior review&#x27;s out-of-scope fragment placement.</p></div>
+    <div class="r-comment-body"><p>reviewed the two commits the run gained after its first review (ba00d850d8..946e6d8ff1: the evidence-fragment rename and the section_hold_verdict change) and stored a parsed record scoring goal_fidelity 19, evidence 18, scope_discipline 19, durability 17, fit 16, reuse 13, added_failure_count 0, with two non-blocking findings — the duplicated kind-classification rule at queue_admission.py:3846 and the unasserted pass-side verdict derivation at queue_admission.py:2413; both are clean of blocking defects and the increment repairs the prior review's out-of-scope fragment placement.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T185654778148-held-request-names-its-hold" data-who="reckon-build" data-when="2026-11-11T21:55:50Z">
+    <div class="r-comment-body"><p>a readiness hold now names its blocker (decision key or gate id) in the dispatch answer, on the request&#x27;s recorded hold and in an admission pass&#x27;s verdict row, from one derivation in section_hold(); a hold on a declared section wait keeps the wording about waits and is recorded under its own verdict held-on-waits; the pass re-derives a readiness ref only onto a record that already carries one, so a dispatch&#x27;s hold survives the pass and the pass&#x27;s read-count guards stay green</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261111T200747600010-review-of-refused-review-writes-nothing-e46e82f0cb78" data-who="reckon-build" data-when="2026-11-11T20:25:05.929Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T185754655706-refused-review-writes-nothing at head e46e82f0cb7895edc5419fc55886a8eb6e8a5797: the session guard does run before composition and the test fails when it regresses, but the node's own done_when importer-arm clause is unmet (8 added failures at head, 167 vs 159) and the guard's placement ahead of `_run_review`'s argument validation masks argument-error messages — recorded as one blocking and three non-blocking findings.</p></div>
