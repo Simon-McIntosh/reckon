@@ -76,6 +76,13 @@
       "note": "the station-runs-the-census resume advice requires apply to revalidate against one table read for the whole apply, in the shape of process_signal._beat_marked_processes, not one census() per listed pid",
       "reason": "",
       "when": "2026-11-12T09:05:08.833786+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "finding": "duplicate_owner-1",
+      "reason": "merging the four /proc walks onto process_signal._walk_marked_processes touches fleet_migrate and dispatch_launch, outside this section; the station-beat node reuses census.py as landed, and the consolidation is a separate refactor node",
+      "when": "2026-11-12T09:05:23.226078+00:00"
     }
   ],
   "responses": {
@@ -87,6 +94,12 @@
       "note": "the station-runs-the-census resume advice requires apply to revalidate against one table read for the whole apply, in the shape of process_signal._beat_marked_processes, not one census() per listed pid",
       "reason": "",
       "when": "2026-11-12T09:05:08.833786+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "declined",
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "reason": "merging the four /proc walks onto process_signal._walk_marked_processes touches fleet_migrate and dispatch_launch, outside this section; the station-beat node reuses census.py as landed, and the consolidation is a separate refactor node",
+      "when": "2026-11-12T09:05:23.226078+00:00"
     },
     "reuse_search-1": {
       "action": "acted",
