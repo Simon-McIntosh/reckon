@@ -86,8 +86,17 @@ def test_ledger_failure_and_vanished_pointer_leave_the_third_promoted(
         monkeypatch.setattr(
             resumption.plan_review, "compose_owed_plan_reviews", lambda *a, **k: {}
         )
+        # The vanished case is an ordering: the fixture removes a later run's
+        # pointer from inside an earlier run's promotion, so this sweep runs
+        # one promotion at a time. Beside a concurrent sweep that run's
+        # promotion can start before the pointer is removed, and the run is
+        # then promoted rather than reported vanished — a correct outcome the
+        # fixture does not assert.
         report = resumption.sweep(
-            PROJECT, session="session-fixture", pointers=review_runs
+            PROJECT,
+            session="session-fixture",
+            pointers=review_runs,
+            config={"promotion": {"width": 1, "wait_seconds": 60}},
         )["reviews"]
     else:
         report = acceptance.dispatch_awaiting_reviews(
