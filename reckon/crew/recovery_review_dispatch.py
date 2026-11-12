@@ -114,15 +114,16 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     inside the second the resume was stamped in cannot be ordered against it.
 
     Every leg fails closed toward withholding — the direction the wait exists
-    for: no resume stamp, no readable manifest, a status outside the delivered
-    pair, or a manifest not written by this attempt all read as an attempt
-    still in flight, and the head stands superseded. The comparison is against
+    for: neither a generation nor a resume stamp, no readable manifest, a status
+    outside the delivered pair, or a manifest not written by this attempt all
+    read as an attempt still in flight, and the head stands superseded. The comparison is against
     the manifest's own write rather than anything a worker states about
     itself, because the status word alone cannot tell a fresh delivery from the
     head-reset copy the resume itself left behind.
     """
     resumed_at = resume_superseded_at(record)
-    if resumed_at is None:
+    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
+    if resumed_at is None and not baseline_known:
         return False
     from reckon.crew.dispatch import _WORKER_DONE_MANIFEST_STATUSES
 
@@ -134,8 +135,11 @@ def _resumed_attempt_delivered(record: Mapping[str, Any]) -> bool:
     # anywhere inside the second the resume was stamped in cannot be told from
     # the one the resume itself rewrote: a delivery is read only once the write
     # is clear of that whole second.
-    baseline_known = record.get("manifest_baseline_mtime_ns") is not None
-    resumed_ns = int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+    resumed_ns = (
+        int((resumed_at.timestamp() + RESUME_DELIVERY_SECONDS) * 1_000_000_000)
+        if resumed_at is not None
+        else 0
+    )
 
     node = record.get("node")
     candidates: list[Path] = []

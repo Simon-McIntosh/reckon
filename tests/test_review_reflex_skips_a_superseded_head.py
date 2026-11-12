@@ -182,3 +182,19 @@ def test_a_resumed_run_that_delivers_its_new_head_gets_one_review(world):
     )
     _sweep()
     assert world.heads == [delivered]
+
+
+def test_a_recorded_resume_before_its_head_stamp_waits_for_delivery(world):
+    snapshot = runs.read_pointer(RUN)
+    record = dict(snapshot)
+    record["attempt_kind"] = "resume"
+    record["manifest_baseline_mtime_ns"] = world.manifest.stat().st_mtime_ns
+    runs._write_json(runs.pointer_path(RUN), record)
+    held = _sweep(snapshot)
+    assert world.heads == []
+    assert held["refused"]
+    world.manifest.write_text(
+        f"node: fixture\nstatus: complete\ncommits: [{world.head}]\ncheckpoint: delivered\n"
+    )
+    _sweep()
+    assert world.heads == [world.head]
