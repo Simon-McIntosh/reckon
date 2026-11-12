@@ -1,0 +1,32 @@
+<section id="overdue-figure-tracks-the-clock">
+  <h3 id="overdue-figure-tracks-the-clock-result">The overdue figure now moves with the clock</h3>
+  <p>The frozen number was in the snapshot reader, not the derivation. A sweep derives
+  each duty with a fresh age, but the published snapshot stores that age as the instant it
+  <em>is measured from</em> (<code>age_since</code>). A pane reading the stored document
+  through <code>obligation_snapshot.live_payload</code> turns that instant back into
+  <code>age_seconds</code> against its own clock — and the numeral ages. The remedy prose
+  beside it ("review overdue by Nm Ns") was composed once at publish time and copied through
+  unchanged, so the figure stayed at the writer's instant while the age grew. That is the
+  "some cache serves a reason computed once" the report saw: <code>_row_with_age</code>
+  refreshed the numeric age only.</p>
+  <p>The duty now carries the intervals its text is built from — the reflex window, the
+  station stage and the instant that stage was observed — and <code>live_payload</code>
+  composes the text again at its own reading instant from the same refreshed age the row
+  shows. The figure is the duty's age past the reflex window, so it tracks the clock rather
+  than a frozen number.</p>
+  <table>
+    <caption id="overdue-figure-tracks-the-clock-readings">One published snapshot, read at two instants 120 s apart (run age 2000 s at the first reading, reflex window 120 s)</caption>
+    <thead>
+      <tr><th>reading</th><th><code>age_seconds</code></th><th>figure, base revision</th><th>figure, this revision</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>T0</td><td>2000 s</td><td>33m 20s</td><td>31m 20s</td></tr>
+      <tr><td>T0 + 120 s</td><td>2120 s</td><td>33m 20s (frozen)</td><td>33m 20s</td></tr>
+    </tbody>
+  </table>
+  <p>The base row is the declared negative control: the second reading repeats the first
+  figure. At this revision the two readings differ by exactly 120 s, and each figure equals
+  <code>age_seconds</code> less the reflex window. The test publishes through the station's
+  own <code>sweep</code> and reads the stored snapshot back through <code>live_payload</code>,
+  the path a pane uses.</p>
+</section>
