@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="205">
+<meta name="plan-version" content="206">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -938,6 +938,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261112T032907957995-a-torn-ledger-row-is-reported" data-who="reckon-build" data-when="2026-11-12T05:14:16Z">
     <div class="r-comment-body"><p>Restored ledger.py byte-for-byte to original base and preserved exclusive append creation; 6 regression cases cover torn-row reporting, review continuity, mid-append recovery and duplicate refusal. All_debug scoped gate: 57 passed. All three append concurrency guards pass. Strict importer stability pair adds 1 id, already failing in the earlier fresh base log; 0 final-head ids are unseen across fresh base observations. Verification requires coordinator adjudication.</p></div>
 </div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261112T095145472136-review-of-vanished-review-pointer-keeps-station-up-e100457e8afc" data-who="reckon-build" data-when="2026-11-12T10:07:41.396Z">
+    <div class="r-comment-body"><p>Reviewed 8f00956a..e100457e8a (27a85ee5c1, e100457e8a) and scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 19; the fix does what the goal states and its three tests redden on the reverted hunks, with two non-blocking findings recording that the landing fragment's importer-arm row and the source manifest's evidence_inputs state the arm results transposed against the logs they cite.</p></div>
+</div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261112T085600397325-vanished-review-pointer-keeps-station-up" data-who="reckon-build" data-when="2026-11-12T09:27:59.218Z">
+    <div class="r-comment-body"><p>A review pointer that vanished between the station view&#x27;s listing and its read now reads as not in flight, and a tick that raises anything other than a lost lease prints a station-tick-failure line with its traceback and the loop continues; node gate 54 passed at head against 51 at base, negative control 2 failed at base, importer arms 48 identical failing ids at both revisions with none added.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
@@ -1018,9 +1024,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s33" data-id="c-run-r-20261112T095145472136-review-of-vanished-review-pointer-keeps-station-up-e100457e8afc" data-who="reckon-build" data-when="2026-11-12T10:07:41.396Z">
-    <div class="r-comment-body"><p>Reviewed 8f00956a..e100457e8a (27a85ee5c1, e100457e8a) and scored goal_fidelity 20, evidence 17, scope_discipline 20, durability 19, fit 19, reuse 19; the fix does what the goal states and its three tests redden on the reverted hunks, with two non-blocking findings recording that the landing fragment&#x27;s importer-arm row and the source manifest&#x27;s evidence_inputs state the arm results transposed against the logs they cite.</p></div>
 </div>
 </section>
 </main>
