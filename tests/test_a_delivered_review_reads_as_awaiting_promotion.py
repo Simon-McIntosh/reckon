@@ -226,6 +226,32 @@ def test_a_promoted_delivered_review_reads_ready(
     assert duty["kind"] == "review-ready"
 
 
+def test_a_delivered_review_of_a_superseded_head_owes_a_new_review(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A delivered review of an older revision is not this run's promotion.
+
+    Landing its record would land evidence for work the run has moved past, so
+    the run still owes a review of the head it carries now.
+    """
+    run_id = "r-20261112T060543442651-delivered-run"
+    head = _git(repository, "rev-parse", "HEAD")
+    superseded_head = "0" * 40
+    _write_delivered_run(repository, tmp_path, run_id=run_id, head=head)
+    _record_review_dispatch(run_id, review_run_id=REVIEW_RUN_ID, head=superseded_head)
+    _write_review_pointer(
+        review_run_id=REVIEW_RUN_ID,
+        reviewed_run_id=run_id,
+        head=superseded_head,
+        phase="complete",
+    )
+
+    duty = _review_duty(_duties(monkeypatch, [_score_row(run_id)]))
+
+    assert duty["kind"] != "review-awaiting-promotion"
+    assert duty["kind"] == "review-missing"
+
+
 def test_a_completed_review_of_another_run_leaves_this_run_missing(
     repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
