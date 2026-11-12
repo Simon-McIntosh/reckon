@@ -104,9 +104,7 @@ def project(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(home))
     monkeypatch.setenv("RECKON_VELOCITY_CACHE", str(home / "cache" / "velocity"))
-    monkeypatch.setattr(
-        flight, "resolve", _launched(CONFIG)
-    )
+    monkeypatch.setattr(flight, "resolve", _launched(CONFIG))
     repo = tmp_path / "repo"
     plans = repo / "docs" / "plans"
     plans.mkdir(parents=True)
@@ -222,6 +220,28 @@ def test_an_in_harness_review_is_not_judged_for_a_follower(
     """
     monkeypatch.setattr(flight, "resolve", _launched(CONFIG))
 
+    assert plan_review.session_delivery_refusal(PROJECT, SESSION) is None
+
+
+def test_the_launch_follows_the_reviews_own_routing(
+    project, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The launch is the one the dispatch resolves, role overlay included.
+
+    A review role may lend the backend a launch of its own, and a guard reading
+    the backend's raw settings instead would judge a delivery the dispatch never
+    asks for.
+    """
+    overlay = {
+        **CONFIG_CLI,
+        "roles": {
+            **CONFIG_CLI["roles"],
+            "review": {**CONFIG_CLI["roles"]["review"], "launch": "in-harness"},
+        },
+    }
+    monkeypatch.setattr(flight, "resolve", _launched(overlay))
+
+    assert plan_review._review_launch_kind(PROJECT) == "in-harness"
     assert plan_review.session_delivery_refusal(PROJECT, SESSION) is None
 
 

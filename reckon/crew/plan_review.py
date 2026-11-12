@@ -3739,24 +3739,22 @@ def compose_burst_refusal(
 def _review_launch_kind(project: str) -> str:
     """How a composed review of this project is launched, or empty if unknown.
 
-    The review role's backend names the launch, exactly as the dispatch reads
-    it, so a refusal answered before composition speaks for that launch. An
-    unreadable configuration answers empty: the review is then left to the verb,
-    which reports the configuration it could not resolve rather than a delivery
-    condition nobody measured.
+    The review role resolves to its backend through the routing the dispatch
+    itself uses, overlays included, so a refusal answered before composition
+    speaks for the launch that will carry it. An unreadable configuration
+    answers empty: the review is then left to the verb, which reports the
+    configuration it could not resolve rather than a delivery condition nobody
+    measured.
     """
     from reckon import flight
+    from reckon.crew import routing
+    from reckon.crew.node import CrewError
 
     try:
         config = flight.resolve(project=project).config or {}
-    except (flight.FlightConfigError, OSError):  # the verb reports its own
+        _backend_name, backend = routing.resolve_role(config, "review")
+    except (flight.FlightConfigError, OSError, CrewError):  # the verb reports
         return ""
-    backend_name = str(
-        ((config.get("roles") or {}).get("review") or {}).get("backend")
-        or config.get("default_backend")
-        or ""
-    )
-    backend = (config.get("backends") or {}).get(backend_name) or {}
     return str(backend.get("launch") or "")
 
 
