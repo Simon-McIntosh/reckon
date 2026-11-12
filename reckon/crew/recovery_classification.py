@@ -824,16 +824,135 @@ def _lane_admission_detail(
     }
 
 
-def _promoted_awaiting_merge(record: Mapping[str, Any]) -> str:
-    """The pending-landing status of a promoted run whose merge is unfinished.
+#: How long the revision a checkout's primary branch carried is reused. A sweep
+#: classifies every live row within one pass, so a short window reads the branch
+#: once for the whole pass and still notices a merge that lands between passes.
+_PRIMARY_REVISION_TTL_SECONDS = 5.0
 
-    ``crew complete --land`` writes one record per landing under the crew home
-    before it promotes and removes it only once the delivered head is on the
-    primary branch, so a record that still exists marks a promotion whose change
-    no branch carries. The status names repair when the landing pass recorded a
-    merge conflict on the record and a plain merge otherwise. An absent record
-    answers empty, which leaves the ledger's own word standing: only the record
-    made by a landing in flight says the merge is still owed.
+#: The ancestry answers already taken, keyed by the checkout, the delivered head
+#: and the primary revision the answer was taken against. Ancestry of a fixed
+#: pair is fixed, so an answer stays true until the branch moves, which changes
+#: the key. Cleared wholesale at the limit rather than evicted one by one: the
+#: entries are cheap to recompute and a sweep repopulates what it still needs.
+_ANCESTRY_MEMO: dict[tuple[str, str, str], bool] = {}
+_ANCESTRY_MEMO_LIMIT = 4096
+
+#: The primary revision last read from each checkout, with the moment it was
+#: read, so one pass over many rows of one project asks git once.
+_PRIMARY_REVISION_MEMO: dict[str, tuple[float, str]] = {}
+
+
+def _primary_branch_revision(checkout: Path, moment: float) -> str:
+    """The commit ``checkout``'s primary branch carries, or empty when unreadable."""
+    key = str(checkout)
+    cached = _PRIMARY_REVISION_MEMO.get(key)
+    if cached is not None and 0 <= moment - cached[0] <= _PRIMARY_REVISION_TTL_SECONDS:
+        return cached[1]
+    revision = ""
+    if checkout.is_dir():
+        from reckon.crew import merge
+
+        try:
+            branch = merge._current_branch(checkout)
+        except merge.MergeError:
+            branch = "HEAD"
+        answer = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(checkout),
+                "rev-parse",
+                "--verify",
+                f"{branch}^{{commit}}",
+            ],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        if answer.returncode == 0:
+            revision = answer.stdout.strip()
+    _PRIMARY_REVISION_MEMO[key] = (moment, revision)
+    return revision
+
+
+def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | None:
+    """Whether ``head`` is reachable from ``checkout``'s primary branch.
+
+    ``None`` is the answer whenever the question could not be asked — an
+    unreadable checkout, an unresolvable head, a git failure — because a broken
+    probe must not be reported as a merge that is owed.
+
+    The answer is cached by the pair it was taken against. A sweep draws every
+    live row and each row that is promoted asks the same two questions, so the
+    cache is what keeps the branch read and the ancestry walk off the per-row
+    path: a tick costs one ``rev-parse`` per checkout and one ``merge-base`` per
+    distinct delivered head.
+    """
+    primary = _primary_branch_revision(checkout, moment)
+    if not primary or not head:
+        return None
+    key = (str(checkout), head, primary)
+    cached = _ANCESTRY_MEMO.get(key)
+    if cached is not None:
+        return cached
+    answer = subprocess.run(
+        ["git", "-C", str(checkout), "merge-base", "--is-ancestor", head, primary],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    if answer.returncode not in (0, 1):
+        return None
+    on_branch = answer.returncode == 0
+    if len(_ANCESTRY_MEMO) >= _ANCESTRY_MEMO_LIMIT:
+        _ANCESTRY_MEMO.clear()
+    _ANCESTRY_MEMO[key] = on_branch
+    return on_branch
+
+
+def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str]:
+    """The repository a run's head lands in and the head its ledger row names.
+
+    The head comes from the run's own ledger row rather than from its worktree,
+    because the row is what promotion wrote: the promoted revision when it
+    recorded one, and otherwise the last commit it promoted. A row that cannot
+    be read leaves the head unknown, which names no merge and changes no
+    reading.
+    """
+    project = str(record.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    if not project or not run_id:
+        return None, ""
+    from reckon.crew.node import claim_repository
+
+    checkout = claim_repository(record)
+    try:
+        path = ledger.run_path(project, run_id, str(record.get("repo") or ""))
+        row = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError, ledger.LedgerError):
+        return checkout, ""
+    if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
+        return checkout, ""
+    promoted = str(row.get("promoted_revision") or "").strip()
+    if promoted:
+        return checkout, promoted
+    commits = [str(commit).strip() for commit in (row.get("commits") or ())]
+    return checkout, next((commit for commit in reversed(commits) if commit), "")
+
+
+def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str:
+    """The sentence for a promoted run whose merge is still owed, or empty.
+
+    Two facts say a promotion's change is on no branch. ``crew complete --land``
+    writes one record per landing under the crew home before it promotes and
+    removes it only once the delivered head is on the primary branch, so a
+    record that still exists marks a landing in flight; its status names repair
+    when the pass recorded a merge conflict and a plain merge otherwise. The
+    record alone is not enough: a promotion that ended before writing one leaves
+    a ledger row and a head no branch carries, and a run reads landed only when
+    its head is an ancestor of the primary branch. So the head's ancestry is
+    asked whatever the record says, and an unanswerable ancestry leaves the
+    ledger's own word standing rather than inventing a merge to wait for.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -845,11 +964,41 @@ def _promoted_awaiting_merge(record: Mapping[str, Any]) -> str:
     except (OSError, ValueError):
         return ""
     pending = pending_landing._read(record_path)
-    if pending is None:
-        return ""
-    return (
-        "awaiting-merge-repair" if pending.get("merge_conflict") else "awaiting-merge"
+    status = ""
+    if pending is not None:
+        status = (
+            "awaiting-merge-repair"
+            if pending.get("merge_conflict")
+            else "awaiting-merge"
+        )
+    checkout, head = _delivered_head(record)
+    on_branch = (
+        _head_on_primary_branch(checkout, head, moment)
+        if checkout is not None
+        else None
     )
+    if on_branch is True:
+        # A branch carries the head, so the run has landed and a record left
+        # behind describes a merge that has since finished.
+        return ""
+    if on_branch is False:
+        if status:
+            return (
+                "the run is promoted and awaits its merge: its pending landing "
+                f"reads {status}"
+            )
+        return (
+            "the run is promoted and awaits its merge: its delivered head is not "
+            "on the primary branch"
+        )
+    if status:
+        # The ancestry could not be asked, so the record is the best evidence
+        # there is and is reported as what it is.
+        return (
+            "the run is promoted and awaits its merge: its pending landing "
+            f"reads {status}"
+        )
+    return ""
 
 
 def classify_pointer(
@@ -2566,19 +2715,19 @@ def classify_pointer(
         record, classified, moment=moment, stall_seconds=stale_after_seconds
     )
     settled = classified["fleet_verdict"]["state"]
-    pending_landing_status = (
-        _promoted_awaiting_merge(record) if settled in FLEET_SETTLED_STATES else ""
+    awaiting_merge = (
+        _promoted_awaiting_merge(record, moment=moment)
+        if settled in FLEET_SETTLED_STATES
+        else ""
     )
-    if pending_landing_status:
+    if awaiting_merge:
         # A ledger row records the promotion; it does not put the delivered
-        # head on the primary branch. Until the landing record is gone the run
-        # is delivered and reads that way, naming the landing's own status, so
-        # a coordinator is not told to stop attending to a change no branch
+        # head on the primary branch. Until the landing record is gone, or the
+        # head's ancestry says a branch carries it, the run is delivered and
+        # reads that way, naming what the merge is still waiting on, so a
+        # coordinator is not told to stop attending to a change no branch
         # carries yet.
-        detail = (
-            "the run is promoted and awaits its merge: its pending landing "
-            f"reads {pending_landing_status}"
-        )
+        detail = awaiting_merge
         classified["fleet_verdict"] = {
             **classified["fleet_verdict"],
             "state": PROMOTED_UNMERGED_STATE,
