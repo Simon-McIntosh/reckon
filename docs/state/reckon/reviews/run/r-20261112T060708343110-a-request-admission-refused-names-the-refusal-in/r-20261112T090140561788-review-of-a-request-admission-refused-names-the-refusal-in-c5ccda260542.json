@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "f6144b120b9b2db0a4f46626228ad73f38d0e3eb",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-12T09:14:09.975Z",
+  "dispatched_at": "2026-11-12T09:03:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the gate row reads \"5 passed\" while the log it cites, head-arm.log, summarises \"56 passed in 23.82s\" over both test files, and the base row beside it quotes the combined \"52 passed, 2 errors\", so the table's two rows are counted over different populations and a reader cannot reconcile the gate figure with its own log."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html",
+      "line": "28",
+      "severity": "non-blocking",
+      "text": "non-blocking: the property is spelled \"fully-specifie\", missing its final d, so a reader grepping the evidence for the producer's `fully-specified` label (reckon/crew/dispatch_admission.py:459) finds nothing."
+    },
+    {
+      "file": "tests/test_a_refused_request_names_its_refusal.py",
+      "line": "149",
+      "severity": "non-blocking",
+      "text": "non-blocking: `assert \"fully-specified\" in reason` and the `assert \"scoped\" in reason` at :150 hold whichever branch the classifier takes, because both the editable and the plan-owned details end by appending the raw refusal text, so neither assertion can fail if property extraction regresses to zero properties; the load-bearing assertions in the same arm are the independent \"steering\"/\"write-paths\" field names at :152-153 and the next_command at :154."
+    }
+  ],
+  "head_log_revision": "c5ccda260542d54f2ef1ea7739638c396713d16f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "no production call sites found",
+    "diff": "read commit c5ccda2605 against base f6144b120b \u2014 98 added lines across two files, 49 lines adding two test arms in tests/test_a_refused_request_names_its_refusal.py:139-170 and a 49-line landing fragment; reckon/crew/obligations.py carries no change, which the fragment states.",
+    "done_when": "the done_when names a new tests/test_a_refused_request_names_its_refusal.py proving, over a synthesised pointer, that a refused queued request yields a row carrying the refusal's property names and that an unfailed one keeps its waiting row, with a negative control; the manifest records head-arm.log \"56 passed\" EXIT=0, baseline-arm.log \"52 passed, 2 errors\" EXIT=1 with both errors attributed to a git-archive fixture, and negative-control.log \"2 failed, 3 passed\" EXIT=1.",
+    "goal": "the node's goal is that a request admission refused names the refusal in its obligation; reckon/crew/obligations.py:1061 `_queued_contract_refusal` already does that at the node's base (the node confirms commit 77129c667f is an ancestor of f6144b120b), and the landed arms evidence the half that was never exercised \u2014 the editable remedy at reckon/crew/obligations.py:1098-1105 and the capacity exclusion at reckon/crew/obligations.py:1092.",
+    "manifest": "read; it states status complete, commit c5ccda2605, changed_paths naming exactly the two landed files, the literal gate command, three log paths, measurement_module and measurement_cwd for the scratch-tree arms, the negative control log with its mutation, and both suite arms with completed true and failure_count 0.",
+    "write_paths": "the fence was reckon/crew/obligations.py, tests/test_a_refused_request_names_its_refusal.py, the plan's evidence fragment and a figures directory; git diff f6144b120b..c5ccda2605 touches only the test file and the node's own fragment, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_refused_request_names_its_refusal.py:147 and :169 fail if `_queued_contract_refusal` stops reading the failure or loses its capacity exclusion, but :149-150 are pass-through assertions (finding below) and the capacity branch is exercised only by the green arm, never shown red by a declared mutation.",
+    "evidence": "negative-control.log reddens exactly the two arms asserting a refusal (F.F..) with the declared mutation recorded in the manifest, and my own re-run of tests/test_a_refused_request_names_its_refusal.py gave \"5 passed\", but the fragment's gate row misquotes its own log (finding below).",
+    "fit": "the arms follow the existing idiom of tests/test_a_refused_request_names_its_refusal.py:47-58 \u2014 module-level literal refusal constants with comments, the shared mounted_home fixture and _write_queued_pointer \u2014 and add no name the naming rules forbid.",
+    "goal_fidelity": "the goal's product behaviour lives in reckon/crew/obligations.py:1098-1105, reached unchanged from base, so the node's contribution is the evidence that half of the section's deliverable works rather than any product change of its own.",
+    "reuse": "the diff adds no definition with a production capability \u2014 only two test functions extending tests/test_a_refused_request_names_its_refusal.py \u2014 and their fixture and pointer writer reuse that file's own helpers; a search of reckon/crew for an existing obligation-refusal reader found reckon/crew/obligations.py:1061 already owning it.",
+    "scope_discipline": "git diff f6144b120b..c5ccda2605 changes only tests/test_a_refused_request_names_its_refusal.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html, both declared, with no product source touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a request admission refused names the refusal in its obligation; reckon/crew/obligations.py:1061 `_queued_contract_refusal` already does that at the node's base (the node confirms commit 77129c667f is an ancestor of f6144b120b), and the landed arms evidence the half that was never exercised \u2014 the editable remedy at reckon/crew/obligations.py:1098-1105 and the capacity exclusion at reckon/crew/obligations.py:1092.\nVERDICT done_when: the done_when names a new tests/test_a_refused_request_names_its_refusal.py proving, over a synthesised pointer, that a refused queued request yields a row carrying the refusal's property names and that an unfailed one keeps its waiting row, with a negative control; the manifest records head-arm.log \"56 passed\" EXIT=0, baseline-arm.log \"52 passed, 2 errors\" EXIT=1 with both errors attributed to a git-archive fixture, and negative-control.log \"2 failed, 3 passed\" EXIT=1.\nVERDICT write_paths: the fence was reckon/crew/obligations.py, tests/test_a_refused_request_names_its_refusal.py, the plan's evidence fragment and a figures directory; git diff f6144b120b..c5ccda2605 touches only the test file and the node's own fragment, both inside it.\nVERDICT manifest: read; it states status complete, commit c5ccda2605, changed_paths naming exactly the two landed files, the literal gate command, three log paths, measurement_module and measurement_cwd for the scratch-tree arms, the negative control log with its mutation, and both suite arms with completed true and failure_count 0.\nVERDICT diff: read commit c5ccda2605 against base f6144b120b \u2014 98 added lines across two files, 49 lines adding two test arms in tests/test_a_refused_request_names_its_refusal.py:139-170 and a 49-line landing fragment; reckon/crew/obligations.py carries no change, which the fragment states.\nCALL_SITES: none\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the goal's product behaviour lives in reckon/crew/obligations.py:1098-1105, reached unchanged from base, so the node's contribution is the evidence that half of the section's deliverable works rather than any product change of its own.\nSCORE evidence: 16\nJUSTIFICATION evidence: negative-control.log reddens exactly the two arms asserting a refusal (F.F..) with the declared mutation recorded in the manifest, and my own re-run of tests/test_a_refused_request_names_its_refusal.py gave \"5 passed\", but the fragment's gate row misquotes its own log (finding below).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f6144b120b..c5ccda2605 changes only tests/test_a_refused_request_names_its_refusal.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html, both declared, with no product source touched.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_refused_request_names_its_refusal.py:147 and :169 fail if `_queued_contract_refusal` stops reading the failure or loses its capacity exclusion, but :149-150 are pass-through assertions (finding below) and the capacity branch is exercised only by the green arm, never shown red by a declared mutation.\nSCORE fit: 19\nJUSTIFICATION fit: the arms follow the existing idiom of tests/test_a_refused_request_names_its_refusal.py:47-58 \u2014 module-level literal refusal constants with comments, the shared mounted_home fixture and _write_queued_pointer \u2014 and add no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition with a production capability \u2014 only two test functions extending tests/test_a_refused_request_names_its_refusal.py \u2014 and their fixture and pointer writer reuse that file's own helpers; a search of reckon/crew for an existing obligation-refusal reader found reckon/crew/obligations.py:1061 already owning it.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html:36 non-blocking: the gate row reads \"5 passed\" while the log it cites, head-arm.log, summarises \"56 passed in 23.82s\" over both test files, and the base row beside it quotes the combined \"52 passed, 2 errors\", so the table's two rows are counted over different populations and a reader cannot reconcile the gate figure with its own log.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-request-admission-refused-names-the-refusal-in.html:28 non-blocking: the property is spelled \"fully-specifie\", missing its final d, so a reader grepping the evidence for the producer's `fully-specified` label (reckon/crew/dispatch_admission.py:459) finds nothing.\nFINDING tests/test_a_refused_request_names_its_refusal.py:149 non-blocking: `assert \"fully-specified\" in reason` and the `assert \"scoped\" in reason` at :150 hold whichever branch the classifier takes, because both the editable and the plan-owned details end by appending the raw refusal text, so neither assertion can fail if property extraction regresses to zero properties; the load-bearing assertions in the same arm are the independent \"steering\"/\"write-paths\" field names at :152-153 and the next_command at :154.",
+  "review_run_id": "r-20261112T090140561788-review-of-a-request-admission-refused-names-the-refusal-in-c5ccda260542",
+  "reviewed_base_sha": "f6144b120b9b2db0a4f46626228ad73f38d0e3eb",
+  "reviewed_head_sha": "c5ccda260542d54f2ef1ea7739638c396713d16f",
+  "reviewed_run_id": "r-20261112T060708343110-a-request-admission-refused-names-the-refusal-in",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T090140561788-review-of-a-request-admission-refused-names-the-refusal-in-c5ccda260542"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T12:01:49.465630+00:00",
+  "total": 106
+}
