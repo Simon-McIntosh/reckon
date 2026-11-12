@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131 queue_batch (crew dispatch --batch)",
+    "reckon/crew/dispatch_batch.py:749 _queue_batch -> dispatch.queue_requests",
+    "reckon/crew/dispatch.py:392 queue_requests dispatch_options stamp",
+    "reckon/crew/queue_admission.py:5301 _plan_review_owed reads allow_unreviewed_plan"
+  ],
+  "completed_at": "2026-11-12T07:43:06.712Z",
+  "dispatched_at": "2026-11-12T07:26:44Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053103325903-batch-entry-carries-review-waiver/manifest.md",
+      "line": "12",
+      "severity": "blocking",
+      "text": "blocking: the manifest, its baseline_suite and its after_suite all record the fence-arm logs as <run-dir>/baseline-arm.log and <run-dir>/head-arm.log, and neither file exists there; the worker wrote them to node-local /tmp/reckon-crew-scratch/r-20261112T053103325903-batch-entry-carries-review-waiver/ (where both are still readable: 51 passed EXIT=0 and 55 passed EXIT=0), so the promotion receipt's log_path cannot be opened and a reader elsewhere on the workstation cannot see the gate at all."
+    },
+    {
+      "file": "tests/test_a_batch_entry_carries_its_waivers.py",
+      "line": "216",
+      "severity": "non-blocking",
+      "text": "non-blocking: the waived case asserts queue_admission._plan_review_owed returns None rather than running an admission pass, so the done_when's 'the waived entry launches' is exercised only through the gate predicate - a regression that drops the predicate call at reckon/crew/queue_admission.py:5524 would leave every assertion in this file green."
+    },
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": "479",
+      "severity": "non-blocking",
+      "text": "non-blocking: the boolean guard added for allow_unreviewed_plan has no test that reddens without it; removing :479-482 leaves all four cases in tests/test_a_batch_entry_carries_its_waivers.py green, so the refusal it adds is unguarded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "diff": "read both commits against base 6fd868ab8a: 9aa4025058 adds the field to BATCH_ENTRY_FIELDS, a boolean check at :479, the pass-through at :749, the queue_requests parameter and dispatch_options stamp at reckon/crew/dispatch.py:307-395, and the 261-line test file; ad8f34b7d adds only the 41-line evidence fragment.",
+    "done_when": "the done_when names a new four-case test with a temporary plan and crew home; tests/test_a_batch_entry_carries_its_waivers.py:178 asserts the pointer records the waiver, :213-216 assert the enforced gate holds the unwaived entry and owes the waived one nothing, :237-238 assert the misspelt field is refused by name, and the declared negative control reddens the two waiver cases; the arm receipts the manifest cites are as recorded in its suite fields, but their log paths do not resolve.",
+    "goal": "the node's goal is that a batch entry may set allow_unreviewed_plan with the single-dispatch flag's effect and recorded waiver; reckon/crew/dispatch_batch.py:57 accepts the field, :749 hands it to reckon/crew/dispatch.py:392, which records it on dispatch_options that reckon/crew/queue_admission.py:5301 reads before holding a request.",
+    "manifest": "read; status complete, commits 9aa4025058 and ad8f34b7d, changed_paths the four landed files, tests the fence pytest command, baseline_suite and after_suite both completed with zero failures, and negative_control_log naming a log whose content matches its note; its head-arm.log and baseline-arm.log paths do not resolve.",
+    "write_paths": "the node's fence was reckon/crew/dispatch_batch.py, reckon/crew/dispatch.py, tests/test_a_batch_entry_carries_its_waivers.py and the evidence fragment; git diff 6fd868ab8a..ad8f34b7d touches exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_carries_its_waivers.py:178 fails if the dispatch_options stamping is reverted and :216 fails if the gate ignores the waiver, and the declared negative control removes the field from BATCH_ENTRY_FIELDS to redden two cases; the boolean guard added at reckon/crew/dispatch_batch.py:479 has no test that reddens without it.",
+    "evidence": "the fence-arm logs the manifest records are absent from the run directory and readable only from node-local scratch (head-arm.log reading 55 passed EXIT=0, baseline-arm.log reading 51 passed EXIT=0), while negative-control.log is intact at 2 failed, 2 passed, EXIT=1 naming the unknown field.",
+    "fit": "the added code follows the surrounding style of reckon/crew/dispatch_batch.py:747-756 and introduces no name the repository naming rules forbid, and reckon/crew/dispatch.py:308-315 documents the mechanism rather than the task.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:749 passes the entry's allow_unreviewed_plan to reckon/crew/dispatch.py:392, which stamps it on the stored request's dispatch_options, the field reckon/crew/queue_admission.py:5301 reads before holding a request on the review gate, which is the effect the goal names.",
+    "reuse": "the change extends the existing waiver carrier reckon/crew/queue_admission.py:555 _CARRIED_OPTION_KEYS and the existing reader at :5301, adding no second mechanism for carrying dispatch options; a search of reckon/crew found no other owner of a batch-entry waiver field.",
+    "scope_discipline": "git diff --stat 6fd868ab8a..ad8f34b7d lists only reckon/crew/dispatch.py, reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_waivers.py and the evidence fragment, every one inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a batch entry may set allow_unreviewed_plan with the single-dispatch flag's effect and recorded waiver; reckon/crew/dispatch_batch.py:57 accepts the field, :749 hands it to reckon/crew/dispatch.py:392, which records it on dispatch_options that reckon/crew/queue_admission.py:5301 reads before holding a request.\nVERDICT done_when: the done_when names a new four-case test with a temporary plan and crew home; tests/test_a_batch_entry_carries_its_waivers.py:178 asserts the pointer records the waiver, :213-216 assert the enforced gate holds the unwaived entry and owes the waived one nothing, :237-238 assert the misspelt field is refused by name, and the declared negative control reddens the two waiver cases; the arm receipts the manifest cites are as recorded in its suite fields, but their log paths do not resolve.\nVERDICT write_paths: the node's fence was reckon/crew/dispatch_batch.py, reckon/crew/dispatch.py, tests/test_a_batch_entry_carries_its_waivers.py and the evidence fragment; git diff 6fd868ab8a..ad8f34b7d touches exactly those four and nothing else.\nVERDICT manifest: read; status complete, commits 9aa4025058 and ad8f34b7d, changed_paths the four landed files, tests the fence pytest command, baseline_suite and after_suite both completed with zero failures, and negative_control_log naming a log whose content matches its note; its head-arm.log and baseline-arm.log paths do not resolve.\nVERDICT diff: read both commits against base 6fd868ab8a: 9aa4025058 adds the field to BATCH_ENTRY_FIELDS, a boolean check at :479, the pass-through at :749, the queue_requests parameter and dispatch_options stamp at reckon/crew/dispatch.py:307-395, and the 261-line test file; ad8f34b7d adds only the 41-line evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131 queue_batch (crew dispatch --batch), reckon/crew/dispatch_batch.py:749 _queue_batch -> dispatch.queue_requests, reckon/crew/dispatch.py:392 queue_requests dispatch_options stamp, reckon/crew/queue_admission.py:5301 _plan_review_owed reads allow_unreviewed_plan\nSCORE goal_fidelity: 18\nSCORE evidence: 12\nSCORE scope_discipline: 18\nSCORE durability: 16\nSCORE fit: 19\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:749 passes the entry's allow_unreviewed_plan to reckon/crew/dispatch.py:392, which stamps it on the stored request's dispatch_options, the field reckon/crew/queue_admission.py:5301 reads before holding a request on the review gate, which is the effect the goal names.\nJUSTIFICATION evidence: the fence-arm logs the manifest records are absent from the run directory and readable only from node-local scratch (head-arm.log reading 55 passed EXIT=0, baseline-arm.log reading 51 passed EXIT=0), while negative-control.log is intact at 2 failed, 2 passed, EXIT=1 naming the unknown field.\nJUSTIFICATION scope_discipline: git diff --stat 6fd868ab8a..ad8f34b7d lists only reckon/crew/dispatch.py, reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_waivers.py and the evidence fragment, every one inside the node's declared write paths.\nJUSTIFICATION durability: tests/test_a_batch_entry_carries_its_waivers.py:178 fails if the dispatch_options stamping is reverted and :216 fails if the gate ignores the waiver, and the declared negative control removes the field from BATCH_ENTRY_FIELDS to redden two cases; the boolean guard added at reckon/crew/dispatch_batch.py:479 has no test that reddens without it.\nJUSTIFICATION fit: the added code follows the surrounding style of reckon/crew/dispatch_batch.py:747-756 and introduces no name the repository naming rules forbid, and reckon/crew/dispatch.py:308-315 documents the mechanism rather than the task.\nJUSTIFICATION reuse: the change extends the existing waiver carrier reckon/crew/queue_admission.py:555 _CARRIED_OPTION_KEYS and the existing reader at :5301, adding no second mechanism for carrying dispatch options; a search of reckon/crew found no other owner of a batch-entry waiver field.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T053103325903-batch-entry-carries-review-waiver/manifest.md:12 blocking: the manifest, its baseline_suite and its after_suite all record the fence-arm logs as <run-dir>/baseline-arm.log and <run-dir>/head-arm.log, and neither file exists there; the worker wrote them to node-local /tmp/reckon-crew-scratch/r-20261112T053103325903-batch-entry-carries-review-waiver/ (where both are still readable: 51 passed EXIT=0 and 55 passed EXIT=0), so the promotion receipt's log_path cannot be opened and a reader elsewhere on the workstation cannot see the gate at all.\nFINDING tests/test_a_batch_entry_carries_its_waivers.py:216 non-blocking: the waived case asserts queue_admission._plan_review_owed returns None rather than running an admission pass, so the done_when's 'the waived entry launches' is exercised only through the gate predicate - a regression that drops the predicate call at reckon/crew/queue_admission.py:5524 would leave every assertion in this file green.\nFINDING reckon/crew/dispatch_batch.py:479 non-blocking: the boolean guard added for allow_unreviewed_plan has no test that reddens without it; removing :479-482 leaves all four cases in tests/test_a_batch_entry_carries_its_waivers.py green, so the refusal it adds is unguarded.",
+  "review_run_id": "r-20261112T072339728484-review-of-batch-entry-carries-review-waiver-ad8f34b7d081",
+  "reviewed_base_sha": "6fd868ab8a3fc2b830877f6400b5eebf20f27d47",
+  "reviewed_head_sha": "ad8f34b7d08125a4ae564c233729a1b1c127606b",
+  "reviewed_run_id": "r-20261112T053103325903-batch-entry-carries-review-waiver",
+  "reviewer_run_id": "r-20261112T072339728484-review-of-batch-entry-carries-review-waiver-ad8f34b7d081",
+  "scores": {
+    "durability": 16,
+    "evidence": 12,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:31:31.239295+00:00",
+  "total": 103
+}
