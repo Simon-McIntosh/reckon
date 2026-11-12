@@ -272,11 +272,44 @@ def test_dispatch_leaves_a_budget_inside_the_fence_alone(
     assert document["node"]["over_fence_reason"] == ""
 
 
-def test_a_blank_reason_admits_nothing(plan_repo: Path, crew_home: Path) -> None:
+def test_a_blank_reason_admits_nothing(tmp_path: Path) -> None:
     """Whitespace is not a reason: the check reads the stripped text."""
-    result = _dispatch(plan_repo, time_budget=OVER_BUDGET, over_fence="   ")
+    node = TaskNode(
+        id="a-fenced-node",
+        goal=GOAL,
+        plan="a-fenced-plan",
+        section="s1",
+        spec_level="guided",
+        done_when=DONE_WHEN,
+        write_paths=["result.json"],
+        time_budget=OVER_BUDGET,
+        over_fence_reason="   ",
+        manifest_path=str(tmp_path / "manifest.md"),
+    )
 
-    assert result.exit_code != 0, result.output
-    document = _document(result)
-    assert document["error"] == "contract-validation"
-    assert "--over-fence" in " ".join(_bounded_findings(document))
+    verdict = validate_node(node, budget_ceiling=FENCE)
+
+    assert not verdict.ok
+    details = [f["detail"] for f in verdict.findings if f["property"] == "bounded"]
+    assert details, verdict.findings
+    assert "--over-fence" in details[0]
+
+
+def test_a_reason_padded_with_whitespace_still_admits(tmp_path: Path) -> None:
+    """The stripped text is what is read, so surrounding whitespace is harmless."""
+    node = TaskNode(
+        id="a-fenced-node",
+        goal=GOAL,
+        plan="a-fenced-plan",
+        section="s1",
+        spec_level="guided",
+        done_when=DONE_WHEN,
+        write_paths=["result.json"],
+        time_budget=OVER_BUDGET,
+        over_fence_reason=f"  {REASON}  ",
+        manifest_path=str(tmp_path / "manifest.md"),
+    )
+
+    verdict = validate_node(node, budget_ceiling=FENCE)
+
+    assert verdict.ok, verdict.findings
