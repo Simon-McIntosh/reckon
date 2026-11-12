@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import subprocess
 import sys
@@ -12,7 +13,7 @@ from pathlib import Path
 import pytest
 
 from reckon import ledger
-from reckon.crew import promotion, resumption, runs
+from reckon.crew import promotion, resumption, review, runs
 from reckon.crew import recovery_review_acceptance as acceptance
 from tests.helpers.git import git
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
@@ -23,17 +24,21 @@ from tests.test_reflex_acceptance_reads_the_remote_primary import (
     _write_run,
 )
 from tests.test_reflex_acceptance_reads_the_remote_primary import (
-    origin_and_repository as origin_and_repository,
+    origin_and_repository as origin_and_repository,  # noqa: PLC0414
 )
 
 
 @pytest.fixture()
-def candidate(origin_and_repository, tmp_path):
+def candidate(origin_and_repository, tmp_path, isolated_reckon_home):
+    assert runs.crew_home().is_relative_to(isolated_reckon_home)
+    real_pointer = Path.home() / ".config/reckon/crew/live" / f"{RUN_ID}.json"
+    assert not real_pointer.exists()
     _origin, repository = origin_and_repository
     base, commit = _land_run_commit(repository, push=False)
     _write_run(repository, tmp_path, base=base, commit=commit)
     _store_review(base=base, head=commit)
-    return repository, base, commit
+    yield repository, base, commit
+    assert not real_pointer.exists()
 
 
 def _sweep():
@@ -146,6 +151,36 @@ def test_a_changed_remote_releases_the_refusal_and_promotes(candidate):
     assert rows[0]["promoted_by"] == "review-acceptance"
 
 
+@pytest.mark.parametrize("changed_input", ["review", "manifest", "gate_log"])
+def test_changed_refusal_inputs_are_judged_again(candidate, monkeypatch, changed_input):
+    _repository, _base, commit = candidate
+    calls = []
+    original = acceptance._commits_missing_from
+
+    def counted(*args):
+        calls.append(args)
+        return original(*args)
+
+    monkeypatch.setattr(acceptance, "_commits_missing_from", counted)
+    _sweep()
+    pointer = runs.read_pointer(RUN_ID)
+    manifest = Path(pointer["manifest_path"])
+    if changed_input == "review":
+        path = review.review_path(PROJECT, RUN_ID, reviewed_head_sha=commit)
+        record = json.loads(path.read_text())
+        record["scores"]["fit"] -= 1
+        record["total"] -= 1
+        review.store_review(record)
+    elif changed_input == "manifest":
+        manifest.write_text(manifest.read_text() + "checkpoint: gate confirmed\n")
+    else:
+        path = manifest.parent.parent / "gate.log"
+        assert path.is_file()
+        path.write_text("gate confirmed\nEXIT=0\n")
+    _sweep()
+    assert len(calls) == 2
+
+
 def test_coordinator_completion_between_judgement_and_lease_is_not_repeated(
     candidate, monkeypatch
 ):
@@ -172,3 +207,41 @@ def test_coordinator_completion_between_judgement_and_lease_is_not_repeated(
     rows = ledger.runs(PROJECT, root=repository)
     assert [row["run_id"] for row in rows] == [RUN_ID]
     assert rows[0]["gate"] == "failed"
+
+
+@pytest.mark.parametrize("changed_input", ["head", "attempt", "review"])
+def test_a_changed_run_is_not_promoted_on_an_earlier_judgement(
+    candidate, monkeypatch, changed_input
+):
+    repository, _base, commit = candidate
+    git(repository, "push", "-q", "origin", "main")
+    original = promotion._promotion_host_lease
+    intercepted = []
+
+    @contextmanager
+    def change_before_claim(run_id):
+        if not intercepted:
+            intercepted.append(run_id)
+            if changed_input == "head":
+                (repository / "candidate.txt").write_text("unreviewed\n")
+                git(repository, "add", "candidate.txt")
+                git(repository, "commit", "-q", "-m", "fix: revise the deliverable")
+            elif changed_input == "attempt":
+                pointer = runs.read_pointer(RUN_ID)
+                pointer["attempt"] = "resumed-attempt"
+                runs._write_json(runs.pointer_path(RUN_ID), pointer)
+            else:
+                path = review.review_path(PROJECT, RUN_ID, reviewed_head_sha=commit)
+                record = json.loads(path.read_text())
+                record["findings"] = [{"claim": "hold the run", "severity": "blocking"}]
+                review.store_review(record)
+        with original(run_id) as lease:
+            yield lease
+
+    monkeypatch.setattr(promotion, "_promotion_host_lease", change_before_claim)
+    report = _sweep()
+
+    assert intercepted == [RUN_ID]
+    assert report["accepted"] == [], report
+    assert runs.pointer_path(RUN_ID).exists()
+    assert ledger.runs(PROJECT, root=repository) == []

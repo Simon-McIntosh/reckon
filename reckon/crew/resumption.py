@@ -2117,9 +2117,9 @@ class PromotionWorkers:
 
     A sweep hands the work off after the reviews it owed are dispatched, so one
     promotion running for minutes delays no review and no other promotion. The
-    jobs run at most ``width`` at a time, each holding the run's cross-host
-    promotion lease and this process's claim on it, so the same run is never
-    promoted twice concurrently by two sweeps.
+    jobs run at most ``width`` at a time, each holding this process's claim on
+    the run. Promotion takes its own cross-host lease when it writes, leaving
+    coordinators free to complete a run while acceptance judges it.
 
     ``wait`` waits up to ``wait_seconds`` for the workers this sweep started and
     returns their outcomes in submission order, whether or not each finished.
@@ -2167,43 +2167,15 @@ class PromotionWorkers:
         run_id: str,
         job: Callable[[], dict[str, Any] | None],
     ) -> None:
-        from reckon.crew import promotion
-
         outcome: dict[str, Any]
         try:
             with self._slots:
-                started = False
-                try:
-                    # The lease is taken for the whole job, including the
-                    # gate replay acceptance does before it promotes: two
-                    # sweeps must not spend the same minutes on one run.
-                    with promotion._promotion_host_lease(run_id):
-                        started = True
-                        # The job names its own outcome, which is what lets it
-                        # say whether the run accepted, promoted itself or
-                        # failed, and keeps one vocabulary with the pass that
-                        # runs the same work in its own thread.
-                        ran = job()
-                        outcome = (
-                            dict(ran)
-                            if isinstance(ran, Mapping)
-                            else {"run_id": run_id, "result": ran}
-                        )
-                except CrewError as exc:
-                    if started:
-                        outcome = {
-                            "run_id": run_id,
-                            "failed": {
-                                "run_id": run_id,
-                                "error": f"{type(exc).__name__}: {exc}",
-                            },
-                        }
-                    else:
-                        outcome = {
-                            "run_id": run_id,
-                            "in_flight": True,
-                            "reason": str(exc),
-                        }
+                ran = job()
+                outcome = (
+                    dict(ran)
+                    if isinstance(ran, Mapping)
+                    else {"run_id": run_id, "result": ran}
+                )
         except Exception as exc:  # noqa: BLE001 - one job's failure is its own
             outcome = {
                 "run_id": run_id,
