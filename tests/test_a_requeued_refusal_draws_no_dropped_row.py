@@ -23,6 +23,8 @@ from reckon.crew import ticker
 
 SESSION = "s-own"
 PROJECT = "reckon"
+PLAN = "the-monitor-shows-the-work-it-watches"
+SECTION = "80"
 NODE = "a-limit-reset-is-one-record"
 REFUSAL = (
     "the queued launch was refused: PlanReviewMissingError: section 73 of the "
@@ -37,6 +39,8 @@ def _row(
     """One transition row as the project's watcher writes it."""
     event: dict[str, Any] = {
         "project": PROJECT,
+        "plan": PLAN,
+        "section": SECTION,
         "event": "transition",
         "run_id": run_id,
         "node": NODE,
@@ -77,31 +81,48 @@ def _words(rows: list[tuple[dict[str, Any], str]]) -> list[str]:
 
 
 def _refused_launch(
-    pane: _Pane, run_id: str, *, at: float, refusal: str = REFUSAL
+    pane: _Pane,
+    run_id: str,
+    *,
+    at: float,
+    refusal: str = REFUSAL,
+    requeue_id: str | None = None,
+    section: str = SECTION,
 ) -> list[dict[str, Any]]:
-    """Drive the rows of one refused launch attempt, returning what it drew."""
+    """Drive the rows of one refused launch attempt, returning what it drew.
+
+    The second pointer is the request written back by the admission pass. The
+    pass keeps the request's run id across the re-queue — it rewrites the
+    pointer it took the attempt from, and the launch itself continues that
+    request — so the id is stated on every row rather than defaulted, and
+    ``requeue_id`` exists only so a test can say what it means when the rows
+    do not share one.
+    """
+    second = run_id if requeue_id is None else requeue_id
     drawn: list[dict[str, Any]] = []
     for offset, event in enumerate(
         (
             # The request arrives and queues for a slot, then its launch is
             # attempted: the attempt's pointer is released and the request is
             # written back, so the follower sees it leave the fleet and return.
-            _row(None, "dispatched", run_id),
+            _row(None, "dispatched", run_id, section=section),
             _row(
                 "dispatched",
                 "queued",
                 run_id,
                 detail="waiting for a local lane slot",
                 next_action="wait for a local lane slot",
+                section=section,
             ),
-            _row("queued", "withdrawn", run_id),
-            _row(None, "dispatched", run_id),
+            _row("queued", "withdrawn", run_id, section=section),
+            _row(None, "dispatched", second, section=section),
             _row(
                 "dispatched",
                 "queued",
-                run_id,
+                second,
                 detail=refusal,
                 next_action=REMEDY,
+                section=section,
             ),
         )
     ):
@@ -169,6 +190,57 @@ def test_a_refusal_the_request_has_not_shown_before_is_named_again() -> None:
         )
     )
     assert len([row for row, _ in rows if row.get(ticker.QUEUED_REFUSED_FIELD)]) == 1
+
+
+def test_a_requeue_under_a_fresh_pointer_id_is_the_same_request() -> None:
+    """The re-queue's own pointer id does not make it a second request.
+
+    The admission pass writes a refused request back as a fresh pointer, and the
+    pointer a later pass publishes need not carry the id the first one did. The
+    request is the work the session asked for, so the refusal is named once for
+    it: the rows state a different run id on the second attempt, and the pane
+    still draws one row.
+    """
+    pane = _Pane()
+    first = _refused_launch(pane, "r-first", at=1000.0)
+    assert len(first) == 1
+    second = _refused_launch(pane, "r-first", at=1100.0, requeue_id="r-second")
+    assert [row for row, _ in pane.flush(now=9000.0)] == []
+    assert second == []
+
+
+def test_a_different_request_is_named_on_its_own_row() -> None:
+    """Another request of the same session is not the refusal already given.
+
+    The once-only memory belongs to the request, not to the pane: a second
+    request for another section carries its own refusal and names it, which is
+    what tells a coordinator which of two queued requests is stuck.
+    """
+    pane = _Pane()
+    assert len(_refused_launch(pane, "r-first", at=1000.0)) == 1
+    other = _refused_launch(pane, "r-third", at=1100.0, section="81")
+    assert len(other) == 1
+    assert REFUSAL in str(other[0].get(ticker.QUEUED_REFUSED_FIELD))
+
+
+def test_both_of_the_classifier_s_refusal_clauses_are_named() -> None:
+    """The session-subject refusal is a refusal of the launch and reads as one.
+
+    The classifier composes two clauses for a refused queued launch: the lane's
+    and a condition of the dispatching session's. Both leave the request queued
+    and both name a remedy, so the pane treats them alike.
+    """
+    from reckon.crew.recovery_classification import QUEUED_REFUSAL_SESSION_PREFIX
+
+    clause = (
+        f"{QUEUED_REFUSAL_SESSION_PREFIX}FollowerAdmissionUnmet: no watcher for "
+        f"this session"
+    )
+    pane = _Pane()
+    drawn = _refused_launch(pane, "r-session", at=1000.0, refusal=clause)
+    assert len(drawn) == 1
+    assert drawn[0].get(ticker.QUEUED_REFUSED_FIELD) is not None
+    assert "FollowerAdmissionUnmet" in str(drawn[0].get(ticker.QUEUED_REFUSED_FIELD))
 
 
 def test_a_discarded_request_still_draws_dropped() -> None:

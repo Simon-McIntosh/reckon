@@ -125,6 +125,18 @@ _UNRECONCILED_RUNS_REFUSAL = "UnreconciledRuns"
 # read from the refusal rather than composed again here.
 _UNRECONCILED_RUN_LINE = re.compile(r"^-\s+(\S+):\s+(.+)$", re.MULTILINE)
 
+# The clauses a queued request's refused launch is reported under. A refusal of
+# the lane is the common one; a refusal of a condition of the dispatching
+# session is the other, and both leave the request queued. The snapshot carries
+# the same words, so the reader that draws the refusal recognises it by the
+# text written here rather than spelling the prefix a second time.
+QUEUED_REFUSAL_PREFIX = "the queued launch was refused: "
+QUEUED_REFUSAL_SESSION_PREFIX = (
+    "the last admission attempt was refused for a condition of this session "
+    "rather than of the lane: "
+)
+QUEUED_REFUSAL_PREFIXES = (QUEUED_REFUSAL_PREFIX, QUEUED_REFUSAL_SESSION_PREFIX)
+
 
 def _wait_refusal_classes() -> frozenset[str]:
     """The refusals that leave a queued request waiting rather than in debt.
@@ -318,10 +330,7 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
         if project:
             with contextlib.suppress(CrewError):
                 command = _watch_attach_line(project, session=session)
-        detail = (
-            f"the last admission attempt was refused for a condition of this "
-            f"session rather than of the lane: {text}"
-        )
+        detail = f"{QUEUED_REFUSAL_SESSION_PREFIX}{text}"
     else:
         command = _remedy_command_stated_by(text)
         if command is None:
@@ -331,7 +340,7 @@ def _queued_failure_remedy(record: Mapping[str, Any]) -> dict[str, str] | None:
             and _plan_review_remedy_is_answered(command)
         ):
             return None
-        detail = f"the queued launch was refused: {text}"
+        detail = f"{QUEUED_REFUSAL_PREFIX}{text}"
     return {"detail": detail, "next_command": command}
 
 

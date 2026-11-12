@@ -577,8 +577,8 @@ LAUNCH_FIELD = "pane_launch"
 # ``next_action``. A refused attempt leaves the request in ``queued``, holding
 # its place, so the refusal is the one fact on that row a coordinator must act
 # on and the only thing that distinguishes it from the ordinary row saying the
-# request waits for a slot.
-QUEUED_REFUSAL_PREFIX = "the queued launch was refused: "
+# request waits for a slot. The clauses themselves live in the classifier that
+# writes them, so the reader recognises a refusal by the same text that made it.
 
 # The row field the row policy sets on the request's row when it names a
 # refusal the pane has not shown before. A refusal is news once: a request
@@ -599,21 +599,46 @@ def queued_refusal(event: Mapping[str, Any]) -> str:
 
     A queued row carries the refusal only while the request's latest attempt
     failed for a reason a coordinator must clear; an ordinary queued row's
-    detail names the slot it waits for. The remedy is the command the
-    classifier wrote into ``next_action`` — the reader that owns it is
-    ``_queued_failure_remedy`` in ``reckon.crew.recovery_classification``, and
-    the row prints what that reader decided rather than deriving a second
-    answer here.
+    detail names the slot it waits for. Both of the classifier's refusal
+    clauses are recognised — the lane's and the dispatching session's — because
+    both leave the request queued and both name a remedy. The remedy is the
+    command the classifier wrote into ``next_action``: the reader that owns it
+    is ``_queued_failure_remedy`` in ``reckon.crew.recovery_classification``,
+    which also writes the prefixes, so the row prints what that reader decided
+    rather than deriving a second answer here.
     """
+    from reckon.crew.recovery_classification import QUEUED_REFUSAL_PREFIXES
+
     if str(event.get("to_state") or "") != "queued":
         return ""
     detail = str(event.get("detail") or "").strip()
-    if not detail.startswith(QUEUED_REFUSAL_PREFIX):
+    if not detail.startswith(QUEUED_REFUSAL_PREFIXES):
         return ""
     remedy = str(event.get("next_action") or "").strip()
     if remedy and remedy not in detail:
         return f"{detail} — {remedy}"
     return detail
+
+
+def request_key(event: Mapping[str, Any]) -> str:
+    """What names one queued request across its re-queues.
+
+    A queue entry is the work a session asked for, not the pointer that carries
+    it: the queue refuses a second request for the same
+    (project, plan, section, node) and answers with the existing one, so those
+    four fields plus the session name a request for its whole life. The run id
+    is the fallback for a row that does not carry them — it is the identity the
+    admission pass preserves across a re-queue, and the only handle a bare row
+    has.
+    """
+    fields = (
+        str(event.get(project_key) or "").strip()
+        for project_key in ("project", "plan", "section", "node", "session")
+    )
+    parts = tuple(fields)
+    if all(parts):
+        return "\x1f".join(parts)
+    return str(event.get("run_id") or "")
 
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
@@ -1715,10 +1740,14 @@ class RowPolicy:
         # the state word, because a run's pane word passes through the review
         # and back; the attempt is what decides whether a delivery is fresh.
         self._launches: dict[str, int] = {}
-        # run_id -> the refusal clauses this pane has already named for the
+        # request key -> the refusal clauses this pane has already named for the
         # request. A request refused again for the same reason carries the
         # remedy the reader already has, so the row is not news and prints
         # nothing; a refusal the request has not shown before prints once.
+        # Keyed on the request rather than the pointer, because the admission
+        # pass writes a refused request back as a fresh pointer and a later
+        # launch may publish it under a new id: the request is the work the
+        # session asked for, which is what :func:`request_key` names.
         self._refusals: dict[str, set[str]] = {}
 
     @property
@@ -2267,7 +2296,7 @@ class RowPolicy:
             # drop: the row that proves the request survived cancels it.
             self._departures.pop(run_id, None)
             self._held.pop(run_id, None)
-            seen = self._refusals.setdefault(run_id, set())
+            seen = self._refusals.setdefault(request_key(event), set())
             if refusal in seen:
                 return []
             seen.add(refusal)
@@ -3531,25 +3560,26 @@ class Ticker:
             for text, style in cells
         )
 
-    def _refusal_line(self, event: Mapping[str, Any]) -> str:
-        """One queued request whose launch was refused, as a clause naming it.
+    def _clause_line(
+        self,
+        event: Mapping[str, Any],
+        *,
+        stage: str,
+        handle: str,
+        hue_key: str,
+        clause: str,
+    ) -> str:
+        """A row that speaks about one handle rather than moving a run.
 
-        The request keeps its place and stays ``queued``, so the row carries no
-        transition: the refusal and the remedy that clears it are the whole of
-        the news, and the pane's memory for the request stays on the word it
-        already held. The clause takes the room the transition columns leave
-        the way the submission row's does, so a narrow pane drops the tail of
-        the command rather than wrapping.
+        A submission, a lift and a refusal are all the same shape: the stage
+        word in the role column, the handle in the job cell, one composed
+        clause where a transition would go, then the spend and counter cells
+        that keep the row lined up with the fleet beneath it. The clause takes
+        the room the transition columns leave and is cut like any other cell, so
+        a narrow pane drops its tail rather than wrapping the row.
         """
-        spend = self._spend_cells(event, "queued")
+        spend = self._spend_cells(event, stage)
         stats = self._stats(event)
-        run_id = str(event.get("run_id") or "")
-        node = str(event.get("node") or run_id)
-        if str(event.get("event") or "").strip():
-            # The request's own word does not move, so the next row's left half
-            # reads the word this row left the pane holding.
-            self._reported[run_id] = "queued"
-        job = _job_name(node, event.get("role"))
         tail = (
             GAP
             + sum(len(text) for text, _ in spend)
@@ -3557,17 +3587,15 @@ class Ticker:
             + sum(len(text) for text, _ in stats)
         )
         room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
+        job = _job_name(handle, event.get("role"))
         cells: list[tuple[str, Any]] = [
             (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
             (" " * GAP, None),
-            (f"{REFUSAL_STAGE:<{ROLE}}", "dim"),
+            (f"{stage:<{ROLE}}", "dim"),
             (" " * GAP, None),
-            (
-                f"{self._job_cell(job, REFUSAL_STAGE, run_id, ''):<{NODE}}",
-                self.hue(node),
-            ),
+            (f"{self._job_cell(job, stage, handle, ''):<{NODE}}", self.hue(hue_key)),
             (" " * GAP, None),
-            (elide(str(event.get(QUEUED_REFUSED_FIELD) or ""), room), None),
+            (elide(clause, room), None),
             (" " * GAP, None),
             *spend,
             (" " * GAP, None),
@@ -3577,6 +3605,27 @@ class Ticker:
         return "".join(
             self._paint(text, "dim" if shadow and style is not None else style)
             for text, style in cells
+        )
+
+    def _refusal_line(self, event: Mapping[str, Any]) -> str:
+        """One queued request whose launch was refused, as a clause naming it.
+
+        The request keeps its place and stays ``queued``, so the row carries no
+        transition: the refusal and the remedy that clears it are the whole of
+        the news, and the pane's memory for the request stays on the word it
+        already held.
+        """
+        run_id = str(event.get("run_id") or "")
+        if str(event.get("event") or "").strip():
+            # The request's own word does not move, so the next row's left half
+            # reads the word this row left the pane holding.
+            self._reported[run_id] = "queued"
+        return self._clause_line(
+            event,
+            stage=REFUSAL_STAGE,
+            handle=run_id,
+            hue_key=str(event.get("node") or run_id),
+            clause=str(event.get(QUEUED_REFUSED_FIELD) or ""),
         )
 
     def _submission_line(self, event: Mapping[str, Any]) -> str:
@@ -3589,38 +3638,13 @@ class Ticker:
         columns leave and is cut like any other cell, so a narrow pane drops the
         tail of the command rather than wrapping the row.
         """
-        spend = self._spend_cells(event, SUBMISSION_STAGE)
-        stats = self._stats(event)
         run_id = str(event.get("run_id") or "")
-        node = str(event.get("node") or run_id)
-        job = _job_name(node, event.get("role"))
-        tail = (
-            GAP
-            + sum(len(text) for text, _ in spend)
-            + GAP
-            + sum(len(text) for text, _ in stats)
-        )
-        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
-        cells: list[tuple[str, Any]] = [
-            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
-            (" " * GAP, None),
-            (f"{SUBMISSION_STAGE:<{ROLE}}", "dim"),
-            (" " * GAP, None),
-            (
-                f"{self._job_cell(job, SUBMISSION_STAGE, run_id, ''):<{NODE}}",
-                self.hue(node),
-            ),
-            (" " * GAP, None),
-            (elide(submission_clause(event), room), None),
-            (" " * GAP, None),
-            *spend,
-            (" " * GAP, None),
-            *stats,
-        ]
-        shadow = is_shadow(event)
-        return "".join(
-            self._paint(text, "dim" if shadow and style is not None else style)
-            for text, style in cells
+        return self._clause_line(
+            event,
+            stage=SUBMISSION_STAGE,
+            handle=run_id,
+            hue_key=str(event.get("node") or run_id),
+            clause=submission_clause(event),
         )
 
     def _lift_line(self, event: Mapping[str, Any]) -> str:
@@ -3633,37 +3657,13 @@ class Ticker:
         The elapsed and counter cells keep their places after it, so the row
         lines up with the fleet rows beneath it.
         """
-        spend = self._spend_cells(event, LIFT_STAGE)
-        stats = self._stats(event)
         group = str(event.get("node") or "")
-        job = _job_name(group, event.get("role"))
-        tail = (
-            GAP
-            + sum(len(text) for text, _ in spend)
-            + GAP
-            + sum(len(text) for text, _ in stats)
-        )
-        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
-        cells: list[tuple[str, Any]] = [
-            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
-            (" " * GAP, None),
-            (f"{LIFT_STAGE:<{ROLE}}", "dim"),
-            (" " * GAP, None),
-            (
-                f"{self._job_cell(job, LIFT_STAGE, group, ''):<{NODE}}",
-                self.hue(group),
-            ),
-            (" " * GAP, None),
-            (elide(lift_clause(event), room), None),
-            (" " * GAP, None),
-            *spend,
-            (" " * GAP, None),
-            *stats,
-        ]
-        shadow = is_shadow(event)
-        return "".join(
-            self._paint(text, "dim" if shadow and style is not None else style)
-            for text, style in cells
+        return self._clause_line(
+            event,
+            stage=LIFT_STAGE,
+            handle=group,
+            hue_key=group,
+            clause=lift_clause(event),
         )
 
     def _spend_cells(
