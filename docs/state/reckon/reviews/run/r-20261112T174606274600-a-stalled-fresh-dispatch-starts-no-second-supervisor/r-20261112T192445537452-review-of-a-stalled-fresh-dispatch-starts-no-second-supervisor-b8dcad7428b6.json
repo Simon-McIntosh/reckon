@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "45c1a94bee1dc81655abe2b35353c0b3101da171",
+  "call_site_count": 6,
+  "call_sites": "reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3433, reckon/crew/dispatch_launch.py:3389",
+  "completed_at": "2026-11-12T19:37:15.188Z",
+  "dispatched_at": "2026-11-12T19:31:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "1634",
+      "severity": "non-blocking",
+      "text": "the _SupersededLaunchError docstring still says it is 'Raised only at the pre-spawn fence', but the reviewed commit adds a second raise site through _refuse_if_superseded at :3671 before the shared spec write, so the docstring now misdescribes the refusal's reach; a reader deciding whether an early unwind is this error is told it cannot happen before the spawn."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3659",
+      "severity": "non-blocking",
+      "text": "_prepare_attempt_records still runs before the pre-spec fence at :3671, and it overwrites the canonical attempt record and unlinks the canonical worker and exit records; in a run whose newer attempt has written those but whose worker is not yet live the live_worker_reading guard does not fire, so an abandoning launch can still retire records the newer attempt owns. This ordering predates the reviewed commits and the test's stall hook deliberately sits after it, so the new spec assertion cannot see it."
+    }
+  ],
+  "head_log_revision": "b8dcad7428b630788477c232b562c202c3b9355f",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3433, reckon/crew/dispatch_launch.py:3389",
+    "diff": "read both gained commits against 64fbead266: 34a0b1025d adds _refuse_if_superseded at dispatch.py:1637, calls it before the spec write at :3671 and replaces the inline try/except at the pre-spawn point with the helper at :3696, and extends the test to publish and assert the newer spec; b8dcad7428 rewrites two paragraph of the evidence fragment only.",
+    "done_when": "the done_when's stalled case now publishes the newer attempt's spec via _write_json and asserts it byte-for-byte unchanged at tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:282; the case's stall hook moved to _prepare_attempt_records so the abandonment is decided at the pre-spec point.",
+    "goal": "the node's goal for this increment is to stop a superseded fresh dispatch from rewriting the run's shared supervisor.json before it abandons; reckon/crew/dispatch.py:3671 places the fence before the spec write at :3672 and :3696 keeps the pre-spawn re-read.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T174606274600-a-stalled-fresh-dispatch-starts-no-second-supervisor/manifest.md; status complete, commits 5f9701424f/64fbead266/34a0b1025d/b8dcad7428, baseline_suite and after_suite both completed true with zero failures, negative_control_log and the rerun logs named in test_logs.",
+    "write_paths": "the node's declared write paths are reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py (docstring only), the new test and the evidence fragment; the gained commits change the first, the third and the fourth and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:282 compares the spec bytes against bytes the test wrote and re-read itself, and removing only the pre-spec fence call reddens it (pre-spec-fence-removed.log); the still-newest case's :299 pid assertion remains self-referential but predates these commits.",
+    "evidence": "the new assertion is shown load-bearing by pre-spec-fence-removed.log (1 failed, EXIT=1, the spec-bytes comparison at the test's :282), and the cohort claim the prior review could not reconcile is now readable from the 24 rerun logs (base 11 passed/1 failed, head 11 passed/1 failed, the same id test_a_promoted_run_replays_its_allowance_from_the_committed_row once in three at each revision).",
+    "fit": "the new helper _refuse_if_superseded follows the private-helper idiom beside the existing _SupersededLaunchError at reckon/crew/dispatch.py:1637, but that error's docstring at dispatch.py:1634 still reads 'Raised only at the pre-spawn fence', which the second raise site now contradicts.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3671 now calls the fence through _refuse_if_superseded before _write_json of the shared supervisor spec, and again at :3696 before _start_supervisor, so the prior review's finding that the spec was overwritten by an abandoned launch is closed while the still-newest path is unchanged.",
+    "reuse": "the helper at reckon/crew/dispatch.py:1637 wraps the existing owner _refuse_superseded_launch (reckon/crew/dispatch_launch.py:2773) rather than adding a second fence, and the search over reckon/crew for a supersession check found no other owner.",
+    "scope_discipline": "git diff --stat 64fbead266..b8dcad7428 changes exactly three files \u2014 reckon/crew/dispatch.py, tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py and the node's evidence fragment \u2014 all inside the node's declared write paths, with no plan, index or figure path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's goal is to stop a superseded fresh dispatch from rewriting the run's shared supervisor.json before it abandons; reckon/crew/dispatch.py:3671 calls _refuse_if_superseded before the spec _write_json at :3672 and :3696 keeps the pre-spawn re-read.\nVERDICT done_when: the done_when's stalled case publishes the newer attempt's spec and asserts it unchanged; tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:282 holds that assertion and pre-spec-fence-removed.log shows it reddens (1 failed EXIT=1) when only the pre-spec call is removed.\nVERDICT write_paths: the fence covers reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py (docstring only), the new test and the evidence fragment; git diff --stat 64fbead266..b8dcad7428 changes three of those four and nothing else.\nVERDICT manifest: read manifest.md; status complete with four commits, both suites completed true and zero failures, and test_logs now naming the 24 per-revision rerun logs that the prior review found prose-only.\nVERDICT diff: read 34a0b1025d and b8dcad7428 against 64fbead266; the first adds the helper at dispatch.py:1637 and both call sites at :3671 and :3696 plus the spec assertion in the test, the second only rewrites the evidence fragment's what-changed and gate paragraphs.\nCALL_SITES: reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3433, reckon/crew/dispatch_launch.py:3389\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3671 puts the fence before the shared spec write, closing the prior review's finding, and :3696 leaves the still-newest path starting its supervisor as before.\nSCORE evidence: 18\nJUSTIFICATION evidence: pre-spec-fence-removed.log records the new assertion failing with EXIT=1, and the 24 rerun logs give base 11 passed/1 failed and head 11 passed/1 failed on the same id, reconciling the cohort claim the prior review could not check.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 64fbead266..b8dcad7428 shows exactly dispatch.py, the test file and the evidence fragment, all inside the node's declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:282 compares the spec against bytes the test wrote and re-read independently and reddens when the pre-spec fence is removed, though the still-newest :299 pid assertion stays self-referential.\nSCORE fit: 16\nJUSTIFICATION fit: _refuse_if_superseded at reckon/crew/dispatch.py:1637 follows the private-helper idiom, but the _SupersededLaunchError docstring at :1634 still claims it is raised only at the pre-spawn fence.\nSCORE reuse: 20\nJUSTIFICATION reuse: the helper wraps the existing owner at reckon/crew/dispatch_launch.py:2773 and adds no second fence; no other supersession check exists in reckon/crew.\nFINDING reckon/crew/dispatch.py:1634 non-blocking: the _SupersededLaunchError docstring says it is raised only at the pre-spawn fence, which the second call site at :3671 contradicts.\nFINDING reckon/crew/dispatch.py:3659 non-blocking: _prepare_attempt_records still runs before the pre-spec fence and retires canonical attempt, worker and exit records the newer attempt may own; the ordering predates the reviewed commits.",
+  "review_run_id": "r-20261112T192445537452-review-of-a-stalled-fresh-dispatch-starts-no-second-supervisor-b8dcad7428b6",
+  "reviewed_base_sha": "64fbead26623e9395b7f1c9e030810403f04c27d",
+  "reviewed_head_sha": "b8dcad7428b630788477c232b562c202c3b9355f",
+  "reviewed_run_id": "r-20261112T174606274600-a-stalled-fresh-dispatch-starts-no-second-supervisor",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T192445537452-review-of-a-stalled-fresh-dispatch-starts-no-second-supervisor-b8dcad7428b6",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T19:45:59.050755+00:00",
+  "total": 111
+}
