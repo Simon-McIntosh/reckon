@@ -1052,6 +1052,54 @@ def _file_stamp(path: str) -> str:
     return f"{stat.st_mtime_ns}:{stat.st_size}"
 
 
+def _plan_document_path(pointer: Mapping[str, Any]) -> str:
+    """The plan file a queued request's node names, inside its repository."""
+    node = dict(pointer.get("node") or {})
+    repo = str(pointer.get("repo") or "")
+    plan = str(node.get("plan") or "")
+    return str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
+
+
+def _plan_committed_stamp(pointer: Mapping[str, Any]) -> str:
+    """The plan's committed content, as HEAD names the blob that holds it.
+
+    Committing an edit leaves the plan file's working-tree stamp exactly where
+    it was, so the dependency guard cannot see the commit that cures a request
+    refused because its plan differed from base. The blob at HEAD *is* the
+    committed content, so it moves when the commit moves rather than when the
+    file does. A plan no commit holds yet reads ``absent``, which the first
+    commit that lands it also changes.
+    """
+    repo = str(pointer.get("repo") or "")
+    path = _plan_document_path(pointer)
+    if not repo or not path:
+        return "none"
+    try:
+        relative = Path(path).relative_to(Path(repo)).as_posix()
+    except ValueError:
+        return "outside"
+    result = subprocess.run(
+        ["git", "-C", repo, "rev-parse", f"HEAD:{relative}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    blob = result.stdout.strip()
+    return blob if result.returncode == 0 and blob else "absent"
+
+
+def _is_plan_visibility_refusal(failure: Any) -> bool:
+    """Whether a recorded failure is the plan's own visibility refusing.
+
+    The launch raises ``PlanVisibilityError`` while the plan's working tree
+    differs from base, or while no commit holds the plan or the named section
+    at all. Each of those is cured by committing the plan, so the plan's
+    committed content is what releases the back-off; every other refusal keeps
+    its back-off untouched.
+    """
+    return _failure_text(failure).startswith("PlanVisibilityError")
+
+
 def _dependency_guard(
     pointer: Mapping[str, Any],
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
@@ -1075,11 +1123,8 @@ def _dependency_guard(
     node = dict(pointer.get("node") or {})
     repo = str(pointer.get("repo") or "")
     project = str(pointer.get("project") or "")
-    plan = str(node.get("plan") or "")
     brief = str(node.get("brief_path") or "")
-    plan_path = (
-        str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
-    )
+    plan_path = _plan_document_path(pointer)
     host_config = ""
     project_config = ""
     try:
@@ -1833,6 +1878,12 @@ def _retry_backoff_hold(
     guard = pointer.get("failure_guard")
     if guard is not None and guard != _dependency_guard(pointer, config_for):
         return None
+    if _is_plan_visibility_refusal(failure):
+        # A commit moves the plan's blob at HEAD and nothing else, so this is
+        # the only comparison that sees the commit which cured the refusal.
+        stamped = pointer.get("failure_plan_commit")
+        if stamped is not None and stamped != _plan_committed_stamp(pointer):
+            return None
     retry_at = pointer.get("retry_at")
     if not retry_at:
         return None
@@ -1865,6 +1916,12 @@ def _stamp_failure(
     record["retry_at"] = (moment + _retry_delay(attempts)).isoformat()
     if guard is not None:
         record["failure_guard"] = dict(guard)
+    if _is_plan_visibility_refusal(failure):
+        record["failure_plan_commit"] = _plan_committed_stamp(record)
+    else:
+        # A stamp kept from an earlier plan refusal would release this one on a
+        # commit that never touched it.
+        record.pop("failure_plan_commit", None)
     return record
 
 
@@ -6197,6 +6254,7 @@ QUEUED_LIFE_KEYS = (
     "failure_at",
     "failure_attempts",
     "failure_reported_at",
+    "failure_plan_commit",
     "failure_guard",
     "retry_at",
 )
