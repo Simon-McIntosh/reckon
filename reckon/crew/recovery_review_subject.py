@@ -139,7 +139,15 @@ def select_review_for_head(
     """
     if not head:
         return None, ""
-    stored = review_module.read_review(project, run_id, reviewed_head_sha=head)
+    from reckon.crew.recovery_memo import _read_review_once
+
+    record = {"project": project, "run_id": run_id}
+    stored = _read_review_once(
+        record,
+        ("head", head),
+        lambda: review_module.read_review(project, run_id, reviewed_head_sha=head),
+        tree=tree,
+    )
     if (
         stored is not None
         and stored.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
@@ -147,7 +155,12 @@ def select_review_for_head(
         stored = None
     if stored is not None:
         return ledger.normalize_identity(stored), ""
-    newest = review_module.read_review(project, run_id)
+    newest = _read_review_once(
+        record,
+        ("newest",),
+        lambda: review_module.read_review(project, run_id),
+        tree=tree,
+    )
     if (
         newest is not None
         and newest.get("rubric") == review_module.FIGURE_REVIEW_RUBRIC
@@ -1443,7 +1456,13 @@ def newest_review_for_headless_run(
     """
     if reclaimed:
         return None
-    review = review_module.read_review(project, run_id)
+    from reckon.crew.recovery_memo import _read_review_once
+
+    review = _read_review_once(
+        {"project": project, "run_id": run_id},
+        ("newest",),
+        lambda: review_module.read_review(project, run_id),
+    )
     return ledger.normalize_identity(review) if review is not None else None
 
 
