@@ -933,7 +933,13 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     review_run_id = _in_flight_review(pointer, launched)
     if not review_run_id:
         return False
-    review_pointer = runs.read_pointer(review_run_id)
+    try:
+        review_pointer = runs.read_pointer(review_run_id)
+    except CrewError:
+        # The view listed this review from its own snapshot, and the run left
+        # before this read: a review promoted or discarded during a slow tick
+        # is not working on anything and does not suppress the duty.
+        return False
     if not review_pointer:
         return False
     if str(review_pointer.get("phase") or "") == queue_admission.QUEUED_PHASE:
