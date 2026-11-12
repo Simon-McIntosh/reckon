@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="55">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -230,6 +230,9 @@
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261111T195213891626-an-undeclared-project-shares-its-source-files" data-who="reckon-build" data-when="2026-11-11T21:39:48Z">
     <div class="r-comment-body"><p>An undeclared project now shares its source files: `_shared_write_paths` gives a project with no declaration, or one naming no `shared_roots` key, a default that admits concurrent file claims, and the exclusive classes a textual merge cannot reconcile (plan, cumulative evidence record, generated state, figure topic directory, pyproject.toml, uv.lock, a generated receipt, and any binary file) are listed once in `DEFAULT_EXCLUSIVE_PATHS` and read by both that default and a declaration's exclusivity check; a declaration that cannot be read still shares nothing and names itself in the refusal. `tests/test_an_undeclared_project_shares_its_source_files.py`: 10 passed at head, and its negative control (restoring the share-nothing undeclared default) fails `test_two_source_file_claims_both_launch`. The fourteen claim-mechanics files now declare `shared_roots: []` in their fixtures, so they measure claims as before: the importer arm went from 15 failed / 148 passed / 2 errors at base 87f837f to 3 failed / 172 passed at head 6af5b68, with 0 added failure ids and 12 healed; the three survivors are the D22 harness handshake, which fails identically at base.</p></div>
+</div>
+<div class="r-comment" data-section="s6" data-id="c-run-r-20261111T223359893523-review-of-an-undeclared-project-shares-its-source-files-6af5b68bfd37" data-who="reckon-build" data-when="2026-11-11T22:53:35.563Z">
+    <div class="r-comment-body"><p>Independent review of r-20261111T195213891626 records head 6af5b68b from base 87f837f1: goal_fidelity 19, evidence 18, scope_discipline 17, durability 17, fit 16, reuse 15; added_failure_count 0 with 12 healed, verified by set difference over base2-ids.txt and head2-ids.txt rather than from the manifest summary; four non-blocking findings — a duplicated harness_handshake fixture, a manifest assertion_premise_edits field that reads none against an inverted case, BINARY_RECEIPT_CLASS rendered into the pattern slot of refusals, and no behavioural case for DEFAULT_EXCLUSIVE_PATHS through a declared project.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261111T182937648527-review-of-the-worker-digest-carries-the-concurrent-edit-rule-ce9088450ebb" data-who="reckon-build" data-when="2026-11-11T18:44:38.675Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T163201871164 stored a parsed record over base 16bf78f0ef6d74fdf7116a441da200a5c13ebf8d and head ce9088450ebb49f06540bf67248969428cc12137 scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 18, fit 20, reuse 20, with zero added failures and two non-blocking findings (the evidence fragment cites 15c5e4dd67 for a head arm stored at ce9088450e; the manifest does not record the done-when's ruff clause, which this review verified clean).</p></div>
