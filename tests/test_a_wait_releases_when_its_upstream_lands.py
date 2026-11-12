@@ -15,7 +15,6 @@ from __future__ import annotations
 import json
 import os
 import re
-import shutil
 import subprocess
 import tempfile
 from pathlib import Path
@@ -116,19 +115,20 @@ def _outside_any_work_tree(path: Path) -> bool:
 
 @pytest.fixture()
 def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
-    """A checkout, a config home and a ledger, all this fixture's own."""
-    # The ledger resolves the work tree above its own path and reads a project's
-    # runs through that tree's checkout, so a fixture laid out beneath one has
-    # its reads answered from the repository rather than from the fixture while
-    # its writes still land here. A test run whose temp directory sits inside the
-    # tree under test -- a basetemp beneath the checkout, which a suite run from
-    # an archived tree does -- is exactly that case, so the fixture moves to a
-    # directory clear of every work tree when it has to.
-    root = (
-        tmp_path
-        if _outside_any_work_tree(tmp_path)
-        else Path(tempfile.mkdtemp(prefix="reckon-section-wait-"))
-    )
+    """A checkout, a config home and a ledger, all this fixture's own.
+
+    The ledger resolves the work tree above its own path and reads a project's
+    runs through that tree's checkout, so a fixture laid out beneath another
+    tree has its reads answered from that tree while its writes still land
+    here: a suite whose temp path sits inside the tree under test -- a basetemp
+    beneath the checkout, which a run from a freshly extracted tree produces --
+    is exactly that case. Two things keep the read local wherever the temp path
+    sits. The state root is the fixture checkout's own ``docs/state``, which is
+    the path the resolution re-roots to once it finds the checkout, and the
+    checkout is made a repository itself, so the nearest marker the walk finds
+    is the fixture's rather than an enclosing checkout's.
+    """
+    root = tmp_path
     home = tmp_path / "home"
     home.mkdir()
     # Nothing the ledger, the queue or the mounts registry resolves may reach the
@@ -151,9 +151,19 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     config_home = root / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
-    monkeypatch.setenv("RECKON_STATE_ROOT", str(config_home / "state"))
+    # Git discovery is bounded at the fixture's own temp path, so no git
+    # subprocess this fixture or the code under test starts can walk up into an
+    # enclosing checkout when the temp path sits inside one.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(root))
 
     repository = root / "checkout"
+    (repository / "docs").mkdir(parents=True)
+    # The ledger's state root is the checkout's own state directory: the walk
+    # that locates the work tree above the ledger re-roots to exactly this path,
+    # so the file written and the file read are one file wherever the fixture
+    # sits. A state root outside the checkout would be written here and read
+    # through the enclosing tree.
+    monkeypatch.setenv("RECKON_STATE_ROOT", str(repository / "docs" / "state"))
     state = repository / "docs" / "state" / PROJECT
     state.mkdir(parents=True)
     (state / "index.json").write_text(
@@ -186,13 +196,17 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         f"the guard resolves {resolved}, not the fixture checkout {repository}"
     )
     assert (
-        Path(ledger.ledger_path(PROJECT))
-        .resolve()
-        .is_relative_to(config_home.resolve())
+        Path(ledger.ledger_path(PROJECT)).resolve().is_relative_to(repository.resolve())
     ), (
         f"the ledger the fixture writes and the guard reads is "
-        f"{ledger.ledger_path(PROJECT)}, outside the fixture's config home; a "
+        f"{ledger.ledger_path(PROJECT)}, outside the fixture's checkout; a "
         "cached index or a stale home would answer from another tree"
+    )
+    assert Path(ledger._shared_index_root(PROJECT, None)).resolve() == (
+        repository.resolve()
+    ), (
+        "the ledger resolves its work tree somewhere other than the fixture's "
+        "checkout, so its reads are answered from another tree"
     )
     # A ledger write and the read that follows it must land on the same file.
     # The assertion above names the write path only; this round trip proves the
@@ -205,9 +219,7 @@ def queue_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
         "the ledger read back is not the ledger just written; a read that "
         "resolves through another work tree answers empty"
     )
-    yield repository
-    if root != tmp_path:
-        shutil.rmtree(root, ignore_errors=True)
+    return repository
 
 
 def _config_for():
@@ -456,6 +468,40 @@ def test_a_run_with_no_registered_checkout_holds_the_wait(
     assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE, (
         "an unreadable landing holds the waiter rather than releasing it"
     )
+
+
+def test_the_wait_still_holds_with_the_temp_path_inside_a_checkout(
+    queue_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A temp path inside a work tree does not send the ledger's reads elsewhere.
+
+    A run from a freshly extracted tree puts the suite's basetemp inside the
+    tree under test, and the ledger resolves the work tree above its own path.
+    The fixture is pointed at that layout here and must still read the rows it
+    wrote, which is what the two cases above failed on when it was not.
+    """
+    _queue_waiter(queue_repo)
+    _declare(queue_repo, UPSTREAM)
+    delivered = _deliver(queue_repo)
+    _promote(delivered)
+
+    inside = queue_repo / ".tmp"
+    inside.mkdir()
+    monkeypatch.setenv("TMPDIR", str(inside))
+    scratch = Path(tempfile.mkdtemp(prefix="pytest-inside-", dir=inside))
+    assert not _outside_any_work_tree(scratch), (
+        "the case must exercise a temp path inside a work tree"
+    )
+    assert Path(ledger._shared_index_root(PROJECT, None)).resolve() == (
+        queue_repo.resolve()
+    ), "the ledger reads through the enclosing checkout rather than the fixture"
+
+    rows, _version = ledger.load(PROJECT)
+    assert [row["run_id"] for row in rows["runs"]] == [UPSTREAM_RUN], (
+        "the promotion is readable with the suite's temp path inside a work tree"
+    )
+    _release()
+    assert _phase_of(WAITER) == queue_admission.AWAITING_UPSTREAM_PHASE
 
 
 def test_a_section_declared_done_with_no_run_releases_at_once(queue_repo: Path) -> None:
