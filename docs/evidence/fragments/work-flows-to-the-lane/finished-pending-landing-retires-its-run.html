@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="finished-pending-landing-retires-its-run">
+  <meta name="plan-title" content="A finished pending landing retires its run">
+  <meta name="plan-summary" content="Three regression cases verify the existing retirement path; disabling retirement leaves the live pointer behind.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s29">
+  <meta name="plan-commits" content="d51113cb69d9223d4abd3b5a15def2d668a814ac">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A finished pending landing retires its run | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="finished-pending-landing-retires-its-run-record" data-node="finished-pending-landing-retires-its-run" data-reckon="landed">
+  <h2 id="finished-pending-landing-retires-its-run-outcome">A finished pending landing retires its run</h2>
+  <p>The recorded defect does not reproduce at base <code>bcca31c1c13df0d941db58e9d02ba96be5f321e0</code>:
+  the new regression file, carried into that revision, reports <code>3 passed in 8.92s</code> and <code>EXIT=0</code>.
+  The existing <code>pending_landing.finish_pending_landings</code> removes the marked attempt's pointer
+  after the repaired head reaches the remote and then releases its held worktree. Product code therefore
+  needs no replacement. Commit <code>d51113cb69d9223d4abd3b5a15def2d668a814ac</code> adds the missing dedicated coverage.</p>
+  <p>The tests reuse the existing conflicting-delivery fixture and repair-gate capture. Each creates a
+  temporary repository, bare remote and crew home. The first two promote conflicting deliveries,
+  resolve a real worker merge, and supply a fresh gate for the repaired head. Successful completion proves the remote
+  carries the repaired commit and both function changes, the pointer and pending record are absent,
+  and the worktree path and Git registration are gone. A rejecting remote hook returns
+  <code>push refused by fixture</code>; the pass reports <code>failed</code> while the remote remains unchanged
+  and the pointer, worktree and pending record remain. A third case interrupts the landing after its actual
+  promotion removed the pointer, then proves the next pass finishes without error.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, serial arms</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Armed baseline at the assigned base; new test absent</td><td>51 passed in 7.82s; EXIT=0</td></tr>
+      <tr><td>New regression file against unchanged base code</td><td>3 passed in 8.92s; EXIT=0</td></tr>
+      <tr><td>Six importer files at base</td><td>36 passed in 23.74s; EXIT=0</td></tr>
+      <tr><td>Seven importer files at delivered test commit</td><td>39 passed in 27.31s; EXIT=0; zero added failure IDs</td></tr>
+      <tr><td>Declared negative control: skip marked-pointer retirement</td><td>1 failed, 2 passed in 8.98s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control replaces the two calls to <code>_release_marked_pointer</code> with a false
+  condition in an extracted copy. <code>test_a_finished_pending_landing_retires_its_run</code> fails at
+  <code>assert not runs.pointer_path(run["run_id"]).exists()</code>, after proving the repaired head
+  reached the remote. Thus the test detects the declared defect rather than a failed merge or push.</p>
+  <p>Durable logs live under
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/</code>:
+  <code>baseline.log</code>, <code>reproduction-verified.log</code>, <code>importer-baseline.log</code>,
+  <code>importer-head.log</code>, and <code>negative.log</code>. Each names its revision, resolved command,
+  extracted module path and working directory, and ends with its exit receipt. The manifest carries the
+  final armed-head receipt and lint result. The initial probe had one assertion about a stub receipt's
+  shape corrected before delivery; its failure and attribution remain in the manifest.</p>
+</article>
+</body>
+</html>
