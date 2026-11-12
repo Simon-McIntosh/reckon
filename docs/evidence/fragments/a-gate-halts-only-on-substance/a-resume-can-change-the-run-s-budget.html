@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-gate-halts-only-on-substance">
+  <meta name="plan-title" content="A resume can change the run's budget — verified at the current base">
+  <meta name="plan-summary" content="crew resume --time-budget already records the new allowance on the run and fences the resumed attempt from it; at this base the three cases and the declared control are re-measured, with no product or test change needed.">
+  <meta name="plan-evidence-for" content="reckon:a-gate-halts-only-on-substance">
+  <meta name="plan-verifies" content="reckon:a-gate-halts-only-on-substance#s4">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,resume,budget,fence">
+  <title>A resume can change the run's budget — verified | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="a-resume-can-change-the-run-s-budget" data-reckon="landed" data-when="2026-11-12">
+  <h2 id="a-resume-can-change-the-run-s-budget-title">A resume can change the run's budget</h2>
+  <p id="a-resume-can-change-the-run-s-budget-what">The door is present at base <code>c4eff770</code>: <code>crew_resume</code> in <code>reckon/crew_run_commands.py</code> takes <code>--time-budget</code> and <code>--over-fence REASON</code>, <code>_refuse_a_budget_above_the_resume_fence</code> applies the same resolved <code>fences.time_budget</code> ceiling a dispatch is held to, and <code>_record_resumed_time_budget</code> writes the new allowance to the run's node with a <code>budget_changes</code> entry naming the figure it replaced, the instant and the stated reason. The command then re-reads the pointer, because the record it held predates the write, and the session module that composes the resumed fence is <code>reckon/crew/dispatch_sessions.py</code>'s <code>_restate_time_fence</code>, which reads <code>node.time_budget</code> off the record it is handed and restates <code>deadline</code> and the grace-set hard stop from the resumed attempt's own launch instant. Nothing on the attempt's record carries a competing deadline, so the prompt is the fence the worker reads and is judged by.</p>
+  <p id="a-resume-can-change-the-run-s-budget-measure">Three cases pass at this base against a stubbed run in a temporary crew home with the launch instant pinned to <code>2031-01-01T01:00:00+00:00</code>: a run stored at <code>25m</code> resumed with <code>--time-budget 45m</code> launches one prompt carrying the resumed fence with <code>deadline 2031-01-01T01:45:00Z</code> and none carrying <code>2031-01-01T01:25:00Z</code>, and the run's stored budget reads <code>45m</code> afterwards; a <code>90m</code> resume above the <code>60m</code> fence with <code>--over-fence</code> is accepted, its prompt carries <code>deadline 2031-01-01T02:30:00Z</code>, and the kept change names the reason; the same <code>90m</code> without the option exits nonzero naming <code>--over-fence</code>, launches no worker, and leaves the stored <code>25m</code> in place. The node gate over <code>tests/test_a_resume_can_change_its_budget.py</code> and <code>tests/test_staged_write_inventory.py</code> reads 54 passed, <code>EXIT=0</code>.</p>
+  <p id="a-resume-can-change-the-run-s-budget-control">The declared mutation sets the recording helper aside so the option is ignored: the resumed prompt then carries <code>deadline 2031-01-01T01:25:00Z</code>, the stored budget's, and two cases fail while the refusal case still passes — 2 failed, 1 passed, <code>EXIT=1</code>. No product source or test file is changed by this node; it re-measures the existing door at the current base and records the figures its own logs carry.</p>
+</article>
+</body>
+</html>
