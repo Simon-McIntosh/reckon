@@ -3,8 +3,9 @@
   <p>The base revision <code>af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670</code>
     reproduced the size problem: <code>wc -l reckon/crew/dispatch.py</code>
     returned <strong>4405</strong>. The product split is committed at
-    <code>2bad2244f503ae6f7cb22ea0e299f93b3ce088b9</code>. The facade now has
-    <strong>662 lines</strong>; every new module is below 2000 lines.</p>
+    <code>2bad2244f503ae6f7cb22ea0e299f93b3ce088b9</code>. The initial facade had
+    <strong>662 lines</strong>; the shared-owner repair reduces it to
+    <strong>657 lines</strong>; every new module is below 2000 lines.</p>
   <p>The frozen surface inventory covers all <strong>603 original bindings</strong>.
     Each resolves to its concern's identical object; facade patches and their
     restoration reach each concern that reads the binding. The implementation
@@ -102,6 +103,27 @@
     <code>capture-detail-base-10.json</code> and
     <code>follower-base-repro-base-1.json</code>. The final expanded exact-command
     arm receipts and full revisions are recorded in the run manifest.</p>
+  <h4 id="split-dispatch-shared-forwarding">One runtime assignment owner</h4>
+  <p>The reuse review identified a duplicate assignment-forwarding implementation
+    in the dispatch facade. Before repair, the owner-observation regression
+    check failed with <code>dispatch assignment bypassed the crew facade's
+    forwarding owner</code>. Its independent full armed run recorded
+    <strong>1 failed, 135 passed</strong>; the repair-base arm recorded
+    <strong>135 passed</strong>.</p>
+  <p>The existing <code>reckon/crew.py::_CrewFacade</code> is now defined before
+    concern imports so dispatch can inherit it. Its setter reads the target
+    facade's <code>_CONCERN_MODULES</code> tuple. Dispatch therefore inherits
+    the existing assignment owner and selects its own readers without a second
+    setter implementation. Dispatch retains its existing deletion behavior.
+    The focused surface gate passes all <strong>6 tests</strong>, including
+    actual owner delegation, moved-function behavior and restoration.</p>
+  <p>The final exact armed head receipt, the base/head population of tests that
+    patch through the crew facade, and the control that reverses the answering
+    product commit are recorded in the run manifest. The population inventory
+    retains its patch sites and positive controls. Lint comparison on the owner
+    records <strong>30 baseline and 30 head findings</strong>, with none added;
+    dispatch and the surface test are clean, and all three files pass format
+    checking.</p>
   <p>Durable receipts are under
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch</code>:
     <code>baseline-armed.log</code>, <code>head-armed.log</code>,

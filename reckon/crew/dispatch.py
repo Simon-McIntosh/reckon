@@ -9,7 +9,8 @@ from __future__ import annotations
 
 import sys as _sys
 from importlib import import_module as _import_module
-from types import ModuleType as _ModuleType
+
+from reckon.crew import _CrewFacade
 
 _MODULE_EXPORTS = {
     "_imports": [
@@ -640,14 +641,8 @@ for _module in _CONCERN_MODULES:
         setattr(_module, _name, globals()[_name])
 
 
-class _DispatchFacade(_ModuleType):
-    """Keep old patch paths visible to functions in their concern modules."""
-
-    def __setattr__(self, name, value):
-        super().__setattr__(name, value)
-        for module in _CONCERN_MODULES:
-            if hasattr(module, name):
-                setattr(module, name, value)
+class _DispatchFacade(_CrewFacade):
+    """Use the shared facade assignment owner for dispatch concerns."""
 
     def __delattr__(self, name):
         super().__delattr__(name)

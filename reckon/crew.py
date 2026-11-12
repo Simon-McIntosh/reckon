@@ -32,6 +32,17 @@ from reckon.calibration import agent_configuration_key
 # the implementation lives in the adjacent concern modules.
 __path__ = [str(Path(__file__).with_suffix(""))]
 
+
+class _CrewFacade(_ModuleType):
+    """Keep facade-level runtime overrides visible to moved function globals."""
+
+    def __setattr__(self, name: str, value: Any) -> None:
+        super().__setattr__(name, value)
+        for module in self._CONCERN_MODULES:
+            if hasattr(module, name):
+                setattr(module, name, value)
+
+
 _MODULE_EXPORTS = {
     "node": (
         "NODE_PROPERTIES",
@@ -210,16 +221,6 @@ for _module, _names in zip(_CONCERN_MODULES, _MODULE_EXPORTS.values(), strict=Tr
         if getattr(_value, "__module__", None) == _module.__name__:
             _value.__module__ = __name__
         globals()[_name] = _value
-
-
-class _CrewFacade(_ModuleType):
-    """Keep facade-level runtime overrides visible to moved function globals."""
-
-    def __setattr__(self, name: str, value: Any) -> None:
-        super().__setattr__(name, value)
-        for module in _CONCERN_MODULES:
-            if hasattr(module, name):
-                setattr(module, name, value)
 
 
 sys.modules[__name__].__class__ = _CrewFacade
