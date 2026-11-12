@@ -3856,6 +3856,41 @@ def dispatch_waits(
     return refs, wait_projects, unmet
 
 
+def dispatch_wait_blockers(
+    node: TaskNode,
+    *,
+    repo_root: str | Path,
+    project: str,
+    refs: Sequence[str],
+    readiness_cache: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """The roadmap blockers behind a dispatch's own readiness wait.
+
+    Consume the verdict that supplied the wait, including its decision keys;
+    neither the dispatcher nor admission reinterprets a decision's scope.
+    """
+    if not any(ref.startswith("readiness:") for ref in refs):
+        return []
+    rows, _ = _readiness_rows(
+        project,
+        Path(repo_root) / "docs",
+        readiness_cache,
+        node.plan,
+        [ref for ref in refs if not ref.startswith("readiness:")],
+    )
+    verdict = next(
+        (
+            verdict
+            for section, verdict in (rows.get(node.plan) or {})
+            .get("sections", {})
+            .items()
+            if normalize_section(section) == normalize_section(node.section)
+        ),
+        {},
+    )
+    return list(verdict.get("blockers") or ())
+
+
 def section_hold(
     refs: Iterable[str],
     *,

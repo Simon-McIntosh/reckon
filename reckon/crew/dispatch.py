@@ -2326,15 +2326,23 @@ def dispatch(
     validated_refs: list[str] = []
     wait_projects: dict[str, str] = {}
     waiting: list[str] = []
+    wait_readiness_cache = readiness_cache if readiness_cache is not None else {}
     if stored_request and not member_refuses:
         validated_refs, wait_projects, waiting = queue_admission.dispatch_waits(
             node,
             repo_root=repo_root,
             project=project,
             run_id=str((existing or {}).get("run_id") or run_id),
-            readiness_cache=readiness_cache,
+            readiness_cache=wait_readiness_cache,
         )
     if waiting:
+        blockers = queue_admission.dispatch_wait_blockers(
+            node,
+            repo_root=repo_root,
+            project=project,
+            refs=validated_refs,
+            readiness_cache=wait_readiness_cache,
+        )
         queued, position, phase = _queue_validated_waits(
             _queued_request_record(
                 run_id=run_id,
@@ -2358,7 +2366,7 @@ def dispatch(
             waiting,
             project=project,
             docs_dir=Path(str(repo_root)) / "docs",
-            cache=readiness_cache,
+            cache=wait_readiness_cache,
         )
         queue_admission.record_section_hold(
             str(queued["run_id"]),
@@ -2374,6 +2382,7 @@ def dispatch(
             # the pointer does not carry.
             "phase": phase,
             "waits": list(validated_refs),
+            "blockers": blockers,
             "hold": hold["names"],
             "reason": hold["reason"],
         }
