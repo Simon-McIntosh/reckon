@@ -67,8 +67,7 @@ def _commit_count(repository: Path) -> int:
 
 @pytest.fixture()
 def committed_record(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dict[str, Any]:
-    """A project checkout whose committed reviews tree holds one committed record.
-    """
+    """A project checkout whose committed reviews tree holds one committed record."""
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -120,7 +119,9 @@ def _fold_dimension(node: str = NODE) -> Path:
 
 
 def _stored_answers() -> dict[str, Any]:
-    _path, record = review_module.stored_record(PROJECT, REVIEWED_RUN, reviewed_head_sha=HEAD)
+    _path, record = review_module.stored_record(
+        PROJECT, REVIEWED_RUN, reviewed_head_sha=HEAD
+    )
     assert record is not None
     return record
 
