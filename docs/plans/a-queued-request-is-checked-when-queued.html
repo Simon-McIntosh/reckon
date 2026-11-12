@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="62">
+<meta name="plan-version" content="63">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -158,7 +158,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261112T060635135493-a-batch-made-request-can-be-edited-in-the-queue at head f877312a85 against base c4eff770; record parsed with all six dimensions scored (goal_fidelity 15, evidence 16, scope_discipline 19, durability 17, fit 17, reuse 20) and added_failure_count 0 drawn from both gate arms.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261112T060635135493-a-batch-made-request-can-be-edited-in-the-queue" data-who="reckon-build" data-when="2026-11-12T06:29:36.913Z">
-    <div class="r-comment-body"><p>§6 verified already landed at f83af26ed2 — _queue_batch stores runs_dir()/&lt;run_id&gt;/manifest.md and crew queue edit --time-budget 90m is stored; the test&#x27;s stored-path assertion was re-spelled from runs_dir()/run_id so a run_dir helper redefinition cannot drift the contract; gate 54 passed both arms, negative control 3 failed EXIT=1.</p></div>
+    <div class="r-comment-body"><p>§6 verified already landed at f83af26ed2 — _queue_batch stores runs_dir()/&lt;run_id&gt;/manifest.md and crew queue edit --time-budget 90m is stored; the test's stored-path assertion was re-spelled from runs_dir()/run_id so a run_dir helper redefinition cannot drift the contract; gate 54 passed both arms, negative control 3 failed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261108T004233619983-review-of-batch-context-fit-at-queue-time-9b1492157b5d" data-who="reckon-build" data-when="2026-11-08T01:04:38.451Z">
     <div class="r-comment-body"><p>§7 review of r-20261107T175209652907 at head 9b1492157b - parsed record, six dimensions scored (goal_fidelity 17, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 12; total 96), added failures 0, three non-blocking findings, stored under the reviewed run's review-records/ and not in any worktree</p></div>
@@ -174,6 +174,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261112T090140561788-review-of-a-request-admission-refused-names-the-refusal-in-c5ccda260542" data-who="reckon-build" data-when="2026-11-12T09:14:09.975Z">
     <div class="r-comment-body"><p>Independent review of c5ccda260542 against base f6144b120b: status parsed, six dimensions scored (goal_fidelity 15, evidence 16, scope_discipline 20, durability 16, fit 19, reuse 20, total 106), added_failure_count 0, three non-blocking findings (fragment gate row quotes 5 passed where head-arm.log reads 56 passed; fragment misspells fully-specified; two pass-through assertions in the editable arm), no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261112T060708343110-a-request-admission-refused-names-the-refusal-in" data-who="reckon-build" data-when="2026-11-12T06:52:35.477Z">
+    <div class="r-comment-body"><p>§8 was already implemented at base (77129c667f); this node added the two unevidenced arms — an editable contract refusal names the field behind each property, and publishes `reckon crew queue edit --run &lt;id&gt;` while a capacity refusal keeps the classifier&#x27;s own `queued-awaiting-session` reading and publishes no contract repair — gate 56 passed EXIT=0, negative control 2 failed / 3 passed EXIT=1.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261109T000223570702-review-of-a-batch-derives-an-absolute-write-path-12b5f3d1ce37" data-who="reckon-build" data-when="2026-11-09T00:10:04.413Z">
     <div class="r-comment-body"><p>review of run r-20261108T232922624067-a-batch-derives-an-absolute-write-path at head 12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1 against base cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e scores goal_fidelity 16, evidence 17, scope_discipline 19, durability 15, fit 16, reuse 20 (total 103), adds no failing test, and records four findings — one blocking, that a './'-prefixed relative path now derives absolute at reckon/crew/dispatch_batch.py:309 — with both records passing crew check --review (EXIT=0).</p></div>
