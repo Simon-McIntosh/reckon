@@ -1,0 +1,71 @@
+<section id="a-remote-read-is-bounded">
+  <h3>Remote reads finish within a bound and retry a blocked SSH route</h3>
+  <p><code>reckon/crew/merge.py</code> now gives each <code>ls-remote</code> and
+  <code>fetch</code> a 30 s wall-clock limit. A 10 s SSH connect timeout is
+  appended to an explicit <code>GIT_SSH_COMMAND</code>, or added to plain SSH
+  only when no SSH transport is configured. A configured
+  <code>core.sshCommand</code> or <code>GIT_SSH</code> keeps control of the
+  transport, relying on the wall-clock limit.
+  A subprocess timeout returns a failed result that the remote ancestry reader
+  reports as <code>on_branch: null</code>, <code>cause: unreachable</code>.
+  Port-22 connection refusals, timeouts, unreachable networks and missing routes
+  select the existing port-443 retry for both reads and fetches.</p>
+  <p>Initial delivery measurements:</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Committed implementation gate</td><td>63 passed in 16.02s</td></tr>
+      <tr><td>Base with final regression tests</td><td>8 failed, 55 passed in 21.57s</td></tr>
+      <tr><td>Importer base arm, 14 files</td><td>6 failed, 101 passed in 52.33s</td></tr>
+      <tr><td>Importer head arm, same files</td><td>6 failed, 101 passed in 45.75s; zero added failures</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control at <code>4478f2ca58d0bf07456cab0fa35033b7a4c30671</code>
+  logs <q>ls-remote blocked past the 3 second test bound</q> and
+  <q>fetch blocked past the 3 second test bound</q>, after confirming each stub
+  started. It also fails the timed-out read and fetch retry cases. The final
+  tests replace the product timeout with 0.25 s and require both sleeping
+  commands to return unreachable within 3 s. Import startup is excluded from
+  that operation bound and the child reports the imported source path.</p>
+  <p>The implementation commit is <code>3546e12f2f0d52d2a09b100cedfbfbc585a39fe3</code>.
+  Executable coverage is in <code>tests/test_a_remote_read_is_bounded.py</code>.
+  Receipts, commands, imported module paths and terminal exit statuses are in
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T010554384046-a-remote-read-is-bounded/</code>:
+  <code>head-suite.log</code>, <code>negative-suite.log</code>,
+  <code>base-importers.log</code> and <code>head-importers.log</code>.
+  Matched arms and the final negative control ran as separate
+  <code>all_debug</code> jobs. Ruff check and format check pass on both Python paths.</p>
+  <section id="a-remote-read-is-bounded-ssh-transport">
+    <h4>Configured SSH identities, proxies and wrappers remain in control</h4>
+    <p>The reviewed head <code>a53193255be4fdc7c53b7b4747e06c56dd113c2e</code>
+    replaces a repository or environment SSH command with plain SSH when
+    <code>GIT_SSH_COMMAND</code> is absent. Four regression cases reproduce
+    that override: reads and fetches configured through
+    <code>core.sshCommand</code> or <code>GIT_SSH</code> each fail with
+    <q>fatal: Could not read from remote repository.</q></p>
+    <p>The repair reads <code>git config --get core.sshCommand</code> before
+    selecting a default and leaves configured transports alone. The tests run
+    real Git against a local upload-pack through an executable SSH stub. The
+    stub records its arguments, so passing cases prove Git selected the
+    configured executable and retained its identity and proxy options.
+    The port-443 fallback continues to honour a caller's explicit command.</p>
+    <table>
+      <thead><tr><th>Repair measure</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Reviewed-head transport reproduction</td><td>4 failed, 12 deselected in 5.66s</td></tr>
+        <tr><td>Armed repair gate</td><td>67 passed in 17.49s</td></tr>
+        <tr><td>Declared base with final regression tests</td><td>8 failed, 59 passed in 20.09s</td></tr>
+        <tr><td>Matched importer base arm, 14 files</td><td>6 failed, 101 passed in 45.05s</td></tr>
+        <tr><td>Matched importer repair arm</td><td>6 failed, 101 passed in 43.75s; zero added failures</td></tr>
+      </tbody>
+    </table>
+    <p>Repair source and tests are committed at
+    <code>3bc4da9fe1e9561725278433c2f3ccd3b67ef7cb</code>.
+    The run directory holds <code>transport-override-reproduction.log</code>,
+    <code>transport-head-suite.log</code>, <code>transport-negative-suite.log</code>,
+    <code>transport-base-importers.log</code> and
+    <code>transport-head-importers.log</code>. Matched arms and the negative
+    control ran on <code>all_debug</code>. All 16 focused cases pass; scoped
+    Ruff check and format check are clean.</p>
+  </section>
+</section>
