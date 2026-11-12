@@ -38,7 +38,6 @@ from reckon.crew.node import (
     NodeValidation,
     ScopeConflict,
     TaskNode,
-    UnreconciledRuns,
     done_when_warnings,
     normalize_section,
     parse_duration,
@@ -1286,26 +1285,6 @@ def plan_dispatch(
             resolution.warnings.append(fence_warning)
             _announce_fence_warning(resolution.run_id, fence_warning)
     return resolution
-
-
-def _session_unreconciled_refusal(
-    runs: Iterable[Mapping[str, Any]],
-    peer_runs: Iterable[Mapping[str, Any]],
-    grace: str,
-) -> UnreconciledRuns:
-    """Build an own-session refusal that keeps observed peer rows visible."""
-    refusal = UnreconciledRuns(runs, grace)
-    refusal.peer_runs = [dict(row) for row in peer_runs]
-    if refusal.peer_runs:
-        peer_lines = "\n".join(
-            f"- {row['run_id']} (session {(row.get('session') or '<unknown>')!s}): visible, not counted"
-            for row in refusal.peer_runs
-        )
-        peer_heading = (
-            f"{refusal!s}\nPeer-session unreconciled runs observed but not counted "
-        )
-        refusal.args = (peer_heading + f"toward this session's refusal:\n{peer_lines}",)
-    return refusal
 
 
 def _resolved_wave_id(project: str, session: str, requested: str) -> str:

@@ -1,16 +1,17 @@
 """A queued review keeps the unreconciled-runs waiver across its relaunch.
 
 A review holds the waiver because a run awaiting review *is* an unreconciled
-run: past the grace the fence refuses the very dispatch that reconciles it. The
-waiver reaches dispatch as ``unreconciled_override``; it is recorded on a queued
-request only through ``dispatch_options``, and the admission pass rebuilds it
-from there when the lane admits the request. A caller that passes the override
-without the option therefore queues a request that fails ``UnreconciledRuns`` on
-every admission pass — the deadlock. These cases drive the real reflex and
-composed-review dispatch paths, hold the lane, admit the queued request, and
-find the review launches while an implementation node dispatched in the same
-state is still refused. A stranded review's discard reason is read from wherever
-the discard recorded it, including the spool a never-launched request uses.
+run: past the grace its session's backlog names the very run its review
+reconciles. The waiver reaches dispatch as ``unreconciled_override``; it is
+recorded on a queued request only through ``dispatch_options``, and the
+admission pass rebuilds it from there when the lane admits the request. A
+caller that passes the override without the option therefore queues a request
+whose recorded backlog says the waiver was not requested. These cases drive the
+real reflex and composed-review dispatch paths, hold the lane, admit the queued
+request, and find the review launches asking for its waiver while an
+implementation node dispatched in the same state records the backlog without
+it. A stranded review's discard reason is read from wherever the discard
+recorded it, including the spool a never-launched request uses.
 """
 
 # ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
@@ -126,10 +127,10 @@ def test_a_queued_reflex_review_carries_the_waiver_and_launches(
     assert options["allow_unreconciled_runs"] is True
 
 
-def test_an_implementation_dispatch_in_the_same_state_is_still_refused(
+def test_an_implementation_dispatch_in_the_same_state_records_the_backlog(
     admit_repo: Path, tmp_path: Path
 ) -> None:
-    """The control: without the waiver, a direct dispatch is still refused.
+    """The control: without the waiver, a direct dispatch records what it ran over.
 
     A launch admitted from the queue does not re-apply its session's backlog,
     so the fence's armed case is the coordinator's own dispatch.
@@ -139,30 +140,29 @@ def test_an_implementation_dispatch_in_the_same_state_is_still_refused(
     _delivered_scoring_run(admit_repo)
     config = _config(tmp_path, worker_slots=1)
 
-    with pytest.raises(dispatch_module.UnreconciledRuns) as excinfo:
-        dispatch_module.dispatch(
-            node=TaskNode(
-                id="impl-node",
-                goal="dispatch this node directly",
-                plan="plan-a",
-                section="dispatch",
-                done_when=(
-                    "pytest tests/test_a_review_is_not_refused_for_its_run.py passes"
-                ),
-                write_paths=["impl-node.txt"],
-                time_budget="20m",
-                spec_level="exact",
+    record = dispatch_module.dispatch(
+        node=TaskNode(
+            id="impl-node",
+            goal="dispatch this node directly",
+            plan="plan-a",
+            section="dispatch",
+            done_when=(
+                "pytest tests/test_a_review_is_not_refused_for_its_run.py passes"
             ),
-            project=PROJECT,
-            repo=admit_repo,
-            config=config,
-            session=SESSION,
-            launcher=lambda *args, **kwargs: pytest.fail(
-                "a direct dispatch must be refused"
-            ),
-        )
+            write_paths=["impl-node.txt"],
+            time_budget="20m",
+            spec_level="exact",
+        ),
+        project=PROJECT,
+        repo=admit_repo,
+        config=config,
+        session=SESSION,
+        launcher=_launcher([]),
+    )
 
-    assert [row["run_id"] for row in excinfo.value.runs] == [DELIVERED_RUN]
+    backlog = record["unreconciled_override"]
+    assert backlog["requested"] is False
+    assert [row["run_id"] for row in backlog["waived_runs"]] == [DELIVERED_RUN]
 
 
 def test_a_composed_review_dispatch_records_the_waiver(
