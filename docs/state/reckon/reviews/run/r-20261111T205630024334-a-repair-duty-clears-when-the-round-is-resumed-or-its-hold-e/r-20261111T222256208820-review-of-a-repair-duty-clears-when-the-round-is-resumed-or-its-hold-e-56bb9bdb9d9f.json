@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/obligations.py:3042 obligations() -> _review_duty_item at :3316",
+    "reckon/crew/obligation_snapshot.py:1512",
+    "reckon/crew/station_subscriber.py:155"
+  ],
+  "completed_at": "2026-11-11T22:45:24.988Z",
+  "dispatched_at": "2026-11-11T22:25:25Z",
+  "findings": [
+    {
+      "file": "tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "this second case passes at the base revision, at the landed head and in the declared mutant, so it asserts pre-existing behaviour and cannot fail on the rule this change adds; an over-broad suppression hiding repair-owed whenever a refused dispatch is recorded would pass the whole file."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1781",
+      "severity": "non-blocking",
+      "text": "the live-resume tail re-derives resumption.live_repair_round (resumption.py:1140) through a function-local import of two private helpers, so the liveness rule lives in two places."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T205630024334-a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e/negative-control.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "the negative control removes the whole helper rather than the state the plan names, so it does not show the case survives dropping only the opening-status or round-match guard."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read 56bb9bdb9d against base 582277afab commit by commit; it adds the suppression helper in obligations.py (+44/-2), a 272-line test file and a 26-line evidence fragment, with no other change.",
+    "done_when": "the done_when names a test asserting the obligations view reports no repair-owed row while a coordinator's resumed attempt is live; tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py:246 asserts exactly that through obligations.obligations(PROJECT, SESSION), and the manifest plus gate-head.log record 53 passed EXIT=0.",
+    "goal": "the node's goal is that a repair duty clears when the round is resumed; reckon/crew/obligations.py:1752 adds `_coordinator_resume_in_flight`, consulted at obligations.py:1915, and the plan at docs/plans/the-monitor-shows-the-work-it-watches.html:845 says the expired-hold half is a separate section, so the landed change is the whole of this node's goal.",
+    "manifest": "read; it records commit 56bb9bdb9d9fe798e8272d636236d942404d79b8, head arm 53 passed EXIT=0, base arm 51 passed EXIT=0, a separate base-revision run of the new case at EXIT=1 and a negative control at EXIT=1.",
+    "write_paths": "the manifest declares reckon/crew/obligations.py, the new test, the landing fragment and a figure directory; the diff touches only the first three and the figure directory does not exist."
+  },
+  "justifications": {
+    "durability": "test line 246 reddens in the declared mutant and at the base revision, but test_the_duty_does_not_survive_the_landed_repair (line 249) passes at the landed head, at the base revision and in the mutant, so nothing in the file distinguishes the scoped suppression from an unscoped one.",
+    "evidence": "gate-head.log records the head arm (53 passed, EXIT=0) and gate-base.log the base arm (51 passed, EXIT=0) under the run directory with revision headers, and the base-revision reproduction is the separate base-arm-repair-owed.log at EXIT=1.",
+    "fit": "the helper follows the module's function-level private-import idiom and the file is ruff-clean, but obligations.py:48 splits `repair as repair_module` into its own import block beside the adjacent `review as review_module` line.",
+    "goal_fidelity": "obligations.py:1776-1780 suppresses the repair-owed row only for a live resume whose recorded round matches the review's, which is the resume half the plan assigns to this section.",
+    "reuse": "obligations.py:1781-1785 re-derives the live-resume predicate that resumption.py:1140 `live_repair_round` already encodes and imports its two private primitives rather than extending that owner.",
+    "scope_discipline": "the three files in the diff (obligations.py, the new test, the landing fragment) are all inside the manifest's declared write paths, and the figure directory the scope permits was not written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a repair duty clears when the round is resumed; reckon/crew/obligations.py:1752 adds `_coordinator_resume_in_flight`, consulted at obligations.py:1915, and the plan at docs/plans/the-monitor-shows-the-work-it-watches.html:845 says the expired-hold half is a separate section, so the landed change is the whole of this node's goal.\nVERDICT done_when: the done_when names a test asserting the obligations view reports no repair-owed row while a coordinator's resumed attempt is live; tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py:246 asserts exactly that through obligations.obligations(PROJECT, SESSION), and the manifest plus gate-head.log record 53 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/obligations.py, the new test, the landing fragment and a figure directory; the diff touches only the first three and the figure directory does not exist.\nVERDICT manifest: read; it records commit 56bb9bdb9d9fe798e8272d636236d942404d79b8, head arm 53 passed EXIT=0, base arm 51 passed EXIT=0, a separate base-revision run of the new case at EXIT=1 and a negative control at EXIT=1.\nVERDICT diff: read 56bb9bdb9d against base 582277afab commit by commit; it adds the suppression helper in obligations.py (+44/-2), a 272-line test file and a 26-line evidence fragment, with no other change.\nCALL_SITES: reckon/crew/obligations.py:3042 obligations() building the duty at :3316 (the stopped-turn obligations view), reckon/crew/obligation_snapshot.py:1512, reckon/crew/station_subscriber.py:1155 (duty rows published to the monitor)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: obligations.py:1776-1780 suppresses the repair-owed row only for a live resume whose recorded round matches the review's, which is the resume half the plan assigns to this section.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head.log records the head arm (53 passed, EXIT=0) and gate-base.log the base arm (51 passed, EXIT=0) under the run directory with revision headers, and the base-revision reproduction is the separate base-arm-repair-owed.log at EXIT=1.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the three files in the diff (obligations.py, the new test, the landing fragment) are all inside the manifest's declared write paths, and the figure directory the scope permits was not written.\nSCORE durability: 14\nJUSTIFICATION durability: test line 246 reddens in the declared mutant and at the base revision, but test_the_duty_does_not_survive_the_landed_repair (line 249) passes at the landed head, at the base revision and in the mutant, so nothing in the file distinguishes the scoped suppression from an unscoped one.\nSCORE fit: 16\nJUSTIFICATION fit: the helper follows the module's function-level private-import idiom and the file is ruff-clean, but obligations.py:48 splits `repair as repair_module` into its own import block beside the adjacent `review as review_module` line.\nSCORE reuse: 14\nJUSTIFICATION reuse: obligations.py:1781-1785 re-derives the live-resume predicate that resumption.py:1140 `live_repair_round` already encodes and imports its two private primitives rather than extending that owner.\nFINDING tests/test_a_repair_duty_clears_on_resume_or_expired_hold.py:249 non-blocking: this second case passes at the base revision, at the landed head and in the declared mutant (negative-control.log shows F. = its sibling failed, this one passed), so it asserts pre-existing behaviour and cannot name a condition under which it fails; with only these two cases an over-broad suppression that hid repair-owed whenever a refused dispatch was recorded, live or not, would pass the whole file, leaving the \"scoped to the live attempt\" claim in the change untested.\nFINDING reckon/crew/obligations.py:1781 non-blocking: the helper's last three statements (live attempt number, kind == resume) re-derive the tail of resumption.live_repair_round (resumption.py:1140) through a function-local import of two private helpers, so the liveness rule now lives in two places and a change to one can silently disagree with the other.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T205630024334-a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e/negative-control.log:1 non-blocking: the negative control removes the whole suppression helper rather than the state the plan names (\"keeping the refused dispatch as the duty's state\"), so it proves the case fails without the helper but does not show the case survives the narrower mistake of dropping only the opening-status or round-match guard.\n",
+  "review_run_id": "r-20261111T222256208820-review-of-a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e-56bb9bdb9d9f",
+  "reviewed_base_sha": "582277afab50e93facfd10e9aaf41f503c5dd4be",
+  "reviewed_head_sha": "56bb9bdb9d9fe798e8272d636236d942404d79b8",
+  "reviewed_run_id": "r-20261111T205630024334-a-repair-duty-clears-when-the-round-is-resumed-or-its-hold-e",
+  "scores": {
+    "durability": 14,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T22:40:25Z",
+  "total": 98
+}
