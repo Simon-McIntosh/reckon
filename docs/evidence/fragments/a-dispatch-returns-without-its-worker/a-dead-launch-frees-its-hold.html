@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A dead launch frees its hold | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A dead launch frees its hold</h1>
+      <p class="lead">A launch that took its reservation and then ended before recording a supervisor left nothing on disk saying it had ended, so the reservation held the run for as long as the process that reserved it lived. When that process is a long-lived door &mdash; the admit service, a station &mdash; nothing retried the run and a relaunch was refused on a hold no worker stood behind. A review run was found in exactly that state after 1&nbsp;h&nbsp;50&nbsp;min, its reservation naming the station and no worker ever recorded. Two changes close it: every path that ends a launch between its reservation and its supervisor now files the attempt's exit receipt naming the cause, and a reservation that recorded no supervisor, left no worker record and is older than a declared bound stops holding the run. The release is fenced, so a launch whose attempt was released and retaken starts no supervisor.</p>
+    </header>
+
+    <section id="a-dead-launch-frees-its-hold-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch_launch.py</code>: <code>_record_unreached_launch</code> files the attempt's exit receipt &mdash; naming the run, the attempt and the cause &mdash; from the three paths that end a launch after its reservation and before its supervisor: a failed <code>_prepare_attempt_records</code>, a failed supervisor-spec write, and a failed supervisor start. It writes nothing once a supervisor is recorded, so a receipt can never free a hold with a running worker behind it.</li>
+        <li><code>reservation_in_flight</code> now takes the run directory and attempt, and returns not-held for a reservation that names no supervisor, whose attempt left no worker record, and whose file is older than <code>UNREACHED_LAUNCH_BOUND_SECONDS</code> (1800&nbsp;s). Its docstring states the new rule in place of the old "age is never a reason". The age is the reservation file's own mtime, so a copied or rewritten reservation is dated by when it landed rather than by a stamp it carries.</li>
+        <li><code>_refuse_superseded_launch</code> is the fence, called immediately before <code>_start_supervisor</code>. It re-reads the reservation this launch took and refuses to start when the file has gone, when it names another pid, or when a later attempt has been reserved for the run. The refusing launch files its own exit receipt and starts nothing.</li>
+        <li><code>tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py</code> (new) covers the five behaviours: a raising supervisor start leaves a receipt and frees the hold; a stale reservation naming a live pid is not held and a relaunch is admitted; a hold within the bound still holds; a hold past the bound with a live supervisor still holds; and a superseded launch starts no supervisor while leaving its receipt.</li>
+      </ul>
+    </section>
+
+    <section id="a-dead-launch-frees-its-hold-the-gate">
+      <h2>The gate</h2>
+      <p>Both arms ran as an <code>all_debug</code> job (<code>sbatch</code>, job 1312048), the base arm in a scratch tree of the base revision and the head arm in the worktree at the committed revision. The suite template resolved over each arm's own tree reads <code>tests/test_staged_write_inventory.py</code> at base (this node's test file does not exist there) and both files at head.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>05684b28df</code>, scratch worktree</td><td>51 passed, <code>EXIT=0</code></td><td><code>gate-base.log</code></td></tr>
+          <tr><td>Head <code>65682c8350</code>, worktree</td><td>51 passed, <code>EXIT=0</code></td><td><code>gate-after.log</code></td></tr>
+          <tr><td>Base <code>05684b28df</code>, 52 importing files, <code>-n 4</code></td><td>23 failed, 658 passed, 1 skipped, <code>EXIT=1</code></td><td><code>importing-base.log</code></td></tr>
+          <tr><td>Head <code>65682c8350</code>, 52 importing files, <code>-n 4</code></td><td>23 failed, 663 passed, 1 skipped, <code>EXIT=1</code></td><td><code>importing-after.log</code></td></tr>
+          <tr><td>Negative control, head + mutation</td><td>1 failed, 4 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The importing arms carry the same failure count. Their id sets differ in two places, both benign: <code>tests/test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes</code> failed only at base, and the head arm reported one extra parametrised variant of <code>test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried</code>. That file passes 7 of 7 at head when re-run alone (<code>probe-param-id-head.log</code>), so the extra variant is an <code>-n 4</code> flake and not a regression. The first base gate run errored at setup because its <code>git archive</code> extraction carried no <code>.git</code>; the base arm was re-run in a git worktree and is the one recorded above.</p>
+      <p>Ruff: <code>dispatch_launch.py</code> reports 2 findings at base and 2 at head (the delta is zero, and both are pre-existing checks on unrelated lines); the new test file reports none; both files are format-clean.</p>
+    </section>
+
+    <section id="a-dead-launch-frees-its-hold-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared mutation: <em>restore the base reservation reading so a supervisor-less hold naming a live pid stays held</em>. Applied to <code>reservation_in_flight</code> in the head worktree, the new test file reports <code>FAILED tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py::test_a_stale_reservation_naming_a_live_pid_is_not_held_and_a_relaunch_is_admitted</code> and <code>1 failed, 4 passed</code> with <code>EXIT=1</code>, which the head arm does not fail. The mutation was reverted and the worktree returned to the committed state before the arms ran.</p>
+    </section>
+
+    <section id="a-dead-launch-frees-its-hold-commits">
+      <h2>Commits</h2>
+      <p><code>65682c8350ff3a6c47553e8fb46f88cbeafc0f76</code> &mdash; fix(crew): free a launch reservation that never reached its worker. Changes <code>reckon/crew/dispatch_launch.py</code> and <code>tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py</code>.</p>
+    </section>
+  </main>
+</body>
+</html>
