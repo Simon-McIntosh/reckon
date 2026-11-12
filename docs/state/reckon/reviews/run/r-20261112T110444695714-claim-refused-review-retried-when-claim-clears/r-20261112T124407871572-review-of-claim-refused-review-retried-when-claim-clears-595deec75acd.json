@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: the after arm gate-head.log at 595deec75acd records 52 passed EXIT=0 with no FAILED line and the base arm gate-base.log at 752a45069c12 records 51 passed EXIT=0 with no FAILED line, so the set difference is empty (0).",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:2967 stored_claim_refusal in dispatch_review_for_run",
+    "reckon/crew/recovery_watch.py:3713 sweep",
+    "reckon/crew/resumption.py:2538 sweep",
+    "reckon/crew/plan_review.py:4485 plan review",
+    "reckon/crew/recovery_review_acceptance.py:776 acceptance",
+    "reckon/crew/recovery_review_dispatch.py:3515 _claim_the_refusal_names",
+    "reckon/crew/obligations.py:691 claim_refusal_still_holds"
+  ],
+  "completed_at": "2026-11-12T12:56:13.374Z",
+  "dispatched_at": "2026-11-12T12:47:00Z",
+  "findings": [
+    {
+      "file": "tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py",
+      "line": "163",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares the recorded path against recorded_claim[\"path\"], the same value it was handed, so the path half of the check can never fail; only the run_id half is independent of the code under test."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "688",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new claim-hold branch has no assertion that fails if it is removed \u2014 the node test never calls obligations, and tests/test_a_figure_finding_names_its_rubric.py:209 only exercises the figure path \u2014 so a regression there would make the duty name a follower again with no gate reddening."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 7 production call site(s)",
+    "diff": "read commit 595deec75acd against base 752a45069c12, 326 insertions across four files \u2014 88 lines in recovery_review_dispatch.py adding _claim_the_refusal_names, claim_refusal_still_holds, stored_claim_refusal and the hold short-circuit at line 2967, 17 lines in obligations.py, the new 183-line test, and the evidence fragment; the existing recording signature gains one optional claim keyword and nothing else changes.",
+    "done_when": "the done_when names a three-pass run of tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py, and that test at lines 150-183 drives the reflex three times, asserting pass 2 records no new attempt and pass 3 dispatches; gate-head.log records 52 passed EXIT=0, but the done_when's base-arm matched-arm and all_debug partition clauses are not evidenced.",
+    "goal": "the node goal is \"Retry a claim-refused review dispatch once the claim clears\"; reckon/crew/recovery_review_dispatch.py:2861 stored_claim_refusal returns a hold only while the recorded holder's own claim still binds, so the reflex composes the review again on the first sweep after the release, and obligations.py:688 names the holder to clear.",
+    "manifest": "read; it records status complete, one commit 595deec75acd, gate-head 52 passed, gate-base 51 passed, negative control 1 failed EXIT=1, and states the refusal is stored on the reviewed run's live pointer under review_dispatch and why no later sweep read it as lifted, which is what plan s37 asks the node to record.",
+    "write_paths": "the three declared write paths are reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py and tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py, and the commit's fourth file docs/evidence/fragments/the-monitor-reads-each-fact-once/claim-refused-review-retried-when-claim-clears.html is the node's fragment the plan deliverable declares and the run's orientation write paths carry, so every changed path is declared."
+  },
+  "justifications": {
+    "durability": "the three-pass test at tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:175-183 reddens under the reinstated regression, but reckon/crew/obligations.py:688 has no covering assertion and the assertion at tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:163 is self-referential on the path field.",
+    "evidence": "tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:182 asserts the third pass dispatches and negative-control.log:41 shows that assertion red under the mutation, but no base-revision arm or all_debug partition job is recorded for the node test, so the done_when's matched-arm and partition clauses rest unverified.",
+    "fit": "the new functions at reckon/crew/recovery_review_dispatch.py:2823-2899 follow the module's local-import and docstring idiom, and names such as stored_claim_refusal state mechanism rather than plan labels.",
+    "goal_fidelity": "reckon/crew/recovery_review_dispatch.py:2881-2899 returns None as soon as claim_refusal_still_holds is false, which is the retry-on-release the goal states, and the reflex otherwise holds without re-attempting.",
+    "reuse": "claim_refusal_still_holds delegates to reckon/crew/node.py:1742 claim_disposition, the owner of claim binding, and a capability search found no existing builder of a bare {run_id, path} refusal pair \u2014 reckon/crew/queue_admission.py:1429 _refusal_hold builds a wider launch-queue holder record, a different capability.",
+    "scope_discipline": "every path in the diff is inside the run's declared write paths, the only additional file being the plan-declared evidence fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/claim-refused-review-retried-when-claim-clears.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Retry a claim-refused review dispatch once the claim clears\"; reckon/crew/recovery_review_dispatch.py:2861 stored_claim_refusal returns a hold only while the recorded holder's own claim still binds, so the reflex composes the review again on the first sweep after the release, and obligations.py:688 names the holder to clear.\nVERDICT done_when: the done_when names a three-pass run of tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py, and that test at lines 150-183 drives the reflex three times, asserting pass 2 records no new attempt and pass 3 dispatches; gate-head.log records 52 passed EXIT=0, but the done_when's base-arm matched-arm and all_debug partition clauses are not evidenced.\nVERDICT write_paths: the three declared write paths are reckon/crew/recovery_review_dispatch.py, reckon/crew/obligations.py and tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py, and the commit's fourth file docs/evidence/fragments/the-monitor-reads-each-fact-once/claim-refused-review-retried-when-claim-clears.html is the node's fragment the plan deliverable declares and the run's orientation write paths carry, so every changed path is declared.\nVERDICT manifest: read; it records status complete, one commit 595deec75acd, gate-head 52 passed, gate-base 51 passed, negative control 1 failed EXIT=1, and states the refusal is stored on the reviewed run's live pointer under review_dispatch and why no later sweep read it as lifted, which is what plan s37 asks the node to record.\nVERDICT diff: read commit 595deec75acd against base 752a45069c12, 326 insertions across four files \u2014 88 lines in recovery_review_dispatch.py adding _claim_the_refusal_names, claim_refusal_still_holds, stored_claim_refusal and the hold short-circuit at line 2967, 17 lines in obligations.py, the new 183-line test, and the evidence fragment; the existing recording signature gains one optional claim keyword and nothing else changes.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:2967 stored_claim_refusal in dispatch_review_for_run, reckon/crew/recovery_watch.py:3713 sweep, reckon/crew/resumption.py:2538 sweep, reckon/crew/plan_review.py:4485 plan review, reckon/crew/recovery_review_acceptance.py:776 acceptance, reckon/crew/recovery_review_dispatch.py:3515 _claim_the_refusal_names, reckon/crew/obligations.py:691 claim_refusal_still_holds\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_dispatch.py:2881-2899 returns None as soon as claim_refusal_still_holds is false, which is the retry-on-release the goal states, and the reflex otherwise holds without re-attempting.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:182 asserts the third pass dispatches and negative-control.log:41 shows that assertion red under the mutation, but no base-revision arm or all_debug partition job is recorded for the node test, so the done_when's matched-arm and partition clauses rest unverified.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the run's declared write paths, the only additional file being the plan-declared evidence fragment at docs/evidence/fragments/the-monitor-reads-each-fact-once/claim-refused-review-retried-when-claim-clears.html.\nSCORE durability: 15\nJUSTIFICATION durability: the three-pass test at tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:175-183 reddens under the reinstated regression, but reckon/crew/obligations.py:688 has no covering assertion and the assertion at tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:163 is self-referential on the path field.\nSCORE fit: 18\nJUSTIFICATION fit: the new functions at reckon/crew/recovery_review_dispatch.py:2823-2899 follow the module's local-import and docstring idiom, and names such as stored_claim_refusal state mechanism rather than plan labels.\nSCORE reuse: 18\nJUSTIFICATION reuse: claim_refusal_still_holds delegates to reckon/crew/node.py:1742 claim_disposition, the owner of claim binding, and a capability search found no existing builder of a bare {run_id, path} refusal pair \u2014 reckon/crew/queue_admission.py:1429 _refusal_hold builds a wider launch-queue holder record, a different capability.\nFINDING tests/test_a_claim_refused_review_is_retried_when_the_claim_clears.py:163 non-blocking: the assertion compares the recorded path against recorded_claim[\"path\"], the same value it was handed, so the path half of the check can never fail; only the run_id half is independent of the code under test.\nFINDING reckon/crew/obligations.py:688 non-blocking: the new claim-hold branch has no assertion that fails if it is removed \u2014 the node test never calls obligations, and tests/test_a_figure_finding_names_its_rubric.py:209 only exercises the figure path \u2014 so a regression there would make the duty name a follower again with no gate reddening.",
+  "review_node": "review-of-claim-refused-review-retried-when-claim-clears-595deec75acd",
+  "review_run_id": "r-20261112T124407871572-review-of-claim-refused-review-retried-when-claim-clears-595deec75acd",
+  "reviewed_base_sha": "752a45069c12cfbcd25f2656fb9d774cf7b3ff9b",
+  "reviewed_head_sha": "595deec75acd460cab321aa8a3b75588659018c4",
+  "reviewed_run_id": "r-20261112T110444695714-claim-refused-review-retried-when-claim-clears",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T124407871572-review-of-claim-refused-review-retried-when-claim-clears-595deec75acd"
+  },
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T13:13:05.577758+00:00",
+  "total": 104
+}
