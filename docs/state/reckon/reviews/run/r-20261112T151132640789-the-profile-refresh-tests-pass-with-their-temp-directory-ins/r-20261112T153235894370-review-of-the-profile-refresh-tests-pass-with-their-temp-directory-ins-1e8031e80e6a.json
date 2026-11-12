@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "9e26e432135965b19e00e5e27bd5bd69ca3ac58b",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/ledger.py:1076 _open_current_index -> _shared_index_root/_run_index_path",
+    "reckon/ledger.py:1151 run_ids -> _run_index_path",
+    "reckon/ledger.py:1277 _index_record_written_document -> _run_index_path",
+    "reckon/ledger.py:1852 _indexed_data -> _shared_index_root/_run_index_path",
+    "reckon/mcp_views.py:1962 _section_attempt_count_uncached -> ledger._run_index_path"
+  ],
+  "completed_at": "2026-11-12T15:47:43.547Z",
+  "dispatched_at": "2026-11-12T15:36:39Z",
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": "34",
+      "severity": "non-blocking",
+      "text": "non-blocking: no test pins the new refusal, so the guard is exercised only when the temp directory happens to lie inside a checkout; with reckon/ledger.py:1402-1403 removed in a scratch copy at the reviewed head the file still reports 23 passed under a basetemp outside any checkout, so a regression to the walk-up would be green in every ordinary run. A few lines asserting ledger._ledger_repository(...) is None for a ledger sitting under a foreign .git would make it durable regardless of where the temp directory sits."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T151132640789-the-profile-refresh-tests-pass-with-their-temp-directory-ins/family-base.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the section's done-when names the all_debug partition for the family arm, but the arms ran in place in the fleet allocation (job 1291586, node 98dci4-clu-2023) and neither their headers nor the manifest record a partition; the measured 13.2 s base and 11.6 s head keep them inside the light band, and the dispatch brief forbade opening an srun step in that job, so the deviation is in the brief rather than in the worker's judgement."
+    }
+  ],
+  "head_log_revision": "1e8031e80e6a4b97e972d542d25cea0a450e6f69",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites reaching the changed function through _shared_index_root and _run_index_path: _open_current_index, run_ids, _index_record_written_document, _indexed_data and mcp_views' _section_attempt_count_uncached.",
+    "diff": "read the two commits against base 9e26e4321: 1a1a0459c7 adds the docstring paragraph and the one-line claim guard in _ledger_repository, and 1e8031e80e adds the evidence fragment; nothing else changed.",
+    "done_when": "the done-when asks for the file to pass twice (basetemp outside and inside a scratch checkout), the base run to fail 16, the lane_context importers to add no failure, and ruff to add none; the manifest and its logs record all four, and I reproduced the head arm (23 passed) and the 16-failure control at the reviewed revision in a scratch extraction.",
+    "goal": "the node's goal is that the profile-refresh tests pass with their temp directory inside a checkout; reckon/ledger.py:1398-1403 makes a candidate checkout claim the ledger only when its own state path resolves to that same file, which is what the fixture's enclosing checkout was failing.",
+    "manifest": "read; status complete, commits 1a1a0459c7 and 1e8031e80e, changed_paths reckon/ledger.py and the fragment, tests the two-file pytest gate, test_logs naming all seven arm logs, baseline_suite (2 scaffolding errors) and after_suite (0 failures), negative_control_log the base inside-checkout arm.",
+    "write_paths": "the fence was the test file, lane_context.py, ledger.py, the evidence fragment and a figures directory; the diff touches ledger.py and the fragment only, and ledger.py was the permitted alternative when the walk-up is code a fixture cannot redirect."
+  },
+  "justifications": {
+    "durability": "the guard is only reached when pytest's temp directory lies inside a checkout, so no run of the repository's default configuration reddens on a regression: removing reckon/ledger.py:1402-1403 in a scratch copy at the reviewed head leaves 23 passed with --basetemp outside any checkout and turns it to 16 failed / 7 passed only inside one.",
+    "evidence": "the manifest records base 16 failed / 7 passed (node-base-basetemp-inside.log, EXIT=1) and head 23 passed with basetemp inside and outside a checkout (node-head-basetemp-inside.log, node-head-basetemp-outside.log, EXIT=0), plus the family arms at base 2 failed / 212 passed and head the same two ids (family-base.log, family-head.log); the gap is that the section's done-when names the all_debug partition and no arm's log records a partition, the run having executed in place in the fleet job 1291586 on 98dci4-clu-2023.",
+    "fit": "the change is nine added lines in the module's own resolution function, and its docstring at reckon/ledger.py:1385-1394 states the mechanism with no plan, sprint or ticket identifier and no attribution.",
+    "goal_fidelity": "reckon/ledger.py:1398-1403 adds `if ledger_path(project, checkout).resolve() != source: continue` so an enclosing checkout no longer adopts a config-home ledger, and the profile-refresh file passes 23 of 23 with its temp directory inside a scratch git checkout, which is the node goal.",
+    "reuse": "the guard calls reckon/ledger.py:853 ledger_path, the module's existing owner of a project's state path, instead of re-spelling `<checkout>/docs/state/<project>/crew.json` a second time.",
+    "scope_discipline": "git diff --stat 9e26e4321..1e8031e80e lists exactly reckon/ledger.py and the node's evidence fragment, both inside the declared fence, and the conditional permission to touch ledger.py holds because a fixture-created `.git` cannot redirect the walk (the ledger sits under $RECKON_HOME, not under the fixture's repo)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the profile-refresh tests pass with their temp directory inside a checkout; reckon/ledger.py:1398-1403 makes a candidate checkout claim the ledger only when its own state path resolves to that same file, which is what the fixture's enclosing checkout was failing.\nVERDICT done_when: the done-when asks for the file to pass twice (basetemp outside and inside a scratch checkout), the base run to fail 16, the lane_context importers to add no failure, and ruff to add none; the manifest and its logs record all four, and I reproduced the head arm (23 passed) and the 16-failure control at the reviewed revision in a scratch extraction.\nVERDICT write_paths: the fence was the test file, lane_context.py, ledger.py, the evidence fragment and a figures directory; the diff touches ledger.py and the fragment only, and ledger.py was the permitted alternative when the walk-up is code a fixture cannot redirect.\nVERDICT manifest: read; status complete, commits 1a1a0459c7 and 1e8031e80e, changed_paths reckon/ledger.py and the fragment, tests the two-file pytest gate, test_logs naming all seven arm logs, baseline_suite (2 scaffolding errors) and after_suite (0 failures), negative_control_log the base inside-checkout arm.\nVERDICT diff: read the two commits against base 9e26e4321: 1a1a0459c7 adds the docstring paragraph and the one-line claim guard in _ledger_repository, and 1e8031e80e adds the evidence fragment; nothing else changed.\nCALL_SITES: reckon/ledger.py:1076 _open_current_index -> _shared_index_root/_run_index_path, reckon/ledger.py:1151 run_ids -> _run_index_path, reckon/ledger.py:1277 _index_record_written_document -> _run_index_path, reckon/ledger.py:1852 _indexed_data -> _shared_index_root/_run_index_path, reckon/mcp_views.py:1962 _section_attempt_count_uncached -> ledger._run_index_path\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/ledger.py:1398-1403 adds `if ledger_path(project, checkout).resolve() != source: continue` so an enclosing checkout no longer adopts a config-home ledger, and the profile-refresh file passes 23 of 23 with its temp directory inside a scratch git checkout, which is the node goal.\nSCORE evidence: 15\nJUSTIFICATION evidence: the manifest records base 16 failed / 7 passed (node-base-basetemp-inside.log, EXIT=1) and head 23 passed with basetemp inside and outside a checkout (node-head-basetemp-inside.log, node-head-basetemp-outside.log, EXIT=0), plus the family arms at base 2 failed / 212 passed and head the same two ids (family-base.log, family-head.log); the gap is that the section's done-when names the all_debug partition and no arm's log records a partition, the run having executed in place in the fleet job 1291586 on 98dci4-clu-2023.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 9e26e4321..1e8031e80e lists exactly reckon/ledger.py and the node's evidence fragment, both inside the declared fence, and the conditional permission to touch ledger.py holds because a fixture-created `.git` cannot redirect the walk (the ledger sits under $RECKON_HOME, not under the fixture's repo).\nSCORE durability: 10\nJUSTIFICATION durability: the guard is only reached when pytest's temp directory lies inside a checkout, so no run of the repository's default configuration reddens on a regression: removing reckon/ledger.py:1402-1403 in a scratch copy at the reviewed head leaves 23 passed with --basetemp outside any checkout and turns it to 16 failed / 7 passed only inside one.\nSCORE fit: 19\nJUSTIFICATION fit: the change is nine added lines in the module's own resolution function, and its docstring at reckon/ledger.py:1385-1394 states the mechanism with no plan, sprint or ticket identifier and no attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the guard calls reckon/ledger.py:853 ledger_path, the module's existing owner of a project's state path, instead of re-spelling `<checkout>/docs/state/<project>/crew.json` a second time.\nFINDING tests/test_a_promotion_profile_refresh_costs_its_row.py:34 non-blocking: no test pins the new refusal, so the guard is exercised only when the temp directory happens to lie inside a checkout; with reckon/ledger.py:1402-1403 removed in a scratch copy at the reviewed head the file still reports 23 passed under a basetemp outside any checkout, so a regression to the walk-up would be green in every ordinary run. A few lines asserting ledger._ledger_repository(...) is None for a ledger sitting under a foreign .git would make it durable regardless of where the temp directory sits.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T151132640789-the-profile-refresh-tests-pass-with-their-temp-directory-ins/family-base.log:1 non-blocking: the section's done-when names the all_debug partition for the family arm, but the arms ran in place in the fleet allocation (job 1291586, node 98dci4-clu-2023) and neither their headers nor the manifest record a partition; the measured 13.2 s base and 11.6 s head keep them inside the light band, and the dispatch brief forbade opening an srun step in that job, so the deviation is in the brief rather than in the worker's judgement.",
+  "review_run_id": "r-20261112T153235894370-review-of-the-profile-refresh-tests-pass-with-their-temp-directory-ins-1e8031e80e6a",
+  "reviewed_base_sha": "9e26e432135965b19e00e5e27bd5bd69ca3ac58b",
+  "reviewed_head_sha": "1e8031e80e6a4b97e972d542d25cea0a450e6f69",
+  "reviewed_run_id": "r-20261112T151132640789-the-profile-refresh-tests-pass-with-their-temp-directory-ins",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T153235894370-review-of-the-profile-refresh-tests-pass-with-their-temp-directory-ins-1e8031e80e6a"
+  },
+  "reviewer_run_id": "r-20261112T153235894370-review-of-the-profile-refresh-tests-pass-with-their-temp-directory-ins-1e8031e80e6a",
+  "scores": {
+    "durability": 10,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T15:51:04.182710+00:00",
+  "total": 101
+}
