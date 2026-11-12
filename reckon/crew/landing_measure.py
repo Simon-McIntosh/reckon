@@ -1085,6 +1085,84 @@ def armed_observations(
     }
 
 
+def control_mutation_observation(
+    *,
+    command: str,
+    tree: Path,
+    base_tree: Path,
+    base_sha: str,
+    logs_dir: Path,
+    test_files: Iterable[str] = (),
+    run=None,
+    timeout: float = DEFAULT_MEASURE_TIMEOUT_SECONDS,
+    project: str = "",
+    config: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Run a node's own tests over the tree its repair is absent from.
+
+    A node declares the mutation its check must fail against, and running that
+    check over the unfixed base is the mutation performed: the node's tests are
+    carried into a checkout of the run's base revision and run there, so a case
+    that measures a restored guard fails exactly where the guard is missing.
+    The failing ids are the control's own, judged by the same reader promotion
+    uses for a log the run recorded.
+
+    The run is submitted to the configured measurement partition the way an
+    armed arm is, so taking the reading costs a queue wait rather than a suite
+    run on the landing host. The return value carries ``unreadable`` when the
+    command cannot be measured at all.
+    """
+    runner = run or _RUN
+    node_tests = [str(path).strip() for path in test_files if str(path).strip()]
+    environment, argv = armed_argv(command, node_tests)
+    if not argv:
+        return {"unreadable": "the run armed no suite command"}
+    if _SCOPED_PLACEHOLDER in (command or "") and not node_tests:
+        return {
+            "unreadable": (
+                "the armed command measures the node's own test files, "
+                "and the node names none"
+            )
+        }
+    if config is None:
+        from reckon import flight
+
+        config = flight.resolve(project or None, checkout_path=str(tree)).config
+    landing = config.get("landing") or {}
+    partition = str(landing.get("measure_partition") or "")
+    if partition:
+        runner = _partition_runner(
+            runner,
+            repo=tree,
+            base_tree=base_tree,
+            base_sha=base_sha,
+            head_sha=base_sha,
+            partition=partition,
+            long_partition=str(landing.get("measure_long_partition") or "rigel"),
+            test_files=node_tests,
+        )
+        runner.partitioned = True
+    _carry_missing_tests(base_tree, tree, node_tests)
+    arm = _arm(
+        argv,
+        base_tree,
+        Path(logs_dir) / "control-mutation.log",
+        runner,
+        timeout,
+        environment,
+        file_count=len(node_tests),
+    )
+    if not arm.readable:
+        return {
+            "unreadable": (
+                f"the control mutation exceeded its {timeout:g}s bound"
+                if arm.timed_out
+                else "the control mutation did not run"
+            )
+        }
+    return {"control_suite": arm_observation(command, base_sha, arm)}
+
+
 def _fails(
     command: Sequence[str],
     test_id: str,
