@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="216">
+<meta name="plan-version" content="217">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -968,6 +968,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s34" data-id="c-run-r-20261112T152442768638-review-of-delivered-review-reads-as-awaiting-promotion-1ba76a7053eb" data-who="reckon-build" data-when="2026-11-12T15:34:34.676Z">
     <div class="r-comment-body"><p>Independent review of r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion over the five commits gained since its prior review (a3bffb83451a..1ba76a7053eb) reads parsed: goal_fidelity 19, evidence 17, scope_discipline 19, durability 16, fit 18, reuse 20, added_failure_count 0; one non-blocking finding that the superseded-head case was weakened to two negative assertions, so a regression to no duty there would pass.</p></div>
+</div>
+<div class="r-comment" data-section="s34" data-id="c-run-r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion" data-who="reckon-build" data-when="2026-11-12T15:19:33Z">
+    <div class="r-comment-body"><p>A scoring run whose recorded review dispatch names a review run that is complete AND has a stored record for the head the run carries now reads `review-awaiting-promotion`, naming that review run and its promotion command, instead of carrying no duty at all (base) or reading `review-missing`. A review that ended without filing a record keeps its base reading, a review of a head the run has moved past still reads `review-missing`, and the in-flight reader answers the store question without a second head resolution so a follower pass still resolves a delivered pointer&#x27;s head once. Gate: template arm 51 passed EXIT=0 at base and 56 passed EXIT=0 at head on `all_debug`; the importer population reads 64 failed / 837 passed at base and 64 failed / 842 passed at head over 117 and 118 files, the failure sets identical (zero added, zero gone).</p></div>
 </div>
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261112T132309997944-review-of-overdue-figure-tracks-the-clock-397a9e7ef5f3" data-who="reckon-build" data-when="2026-11-12T13:31:42.254Z">
     <div class="r-comment-body"><p>Independently reviewed run r-20261112T110602029678-overdue-figure-tracks-the-clock at base e52a171c540d2c2b35e17015701a46f8c30e4e99 to head 397a9e7ef5f3ef54dbe3a74a16edacae6cadd73e; the change does make the overdue figure track the clock (figure composed at the reader's instant, gate 52 passed, negative control reddens at (2000 - 2000) == 120), and three non-blocking findings are recorded: stale landing-fragment prose, an unexercised station-stage branch, and a negative-control header naming f9c0b22 rather than the head it ran.</p></div>
