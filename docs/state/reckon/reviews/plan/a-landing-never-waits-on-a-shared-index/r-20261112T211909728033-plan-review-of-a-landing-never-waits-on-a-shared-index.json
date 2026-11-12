@@ -1,0 +1,64 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T21:30:34.771Z",
+  "dispatched_at": "2026-11-12T21:22:07Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:93",
+      "id": "done_when-1",
+      "reason": "without a control that can fail the node's whole measure rests on a suite that may pass on unfixed code, and the plan has to state what a non-reproducing base means (a blocker reported, not a passing arm) before a worker can close it.",
+      "text": "\u00a78's negative control reads \"the base revision, where a write appears after exit in at least one stage, or the test records that none does\", so a base that never exhibits the defect satisfies the control and the node goes green without showing its kill handling suppresses anything \u2014 and the section's own Why says \"Whether each commit postdates the signal is not yet measured\", so the plan already suspects the base may not reproduce",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:89",
+      "id": "single_goal-1",
+      "reason": "one verdict would have to close both surfaces, and a worker that implements the \"or\" branch alone will read a done-when it cannot satisfy, costing a repair round.",
+      "text": "\u00a77's deliverable says a promotion \"ends with its reviewed head merged, or names the pending landing, when it will be retried, and the command that finishes it\", an alternative, while its done-when requires both the merged head on the primary branch after the next landing pass and the output naming the pending landing and the finishing command, so the node carries two independently closable deliverables: the landing pass finishing the merge in `pending_landing.py`, and a new report of retry time and finishing command in `promotion.py`",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:115",
+      "id": "wiring-1",
+      "reason": "\u00a78's one-line invocation is lost from the chain, and \u00a78's evidence would ride into a \u00a77 node's dispatch, so a coordinator cannot reach \u00a78 after \u00a77 lands.",
+      "text": "f-alnw-004 carries the title \"Build \u00a77\u2013\u00a78\" and the body \"killed promotions went on committing\", which is \u00a78's defect, while `data-recommends-skill` and the prompt name only `/reckon-build a-landing-never-waits-on-a-shared-index \u00a77`, so \u00a78 has no invocation of its own and a node dispatched from this followup is pointed at \u00a77 while briefed with \u00a78's evidence",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ea4fefcd442a8530b7f61a3c79f625728970133a",
+  "plan_fingerprint": "d1b14cc26a44f0aa72740ea12c5b9c6b5f43e88404c2545351f923f3147a5ef4",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 25,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T211909728033-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "eebb1da2d1edd5f512e32f9aab6c92c929f31c6a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion.py:236` lands on the refusal message, imas-efit `a0cbeacc1` and `bc2183640` resolve on `origin/develop`, and all four \u00a78 commits resolve as the promote and release commits of the two named runs.",
+    "done_when": "a finding \u2014 \u00a78's negative control admits the case where the base revision shows no post-exit write, so it passes whether or not the defect reproduces.",
+    "evidence_paths": "pass \u2014 both sections put their logs under the run directory and name the all_debug partition for the heavy arms, so no gate log depends on a scratchpad.",
+    "naming": "pass \u2014 \u00a77 and \u00a78 introduce no plan labels, ticket numbers or version tags, and name no changelog prose.",
+    "reasoning": "pass \u2014 \u00a77's premise was checked in code and reproduces (the pending-landing pass iterates the pending directory while the marker is written only to the pointer), and \u00a78 offers its unmeasured cause as a hypothesis its endpoint covers either way.",
+    "single_goal": "a finding \u2014 \u00a77's deliverable offers two endings while its done-when requires both, so it carries the landing pass's merge and a new pending-landing report as separate closable deliverables.",
+    "wiring": "a finding \u2014 f-alnw-004 is titled and bodied for \u00a77\u2013\u00a78 but its only invocation names \u00a77, so \u00a78 has no next-one-line prompt."
+  },
+  "section_digests": {
+    "_document": "544fbba4973b6f05442d5d3b53c9a6f24e28dab0ec3f9f383abd1f97fea3da0a",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "ddc19efe3db5d3e2196ba12f1ccea29b87e0e15e0f71c68c2fc89431d6cca56b",
+    "s7": "6660a2fd6058dcb7c3478fb3e4c3a206ed727ac79e6058df6eb24e538f9817d1",
+    "s8": "12163fe919451ea8afffec3e750d77917c3ee07a408d4036cf2d7e7d54d8d263"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:42:36.054639+00:00",
+  "total": null
+}
