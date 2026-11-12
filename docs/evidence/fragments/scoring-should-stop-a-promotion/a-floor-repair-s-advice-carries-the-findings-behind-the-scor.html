@@ -1,0 +1,61 @@
+<section id="a-floor-repair-s-advice-carries-the-findings-behind-the-scor-landing">
+  <h2>A floor repair's advice carries the review's evidence for the score</h2>
+
+  <p><strong>What changed.</strong> A dimension scored under its declared floor
+  composes a finding of its own, and that finding's text was the score and the
+  floor alone: a repair resumed with it read
+  <code>[dimension-reuse] reuse scored 6 below its declared floor 10</code> and
+  nothing about what had scored 6, so the worker guessed what to fix.
+  <code>review_dispositions.sub_floor_evidence</code> now returns each
+  sub-floor row together with the review's own justification for that dimension
+  and the findings the same record raised, and
+  <code>recovery_repair_dispatch._repair_resume_advice</code> renders them
+  beneath the brief for every dimension under its floor. A dimension the
+  reviewer justified without raising a finding still carries its justification:
+  the justification is the reviewer's account of the score whether or not a
+  finding sits beside it.</p>
+
+  <p><strong>The findings are not attributed to a dimension</strong>, because
+  the record does not attribute them: one review covers one run, and every
+  finding on it is part of what the reviewer observed while scoring. They are
+  repeated on each sub-floor row rather than split by a relation the record
+  does not hold.</p>
+
+  <table id="a-floor-repair-s-advice-carries-the-findings-behind-the-scor-arms">
+    <caption>Each arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Every arm
+    ran on <code>all_debug</code> as its own job, one at a time, at
+    <code>-n 4</code>, over a <code>git archive</code> extraction on node-local
+    disk.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base suite, every test file importing the changed modules</td>
+        <td><code>2578b4c5</code></td>
+        <td>2 failed, 313 passed, <code>EXIT=1</code></td></tr>
+      <tr><td>head suite, the same population plus the new test file</td>
+        <td><code>03e4ac48</code></td>
+        <td><strong>2 failed, 316 passed</strong>, <code>EXIT=1</code></td></tr>
+      <tr><td>negative control: the new test file against base code</td>
+        <td><code>2578b4c5</code> + the new test file</td>
+        <td>3 failed, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Added failures: 0.</strong> The two failures are the same
+  two ids in both arms
+  (<code>test_the_lander_leaves_a_red_run_to_its_coordinator.py::test_a_finding_with_no_disposition_is_not_promoted</code>
+  and
+  <code>test_the_lander_measures_the_population.py::test_candidate_handoff_preserves_the_promotion_guard</code>),
+  pre-existing at the base revision. The head arm passes all three new cases
+  the negative control fails, which is what makes the check falsifiable: at
+  base the advice names only the score and the floor, and the three cases that
+  assert the justification and the finding text are red.</p>
+
+  <p><strong>Measured on the head arm.</strong> A stored review scoring reuse 6
+  against a floor of 10, justified as
+  <em>request_key in reckon/crew/ticker.py duplicates runs.py:_node_identity</em>
+  and carrying one finding naming the same duplicated helper, reaches the
+  resume advice with the round token, the composed brief, and beneath it the
+  review's own justification and the finding with its <code>file:line</code>.
+  A second review with no finding reaches the review's justification alone.</p>
+</section>
