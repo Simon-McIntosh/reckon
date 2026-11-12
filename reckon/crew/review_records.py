@@ -1147,7 +1147,10 @@ def _filed_match(
 # record pays one pass per pointer. The index below holds those two facts — not
 # the record content — and is built at most once per store directory and per
 # process, then reused while the directory's stat identity is unchanged, which
-# is exactly when its set of entries can have moved.
+# is exactly when its set of entries can have moved. The last element says
+# whether the whole-store revalidation is settled for the entries held: true
+# for an index adopted from a persisted document whose store has not moved,
+# false for one this process built or updated itself.
 
 _STORE_INDEXES: dict[
     Path,
@@ -1471,11 +1474,14 @@ def _persisted_index_document(
     file it finds, so that reader can tell a file it may reuse from one it must
     parse, and the facts both lookups select on. The file's path is not stored:
     the store directory is in the document, and a name inside it resolves
-    there.
+    there. The directory's own identity at the moment the entries were read is
+    stored beside them, so a reader can tell a store that has not moved from
+    one that has without listing it.
     """
     return {
         "code_stamp": _index_code_stamp(),
         "store": _resolved(directory),
+        "directory_identity": list(_store_directory_identity(directory) or ()),
         "entries": [
             {
                 "name": entry["name"],
@@ -1530,14 +1536,20 @@ def _entry_from_persisted(directory: Path, raw: Any) -> dict[str, Any] | None:
     }
 
 
-def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
+def _load_persisted_entries(
+    directory: Path,
+) -> tuple[list[dict[str, Any]], tuple[int, ...] | None] | None:
     """The store's index as another process left it, or ``None`` when unusable.
 
     An index is usable only when this checkout's reader wrote it for this store
     directory: a document stamped with other code's identity, or naming another
     store, is ignored rather than trusted, and the caller builds from scratch.
     A missing, half-written or malformed document gets the same answer, because
-    a cache that cannot be read is not a cache.
+    a cache that cannot be read is not a cache. The directory's identity at the
+    moment the document's entries were read comes back with them, so the caller
+    can tell a store whose set of files has not moved since from one that has;
+    a document written before that identity was recorded carries none, and the
+    caller then treats it as one whose store it must look at.
     """
     store = _resolved(directory)
     if not store:
@@ -1552,13 +1564,20 @@ def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
     raw_entries = document.get("entries")
     if not isinstance(raw_entries, list):
         return None
+    raw_identity = document.get("directory_identity")
+    recorded: tuple[int, ...] | None = None
+    if isinstance(raw_identity, list) and raw_identity:
+        try:
+            recorded = tuple(int(item) for item in raw_identity)
+        except (TypeError, ValueError):
+            return None
     entries: list[dict[str, Any]] = []
     for raw in raw_entries:
         entry = _entry_from_persisted(directory, raw)
         if entry is None:
             return None
         entries.append(entry)
-    return entries
+    return entries, recorded
 
 
 def _store_indexes(
@@ -1576,6 +1595,16 @@ def _store_indexes(
     costs one listing and one parse per changed file rather than a pass over
     all of them. The updated index is persisted for the next process on the
     node.
+
+    A process holding none that loads a persisted index adopts it as it stands
+    when the directory's identity is the one that document recorded: no record
+    has been added, removed or atomically replaced since its entries were read,
+    which is every write the store's own writers make. Only a document whose
+    store has moved is listed again, so a one-shot promotion pays one read of
+    the index rather than a stat per stored record. That adoption is also why
+    the adopted entries are held as already revalidated: the whole-store pass
+    below stays for an index this process built or updated itself, where a
+    record rewritten in place is exactly the change it exists to see.
     """
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
@@ -1589,10 +1618,25 @@ def _store_indexes(
     cached = _STORE_INDEXES.get(directory)
     if cached is not None and cached[0] == identity:
         return cached[1], cached[2]
-    entries = cached[3] if cached is not None else _load_persisted_entries(directory)
+    settled_identity: tuple[int, ...] | None = None
+    if cached is not None:
+        entries: list[dict[str, Any]] | None = cached[3]
+    else:
+        loaded = _load_persisted_entries(directory)
+        entries, settled_identity = loaded if loaded is not None else (None, None)
     if entries is None:
         reviewed, review_runs = _build_store_indexes(directory)
         entries = _index_files(reviewed, review_runs)
+    elif settled_identity == identity:
+        reviewed, review_runs = _index_maps(entries)
+        _STORE_INDEXES[directory] = (
+            identity,
+            reviewed,
+            review_runs,
+            entries,
+            True,
+        )
+        return reviewed, review_runs
     else:
         entries = _update_store_entries(directory, entries)
         reviewed, review_runs = _index_maps(entries)
@@ -1646,7 +1690,10 @@ def _refresh_store_entries(
     costs seconds. It is therefore paid at most once per store directory and per
     process, and only for a lookup no entry the index holds can explain -- a
     record rewritten in place to name a run the index has no entry for at all.
-    Every later miss answers from the refreshed index.
+    Every later miss answers from the refreshed index. An index adopted from a
+    persisted document whose store has not moved holds that pass as already
+    paid: its entries were read from a store no writer has changed since, and
+    the pass would re-derive them at a cost that grows with the store.
     """
     if _TICK_REVIEW_STORES.get() is not None:
         return _store_index(directory)
