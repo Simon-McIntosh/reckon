@@ -5451,16 +5451,28 @@ def _apply_section_rederivation(
 
     The fields stay marked as the section's: they were re-derived from it, so a
     later release re-derives them again from text it moved to since.
+
+    A field the pointer no longer marks is skipped. ``crew queue edit`` clears
+    the mark on every field it changes, and that clearing is what makes the
+    field the coordinator's: writing a re-derived value onto it would restore
+    the section's text over the edit and re-mark the field, so every later
+    release would do it again.
     """
     node_block = dict(pointer.get("node") or {})
     marks = dict(node_block.get("section_derived") or {})
+    applied: set[str] = set()
     for name, value in values.items():
+        if name not in marks:
+            continue
         node_block[name] = value
         marks[name] = digests[name]["new"]
+        applied.add(name)
     node_block["section_derived"] = marks
     pointer["node"] = node_block
     changed = {
-        name: dict(pair) for name, pair in digests.items() if pair["old"] != pair["new"]
+        name: dict(pair)
+        for name, pair in digests.items()
+        if pair["old"] != pair["new"] and name in applied
     }
     if changed:
         pointer["section_rederivation"] = changed
@@ -5500,6 +5512,10 @@ def _record_rederivation_refusal(
         pointer["queue_hold"] = hold
 
 
+class _RederivationRefusedError(Exception):
+    """A release whose section cannot be read, carrying the refusal's reason."""
+
+
 def _release_plan_review_holds(
     live: Sequence[Mapping[str, Any]],
     *,
@@ -5528,49 +5544,54 @@ def _release_plan_review_holds(
             continue
         run_id = str(pointer.get("run_id") or "")
         ended = _now()
-        # The hold was taken because the section moved; the release launches
-        # against the text it moved to, so the fields it supplied are re-derived
-        # here and the launched node is the current contract rather than the one
-        # the request was queued under.
-        try:
-            rederived, digests = _section_rederivation(pointer)
-        except Exception as exc:  # noqa: BLE001 - one request's section cannot
-            # stop the pass for every other request and project, so a failure
-            # here holds this request and records why.
-            _record_rederivation_refusal(
-                pointer, run_id, f"{type(exc).__name__}: {exc}"
-            )
-            continue
 
         def release(
             current: dict[str, Any],
             prior_phase: str = prior,
             released_at: datetime = ended,
-            values: dict[str, Any] = rederived,
-            changed: dict[str, dict[str, str]] = digests,
         ) -> dict[str, Any]:
+            # The hold was taken because the section moved; the release launches
+            # against the text it moved to, so the fields it supplied are
+            # re-derived here and the launched node is the current contract
+            # rather than the one the request was queued under. It is derived
+            # from the pointer as it stands now, under the pointer's own lock:
+            # the pass's snapshot was taken before a coordinator's ``crew queue
+            # edit`` may have changed a field, and deriving from it writes the
+            # section's text back over that edit.
+            try:
+                rederived, digests = _section_rederivation(current)
+            except Exception as exc:  # one request's section cannot
+                # stop the pass for every other request and project, so a
+                # failure here holds this request and records why.
+                raise _RederivationRefusedError(f"{type(exc).__name__}: {exc}") from exc
             started = parse_utc((current.get("queue_hold") or {}).get("started_at"))
             queued_at = parse_utc(current.get("queued_at"))
             if started is not None and queued_at is not None:
                 current["queued_at"] = (queued_at + (released_at - started)).isoformat()
-            if values:
-                _apply_section_rederivation(current, values, changed)
+            if rederived:
+                _apply_section_rederivation(current, rederived, digests)
             current["phase"] = prior_phase
             current.pop("queue_hold", None)
             current["queue_released_at"] = released_at.isoformat()
             return current
 
         try:
-            runs._mutate_pointer(run_id, release)
+            written = runs._mutate_pointer(run_id, release)
+        except _RederivationRefusedError as exc:
+            _record_rederivation_refusal(pointer, run_id, str(exc))
+            continue
         except Exception:  # noqa: BLE001, S112 - an unwritable pointer stays held
             continue
         if isinstance(pointer, dict):
+            # The pass launches from this pass's in-memory records, so it takes
+            # the node the release actually wrote rather than the one its
+            # snapshot carried.
+            pointer["node"] = dict(written.get("node") or pointer.get("node") or {})
             pointer["phase"] = prior
             pointer.pop("queue_hold", None)
-            if rederived:
-                # The pass launches from this pass's in-memory records, so the
-                # node it hands the launcher is the one re-derived above.
-                _apply_section_rederivation(pointer, rederived, digests)
+            recorded = written.get("section_rederivation")
+            if isinstance(recorded, Mapping) and recorded:
+                pointer["section_rederivation"] = dict(recorded)
         released.append(run_id)
     return released
 
