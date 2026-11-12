@@ -4262,7 +4262,6 @@ from .dispatch_plan import (  # noqa: E402
     _repairs_ledger_root as _repairs_ledger_root,
     _require_repairs_target as _require_repairs_target,
     _resolved_wave_id as _resolved_wave_id,
-    _session_unreconciled_refusal as _session_unreconciled_refusal,
     continue_hold_on_its_offered_local_lane as continue_hold_on_its_offered_local_lane,
     open_endedness_score as open_endedness_score,
     plan_dispatch as _raw_plan_dispatch,
