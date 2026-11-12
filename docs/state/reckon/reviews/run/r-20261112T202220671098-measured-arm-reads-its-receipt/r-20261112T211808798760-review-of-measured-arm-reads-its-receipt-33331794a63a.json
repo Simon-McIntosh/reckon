@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T21:31:59.039Z",
+  "dispatched_at": "2026-11-12T21:20:34Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/negative-control.log",
+      "line": 1,
+      "severity": "blocking",
+      "text": "the log the reviewed manifest names as its declared negative control holds only the three header lines and no test output and no EXIT line, while the manifest quotes '3 failed, 2 passed in 15.34s' EXIT=1 and `reckon crew check --manifest` on that run reports it records no exit status; the mutation's red result survives only in stream.jsonl, so the artifact named for the claim cannot show it and the record refuses on its own evidence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/population-base-inplace.log",
+      "line": 3,
+      "severity": "non-blocking",
+      "text": "the recorded command is 'pytest -n 4 <13 landing-measure importer files>', an angle-bracket placeholder rather than the literal command that ran, so the base population arm cannot be re-executed from its own log and a later reader cannot check the 3 failed / 134 passed figure."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/population-head.log",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the head population log opens straight into 'bringing up nodes...' with no # command line, so the arm does not state what produced its '3 failed, 139 passed' and the delta against the base arm rests on the manifest's prose rather than on the log."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html",
+      "line": 61,
+      "severity": "non-blocking",
+      "text": "the fragment attributes '56 passed' to head cadd0db0, while gate/after-arm.log records that run at revision 33331794a6; a figure cited at a revision that did not produce it is the shape of a record that cannot be reconciled with its log."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py:283 reinstates the last-line atom and asserts the red base becomes unreadable, so the repair cannot regress silently.",
+    "evidence": "gate/baseline-arm.log ends '51 passed ... EXIT=0' and gate/after-arm.log ends '56 passed ... EXIT=0', but gate/negative-control.log carries only its three header lines and no result.",
+    "fit": "landing_measure.py:83-88 writes the new constant and its comment in the mechanism style the surrounding _FAILED_ID and BOUND_MULTIPLE use, with no plan or ticket labels.",
+    "goal_fidelity": "reckon/crew/landing_measure.py:770 reads the receipt with _EXIT_RECEIPT over the whole log, so an arm whose scheduler line follows EXIT=1 yields status 1 instead of 3.",
+    "reuse": "landing_measure.py:88 adds a third line-anchored EXIT= pattern beside the one owned by reckon/crew/review.py:2274 and reckon/crew/reports.py:1399 rather than extending a shared reader.",
+    "scope_discipline": "the three files in the diff (landing_measure.py, the new test, the evidence fragment) are exactly the three write paths the dispatch declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the dispatch's goal ('Read a landing-measured arm by its exit receipt when the scheduler prints lines after it') and reckon/crew/landing_measure.py:763-790, which reads the last line-anchored EXIT= receipt anywhere in the log instead of requiring it as the log's last line.\nVERDICT done_when: read the done_when in dispatch-detail.json and compared it with tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py, whose five tests cover the red-base read, the landing transition with zero added failures, no receipt, a disagreeing receipt, and the declared mutation; the gate logs record 51 passed EXIT=0 at the base and 56 passed EXIT=0 at the head.\nVERDICT write_paths: read the manifest's declared write paths (reckon/crew/landing_measure.py, tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py, docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html); every path the diff touches is one of them.\nVERDICT manifest: read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/manifest.md; it states base 51 passed and the head 56 passed with EXIT=0 and zero added failures, but the negative-control log it names holds no result and two population logs carry no re-runnable command, which `reckon crew check --manifest` reports as ok:false.\nVERDICT diff: read all three commits against base 9b577c60bee52b0240be8bd696f26b4cadb31592 (f5087d1880 the receipt reader, cadd0db0f2 the in-place wording restoration, 33331794a6 the evidence fragment); 401 insertions across three files, all inside the declared scope.\nCALL_SITES: reckon/crew/promotion_records.py:_evaluate_suite_delta, reckon/crew/promotion_evidence.py:_control_mutation_arm\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/landing_measure.py:770 reads the receipt with _EXIT_RECEIPT over the whole log, so an arm whose scheduler line follows EXIT=1 yields status 1 instead of 3.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate/baseline-arm.log ends '51 passed ... EXIT=0' and gate/after-arm.log ends '56 passed ... EXIT=0', but gate/negative-control.log carries only its three header lines and no result.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the three files in the diff (landing_measure.py, the new test, the evidence fragment) are exactly the three write paths the dispatch declares.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_measured_arm_reads_its_receipt_past_scheduler_lines.py:283 reinstates the last-line atom and asserts the red base becomes unreadable, so the repair cannot regress silently.\nSCORE fit: 18\nJUSTIFICATION fit: landing_measure.py:83-88 writes the new constant and its comment in the mechanism style the surrounding _FAILED_ID and BOUND_MULTIPLE use, with no plan or ticket labels.\nSCORE reuse: 13\nJUSTIFICATION reuse: landing_measure.py:88 adds a third line-anchored EXIT= pattern beside the one owned by reckon/crew/review.py:2274 and reckon/crew/reports.py:1399 rather than extending a shared reader.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/negative-control.log:1 blocking: the log the reviewed manifest names as its declared negative control holds only the three header lines and no test output and no EXIT line, while the manifest quotes '3 failed, 2 passed in 15.34s' EXIT=1; the mutation's red result survives only in stream.jsonl, so the artifact named for the claim cannot show it and the record refuses on its own evidence.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/population-base-inplace.log:3 non-blocking: the recorded command is 'pytest -n 4 <13 landing-measure importer files>', an angle-bracket placeholder rather than the literal command that ran, so the base population arm cannot be re-executed from its own log.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T202220671098-measured-arm-reads-its-receipt/gate/population-head.log:1 non-blocking: the head population log opens straight into 'bringing up nodes...' with no # command line, so the arm does not state what produced its '3 failed, 139 passed'.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/measured-arm-reads-its-receipt.html:61 non-blocking: the fragment attributes '56 passed' to head cadd0db0, while gate/after-arm.log records that run at revision 33331794a6, so the figure is cited at a revision that did not produce it.\n",
+  "review_run_id": "r-20261112T211808798760-review-of-measured-arm-reads-its-receipt-33331794a63a",
+  "reviewed_base_sha": "9b577c60bee52b0240be8bd696f26b4cadb31592",
+  "reviewed_head_sha": "33331794a63a08fac5ea111ac0dfe66ec1350a4a",
+  "reviewed_run_id": "r-20261112T202220671098-measured-arm-reads-its-receipt",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 13,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:43:43.595244+00:00",
+  "total": 102
+}
