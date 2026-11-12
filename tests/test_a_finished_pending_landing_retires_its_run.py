@@ -6,7 +6,7 @@ import json
 import subprocess
 
 from reckon import crew_run_commands
-from reckon.crew import pending_landing, runs
+from reckon.crew import merge, pending_landing, runs
 from tests.helpers.git import git
 from tests.test_a_conflicting_landing_is_repaired import (
     ORIGINAL,
@@ -126,4 +126,37 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
     assert results[0]["status"] == "finished", results
     _assert_remote_carries(run)
     assert not runs.pointer_path(run["run_id"]).exists()
+    assert not pending_landing._record_path(run["run_id"]).exists()
+
+
+def test_a_newer_attempt_keeps_its_pointer_and_worktree(deliveries):
+    deliver, _resumed = deliveries
+    run = _promoted_repair(deliver)
+    marked = runs.read_pointer(run["run_id"])
+    newer = {
+        **marked,
+        "attempt": int(marked.get("attempt") or 0) + 1,
+        "phase": "running",
+    }
+    assert (
+        pending_landing.pointer_attempt(newer)
+        != marked["pending_landing_repair_attempt"]
+    )
+
+    def land_with_newer_attempt(repository, **kwargs):
+        runs._write_json(runs.pointer_path(run["run_id"]), newer)
+        return merge.land(repository, **kwargs)
+
+    results = pending_landing.finish_pending_landings(
+        only_run=run["run_id"], land=land_with_newer_attempt
+    )
+
+    assert results[0]["status"] == "finished", results
+    assert results[0]["head"] == run["head"]
+    _assert_remote_carries(run)
+    assert runs.pointer_path(run["run_id"]).is_file()
+    assert runs.read_pointer(run["run_id"]) == newer
+    assert run["worktree"].is_dir()
+    assert git(run["worktree"], "rev-parse", "HEAD") == run["head"]
+    assert str(run["worktree"]) in git(run["repository"], "worktree", "list")
     assert not pending_landing._record_path(run["run_id"]).exists()
