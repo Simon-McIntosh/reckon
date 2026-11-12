@@ -3,6 +3,13 @@
   "added_failure_ids": [],
   "completed_at": "2026-11-12T19:11:57.115Z",
   "dispatched_at": "2026-11-12T18:59:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "refuted: the finding cites 85df5f3562b7d20bf3de720eb4f416b9971c1639, which swaps two characters of the real commit 85df5f3562b7d20bf3de720be4f416b9971c1639. That commit is in the object store (git cat-file -t answers commit, git show reads its message and diff) and is an ancestor of the head, so landing the head merges it. The manifest's commits list omitting it is cosmetic.",
+      "recorded_at": "2026-11-12T19:17:45.363349+00:00"
+    }
+  },
   "findings": [
     {
       "file": "tests/test_crew.py",
