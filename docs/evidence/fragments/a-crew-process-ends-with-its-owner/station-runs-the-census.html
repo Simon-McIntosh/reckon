@@ -1,38 +1,47 @@
 <section id="station-runs-the-census-landing">
   <h3>The station applies the ownership census every minute</h3>
-  <p>The station starts a dedicated census thread before its first tick and joins
-  it on shutdown. The thread calls the existing census and apply functions,
-  preserving their local ownership checks, ancestry exclusion, identity
-  revalidation and pidfd signalling. Its monotonic interval is 60 seconds;
-  census work cannot hold the heartbeat, review reflex or transition tick.</p>
-  <p>Every candidate is printed to station stderr before apply, followed by its
-  stopped, spared or refused result. Each JSON record names the pid and recorded
-  owner. An unreadable census prints its exception and retries on the next beat.</p>
-  <table>
+  <p>The station runs a dedicated census thread beside its tick and heartbeat,
+  and only when its caller opts in. Starting the station no longer signals
+  anything as a side effect: a station run that did not ask for the sweep never
+  calls the census and never opens a process descriptor. The thread calls the
+  existing census and apply functions, so local ownership checks, ancestry
+  exclusion and pidfd signalling are unchanged. Its monotonic interval is 60
+  seconds, and its join is bounded, so a slow sweep cannot hold shutdown.</p>
+  <p>Apply revalidates a whole sweep against one walk of the process table
+  instead of walking <code>/proc</code> once per listed pid, and every row is
+  judged against that same table. The target's start tick is confirmed again
+  after its descriptor is opened, so a pid recycled mid-sweep is spared rather
+  than signalled. The stop line is printed only after that confirmation:
+  <code>stopping</code> is followed by the result, each JSON record naming the
+  pid and its recorded owner, and a spared row prints no stop line at all. An
+  unreadable census prints its exception and retries on the next beat.</p>
+  <table id="station-runs-the-census-measures">
     <caption>Verification of the isolated change</caption>
     <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
     <tbody>
-      <tr><td>Base station with the planted-stub check</td><td>1 failed in
-      22.37 s, exit 1: <code>ownerless stub survived the station beat</code>.
-      Census first identified exactly that orphan, establishing the instrument
-      could see it.</td></tr>
-      <tr><td>Focused checks</td><td>3 passed in 8.51 s, exit 0. Exactly one
-      ownerless stub stopped with SIGTERM; the live-owned and foreign-host-owned
-      stubs survived. Stderr carried both target and result with its owner.
-      The cadence check rejects a pass just before 60 seconds and accepts the
-      boundary; a failed pass is visibly retried.</td></tr>
-      <tr><td>Armed suites on all_debug</td><td>Base: 51 passed in 9.10 s.
-      Source head: 54 passed in 11.80 s. Both exit 0; zero added failures.</td></tr>
-      <tr><td>Station/census importer arms on all_debug</td><td>Base: 3 failed,
-      148 passed in 52.04 s. Source head: 3 failed, 151 passed in 51.33 s.
-      Identical failing test identities; zero added failures.</td></tr>
-      <tr><td>Lint and format</td><td>Ruff check and format check pass for
-      both changed Python files.</td></tr>
+      <tr><td>Node suite, base and head on a partition node</td><td>Base
+      <code>51 passed in 10.26 s</code>; head <code>58 passed in 10.30 s</code>.
+      Both exit 0; zero added failures.</td></tr>
+      <tr><td>Negative control on the base source</td><td><code>6 failed, 1
+      passed</code>, exit 1, including <code>ownerless stub survived the station
+      beat</code>: the base station never runs the sweep at all.</td></tr>
+      <tr><td>Station and census importer arms</td><td>Base <code>1 failed, 228
+      passed in 73.79 s</code>; head <code>1 failed, 228 passed in 72.49 s</code>.
+      Identical failing identity, zero added and zero removed.</td></tr>
+      <tr><td>Opt-in guard</td><td>A planted ownerless stub survives a station
+      run with the sweep unrequested while <code>os.kill</code>, the census
+      module's pidfd open and its pidfd signal all raise on any call.</td></tr>
+      <tr><td>Shutdown</td><td>A recording beat shows <code>start</code> then
+      <code>stop</code> across a station run that opted in.</td></tr>
+      <tr><td>Lint and format</td><td>Ruff check and format check pass on every
+      staged Python path.</td></tr>
     </tbody>
   </table>
-  <p>Implementation commit: <code>bcea391a434d8c261f8aa593a0d858ea85e31572</code>.
-  Durable receipts, the negative control and imported-module provenance are in
-  run <code>r-20261112T043103964878-station-runs-the-census</code>.
-  Partition job <code>1311377</code> ran on <code>98dci4-clu-3141</code>.
-  The coordinator owns integration, activation and plan-state writeback.</p>
+  <p>Implementation commits <code>2bdded66a569614f4a93489e91b1dd1b36087a17</code>
+  and its test repair. Durable receipts, the negative-control log and
+  imported-module provenance are in run
+  <code>r-20261112T043103964878-station-runs-the-census</code>; the arms ran on
+  an <code>all_debug</code> partition node, never on the fleet node. The station
+  CLI that would pass the opt-in option is another node's write scope, so
+  activating the sweep there belongs to the coordinator.</p>
 </section>
