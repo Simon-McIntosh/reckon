@@ -81,6 +81,13 @@ BOUND_MULTIPLE = 2.0
 #: A line a failing test runner reports its failing id on.
 _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
 
+#: The receipt a partitioned arm's own EXIT trap prints. The scheduler writes
+#: lines of its own after it — an ``srun: error: … Exited with exit code N``
+#: line, for one — so the receipt is read on its own line and not as the log's
+#: last one. The last match wins: a line the suite itself printed earlier is
+#: superseded by the trap's own, which is written after everything the arm ran.
+_EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
+
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
 
@@ -259,6 +266,10 @@ class Arm:
     failure_ids: tuple[str, ...]
     log_path: str = ""
     timed_out: bool = False
+    #: Why a submitted arm's log could not be read, when the reason is known:
+    #: a log with no receipt, or one whose receipt disagrees with the status
+    #: the scheduler returned. Empty when the arm simply has no status.
+    unreadable_reason: str = ""
     #: Wall-clock seconds the arm took, and how many files its population
     #: read. The pair is what a later arm's bound is sized from, so an arm
     #: that took 900 s is not judged again under a bound that ignores it.
@@ -705,6 +716,7 @@ def _arm(
         int(finished.returncode),
         failing_ids(output),
         str(log_path),
+        unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
         elapsed_seconds=elapsed,
         file_count=file_count,
     )
@@ -911,16 +923,29 @@ exit "$status"
         output = log.read_text() if log.exists() else ""
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
-        receipt = re.search(r"^EXIT=(\d+)\n?\Z", output, re.MULTILINE)
-        status = int(receipt.group(1)) if receipt else 3
-        if status != finished.returncode:
+        # The scheduler appends lines of its own to the job's log after the
+        # arm's trap has printed the receipt, so the receipt is read on its own
+        # line rather than as the log's last one; the last such line is the
+        # trap's, since the trap prints after everything the arm itself ran.
+        receipts = _EXIT_RECEIPT.findall(output)
+        status = int(receipts[-1]) if receipts else 3
+        reason = ""
+        if not receipts:
+            reason = "carries no exit receipt"
+        elif status != finished.returncode:
+            reason = (
+                f"reported exit {status} in its receipt while the job returned "
+                f"{finished.returncode}"
+            )
             status = 3
-        return subprocess.CompletedProcess(
+        returned = subprocess.CompletedProcess(
             command,
             status,
             output or f"{finished.stdout or ''}{finished.stderr or ''}",
             "",
         )
+        returned.unreadable_reason = reason
+        return returned
 
     return run
 
@@ -1235,6 +1260,8 @@ def armed_observations(
             unreadable = (
                 f"the measured {name} arm exceeded its {timeout:g}s bound"
                 if arm.timed_out
+                else f"the measured {name} arm {arm.unreadable_reason}"
+                if arm.unreadable_reason
                 else f"the measured {name} arm did not run"
             )
     if unreadable:
@@ -1317,6 +1344,8 @@ def control_mutation_observation(
             "unreadable": (
                 f"the control mutation exceeded its {timeout:g}s bound"
                 if arm.timed_out
+                else f"the control mutation {arm.unreadable_reason}"
+                if arm.unreadable_reason
                 else "the control mutation did not run"
             )
         }
