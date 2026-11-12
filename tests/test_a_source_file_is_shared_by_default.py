@@ -157,15 +157,13 @@ def test_an_exclusive_pattern_is_named_in_the_refusal(repository: Path) -> None:
 @pytest.mark.parametrize(
     "owner_path,joiner_path", [(SOURCE, "pkg"), ("pkg", SOURCE), ("pkg", "pkg")]
 )
-def test_directory_claims_stay_exclusive(
+def test_directory_claims_share_their_files_under_a_shared_root(
     repository: Path, owner_path: str, joiner_path: str
 ) -> None:
     owner = _dispatch(repository, "owner", owner_path)
+    joiner = _dispatch(repository, "joiner", joiner_path)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", joiner_path)
-
-    assert refusal.value.run_id == owner["run_id"]
+    assert owner["run_id"] != joiner["run_id"]
 
 
 def test_a_declaration_without_shared_roots_takes_the_default(
@@ -185,18 +183,18 @@ def test_explicit_shared_paths_still_work_without_roots(repository: Path) -> Non
     assert _dispatch(repository, "joiner", SOURCE)["run_id"]
 
 
-def test_queue_edits_keep_a_directory_claim_exclusive(repository: Path) -> None:
-    owner = _dispatch(repository, "owner", "pkg")
+def test_queue_edits_admit_a_file_under_a_directory_claim(repository: Path) -> None:
+    _dispatch(repository, "owner", "pkg")
     request = _queue(repository, node_id="joiner", run_id="r-joiner")
+    request["node"]["write_paths"] = [SOURCE]
 
     refusal = queue_edit._live_claim_conflict(_node("joiner", SOURCE), request)
 
-    assert refusal is not None
-    assert refusal.run_id == owner["run_id"]
+    assert refusal is None, refusal
 
 
-def test_admission_keeps_a_directory_claim_exclusive(repository: Path) -> None:
-    owner = _dispatch(repository, "owner", "pkg")
+def test_admission_admits_a_file_under_a_directory_claim(repository: Path) -> None:
+    _dispatch(repository, "owner", "pkg")
     request = _queue(repository, node_id="joiner", run_id="r-joiner")
     request["node"]["write_paths"] = [SOURCE]
 
@@ -207,8 +205,7 @@ def test_admission_keeps_a_directory_claim_exclusive(repository: Path) -> None:
         shared_files=runs._shared_write_paths(PROJECT, repository),
     )
 
-    assert hold is not None
-    assert owner["run_id"] in str(hold)
+    assert hold is None, hold
 
 
 def test_queue_edits_admit_an_exact_shared_file_claim(repository: Path) -> None:
@@ -244,9 +241,12 @@ def test_root_membership_respects_file_and_directory_boundaries(
     assert SOURCE in shared
     assert "pkg/extensionless" in shared
     assert "pkg/future.py" in shared
-    assert "pkg" not in shared
+    # A directory under a shared root shares as the files beneath it do, so a
+    # claim on it admits a peer; an absent suffixless path is still read as a
+    # directory claim rather than a file, and is not itself a shared file.
+    assert "pkg" in shared
+    assert "pkg/directory.py" in shared
     assert "pkg/future-directory" not in shared
-    assert "pkg/directory.py" not in shared
     assert "pkg-other/source.py" not in shared
     assert "../outside.py" not in shared
 

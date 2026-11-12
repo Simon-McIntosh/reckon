@@ -259,7 +259,7 @@ def _live_claim_conflict(
                     claim
                     for claim in theirs
                     if runs_module._scopes_overlap(path, claim)
-                    and not (path == claim and path in shared)
+                    and not runs_module._claim_paths_share(shared, path, claim)
                 ),
                 None,
             )
