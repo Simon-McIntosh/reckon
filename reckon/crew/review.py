@@ -1803,16 +1803,27 @@ _GATE_FAILURE_RE = re.compile(r"^(?:FAILED|ERROR)\s+(.+)$", re.MULTILINE)
 # number, separated by single colons — and that shape is a message a test
 # printed, never a test that failed.
 _FAILURE_FILE_ID_RE = re.compile(r"^\S+\.py$")
+_FAILURE_BARE_ID_RE = re.compile(r"^\S+$")
+_CAPTURED_RECORD_RE = re.compile(r"^[^\s:]+:\S+:\d+(?:\s|$)")
 
 
 def _is_failure_node_id(candidate: str) -> bool:
-    """Whether a failure line's id name is a test pytest reported.
+    """Whether a failure line's id name is a test identity rather than printed text.
 
-    The short-summary id is a node id (``tests/test_x.py::TestY::test_z``, with
-    any parametrisation in brackets) or, for a collection error, the file pytest
-    could not import. A captured logging record carries neither shape.
+    A short-summary id is a node id (``tests/test_x.py::TestY::test_z``, with
+    any parametrisation in brackets), the file path a collection error names, or
+    the bare test name a manifest records and the shared matching rule lets
+    stand for a qualified id. A captured logging record is a logger, filename
+    and line number separated by single colons and followed by a message, which
+    is none of those.
     """
-    return "::" in candidate or _FAILURE_FILE_ID_RE.match(candidate) is not None
+    if _CAPTURED_RECORD_RE.match(candidate):
+        return False
+    return (
+        "::" in candidate
+        or _FAILURE_FILE_ID_RE.match(candidate) is not None
+        or _FAILURE_BARE_ID_RE.match(candidate) is not None
+    )
 
 
 # A ctest gate log's failure summary. Every entry under the block header is a
