@@ -21,12 +21,21 @@ def local_host() -> str:
     return socket.gethostname()
 
 
+def _pid_namespace() -> str:
+    """Identify the process table in which a holder's PID has meaning."""
+    try:
+        return os.readlink("/proc/self/ns/pid")
+    except OSError:
+        return ""
+
+
 @dataclass(frozen=True)
 class LeaseHolder:
     host: str
     pid: int
     job: str
     token: str
+    pid_namespace: str = ""
 
 
 class HostLease:
@@ -43,7 +52,7 @@ class HostLease:
         clock: Callable[[], float] = time.time,
     ) -> None:
         self.path = state / "leases" / f"{name}.json"
-        self.owner = LeaseHolder(host, pid, job, uuid4().hex)
+        self.owner = LeaseHolder(host, pid, job, uuid4().hex, _pid_namespace())
         self._clock = clock
         self._inode: int | None = None
 
@@ -57,6 +66,7 @@ class HostLease:
                 int(record["pid"]),
                 str(record["job"]),
                 str(record["token"]),
+                str(record.get("pid_namespace") or ""),
             ), stat
         except (OSError, ValueError, KeyError, TypeError):
             try:
@@ -77,11 +87,17 @@ class HostLease:
         for _ in range(3):
             holder, stat = self._read()
             if holder is not None and stat is not None:
-                if (holder.host, holder.pid, holder.job) == (
-                    self.owner.host,
-                    self.owner.pid,
-                    self.owner.job,
-                ) and self._clock() - stat.st_mtime < LEASE_STALE_SECONDS:
+                if (
+                    (holder.host, holder.pid, holder.job, holder.pid_namespace)
+                    == (
+                        self.owner.host,
+                        self.owner.pid,
+                        self.owner.job,
+                        self.owner.pid_namespace,
+                    )
+                    and holder.pid_namespace
+                    and self._clock() - stat.st_mtime < LEASE_STALE_SECONDS
+                ):
                     self.owner = holder
                     self._inode = stat.st_ino
                     return True
@@ -147,7 +163,19 @@ class HostLease:
         return True
 
     def release_holder(self, holder: LeaseHolder) -> bool:
-        """Clear an exact holder after an external seat lock proves it has exited."""
+        """Clear a dead holder only from the process table its PID names.
+
+        A worker can share the host's lease directory while seeing a separate
+        PID namespace. Its failed PID probe says nothing about the host's
+        holder, so it must leave the lease to renewal or stale expiry. Records
+        with no namespace likewise cannot justify an early release.
+        """
+        if (
+            holder.host != self.owner.host
+            or not holder.pid_namespace
+            or holder.pid_namespace != self.owner.pid_namespace
+        ):
+            return False
         current, stat = self._read()
         if current != holder or stat is None:
             return False
