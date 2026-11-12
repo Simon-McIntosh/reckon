@@ -33,9 +33,7 @@ from tests.test_the_reflex_resumes_an_unpromoted_run import (  # noqa: F401
     _stub_dispatch,
     _stub_resume,
     _sweep,
-)
-from tests.test_the_reflex_resumes_an_unpromoted_run import (
-    isolated_project as _isolated_project,  # noqa: F401 - fixture, requested by name
+    isolated_project,
 )
 
 pytestmark = pytest.mark.arms_watch_producer
@@ -65,7 +63,7 @@ def _busy(record: dict) -> str:
 
 
 def test_a_dead_recorded_pid_does_not_hold_the_round(
-    isolated_project: tuple[Path, Path, str],
+    request: pytest.FixtureRequest,
 ) -> None:
     """A resume stream without a result, and a recorded pid that is gone.
 
@@ -73,7 +71,7 @@ def test_a_dead_recorded_pid_does_not_hold_the_round(
     process that wrote it has exited, so the turn cannot still be producing
     work and the round is free.
     """
-    config_home, repo, _head_sha = isolated_project
+    config_home, repo, _head_sha = request.getfixturevalue("isolated_project")
     record = _completed_pointer(config_home, repo)
     record["pid"] = DEAD_PID
     runs._write_json(runs.pointer_path(RUN_ID), record)
@@ -83,7 +81,7 @@ def test_a_dead_recorded_pid_does_not_hold_the_round(
 
 
 def test_a_live_recorded_pid_still_holds_the_round(
-    isolated_project: tuple[Path, Path, str],
+    request: pytest.FixtureRequest,
 ) -> None:
     """The same unfinished stream, with the worker still running.
 
@@ -92,7 +90,7 @@ def test_a_live_recorded_pid_still_holds_the_round(
     live worker's own, so the hold is asserted rather than the sentence naming
     it.
     """
-    config_home, repo, _head_sha = isolated_project
+    config_home, repo, _head_sha = request.getfixturevalue("isolated_project")
     record = _completed_pointer(config_home, repo)
     record["pid"] = os.getpid()
     runs._write_json(runs.pointer_path(RUN_ID), record)
@@ -102,7 +100,7 @@ def test_a_live_recorded_pid_still_holds_the_round(
 
 
 def test_a_run_recording_no_process_on_an_unfinished_stream_still_holds(
-    isolated_project: tuple[Path, Path, str],
+    request: pytest.FixtureRequest,
 ) -> None:
     """No recorded process is not a stopped worker: silence is not death.
 
@@ -110,7 +108,7 @@ def test_a_run_recording_no_process_on_an_unfinished_stream_still_holds(
     read answers unknown. The stream is then the only evidence there is, and it
     keeps its old reading.
     """
-    config_home, repo, _head_sha = isolated_project
+    config_home, repo, _head_sha = request.getfixturevalue("isolated_project")
     record = _completed_pointer(config_home, repo)
     record.pop("pid", None)
     runs._write_json(runs.pointer_path(RUN_ID), record)
@@ -120,7 +118,7 @@ def test_a_run_recording_no_process_on_an_unfinished_stream_still_holds(
 
 
 def test_a_dead_worker_does_not_hold_the_repair_from_dispatch(
-    isolated_project: tuple[Path, Path, str], monkeypatch: pytest.MonkeyPatch
+    request: pytest.FixtureRequest, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """The full reflex: the dead turn's round is repaired, not held.
 
@@ -129,7 +127,7 @@ def test_a_dead_worker_does_not_hold_the_repair_from_dispatch(
     must reach the retry and spend a second resume rather than reading the dead
     turn's stream as work in progress.
     """
-    config_home, repo, head_sha = isolated_project
+    config_home, repo, head_sha = request.getfixturevalue("isolated_project")
     record = _completed_pointer(config_home, repo)
     record["pid"] = DEAD_PID
     runs._write_json(runs.pointer_path(RUN_ID), record)
