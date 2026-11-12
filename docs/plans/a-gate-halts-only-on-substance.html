@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="33">
+<meta name="plan-version" content="34">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -103,6 +103,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261112T111500541074-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ee399ded5092" data-who="reckon-build" data-when="2026-11-12T11:25:20.302Z">
     <div class="r-comment-body"><p>review only, no plan edit — the one commit gained since the prior review (ee399ded50) is reviewed at ea4b01e2b0..ee399ded50 and scores 16/15/19/17/17/5 with two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261112T060350588311-a-brief-can-raise-the-budget-fence-with-a-record" data-who="reckon-build" data-when="2026-11-12T09:10:13Z">
+    <div class="r-comment-body"><p>verified and closed §3, then withdrew a false outside-scope claim — `crew dispatch --over-fence REASON` admits a 240 m budget only with a non-blank recorded reason (stored as over_fence_reason and carried by TaskNode.as_dict() onto the run record and ledger row), refuses without it naming --over-fence, and leaves an in-fence budget alone; three arms added at the bounded check (whitespace-only refused, whitespace-padded reason still admits, a queued request&#x27;s rebuild keeps the reason it recorded) — base 58 passed, after 61 passed, declared control 3 failed / 57 passed EXIT=1, strip probe 1 failed / 8 passed EXIT=1, round-trip control 1 failed EXIT=1; the earlier claim that _node_from_pointer drops over_fence_reason was wrong and is withdrawn, no repair node is owed</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>
