@@ -3112,11 +3112,12 @@ def launch_plan(
     # actually seeded — an unfenced, resumed or operator-settings launch
     # registers no server — so the instruction is composed here, from the
     # resolved fact, rather than at dispatch where only the flight key is
-    # known. A prompt already carrying one keeps exactly one.
-    if anchored_edit:
-        from reckon.crew.prompts import with_anchored_edit_instruction
+    # known. A prompt already carrying one keeps exactly one, and a launch that
+    # seeds none drops it: a lane change composes from the run's prompt file,
+    # which the anchored launch before it wrote.
+    from reckon.crew.prompts import with_anchored_edit_instruction
 
-        prompt = with_anchored_edit_instruction(prompt, launch_backend, at_launch=True)
+    prompt = with_anchored_edit_instruction(prompt, launch_backend, at_launch=True)
     if anchored_edit and dialect.name == "codex":
         # The server confines every path to its own ``--root`` set, so it is
         # handed the same roots the worker is: the delivery roots that survive

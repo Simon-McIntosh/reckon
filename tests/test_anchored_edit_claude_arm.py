@@ -14,6 +14,11 @@ from reckon._flight_schema import BackendConfig
 from reckon.anchored_edit import AnchoredEditor
 from reckon.crew import dispatch_launch, runs
 from reckon.crew.dispatch_admission import _fence_write_roots
+from reckon.crew.prompts import (
+    ANCHORED_EDIT_CLAUDE_INSTRUCTION,
+    ANCHORED_EDIT_HEADING,
+    ANCHORED_EDIT_INSTRUCTION,
+)
 
 BASE_SETTINGS = (
     '{\n  "enableAllProjectMcpServers": false,\n'
@@ -238,11 +243,6 @@ def test_a_prompt_already_instructed_keeps_one_copy(launch_case):
     left as it was written.
     """
     compose, _, _, _ = launch_case
-    from reckon.crew.prompts import (
-        ANCHORED_EDIT_CLAUDE_INSTRUCTION,
-        ANCHORED_EDIT_HEADING,
-    )
-
     already = (
         f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
     )
@@ -251,6 +251,107 @@ def test_a_prompt_already_instructed_keeps_one_copy(launch_case):
     assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
     assert plan.prompt.startswith("node prompt\n\n")
     assert plan.prompt.rstrip().endswith(ANCHORED_EDIT_CLAUDE_INSTRUCTION)
+
+
+def _answer_the_hook_trust_handshake(monkeypatch):
+    """Answer the codex hook-trust handshake without running the harness.
+
+    Composing a codex launch argv asks the installed harness which inbox hook
+    definition it will load, which costs a subprocess and a writable harness
+    home on whichever machine the suite runs. The subject here is the prompt a
+    launch hands its worker, so the exchange is answered from the definition
+    the argv carries in its place.
+    """
+    from reckon.hooks.install import worker_inbox_group
+
+    handshake = {
+        "result": {
+            "data": [
+                {
+                    "errors": [],
+                    "hooks": [
+                        {
+                            "key": "/<session-flags>/config.toml:post_tool_use:0:0",
+                            "currentHash": "sha256:" + "a" * 64,
+                            "source": "sessionFlags",
+                            "eventName": "postToolUse",
+                            "handlerType": "command",
+                            "command": worker_inbox_group()["hooks"][0]["command"],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    monkeypatch.setattr(_backends, "run_probe", lambda probe: handshake)
+
+
+@pytest.mark.parametrize(
+    "command, body",
+    [
+        ("claude", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("clive", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+    ],
+)
+def test_a_launch_seeding_none_drops_the_carried_instruction(
+    launch_case, monkeypatch, command, body
+):
+    """A lane change composes from the prompt file the anchored launch wrote.
+
+    The launch it moves to seeds no anchored server, so the block naming tools
+    it will not have comes back out, whichever dialect's body was left there,
+    and the rest of the prompt is left as it was written.
+    """
+    compose, _, _, _ = launch_case
+    if command == "codex":
+        _answer_the_hook_trust_handshake(monkeypatch)
+    already = f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{body}\n"
+    plan = compose(command=command, enabled=False, prompt=already)
+    assert plan.anchored_edit is False
+    assert ANCHORED_EDIT_HEADING not in plan.prompt
+    assert body not in plan.prompt
+    assert plan.prompt.rstrip() == "node prompt"
+
+
+@pytest.mark.parametrize("command", ["claude", "clive"])
+def test_an_unfenced_launch_drops_it_even_with_the_key_on(launch_case, command):
+    """The flight key can ask for the treatment and the launch still seed none.
+
+    A Claude-dialect launch without the fence registers no server, so a prompt
+    carried from an earlier anchored launch loses the block the same way: the
+    resolved fact, not the key, decides.
+    """
+    compose, _, _, _ = launch_case
+    already = (
+        f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_CLAUDE_INSTRUCTION}\n"
+    )
+    plan = compose(command=command, enabled=True, fence=False, prompt=already)
+    assert plan.anchored_edit is False
+    assert ANCHORED_EDIT_HEADING not in plan.prompt
+    assert plan.prompt.rstrip() == "node prompt"
+
+
+@pytest.mark.parametrize(
+    "command, body",
+    [
+        ("claude", ANCHORED_EDIT_CLAUDE_INSTRUCTION),
+        ("codex", ANCHORED_EDIT_INSTRUCTION),
+    ],
+)
+def test_a_seeding_launch_restates_one_copy_of_the_instruction(
+    launch_case, monkeypatch, command, body
+):
+    """A prompt whose launch carries the block again gets exactly one copy."""
+    compose, _, _, _ = launch_case
+    if command == "codex":
+        _answer_the_hook_trust_handshake(monkeypatch)
+    already = f"node prompt\n\n{ANCHORED_EDIT_HEADING}\n{body}\n"
+    plan = compose(command=command, enabled=True, prompt=already)
+    assert plan.anchored_edit is True
+    assert plan.prompt.count(ANCHORED_EDIT_HEADING) == 1
+    assert plan.prompt.rstrip().endswith(body)
 
 
 @pytest.mark.parametrize(

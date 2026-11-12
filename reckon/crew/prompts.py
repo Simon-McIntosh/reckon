@@ -660,9 +660,14 @@ def with_anchored_edit_instruction(
     there; at dispatch a Claude backend composes no instruction and gets the
     one its launch earns.
 
-    An instruction already present is removed first, so a lane change that
-    composes from a prompt file a launch already wrote keeps exactly one.
+    A block already present is removed first, so a lane change that composes
+    from a prompt file a launch already wrote keeps exactly one. The same strip
+    runs on a launch that seeds no anchored server: a run moved off an anchored
+    backend to a baseline one hands its worker no instruction naming tools the
+    new launch does not offer.
     """
+    if at_launch:
+        prompt = prompt_without_anchored_edit_instruction(prompt)
     if not isinstance(backend, Mapping) or backend.get("anchored_edit") is not True:
         return prompt
     from reckon import _backends
