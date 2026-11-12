@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7acd902932636fd86fd05392ffb3b5abf8e65d09",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station.py:793 run_station (owner of census_sweep and of the CensusBeat start/stop)",
+    "reckon/crew/census.py:301 the census sweep entry (owner of before_signal, called from reckon/crew_run_commands.py:55 and from reckon/crew/station.py:186)",
+    "reckon/crew_follow_commands.py:47 crew_station -> run_station(interval=interval, once=once) (the only production caller, which does not pass census_sweep)"
+  ],
+  "completed_at": "2026-11-12T09:47:33.311Z",
+  "dispatched_at": "2026-11-12T09:39:49Z",
+  "findings": [
+    {
+      "file": "tests/test_the_station_runs_the_census.py",
+      "line": "188",
+      "severity": "blocking",
+      "text": "blocking: the opt-in guard cannot fail \u2014 deleting the `if census_sweep:` gate at reckon/crew/station.py:874 starts CensusBeat, whose `_run` at station.py:196-202 catches the AssertionError raised by the patched `census.census`, prints `station-census-failure` and continues, so `orphan.poll() is None` still holds and the test stays green; the default-off behaviour, the one safety property this delta exists to establish, therefore has no failing-capable test while docs/evidence/fragments/a-crew-process-ends-with-its-owner/station-runs-the-census.html:31 claims an \"Opt-in guard\"."
+    },
+    {
+      "file": "reckon/crew/station.py",
+      "line": "803",
+      "severity": "non-blocking",
+      "text": "non-blocking: `census_sweep` defaults to False and no production caller passes True (reckon/crew_follow_commands.py:47), so the goal's \"stopped automatically\" does not happen in production until the crew-station CLI wiring lands; the manifest records this correctly under outside_scope."
+    }
+  ],
+  "head_log_revision": "837b04c07ee332812d992ba65c817a48f651feff",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read all three commits against base fa848a41 \u2014 2bdded66a5 adds the `census_sweep` parameter and its gate (reckon/crew/station.py:803-806, 874-876), the guarded finally stop (station.py:854, 894-896), a bounded join (station.py:215), the single-table revalidation and `before_signal` hook (reckon/crew/census.py:301-367); 4f9c00902e repairs the two new tests; 837b04c07e rewrites only the evidence fragment.",
+    "done_when": "the done_when asks for the planted-stub station test at head, importer arms adding no failure and ruff clean; the manifest records final-head-suite.log `58 passed in 11.54s` EXIT=0, baseline-suite.log `51 passed in 10.26s` EXIT=0, both importer arms `1 failed, 228 passed` with the identical failing id, and negative-control.log `6 failed, 1 passed` EXIT=1.",
+    "goal": "the node goal is that the station runs `crew census` on its beat so ownerless reckon processes stop automatically; the delta adds `census_sweep: bool = False` at reckon/crew/station.py:803 and gates `CensusBeat` construction on it at station.py:874-876, so the mechanism exists but no production caller opts in (reckon/crew_follow_commands.py:47).",
+    "manifest": "read at .../r-20261112T043103964878-station-runs-the-census/manifest.md; status complete at 837b04c07e, commits 2bdded66a5, 4f9c00902e and 837b04c07e, after_suite 0 failures with its log at final-head-suite.log, and outside_scope naming the crew-station CLI wiring.",
+    "write_paths": "the declared fence was reckon/crew/station.py, reckon/crew/census.py, tests/test_the_station_runs_the_census.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/station-runs-the-census.html; `git diff --stat fa848a41..837b04c0` lists exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_the_station_runs_the_census.py:191 and :217 fail if the stop wiring or the single-table read regresses, but :188 cannot fail on removal of the opt-in gate because reckon/crew/station.py:196-202 swallows the patched census exception inside the beat thread.",
+    "evidence": "final-head-suite.log reads `58 passed in 11.54s` EXIT=0 at 837b04c07e, baseline-suite.log `51 passed in 10.26s` EXIT=0 at 7acd9029, and negative-control.log `6 failed, 1 passed` EXIT=1, so the gate asserts the done_when's stop semantics with a red base arm.",
+    "fit": "reckon/crew/station.py:215 now bounds the join with `max(1.0, self.beat_seconds * 2)`, matching StationBeat:142, LeaseBeat:224 and ReflexBeat:432, and the added names `census_sweep` and `before_signal` carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/station.py:874-876 constructs CensusBeat only when `census_sweep` is true and station.py:803 defaults it false, so the sweep is implemented but inert in production because reckon/crew_follow_commands.py:47 never passes it.",
+    "reuse": "reckon/crew/census.py:301 extends the existing census sweep pair with a `before_signal` hook and a shared table read rather than forking detection or signalling, which remain in census.census and _pidfd_signal.",
+    "scope_discipline": "`git diff --stat fa848a41..837b04c0` shows only reckon/crew/station.py, reckon/crew/census.py, tests/test_the_station_runs_the_census.py and the evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the station runs `crew census` on its beat so ownerless reckon processes stop automatically; the delta adds `census_sweep: bool = False` at reckon/crew/station.py:803 and gates `CensusBeat` construction on it at station.py:874-876, so the mechanism exists but no production caller opts in (reckon/crew_follow_commands.py:47).\nVERDICT done_when: the done_when asks for the planted-stub station test at head, importer arms adding no failure and ruff clean; the manifest records final-head-suite.log `58 passed in 11.54s` EXIT=0, baseline-suite.log `51 passed in 10.26s` EXIT=0, both importer arms `1 failed, 228 passed` with the identical failing id, and negative-control.log `6 failed, 1 passed` EXIT=1.\nVERDICT write_paths: the declared fence was reckon/crew/station.py, reckon/crew/census.py, tests/test_the_station_runs_the_census.py and docs/evidence/fragments/a-crew-process-ends-with-its-owner/station-runs-the-census.html; `git diff --stat fa848a41..837b04c0` lists exactly those four files and nothing else.\nVERDICT manifest: read at .../r-20261112T043103964878-station-runs-the-census/manifest.md; status complete at 837b04c07e, commits 2bdded66a5, 4f9c00902e and 837b04c07e, after_suite 0 failures with its log at final-head-suite.log, and outside_scope naming the crew-station CLI wiring.\nVERDICT diff: read all three commits against base fa848a41 \u2014 2bdded66a5 adds the `census_sweep` parameter and its gate (reckon/crew/station.py:803-806, 874-876), the guarded finally stop (station.py:854, 894-896), a bounded join (station.py:215), the single-table revalidation and `before_signal` hook (reckon/crew/census.py:301-367); 4f9c00902e repairs the two new tests; 837b04c07e rewrites only the evidence fragment.\nCALL_SITES: reckon/crew/station.py:793 run_station (owner of census_sweep and of the CensusBeat start/stop), reckon/crew/census.py:301 census sweep entry (owner of before_signal, called from reckon/crew_run_commands.py:55 and from reckon/crew/station.py:186), reckon/crew_follow_commands.py:47 crew_station -> run_station(interval=interval, once=once) (the only production caller, which does not pass census_sweep)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:874-876 constructs CensusBeat only when `census_sweep` is true and station.py:803 defaults it false, so the sweep is implemented but inert in production because reckon/crew_follow_commands.py:47 never passes it.\nSCORE evidence: 17\nJUSTIFICATION evidence: final-head-suite.log reads `58 passed in 11.54s` EXIT=0 at 837b04c07e, baseline-suite.log `51 passed in 10.26s` EXIT=0 at 7acd9029, and negative-control.log `6 failed, 1 passed` EXIT=1, so the gate asserts the done_when's stop semantics with a red base arm.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: `git diff --stat fa848a41..837b04c0` shows only reckon/crew/station.py, reckon/crew/census.py, tests/test_the_station_runs_the_census.py and the evidence fragment, all inside the declared write paths.\nSCORE durability: 12\nJUSTIFICATION durability: tests/test_the_station_runs_the_census.py:191 and :217 fail if the stop wiring or the single-table read regresses, but :188 cannot fail on removal of the opt-in gate because reckon/crew/station.py:196-202 swallows the patched census exception inside the beat thread.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/station.py:215 now bounds the join with `max(1.0, self.beat_seconds * 2)`, matching StationBeat:142, LeaseBeat:224 and ReflexBeat:432, and the added names `census_sweep` and `before_signal` carry no plan or ticket identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/census.py:301 extends the existing census/apply pair with a `before_signal` hook and a shared table read rather than forking detection or signalling, which remain in census.census and _pidfd_signal.\nFINDING tests/test_the_station_runs_the_census.py:188 blocking: the opt-in guard cannot fail \u2014 deleting the `if census_sweep:` gate at reckon/crew/station.py:874 starts CensusBeat, whose `_run` at station.py:196-202 catches the AssertionError raised by the patched `census.census`, prints `station-census-failure` and continues, so `orphan.poll() is None` still holds and the test stays green; the default-off behaviour, the one safety property this delta exists to establish, therefore has no failing-capable test while docs/evidence/fragments/a-crew-process-ends-with-its-owner/station-runs-the-census.html:31 claims an \"Opt-in guard\".\nFINDING reckon/crew/station.py:803 non-blocking: `census_sweep` defaults to False and no production caller passes True (reckon/crew_follow_commands.py:47), so the goal's \"stopped automatically\" does not happen in production until the crew-station CLI wiring lands; the manifest records this correctly under outside_scope.\n",
+  "review_run_id": "r-20261112T093051330195-review-of-station-runs-the-census-837b04c07ee3",
+  "reviewed_base_sha": "fa848a41412c0698a88a51c46ea8649ea03b0879",
+  "reviewed_head_sha": "837b04c07ee332812d992ba65c817a48f651feff",
+  "reviewed_run_id": "r-20261112T043103964878-station-runs-the-census",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T093051330195-review-of-station-runs-the-census-837b04c07ee3"
+  },
+  "reviewer_run_id": "r-20261112T093051330195-review-of-station-runs-the-census-837b04c07ee3",
+  "scores": {
+    "durability": 12,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T10:05:25.594169+00:00",
+  "total": 99
+}
