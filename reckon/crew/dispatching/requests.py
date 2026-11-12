@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from . import _unbound_dispatch_call
 from ._imports import (
     Any,
     CrewError,
@@ -28,7 +29,9 @@ from ._imports import (
     watch_state,
 )
 
-_FACADE_BINDINGS = ()
+_recorded_backlog = _unbound_dispatch_call
+
+_FACADE_BINDINGS = ("_recorded_backlog",)
 
 
 def _queued_request_record(
@@ -45,6 +48,7 @@ def _queued_request_record(
     queued_at: str,
     admitted_from: str = "",
     local: bool = True,
+    backlog: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The request record a held local dispatch stores as one queued pointer.
 
@@ -81,6 +85,11 @@ def _queued_request_record(
             record[key] = value
     if admitted_from:
         record["admitted_from"] = admitted_from
+    if backlog is not None:
+        # A request held at dispatch records the backlog it was made over just
+        # as a launched run does, so the pointer says the same thing whichever
+        # way the request went.
+        record["unreconciled_override"] = dict(backlog)
     return record
 
 
@@ -195,26 +204,38 @@ def queue_requests(
     )
     stored: dict[str, Any] = {}
     cache: dict[str, Any] = {}
+    # Queuing a request succeeds over its session's backlog exactly as a direct
+    # dispatch does, and records the backlog on the request it stores, so both
+    # routes say which unreconciled runs the work was chosen over.
+    backlog = _recorded_backlog(
+        project=project,
+        session=session,
+        config=config,
+        requested=False,
+        source="coordinator",
+    )
     for index, node in enumerate(nodes):
         run_id = assigned_ids[node.id]
+        record = _queued_request_record(
+            run_id=run_id,
+            project=project,
+            node=node,
+            repo_root=Path(str(repo_root)),
+            session=session,
+            backend_name=lane,
+            launch_kind=launch_kind,
+            lane_allowance={},
+            dispatch_options={
+                "project": project,
+                "session": session,
+                "no_watch": True,
+                "allow_unreviewed_plan": allow_unreviewed_plan,
+            },
+            queued_at=_utc_now(),
+            backlog=backlog,
+        )
         queued, position, phase = _queue_validated_waits(
-            _queued_request_record(
-                run_id=run_id,
-                project=project,
-                node=node,
-                repo_root=Path(str(repo_root)),
-                session=session,
-                backend_name=lane,
-                launch_kind=launch_kind,
-                lane_allowance={},
-                dispatch_options={
-                    "project": project,
-                    "session": session,
-                    "no_watch": True,
-                    "allow_unreviewed_plan": allow_unreviewed_plan,
-                },
-                queued_at=_utc_now(),
-            ),
+            record,
             refs=refs_by_run[run_id],
             wait_projects=projects_by_run[run_id],
             max_requests=flight.queue_max_requests(config),

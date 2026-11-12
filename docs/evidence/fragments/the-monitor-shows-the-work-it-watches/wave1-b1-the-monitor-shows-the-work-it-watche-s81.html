@@ -1,0 +1,44 @@
+<section id="wave1-b1-the-monitor-shows-the-work-it-watche-s81">
+<h3>Review composition waits for the current attempt</h3>
+<p>The review guards read the current stored lifecycle state before composing.
+The caller's lane, brief, commit and figure inputs take precedence when the
+review is composed. A resume launch, a live process, an undelivered resumed
+attempt, or an active deferral withholds the review. Deferrals use the
+obligations reader and delivery uses the existing manifest-generation reader.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Stale sweep snapshot during resume planning</td><td>Zero compositions at the superseded head.</td></tr>
+<tr><td>Live process after classification</td><td>Zero compositions, with a running refusal.</td></tr>
+<tr><td>Deferral and expiry</td><td>Zero before expiry; one at expiry.</td></tr>
+<tr><td>Resumed delivery at a new head</td><td>One composition at the new head.</td></tr>
+<tr><td>Recorded resume before its head stamp</td><td>Zero before delivery; one after delivery, using manifest generation.</td></tr>
+<tr><td>Caller compatibility and focused regressions</td><td>9 passed in 13.56s</td></tr>
+<tr><td>Supervisor file, base / prior head / repaired</td><td>8 passed in 46.37s / 2 failed, 6 passed in 34.96s / 8 passed in 49.19s</td></tr>
+<tr><td>Renewed caller comparison, base</td><td>22 failed, 1342 passed, 14 warnings, 3 errors in 523.64s (0:08:43)</td></tr>
+<tr><td>Renewed caller comparison, repaired source</td><td>22 failed, 1348 passed, 12 warnings, 3 errors in 593.08s (0:09:53)</td></tr>
+<tr><td>Added caller failures</td><td>0, comparing failure identities.</td></tr>
+<tr><td>Negative control</td><td>Removing only the pointer refresh dispatches the superseded head and fails its regression. The pre-existing superseded-head refusal remains present; this recorded control stands under the coordinator ruling.</td></tr>
+<tr><td>Module-window guard</td><td>The identical eleven base/head violations are recorded as pre-existing; the guard and oversized modules are unchanged.</td></tr>
+</tbody>
+</table>
+<p>At assigned base <code>3eeb58f0c3cbb60c056002f9951e2b3d59d92943</code>,
+<code>resumption.py:2543</code> forwards the cached pointer population and
+<code>recovery_review_acceptance.py:776–777</code> composes from that snapshot.
+The superseded-head stamp is written after attempt recording at
+<code>resumption.py:1895</code>. The reproduction enters the real sweep from
+resume-plan composition, after the launch mark but before the head stamp.</p>
+<p>The complete-pointer replacement discarded caller-provided review inputs.
+Keeping lifecycle checks separate from composition preserves those inputs.
+Fresh supervisor triage isolated two additional failures to the refusal's
+running wording; the repaired file passes all eight cases.</p>
+<p>The historical discarded reviews confirm the old heads reviewed. The
+promoted source record does not retain its transient resume-head or dispatch
+fields and its live pointer is absent, so its exact historical interleaving
+remains unproven. The controlled reproduction establishes the ordering at the
+assigned base.</p>
+<p>The manifest carries the final armed pair, scoped lint and formatting
+receipts, exact commands, revision and imported-module provenance, negative
+control, and pre-existing failures. Shared plan state remains the coordinator's
+responsibility.</p>
+</section>

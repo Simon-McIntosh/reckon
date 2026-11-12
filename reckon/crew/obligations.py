@@ -24,6 +24,7 @@ import json
 import os
 import re
 import shlex
+import sys
 import threading
 from collections import OrderedDict, defaultdict, deque
 from collections.abc import Callable, Iterable, Mapping, Sequence
@@ -81,6 +82,16 @@ CLASSIFICATION_DUTY_KINDS = {
 # whose head moved past the revision its stored review recorded reads
 # review-missing naming both heads, whatever the classifier's own reading said.
 REVIEW_CLASSIFICATION_KINDS = frozenset({"scoring", "promotable"})
+#: The pointer phases in which the admission pass is holding a request rather
+#: than a worker running it. The closure counts a request in one of these for
+#: as long as its pointer stands — the pointer keeps its write fence — so the
+#: duty list has to name it too, and the phases are read from the admission
+#: pass rather than spelled here.
+WAITING_UPSTREAM_PHASES = queue_admission.WAITING_UPSTREAM_PHASES
+PARKED_REQUEST_PHASES = (
+    *queue_admission.WAITING_UPSTREAM_PHASES,
+    queue_admission.HELD_PHASE,
+)
 #: Recovery readings that owe their session a duty under a word the lifecycle
 #: classification does not carry.
 #:
@@ -2175,8 +2186,20 @@ def _review_duty_item(
 
     if pointer is None or recovery._is_review_run(pointer):
         # No live tree to ask, or a reviewer whose own record is its
-        # deliverable: the classifier's own reading stands.
-        return _live_item(row, kind=_classification_kind(), now=now)
+        # deliverable: the classifier's own reading stands. A reviewer holding
+        # a live pointer also carries the promotion its record is settled by,
+        # composed from the pointer and the manifest's own citations through
+        # the one composer every promotion duty uses: the classifier has no
+        # pointer in hand and states that promotion in prose, so a duty built
+        # from its reading alone named no command the coordinator could run.
+        item = _live_item(row, kind=_classification_kind(), now=now)
+        if pointer is not None and classification in REVIEW_CLASSIFICATION_KINDS:
+            item["next_command"] = recovery_classification._promotion_command(
+                str(row.get("run_id") or ""),
+                pointer,
+                list(row.get("manifest_commits") or []),
+            )
+        return item
 
     if (
         classification == "scoring"
@@ -3585,7 +3608,14 @@ def _obligations_view(
             item["held_path"] = held_path
         items.append(item)
     for row in classified:
-        if str(row.get("session") or "") != session:
+        owner = str(row.get("session") or "")
+        # A pointer with no recorded owner is counted toward every session by
+        # the closure, because an absent owner cannot prove the run belongs to
+        # a peer. Listing it only for an exact owner match is what let a
+        # complete plan-review run holding a live pointer be counted and yet
+        # appear nowhere: the count named a run the list did not. This view
+        # therefore takes the closure's own rule.
+        if owner and owner != session:
             continue
         if (
             pointers.get(str(row.get("run_id") or ""), {}).get("phase")
@@ -3657,6 +3687,60 @@ def _obligations_view(
             kind = CLASSIFICATION_DUTY_KINDS.get(classification, "")
         if kind:
             items.append(_live_item(row, kind=kind, now=now))
+    # A request the admission pass parks — waiting on an upstream section, or
+    # held for a lane, an allowance or a retry back-off — is counted by the
+    # closure for as long as its pointer stands, because it holds a write fence
+    # until it is settled. No branch above lists one, so a session told a count
+    # beside a shorter list was told that something is owed and shown nothing:
+    # each such request is listed here, carrying the remedy its own reader
+    # composed. A request waiting on an upstream section is built through the
+    # publisher's own builder, which is what keeps this list and a sweep's
+    # slice of it equal for the same files; anything else parked is listed
+    # under the classification its reader gave it.
+    listed = {str(item.get("run_id") or "") for item in items}
+    for row in classified:
+        run_id = str(row.get("run_id") or "")
+        if not run_id or run_id in listed:
+            continue
+        owner = str(row.get("session") or "")
+        if owner and owner != session:
+            continue
+        pointer = pointers.get(run_id)
+        if pointer is None:
+            continue
+        phase = str(pointer.get("phase") or "")
+        if phase not in PARKED_REQUEST_PHASES:
+            continue
+        recorded = pointer.get("closure_disposition")
+        disposition = (
+            str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
+        )
+        if recovery.closure_disposition_valid(
+            disposition, str(row.get("classification") or "")
+        ):
+            continue
+        if phase in WAITING_UPSTREAM_PHASES:
+            from reckon.crew import obligation_snapshot
+
+            items.append(
+                obligation_snapshot._upstream_hold_item(
+                    sys.modules[__name__],
+                    row,
+                    pointer=pointer,
+                    now=now,
+                    phase=phase,
+                    verdicts=verdicts,
+                )
+            )
+        else:
+            items.append(
+                _live_item(
+                    row,
+                    kind=str(row.get("classification") or "") or "unreconciled",
+                    now=now,
+                )
+            )
+        listed.add(run_id)
 
     items.extend(
         _sub_floor_items(

@@ -1,0 +1,580 @@
+{
+  "agent": {
+    "alias": "sol61",
+    "backend": "codex",
+    "effort": "high",
+    "launch": "cli",
+    "model": "gpt-6.1-sol",
+    "sandbox": "worktree-full"
+  },
+  "attempt": 1,
+  "attempt_kind": "dispatch",
+  "backend": "codex",
+  "base_sha": "7e5cf96f616d33d1740701ca9146d51556c8ac87",
+  "boundary_waiver": null,
+  "brief": null,
+  "budget": {
+    "budget_overrun": false,
+    "budget_overrun_notice": null,
+    "budget_overrun_seconds": 0,
+    "budget_overrun_tokens": 0,
+    "cost_usd": null,
+    "detail": "backend reports token usage but no headroom",
+    "headroom": "unknown",
+    "rate_limit_period_minutes": null,
+    "rate_limit_type": null,
+    "refusal": false,
+    "resets_at": null,
+    "surpassed_threshold": null,
+    "threshold_status": null,
+    "tokens": {
+      "cache_write_input_tokens": 0,
+      "cache_write_input_tokens_cumulative": 0,
+      "cached_input_tokens": 8892800,
+      "cached_input_tokens_cumulative": 8892800,
+      "input_tokens": 9081316,
+      "input_tokens_cumulative": 9081316,
+      "output_tokens": 45601,
+      "output_tokens_cumulative": 45601,
+      "reasoning_output_tokens": 18970,
+      "reasoning_output_tokens_cumulative": 18970
+    },
+    "utilisation_pct": null
+  },
+  "changed_lines": {
+    "added": 97,
+    "files": 1,
+    "removed": 0
+  },
+  "clone_matches": [],
+  "commit_resolution": null,
+  "commits": [
+    "316cc43bbe5b12267609850f5981599673deb897"
+  ],
+  "completed_at": "2026-11-12T16:56:33Z",
+  "completed_at_source": "stream_mtime",
+  "dispatched_at": "2026-11-12T16:29:37Z",
+  "disposition": null,
+  "dispute_count": 0,
+  "domain_waiver": null,
+  "duration_measurement": {
+    "reason": "model_span_unavailable_at_promotion",
+    "status": "underivable"
+  },
+  "execution_fit": {
+    "allowed": true,
+    "execution_capable": true,
+    "matched_measure": null,
+    "override": false,
+    "role": "implement",
+    "status": "no-execution-measure"
+  },
+  "failure_classification": null,
+  "gate": "not-run",
+  "gate_check": null,
+  "impl_move": {
+    "at_complete": null,
+    "at_dispatch": 0.9331476323119777,
+    "plan": "a-read-answers-inside-its-deadline",
+    "reason": "gate-not-passing",
+    "verdict": "exempt"
+  },
+  "lane": "codex",
+  "lane_advisory": {
+    "backend": "codex",
+    "burn_multiple": 1.389463237118518,
+    "cheaper_lane": {
+      "detail": "",
+      "lane": null,
+      "state": "not_evaluated"
+    },
+    "detail": "'codex' is projected to exhaust at 2026-11-14T02:16:14Z, which is after this node's 3600s horizon ending 2026-11-12T17:22:50.789391+00:00",
+    "horizon_ends_at": "2026-11-12T17:22:50.789391+00:00",
+    "horizon_seconds": 3600,
+    "metered": true,
+    "observed_at": "2026-11-12T16:22:48Z",
+    "precedes_horizon": false,
+    "projected_exhaustion_at": "2026-11-14T02:16:14Z",
+    "resets_at": "2026-11-14T15:28:13Z",
+    "seconds_until_reset": 169524,
+    "state": "quiet",
+    "utilisation_pct": 100.0
+  },
+  "lane_declaration": {
+    "backend": "codex",
+    "headroom": "known",
+    "metered": true,
+    "observed_at": "2026-11-12T16:22:48Z",
+    "read_at": "2026-11-12T16:22:50Z",
+    "resolved_backend": "codex",
+    "utilisation_pct": 100.0
+  },
+  "lane_reading": {
+    "age_seconds": null,
+    "binding_observed": "unknown",
+    "detail": "backend declares no lane document",
+    "generating": "unknown",
+    "headroom": "unknown",
+    "mean_context": "unknown",
+    "observed_at": null,
+    "state": "unknown",
+    "suggested_shelf_life_seconds": null,
+    "throughput": {
+      "age_seconds": null,
+      "aggregate_tokens_per_second": "unknown",
+      "detail": "backend declares no lane document",
+      "mean_tokens_per_second": "unknown",
+      "observed_at": null,
+      "runs": "unknown",
+      "state": "unknown"
+    },
+    "waiting": "unknown"
+  },
+  "lane_receipt": {
+    "effective_context_window": 380000,
+    "notional_cost_usd": "unmeasured",
+    "observed_at": "2026-11-12T16:56:33Z",
+    "quota_state": "measured",
+    "quota_windows": [
+      {
+        "observed_at": "2026-11-12T16:56:33Z",
+        "resets_at": 1795105480,
+        "used_percent": 1.0,
+        "window_minutes": 10080
+      }
+    ],
+    "rate_basis": "unmeasured",
+    "unmeasured": {
+      "notional_cost_usd": "no_dated_rate",
+      "rate_basis": "no_dated_rate"
+    }
+  },
+  "lineage": null,
+  "local": false,
+  "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage/manifest.md",
+  "member": "disposable-r-20261112T105120248566-attribute-a-current-promotions-time-by-stage",
+  "model_key": "sol",
+  "negative_control": {
+    "reason": "node-writes-no-test-path",
+    "verdict": "exempt"
+  },
+  "no_commit": null,
+  "node": "attribute-a-current-promotions-time-by-stage",
+  "node_definition": {
+    "admission_findings": [],
+    "after": [
+      "r-20261112T104303102350-a-promotion-holds-no-profile-build"
+    ],
+    "anchor_paths": [],
+    "brief": "",
+    "brief_path": "",
+    "brief_sha256": "",
+    "capability": {
+      "class": "general",
+      "requirements": {
+        "reasoning": "deep",
+        "risk": "moderate",
+        "verification": "strict"
+      },
+      "version": "1.0"
+    },
+    "compares_with": "",
+    "coordinator": {
+      "authoring_turn": {
+        "detail": "the dispatching harness exposed no authoring-turn token usage",
+        "status": "unknown",
+        "tokens": null
+      },
+      "harness": null,
+      "runtime_session_id": null,
+      "session_id": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758"
+    },
+    "done_when": "The section's done-when holds: the run's note.md, copied to the node's fragment, holds one stage table per promotion whose named stages account for at least 90% of each promotion's wall time, profiled with py-spy record --idle on the all_debug partition against seeded homes at the live counts and at one tenth; seeding script and profiles kept under ~/.cache/reckon-promotion-rollout/; no product source changed",
+    "estimated_hours": null,
+    "goal": "Attribute a current promotion's time by stage",
+    "id": "attribute-a-current-promotions-time-by-stage",
+    "images": [],
+    "inputs": [],
+    "lane_declaration": {
+      "backend": "codex",
+      "headroom": "known",
+      "metered": true,
+      "observed_at": "2026-11-12T16:22:48Z",
+      "read_at": "2026-11-12T16:22:50Z",
+      "resolved_backend": "codex",
+      "utilisation_pct": 100.0
+    },
+    "lane_reading": {
+      "age_seconds": null,
+      "binding_observed": "unknown",
+      "detail": "backend declares no lane document",
+      "generating": "unknown",
+      "headroom": "unknown",
+      "mean_context": "unknown",
+      "observed_at": null,
+      "state": "unknown",
+      "suggested_shelf_life_seconds": null,
+      "throughput": {
+        "age_seconds": null,
+        "aggregate_tokens_per_second": "unknown",
+        "detail": "backend declares no lane document",
+        "mean_tokens_per_second": "unknown",
+        "observed_at": null,
+        "runs": "unknown",
+        "state": "unknown"
+      },
+      "waiting": "unknown"
+    },
+    "manifest_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage/manifest.md",
+    "negative_control": "none: an investigation whose table must reconcile to wall time",
+    "over_fence_reason": "",
+    "peer_scopes": {
+      "a-dead-launch-frees-its-hold": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-dead-launch-frees-its-hold.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-dead-launch-frees-its-hold",
+        "reckon/crew/dispatch_launch.py",
+        "tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py"
+      ],
+      "a-design-and-a-content-review-run-together": [
+        "docs/evidence/fragments/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together.html",
+        "docs/figures/a-plan-is-reviewed-before-it-is-built/a-design-and-a-content-review-run-together",
+        "reckon/crew/promotion_checks.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/recovery_review_subject.py",
+        "reckon/crew/repair.py",
+        "tests/test_a_design_and_a_content_review_run_together.py",
+        "tests/test_a_design_and_content_review_run_together.py"
+      ],
+      "a-launch-span-is-dated-and-bounded": [
+        "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded.html",
+        "docs/figures/a-dispatch-returns-without-its-worker/a-launch-span-is-dated-and-bounded",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatch_claims.py",
+        "reckon/crew/dispatch_refusals.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/refusals.py",
+        "tests/test_a_launch_span_is_dated_and_bounded.py",
+        "tests/test_crew_refusal_visibility.py"
+      ],
+      "a-persisted-item-has-a-record-and-a-home-outside": [
+        "reckon/crew"
+      ],
+      "a-plan-write-parses-its-plan-once": [
+        "docs/evidence/fragments/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once.html",
+        "docs/figures/a-read-answers-inside-its-deadline/a-plan-write-parses-its-plan-once",
+        "reckon/_plan_html.py",
+        "reckon/_store.py",
+        "tests/test_a_plan_write_parses_its_plan_once.py"
+      ],
+      "ab-clive-lane-and-model-routing-s53": [
+        "reckon/crew/budget_group.py",
+        "reckon/crew/budget_lift.py",
+        "reckon/crew/lift_watch.py",
+        "reckon/crew/picker/snapshot.py",
+        "reckon/crew/routing.py",
+        "reckon/crew_run_commands.py",
+        "skills/reckon-build/SKILL.md"
+      ],
+      "ab-codex-anchored-a-seat-held-elsewhere-s23": [
+        "reckon/crew/watch_unit.py",
+        "reckon/crew_follow_commands.py"
+      ],
+      "ab2-codex-anchored-lane-and-model-routing-s59": [
+        "reckon/crew/dispatch_picker.py",
+        "reckon/crew/dispatch_plan.py",
+        "reckon/crew/picker/__init__.py",
+        "reckon/crew/picker/types.py"
+      ],
+      "decision-holds-named-sections": [
+        "docs/_shared/plan.schema.json",
+        "docs/evidence/fragments/work-flows-to-the-lane/decision-holds-named-sections.html",
+        "docs/figures/work-flows-to-the-lane/decision-holds-named-sections",
+        "reckon/_plan_html.py",
+        "reckon/_schema.py",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "reckon/roadmap.py",
+        "tests/test_a_decision_holds_only_the_sections_it_names.py"
+      ],
+      "dispatch-over-the-backlog": [
+        "docs/evidence/fragments/work-flows-to-the-lane/dispatch-over-the-backlog.html",
+        "docs/figures/work-flows-to-the-lane/dispatch-over-the-backlog",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/queue_admission.py",
+        "tests/test_a_dispatch_is_not_refused_on_its_backlog.py",
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py"
+      ],
+      "service-runs-mains-code": [
+        "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code.html",
+        "docs/figures/work-is-never-stuck-behind-the-admission-loop/service-runs-mains-code",
+        "reckon/crew/fleet_supervisor.py",
+        "tests/test_a_service_runs_the_code_main_carries.py"
+      ],
+      "split-dispatch": [
+        "docs/evidence/fragments/work-flows-to-the-lane/split-dispatch.html",
+        "docs/figures/work-flows-to-the-lane/split-dispatch",
+        "reckon/crew/dispatch.py",
+        "reckon/crew/dispatching",
+        "tests/test_dispatch_split_keeps_its_surface.py"
+      ],
+      "split-queue-admission": [
+        "docs/evidence/fragments/work-flows-to-the-lane/split-queue-admission.html",
+        "docs/figures/work-flows-to-the-lane/split-queue-admission",
+        "reckon/crew/admission",
+        "reckon/crew/queue_admission.py",
+        "tests/test_queue_admission_split_keeps_its_surface.py"
+      ],
+      "sweep-never-waits-on-a-promotion": [
+        "docs/evidence/fragments/work-flows-to-the-lane/sweep-never-waits-on-a-promotion.html",
+        "docs/figures/work-flows-to-the-lane/sweep-never-waits-on-a-promotion",
+        "reckon/crew/recovery_review_acceptance.py",
+        "reckon/crew/resumption.py",
+        "reckon/crew/station.py",
+        "tests/test_a_sweep_never_waits_on_a_promotion.py",
+        "tests/test_one_run_cannot_stop_a_sweep.py"
+      ],
+      "the-old-event-logs-are-retired": [
+        "docs/evidence/fragments/crew-state-stays-bounded/the-old-event-logs-are-retired.html",
+        "docs/figures/crew-state-stays-bounded/the-old-event-logs-are-retired",
+        "reckon/crew/event_log_retirement.py",
+        "reckon/crew/gc.py",
+        "tests/test_the_old_event_logs_are_retired.py"
+      ],
+      "wave1-a1-the-monitor-shows-the-work-it-watche-s80": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80",
+        "reckon/crew/queue_admission.py",
+        "reckon/crew/ticker.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_a_requeued_refusal_draws_no_dropped_row.py"
+      ],
+      "wave1-a2-the-monitor-shows-the-work-it-watche-s87": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a2-the-monitor-shows-the-work-it-watche-s87.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave1-a2-the-monitor-shows-the-work-it-watche-s87",
+        "reckon/crew/obligations.py",
+        "tests/test_obligation_count_equals_its_list.py"
+      ],
+      "wave1-a3-the-monitor-shows-the-work-it-watche-s77": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a3-the-monitor-shows-the-work-it-watche-s77.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave1-a3-the-monitor-shows-the-work-it-watche-s77",
+        "reckon/crew/follow_checkpoint.py",
+        "reckon/crew_follow_commands.py",
+        "tests/test_a_second_follower_keeps_a_landing_from_state.py"
+      ],
+      "wave1-b1-the-monitor-shows-the-work-it-watche-s81": [
+        "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-b1-the-monitor-shows-the-work-it-watche-s81.html",
+        "docs/figures/the-monitor-shows-the-work-it-watches/wave1-b1-the-monitor-shows-the-work-it-watche-s81",
+        "reckon/crew/recovery_review_acceptance.py",
+        "reckon/crew/recovery_review_dispatch.py",
+        "reckon/crew/resumption.py",
+        "tests/test_every_module_fits_a_worker_window.py",
+        "tests/test_review_reflex_skips_a_superseded_head.py"
+      ]
+    },
+    "plan": "a-read-answers-inside-its-deadline",
+    "regenerate_paths": [],
+    "requested_backend": "codex",
+    "requires_decisions": [],
+    "role": "implement",
+    "section": "§71",
+    "spec_level": "exact",
+    "time_budget": "60m",
+    "token_budget": null,
+    "waits_only_after": false,
+    "write_paths": [
+      "docs/evidence/fragments/a-read-answers-inside-its-deadline/attribute-a-current-promotions-time-by-stage.html",
+      "docs/figures/a-read-answers-inside-its-deadline/attribute-a-current-promotions-time-by-stage"
+    ]
+  },
+  "orchestrator_lane_override": null,
+  "orientation_input_tokens": null,
+  "outcome": "",
+  "outside_scope_paths": [],
+  "pace": {
+    "allowance": {
+      "advisory": true,
+      "burn_multiple": null,
+      "derived": null,
+      "drain_hours": 168.0,
+      "effective_limit": null,
+      "elapsed_fraction": 0.00017424142857131692,
+      "elapsed_hours": 0.02927255999998124,
+      "group": "codex-sub",
+      "limited_by": null,
+      "observed_at": "2026-11-12T16:26:25+00:00",
+      "pace_multiple": 1.1,
+      "provider_ceiling": null,
+      "reason": "window too young to project: burn evidence is quantised too coarsely: 0.02% elapsed is below the 5% floor and 0% utilisation is below the 5% floor",
+      "remaining_budget": 1.0,
+      "remaining_windows": null,
+      "resets_at": "2026-11-19T16:24:40Z",
+      "state": "observed",
+      "utilisation": 0.0,
+      "window_minutes": 10080
+    },
+    "bar": {
+      "bar": 0.0,
+      "decided_by": "window",
+      "margin": 0.71875,
+      "name": "attribute-a-current-promotions-time-by-stage",
+      "score": 0.71875,
+      "state": "observed",
+      "verdict": "send-metered",
+      "window_fill": 0.0
+    },
+    "clocks": {
+      "five_hour": {
+        "age_seconds": 0.381216,
+        "observed_at": "2026-11-12T16:26:25+00:00",
+        "period": "primary",
+        "resets_at": "2026-11-19T16:24:40Z",
+        "state": "observed",
+        "utilisation": 0.0,
+        "window_minutes": 10080
+      },
+      "seven_day": {
+        "age_seconds": null,
+        "observed_at": null,
+        "period": "seven_day",
+        "resets_at": null,
+        "state": "not_published",
+        "utilisation": null,
+        "window_minutes": null
+      }
+    },
+    "group": "codex-sub",
+    "hold": null,
+    "lane": "codex",
+    "lift_id": null,
+    "member": "codex",
+    "node": "attribute-a-current-promotions-time-by-stage",
+    "policy": {
+      "drain_lead_hours": 12.0,
+      "pace_multiple": 1.1
+    },
+    "reason": null,
+    "recorded_at": "2026-11-12T16:26:25.381216+00:00",
+    "score": 0.71875,
+    "session": null,
+    "source": "recorded",
+    "state": "observed"
+  },
+  "picker_selection": {
+    "action": "fallback",
+    "backend": null,
+    "comment": "",
+    "confidence": null,
+    "effort": null,
+    "excluded": [],
+    "fallback_reason": "timeout",
+    "family": null,
+    "jev_model": "~typesafe/jev-latest",
+    "latency_ms": 5001.11,
+    "model": null,
+    "offered": [],
+    "probabilities": {},
+    "stage_ms": {}
+  },
+  "plan": "a-read-answers-inside-its-deadline",
+  "plan_impl_at_dispatch": 0.9331476323119777,
+  "plan_link": null,
+  "promoted_by": null,
+  "promoted_revision": "316cc43bbe5b12267609850f5981599673deb897",
+  "release": {
+    "arms_kept": [],
+    "arms_logs_copied": [],
+    "arms_removed_paths": [],
+    "arms_withheld": "gate verdict 'not-run' is not passing; cited arms retained as evidence",
+    "process_signalled": false,
+    "process_withheld": "process is not alive",
+    "scratch_bytes": 0,
+    "scratch_host": "98dci4-clu-2023.iter.org",
+    "scratch_path": "/tmp/reckon-crew-scratch/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage",
+    "scratch_removed": true,
+    "scratch_removed_paths": [
+      {
+        "bytes": 0,
+        "path": "/tmp/reckon-crew-scratch/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage"
+      }
+    ],
+    "scratch_withheld": "",
+    "worktree_audit": {
+      "counts": {
+        "dirty": 0,
+        "disposable": 0,
+        "integrated": 0,
+        "live-referenced": 0,
+        "retained-for-resume": 0,
+        "unintegrated": 0
+      },
+      "worktrees": [
+        {
+          "available": false,
+          "detail": "tree is no longer available",
+          "path": "/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/efd0ee8c-9d4e-4fa3-a440-ac05791d4758/attribute-a-current-promotions-time-by-stage",
+          "unavailable_state": "missing"
+        }
+      ]
+    },
+    "worktree_released": true
+  },
+  "resume_waiver": null,
+  "review": null,
+  "review_tier": "none",
+  "role": "implement",
+  "route_mode": "explicit",
+  "run_id": "r-20261112T105120248566-attribute-a-current-promotions-time-by-stage",
+  "scope_acceptances": null,
+  "scope_changed": false,
+  "section": "§71",
+  "session": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+  "session_harness": "codex",
+  "session_id": "01a1d098-dded-7851-b95c-f8d7f3bb9098",
+  "session_model": "gpt-6.1-sol",
+  "shadow_controlled": null,
+  "shadow_patch": "",
+  "spec_level": "exact",
+  "stalled": false,
+  "suite_delta": null,
+  "tests_added": null,
+  "throughput": {
+    "cumulative_cached_input_tokens": 8892800,
+    "cumulative_input_tokens": 17974116,
+    "detail": "turn tokens recorded, but no span was supplied to rate them",
+    "generated_tokens": 64571
+  },
+  "time_budget": "60m",
+  "tool_steps": 150.0,
+  "unplanned_reason": null,
+  "unreconciled_override": null,
+  "wall_seconds": 1616,
+  "watch_override": null,
+  "worker_exit": {
+    "attempt": 1,
+    "ended_during": "working",
+    "ended_pids": [],
+    "exit_code": 0,
+    "exited_at": "2026-11-12T16:56:38Z",
+    "last_record_type": "turn.completed",
+    "launched_at": "2026-11-12T16:30:17Z",
+    "recorded_by": "supervisor",
+    "removed_harness_caches": [
+      {
+        "bytes": 70380481,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage/codex-home/cache"
+      },
+      {
+        "bytes": 28814443,
+        "path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T105120248566-attribute-a-current-promotions-time-by-stage/codex-home/plugins"
+      }
+    ],
+    "run_id": "r-20261112T105120248566-attribute-a-current-promotions-time-by-stage",
+    "signal": null,
+    "signal_name": null,
+    "stream_records_seen": 372,
+    "worker_pid": 646443
+  },
+  "worker_seconds": 1616,
+  "worker_seconds_source": "wall_fallback",
+  "worktree_retention": null
+}

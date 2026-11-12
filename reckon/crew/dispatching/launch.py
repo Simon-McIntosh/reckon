@@ -38,7 +38,9 @@ from ._imports import (
     _prepare_attempt_records,
     _process_start_time,
     _raise_repository_scope_conflict,
+    _record_unreached_launch,
     _refuse_a_discarded_launch,
+    _refuse_superseded_launch,
     _release_launch_claim,
     _remove_worktree,
     _repository_scope_claims,
@@ -101,6 +103,28 @@ _FACADE_BINDINGS = (
     "_resolved_suite_gate",
     "_suite_gate_prompt_body_for",
 )
+
+
+class _SupersededLaunchError(CrewError):
+    """A dispatch that another launch of the same run has taken the attempt from.
+
+    Raised only at the pre-spawn fence, so the caller can tell this refusal from
+    every other one that unwinds a dispatch: the pointer, the run directory and
+    the worktree belong to the newer attempt and must be left standing.
+    """
+
+
+def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
+    """Stop a dispatch whose attempt another launch has taken from it.
+
+    The shared supervisor spec belongs to whichever attempt is newest, so this
+    runs before the spec is written as well as before the supervisor starts: a
+    stale launch must not hand the newer attempt's supervisor its spec.
+    """
+    try:
+        _refuse_superseded_launch(run_directory, reservation, run_id)
+    except CrewError as superseded:
+        raise _SupersededLaunchError(str(superseded)) from superseded
 
 
 def _launch_dispatch(
@@ -169,7 +193,7 @@ def _launch_dispatch(
     stacked_admissions,
     suite_command,
     urgency,
-    waiver,
+    backlog,
     watcher_waiver,
     wave_id,
     worktree_identity,
@@ -621,7 +645,7 @@ def _launch_dispatch(
                 if paired_shadow_run_id
                 else {}
             ),
-            "unreconciled_override": waiver,
+            "unreconciled_override": backlog,
             "unreviewed_plan_override": plan_review_waiver,
             "watch_override": watcher_waiver,
             "watch": {
@@ -712,7 +736,7 @@ def _launch_dispatch(
                 # composition, so it is rewritten here from the composed text.
                 # A dialect that takes its prompt on stdin carries it in
                 # stdin_text; one that puts it on the command line carries it
-                # nowhere else, so the launch's own prompt is the copy that keeps
+                # nowhere else, so the plan's own prompt is the copy that keeps
                 # the run's prompt.txt holding the brief it was dispatched with.
                 prompt_path.write_text(_prompt_file_text(plan), encoding="utf-8")
             except (_backends.BackendError, flight.FlightConfigError, OSError) as exc:
@@ -892,6 +916,11 @@ def _launch_dispatch(
                         attempt_started_at=str(record["attempt_started_at"]),
                     )
                     spec_path = directory / SUPERVISOR_SPEC_NAME
+                    # Another launch may have taken the run while this one
+                    # stalled. The spec below is the run's shared one, so this
+                    # re-read comes first: a superseded launch must not write
+                    # it, still less start the supervisor that would read it.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     _write_json(
                         spec_path,
                         _supervisor_spec(
@@ -913,6 +942,10 @@ def _launch_dispatch(
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
                     refuse_a_released_launch(run_id)
+                    # Re-read again immediately before the spawn, unlocked, for
+                    # the same reason the relaunch path does: two supervisors in
+                    # one worktree is the failure this line prevents.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                     if reservation is not None:
                         # The supervisor only becomes the hold once it exists:
@@ -1008,6 +1041,14 @@ def _launch_dispatch(
                 worktree=Path(str(worktree["path"])),
                 fenced=bool(record["fenced"]),
             )
+    except _SupersededLaunchError as superseded:
+        # The pointer, the run directory and the worktree now belong to the
+        # newer attempt of this run id, so this launch must not run the undo
+        # below: it would unlink that attempt's pointer and remove its tree.
+        # Its own attempt's exit receipt is the only record it owes, and it
+        # frees the hold this launch took.
+        _record_unreached_launch(directory, reservation, superseded)
+        raise
     except Exception as exc:
         # Undoing this run is the rollback, and a step of a rollback that fails
         # must not become the error the caller reads: the dispatch stopped for

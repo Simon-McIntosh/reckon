@@ -41,7 +41,6 @@ from ._imports import (
     _repository_scope_claims,
     _resolve_commit,
     _resolved_wave_id,
-    _session_unreconciled_refusal,
     _stamp_agent_display,
     _store_brief,
     _supervisor_write,
@@ -73,6 +72,7 @@ from ._imports import (
 )
 
 # The facade binds cyclic calls after all concerns have been imported.
+_recorded_backlog = _unbound_dispatch_call
 _answer_existing_node_run = _unbound_dispatch_call
 _arrange_dispatch_follower = _unbound_dispatch_call
 _launch_dispatch = _unbound_dispatch_call
@@ -87,6 +87,7 @@ _session_older_admissible_request = _unbound_dispatch_call
 plan_dispatch = _unbound_dispatch_call
 
 _FACADE_BINDINGS = (
+    "_recorded_backlog",
     "_answer_existing_node_run",
     "_arrange_dispatch_follower",
     "_launch_dispatch",
@@ -172,9 +173,11 @@ def dispatch(
     the matched measure and resolved role stay on the run record so the exception
     remains visible after the request that supplied it is gone.
 
-    An unreconciled-run override is narrower: it waives only the terminal
-    backlog observed by this dispatch. The exact runs and resolving commands
-    are copied onto the new record so the exception survives its command line.
+    A session's overdue unreconciled runs never refuse a dispatch. They are
+    duties, listed by the obligations view, and this dispatch copies the exact
+    runs it was made over onto the new record so a later reader sees the work
+    was started over unreconciled runs. ``--allow-unreconciled-runs`` still
+    parses and is still recorded, and gates nothing.
 
     Dispatch arms the project watcher before creating a worktree when watcher
     policy is enabled. The producer is detached from the caller and keeps a
@@ -472,39 +475,20 @@ def dispatch(
         raise CompetenceLimit(competence)
 
     fences = config.get("fences") or {}
-    unreconciled_grace = str(fences.get("unreconciled_run_grace") or "")
-    from reckon.crew.recovery import (
-        _partition_session_rows,
-        overdue_unreconciled_runs,
-    )
-
-    project_unreconciled = overdue_unreconciled_runs(
+    # A session's terminal backlog is recorded, not enforced. The rows are copied
+    # onto the run as a field rather than referenced, so the record states which
+    # runs the dispatch was made over instead of pointing at the ledger's state
+    # in a later moment. The flag still parses and still says whether the
+    # coordinator asked for an exception; it changes no gate, because there is
+    # no gate left to change.
+    backlog = _recorded_backlog(
         project=project,
-        grace=unreconciled_grace,
+        session=session,
+        config=config,
+        requested=unreconciled_override,
+        source="admission-launch" if admission_launch else "coordinator",
     )
-    unreconciled, peer_unreconciled = _partition_session_rows(
-        project_unreconciled, session
-    )
-    if unreconciled and not unreconciled_override:
-        raise _session_unreconciled_refusal(
-            unreconciled, peer_unreconciled, unreconciled_grace
-        )
-    waiver = (
-        {
-            "requested": True,
-            # Which kind of command asked for the exception: a coordinator's own
-            # dispatch or a queue admission continuing a request it admitted.
-            "source": "admission-launch" if admission_launch else "coordinator",
-            # The waived backlog is copied as a field rather than referenced, so
-            # the record states exactly which runs the exception covered rather
-            # than pointing at the ledger's state in a later moment.
-            "grace": unreconciled_grace,
-            "waived_runs": unreconciled,
-        }
-        if unreconciled_override and unreconciled
-        else None
-    )
-    # A waived plan review is narrower than the unreconciled waiver: it excuses
+    # A waived plan review is narrower than the recorded backlog: it excuses
     # only the missing review of the plan this node builds, and is recorded with
     # the plan it waived so the exception names what was let through.
     plan_review_waiver = (
@@ -604,6 +588,7 @@ def dispatch(
                             queued_at=_utc_now(),
                             local=resolution.backend
                             == str(config.get("local_backend") or ""),
+                            backlog=backlog,
                         ),
                         max_requests=flight.queue_max_requests(config),
                     )
@@ -839,6 +824,7 @@ def dispatch(
                 queued_at=_utc_now(),
                 admitted_from=admitted_from,
                 local=is_local,
+                backlog=backlog,
             ),
             refs=validated_refs,
             wait_projects=wait_projects,
@@ -917,6 +903,7 @@ def dispatch(
                 dispatch_options=dispatch_options,
                 queued_at=_utc_now(),
                 local=queued_backend_name == local_backend,
+                backlog=backlog,
             ),
             backend=backend,
             lane_allowance=lane_allowance,
@@ -961,6 +948,7 @@ def dispatch(
                     dispatch_options=dispatch_options,
                     queued_at=_utc_now(),
                     admitted_from=admitted_from,
+                    backlog=backlog,
                 ),
                 max_requests=flight.queue_max_requests(config),
             )
@@ -1032,6 +1020,7 @@ def dispatch(
                         lane_allowance=lane_allowance,
                         dispatch_options=dispatch_options,
                         queued_at=_utc_now(),
+                        backlog=backlog,
                     ),
                     max_requests=flight.queue_max_requests(config),
                 )
@@ -1468,7 +1457,7 @@ def dispatch(
         stacked_admissions=stacked_admissions,
         suite_command=suite_command,
         urgency=urgency,
-        waiver=waiver,
+        backlog=backlog,
         watcher_waiver=watcher_waiver,
         wave_id=wave_id,
         worktree_identity=worktree_identity,

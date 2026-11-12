@@ -1,11 +1,10 @@
 """A launch from the queue is not refused on its coordinator's backlog.
 
 Queued work exists so that it runs when its lane frees, whether or not its
-coordinator is awake to reconcile delivered runs. The
-unreconciled-run guard judges a request when it is queued, not again when the
-lane opens: an admission launch waives its session's backlog and records that
-waiver on the run with the runs it covered, while a direct dispatch keeps the
-refusal unchanged.
+coordinator is awake to reconcile delivered runs. Neither route is held back by
+a session's terminal backlog: each records on the run it writes the overdue
+runs the work was chosen over, and the admission launch names itself as the
+source of that record.
 """
 
 from __future__ import annotations
@@ -211,24 +210,29 @@ def test_an_admission_launch_waives_its_coordinator_backlog(
     assert [row["run_id"] for row in waiver["waived_runs"]] == ["r-delivered"]
 
 
-def test_a_direct_dispatch_still_refuses_the_backlog(admit_repo: Path) -> None:
+def test_a_direct_dispatch_records_the_backlog_it_runs_over(
+    admit_repo: Path,
+) -> None:
+    """A direct dispatch succeeds and names the runs it was chosen over."""
     home = Path(os.environ["RECKON_HOME"])
     _write_overdue_run(home, "r-delivered")
     config, _ = _config_for()
+    recorded: list = []
 
-    with pytest.raises(dispatch_module.UnreconciledRuns) as excinfo:
-        dispatch_module.dispatch(
-            node=_node("direct"),
-            project=PROJECT,
-            repo=admit_repo,
-            config=config,
-            session=SESSION,
-            launcher=lambda *args, **kwargs: pytest.fail(
-                "a direct dispatch must be refused"
-            ),
-        )
+    result = dispatch_module.dispatch(
+        node=_node("direct"),
+        project=PROJECT,
+        repo=admit_repo,
+        config=config,
+        session=SESSION,
+        launcher=_launcher(recorded),
+    )
 
-    assert [row["run_id"] for row in excinfo.value.runs] == ["r-delivered"]
+    assert result["run_id"] != "r-delivered"
+    backlog = runs.dispatch_field(result, "unreconciled_override")
+    assert backlog["source"] == "coordinator"
+    assert backlog["requested"] is False
+    assert [row["run_id"] for row in backlog["waived_runs"]] == ["r-delivered"]
 
 
 def test_a_request_with_no_backlog_records_no_waiver(admit_repo: Path) -> None:

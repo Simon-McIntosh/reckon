@@ -7,10 +7,12 @@ from ._imports import (
     CompetenceLimit,
     CrewError,
     DispatchPlan,
+    Iterable,
     Mapping,
     Path,
     Sequence,
     TaskNode,
+    UnreconciledRuns,
     _agent_configuration,
     _context_fit_verdict,
     _context_refusal,
@@ -335,3 +337,57 @@ def _plan_dispatch_reads(**kwargs: Any) -> DispatchPlan:
         caller_write_paths=caller_write_paths,
     )
     return rerouted
+
+
+def _recorded_backlog(
+    *,
+    project: str,
+    session: str,
+    config: Mapping[str, Any],
+    requested: bool,
+    source: str,
+) -> dict[str, Any] | None:
+    """The overdue terminal runs a session's dispatch is made over, or None.
+
+    A session's unreconciled runs do not hold new work back: they are owed
+    duties, listed by the obligations view, and dispatch records them on the
+    run it writes rather than refusing. Only this session's own rows are named;
+    another session's backlog is neither counted nor copied.
+    """
+    from reckon.crew.recovery import _partition_session_rows, overdue_unreconciled_runs
+
+    grace = str((config.get("fences") or {}).get("unreconciled_run_grace") or "")
+    unreconciled, _peer_unreconciled = _partition_session_rows(
+        overdue_unreconciled_runs(project=project, grace=grace),
+        session,
+    )
+    if not unreconciled:
+        return None
+    return {
+        "requested": bool(requested),
+        # Which kind of command was made over the backlog: a coordinator's own
+        # dispatch or a queue admission continuing a request it admitted.
+        "source": source,
+        "grace": grace,
+        "waived_runs": unreconciled,
+    }
+
+
+def _session_unreconciled_refusal(
+    runs: Iterable[Mapping[str, Any]],
+    peer_runs: Iterable[Mapping[str, Any]],
+    grace: str,
+) -> UnreconciledRuns:
+    """Build an own-session refusal that keeps observed peer rows visible."""
+    refusal = UnreconciledRuns(runs, grace)
+    refusal.peer_runs = [dict(row) for row in peer_runs]
+    if refusal.peer_runs:
+        peer_lines = "\n".join(
+            f"- {row['run_id']} (session {(row.get('session') or '<unknown>')!s}): visible, not counted"
+            for row in refusal.peer_runs
+        )
+        peer_heading = (
+            f"{refusal!s}\nPeer-session unreconciled runs observed but not counted "
+        )
+        refusal.args = (peer_heading + f"toward this session's refusal:\n{peer_lines}",)
+    return refusal

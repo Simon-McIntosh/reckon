@@ -315,6 +315,8 @@ _MODULE_EXPORTS = {
         "_record_plan",
         "_record_shadow_picker_selection",
         "_record_stop_before_spawn",
+        "_record_unreached_launch",
+        "_refuse_superseded_launch",
         "_recorded_manifest_path",
         "_recorded_task_node",
         "_references_any_module",
@@ -366,7 +368,6 @@ _MODULE_EXPORTS = {
         "_session_host_runtime_root",
         "_session_host_waiting",
         "_session_too_large_to_continue",
-        "_session_unreconciled_refusal",
         "_settle_racing_winner",
         "_shadow_mask_paths",
         "_shared_landing_paths",
@@ -600,6 +601,8 @@ _MODULE_EXPORTS = {
     ],
     "fences": [
         "_gating_input_window",
+        "_recorded_backlog",
+        "_session_unreconciled_refusal",
         "_overridden_hold_route_mode",
         "_oversized_context_refusal",
         "_plan_dispatch_reads",
@@ -625,7 +628,7 @@ _MODULE_EXPORTS = {
     ],
     "claims": ["_attempt_record_for", "_request_claim_restored_on_refusal"],
     "preparation": ["dispatch"],
-    "launch": ["_launch_dispatch"],
+    "launch": ["_launch_dispatch", "_SupersededLaunchError", "_refuse_if_superseded"],
 }
 _CONCERN_MODULES = tuple(
     _import_module(f"{__package__}.dispatching.{name}") for name in _MODULE_EXPORTS

@@ -1,0 +1,69 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "45c1a94bee1dc81655abe2b35353c0b3101da171",
+  "call_site_count": 6,
+  "call_sites": "reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3395, reckon/crew/dispatch_launch.py:3389",
+  "completed_at": "2026-11-12T19:02:22.853Z",
+  "dispatched_at": "2026-11-12T18:52:16Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3654",
+      "severity": "non-blocking",
+      "text": "the fence at :3680 sits after _write_json(spec_path, ...) at :3654 has already overwritten the run's single canonical supervisor.json (SUPERVISOR_SPEC_NAME at dispatch_launch.py:1957) with this abandoned attempt's spec, so a superseded launch still writes shared state the newer attempt owns: if attempt 2 is between its own spec write and its _start_supervisor, the newer supervisor reads attempt 1's spec (attempt number and attempt_started_at), because the run directory is keyed on run_id rather than on attempt. The test asserts the pointer, run directory and worktree survive but never inspects the spec, so this residue is untested; the window is narrow and the sibling relaunch path has the same ordering, which is why this does not hold the node."
+    },
+    {
+      "file": "tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py",
+      "line": "281",
+      "severity": "non-blocking",
+      "text": "assert record.get(\"pid\") == os.getpid() compares the dispatch result against the value the test's own _spawn stub returned, so both sides originate in the fixture and it guards only that the return value is stored, not that the fence let a still-newest launch through; the case's independent guard is assert started at :280 with the absent attempt-1-exit.json at :282."
+    },
+    {
+      "file": "manifest.md",
+      "line": "9",
+      "severity": "non-blocking",
+      "text": "the four head-only cohort ids are attributed as flaky on the strength of isolation reruns whose results are recorded only in the retry_failures prose here and in the evidence fragment, while test_logs names gate-base.log, gate-head.log and the targeted arms but no rerun log, so the done_when's claim that the cohort adds no failure cannot be reconciled from the artefacts a reader can open; the delta itself (4 head-only ids, 1 base-only id) is correctly stated."
+    }
+  ],
+  "head_log_revision": "5f9701424f4d04b046ff32a792cf934e9dde9134",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3395, reckon/crew/dispatch_launch.py:3389",
+    "diff": "read both commits against 45c1a94bee; 5f9701424f adds the fence call and its try/except wrapping at dispatch.py:3672-3683, the _SupersededLaunchError type at :1631 with its unwind clause at :3778, the two dispatch_launch.py re-exports at :4136, the corrected docstring reference at dispatch_launch.py:2469, and the 284-line test file; 64fbead266 only adds three lines of cohort results to the evidence fragment.",
+    "done_when": "the done_when names two cases over a temporary crew home and repository, an aged reservation with a newer attempt, a base negative control, and matched cohort arms run on all_debug; tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:216 and :268 hold the cases, negative-control.log records 1 failed EXIT=1, and gate-base.log/gate-head.log record 133 failed/3429 passed and 136 failed/3428 passed, both EXIT=1, with four head-only ids whose flaky attribution is recorded in manifest.md:9 but in no log.",
+    "goal": "the node's goal is to fence the fresh-dispatch supervisor start against a superseded launch; reckon/crew/dispatch.py:3680 re-reads the reservation through the existing fence immediately before _start_supervisor at :3683, and :3778 handles the refusal without the rollback so the newer attempt's records survive.",
+    "manifest": "read /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T174606274600-a-stalled-fresh-dispatch-starts-no-second-supervisor/manifest.md; status complete, commits 5f9701424f and 64fbead266, baseline_suite and after_suite both completed true with literal commands and zero failures, negative_control_log naming negative-control.log, and retry_failures naming the four head-only cohort ids as flaky.",
+    "write_paths": "prompt.txt:78-84 fences reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, the new test, the evidence fragment and a figures directory; git diff --stat from 45c1a94bee to 64fbead266 changes the first, second, third and fourth and nothing else, and no figure was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:247 reddens when the fence is removed (negative-control.log, 1 failed EXIT=1) and :280-282 reddens if the still-newest case stops starting a supervisor or starts writing an exit receipt, but :281 compares the dispatch result against the value the test's own _spawn stub returned rather than an independent source.",
+    "evidence": "the done_when's two cases and its declared negative control are on disk (negative-control.log 1 failed EXIT=1, fence-suite-after.log 53 passed EXIT=0), but its cohort claim rests on gate-base.log and gate-head.log whose head-only ids are four, and the isolation reruns that attribute them as flaky appear only in manifest.md:9 and the fragment with no log named in test_logs.",
+    "fit": "the added names _SupersededLaunchError and _refuse_superseded_launch state mechanism with no plan, sprint or ticket label, follow the private-error and noqa re-export idiom already in reckon/crew/dispatch.py:4136, and the comments explain the two-supervisor hazard rather than the change's history.",
+    "goal_fidelity": "reckon/crew/dispatch.py:3680 calls _refuse_superseded_launch(directory, reservation, run_id) immediately before _start_supervisor at :3683 on the fresh-dispatch path, and the refusal at :3778 carries its own except clause that writes only the attempt receipt, so a superseded launch starts no supervisor and leaves the newer attempt's pointer, run directory and worktree standing.",
+    "reuse": "the fence is not re-implemented: dispatch.py imports the existing _refuse_superseded_launch from its owner at reckon/crew/dispatch_launch.py:2773 and calls it at :3680 exactly where the relaunch path calls it at dispatch_launch.py:3389; the only new code is the error type and its unwind clause, and no owner of that capability exists elsewhere in reckon/crew.",
+    "scope_discipline": "git diff --stat 45c1a94bee..64fbead266 shows exactly four changed files (dispatch.py, dispatch_launch.py, the new test file, the evidence fragment), all inside the fence at prompt.txt:78-84, with no plan, index or sibling-node path touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to fence the fresh-dispatch supervisor start against a superseded launch; reckon/crew/dispatch.py:3680 calls _refuse_superseded_launch(directory, reservation, run_id) immediately before _start_supervisor at :3683, the same unlock-read fence the relaunch path uses at reckon/crew/dispatch_launch.py:3389, and the refusal's own clause at :3778 writes only the attempt receipt so no rollback touches the newer attempt's records.\nVERDICT done_when: the done_when names tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py driving an aged reservation with a newer attempt reserved, an assertion of no supervisor start plus the attempt exit receipt, a still-newest second case, a base negative control, and matched cohort arms on an all_debug job; the file holds both cases at :216 and :268, negative-control.log records 1 failed EXIT=1, and gate-base.log (133 failed, 3429 passed) and gate-head.log (136 failed, 3428 passed) are both EXIT=1, but the four head-only ids' flaky attribution is prose-only.\nVERDICT write_paths: the fence at prompt.txt:78-84 is reckon/crew/dispatch.py, reckon/crew/dispatch_launch.py, tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py, the evidence fragment and a figures directory; git diff --stat 45c1a94bee..64fbead266 shows exactly four changed files inside it and no figure, plan or sibling-node path.\nVERDICT manifest: read manifest.md; status complete, commits 5f9701424f and 64fbead266, baseline_suite and after_suite both completed true with literal commands and zero failures, negative_control_log naming negative-control.log, retry_failures naming the four head-only ids, and the ruff claim verified in the worktree (2 findings, both pre-existing at base).\nVERDICT diff: read both commits against 45c1a94bee; 5f9701424f adds the fence call at dispatch.py:3680, the _SupersededLaunchError type at :1631 with its own except clause at :3778, the two dispatch_launch.py re-exports, the corrected _launch_still_newest docstring reference at dispatch_launch.py:2469 (the name resolves nowhere), and the 284-line test; 64fbead266 only adds the cohort results to the evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:2256, reckon/crew/admission/launching.py:314, reckon/crew/plan_review.py:5816, reckon/crew/plan_review.py:6566, reckon/crew/recovery_review_dispatch.py:3395, reckon/crew/dispatch_launch.py:3389\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:3680 places the existing fence immediately before _start_supervisor at :3683, and the dedicated except clause at :3778 writes only the attempt receipt, so a superseded launch neither spawns nor runs the rollback that would unlink the newer attempt's pointer, directory or worktree.\nSCORE evidence: 15\nJUSTIFICATION evidence: negative-control.log (1 failed, EXIT=1), fence-suite-after.log (53 passed, EXIT=0) and both cohort arms are recorded with revision and command, but the cohort delta is four head-only ids and the isolation reruns that make them flaky are recorded only in manifest.md:9 and the fragment, with no rerun log in test_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every one of the four files in git diff --stat 45c1a94bee..64fbead266 is inside the fence at prompt.txt:78-84, the worktree is clean at 64fbead266, and no plan or index path was written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:247 reddens when the fence call is removed (the declared negative control, 1 failed EXIT=1) and :280-282 reddens if the still-newest case stops spawning or writes an exit receipt, but :281 compares against the test's own stub value rather than an independent source.\nSCORE fit: 18\nJUSTIFICATION fit: _SupersededLaunchError and _refuse_superseded_launch name the mechanism with no plan or ticket label, and the private-error with its own unwind clause follows the surrounding idiom of reckon/crew/dispatch.py:3778 and the noqa re-export block at :4136.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change imports and calls the fence already owned by reckon/crew/dispatch_launch.py:2773 rather than adding a second copy, at the same position the relaunch path uses it (dispatch_launch.py:3389), and no other owner of a superseded-launch check exists in reckon/crew.\nFINDING reckon/crew/dispatch.py:3654 non-blocking: the fence at :3680 follows the _write_json(spec_path, ...) at :3654, so a superseded launch still overwrites the run's canonical supervisor.json with its own spec before refusing; a newer attempt sitting between its spec write and its spawn would have its supervisor read attempt 1's spec, and the test asserts the pointer, directory and worktree but never the spec.\nFINDING tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py:281 non-blocking: assert record.get(\"pid\") == os.getpid() compares the dispatch result against the value the test's own _spawn stub returned, guarding only that the return is stored; the independent guard is assert started at :280 with the absent exit receipt at :282.\nFINDING manifest.md:9 non-blocking: the four head-only cohort ids are called flaky on isolation reruns whose results appear only in retry_failures prose and the fragment, with no rerun log named in test_logs, so the done_when's no-added-failure claim cannot be reconciled from the recorded artefacts.\n",
+  "review_run_id": "r-20261112T184207442446-review-of-a-stalled-fresh-dispatch-starts-no-second-supervisor-64fbead26623",
+  "reviewed_base_sha": "45c1a94bee1dc81655abe2b35353c0b3101da171",
+  "reviewed_head_sha": "64fbead26623e9395b7f1c9e030810403f04c27d",
+  "reviewed_run_id": "r-20261112T174606274600-a-stalled-fresh-dispatch-starts-no-second-supervisor",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T184207442446-review-of-a-stalled-fresh-dispatch-starts-no-second-supervisor-64fbead26623",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T19:06:49.228366+00:00",
+  "total": 110
+}

@@ -1,0 +1,80 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/review_records.py:895 stored_records_for_run",
+    "reckon/crew/review_records.py:1029 _record_filed_elsewhere",
+    "reckon/crew/review_records.py:1050 _record_filed_elsewhere",
+    "reckon/crew/review_records.py:1070 _indexed_at_head",
+    "reckon/crew/review_records.py:1737 review_entries_signature",
+    "reckon/crew/review_records.py:1784 reviewed_run_ids",
+    "reckon/crew/recovery_memo.py:384"
+  ],
+  "completed_at": "2026-11-12T20:48:27.502Z",
+  "dispatched_at": "2026-11-12T20:35:14Z",
+  "findings": [
+    {
+      "file": "reckon/crew/review_records.py",
+      "line": "1484",
+      "severity": "non-blocking",
+      "text": "non-blocking: _persisted_index_document stamps the directory identity by stat'ing the store at persist time, after _update_store_entries or the build has already read the entries, so a record another process files in that window is covered by the recorded identity but missing from the entries, and every later cold process adopts the incomplete set silently until the directory moves again; the identity read at line 1614 is the value that matches what the entries describe and should be passed in."
+    },
+    {
+      "file": "tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py",
+      "line": "232",
+      "severity": "non-blocking",
+      "text": "non-blocking: the assertion compares reviewed['reviewed_head_sha'] against PROMOTED_HEAD, the same constant the test seeded the record with and passed to _promotion_lookups as promoted_revision, so a lookup that echoed the requested revision back instead of returning the stored record would still pass; the independent guard is the neighbouring path assertion at line 242, which asks for REVIEWED_RUN and requires the file named for the reviewer's run."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T192244510547-a-promotion-s-review-lookups-cost-the-same-at-any-store-size/negative-control-base-tree.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the negative control's header names the head worktree's review_records.py as the module under test while the command's PYTHONPATH and the observed base behaviour (138 and 260 accesses) show the base tree was imported, so a reader checking the control's provenance sees a contradiction; the manifest also omits measurement_module and measurement_cwd for this scratch-tree arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/review_records.py:895 stored_records_for_run, reckon/crew/review_records.py:1029/1050 _record_filed_elsewhere, reckon/crew/review_records.py:1070 _indexed_at_head, reckon/crew/review_records.py:1737 review_entries_signature, reckon/crew/review_records.py:1784 reviewed_run_ids, reckon/crew/recovery_memo.py:384",
+    "diff": "read both commits against f4c91059: 6d4444900a adds directory_identity to the persisted index document, returns it from _load_persisted_entries, adopts the loaded entries without listing in _store_indexes and marks them settled for _refresh_store_entries, 61 lines in review_records.py and no new definition; 2eb0a11241 adds only the 37-line landing fragment.",
+    "done_when": "the source done_when renders as: the section's test passes with its negative control, the test files importing the changed modules add no failure against base at -n 4, and ruff adds no findings on the staged paths; the manifest records all three (after-arm.log 2 passed EXIT=0; importers-base.log and importers-head.log both 316 passed with the same 4 ids; nil ruff in the manifest but the fragment records 2 -> 0), and I re-ran ruff myself on both staged paths: all checks passed, 2 files already formatted.",
+    "goal": "the goal is that a promotion's review lookups cost the same at any store size; reckon/crew/review_records.py:1618-1643 adopts the persisted store index unchanged when the recorded directory identity still matches, and after-arm.log records 20 store accesses at both 700 and 7,000 records (33 -> 138 at base), so the goal is met on the measured path.",
+    "manifest": "read at the reviewed run directory; status complete, commits 6d4444900a and 2eb0a11241, changed_paths the three landed files, tests the section test command, test_logs naming after-arm.log and the negative-control log, baseline_suite and after_suite both 4 failure ids (2 failed + 2 errors) at base and head respectively; it omits measurement_module and measurement_cwd, which the scratch-tree arm contract requires.",
+    "write_paths": "the fence was reckon/crew/review_records.py, recovery_memo.py, recovery_review_subject.py, promotion.py, tests/, the landing fragment and a figures directory; git diff --stat f4c91059..2eb0a11241 touches exactly review_records.py, one new test file under tests/ and the fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:222 reddens when the adoption is removed, as the base-tree control shows, with the fallback branch guarded by tests/test_the_review_store_index_re_reads_only_what_changed.py:269; the head-sha assertion at line 232 is not independent of the value the test supplied.",
+    "evidence": "the gate asserts the done_when's measure on both arms of the count (after-arm.log EXIT=0, negative-control-base-tree.log EXIT=1 with 138 vs 33 and 260 vs 50), though that control log's module header names the head worktree's module.",
+    "fit": "the change keeps the module's private-helper shape and mechanism docstrings at reckon/crew/review_records.py:1595-1607, though the name settled_identity denotes the identity the document recorded rather than a state.",
+    "goal_fidelity": "reckon/crew/review_records.py:1629-1643 returns the loaded indexes with no listing and no per-record stat when the recorded identity equals the live one, which is the goal's whole claim.",
+    "reuse": "the change extends the existing owner _store_directory_identity at reckon/crew/review_records.py:1316 rather than adding a mechanism; a capability search over reckon/crew for stat-identity-keyed caches found file_memo.file_signature at reckon/file_memo.py:273, which memoises one file's parse in-process and is a different capability, so nothing is duplicated.",
+    "scope_discipline": "every path in git diff --stat f4c91059..2eb0a11241 is inside the declared fence, and the change adds no definition beyond the two functions it extends."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a promotion's review lookups cost the same at any store size; reckon/crew/review_records.py:1618-1643 adopts the persisted store index unchanged when the recorded directory identity still matches, and after-arm.log records 20 store accesses at both 700 and 7,000 records (33 -> 138 at base), so the goal is met on the measured path.\nVERDICT done_when: the source done_when renders as: the section's test passes with its negative control, the test files importing the changed modules add no failure against base at -n 4, and ruff adds no findings on the staged paths; the manifest records all three (after-arm.log 2 passed EXIT=0; importers-base.log and importers-head.log both 316 passed with the same 4 ids; nil ruff in the manifest but the fragment records 2 -> 0), and I re-ran ruff myself on both staged paths: all checks passed, 2 files already formatted.\nVERDICT write_paths: the fence was reckon/crew/review_records.py, recovery_memo.py, recovery_review_subject.py, promotion.py, tests/, the landing fragment and a figures directory; git diff --stat f4c91059..2eb0a11241 touches exactly review_records.py, one new test file under tests/ and the fragment, all inside the fence.\nVERDICT manifest: read at the reviewed run directory; status complete, commits 6d4444900a and 2eb0a11241, changed_paths the three landed files, tests the section test command, test_logs naming after-arm.log and the negative-control log, baseline_suite and after_suite both 4 failure ids (2 failed + 2 errors) at base and head respectively; it omits measurement_module and measurement_cwd, which the scratch-tree arm contract requires.\nVERDICT diff: read both commits against f4c91059: 6d4444900a adds directory_identity to the persisted index document, returns it from _load_persisted_entries, adopts the loaded entries without listing in _store_indexes and marks them settled for _refresh_store_entries, 61 lines in review_records.py and no new definition; 2eb0a11241 adds only the 37-line landing fragment.\nCALL_SITES: reckon/crew/review_records.py:895 stored_records_for_run, reckon/crew/review_records.py:1029 _record_filed_elsewhere, reckon/crew/review_records.py:1050 _record_filed_elsewhere, reckon/crew/review_records.py:1070 _indexed_at_head, reckon/crew/review_records.py:1737 review_entries_signature, reckon/crew/review_records.py:1784 reviewed_run_ids, reckon/crew/recovery_memo.py:384 _recovery_memo_entries\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/review_records.py:1629-1643 returns the loaded indexes with no listing and no per-record stat when the recorded identity equals the live one, which is the goal's whole claim.\nSCORE evidence: 16\nJUSTIFICATION evidence: the gate asserts the done_when's measure on both arms of the count (after-arm.log EXIT=0, negative-control-base-tree.log EXIT=1 with 138 vs 33 and 260 vs 50), though that control log's module header names the head worktree's module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat f4c91059..2eb0a11241 is inside the declared fence, and the change adds no definition beyond the two functions it extends.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:222 reddens when the adoption is removed, as the base-tree control shows, with the fallback branch guarded by tests/test_the_review_store_index_re_reads_only_what_changed.py:269; the head-sha assertion at line 232 is not independent of the value the test supplied.\nSCORE fit: 18\nJUSTIFICATION fit: the change keeps the module's private-helper shape and mechanism docstrings at reckon/crew/review_records.py:1595-1607, though the name settled_identity denotes the identity the document recorded rather than a state.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner _store_directory_identity at reckon/crew/review_records.py:1316 rather than adding a mechanism; a capability search over reckon/crew for stat-identity-keyed caches found file_memo.file_signature at reckon/file_memo.py:273, which memoises one file's parse in-process and is a different capability, so nothing is duplicated.\nFINDING reckon/crew/review_records.py:1484 non-blocking: _persisted_index_document stamps the directory identity by stat'ing the store at persist time, after _update_store_entries or the build has already read the entries, so a record another process files in that window is covered by the recorded identity but missing from the entries, and every later cold process adopts the incomplete set silently until the directory moves again; the identity read at line 1614 is the value that matches what the entries describe and should be passed in.\nFINDING tests/test_a_promotions_review_lookups_cost_the_same_at_any_store_size.py:232 non-blocking: the assertion compares reviewed['reviewed_head_sha'] against PROMOTED_HEAD, the same constant the test seeded the record with and passed to _promotion_lookups as promoted_revision, so a lookup that echoed the requested revision back instead of returning the stored record would still pass; the independent guard is the neighbouring path assertion at line 242, which asks for REVIEWED_RUN and requires the file named for the reviewer's run.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T192244510547-a-promotion-s-review-lookups-cost-the-same-at-any-store-size/negative-control-base-tree.log:3 non-blocking: the negative control's header names the head worktree's review_records.py as the module under test while the command's PYTHONPATH and the observed base behaviour (138 and 260 accesses) show the base tree was imported, so a reader checking the control's provenance sees a contradiction; the manifest also omits measurement_module and measurement_cwd for this scratch-tree arm.",
+  "review_run_id": "r-20261112T202541381748-review-of-a-promotion-s-review-lookups-cost-the-same-at-any-store-size-2eb0a1124135",
+  "reviewed_base_sha": "f4c910599c515cac68f47acb00f2ed0b10dd93cf",
+  "reviewed_head_sha": "2eb0a1124135ff857289e2b8bb6d56a3f7ee15ec",
+  "reviewed_run_id": "r-20261112T192244510547-a-promotion-s-review-lookups-cost-the-same-at-any-store-size",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T202541381748-review-of-a-promotion-s-review-lookups-cost-the-same-at-any-store-size-2eb0a1124135"
+  },
+  "reviewer_run_id": "r-20261112T202541381748-review-of-a-promotion-s-review-lookups-cost-the-same-at-any-store-size-2eb0a1124135",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:25:17.747386+00:00",
+  "total": 110
+}

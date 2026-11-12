@@ -1,0 +1,114 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Restoring a setter that updates only the facade or routes through crew concerns instead of dispatch concerns leaves the moved helper at its original filename or path, failing the independent literal sample/forwarded.receipt expectation.",
+      "file": "tests/test_dispatch_split_keeps_its_surface.py",
+      "line": 691
+    },
+    {
+      "failure_condition": "Restoring the duplicated dispatch setter bypasses the observed existing owner, leaving no matching owner invocation; the recorded reverse-commit control fails here.",
+      "file": "tests/test_dispatch_split_keeps_its_surface.py",
+      "line": 695
+    },
+    {
+      "failure_condition": "Failing to restore the facade constant after the patch context leaves forwarded.receipt instead of the pre-patch snapshot; this is restoration readback, supplementary to the moved-helper checks.",
+      "file": "tests/test_dispatch_split_keeps_its_surface.py",
+      "line": 701
+    },
+    {
+      "failure_condition": "Failing to propagate restoration to the helper globals leaves its filename forwarded.receipt instead of the pre-patch snapshot; the original snapshot is not a supplied override and does not move with that override.",
+      "file": "tests/test_dispatch_split_keeps_its_surface.py",
+      "line": 702
+    }
+  ],
+  "assertion_independence": "No added assertion solely compares the supplied override with facade readback; literal path behavior and a separately observed owner call test propagation and reuse, while the original-value assertions test restoration.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew.py:175 dispatch export entry and :226 facade installation",
+    "reckon/crew/queue_admission.py:396 and :441 _launch_queued dispatch",
+    "reckon/crew/recovery_review_dispatch.py:3366 plan_dispatch and :3395 dispatch",
+    "reckon/crew/dispatching/launch.py:1071 _attempt_record_for"
+  ],
+  "completed_at": "2026-11-12T20:45:04Z",
+  "dispatched_at": "2026-11-12T20:39:11Z",
+  "findings": [],
+  "importer_comparison": {
+    "added_failure_ids": [],
+    "base_failure_count": 16,
+    "base_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/reuse-crew-base-importers.log",
+    "head_failure_count": 16,
+    "head_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/reuse-crew-head-importers.log",
+    "positive_control": "Both logs contain all 16 named failure IDs and their 16-failure summaries; direct extraction agrees with the comparison receipt."
+  },
+  "item_verdicts": {
+    "call_sites": "Verified reckon/crew.py:175 dispatch export entry and :226 facade installation, reckon/crew/queue_admission.py:396 and :441 _launch_queued dispatch, reckon/crew/recovery_review_dispatch.py:3366 plan_dispatch and :3395 dispatch, reckon/crew/dispatching/launch.py:1071 _attempt_record_for",
+    "diff": "Read commits 54d6d4e70e5f365f0a8f93fa1628729104603f05 and 27e092194d09336b984dd2692d367b5bb60f033b separately against 57f62e1751cfacb0818d824710e9f568e2a06387; the four-path delta adds the owner-observation test, reuses the setter, and updates the evidence fragment.",
+    "done_when": "Read live plan s24 and the repair measure; reuse-fixed-head-armed.log records 136 passed at the reviewed head, reuse-reverted-owner-control.log records the intended refusal, and the 58-file crew facade comparison adds zero failure IDs.",
+    "goal": "Read prompt.txt:40 and the reuse repair instructions in resume-3-advice.txt and resume-4-advice.txt; reckon/crew/dispatch.py:644 now extends the existing crew assignment owner while preserving old import and patch paths.",
+    "manifest": "Read the complete source manifest naming both new commits, acted dimension-reuse, exact original-base and final-head receipts, repair-base receipt, importer comparison and reversal control; the opened logs reconcile with its figures.",
+    "write_paths": "Read prompt.txt scope and resume-4-advice.txt granting reckon/crew.py; all four incremental changed paths are explicitly authorized."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_split_keeps_its_surface.py:695 fails when dispatch reinstates its independent setter, as the reversal log demonstrates, while :691 and :702 exercise actual moved-helper forwarding and restoration.",
+    "evidence": "reuse-original-baseline-armed.log records 130 passed, reuse-repair-baseline-armed.log 135 passed, reuse-fixed-head-armed.log 136 passed, and reuse-reverted-owner-control.log 1 failed and 5 passed with EXIT=1 at test_dispatch_split_keeps_its_surface.py:695.",
+    "fit": "reckon/crew.py:36 retains the existing module-facade idiom and reckon/crew/dispatch.py:644 expresses its specialization by inheritance with mechanism-based names and docstrings.",
+    "goal_fidelity": "reckon/crew/dispatch.py:644 inherits _CrewFacade and reckon/crew.py:41 selects the receiving facade concerns, satisfying the reuse repair without changing moved function bodies.",
+    "reuse": "The capability search for module-facade override propagation locates reckon/crew.py:36-43, which was opened; dispatch.py:644 now extends that owner and adds no competing setter.",
+    "scope_discipline": "The four paths in the incremental diff are covered by prompt.txt and the explicit reckon/crew.py grant in resume-4-advice.txt; the shared-owner change stays confined to its placement and concern selection."
+  },
+  "prior_finding_resolution": "Prior duplicate setter finding is answered by inheritance at dispatch.py:644; no findings in this incremental review.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:40 and the reuse repair instructions in resume-3-advice.txt and resume-4-advice.txt; reckon/crew/dispatch.py:644 now extends the existing crew assignment owner while preserving old import and patch paths.\nVERDICT done_when: Read live plan s24 and the repair measure; reuse-fixed-head-armed.log records 136 passed at the reviewed head, reuse-reverted-owner-control.log records the intended refusal, and the 58-file crew facade comparison adds zero failure IDs.\nVERDICT write_paths: Read prompt.txt scope and resume-4-advice.txt granting reckon/crew.py; all four incremental changed paths are explicitly authorized.\nVERDICT manifest: Read the complete source manifest naming both new commits, acted dimension-reuse, exact original-base and final-head receipts, repair-base receipt, importer comparison and reversal control; the opened logs reconcile with its figures.\nVERDICT diff: Read commits 54d6d4e70e5f365f0a8f93fa1628729104603f05 and 27e092194d09336b984dd2692d367b5bb60f033b separately against 57f62e1751cfacb0818d824710e9f568e2a06387; the four-path delta adds the owner-observation test, reuses the setter, and updates the evidence fragment.\nCALL_SITES: reckon/crew.py:175 dispatch export entry and :226 facade installation, reckon/crew/queue_admission.py:396 and :441 _launch_queued dispatch, reckon/crew/recovery_review_dispatch.py:3366 plan_dispatch and :3395 dispatch, reckon/crew/dispatching/launch.py:1071 _attempt_record_for\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:644 inherits _CrewFacade and reckon/crew.py:41 selects the receiving facade concerns, satisfying the reuse repair without changing moved function bodies.\nSCORE evidence: 20\nJUSTIFICATION evidence: reuse-original-baseline-armed.log records 130 passed, reuse-repair-baseline-armed.log 135 passed, reuse-fixed-head-armed.log 136 passed, and reuse-reverted-owner-control.log 1 failed and 5 passed with EXIT=1 at test_dispatch_split_keeps_its_surface.py:695.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths in the incremental diff are covered by prompt.txt and the explicit reckon/crew.py grant in resume-4-advice.txt; the shared-owner change stays confined to its placement and concern selection.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_dispatch_split_keeps_its_surface.py:695 fails when dispatch reinstates its independent setter, as the reversal log demonstrates, while :691 and :702 exercise actual moved-helper forwarding and restoration.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew.py:36 retains the existing module-facade idiom and reckon/crew/dispatch.py:644 expresses its specialization by inheritance with mechanism-based names and docstrings.\nSCORE reuse: 20\nJUSTIFICATION reuse: The capability search for module-facade override propagation locates reckon/crew.py:36-43, which was opened; dispatch.py:644 now extends that owner and adds no competing setter.\n",
+  "repair_baseline_suite": {
+    "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_worker_resumes_to_completion.py tests/test_a_pick_names_its_slow_stage.py tests/test_crew_refusal_visibility.py tests/test_dispatch_split_keeps_its_surface.py tests/test_follow_observes_other_sessions.py tests/test_the_fleet_gate_holds_dispatch.py tests/test_staged_write_inventory.py",
+    "completed": true,
+    "exit_status": 0,
+    "failure_count": 0,
+    "failure_ids": [],
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/reuse-repair-baseline-armed.log",
+    "revision": "57f62e1751cfacb0818d824710e9f568e2a06387"
+  },
+  "reuse_search": {
+    "owner": "reckon/crew.py:36-43 _CrewFacade.__setattr__; dispatch extends it rather than duplicating it. The test-local record_forward wraps this owner for observation.",
+    "searched": "Module-facade classes and concern-wide runtime override propagation in the reviewed revision of reckon/."
+  },
+  "review_limits": "Incremental review only: 57f62e1751cfacb0818d824710e9f568e2a06387..27e092194d09336b984dd2692d367b5bb60f033b. No suite rerun, no product edits. All source and call-site reads use git objects at the reviewed head; the reviewer worktree remains at its dispatched revision.",
+  "review_run_id": "r-20261112T203635840485-review-of-split-dispatch-27e092194d09",
+  "reviewed_base_sha": "57f62e1751cfacb0818d824710e9f568e2a06387",
+  "reviewed_head_sha": "27e092194d09336b984dd2692d367b5bb60f033b",
+  "reviewed_run_id": "r-20261112T062614544790-split-dispatch",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_worker_resumes_to_completion.py tests/test_a_pick_names_its_slow_stage.py tests/test_crew_refusal_visibility.py tests/test_dispatch_split_keeps_its_surface.py tests/test_follow_observes_other_sessions.py tests/test_the_fleet_gate_holds_dispatch.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/reuse-fixed-head-armed.log",
+      "revision": "27e092194d09336b984dd2692d367b5bb60f033b"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_worker_resumes_to_completion.py tests/test_a_pick_names_its_slow_stage.py tests/test_crew_refusal_visibility.py tests/test_follow_observes_other_sessions.py tests/test_the_fleet_gate_holds_dispatch.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/reuse-original-baseline-armed.log",
+      "revision": "af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:06:12.743334+00:00",
+  "total": 120
+}

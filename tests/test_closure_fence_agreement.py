@@ -204,26 +204,26 @@ def test_drain_and_dispatch_counts_agree_over_mixed_pointers(home) -> None:
     assert report["disposed_runs"] == 2
 
 
-def test_dispatch_refuses_only_the_unreconciled_subset(home, repo) -> None:
+def test_dispatch_records_only_the_unreconciled_subset(home, repo) -> None:
+    """The backlog a dispatch records is the drain's own unreconciled count."""
     _write_terminal_pointer(home, "r-undisposed", age_seconds=601)
     _write_terminal_pointer(home, "r-outlived", age_seconds=601)
     crew.record_run_disposition("r-outlived", "still-working", project="proj")
     _write_terminal_pointer(home, "r-handed", age_seconds=601)
     crew.record_run_disposition("r-handed", "handed-off", project="proj")
 
-    with pytest.raises(crew.UnreconciledRuns) as excinfo:
-        crew.dispatch(
-            node=_node(id="next-node"),
-            project="proj",
-            repo=repo,
-            config=_grace_config(),
-            session="sess",
-            launcher=lambda *args, **kwargs: pytest.fail("dispatch must be refused"),
-        )
+    record = crew.dispatch(
+        node=_node(id="next-node"),
+        project="proj",
+        repo=repo,
+        config=_grace_config(),
+        session="sess",
+        launcher=lambda *args, **kwargs: 4242,
+    )
 
-    refused = {row["run_id"] for row in excinfo.value.runs}
-    assert refused == {"r-undisposed", "r-outlived"}
-    assert "r-handed" not in refused
+    recorded = {row["run_id"] for row in record["unreconciled_override"]["waived_runs"]}
+    assert recorded == {"r-undisposed", "r-outlived"}
+    assert "r-handed" not in recorded
 
 
 def test_dispatch_accepts_a_handed_off_pointer(home, repo) -> None:

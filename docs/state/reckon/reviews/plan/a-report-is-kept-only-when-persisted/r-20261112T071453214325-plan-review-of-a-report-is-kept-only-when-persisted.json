@@ -1,0 +1,92 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T07:30:04.892Z",
+  "dispatched_at": "2026-11-12T07:17:09Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/review.py:2658",
+      "id": "duplicate_owner-1",
+      "reason": "the plan would have the node extend the committed store and the typed resource vocabulary instead of adding a fourth path-resolution rule for the same directory, which is the point of \u00a72's own \"reckon carries no default path\" constraint.",
+      "text": "\u00a72's \"per-project persisted-items store under the project's docs state\" (`docs/plans/a-report-is-kept-only-when-persisted.html:56`) is a second instance of a store shape this repository already owns twice: `committed_review_root` (reckon/crew/review.py:2658) resolves `docs/state/<project>/reports/...` against the mounted docs dir, returns `None` for an unmounted project rather than inventing a path, and is written by the review store, while `reckon/project_state.py:262` (`resource_path`) plus `_validate_resource` (reckon/project_state.py:717) own the typed, validated, locked per-project state record with `read_resource`/`write_resource`; a bespoke persisted-items file would re-derive the path rule, the mount resolution and the atomic write that `reckon/_store.py:620` (`write_json_atomically`) already provides",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/routing.py:1822",
+      "id": "duplicate_owner-2",
+      "reason": "the plan must state that its item rule subsumes and replaces the run-tree rule for the reports store, and name the ordering, or the delivered sweep will keep cited items for a reader who never learns the other pass removed them.",
+      "text": "\u00a74's hourly sweep (`docs/plans/a-report-is-kept-only-when-persisted.html:83`) is a third removal pass over the same store beside the two that already run: `_run_report_trees` (reckon/crew/routing.py:1822) removes every top-level `reports/<project>/<run-id>/` tree at `retention_days`, whose default is 30 (reckon/crew/gc.py:648), and `_plan_review_raw_reports` (reckon/crew/routing.py:2067) prunes raw review text at `review.raw_report_retention_days`, default 30 (reckon/flight.py:150); both are invoked from `garbage_collect` (reckon/crew/gc.py:993-1007), so a run-keyed report tree \u2014 the exact shape \u00a76 turned into symlinks \u2014 is already judged and removed at \u00a74's own 30-day ceiling with no citation, no plan status and no look inside the item; measured, not inferred: a probe against a synthetic `reports/proj/r-20260101T000000000000-cited-item` aged 40 days, with the run id in `ledgered`, returned `prune 40 <path>` from `_run_report_trees` while the tree held a figure a plan cites, so \u00a74's promise \"kept at 90 days: an item whose own path is cited\" is already contradicted by the pass that lands first",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/figures.py:187",
+      "id": "duplicate_owner-3",
+      "reason": "\u00a75's deliverable and its browser test are undefined until it names which root the listing reads, and its write paths name the JSX component that renders `docs/figures`, which is the wrong surface for an expiry class.",
+      "text": "\u00a75's premise, \"Where the SPA lists a plan's figures and report items\" (`docs/plans/a-report-is-kept-only-when-persisted.html:125`), is already met for one root and is unmeetable for the other: `figure_rows` (reckon/figures.py:187) already returns one row per figure under `docs/figures`, each carrying `for_plan` when a figure's top-level directory is a plan slug, and `_discover_plans_uncached` already appends those rows to the served plan inventory (reckon/serve.py:1723) for the Figures surface (`docs/ui/shell-route.jsx:8`); `docs/figures` is committed to git and never expires, so \u00a75's done-when \u2014 \"one persisted, one cited and two working figures\" \u2014 cannot be satisfied from that inventory, because a figure in `docs/figures` is never in the reports store and can carry no working or expiry class; the plan therefore needs a second listing root over `reports/<project>/...` and does not say so",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:83",
+      "id": "thin_wrapper-1",
+      "reason": "the honest change is one extended pass that owns the reports store's retention, with the symlink branch inside it, rather than a third pass that must inherit-fix a defect the second one still carries.",
+      "text": "\u00a74 wraps anew what `_run_report_trees` already does (walk `reports/<project>`, test liveness, print, `shutil.rmtree`) and justifies nothing: the reasons it cannot instead be extended \u2014 the citation rule, the plan-close rule, the item-versus-tree unit, the symlink target \u2014 are exactly the reasons a thin second pass drifts from the first, and the pass's own failure mode is already recorded in \u00a71: `shutil.rmtree` on a symlinked item raises `OSError: Cannot call rmtree on a symbolic link` (reproduced: the target and the link both survive), which is the defect \u00a76's symlink swap creates for the *existing* pass today",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:77",
+      "id": "deep_module-1",
+      "reason": "without one deep module over that classification, the listing will show an item as retained while the sweep removes it, which is precisely the failure \u00a75's filter exists to prevent.",
+      "text": "the retention decision is given to no module: \u00a73 requires the served listing to emit `persisted`, `cited` or `working` and a \u00a74 expiry date for each item, and \u00a74 requires the sweep to apply the same rules to remove items, so two call sites must derive one classification from the persist records (\u00a72), the citation scan across plan, research and evidence documents, the plan's status, the live pointers and the newest-file age; the plan puts the rule text only in \u00a74 and the class name only in \u00a73, and names no function that both read",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-report-is-kept-only-when-persisted.html:74",
+      "id": "interface_budget-1",
+      "reason": "each section must account for the surface it adds \u2014 folding the listing into the existing `records` view rather than buying a 22nd, and saying which of the added surface it retires \u2014 or the plan ships five new interfaces with no statement of what the added surface retires or merges, or why nothing can be.",
+      "text": "against public_definitions 2541, cli_options 475, mcp_views 15, refusal_families 25, \u00a73 adds a `crew` MCP view (15 \u2192 16) and, on the same tool, \"an action\" \u2014 `CrewArgs` (reckon/_mcp_tools.py:89) is view-only today and carries no `action` field, actions living on separate tools such as `CrewRecoverArgs` (reckon/_mcp_tools.py:134) \u2014 plus a new HTTP route on a server whose route set is `/_changes`, `/_checks`, `/_discover`, `/_index`, `/_projects`, `/_runtime`, `/_schedule`, `/_shared`, `/_thumb`, `/_ui`, `/crew`, `/plan`, `/state`; \u00a72 and \u00a74 together add three flight settings and at least one new refusal family (\"refused, naming the setting\"), while \u00a73 also duplicates a surface it could merge into the existing `records` and `plan-review` views of the same tool; no section names a surface it retires or merges, or states why nothing can be, and this repository already carries the vehicle for retirement (`reckon/crew/tombstones.py:1`, whose tombstones name an action or a view of the crew tool)",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/doccheck.py:2499",
+      "id": "reuse_search-1",
+      "reason": "this is reuse-map material for the node brief, not an endpoint the plan states; no endpoint, record or figure moves because of it.",
+      "text": "the document walk \u00a74's citation rule needs exists twice and the plan's node would otherwise write it a third time: `audit_links` and `_link_record` (reckon/doccheck.py:2499, `_REVIEW_CITATION_TEXTS`-style scoped text readers at :2131) already open every HTML document in a project and extract its link targets, and `_LINK_ATTR_RE` (reckon/resources.py:88) is the one agreed `href|src` grammar, while `iter_resources` (reckon/resources.py:554) enumerates the plans, research and evidence documents \u00a74 names",
+      "type": "reuse_search",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "8e2a478d584aeb60a6470d14b6763ce06d9bdd2e",
+  "plan_fingerprint": "285a32d62abc66c08de2a50db74078a4b44260df291cbc38ac7153db2a5b9a4a",
+  "plan_slug": "a-report-is-kept-only-when-persisted",
+  "plan_version": 8,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T071453214325-plan-review-of-a-report-is-kept-only-when-persisted",
+  "reviewed_blob_sha": "c77d4cf55b179078f75988069c4f7d5da2e7640a",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the retention judgement (persisted / cited / working and the expiry date) is required by two consumers, the \u00a74 sweep and the \u00a73 served listing (`docs/plans/a-report-is-kept-only-when-persisted.html:77`), with no module named as its owner, so it is described as sweep behaviour in \u00a74 and as listing behaviour in \u00a73 and one of them will re-derive it.",
+    "duplicate_owner": "a finding \u2014 three shared owners are duplicated: the committed per-project record store (`reckon/crew/review.py:2658`), the report-tree removal pass (`reckon/crew/routing.py:1822`) and the plan figure inventory (`reckon/figures.py:187`).",
+    "interface_budget": "a finding \u2014 public_definitions 2541, cli_options 475, mcp_views 15, refusal_families 25; \u00a73 adds a crew MCP view (`mcp_views` 15 \u2192 16) and an action to a view-only tool, a new HTTP route and a new CLI verb with `--data`, and \u00a72 and \u00a74 add three flight settings and at least one new refusal family, and no section names anything retired or merged or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the machinery \u00a72 and \u00a74 propose already exists in three owners: `reckon/crew/review.py:2658` (`committed_review_root`, the committed per-project record store under `docs/state/<project>/reports`-shaped trees), `reckon/crew/routing.py:1822` (`_run_report_trees`, which already deletes whole `reports/<project>/<run-id>/` trees at a 30-day default) and `reckon/figures.py:187` (`figure_rows`, which already attributes figures to a plan via `for_plan` and is already served by `reckon/serve.py:1723`), plus `reckon/doccheck.py:2499` (`audit_links`/`_link_record`) and `reckon/resources.py:88` (`_LINK_ATTR_RE`) for the document walk \u00a74's citation rule needs.",
+    "thin_wrapper": "a finding \u2014 \u00a74 adds a third removal pass over the reports store rather than extending `_run_report_trees`, and says nothing about why that pass, or `_plan_review_raw_reports` beside it, cannot carry the new rule."
+  },
+  "section_digests": {
+    "_document": "f5b1858f7f61d1a840fbf35cbad9a6e3e8b95ce871c7d4572a14e693d2ed2d7f",
+    "s1": "ee47fe5018715e3fb4b9e9312fa9f5edd9cb7704d33128b5fb7faff903354379",
+    "s2": "bdeff57769ddb25da004511df9b4d8a48ba396a72feebcc170f9dec7109b9f9a",
+    "s3": "104d305701dab3bf171cc62567f3b48f5130255c07d5e68df0154ef157456d7f",
+    "s4": "896f95be9933258fdc2ecfdecd74f427562914bf1be5ab92930a9ec091332148",
+    "s5": "dd9ca4bececd6ad2cb3b6d3c79fdbc95be89c01e971a288615fc784308a306f4",
+    "s6": "6c471b14972a42e0101dac6f6557f756abdebee752fe914375756de57c03b742"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T08:03:01.045126+00:00",
+  "total": null
+}

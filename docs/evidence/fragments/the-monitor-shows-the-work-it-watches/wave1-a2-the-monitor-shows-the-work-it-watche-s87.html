@@ -1,0 +1,60 @@
+<section id="wave1-a2-the-monitor-shows-the-work-it-watche-s87" data-reckon="evidence">
+  <h2>The unreconciled count and the duty list come from one derivation</h2>
+  <p>
+    A coordinator was told two figures about the same live pointers — how many
+    runs are unreconciled, and what it owes for them — read from separate
+    derivations. A complete plan-review run holding a live pointer was counted
+    (<code>unreconciled runs: 1</code>) and never listed
+    (<code>0 outstanding</code>), so it was named nowhere and offered no
+    promotion command.
+  </p>
+
+  <h3 id="wave1-a2-the-monitor-shows-the-work-it-watche-s87-reproduction">Reproduction</h3>
+  <p>
+    The fixture builds a synthesised repository and temporary crew home holding
+    one pointer: node <code>plan-review-of-coil-supply-report-rebuild</code>,
+    manifest <code>status: complete</code>, no recorded owner. Before the
+    change the view reported a count of one against an empty list; the new test
+    asserts the two agree, one item, and that its command begins
+    <code>reckon crew complete --run r-…-plan-review-of-coil-supply-report-rebuild</code>.
+  </p>
+
+  <h3 id="wave1-a2-the-monitor-shows-the-work-it-watche-s87-gaps-closed">Three counted-but-unlisted shapes closed</h3>
+  <table>
+    <thead>
+      <tr><th>Pointer shape</th><th>Before</th><th>After</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Complete plan-review run, no recorded owner</td>
+        <td>counted, not listed</td>
+        <td>one item carrying its <code>--run</code> promotion command</td>
+      </tr>
+      <tr>
+        <td>Reviewer run listed</td>
+        <td>prose action only</td>
+        <td>the same promotion command every promotion duty uses</td>
+      </tr>
+      <tr>
+        <td>Request parked by admission (<code>held</code>, <code>awaiting-upstream</code>, <code>blocked-upstream</code>)</td>
+        <td>counted while its fence stood, never listed</td>
+        <td>listed through the publisher's own item builder, so the snapshot slice stays equal</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h3 id="wave1-a2-the-monitor-shows-the-work-it-watche-s87-measures">Measures</h3>
+  <ul>
+    <li>
+      <code>tests/test_obligation_count_equals_its_list.py</code>: six fixtures,
+      each asserting the count equals the list's length, on the fixed tree all
+      pass; on the tree with the separate count restored, the plan-review
+      fixture fails with <code>assert 0 == 1</code> — the count and the list
+      disagree again.
+    </li>
+    <li>
+      Suite arms at base revision and at the run's head, both from git
+      checkouts under the run's own scratch, both <code>EXIT=0</code>.
+    </li>
+  </ul>
+</section>

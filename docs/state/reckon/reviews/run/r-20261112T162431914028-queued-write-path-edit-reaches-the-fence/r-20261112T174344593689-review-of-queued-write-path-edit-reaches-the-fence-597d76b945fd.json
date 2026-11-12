@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline-suite.log at babfff30dc records '51 passed', EXIT=0, completed; after-suite.log at 2351003078 records '54 passed', EXIT=0, completed (51 plus the three cases the node's test file adds). Both failure_ids lists are empty, so the set difference is empty and the count is 0. I re-ran the node's test file alone at the reviewed head and read '3 passed'.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:5923",
+    "reckon/crew/queue_admission.py:496",
+    "reckon/crew/queue_edit.py:442"
+  ],
+  "completed_at": "2026-11-12T18:01:17.071Z",
+  "dimension_dispositions": {
+    "scope_discipline": {
+      "kind": "exempted",
+      "reason": "the reviewer read the original grant; both added modules were granted by crew widen before the worker changed them",
+      "recorded_at": "2026-11-12T19:06:46.051899+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T17:52:19Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the coordinator widened the run to queue_admission.py with crew widen before resuming it, and to admission/reviews.py for the merge repair; the paths are ratified",
+      "recorded_at": "2026-11-12T19:04:49.775100+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "the refusal path is defensive and its catch keeps one request's re-derivation failure from aborting the pass; a raising-rederivation case is a test refinement, recorded here",
+      "recorded_at": "2026-11-12T19:05:51.043593+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the launch path was already correct; the held-release case is the real mechanism and fails at base, confirmed by the coordinator on base code",
+      "recorded_at": "2026-11-12T19:06:26.242953+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "5454",
+      "severity": "non-blocking",
+      "text": "the repair is written in a file outside the node's declared write paths, which named only reckon/crew/queue_edit.py and reckon/crew/runs.py, and the manifest's outside_scope line states nothing outside the declared scope was changed; queue_admission.py is the defect's real owner and the change is correct, but the coordinator should ratify the path rather than read the fence as proven."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "5515",
+      "severity": "non-blocking",
+      "text": "the new _RederivationRefusedError path is unguarded by any test: no case makes _section_rederivation raise, so a regression that stops catching the exception (letting it abort the whole admission pass for every request) or that stops recording the refusal would pass all three cases."
+    },
+    {
+      "file": "tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py",
+      "line": "194",
+      "severity": "non-blocking",
+      "text": "the done_when's negative-control clause ('at the base revision the scope check names the added path as outside the declared write scope') cannot be met as written, because the launch path was already correct and this case passes at base; the run's negative control substitutes the held-release case, which is the actual mechanism, so the substitution should be recorded against the section rather than against the done_when."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is to carry a queued write-path edit into the launched run's declared scope; the landed change makes the plan-review release re-derive inside the pointer lock and skip any field whose mark crew queue edit cleared (reckon/crew/queue_admission.py:5454-5470), so a coordinator's added path survives the release and reaches the launched record.\nVERDICT done_when: the done_when names tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py plus matched suite arms, a base-revision negative control and ruff; the manifest records the arms (51 passed EXIT=0 at babfff30dc, 54 passed EXIT=0 at 2351003078), the control (negative-control.log, 1 failed 2 passed EXIT=1, failing test_a_release_keeps_the_write_path_a_coordinator_edited), but records no ruff result although ruff check and format --check are clean on both changed paths; the control exercises the held-release case, not the base scope-check clause the done_when states, because that clause is false \u2014 the run's own first case passes at base.\nVERDICT write_paths: the declared paths are reckon/crew/queue_edit.py, reckon/crew/runs.py, tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py, the fragment under docs/evidence/fragments/a-queue-holds-the-whole-plan/ and a figures directory; the diff touches the test file and the fragment but writes its repair in reckon/crew/queue_admission.py, which is not a declared path and which the manifest's outside_scope line does not report.\nVERDICT manifest: read in full; it records status complete, three commits, both arm logs with revisions and EXIT=0, the control log, the reproduction log, a landed fragment and per-rubric lines; I checked each figure against the log on disk and re-ran the node's test file at the reviewed head (3 passed); it omits any ruff record and misstates outside_scope.\nVERDICT diff: read all three commits against base babfff30dc \u2014 0798593791 adds the 205-line test file, 2351003078 rewrites the release path in reckon/crew/queue_admission.py (+67/-23) and extends the test file by 148 lines, 597d76b945 adds the 60-line evidence fragment; nothing else changed.\nCALL_SITES: reckon/crew/queue_admission.py:5923 (the admission pass calls _release_plan_review_holds over the live pointers), reckon/crew/queue_admission.py:496 (_carry_section_rederivation carries the released fields onto the launched run), reckon/crew/queue_edit.py:442 (the queue writer clears the section mark on every field it edits, which is the precondition the skip relies on)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:5562 re-derives from `current` inside _mutate_pointer's lock and :5589 adopts the written node, so a coordinator's added path survives release and launch, though the launch path itself was already correct and only the held-release loss was fixed.\nSCORE evidence: 14\nJUSTIFICATION evidence: baseline-suite.log and after-suite.log record 51 and 54 passed EXIT=0 at their own revisions and negative-control.log records 1 failed 2 passed EXIT=1, but the manifest records no ruff result for the done_when's ruff clause (ruff check and format --check are clean on both changed paths when I ran them) and its negative control does not exercise the scope-check clause the done_when names.\nSCORE scope_discipline: 9\nJUSTIFICATION scope_discipline: the repair is at reckon/crew/queue_admission.py:5454, outside the declared write paths (queue_edit.py and runs.py), and the manifest's outside_scope line claims no such change.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py:322-328 reddens both on a restored snapshot-derived release (negative-control.log, the set assertion at :322) and on dropping the in-memory adoption at :328, and :348-349 reddens if the re-derivation stops applying; no case exercises the _RederivationRefusedError path the change adds.\nSCORE fit: 18\nJUSTIFICATION fit: the change follows the module's own idiom \u2014 a private sentinel exception of the same shape as _PointerNotHoldableError at reckon/crew/queue_admission.py:4884 \u2014 and the added docstring states the mark mechanism rather than a ticket or stage label.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/crew for an owner of 'a field the section still supplies' found only _section_rederivation and _apply_section_rederivation at reckon/crew/queue_admission.py:5402 and :5445, which the change extends in place rather than forking; dispatch_batch.rederived_section_fields owns the plan read and is reused unchanged.\nFINDING reckon/crew/queue_admission.py:5454 non-blocking: the repair is written in a file outside the node's declared write paths, which named only reckon/crew/queue_edit.py and reckon/crew/runs.py, and the manifest's outside_scope line states nothing outside the declared scope was changed; the file is the defect's real owner and the change is correct, but the coordinator should ratify the path rather than read the fence as proven.\nFINDING reckon/crew/queue_admission.py:5515 non-blocking: no test makes _section_rederivation raise, so a regression that stops catching _RederivationRefusedError (letting it abort the whole admission pass) or stops recording the refusal would pass all three cases.\nFINDING tests/test_a_queued_write_path_edit_reaches_the_landing_fence.py:194 non-blocking: the done_when's negative-control clause cannot be met as written because the launch path already carried the edit and this case passes at base; the run substituted the held-release case, which is the real mechanism, and that substitution belongs against the section rather than the done_when.\n",
+  "review_node": "review-of-queued-write-path-edit-reaches-the-fence-597d76b945fd",
+  "review_run_id": "r-20261112T174344593689-review-of-queued-write-path-edit-reaches-the-fence-597d76b945fd",
+  "reviewed_base_sha": "babfff30dc9db5219e4bf0ff4a8947b6942256c2",
+  "reviewed_head_sha": "597d76b945fdba278240cc06a993be55257c1c75",
+  "reviewed_run_id": "r-20261112T162431914028-queued-write-path-edit-reaches-the-fence",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 9
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T18:09:09.749266+00:00",
+  "total": 94
+}
