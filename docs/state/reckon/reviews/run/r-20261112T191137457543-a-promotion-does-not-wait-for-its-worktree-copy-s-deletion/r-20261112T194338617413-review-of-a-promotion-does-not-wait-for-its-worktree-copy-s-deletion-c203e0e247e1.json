@@ -1,0 +1,103 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d2e5fb667e77843edeaa73344ffd810d6afd100d",
+  "call_site_count": 10,
+  "call_sites": [
+    "reckon/crew/promotion.py:1357 _complete_locked re-promotion release",
+    "reckon/crew/promotion.py:2031 _complete_locked landing release",
+    "reckon/crew/promotion_release.py:462 _release_after_promotion -> _release_worktree_whole",
+    "reckon/crew/routing.py:1694 discard release",
+    "reckon/crew/routing.py:2495 discard release",
+    "reckon/crew/gc.py:834 gc release",
+    "reckon/crew/gc.py:842 gc release",
+    "reckon/crew/gc.py:856 gc release",
+    "reckon/crew/gc.py:906 garbage_collect -> _sweep_worktree_trash",
+    "reckon/crew/gc.py:1826 retention_sweep (hourly service entry)"
+  ],
+  "completed_at": "2026-11-12T20:05:33.858Z",
+  "dispatched_at": "2026-11-12T19:51:28Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1826",
+      "severity": "blocking",
+      "text": "blocking: retention_sweep is the pass the hourly reckon-crew-retention service runs (gc.main, gc.py:2142) and it never calls _sweep_worktree_trash; that sweep runs only from garbage_collect (gc.py:906), reached only by the crew gc CLI (crew_run_commands.py:2229). With no recurring crew gc on the fleet, every promotion now leaves a full worktree copy in the trash root permanently, so the done-when's 'removed by a recurring pass of a reckon service that already runs on the fleet' is unmet and the deliverable's 'never left behind indefinitely' is not satisfied by the landed code."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion/gate-head.log",
+      "line": "3",
+      "severity": "blocking",
+      "text": "blocking: the head gate log the manifest names in test_logs ends at line 3 with its '# command:' header and carries no pytest summary and no bare EXIT= line, so the gate's status is unreadable from the record; the run that wrote it was killed after roughly six minutes (mtime 19:37:52Z against a 19:31:32Z start) and overwrote an earlier complete log, so the manifest's quoted '2 passed in 13.91s EXIT=0' cannot be checked against the file it cites."
+    },
+    {
+      "file": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py",
+      "line": "297",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert isinstance(outcome.get('result'), object) is true for None and for every value, so it can never fail; the first promotion's exit code is never asserted (outcome['result'] is a CliRunner result that is discarded), so a first promotion that errored silently still passes this case."
+    },
+    {
+      "file": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py",
+      "line": "292",
+      "severity": "non-blocking",
+      "text": "non-blocking: the second case promotes the same run rather than 'another run' as the done-when words it, and promotion locks are per run (reckon/crew/runs.py:472, locks/<run_id>.lock), so two different runs never contend; the 31.1 s wait the negative control measures is of a scenario the live serial sweep cannot produce, which the manifest records under outside_scope (3)."
+    },
+    {
+      "file": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py",
+      "line": "249",
+      "severity": "non-blocking",
+      "text": "non-blocking: the test backdates the copy's mtime by two hours before driving the sweep, implying an age gate, but _sweep_worktree_trash (reckon/crew/gc.py:126-133) removes every directory it finds regardless of age, so the assertion at :256-257 holds identically for a fresh copy and the done-when's 'no copy older than one hour survives it' is not what the line tests."
+    },
+    {
+      "file": "tests/test_discarded_run_promotes_after_its_commits_land.py",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when requires 'the existing tests of _read_pointer_or_rebuild pass unchanged', and this is the only test file naming that function, but no recorded log or stream command ran it, so that clause of the done-when is unevidenced; the change does not touch the pointer read, so the risk is in the record rather than the code."
+    }
+  ],
+  "head_log_revision": "c203e0e247e1c095900a2f9227accff43ec7e46c",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production callers of the changed release path: two promotion sites, promotion_release.py:462, the discard releases at routing.py:1694 and :2495, the gc releases at gc.py:834/:842/:856, and the sweep at gc.py:906.",
+    "diff": "read the single commit c203e0e247 against base d2e5fb667e: routing.py adds a ContextVar and its context manager and an early return before the deletion; promotion.py wraps the two _release_after_promotion calls; the new 303-line test file; the 24-line landing fragment.",
+    "done_when": "the done-when asks a slowed promotion to return within 5 s of an undelayed one (tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:237), a second promotion to reach the lock within 5 s (:298), the copy to be removed by a recurring pass of a reckon service that already runs on the fleet, the _read_pointer_or_rebuild tests to pass unchanged, and both suite arms on all_debug; the first four are only partly met and the partition is not used, see the findings at reckon/crew/gc.py:1826 and gate-head.log:3.",
+    "goal": "the node's goal is that a promotion does not wait for its worktree copy's deletion; reckon/crew/routing.py:1516 leaves the moved-aside copy in the trash root when the deferring scope is set and reckon/crew/promotion.py:1357 and :2031 set it around both _release_after_promotion calls, so the wait is gone.",
+    "manifest": "read; status complete, commits c203e0e247, four changed_paths, tests the one-file pytest command, test_logs naming gate-head.log, negative-control-base.log and both suite arms, baseline_suite and after_suite both completed with the same single failure id, and an outside_scope block that honestly records the unwired recurring sweep.",
+    "write_paths": "the plan section and the orientation manifest declare reckon/crew/routing.py, reckon/crew/promotion.py, the evidence fragment directory, the figure directory and the new test file; git show --stat c203e0e247 lands exactly two modules, the new test and the fragment, with no figure, all inside that scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:237 asserts the slowed promotion returns within 5 s of the undelayed one and reddens at the base revision with 31.1 s, so it fails if the deferral is reverted; the second case's line 297 assertion is vacuous, which is why this is not higher.",
+    "evidence": "The core measure is recorded and discriminating (negative-control-base.log ends \"2 failed in 77.33s\" EXIT=1 with the 31.1 s lock wait), but the file the manifest names as the head gate log holds no pytest summary and no EXIT= line, the sweep the done-when requires is not the sweep the hourly service runs, and the \"existing tests of _read_pointer_or_rebuild pass unchanged\" clause was never run.",
+    "fit": "The new names describe the mechanism (deferring_worktree_copy_deletion, _DEFER_COPY_DELETION) with no plan, phase or ticket identifier, and the ContextVar idiom at reckon/crew/routing.py:1453 matches LAUNCH_RUN_ID at :1079 and ADMISSION_REVIEW_UNITS at :2653.",
+    "goal_fidelity": "The goal sentence is met: reckon/crew/routing.py:1516 returns the release result before _delete_worktree_copy whenever _DEFER_COPY_DELETION is set, and reckon/crew/promotion.py:1357 and :2031 enter that scope around both _release_after_promotion calls, so a promotion no longer waits on the copy's deletion; the deliverable's second half is not met, see the finding at reckon/crew/gc.py:1826.",
+    "reuse": "The change extends the owners in place rather than forking them: it reuses _release_worktree_whole (reckon/crew/routing.py:1473), the existing trash root and _sweep_worktree_trash (reckon/crew/gc.py:119), and a capability search over reckon/crew for another deferral or trash-sweep owner found none.",
+    "scope_discipline": "git show c203e0e247 changes only reckon/crew/routing.py, reckon/crew/promotion.py, docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-wait-for-its-worktree-copy-s-deletion.html and the new tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py, all inside the plan section's declared write paths, with the test file added because the plan names it though the dispatch's scope list omitted it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a promotion does not wait for its worktree copy's deletion; reckon/crew/routing.py:1516 leaves the moved-aside copy in the trash root when _DEFER_COPY_DELETION is set and reckon/crew/promotion.py:1357 and :2031 set it around both _release_after_promotion calls, so the wait is gone.\nVERDICT done_when: the done-when asks a slowed promotion to return within 5 s of an undelayed one (tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:237), a second promotion to acquire the lock within 5 s (:298), the copy to be removed by a recurring pass of a reckon service that already runs on the fleet, the _read_pointer_or_rebuild tests to pass unchanged, and both suite arms run on all_debug; the return-time measure is met and recorded, the recurring-pass clause is not (the hourly retention_sweep never calls the trash sweep), the same-run lock case is not the 'another run' case worded, the pointer tests were never run, and no arm ran on all_debug.\nVERDICT write_paths: the plan section and the orientation manifest declare reckon/crew/routing.py, reckon/crew/promotion.py, the evidence fragment directory, the figure directory and the new test file; git show --stat c203e0e247 lands exactly the two modules, the new test and the fragment, all inside that scope.\nVERDICT manifest: read; status complete, commits c203e0e247, four changed_paths, tests the one-file pytest command, test_logs naming gate-head.log, negative-control-base.log and both suite arms, baseline_suite and after_suite both completed with the same single failure id, and an outside_scope block that honestly records the unwired recurring sweep.\nVERDICT diff: read the single commit c203e0e247 against base d2e5fb667e: routing.py adds the ContextVar and its context manager plus an early return before the deletion; promotion.py wraps the two _release_after_promotion calls; the new 303-line test file; the 24-line landing fragment.\nCALL_SITES: reckon/crew/promotion.py:1357 _complete_locked re-promotion release, reckon/crew/promotion.py:2031 _complete_locked landing release, reckon/crew/promotion_release.py:462 _release_after_promotion -> _release_worktree_whole, reckon/crew/routing.py:1694 discard release, reckon/crew/routing.py:2495 discard release, reckon/crew/gc.py:834 gc release, reckon/crew/gc.py:842 gc release, reckon/crew/gc.py:856 gc release, reckon/crew/gc.py:906 garbage_collect -> _sweep_worktree_trash, reckon/crew/gc.py:1826 retention_sweep (hourly service entry)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:1516 returns the release result before _delete_worktree_copy under the deferring scope and reckon/crew/promotion.py:1357 and :2031 enter it, so a promotion no longer waits for the copy's deletion.\nSCORE evidence: 9\nJUSTIFICATION evidence: negative-control-base.log is complete and discriminating (\"2 failed in 77.33s\" EXIT=1, 31.1 s lock wait) but gate-head.log carries no summary and no EXIT= line, the required recurring sweep is not the one the hourly service runs, and the _read_pointer_or_rebuild clause was never run.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: git show c203e0e247 touches only reckon/crew/routing.py, reckon/crew/promotion.py, the new test file and the evidence fragment, all inside the plan section's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:237 fails if the deferral is reverted (the base arm reads 31.1 s against a 5 s budget), while the second case's guard at :297 can never fail.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/routing.py:1453 uses the same ContextVar idiom as LAUNCH_RUN_ID at :1079 and the added names carry no plan, phase or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change reuses _release_worktree_whole (routing.py:1473), the existing trash root and _sweep_worktree_trash (gc.py:119) rather than forking a removal policy, and a capability search over reckon/crew found no other deferral owner.\nFINDING reckon/crew/gc.py:1826 blocking: retention_sweep is the hourly service's pass (gc.main, gc.py:2142) and never calls _sweep_worktree_trash, which only garbage_collect (gc.py:906) and the crew gc CLI (crew_run_commands.py:2229) reach, so every promotion now leaves a worktree copy in the trash root permanently and the done-when's recurring-pass clause is unmet.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion/gate-head.log:3 blocking: the head gate log ends at its '# command:' header with no pytest summary and no bare EXIT= line, the run that wrote it killed after about six minutes, so the manifest's quoted result cannot be checked against the file it cites and the gate's status is unreadable.\nFINDING tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:297 non-blocking: assert isinstance(outcome.get('result'), object) is true for None and every value, so it guards nothing and the first promotion's exit code is never asserted.\nFINDING tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:292 non-blocking: the second case promotes the same run, and locks are per run (runs.py:472), so two different runs never contend and the 31.1 s wait measures a scenario the live sweep cannot produce.\nFINDING tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:249 non-blocking: the two-hour mtime backdate implies an age gate but _sweep_worktree_trash removes every entry regardless of age, so the assertion holds identically for a fresh copy.\nFINDING tests/test_discarded_run_promotes_after_its_commits_land.py:1 non-blocking: the done-when's '_read_pointer_or_rebuild tests pass unchanged' clause is unevidenced because no recorded run executed this file.\n",
+  "review_run_id": "r-20261112T194338617413-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-c203e0e247e1",
+  "reviewed_base_sha": "d2e5fb667e77843edeaa73344ffd810d6afd100d",
+  "reviewed_head_sha": "c203e0e247e1c095900a2f9227accff43ec7e46c",
+  "reviewed_run_id": "r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T194338617413-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-c203e0e247e1"
+  },
+  "reviewer_run_id": "r-20261112T194338617413-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-c203e0e247e1",
+  "scores": {
+    "durability": 15,
+    "evidence": 9,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T20:10:31.159287+00:00",
+  "total": 97
+}
