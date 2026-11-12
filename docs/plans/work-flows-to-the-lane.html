@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="77">
+<meta name="plan-version" content="78">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -301,6 +301,9 @@
 </div>
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261112T105655465934-review-of-finding-on-own-file-opens-repair-a559003295c2" data-who="reckon-build" data-when="2026-11-12T11:07:18.416Z">
     <div class="r-comment-body"><p>The review of r-20261112T053157549848-finding-on-own-file-opens-repair covers only the two commits it gained since its head was last reviewed: d92af4764 deletes repair.py's private _within_tree and defers containment to the worker fence's _within_any (the reuse finding the prior review scored 5), merges the two run-path helpers into _run_own_paths, and repairs three docstrings; a5590032 updates the evidence fragment. The delta is a behaviour-preserving refactor: 55 passed at the new head, the mutation still reddens exactly the two run-own-file cases, and the deleted private predicate has no remaining reference in the repository. Scored 19/14/20/18/19/20 against reviewed_base_sha e82aa6bb and reviewed_head_sha a5590032, with two non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s20" data-id="c-run-r-20261112T053157549848-finding-on-own-file-opens-repair" data-who="reckon-build" data-when="2026-11-12T12:45:45Z">
+    <div class="r-comment-body"><p>A blocking finding citing a file the reviewed run itself holds now opens its repair round: the reflex decides that from the run&#x27;s worktree, its manifest and its run directory, grants the write scope from the worktree alone, names every blocking finding it still cannot reach, and defers path containment to the worker fence&#x27;s own predicate rather than a fourth copy of it. Base arm 51 passed, head arm 55 passed (the four new cases), importer population 266 passed on each side, and the declared mutation fails exactly the two run-own-file cases.</p></div>
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261112T085551328496-review-of-landing-reads-recorded-control-61624f058320" data-who="reckon-build" data-when="2026-11-12T09:13:15.116Z">
     <div class="r-comment-body"><p>review-of-landing-reads-recorded-control-61624f058320: an independent review of run r-20261112T053204533907-landing-reads-recorded-control at head 61624f058320, scoring goal_fidelity 18, evidence 15, scope_discipline 17, durability 18, fit 18, reuse 16 over base b8585860, with two non-blocking findings and no added suite failure.</p></div>
