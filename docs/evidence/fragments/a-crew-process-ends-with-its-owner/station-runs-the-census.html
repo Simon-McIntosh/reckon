@@ -1,0 +1,38 @@
+<section id="station-runs-the-census-landing">
+  <h3>The station applies the ownership census every minute</h3>
+  <p>The station starts a dedicated census thread before its first tick and joins
+  it on shutdown. The thread calls the existing census and apply functions,
+  preserving their local ownership checks, ancestry exclusion, identity
+  revalidation and pidfd signalling. Its monotonic interval is 60 seconds;
+  census work cannot hold the heartbeat, review reflex or transition tick.</p>
+  <p>Every candidate is printed to station stderr before apply, followed by its
+  stopped, spared or refused result. Each JSON record names the pid and recorded
+  owner. An unreadable census prints its exception and retries on the next beat.</p>
+  <table>
+    <caption>Verification of the isolated change</caption>
+    <thead><tr><th>Measure</th><th>Receipt</th></tr></thead>
+    <tbody>
+      <tr><td>Base station with the planted-stub check</td><td>1 failed in
+      22.37 s, exit 1: <code>ownerless stub survived the station beat</code>.
+      Census first identified exactly that orphan, establishing the instrument
+      could see it.</td></tr>
+      <tr><td>Focused checks</td><td>3 passed in 8.51 s, exit 0. Exactly one
+      ownerless stub stopped with SIGTERM; the live-owned and foreign-host-owned
+      stubs survived. Stderr carried both target and result with its owner.
+      The cadence check rejects a pass just before 60 seconds and accepts the
+      boundary; a failed pass is visibly retried.</td></tr>
+      <tr><td>Armed suites on all_debug</td><td>Base: 51 passed in 9.10 s.
+      Source head: 54 passed in 11.80 s. Both exit 0; zero added failures.</td></tr>
+      <tr><td>Station/census importer arms on all_debug</td><td>Base: 3 failed,
+      148 passed in 52.04 s. Source head: 3 failed, 151 passed in 51.33 s.
+      Identical failing test identities; zero added failures.</td></tr>
+      <tr><td>Lint and format</td><td>Ruff check and format check pass for
+      both changed Python files.</td></tr>
+    </tbody>
+  </table>
+  <p>Implementation commit: <code>bcea391a434d8c261f8aa593a0d858ea85e31572</code>.
+  Durable receipts, the negative control and imported-module provenance are in
+  run <code>r-20261112T043103964878-station-runs-the-census</code>.
+  Partition job <code>1311377</code> ran on <code>98dci4-clu-3141</code>.
+  The coordinator owns integration, activation and plan-state writeback.</p>
+</section>
