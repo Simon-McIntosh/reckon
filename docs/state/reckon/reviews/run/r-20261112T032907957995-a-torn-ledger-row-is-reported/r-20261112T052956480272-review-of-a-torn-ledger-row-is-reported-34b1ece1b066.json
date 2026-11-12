@@ -1,0 +1,181 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from source manifest baseline_suite and after_suite logs; both complete, EXIT=0, no failed/error identities. Broader importer delta is separately preserved and blocks the source measure.",
+  "assertion_analysis": [
+    {
+      "fails_if": "Healthy rows are omitted or damage is neither identified nor logged; bypassing _read_run translation also raises before the assertions.",
+      "lines": [
+        41,
+        42,
+        43
+      ]
+    },
+    {
+      "fails_if": "Repair does not expose the repaired row or damage state remains set after a successful read.",
+      "lines": [
+        46,
+        47
+      ]
+    },
+    {
+      "fails_if": "A torn row causes review promotion failure, refusal or omission; expected run IDs come from the independent fixture and actual values from the real promotion report.",
+      "lines": [
+        57,
+        58
+      ]
+    },
+    {
+      "fails_if": "Promoted healthy rows are absent from persisted ledger or the damaged path is not recorded.",
+      "lines": [
+        60,
+        63
+      ]
+    },
+    {
+      "fails_if": "Duplicate append returns normally, changes original bytes, or serializes the first row incorrectly; original bytes are independently captured before the second call.",
+      "lines": [
+        72,
+        77,
+        78
+      ]
+    },
+    {
+      "fails_if": "A real half-written append loses healthy rows, fails to mark its target damaged or fails to log its path.",
+      "lines": [
+        109,
+        110,
+        111
+      ]
+    },
+    {
+      "fails_if": "The exclusive-open writer interception is bypassed, never invoked, or observes different healthy IDs.",
+      "lines": [
+        121
+      ]
+    },
+    {
+      "fails_if": "Completed append is absent on reread, damage remains set, or persisted payload differs from requested row.",
+      "lines": [
+        123,
+        124,
+        126
+      ]
+    }
+  ],
+  "assertion_independence": "No self-comparison found: payload equality checks compare deserialized persisted bytes against requested data, damage checks compare separately constructed paths against observed state, and promotion results compare real outputs against fixture identities. No expected side calls the implementation being tested.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews:713",
+    "reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:618",
+    "reckon/crew/promotion.py:complete:1253",
+    "reckon/crew/promotion.py:complete:1853",
+    "reckon/ledger.py:load:2149"
+  ],
+  "completed_at": "2026-11-12T05:39:36Z",
+  "dispatched_at": "2026-11-12T05:32:22Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/manifest.md",
+      "line": "24",
+      "severity": "blocking",
+      "text": "blocking: The required matched importer pair still adds tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row; its presence in an earlier base observation supports a pre-existing failure explanation but does not satisfy the declared zero-added-ID pair measure, so landing needs explicit coordinator adjudication or a conforming paired receipt."
+    }
+  ],
+  "importer_evidence": {
+    "added_failure_ids": [
+      "tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row"
+    ],
+    "added_ids_not_seen_in_either_fresh_base_arm": [],
+    "base_observations": [
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/narrow-base-importers.log",
+      "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/stability-base-importers.log"
+    ],
+    "base_revision": "acc1f3493f81e678e6a877aff5b2ebb89ad55908",
+    "base_summary": "82 failed, 3066 passed, 4 skipped, 4 warnings, 3 errors in 523.28s (0:08:43)",
+    "distribution": "loadfile",
+    "earlier_base_evidence_for_pair_delta": {
+      "tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/narrow-base-importers.log"
+    },
+    "head_revision": "34b1ece1b066b52b6bb62f91e43838a2311c380e",
+    "head_summary": "83 failed, 3065 passed, 4 skipped, 4 warnings, 3 errors in 522.19s (0:08:42)",
+    "importer_files_match": true,
+    "parser_positive_control": {
+      "base_present": true,
+      "failure_id": "tests/test_brief_prompt.py::test_the_manifest_template_states_the_red_logs_exit_line",
+      "head_present": true
+    },
+    "removed_failure_ids": [],
+    "scope": "same 302 importing test files, no edits to their sources",
+    "strict_matched_pair_added_count": 1
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read all four commits from acc1f3493f81e678e6a877aff5b2ebb89ad55908 through 34b1ece1b066b52b6bb62f91e43838a2311c380e; the later correction removes the initial writer change, leaving ledger.py blob 55a131c5bf4c16c6100336bbfc305398227b3e77 identical at both revisions and only tests plus evidence added.",
+    "done_when": "Source prompt.txt:119 names torn-row, review-continuity, importer-delta and lint checks; narrow-head-suite.log records 57 passed, but stability-importer-comparison.json records one added failure ID, leaving the strict importer measure unmet.",
+    "goal": "Source prompt.txt:38 requires tolerant ledger reads; the final test file verifies the already-working guard and resume-1-advice.txt authorizes retaining the base writer implementation.",
+    "manifest": "Source manifest.md:19-24 records readable base/head gate logs, five negative-control failures and the unresolved importer comparison, with baseline_suite and after_suite yielding zero added failure IDs.",
+    "write_paths": "Source prompt.txt:80-84 permits ledger.py, the new regression file and its fragment; the net diff changes only the permitted test and evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_torn_ledger_row_is_reported_not_raised.py:41-63 and :107-124 fail when the _read_run decode translation is bypassed, as narrow-negative-control.log records five failures, while :72-78 separately guards duplicate refusal and original-byte preservation.",
+    "evidence": "Source narrow-base-suite.log and narrow-head-suite.log record 51 and 57 passes with zero added gate failures, but manifest.md:24 and stability-importer-comparison.json preserve a one-ID strict importer delta requiring adjudication.",
+    "fit": "tests/test_a_torn_ledger_row_is_reported_not_raised.py:10-17 imports established repository/review fixtures, uses tmp_path isolation and mechanism-based names, and narrow-lint.log records clean lint and format checks.",
+    "goal_fidelity": "tests/test_a_torn_ledger_row_is_reported_not_raised.py:34-63 proves tolerant indexed and uncached reads plus review promotion, while resume-1-advice.txt explicitly narrows away unnecessary writer changes.",
+    "reuse": "tests/test_a_torn_ledger_row_is_reported_not_raised.py:20-126 extends coverage owned by tests/test_ledger_files_and_index_agree.py:251 and reuses repository/review fixtures; a capability search found no reusable mid-exclusive-append observer, and the local AppendingWriter wraps the real handle without implementing a production writer.",
+    "scope_discipline": "The base-to-head diff contains only tests/test_a_torn_ledger_row_is_reported_not_raised.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-torn-ledger-row-is-reported.html, both permitted by source prompt.txt:80-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires tolerant ledger reads; the final test file verifies the already-working guard and resume-1-advice.txt authorizes retaining the base writer implementation.\nVERDICT done_when: Source prompt.txt:119 names torn-row, review-continuity, importer-delta and lint checks; narrow-head-suite.log records 57 passed, but stability-importer-comparison.json records one added failure ID, leaving the strict importer measure unmet.\nVERDICT write_paths: Source prompt.txt:80-84 permits ledger.py, the new regression file and its fragment; the net diff changes only the permitted test and evidence fragment.\nVERDICT manifest: Source manifest.md:19-24 records readable base/head gate logs, five negative-control failures and the unresolved importer comparison, with baseline_suite and after_suite yielding zero added failure IDs.\nVERDICT diff: Read all four commits from acc1f3493f81e678e6a877aff5b2ebb89ad55908 through 34b1ece1b066b52b6bb62f91e43838a2311c380e; the later correction removes the initial writer change, leaving ledger.py blob 55a131c5bf4c16c6100336bbfc305398227b3e77 identical at both revisions and only tests plus evidence added.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:dispatch_awaiting_reviews:713, reckon/crew/recovery_review_acceptance.py:promote_review_run_itself:618, reckon/crew/promotion.py:complete:1253, reckon/crew/promotion.py:complete:1853, reckon/ledger.py:load:2149\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_torn_ledger_row_is_reported_not_raised.py:34-63 proves tolerant indexed and uncached reads plus review promotion, while resume-1-advice.txt explicitly narrows away unnecessary writer changes.\nSCORE evidence: 16\nJUSTIFICATION evidence: Source narrow-base-suite.log and narrow-head-suite.log record 51 and 57 passes with zero added gate failures, but manifest.md:24 and stability-importer-comparison.json preserve a one-ID strict importer delta requiring adjudication.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff contains only tests/test_a_torn_ledger_row_is_reported_not_raised.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/a-torn-ledger-row-is-reported.html, both permitted by source prompt.txt:80-84.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_torn_ledger_row_is_reported_not_raised.py:41-63 and :107-124 fail when the _read_run decode translation is bypassed, as narrow-negative-control.log records five failures, while :72-78 separately guards duplicate refusal and original-byte preservation.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_torn_ledger_row_is_reported_not_raised.py:10-17 imports established repository/review fixtures, uses tmp_path isolation and mechanism-based names, and narrow-lint.log records clean lint and format checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_a_torn_ledger_row_is_reported_not_raised.py:20-126 extends coverage owned by tests/test_ledger_files_and_index_agree.py:251 and reuses repository/review fixtures; a capability search found no reusable mid-exclusive-append observer, and the local AppendingWriter wraps the real handle without implementing a production writer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/manifest.md:24 blocking: The required matched importer pair still adds tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row; its presence in an earlier base observation supports a pre-existing failure explanation but does not satisfy the declared zero-added-ID pair measure, so landing needs explicit coordinator adjudication or a conforming paired receipt.\n",
+  "reuse_search": {
+    "conclusion": "Existing damaged-row tests are extended for both cache modes, recovery and real review promotion; unrelated writer fixtures implement no reusable half-append observation capability. All new definitions are local fixtures, tests and an observation adapter.",
+    "owners_opened": [
+      "reckon/ledger.py:_read_run/load/append_run",
+      "tests/test_ledger_files_and_index_agree.py:251",
+      "tests/test_a_review_run_promotes_itself.py:repository",
+      "tests/test_one_run_cannot_stop_a_sweep.py:review_runs",
+      "tests/test_staged_write_inventory.py:315",
+      "tests/test_supervisor_write_reuses_the_store.py:41",
+      "tests/test_runs_pointer_writer_reuses_the_store.py:38"
+    ],
+    "queries": [
+      "damaged_run_records/truncated/duplicate_append",
+      "class .*Writer/midpoint = len(text)/handle.flush"
+    ]
+  },
+  "review_run_id": "r-20261112T052956480272-review-of-a-torn-ledger-row-is-reported-34b1ece1b066",
+  "reviewed_base_sha": "acc1f3493f81e678e6a877aff5b2ebb89ad55908",
+  "reviewed_head_sha": "34b1ece1b066b52b6bb62f91e43838a2311c380e",
+  "reviewed_run_id": "r-20261112T032907957995-a-torn-ledger-row-is-reported",
+  "scores": {
+    "durability": 20,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/narrow-head-suite.log",
+      "log_sha256": "70b3ad2679737456b612c7c983bc20c80f2ae8fad2cc7b36c254f5a6dbd0552b",
+      "revision": "34b1ece1b066b52b6bb62f91e43838a2311c380e",
+      "summary": "57 passed in 10.60s"
+    },
+    "baseline_suite": {
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032907957995-a-torn-ledger-row-is-reported/narrow-base-suite.log",
+      "log_sha256": "7366298de9d769220fb5d18188fec7eed15ca270db7b4b40687744ed6482601b",
+      "revision": "acc1f3493f81e678e6a877aff5b2ebb89ad55908",
+      "summary": "51 passed in 10.70s"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T05:49:47.913199+00:00",
+  "total": 116
+}
