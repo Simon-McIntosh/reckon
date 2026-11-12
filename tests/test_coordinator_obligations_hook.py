@@ -953,9 +953,12 @@ def test_the_digest_does_not_silence_the_stop_mode(
 ) -> None:
     """A stop is a verdict on the turn, not a repeat of a checklist.
 
-    The prompt drive records the digest for the very duty set the stop that
-    follows it reads. The block must still fire: a stop allowed over
-    outstanding work is the forgetting this hook exists to prevent.
+    The two modes keep separate records. The prompt drive records the set it
+    injected; the stop that follows it reads the very same duties, and the
+    block must still fire, because a stop allowed over outstanding work is the
+    forgetting this hook exists to prevent. A stop record shared with the
+    prompt path would compare this list against the injection it just saw and
+    stay silent.
     """
     _blocked_run(repository, tmp_path)
 
@@ -966,6 +969,96 @@ def test_the_digest_does_not_silence_the_stop_mode(
     assert prompting.stdout, "the prompt drive must inject for this case to bite"
     assert stopping.returncode == 0
     assert json.loads(stopping.stdout)["decision"] == "block"
+
+
+def test_the_stop_hook_blocks_once_per_unchanged_duty_list(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """Only a growing age does not make a duty list new.
+
+    The prompt drive shows the list at a turn's opening, as a session's turn
+    does, and then three stops read the same duties while the manifest's age
+    and the overdue figure it produces grow between them. Across the three
+    stops the hook blocks at most once: the first is a verdict on the turn,
+    and the next two would repeat it for a figure that moved and nothing else.
+    A duty arriving beside the first is a different set, so the stop that sees
+    it blocks again.
+    """
+    manifest = _blocked_run(repository, tmp_path)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        prompting = _hook("prompt", _prompt_payload(repository, "harness-session"))
+        assert prompting.stdout, "the prompt drive must inject for this case to bite"
+
+        stops = [_hook("stop", _stop_payload(repository, "harness-session"))]
+        for age in (900, 1800):
+            moment = time.time() - age
+            os.utime(manifest, (moment, moment))
+            # The snapshot is republished by each drive, so this view and the
+            # hook read the same aged figure rather than a stale one.
+            view = obligations_view(PROJECT, SESSION)
+            assert view["obligations"][0]["age_seconds"] >= age, (
+                "the overdue figure must have grown for the repeated stops to "
+                "say anything about the list being unchanged"
+            )
+            stops.append(_hook("stop", _stop_payload(repository, "harness-session")))
+
+    assert [stop.returncode for stop in stops] == [0, 0, 0]
+    spoken = [stop for stop in stops if stop.stdout.strip()]
+    assert len(spoken) == 1, (
+        "one unchanged duty list must be refused at most once; the recorded "
+        f"blocks were {[json.loads(stop.stdout) for stop in spoken]}"
+    )
+    assert json.loads(spoken[0].stdout)["decision"] == "block"
+    for quiet in stops:
+        if not quiet.stdout.strip():
+            assert quiet.stderr == ""
+
+    _blocked_run(
+        repository, tmp_path, run_id=SECOND_RUN_ID, node_id=SECOND_NODE_ID
+    )
+    with runs.follower_claim(PROJECT, SESSION):
+        gained = _hook("stop", _stop_payload(repository, "harness-session"))
+
+    assert gained.returncode == 0
+    assert json.loads(gained.stdout)["decision"] == "block", (
+        "a list that gained a duty is a different list and must block again"
+    )
+
+
+def test_a_duty_that_empties_and_returns_is_refused_again_by_the_stop_mode(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """The stop record clears with the list, so a returned duty blocks again.
+
+    A stop over an empty list notices the emptying and clears both records. The
+    same duty returning later is then refused once more rather than compared
+    against the set the earlier stop recorded and read as a repeat.
+    """
+    _blocked_run(repository, tmp_path)
+    pointer = runs.pointer_path(RUN_ID)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("stop", _stop_payload(repository, "harness-session"))
+        assert json.loads(first.stdout)["decision"] == "block", (
+            "the first stop must block for the returned-duty case to bite"
+        )
+
+        pointer.unlink()
+        assert obligations_view(PROJECT, SESSION)["obligations"] == [], (
+            "the removed run must leave the session owing nothing"
+        )
+        emptied = _hook("stop", _stop_payload(repository, "harness-session"))
+        assert emptied.returncode == 0
+        assert emptied.stdout == "", "a stop over no duties is not a verdict"
+
+        _blocked_run(repository, tmp_path)
+        returned = _hook("stop", _stop_payload(repository, "harness-session"))
+
+    assert returned.returncode == 0
+    assert json.loads(returned.stdout)["decision"] == "block", (
+        "the returned duty must be refused again"
+    )
 
 
 def test_a_duty_that_empties_and_returns_is_injected_again(
