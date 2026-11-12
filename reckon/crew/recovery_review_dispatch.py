@@ -2980,7 +2980,7 @@ def dispatch_review_for_run(
         if isinstance(launching, Mapping):
             reason = "the run has a resume launching; its delivery is not settled"
         elif runs.record_process_alive(lifecycle) is True:
-            reason = "the run's recorded process is alive; its delivery is not settled"
+            reason = "the run's recorded process is still running; its delivery is not settled"
         elif lifecycle.get(
             "attempt_kind"
         ) == "resume" and not _resumed_attempt_delivered(lifecycle):
