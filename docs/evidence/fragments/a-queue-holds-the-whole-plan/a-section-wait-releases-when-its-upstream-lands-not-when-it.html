@@ -1,0 +1,205 @@
+<section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-landing">
+  <h2>A section wait releases when its upstream lands, not when it is declared done</h2>
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-defect">
+  <h3>The defect</h3>
+
+  <p><strong>A declaration of done is not a landing.</strong> A coordinator
+  marks a section done in the plan and commits that immediately before
+  <code>crew complete --land</code>, so between the two the plan reads done
+  while the section's revision is still off the registered checkout's HEAD.
+  Every route that released waiters read the declaration alone, so a request
+  waiting on that section could launch onto a base without its upstream code.
+
+  <p><strong>Reproduction at the base revision.</strong> The new test file run
+  against <code>bc6d7fd9f1306f21d21daa58f44f235265e6cca3</code> reports
+  <code>2 failed, 1 passed</code>, <code>EXIT=1</code>. Both failures are the
+  same assertion: a waiter on a section that is declared done, whose run has
+  delivered and whose head is not in HEAD, reads
+  <code>queued</code> where it must read <code>awaiting-upstream</code>
+  (<code>assert 'queued' == 'awaiting-upstream'</code>).
+  </section>
+
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-change">
+  <h3>The change</h3>
+
+  <p><strong>One derivation, every route.</strong> <code>_section_run_unlanded</code>
+  in <code>reckon/crew/queue_admission.py</code> answers whether a run of one
+  section has delivered or been promoted and is not landed. A section
+  declaration of done releases only when it answers no. It is consulted from
+  the three places a section ref is resolved — <code>_ref_state</code>,
+  <code>_section_readiness_state</code> and the dispatch fast path
+  <code>_dispatch_nonrun_wait_state</code> — and that one derivation already
+  serves the admission pass, a promotion's own release and a dispatch's
+  queue-time check, so all three reach the guard.
+
+  <p><strong>What is read.</strong> Promotion removes the live pointer and then
+  records the revision, so in production the project ledger is the only record
+  of a promoted run and the pointer branch never decides. The guard asks the
+  queue's own derivation — <code>runs._unloaded_sections</code>, which names
+  declared work with no live request and no reachable promotion — whether the
+  section is still unloaded, and keys sections by
+  <code>section_record_id</code>, the one identity every spelling of a section
+  resolves through. The live pointers are read too, for the window between
+  delivery and promotion, where a run whose pointer phase is dead or whose
+  discard is recorded holds nothing and a delivered run holds.
+
+  <p><strong>What still releases.</strong> A section declared done with no run
+  at all, such as one completed by hand, releases its waiters at once, and a
+  discarded run stops holding the moment its discard is recorded.
+
+  <p><strong>A landing that cannot be read is unknown, not absent.</strong> Two
+  records can be missing, and each holds the wait rather than releasing it. A
+  ledger that cannot be read says nothing about what was promoted. A project no
+  mount names offers no HEAD to compare against. In both cases releasing would
+  put a waiter onto a base the queue cannot show carries its upstream, which is
+  the answer the request-ref path already gives a run whose record or project it
+  cannot find. The unregistered-checkout hold applies only once a run of the
+  section exists, so the release of the no-run case above is unchanged.
+
+  <p><strong>The index was checked, not assumed.</strong> A warm index is keyed
+  on the project's write generation, which every ledger write path bumps, so a
+  read made after a promotion is answered by an index that already carries it.
+  A case warms the index while the section is still unlanded, promotes,
+  then asserts that the index now carries the promoted revision and that the
+  guard still holds — so an index built before the promotion cannot be what
+  releases the wait. Flipping the read to <code>use_index=False</code> leaves
+  every case green, which is what established that <em>the index was not the
+  cause</em> of the failure reported against a clean tree; the read therefore
+  stays indexed, which is also the cheaper of the two.
+
+  <p><strong>Cost.</strong> The ledger rows are read once per project per pass
+  and kept in the readiness cache beside the plan rows, and the drain's own
+  derivation — which reads the ledger itself — has its answer kept for the pass
+  too, so a release tick pays one read and one derivation rather than one of
+  each per waiting request.
+  </section>
+
+  <section id="a-section-wait-releases-when-its-upstream-lands-not-when-it-measure">
+  <h3>The measure</h3>
+
+  <p><strong>Gate.</strong>
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q
+  tests/test_a_wait_releases_when_its_upstream_lands.py
+  tests/test_staged_write_inventory.py</code> reports
+  <code>58 passed</code>, <code>EXIT=0</code> at the head, run on the
+  <code>all_debug</code> partition in a fresh tree with the suite's
+  <code>TMPDIR</code> inside that tree, which is the layout the fixture now
+  answers. The base arm of the same template, resolved
+  over the base tree where the new file does not exist, reports
+  <code>51 passed</code>, <code>EXIT=0</code>: the six added tests are the
+  only difference and no base failure is added.
+
+  <p><strong>Cases.</strong> The first test drives the whole sequence: a
+  delivered run off HEAD holds its waiter through an admission pass, and keeps
+  holding through the promotion's own release once the pointer is removed and
+  the ledger is the only record, and the waiter is released once the delivered
+  head is merged into HEAD. The second discards the delivered run and shows the
+  waiter released. The third makes the ledger unreadable once its run has
+  delivered and shows the waiter held. The fourth removes the project's
+  registration and shows the waiter held. The fifth declares a section done
+  with no run at all and shows the waiter released at once. The sixth warms the
+  ledger's index before the promotion and shows the waiter held after it,
+  because the write moved the generation the index is keyed on and the index
+  therefore carries the promotion rather than a view of the moment it was built.
+  The seventh is the layout case: it moves <code>TMPDIR</code> inside the
+  fixture's checkout, confirms that path lies inside a work tree, and asserts
+  that the ledger still resolves its own checkout, still reads the promotion it
+  wrote, and still holds the wait. That is the case that fails when the read
+  escapes, and it is what the earlier head failed on a host whose temp path sat
+  inside the tree.
+
+  <p><strong>The test owns everything it reads.</strong> Four inputs can resolve
+  outside the fixture, and each one is pinned and then asserted rather than
+  assumed. The mounts registry outranks the config home wherever both are
+  consulted, so a host that exports <code>RECKON_MOUNTS_PATH</code> would leave
+  the fixture's repository unnamed and the guard would read another tree's HEAD;
+  it is pinned at the fixture's own <code>mounts.json</code>. The configuration
+  home, the state root and the pick cache are pinned inside the fixture. The
+  state root is the fixture checkout's own <code>docs/state</code>, which is the
+  path the ledger's work-tree resolution re-roots to, and the ledger's path is
+  asserted to be inside the checkout and its resolved work tree to be that
+  checkout. <code>HOME</code> and the XDG directories are pinned to the
+  fixture's temp path as well, so nothing falls back to the invoking user's live
+  configuration. The fixture then asserts
+  that <code>project_mount_repository</code> resolves the checkout it built.
+  After the promotion each test names the ledger row the guard must read and
+  calls <code>_section_run_unlanded</code> directly, so a tree where any of these
+  resolves elsewhere fails at the component that decides rather than as a phase
+  assertion further down.
+
+  <p><strong>A temp path inside a work tree.</strong> The failure reported
+  against a head that passed in this worker's own runs had one cause, and it was
+  neither the index nor the write generation nor the guard. The ledger resolves
+  the git work tree above its own path and reads a project's runs through that
+  tree's checkout, so a suite whose temp tree sits inside the tree under test —
+  a <code>basetemp</code> beneath the checkout, which a run from a freshly
+  extracted tree produces — had every ledger read answered from that tree while
+  the fixture's promotion wrote under its own state root. The read came back
+  with no runs at all, which is what both reported failures asserted.
+
+  <p><strong>The cure, and a cure that is not one.</strong> Bounding git's own
+  discovery does not reach this: the ledger finds the tree by reading a
+  <code>.git</code> marker in each ancestor directory, never by asking git, so
+  <code>GIT_CEILING_DIRECTORIES</code> leaves the walk unchanged. That was
+  measured rather than reasoned: with the variable set at a temp root inside a
+  checkout, the resolved work tree is still the enclosing checkout
+  (<code>shared → …/Code/reckon</code>). The variable is set in the fixture all
+  the same, because it does bound the git subprocesses the fixture and the
+  ancestry check start, but the boundary that fixes the read is nearer. The
+  walk's answer is the nearest ancestor carrying a marker, and the path it then
+  reads is <code>&lt;tree&gt;/docs/state/&lt;project&gt;/&lt;ledger&gt;</code>;
+  so the fixture makes its own checkout a repository, which is the nearest
+  marker, and points the ledger's state root at that checkout's own
+  <code>docs/state</code>, which is the path the resolution reads. Written and
+  read are then one file wherever the temp path sits, with no relocation and no
+  dependence on a writable directory outside the tree. The round trip in the
+  fixture asserts it on a project name of its own, so an escaping read fails at
+  the fixture instead of surfacing as a phase assertion further down.
+
+  <p><strong>Fresh trees.</strong> Runs of the gate command in a tree of their
+  own report <code>58 passed</code>, <code>EXIT=0</code> at the head with
+  <code>TMPDIR</code> inside that tree, <code>57 passed</code>, <code>EXIT=0</code>
+  at the same head in the ordinary layout, and <code>56 passed</code>,
+  <code>EXIT=0</code> at the revision whose failure was
+  reported, the latter with the host's real mounts registry exported and the
+  fixture's config home unset, which is the hostile case the pinning exists for.
+  A literal
+  <code>git worktree add</code> cannot be created from this worker: the main
+  checkout's <code>.git</code> is read-only here
+  (<code>git worktree add</code> fails with
+  <code>could not create directory of …/reckon/.git/worktrees/…: Read-only file
+  system</code>), so each fresh tree is the revision extracted into a new
+  directory, made a repository of its own, with the shared
+  <code>.venv</code> symlinked in — log <code>fresh-tree-head.log</code>, and
+  <code>repro-224-hostile.log</code> beside it. The one read whose answer could
+  depend on which tree is asking was the ledger index, and it is gone: the guard
+  reads the run rows through an index keyed on the write generation.
+
+  <p><strong>Negative control.</strong> With
+  <code>_section_run_unlanded</code> made to answer <code>False</code> — the
+  declaration alone releasing — the six cases as they stood then report
+  <code>5 failed, 1 passed</code>, <code>EXIT=1</code>, failing every case that
+  holds. The guard is load-bearing: without it the first case releases before
+  the merge, which is the defect the section reports.
+
+  <p><strong>The ledger branch is the one that decides.</strong> A second
+  control removes only the <code>_unloaded_sections</code> branch and runs the
+  same six tests: <code>2 failed, 4 passed</code>, <code>EXIT=1</code>. Both
+  failures are the cases that hold through the promotion — the one that drives
+  the sequence and the one that warms the index before it — and both fail at the
+  point where the pointer has been removed and the promotion has recorded its
+  revision. The branch production takes is
+  therefore exercised by the test rather than merely present beside it.
+
+  <p><strong>Regression.</strong> Six queue tests carrying dependency waits,
+  discards, holds and the drain (<code>test_a_queued_request_waits_on_its_dependencies</code>,
+  <code>test_queue_dag_waits</code>,
+  <code>test_a_released_request_takes_the_sections_current_contract</code>,
+  <code>test_a_discarded_request_stays_discarded</code>,
+  <code>test_a_held_request_stays_queued</code>,
+  <code>test_drain_lists_unloaded</code>) report the same result at the base
+  revision and at the head: <code>30 failed, 38 passed</code>, with the failing
+  id sets identical. Those 30 failures predate this change and are not reached
+  by it; the delta is zero.
+  </section>
+</section>
