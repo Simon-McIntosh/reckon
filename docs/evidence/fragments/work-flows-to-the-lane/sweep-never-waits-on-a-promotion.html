@@ -47,14 +47,41 @@
     </tbody>
   </table>
 
-  <p><strong>What the delta says.</strong> Two failure ids are added at the head
-  and none are fixed. One is
+  <p><strong>What the delta says.</strong> The first arm pair left two failure
+  ids added at the head, both since repaired. One was
   <code>test_one_run_cannot_stop_a_sweep.py::test_ledger_failure_and_vanished_pointer_leave_the_third_promoted[True]</code>,
   whose fixture unlinks a later run's pointer from inside an earlier run's
   promotion and expects that run to read as vanished — an ordering only serial
-  promotions give, and it fails two runs in three on its own. That repair
-  belongs in the fixture and is outside this node's write scope. The other,
+  promotions give. Two things were wrong and both are fixed: a worker now
+  re-reads the run's pointer at the moment it would promote, so a run that has
+  stopped being live is reported vanished instead of being promoted from the
+  mapping the sweep handed over; and the fixture asks for a width of one,
+  which is the ordering it means to assert. Reverted, the id fails four runs
+  in five; at this head it passes five of five.</p>
+
+  <p>The other,
   <code>test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits</code>,
   passes six of six in isolation at this head and failed only inside the
   60-file parallel arm.</p>
+
+  <table id="sweep-never-waits-on-a-promotion-repair-arms">
+    <caption>The repair round's arms, each run with
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code>
+    resolved over its own tree.</caption>
+    <thead><tr><th>arm</th><th>command's test files</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>fe9af3caa</code>, base tree initialised as a repository</td>
+        <td><code>tests/test_staged_write_inventory.py</code></td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>head <code>9d38672eed</code></td>
+        <td>this node's test and the staged-write inventory</td>
+        <td>57 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared mutation: promotions run inside the sweep</td>
+        <td>this node's dispatch-first test</td>
+        <td><code>FAILED</code>, <code>EXIT=1</code></td></tr>
+      <tr><td>repair reverted for fdf56a6e02c</td>
+        <td>the vanished-pointer fixture</td>
+        <td>4 of 5 runs <code>FAILED</code>, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
 </section>
