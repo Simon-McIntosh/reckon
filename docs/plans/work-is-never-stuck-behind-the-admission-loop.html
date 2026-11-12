@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="374">
+<meta name="plan-version" content="375">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -874,6 +874,12 @@
 <div class="r-comment" data-section="s51" data-id="c-run-r-20261111T202418533036-a-dirty-shared-checkout-does-not-hold-services-on-old-code" data-who="reckon-build" data-when="2026-11-11T21:44:03Z">
     <div class="r-comment-body"><p>§51 — a dirty shared checkout no longer holds a declared service on old code: the restart decision compares the committed head's identity alone, a dirty tree never blocks it, the replacement is started from a published image of that head and leases it for its own life (a prune after the restart leaves the image in place), and an unreadable identity is logged as uncompared rather than adopted. Head arm 55 passed EXIT=0, base arm 51 passed EXIT=0, importer arms 14 failed/268 passed at head against 14 failed/264 passed at base with identical failure ids, negative control 2 failed EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s52" data-id="c-run-r-20261112T035851898012-review-of-a-live-launch-holder-is-not-stranded-b46908283863" data-who="reckon-build" data-when="2026-11-12T04:15:51Z">
+    <div class="r-comment-body"><p>Independent review at base b770ff474971136579a565932036a37a4c76f0b8 and head b4690828386369f510728525f295ec7173d85333 scores each dimension 20/20, records zero findings and zero added failures; coordinator may adjudicate and integrate.</p></div>
+</div>
+<div class="r-comment" data-section="s52" data-id="c-run-r-20261112T031818685439-a-live-launch-holder-is-not-stranded" data-who="reckon-build" data-when="2026-11-12T03:56:43Z">
+    <div class="r-comment-body"><p>Live local holders retain their launch pointer and directory; released review traces name the reviewed run. The abandoned-launch fixture models a reused pid with all 24 assertions unchanged. all_debug scoped gate: 55 base passes, 61 head passes; importer failure ids: 129 in both arms, 0 added and 0 removed.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261102T120815240747-review-of-a-wait-whose-producer-is-gone-is-an-obligation-97c7bcf2a569" data-who="reckon-build" data-when="2026-11-02T12:18:54.018Z">
     <div class="r-comment-body"><p>reviewed r-20261102T112937256651-a-wait-whose-producer-is-gone-is-an-obligation at 67d1e26d0b..97c7bcf2a5: parsed record scoring goal_fidelity 19, evidence 16, scope_discipline 20, durability 15, fit 19, reuse 18 (total 107), three non-blocking findings, added_failure_count 0</p></div>
 </div>
@@ -900,9 +906,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s52" data-id="c-run-r-20261112T035851898012-review-of-a-live-launch-holder-is-not-stranded-b46908283863" data-who="reckon-build" data-when="2026-11-12T04:15:51Z">
-    <div class="r-comment-body"><p>Independent review at base b770ff474971136579a565932036a37a4c76f0b8 and head b4690828386369f510728525f295ec7173d85333 scores each dimension 20/20, records zero findings and zero added failures; coordinator may adjudicate and integrate.</p></div>
 </div>
 </section>
 </main>
