@@ -1,0 +1,72 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/landing.py:_LandingWorker._land",
+    "reckon/crew/admission/service.py:admit_until_stopped",
+    "reckon/crew/queue_landing.py:_land_deliveries",
+    "reckon/crew/queue_landing.py:_promoted_candidate",
+    "reckon/crew/queue_landing.py:run_measurement_request"
+  ],
+  "completed_at": "2026-11-12T22:04:06Z",
+  "dispatched_at": "2026-11-12T21:56:02Z",
+  "findings": [
+    {
+      "file": "tests/test_the_lander_never_waits_on_a_measurement.py",
+      "line": "245",
+      "severity": "non-blocking",
+      "text": "non-blocking: the stub at line 238 constructs its result from request[\"head\"] and request[\"primary\"], then lines 245-246 compare those same supplied identities; main never moves between submit and execution, so removing request-based primary pinning or population restamping can leave these assertions green, weakening protection against measuring another revision."
+    }
+  ],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T211438912655-lander-never-waits-on-a-measurement/after-suite.log",
+    "after_summary": "68 passed in 18.60s",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T211438912655-lander-never-waits-on-a-measurement/baseline-suite.log",
+    "baseline_summary": "51 passed in 9.03s"
+  },
+  "importer_evidence": {
+    "added_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T211438912655-lander-never-waits-on-a-measurement/after-importers.log",
+    "base_failure_count": 9,
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T211438912655-lander-never-waits-on-a-measurement/baseline-importers.log",
+    "head_failure_count": 9
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read 828c95489a4f3852de625d58e4726cdfaeebf5db, 1116bd3ebba672132c21e7e6e3a13ab86259cc27 and 37a6b3f10912275c8da7b14c1e23c6b16c9622ba against 56a51a776c678ed3efb1af7ca4c7733189c5fa43; asynchronous scheduling, recovery fixes, 17 cases and the evidence fragment stay within scope.",
+    "done_when": "docs/plans/work-flows-to-the-lane.html:170 requires progress, isolation, width, restart and live admit evidence; after-suite.log records 68 passed, negative-control.log records the intended failing progress test, and live-probe.log records return before job 1312494 ended.",
+    "goal": "prompt.txt:39 names submit-and-resume landing; reckon/crew/queue_landing.py:1181-1259 persists asynchronous jobs and consumes them on later passes.",
+    "manifest": "the source manifest names all three resolvable commits, readable base/head logs and importer logs; its final-head 68-pass result, zero added failures and live-job receipt agree with those logs.",
+    "write_paths": "the seven declared paths in the source manifest contain all six changed files, with the figure directory unused."
+  },
+  "justifications": {
+    "durability": "tests/test_the_lander_never_waits_on_a_measurement.py:117 fails with restored blocking submission and the remaining cases protect adoption, width, refusal and receipts, but lines 232-246 do not independently guard pinned revision identities.",
+    "evidence": "after-suite.log records 68 passed at the reviewed head, negative-control.log names the progress-test failure after restoring waiting, and live-probe.log plus live-completion.log establish return before successful scheduler completion.",
+    "fit": "reckon/crew/landing_measure.py:114 and reckon/crew/queue_landing.py:1181 extend their existing owners, use mechanism names, shared atomic writes and existing measurement records, with no new forbidden source names.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:2142-2180 defers pending measurements while continuing the pass, and reckon/crew/landing_measure.py:157 removes the synchronous wait.",
+    "reuse": "capability searches for scheduler submission, state reading and measurement ownership found landing_measure.partition_submission and queue_landing._measure_delivery, which the additions extend, while fleet_node.submit/query_jobs own fleet allocation rather than pinned measurement jobs and recovery_liveness owns arbitrary manifest probes.",
+    "scope_discipline": "the six files in the base-to-head diff are all declared in the source manifest's orientation_write_paths and implement scheduling, its focused tests or its delivery evidence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:39 names submit-and-resume landing; reckon/crew/queue_landing.py:1181-1259 persists asynchronous jobs and consumes them on later passes.\nVERDICT done_when: docs/plans/work-flows-to-the-lane.html:170 requires progress, isolation, width, restart and live admit evidence; after-suite.log records 68 passed, negative-control.log records the intended failing progress test, and live-probe.log records return before job 1312494 ended.\nVERDICT write_paths: the seven declared paths in the source manifest contain all six changed files, with the figure directory unused.\nVERDICT manifest: the source manifest names all three resolvable commits, readable base/head logs and importer logs; its final-head 68-pass result, zero added failures and live-job receipt agree with those logs.\nVERDICT diff: read 828c95489a4f3852de625d58e4726cdfaeebf5db, 1116bd3ebba672132c21e7e6e3a13ab86259cc27 and 37a6b3f10912275c8da7b14c1e23c6b16c9622ba against 56a51a776c678ed3efb1af7ca4c7733189c5fa43; asynchronous scheduling, recovery fixes, 17 cases and the evidence fragment stay within scope.\nCALL_SITES: reckon/crew/admission/landing.py:_LandingWorker._land, reckon/crew/admission/service.py:admit_until_stopped, reckon/crew/queue_landing.py:_land_deliveries, reckon/crew/queue_landing.py:_promoted_candidate, reckon/crew/queue_landing.py:run_measurement_request\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:2142-2180 defers pending measurements while continuing the pass, and reckon/crew/landing_measure.py:157 removes the synchronous wait.\nSCORE evidence: 20\nJUSTIFICATION evidence: after-suite.log records 68 passed at the reviewed head, negative-control.log names the progress-test failure after restoring waiting, and live-probe.log plus live-completion.log establish return before successful scheduler completion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the six files in the base-to-head diff are all declared in the source manifest's orientation_write_paths and implement scheduling, its focused tests or its delivery evidence.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_the_lander_never_waits_on_a_measurement.py:117 fails with restored blocking submission and the remaining cases protect adoption, width, refusal and receipts, but lines 232-246 do not independently guard pinned revision identities.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/landing_measure.py:114 and reckon/crew/queue_landing.py:1181 extend their existing owners, use mechanism names, shared atomic writes and existing measurement records, with no new forbidden source names.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for scheduler submission, state reading and measurement ownership found landing_measure.partition_submission and queue_landing._measure_delivery, which the additions extend, while fleet_node.submit/query_jobs own fleet allocation rather than pinned measurement jobs and recovery_liveness owns arbitrary manifest probes.\nFINDING tests/test_the_lander_never_waits_on_a_measurement.py:245 non-blocking: the stub at line 238 constructs its result from request[\"head\"] and request[\"primary\"], then lines 245-246 compare those same supplied identities; main never moves between submit and execution, so removing request-based primary pinning or population restamping can leave these assertions green, weakening protection against measuring another revision.\n",
+  "review_run_id": "r-20261112T215227342343-review-of-lander-never-waits-on-a-measurement-37a6b3f10912",
+  "reviewed_base_sha": "56a51a776c678ed3efb1af7ca4c7733189c5fa43",
+  "reviewed_head_sha": "37a6b3f10912275c8da7b14c1e23c6b16c9622ba",
+  "reviewed_run_id": "r-20261112T211438912655-lander-never-waits-on-a-measurement",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:11:29.510698+00:00",
+  "total": 117
+}
