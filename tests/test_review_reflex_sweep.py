@@ -357,7 +357,9 @@ def test_the_dispatch_without_the_waiver_records_the_run_it_ran_over(
         )
     assert report["dispatched"] is True
     review_run_id = str(runs.read_pointer("r-work")["review_dispatch"]["run_id"])
-    backlog = runs.read_pointer(review_run_id)["unreconciled_override"]
+    backlog = runs.dispatch_field(
+        runs.read_pointer(review_run_id), "unreconciled_override"
+    )
     assert backlog["requested"] is False
     assert backlog["grace"] == "10m"
     assert [row["run_id"] for row in backlog["waived_runs"]] == ["r-work"]
