@@ -41,21 +41,24 @@
     makes the direct-dispatch case raise <code>UnreconciledRuns</code>:
     <strong>4 failed, 4 passed</strong>.
   </p>
-  <p id="dispatch-over-the-backlog-outside-scope">
-    Three test files outside this node's write scope still assert the
-    superseded refusal and turn red at head, each with
-    <code>pytest.raises(dispatch_module.UnreconciledRuns)</code> around a
-    dispatch this section now lets through:
-    <code>tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py::test_a_run_without_a_current_reflex_wait_still_refuses_dispatch</code>
-    (both parametrised cases),
-    <code>tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_is_still_refused</code>
+  <p id="dispatch-over-the-backlog-witnesses">
+    Seven tests asserted the retired refusal before this section landed. All
+    seven now assert the recorded backlog instead: the two cases in
+    <code>tests/test_crew.py</code>, the subset case in
+    <code>tests/test_closure_fence_agreement.py</code>, the two parametrised
+    cases of
+    <code>tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py::test_a_run_without_a_current_reflex_wait_is_dispatched_over_and_recorded</code>,
+    <code>tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_records_the_backlog</code>
     and
-    <code>tests/test_review_reflex_sweep.py::test_the_fence_refuses_the_same_run_without_the_waiver</code>.
-    The importer arm reads 1 failed / 31 passed at base and 5 failed / 27 passed
-    at head. Each needs the same rewrite as the queued-launch test: assert the
-    recorded backlog instead of the exception. The two cases in
-    <code>tests/test_crew.py</code> and the subset case in
-    <code>tests/test_closure_fence_agreement.py</code>, rewritten once their
-    paths were granted, pass at head.
+    <code>tests/test_review_reflex_sweep.py::test_the_dispatch_without_the_waiver_records_the_run_it_ran_over</code>.
+    Each keeps the case it was written for: only this session's own overdue
+    rows are named, every run past the grace is named, the CLI writes the same
+    backlog the direct call does, the dispatched review says its waiver was
+    requested while the direct dispatch beside it says it was not, and the
+    grace the run outlived is on the record. A refusal in a file that also
+    carries other cases stays where the section does not reach it:
+    <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code>
+    reads a pointer for a field the pointer omits and fails at base as it does
+    at head, so it is unchanged and remains red on both sides.
   </p>
 </section>
