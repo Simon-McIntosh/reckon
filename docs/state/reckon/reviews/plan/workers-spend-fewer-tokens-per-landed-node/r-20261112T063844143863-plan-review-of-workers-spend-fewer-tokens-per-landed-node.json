@@ -1,0 +1,60 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T06:49:56.255Z",
+  "dispatched_at": "2026-11-12T06:42:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:125",
+      "id": "done_when-1",
+      "reason": "as written the control fails on the plan's own named record source, and a node would either report a failed control or quietly read a different file, so the plan must name the run and the record the launch fact is read from (the attempt that launched, not the run's latest `worker.json`, which a resume rewrites to `false`).",
+      "text": "\u00a712's negative control says that replacing the membership rule with the `anchored_edit` launch fact alone \"places the 2026-11-11 local anchored runs whose tools were never offered in the anchored arm\", but the records do not show that: all three 2026-11-11 local anchored runs (`r-20261111T074901833566`, `r-20261111T075900526642`, `r-20261111T130138944743`) read `\"anchored_edit\": false` in their `worker.json`, the second also in `attempt-1-worker.json`, and only `r-20261111T130138944743` carries `true` at all, in `attempt-1-worker.json` alone \u2014 the file \u00a78 does not name, since \u00a78 names `worker.json` and the stream's session-start record. Run over `worker.json`, the unfiltered query moves no run and the two counts are identical, so the control cannot show the difference it is written to show",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/workers-spend-fewer-tokens-per-landed-node.html:125",
+      "id": "done_when-2",
+      "reason": "the population the query reads decides both the population sizes the record must report and whether the control can move a count, so leaving it unstated sends the node down one of two paths and the wrong one reports a control that cannot differ.",
+      "text": "\u00a712 states the comparison population as \"a first wave of about four implement runs each\" but is not stated as a query window, while its negative control depends on a query that also reaches the 2026-11-11 runs, which all precede the wave; a query scoped to the wave excludes those runs whatever the membership rule says, so the control is unsatisfiable as written and a node has to guess whether the rule is applied to the wave or to every local anchored run since \u00a710 landed",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "8e200ea58cb1c0774997710a8808a7747ffeb5f2",
+  "plan_fingerprint": "12e092de6ecdb43e7e5e3b3f633656e5a203663adba1fca5bcc32aa49c938c65",
+  "plan_slug": "workers-spend-fewer-tokens-per-landed-node",
+  "plan_version": 60,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T063844143863-plan-review-of-workers-spend-fewer-tokens-per-landed-node",
+  "reviewed_blob_sha": "bd830575e301c633ce72cf48f82ed9a32da9d771",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 \u00a712's internal references (\u00a78, \u00a710) resolve to sections that exist in the same document; the evidence path's parent directory resolves on disk (`docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/`), and the record file itself is the section's deliverable rather than a citation.",
+    "done_when": "findings \u2014 \u00a712's negative control names an outcome the run records do not support: of the three 2026-11-11 local anchored runs, only one carries the launch fact `true`, and only in its attempt-1 record, while \u00a78 points the measurement at `worker.json`, where all three read `false`.",
+    "evidence_paths": "pass \u2014 the record is written to `docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/interim-arm-report.html`; that fragment directory exists in the repository with ten sibling fragments and is a durable, versioned path, not a scratchpad.",
+    "naming": "pass \u2014 \u00a712 adds only prose and an evidence filename that names what the artifact measures; no plan label, stage name, ticket number or version tag enters it.",
+    "reasoning": "pass \u2014 \u00a712's stated cause matches its evidence (the \u00a78 thresholds of 30 local / 15 codex runs per arm against about twenty open sections, and sections already implemented, so the arms are compared early with uncertainty stated); the endpoint \u2014 a per-arm table with 90% bootstrap intervals, population sizes, effort-hour mix, the draw's seed and assignment, the query and the positive controls' results \u2014 is obtainable from the run store and run directories, and the stated conclusion (\"confounded by section\" at about four runs per arm) is the correct reading of that count; the seeded stratified draw assigns work and is the experiment design the comparison rests on, not a code path or a function to call, so it is not an implementation prescription. One caveat recorded, not raised: the Why says \"many sections declared implementable were found already implemented\", which is what makes \"about four runs each\" an upper bound rather than a target; the hedge and the stated uncertainty cover it.",
+    "single_goal": "pass \u2014 \u00a712 delivers one record, the interim per-arm comparison, and explicitly draws no verdict, changes no flight default and removes nothing.",
+    "wiring": "pass \u2014 \u00a712 consumes \u00a78's metrics and \u00a78's membership rule and every arm it compares (\u00a74, \u00a75, \u00a77, \u00a710) exists and is declared done, so the section's dependencies are satisfied by the plan's prose; no `plan-section-depends-on` entry for s12 is wanted here, because an edge to \u00a78 would hold the interim comparison behind the \u00a78 verdict that this section exists to precede, and the arms are already landed so an edge to them orders nothing."
+  },
+  "section_digests": {
+    "_document": "d5ca1a0756452c6f137ad04ac383be087ec0e9a758df3bb2fa680627e12566d2",
+    "s1": "27efb946331b363cf3b48ca57f6009092461d2d586c980ec04683af290acb176",
+    "s10": "57c0e4bc790984e6470018cb7d1d811c93595c29bd68880d123ca24701f03432",
+    "s11": "1875a6d7d71c4631394fabd2dff8760a85b806148eac48ac293dabf4ad0940a8",
+    "s12": "b31afd0457f2aa384364299d5c56cc15d66d62c666b5fb35b72a030f62b41348",
+    "s2": "18a630a087c36f00788ca9ae4eba2d68e6b53ce5b7125f0da1af4e80b79bdf11",
+    "s3": "27f3ab4633055716703b5c5dc0489fd76b40de28c824267138496901afdd6ab4",
+    "s4": "cfaa23bf173d4d6871264740465b4cfe8419b64a4f662678500d625d859bc62d",
+    "s5": "c9183ce2a232ac782857e41634ee80387efd76e2fdd6a54bb8d09a4daed96e21",
+    "s6": "f3f3ac6fa716bf7bfc694dc026651c7f5e8c3c995720f26ec8e52dadcf7dee82",
+    "s7": "ad03def51d9b50982dddda60fabd711d849eb149f7c7aedc838f37c64f572076",
+    "s8": "10538eab034fdd52bc7935fcce8b1472ca6742b4f998d60e331d0c3b1813f85a",
+    "s9": "2b2876c321e5725696c3622c225b7a81b3403379688687af5b7f98042c6c79a5"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T16:27:04.162582+00:00",
+  "total": null
+}
