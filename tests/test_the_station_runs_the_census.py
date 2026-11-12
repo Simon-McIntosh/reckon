@@ -15,7 +15,9 @@ from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import pytest
+from click.testing import CliRunner
 
+from reckon import cli
 from reckon.crew import census, station, station_store
 
 
@@ -162,30 +164,78 @@ def _station_named(home, tick=lambda: None):
     )
 
 
-def test_a_station_that_did_not_opt_in_sends_no_signal(stubs, tmp_path, monkeypatch):
-    """A planted orphan survives a station run that never opted into the sweep."""
+def test_a_station_that_did_not_opt_in_never_opens_the_census(
+    stubs, tmp_path, monkeypatch
+):
+    """A planted orphan survives a station run that never opted into the sweep.
+
+    Every call the sweep would make is recorded rather than raised, so a guard
+    that silently stopped gating fails this test instead of being caught by the
+    beat thread's own exception handler.
+    """
     orphan = stubs(1)
     store = station_store.StationStore(tmp_path / "runtime")
     monkeypatch.setattr(station, "StationReloader", lambda root: None)
+    calls = []
+    beats = []
+
+    class RecordingBeat(station.CensusBeat):
+        def __init__(self, **kwargs):
+            beats.append("constructed")
+            super().__init__(**kwargs)
+
+        def start(self):
+            beats.append("started")
+            super().start()
+
+    def record_census(**kwargs):
+        calls.append("census")
+        return {"state_home": str(tmp_path / "crew"), "orphaned": [], "spared": []}
+
+    def record_apply(report, **kwargs):
+        calls.append("apply")
+        return []
 
     def refuse(*args, **kwargs):
-        raise AssertionError("a station that did not opt in ran the census")
+        raise AssertionError("a station that did not opt in signalled a process")
 
     with monkeypatch.context() as patched:
-        patched.setattr(census, "census", refuse)
+        patched.setattr(station, "CensusBeat", RecordingBeat)
+        patched.setattr(census, "census", record_census)
+        patched.setattr(census, "apply_census", record_apply)
         patched.setattr(os, "kill", refuse)
         patched.setattr(census, "_pidfd_open", refuse)
         patched.setattr(census, "_pidfd_signal", refuse)
-        patched.setattr(
-            signal,
-            "pidfd_send_signal",
-            refuse,
-            raising=False,
-        )
+        patched.setattr(signal, "pidfd_send_signal", refuse, raising=False)
         station.run_station(
             once=True, store=store, station_instance=_station_named(tmp_path / "crew")
         )
+    assert calls == [], f"an unopted station ran the census: {calls}"
+    assert beats == [], f"an unopted station started a census beat: {beats}"
+    assert not [
+        thread
+        for thread in threading.enumerate()
+        if thread.name == "station-census" and thread.is_alive()
+    ]
     assert orphan.poll() is None, "an unopted station signalled a process"
+
+
+def test_the_station_cli_forwards_the_census_opt_in(monkeypatch):
+    """The command's flag reaches run_station, and the default stays off."""
+    recorded = {}
+
+    def fake_run_station(**kwargs):
+        recorded.update(kwargs)
+
+    monkeypatch.setattr(station, "run_station", fake_run_station)
+    runner = CliRunner()
+    result = runner.invoke(cli.main, ["crew", "station", "--once", "--census-sweep"])
+    assert result.exit_code == 0, result.output
+    assert recorded == {"interval": 1.0, "once": True, "census_sweep": True}
+    recorded.clear()
+    result = runner.invoke(cli.main, ["crew", "station", "--once"])
+    assert result.exit_code == 0, result.output
+    assert recorded["census_sweep"] is False
 
 
 def test_the_census_thread_stops_when_the_station_exits(tmp_path, monkeypatch):
