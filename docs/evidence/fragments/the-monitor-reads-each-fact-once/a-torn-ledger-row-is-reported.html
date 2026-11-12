@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s32">
+  <meta name="plan-recorded-at" content="2026-11-12">
+  <title>A torn ledger row is reported while exclusive append creation is preserved</title>
+</head>
+<body>
+<article id="a-torn-ledger-row-is-reported-landing" data-node="a-torn-ledger-row-is-reported" data-reckon="landed" data-when="2026-11-12">
+  <h2>Tolerant reads and exclusive creation</h2>
+  <p id="a-torn-ledger-row-is-reported-scope">The narrowed delivery keeps <code>reckon/ledger.py</code> byte-for-byte identical to <code>acc1f3493f81e678e6a877aff5b2ebb89ad55908</code>. Existing-file replacements already use the shared atomic writer. Append retains its exclusive <code>open("x")</code>; aggregate splitting creates missing records. Neither creation path is changed.</p>
+  <p id="a-torn-ledger-row-is-reported-reader">The base reader already translates a per-run decode failure into <code>DamagedRunRecordError</code>, reports the damaged path, and continues. The regression file verifies both indexed and uncached reads, repeated damage reporting, a repaired record becoming visible, and a review pass that still promotes all three healthy review runs.</p>
+  <p id="a-torn-ledger-row-is-reported-append">Two cases pause the real exclusive append after half its bytes are flushed. The indexed and uncached readers each return both healthy rows and identify the incomplete row as damaged. Once the append completes, the next read includes the complete row and clears the damage report. A duplicate-append case requires <code>LedgerError</code> and verifies the original record stays byte-identical.</p>
+  <p id="a-torn-ledger-row-is-reported-control">The recorded bare <code>JSONDecodeError</code> does not reproduce on the unmodified base. The negative control therefore bypasses the existing decode-to-damage translation in a temporary measurement tree. Its failing test identities and the unmodified tree's passing gate show that the tests exercise the reader guard.</p>
+  <p id="a-torn-ledger-row-is-reported-receipts">Fresh scoped and matched importer arms run sequentially on <code>all_debug</code>. The worker manifest records their actual revisions, commands, imported module paths, runner summaries and failing test identities, together with the final negative-control log. The prior delivery and its superseded measurements remain in <code>manifest-before-narrowing.md</code>; this delivery changes no concurrency test outside its write scope and does not close the live section.</p>
+</article>
+</body>
+</html>
