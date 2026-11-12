@@ -84,6 +84,11 @@
     <p>§15 landed at <code>f8d7cfd3c2</code>. A request backing off after a launch refused for an uncommitted plan is now retried at the first admit pass after the plan's committed content changes, whatever its <code>retry_at</code>. Its review was deleted as a stranded launch four times overnight (traces under <code>refusal-traces/</code>; the fix is <code>work-is-never-stuck-behind-the-admission-loop</code> §52), and the fifth review was clean. The admit service's lander promoted and landed it unaided, once the station sweep fixes were live. Reviewed head: <code>5740f22d</code>.</p>
   </section>
 
+  <section id="s14-decision-can-be-withdrawn" data-evidence-origin="append">
+    <h2>§14 — a decision can be withdrawn through edit_plan</h2>
+    <p>§14 landed at <code>145f513002</code> (reviewed head <code>19147e9e</code>, run <code>r-20261112T053149645420-decision-can-be-withdrawn</code>). An <code>edit_plan</code> op now withdraws an unlocked decision in one versioned write. The withdrawal is kept with its reason and date, the decision stops holding any section, and withdrawing a locked decision is refused. Its review was clean. The coordinator promoted and landed it by hand, because the session's sweep was busy promoting other reviews (§25).</p>
+  </section>
+
 </main>
 </body>
 </html>
