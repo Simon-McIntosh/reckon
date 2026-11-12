@@ -653,6 +653,7 @@ def dispatch_awaiting_reviews(
     launcher: Callable[..., Any] | None = None,
     session: str | None = None,
     pointers: Sequence[Mapping[str, Any]] | None = None,
+    promotions: Any = None,
 ) -> dict[str, Any]:
     """Dispatch the review every scoring run composes, and report each outcome.
 
@@ -673,6 +674,15 @@ def dispatch_awaiting_reviews(
     chose them. Left unset it is resolved from the follower registration this
     process holds, so a sweep inside a follower is confined to its own session
     without the caller having to declare it.
+
+    ``promotions`` hands each promotion and acceptance to a worker of its own
+    instead of running it in this thread. A promotion takes minutes, so a sweep
+    that ran them one after another held every review it owed behind them. The
+    reviews are dispatched in the pass over the runs; the promotions are handed
+    over only once that pass is done, so no promotion can complete before the
+    reviews this sweep owed are dispatched. ``None`` keeps the older behaviour
+    of running each promotion at the point the run is read, which is what a
+    caller that wants one run's outcome in the returned report asks for.
     """
     reports: list[dict[str, Any]] = []
     failed: list[dict[str, Any]] = []
@@ -685,6 +695,70 @@ def dispatch_awaiting_reviews(
     awaiting_lane: list[str] = []
     lane_paused: list[str] = []
     repaired: list[str] = []
+    in_flight: list[dict[str, Any]] = []
+    handed: list[tuple[str, str, Callable[[], dict[str, Any] | None]]] = []
+
+    def _run_job(
+        run_id: str, job: Callable[[], dict[str, Any] | None]
+    ) -> dict[str, Any]:
+        """Run one promotion or acceptance and name its outcome.
+
+        The exception is classified where it is raised, because a pointer that
+        has gone since it was read tells a vanished run from one that failed.
+        """
+        try:
+            return {"run_id": run_id, "result": job()}
+        except Exception as exc:  # noqa: BLE001 - each run's turn is its own
+            entry = {
+                "run_id": run_id,
+                "error": f"{type(exc).__name__}: {exc}",
+            }
+            if isinstance(exc, CrewError) and not runs.pointer_path(run_id).exists():
+                return {"run_id": run_id, "vanished": entry}
+            return {"run_id": run_id, "failed": entry}
+
+    def _apply(kind: str, run_id: str, outcome: Mapping[str, Any]) -> None:
+        if "vanished" in outcome:
+            vanished.append(outcome["vanished"])
+            return
+        if "failed" in outcome:
+            failed.append(outcome["failed"])
+            return
+        if outcome.get("in_flight"):
+            in_flight.append(
+                {
+                    "run_id": run_id,
+                    "kind": kind,
+                    "reason": str(outcome.get("reason") or ""),
+                }
+            )
+            return
+        result = outcome.get("result")
+        if result is None:
+            return
+        if kind == "review-self":
+            if result.get("promoted"):
+                self_promoted.append(str(result.get("run_id") or ""))
+            else:
+                # A refused self-promotion is kept in its own list rather than
+                # in ``reports``: that list is what a caller reads to find the
+                # runs a review was composed or accepted for, and a review run
+                # only ever promotes itself, so it is not a run awaiting review
+                # and must not displace that reading.
+                review_self_refused.append(result)
+            return
+        reports.append(result)
+        if result.get("accepted"):
+            accepted.append(str(result.get("run_id") or ""))
+
+    def _hand_off(
+        run_id: str, kind: str, job: Callable[[], dict[str, Any] | None]
+    ) -> None:
+        if promotions is None:
+            _apply(kind, run_id, _run_job(run_id, job))
+            return
+        handed.append((run_id, kind, job))
+
     sweeping = session if session is not None else _sweeping_session(project)
     live = list_live(project=project) if pointers is None else pointers
     for pointer in runs._tick_pointers(live):
@@ -709,18 +783,15 @@ def dispatch_awaiting_reviews(
             if _is_review_run(pointer):
                 # Promotion can reconstruct a missing pointer from durable records;
                 # a sweep acts only on the live run it was asked to handle.
-                runs.read_pointer(str(pointer.get("run_id") or ""))
-                self_promotion = promote_review_run_itself(pointer, config=config)
-                if self_promotion is not None:
-                    if self_promotion.get("promoted"):
-                        self_promoted.append(str(self_promotion.get("run_id") or ""))
-                    else:
-                        # A refused self-promotion is kept in its own list rather
-                        # than in ``reports``: that list is what a caller reads to
-                        # find the runs a review was composed or accepted for, and
-                        # a review run only ever promotes itself, so it is not a
-                        # run awaiting review and must not displace that reading.
-                        review_self_refused.append(self_promotion)
+                run_id = str(pointer.get("run_id") or "")
+                runs.read_pointer(run_id)
+                _hand_off(
+                    run_id,
+                    "review-self",
+                    lambda pointer=pointer: promote_review_run_itself(
+                        pointer, config=config
+                    ),
+                )
                 continue
             # A run resumed since its queued review was recorded carries a head the
             # review no longer speaks for; the queued attempt is withdrawn rather
@@ -797,11 +868,11 @@ def dispatch_awaiting_reviews(
             # to its coordinator, and an eligible run whose acceptance was refused
             # is reported with its reason rather than silently skipped.
             if scan is not None and scan["classification"] == "promotable":
-                acceptance = accept_clean_review(pointer, config=config)
-                if acceptance is not None:
-                    reports.append(acceptance)
-                    if acceptance.get("accepted"):
-                        accepted.append(str(acceptance.get("run_id") or ""))
+                _hand_off(
+                    str(pointer.get("run_id") or ""),
+                    "acceptance",
+                    lambda pointer=pointer: accept_clean_review(pointer, config=config),
+                )
             # The repair pass, keyed on the stored review rather than on the run's
             # classification: a review carrying findings may leave the run reading
             # promotable, so gating this on ``scoring`` alone would leave a
@@ -822,6 +893,37 @@ def dispatch_awaiting_reviews(
                 vanished.append(entry)
             else:
                 failed.append(entry)
+    # The reviews this sweep owed are dispatched by now, so the promotions go
+    # to their workers with nothing left waiting behind them. A run another
+    # sweep is already promoting is reported in flight rather than promoted a
+    # second time beside it.
+    if promotions is not None:
+        for run_id, kind, job in handed:
+
+            def _job(
+                job: Callable[[], dict[str, Any] | None] = job,
+                run_id: str = run_id,
+                kind: str = kind,
+            ) -> dict[str, Any]:
+                return {**_run_job(run_id, job), "kind": kind}
+
+            if not promotions.submit(run_id, _job):
+                in_flight.append(
+                    {
+                        "run_id": run_id,
+                        "kind": kind,
+                        "reason": (
+                            "another sweep is already promoting this run, so "
+                            "this one leaves it to that promotion"
+                        ),
+                    }
+                )
+        for outcome in promotions.wait():
+            _apply(
+                str(outcome.get("kind") or ""),
+                str(outcome.get("run_id") or ""),
+                outcome,
+            )
     return {
         "reports": reports,
         "failed": failed,
@@ -830,6 +932,7 @@ def dispatch_awaiting_reviews(
         "refused": refused,
         "accepted": accepted,
         "self_promoted": self_promoted,
+        "in_flight": in_flight,
         "review_self_refused": review_self_refused,
         "awaiting_lane": awaiting_lane,
         "lane_paused": lane_paused,
