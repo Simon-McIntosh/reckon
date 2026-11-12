@@ -2250,9 +2250,12 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
     as one ``<index> - <name> (<reason>)`` entry beneath the line ``The
     following tests FAILED:``. Each entry is a failure whatever its reason, so
     a test reported ``Not Run`` behind a build break is read the same as one
-    that ran and failed. The name is taken verbatim: a ctest name is the
-    label the project gave the test, not a path relative to a working
-    directory, so it needs no reduction against the arm that printed it.
+    that ran and failed. A block ends at the first line that is not an entry,
+    and the scan resumes rather than stopping: a multi-label gate runs ctest
+    once per label, so its log carries one ``The following tests FAILED:``
+    block per label and every one of them belongs to the gate's failure set. The name is taken verbatim: a
+    ctest name is the label the project gave the test, not a path relative to a
+    working directory, so it needs no reduction against the arm that printed it.
     """
     ids: set[str] = set()
     in_block = False
@@ -2267,7 +2270,7 @@ def _ctest_failure_ids(log_text: str) -> set[str]:
             ids.add(match.group(1))
             continue
         if raw.strip():
-            break
+            in_block = False
     return ids
 
 
