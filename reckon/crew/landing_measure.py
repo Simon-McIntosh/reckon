@@ -550,6 +550,97 @@ def _arm(
     )
 
 
+_LONG_PARTITION_BOUND_SECONDS = 3600.0
+
+
+def partition_for_bound(
+    partition: str,
+    long_partition: str,
+    bound_seconds: float,
+) -> str:
+    """The partition a measure runs on, given its bound.
+
+    A bound past an hour takes the long partition, because the short
+    partitions end a job that outlives them rather than letting it finish.
+    """
+    if bound_seconds > _LONG_PARTITION_BOUND_SECONDS:
+        return long_partition or "rigel"
+    return partition
+
+
+def partition_submission(
+    *,
+    script: str,
+    partition: str,
+    long_partition: str,
+    bound_seconds: float,
+    chdir: Path,
+    log_path: Path,
+) -> tuple[str, list[str], dict[str, str]]:
+    """The one batch submission form every partitioned measure uses.
+
+    The argv and the environment are built here and nowhere else, so a caller
+    submitting to a measure partition cannot drift from the form the landing
+    measure uses. ``sbatch --wait`` submits a job of its own and blocks until
+    that job ends; the job runs the script as an ``srun`` step inside itself,
+    because a bare ``srun`` from the fleet node stays inside the fleet
+    allocation whatever partition it names. The job's ``--time`` is the
+    caller's bound rendered as ``HH:MM:SS``, so the scheduler ends an overrun
+    rather than leaving it to a client-side timeout, and the caller's
+    scheduler variables are removed so the job is not attached to whatever
+    allocation the submission came from.
+
+    The selected partition is returned beside them, because a caller that
+    reports where its measure ran needs the partition the bound chose rather
+    than the one that was declared for short bounds.
+    """
+    selected = partition_for_bound(partition, long_partition, bound_seconds)
+    seconds = max(1, math.ceil(bound_seconds))
+    hours, remainder = divmod(seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
+    step = (
+        shlex.join(
+            [
+                "srun",
+                f"--partition={selected}",
+                f"--time={bound}",
+                "--ntasks=1",
+                "bash",
+                "-c",
+                script,
+            ]
+        )
+        + " > "
+        + shlex.quote(str(log_path))
+        + " 2>&1"
+    )
+    argv = [
+        "sbatch",
+        "--wait",
+        "--parsable",
+        f"--partition={selected}",
+        f"--time={bound}",
+        "--nodes=1",
+        "--ntasks=1",
+        f"--cpus-per-task={POPULATION_WORKERS}",
+        "--mem=32G",
+        f"--output={log_path}.scheduler",
+        f"--error={log_path}.scheduler",
+        f"--chdir={chdir}",
+        "--wrap",
+        step,
+    ]
+    environment = {
+        key: value
+        for key, value in os.environ.items()
+        if not key.startswith(("SLURM_", "SBATCH_"))
+    }
+    environment["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
+    environment["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
+    return selected, argv, environment
+
+
 def _partition_runner(
     runner,
     *,
@@ -579,11 +670,6 @@ def _partition_runner(
     def run(command, **options):
         revision = base_sha if Path(options["cwd"]) == base_tree else head_sha
         timeout = options["timeout"]
-        selected = long_partition if timeout > 3600 else partition
-        seconds = max(1, math.ceil(timeout))
-        hours, remainder = divmod(seconds, 3600)
-        minutes, seconds = divmod(remainder, 60)
-        bound = f"{hours:02d}:{minutes:02d}:{seconds:02d}"
         log = Path(options.pop("arm_log_path")).resolve()
         scratch_id = hashlib.sha256(str(log).encode()).hexdigest()[:12]
         quote = shlex.quote
@@ -620,47 +706,14 @@ set +e
 status=$?
 exit "$status"
 """
-        # The batch job owns the step: srun from the fleet itself would stay
-        # inside the fleet allocation even when it names a different partition.
-        step = (
-            shlex.join(
-                [
-                    "srun",
-                    f"--partition={selected}",
-                    f"--time={bound}",
-                    "--ntasks=1",
-                    "bash",
-                    "-c",
-                    script,
-                ]
-            )
-            + " > "
-            + quote(str(log))
-            + " 2>&1"
+        _selected, argv, env = partition_submission(
+            script=script,
+            partition=partition,
+            long_partition=long_partition,
+            bound_seconds=timeout,
+            chdir=shared_repo,
+            log_path=log,
         )
-        argv = [
-            "sbatch",
-            "--wait",
-            "--parsable",
-            f"--partition={selected}",
-            f"--time={bound}",
-            "--nodes=1",
-            "--ntasks=1",
-            f"--cpus-per-task={POPULATION_WORKERS}",
-            "--mem=32G",
-            f"--output={log}.scheduler",
-            f"--error={log}.scheduler",
-            f"--chdir={shared_repo}",
-            "--wrap",
-            step,
-        ]
-        env = {
-            k: v
-            for k, v in os.environ.items()
-            if not k.startswith(("SLURM_", "SBATCH_"))
-        }
-        env["RECKON_ALLOW_NESTED_LAUNCH"] = "1"
-        env["TMPDIR"] = NODE_LOCAL_TEMP_ROOT
         log.write_text("")
         try:
             finished = runner(

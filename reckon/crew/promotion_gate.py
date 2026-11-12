@@ -7,8 +7,9 @@ import re
 import shlex
 import shutil
 import subprocess
+import tempfile
 import time
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -44,6 +45,71 @@ _REPLAY_BOUND_CEILING_SECONDS = 1800.0
 _GATE_LOG_DURATION = re.compile(r"\bin (\d+(?:\.\d+)?)s\b")
 
 
+# Room for the scheduler to start the job and reap it, over the job's own bound.
+_PARTITION_SUBMISSION_SLACK_SECONDS = 120.0
+
+
+_PARTITION_RECEIPT = re.compile(r"^EXIT=(-?\d+)\s*$", re.MULTILINE)
+
+
+# What a job's log states when its submission never reached the command, so a
+# missing receipt and a receipt that says so report the same status.
+_UNREADABLE_JOB_STATUS = 3
+
+
+def _replay_landing(repository: Path) -> Mapping[str, Any]:
+    """The landing declaration the replayed repository's flight resolves to."""
+    from reckon import flight
+
+    return (
+        flight.resolve(None, checkout_path=str(repository)).config.get("landing") or {}
+    )
+
+
+def _job_log_receipt(text: str) -> int | None:
+    """The status a job's log records, from its last ``EXIT=`` line, or None.
+
+    Only the last record counts: a replayed command that prints an ``EXIT=``
+    line of its own is not the job's receipt. A log with no receipt is a job
+    that never reached its own status — refused at submission, killed before
+    the step ran, or cut off — and has no measurable verdict at all.
+    """
+    receipts = _PARTITION_RECEIPT.findall(text or "")
+    return int(receipts[-1]) if receipts else None
+
+
+def _replay_job_log(replay_log_path: str | Path | None) -> Path:
+    """Where a batch job writes its own output, durable when the caller names one.
+
+    The path is derived from the caller's replay log, so the same verify-gate
+    of a run lands on the same file on every attempt. It is therefore cleared
+    before each submission: a submission that never reaches its step leaves
+    the file empty, and an earlier attempt's verdict cannot be read back as
+    the verdict of a job that did not run.
+    """
+    if replay_log_path is not None:
+        path = (
+            Path(replay_log_path)
+            .expanduser()
+            .with_name(Path(replay_log_path).name + ".job.log")
+        )
+    else:
+        path = Path(tempfile.mkdtemp(prefix="reckon-gate-replay-")) / "job.log"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("", encoding="utf-8")
+    return path
+
+
+def _partition_replay_script(replayed: str) -> str:
+    """The script a batch job runs: the replayed command, with its status kept.
+
+    The terminal ``EXIT=`` record is what a reader of the job's log needs: a log
+    that ends without one was cut off before the command returned, which is a
+    different fact from a command that failed.
+    """
+    return f'set +e\n{replayed}\nstatus=$?\nprintf \'EXIT=%s\\n\' "$status"\nexit "$status"\n'
+
+
 def _replay_log_header(
     *,
     replay_command: str,
@@ -51,6 +117,7 @@ def _replay_log_header(
     checkout_revision: str,
     integrated_revision: str,
     rewritten_roots: Sequence[str] = (),
+    partition: str = "",
 ) -> list[str]:
     """The header lines a re-run log opens with, in the gate log's own shape.
 
@@ -65,6 +132,7 @@ def _replay_log_header(
             f"(integrated {integrated_revision or 'unknown'})"
         ),
         f"# cwd of the replay: {checkout}",
+        f"# partition: {partition or 'in-place'}",
         f"# command: {replay_command}",
     ]
     lines.extend(
@@ -600,6 +668,7 @@ def rerun_gate_at_integrated_revision(
     worktree_roots: Sequence[str | Path] = (),
     replay_log_path: str | Path | None = None,
     recorded_gate_seconds: float | None = None,
+    run: Callable[..., Any] | None = None,
 ) -> dict[str, Any]:
     """Re-run one gate against the tree that ships, and compare its verdict.
 
@@ -775,28 +844,67 @@ def rerun_gate_at_integrated_revision(
             command, roots=worktree_roots, checkout=checkout_root
         )
         report["worktree_roots_rewritten"] = list(rewritten_roots)
+        landing = _replay_landing(checkout_root)
+        declared = str(landing.get("measure_partition") or "").strip()
+        selected = ""
+        executor = run or subprocess.run
+        job_log: Path | None = None
+        environment: dict[str, str] | None = None
+        if declared:
+            from reckon.crew.landing_measure import partition_submission
+
+            job_log = _replay_job_log(replay_log_path)
+            selected, argv, environment = partition_submission(
+                script=_partition_replay_script(replayed),
+                partition=declared,
+                long_partition=str(landing.get("measure_long_partition") or "rigel"),
+                bound_seconds=bound_seconds,
+                chdir=checkout_root,
+                log_path=job_log,
+            )
+            timeout = bound_seconds + _PARTITION_SUBMISSION_SLACK_SECONDS
+        else:
+            argv = ["sh", "-c", replayed]
+            timeout = bound_seconds
+        report["measure_partition"] = selected or "in-place"
         header = _replay_log_header(
             replay_command=replayed,
             checkout=checkout_root,
             checkout_revision=report["checkout_revision"],
             integrated_revision=report["integrated_revision"],
             rewritten_roots=rewritten_roots,
+            partition=selected,
         )
         started = time.monotonic()
         try:
-            result = subprocess.run(
-                ["sh", "-c", replayed],
-                cwd=str(repository),
+            result = executor(
+                argv,
+                cwd=str(checkout_root if job_log is not None else repository),
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
                 text=True,
                 check=False,
-                timeout=bound_seconds,
+                timeout=timeout,
+                **({"env": environment} if environment is not None else {}),
             )
         except subprocess.TimeoutExpired as expired:
             elapsed = time.monotonic() - started
             report.update(ran=True, timed_out=True, replay_elapsed_seconds=elapsed)
             partial = expired.output if isinstance(expired.output, str) else ""
+            if job_log is not None and environment is not None:
+                # sbatch --wait prints the id before waiting; stop that job only.
+                identifier = re.match(r"^(\d+)(?:;[^\n]*)?(?:\n|$)", partial)
+                if identifier:
+                    executor(
+                        ["scancel", identifier.group(1)],
+                        cwd=str(checkout_root),
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        check=False,
+                        timeout=30,
+                        env=environment,
+                    )
             written = _write_replay_log(
                 replay_log_path,
                 header=header,
@@ -813,16 +921,31 @@ def rerun_gate_at_integrated_revision(
             replay_text = partial
         else:
             report["ran"] = True
-            report["exit_status"] = result.returncode
-            report["integrated_verdict"] = (
-                "passed" if result.returncode == 0 else "failed"
-            )
-            replay_text = result.stdout or ""
+            if job_log is not None:
+                # The job's own log is the durable copy; the submission's
+                # stdout carries only the job id and whatever the scheduler
+                # printed. Its terminal receipt is the status this replay
+                # reports, because a client-side return code cannot tell a
+                # finished job from one the scheduler stopped, and a job that
+                # never reached its command leaves no receipt at all — that is
+                # an unmeasured replay, not a passing one.
+                replay_text = (
+                    job_log.read_text(encoding="utf-8", errors="replace")
+                    if job_log.exists()
+                    else ""
+                )
+                receipt = _job_log_receipt(replay_text)
+                status = receipt if receipt is not None else _UNREADABLE_JOB_STATUS
+            else:
+                replay_text = result.stdout or ""
+                status = result.returncode
+            report["exit_status"] = status
+            report["integrated_verdict"] = "passed" if status == 0 else "failed"
             written = _write_replay_log(
                 replay_log_path,
                 header=header,
                 output=replay_text,
-                exit_status=result.returncode,
+                exit_status=status,
             )
             if written is not None:
                 report["log_path"] = str(written)
@@ -877,6 +1000,7 @@ def replay_domain_invariant_checks(
     changed_paths: Sequence[str] | None = None,
     worktree_roots: Sequence[str | Path] = (),
     recorded_gate_seconds: float | None = None,
+    run: Callable[..., Any] | None = None,
 ) -> tuple[dict[str, Any], ...]:
     """Run each declared invariant's check through the promotion replay.
 
@@ -912,6 +1036,7 @@ def replay_domain_invariant_checks(
             worktree_roots=worktree_roots,
             replay_log_path=directory / _domain_check_log_name(identifier),
             recorded_gate_seconds=recorded_gate_seconds,
+            run=run,
         )
         finding = report.get("finding")
         rows.append(
