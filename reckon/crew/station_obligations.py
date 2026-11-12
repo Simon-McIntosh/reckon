@@ -208,6 +208,7 @@ def refresh(
     project: str,
     changed: bool = True,
     now: datetime | None = None,
+    sweep_failures: Mapping[str, Any] | None = None,
 ) -> list[str]:
     """Derive and store each live session's obligations when the fleet moved.
 
@@ -220,8 +221,8 @@ def refresh(
     instant = _utc_now() if now is None else now
     key = (str(getattr(store, "root", "")), project)
     memory = _REFRESHES.get(key)
-    sweep_record = store.station_value(_sweep_failure_key(project)) or "{}"
-    sweep_failures = json.loads(sweep_record)
+    sweep_failures = sweep_failures or {}
+    sweep_record = json.dumps(sweep_failures, sort_keys=True)
     due = (
         (memory is not None and memory.identity != sweep_record)
         or changed
@@ -464,7 +465,14 @@ def publish(
     does, and the next tick tries again.
     """
     try:
-        refresh(store, project=project, changed=changed, now=now)
+        sweep_record = store.station_value(_sweep_failure_key(project)) or "{}"
+        refresh(
+            store,
+            project=project,
+            changed=changed,
+            now=now,
+            sweep_failures=json.loads(sweep_record),
+        )
     except Exception:  # noqa: BLE001 - one project's input costs one pass
         _report_failure(project, "refresh")
         return None
