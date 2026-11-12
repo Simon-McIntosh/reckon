@@ -1817,7 +1817,7 @@ def _shared_write_paths(project: str | None, repo: Path) -> frozenset[str]:
     """Read the project's one file-sharing policy for every claim comparison.
 
     ``paths`` retains explicit file sharing. ``shared_roots`` makes files below
-repository-relative roots shareable, and a directory under such a root
+    repository-relative roots shareable, and a directory under such a root
     shares as the files beneath it do, because the worktree isolates the edits
     and the merge reconciles them. A project that names no ``shared_roots`` key,
     or has no declaration at all, shares its source files by default: any file
