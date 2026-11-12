@@ -265,16 +265,13 @@ def test_a_promotion_folds_its_row_without_a_ledger_decode(
         monkeypatch.setattr(ledger, "_indexed_data", _maybe_refused)
 
     run_ids = [
-        _build_review_run(tmp_path, repository, sequence)
-        for sequence in range(1, 4)
+        _build_review_run(tmp_path, repository, sequence) for sequence in range(1, 4)
     ]
     with _profile_decode_counter(monkeypatch) as calls:
         for run_id in run_ids:
             _promote(run_id, repository)
 
-    profile_calls = [
-        call for call in calls if call["in_lock"] and call["in_profile"]
-    ]
+    profile_calls = [call for call in calls if call["in_lock"] and call["in_profile"]]
     print(
         f"stale_index={stale_index} profile_calls={profile_calls} "
         f"all_calls={len(calls)}"
@@ -286,9 +283,9 @@ def test_a_promotion_folds_its_row_without_a_ledger_decode(
     assert calls, "the instrument must see the promotion's own ledger reads"
 
     lane_context._PROFILE_CACHE.clear()
-    served, age = lane_context._cached_run_time_profile(PROJECT, now=now)
+    served, _age = lane_context._cached_run_time_profile(PROJECT, now=now)
     print(f"served_rows={served.get('rows')} groups={len(served.get('groups', []))}")
     assert served["rows"] == SEEDED_ROWS + len(run_ids)
-    assert {
-        group["backend"] for group in served["groups"]
-    } >= {f"promoted-backend-{sequence}" for sequence in range(1, 4)}
+    assert {group["backend"] for group in served["groups"]} >= {
+        f"promoted-backend-{sequence}" for sequence in range(1, 4)
+    }

@@ -863,9 +863,7 @@ def _indexed_profile_inputs(
         return None
 
 
-def _stored_profile_extends_anchor(
-    anchor: Mapping[str, Any] | None, key: Any
-) -> bool:
+def _stored_profile_extends_anchor(anchor: Mapping[str, Any] | None, key: Any) -> bool:
     """Whether a stored profile keys the ledger state a fold is about to extend.
 
     A promotion's fold has the row it just wrote and must not read the ledger to
