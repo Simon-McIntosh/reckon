@@ -100,4 +100,15 @@
   and the other ten pass (<code>1 failed, 10 passed</code>, exit 1). The
   landing measure's own partition tests (16 cases) pass unchanged against the
   shared helper.</p>
+
+  <p><strong>Matched arms.</strong> Each arm was run as an <code>all_debug</code>
+  batch job submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>
+  and resolved over its own tree. The base arm at
+  <code>0dee9730af</code> reports <code>51 passed</code>, exit 0. The after arm
+  at <code>4d847e1a3f</code> reports <code>62 passed</code>, exit 0. The wider
+  set of files importing <code>reckon.crew.promotion_gate</code> or
+  <code>reckon.crew.landing_measure</code> fails the same three ids in both
+  arms — <code>3 failed, 169 passed</code> at base and
+  <code>3 failed, 180 passed</code> at head — so the repair adds no failing
+  id.</p>
 </section>
