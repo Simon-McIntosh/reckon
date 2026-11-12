@@ -1,0 +1,69 @@
+<section id="gate-replay-runs-on-the-measure-partition-landing">
+  <h2>A gate replay runs on the measure partition</h2>
+
+  <p><strong>What changed.</strong> <code>rerun_gate_at_integrated_revision</code>
+  in <code>reckon/crew/promotion_gate.py</code> executed every replay with
+  <code>subprocess.run(["sh", "-c", replayed], cwd=repository, ...)</code> in the
+  coordinator's own process, so promoting a computing project ran that project's
+  suite on the cores and GPFS bandwidth every session shares. The replay now
+  reads the flight resolved for the replayed repository, and when
+  <code>landing.measure_partition</code> is declared it submits the replayed
+  command as its own <code>sbatch --wait</code> job instead: the command runs as
+  an <code>srun</code> step inside that batch job, the job's
+  <code>--time</code> is the replay bound rendered as <code>HH:MM:SS</code>
+  (<code>450 s</code> reads <code>00:07:30</code>), the caller's
+  <code>SLURM_*</code> and <code>SBATCH_*</code> variables are removed from the
+  submission's environment, and a bound past 3600 seconds takes
+  <code>measure_long_partition</code>. A bare <code>srun</code> is deliberately
+  not used, because a step started from the fleet node stays inside the fleet
+  allocation whatever partition it names. A repository whose flight declares no
+  partition keeps the in-place call, and the replay log's header now names the
+  partition it ran on.</p>
+
+  <p><strong>The argv and environment form is one function.</strong>
+  <code>partition_job_argv</code> and <code>partition_job_environment</code> carry
+  the submission form, and <code>replay_domain_invariant_checks</code> reaches
+  them through the same replay it already used, so a declared domain check is
+  submitted the same way and no second executor exists. The replay's captured
+  output, exit status and timeout reporting are unchanged: the job writes its own
+  log, the replay reads the text back from it, and its terminal
+  <code>EXIT=</code> record is the status reported. A replay cut short cancels
+  only the job id <code>sbatch --wait</code> printed.</p>
+
+  <h3 id="gate-replay-runs-on-the-measure-partition-measured">Measured</h3>
+
+  <p>The new <code>tests/test_a_gate_replay_runs_on_the_measure_partition.py</code>
+  drives the replay on a temporary git repository with a recording stand-in for
+  the runner and a resolved flight declaring
+  <code>measure_partition: all_debug</code> and
+  <code>measure_long_partition: rigel</code>. Seven cases pass at the head
+  <code>e8b5654ead</code>: the recorded argv starts with
+  <code>sbatch --wait</code> and names <code>--partition=all_debug</code> and
+  <code>--chdir</code> set to the repository; a 450 s bound records
+  <code>--time=00:07:30</code>; the recorded environment carries no
+  <code>SLURM_*</code> or <code>SBATCH_*</code> key when the caller's does; a
+  7200 s bound records <code>--partition=rigel</code> and
+  <code>--time=02:00:00</code>; a flight with no partition records the in-place
+  <code>["sh", "-c", ...]</code> argv; the replay log's header reads
+  <code># partition: all_debug</code>; and one declared domain check is replayed
+  through the same submission.</p>
+
+  <p><strong>Negative control.</strong> Restoring the in-place
+  <code>sh -c</code> call, so the partitioned case records no partitioned argv,
+  fails six of the seven cases (the no-partition case still passes, as it
+  should) — <code>6 failed, 1 passed</code>, exit 1.</p>
+
+  <p><strong>Suite arms</strong>, each run as an <code>all_debug</code> batch job
+  submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch</code>, each arm
+  resolved over its own tree. The base arm at
+  <code>0dee9730af</code>, resolved over a base extraction (module
+  <code>/home/ITER/mcintos/.cache/reckon-gate-replay-A98F/reckon/crew/promotion_gate.py</code>),
+  ran the four test files importing <code>reckon.crew.promotion_gate</code> that
+  exist there and reported <code>35 passed</code>, exit 0. The after arm at
+  <code>e8b5654ead</code> ran those four and the new test file and reported
+  <code>42 passed</code>, exit 0. No failure was added.</p>
+
+  <p>Ruff check and ruff format --check add no finding on the staged paths. The
+  one format finding left in <code>reckon/crew/promotion_gate.py</code> is
+  present at the base revision.</p>
+</section>
