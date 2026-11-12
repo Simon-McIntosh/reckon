@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="48">
+<meta name="plan-version" content="49">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -192,6 +192,12 @@
 <div class="r-comment" data-section="s16" data-id="c-close-s16" data-who="reckon-build" data-when="2026-11-11T22:30:00Z">
     <div class="r-comment-body"><p>§16 landed at <code>5426731d0f</code>: a launched run no longer reads as a queued duty telling its coordinator to re-dispatch it. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s16-launched-run-owes-no-queued-duty">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261112T005045933901-review-of-landing-measures-mismatched-arm-82010770b828" data-who="reckon-build" data-when="2026-11-12T01:08:02.010Z">
+    <div class="r-comment-body"><p>independent review of r-20261111T213514632362-landing-measures-mismatched-arm at head 82010770b828a9dd245eb17aa32932d75765f67d from base dc998c198357ad7ea094138fcc4b75c4ba148232 — one parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 11), added_failure_count 0 derived from the reviewed run's own arms, three non-blocking findings (armed_observations re-orchestrates measure_run's suite-arm path; _measure_missing_arms overlaps _measure_delivery; the manifest records no ruff result, verified clean here)</p></div>
+</div>
+<div class="r-comment" data-section="s17" data-id="c-run-r-20261111T213514632362-landing-measures-mismatched-arm" data-who="reckon-build" data-when="2026-11-11T21:57:37.230Z">
+    <div class="r-comment-body"><p>§17 landed: the suite-delta check now measures a missing, mismatched or wrong-revision arm itself — landing_measure.armed_observations runs the armed command at base and head on the declared partition and the run records it as measured by the landing — instead of refusing; matching pairs stay unmeasured and a measured arm adding a failure still refuses naming the id; 57 passed at head, EXIT=0, against 6 failed/49 passed/2 errors at base with the new test copied in.</p></div>
+</div>
 <div class="r-comment" data-section="s19" data-id="c-run-r-20261111T224736111945-review-of-identity-judged-on-its-host-2254607a7a0b" data-who="reckon-build" data-when="2026-11-11T23:05:56.634Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T214015365474-identity-judged-on-its-host at 2254607a7a0b (base a4ca8b6c) scores goal_fidelity 19, evidence 17, scope_discipline 20, durability 18, fit 18, reuse 19, with three non-blocking findings and no blocking finding.</p></div>
 </div>
@@ -263,9 +269,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261111T185601723958-re-review-need-in-shadow" data-who="reckon-build" data-when="2026-11-11T22:17:29Z">
     <div class="r-comment-body"><p>§8 — a second or later code review is judged before its outcome is known and the judgement, with the inputs it was given, is recorded against the dispatched review run; the review's own outcome is recorded beside it when the review is stored; an unreadable earlier revision records the row unavailable rather than a zero; `crew view review-need` reports what each threshold would have skipped, counting an unmeasured row as pending and never as clean; nothing is skipped, so the record costs no review. After arm 63 passed EXIT=0 on all_debug against a base arm of 51 passed EXIT=0; three negative controls redden their own tests.</p></div>
-</div>
-<div class="r-comment" data-section="s17" data-id="c-run-r-20261112T005045933901-review-of-landing-measures-mismatched-arm-82010770b828" data-who="reckon-build" data-when="2026-11-12T01:08:02.010Z">
-    <div class="r-comment-body"><p>independent review of r-20261111T213514632362-landing-measures-mismatched-arm at head 82010770b828a9dd245eb17aa32932d75765f67d from base dc998c198357ad7ea094138fcc4b75c4ba148232 — one parsed record scoring all six dimensions (goal_fidelity 19, evidence 17, scope_discipline 19, durability 17, fit 18, reuse 11), added_failure_count 0 derived from the reviewed run&#x27;s own arms, three non-blocking findings (armed_observations re-orchestrates measure_run&#x27;s suite-arm path; _measure_missing_arms overlaps _measure_delivery; the manifest records no ruff result, verified clean here)</p></div>
 </div>
 </section>
 </main>
