@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="209">
+<meta name="plan-version" content="210">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -963,6 +963,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261112T123325581650-review-of-launched-run-is-never-queued-c5baa7d29bda" data-who="reckon-build" data-when="2026-11-12T12:53:40.979Z">
     <div class="r-comment-body"><p>Reviewed run r-20261112T110348511503-launched-run-is-never-queued (base 752a45069c12cfbcd25f2656fb9d774cf7b3ff9b, head c5baa7d29bdaa1f78f0021f0fda0f4999768b701); scores goal_fidelity 19, evidence 14, scope_discipline 19, durability 15, fit 16, reuse 20; four non-blocking findings, zero added failures.</p></div>
 </div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261112T110348511503-launched-run-is-never-queued" data-who="reckon-build" data-when="2026-11-12T12:30:28.734Z">
+    <div class="r-comment-body"><p>A launched pointer is never read as queued: queue_admission.awaits_a_lane_slot requires phase queued AND no launched_at/launch_recorded_at, queued_placements orders only by it, and the obligations derivation classifies a stale-phase pointer from its own manifest; at base a pointer whose phase still reads queued while carrying launched_at reads run-queued at position 1 (3 failed), at head it holds no queue place while the genuinely queued request keeps position 1 (54 passed on the gate pair).</p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261112T124407871572-review-of-claim-refused-review-retried-when-claim-clears-595deec75acd" data-who="reckon-build" data-when="2026-11-12T12:56:13.374Z">
+    <div class="r-comment-body"><p>review of r-20261112T110444695714-claim-refused-review-retried-when-claim-clears at head 595deec75acd against base 752a45069c12; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 18, reuse 18 (total 104); added_failure_count 0; two non-blocking findings (a self-referential path assertion in the new test, and the obligations hold branch carrying no covering assertion).</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
@@ -1043,9 +1049,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s37" data-id="c-run-r-20261112T124407871572-review-of-claim-refused-review-retried-when-claim-clears-595deec75acd" data-who="reckon-build" data-when="2026-11-12T12:56:13.374Z">
-    <div class="r-comment-body"><p>review of r-20261112T110444695714-claim-refused-review-retried-when-claim-clears at head 595deec75acd against base 752a45069c12; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 18, reuse 18 (total 104); added_failure_count 0; two non-blocking findings (a self-referential path assertion in the new test, and the obligations hold branch carrying no covering assertion).</p></div>
 </div>
 </section>
 </main>
