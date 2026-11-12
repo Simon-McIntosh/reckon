@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/fleet_supervisor.py:serve (2757)",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices.reload (1633)",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices._start_locked (1694, 1710)"
+  ],
+  "completed_at": "2026-11-11T22:50:08.442Z",
+  "dispatched_at": "2026-11-11T22:28:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/fleet_supervisor.py",
+      "line": "1633",
+      "text": "non-blocking: the replacement's lease on the published image is released by _stop_locked (:1761, _release_image_pin) and only re-taken at :1633, so the image is unleased for the whole stop (one SERVICE_STOP_GRACE_SECONDS=10 s wait, plus a second after SIGKILL); a concurrent materialize_committed_tree prune that finds it unheld can remove it, which is the failure the new lease exists to prevent. The window is narrow because retention is COMMITTED_TREE_RETENTION=3 (checkout_trust.py:52) and the image has just been stamped newest, so three further identities must be published inside the stop for it to rank into the prune slice; but when it does happen _pin_image catches the OSError, logs, and starts the copy anyway with PYTHONPATH naming the removed tree, so the copy resolves the next entry on the path rather than refusing. Carrying the existing descriptor across the stop (capture state.image_pin and clear it before _stop_locked, assign it to the replacement) would leave no gap in the lease."
+    },
+    {
+      "file": "tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py",
+      "line": "323",
+      "text": "non-blocking: test_a_dirty_tree_after_a_moved_head_asks_for_a_service_reload exercises the extracted decision function only, not the serve() loop's dispatch on it at reckon/crew/fleet_supervisor.py:2757-2786, so deleting the `elif action == \"service-reload\": services.reload()` branch (the half the previous review named) still leaves the suite green; the serve-loop tests in tests/test_the_fleet_supervisor_runs_current_code.py drive serve() but declare no services and do not inject tree_dirty, so none of them reaches that branch either."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/fleet_supervisor.py:2757 (serve request loop), :1633 (DeclaredServices.reload replacement start), :1694/:1710 (_start_locked consuming start_image and holding the pin) are the production paths that reach the change; no other production module constructs DeclaredServices.",
+    "diff": "read commit by commit from 8ab45560b6 to 8326238972; two commits, three files, 137 insertions and 12 deletions: the replacement's re-lease, the moved_checkout_action extraction, and the evidence fragment update.",
+    "done_when": "the done_when requires the node's test file with its negative control, the importer population at base with no added failure, and clean ruff on staged paths; the manifest records all three and the logs reconcile: head arm 55 passed EXIT=0 (logs/after-suite.log), base arm 51 passed EXIT=0 (logs/baseline-suite.log), importer arms 14 failed/268 passed at head against 14 failed/264 passed at base with identical ids (logs/importer-head.log, logs/importer-base.log), three negative controls at EXIT=1.",
+    "goal": "the node goal is that a dirty shared checkout never holds declared services on old code; the diff re-leases the published image the replacement runs from at reckon/crew/fleet_supervisor.py:1633 and states the request loop's dirty-tree duty at :2384, so both halves of the goal are implemented.",
+    "manifest": "read; status complete, three commits named, the suite figures and negative-control log path recorded, and every figure it states is the one the cited log prints.",
+    "write_paths": "declared reckon/crew/fleet_supervisor.py, tests/test...py, the evidence fragment and docs/figures/...; the diff touches the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "the prune case at tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:277 reddens when the lease is dropped (logs/negative-control-pin.log) and the decision case at :323 reddens when the duty is deleted (logs/negative-control-branch.log), but no assertion reaches the serve loop's service-reload dispatch at reckon/crew/fleet_supervisor.py:2774.",
+    "evidence": "the done_when's three arms are all recorded and reconcile with their logs: 55 passed at head, 51 passed at base, and importer arms with identical 14 failure ids on both sides.",
+    "fit": "the module's own idiom: a module-private helper with a mechanism docstring (_pin_image at :1389) and a string-valued action matching _code_decision's vocabulary, with no plan or ticket identifiers.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1633 takes a fresh lease on the image the replacement imports, which is the committed head's tree, so a dirty working tree cannot hold the service on old code.",
+    "reuse": "_pin_image wraps the owner, checkout_trust.pin_materialized_tree (checkout_trust.py:486); moved_checkout_action has no prior owner and was extracted from the serve loop itself, and served_code.MovedCheckout.may_load (served_code.py:758) holds only the moved-and-trusted predicate, so nothing is forked.",
+    "scope_discipline": "every path in the diff is inside the declared write paths; no plan, index or peer-owned file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a dirty shared checkout never holds declared services on old code; reckon/crew/fleet_supervisor.py:1633 re-leases the published image the replacement imports and :2757 states the request loop's dirty-tree duty, so both halves are implemented.\nVERDICT done_when: the done_when requires the node's test file with its negative control, the importer population adding no failure at base, and clean ruff on staged paths; the manifest records all of them and they reconcile with the logs (head 55 passed, base 51 passed, importer arms identical 14 failure ids, three controls at EXIT=1).\nVERDICT write_paths: the declared scope is four paths; the diff touches reckon/crew/fleet_supervisor.py, tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py and the evidence fragment, all inside the declaration, with docs/figures/... untouched.\nVERDICT manifest: read; status complete, commits d6d88e3156/8ab45560b6/8246772d3c/8326238972 named, test_logs listed, and every figure it states matches the log it cites.\nVERDICT diff: read commit by commit from 8ab45560b6 to 8326238972; two commits over three files (+137/-12) carrying the replacement's re-lease, the moved_checkout_action extraction and the evidence update, with nothing the goal does not imply.\nCALL_SITES: reckon/crew/fleet_supervisor.py:2757, reckon/crew/fleet_supervisor.py:1633, reckon/crew/fleet_supervisor.py:1694\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1633 leases the image the replacement imports, so the working tree's edits are never the code a restarted service runs.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/after-suite.log prints 55 passed EXIT=0, logs/baseline-suite.log 51 passed EXIT=0, and logs/importer-base.log and logs/importer-head.log carry the same 14 failure ids.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all three changed paths are declared write paths of the node and the diff carries nothing else.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:277 reddens when the lease is dropped and :323 when the duty is deleted, but reckon/crew/fleet_supervisor.py:2774's service-reload dispatch is reached by no test.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1389 follows the module's private-helper idiom and neither the names nor the comments carry a plan or ticket identifier.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/fleet_supervisor.py:1403 wraps checkout_trust.pin_materialized_tree, the owner of the lease capability, rather than re-implementing it.\nFINDING reckon/crew/fleet_supervisor.py:1633 non-blocking: the image is unleased for the whole stop between _stop_locked's release at :1761 and the re-take at :1633, so a prune in that window removes the image and _pin_image starts the copy anyway.\nFINDING tests/test_a_dirty_checkout_does_not_hold_services_on_old_code.py:323 non-blocking: the new case tests only the extracted decision, so deleting the service-reload branch at reckon/crew/fleet_supervisor.py:2774 still leaves the suite green.",
+  "review_run_id": "r-20261111T222543798910-review-of-a-dirty-shared-checkout-does-not-hold-services-on-old-code-8326238972cc",
+  "reviewed_base_sha": "8ab45560b69cc5565b647f3151f1a15bdc3c0449",
+  "reviewed_head_sha": "8326238972cc7d32413c06462b00143e29fec43e",
+  "reviewed_run_id": "r-20261111T202418533036-a-dirty-shared-checkout-does-not-hold-services-on-old-code",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:01:23.888919+00:00",
+  "total": 110
+}
