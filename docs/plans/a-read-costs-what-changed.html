@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="93">
+<meta name="plan-version" content="94">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -188,6 +188,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arcwc-s20-census" data-who="" data-when="">
     <div class="r-comment-body"><p>Station census after §20, at 22:37Z on 11 November (<code>~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-strace-after-s20.txt</code>, profile <code>~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-profile-after-s20-30s.raw</code>). The station read 276.9 MiB in 30 seconds, and 254.5 MiB of that, 65,262 reads, was still <code>run_store.db</code>. Every run-store sample in the profile was still <code>runs_for_node</code>. The station process started at about 22:18Z, before §20 merged at 22:31Z, so it was running the old query. The census is repeated after the station reloads onto main, and that reading closes this measure.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-arcwc-s20-census-after-reload" data-who="" data-when="">
+    <div class="r-comment-body"><p>Station census after it reloaded onto §20, at 00:36Z on 12 November, six minutes after the restart (<code>~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-strace-0036Z-after-reload.txt</code>). <code>run_store.db</code> no longer appears among the station's reads: it was 254.5 MiB per 30 seconds and is now nothing measurable. Total reads fell from 276.9 MiB to 142.5 MiB per 30 seconds. The largest reader is now one project's ledger index cache, <code>~/.cache/reckon/ledger-181814ae…-v5.sqlite</code>, at 123.8 MiB over 31,867 reads. Part of that may be warm-up after the restart. That cache is the next attribution.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads" data-who="reckon-build" data-when="2026-11-07T17:10:45.247Z">
     <div class="r-comment-body"><p>§11 findings_by_path answers from an index keyed on the review store's stat identity; on the live store `_open_findings` for one dispatch's write paths falls from 133.6 s to 1.33 s on the second call in a process (first call unchanged at 66.3 s), with the three index facts and their negative control held by tests/test_findings_are_indexed_by_path.py.</p></div>
