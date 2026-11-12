@@ -1,0 +1,98 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "8e200ea58cb1c0774997710a8808a7747ffeb5f2",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station_subscriber.py:515 PaneRowPath(own_session=...)",
+    "reckon/crew_follow_commands.py:1115 PaneRowPath(...)",
+    "reckon/crew/ticker.py:2791 PaneRowPath(...)",
+    "reckon/crew/recovery_classification.py:1369 _queued_failure_remedy -> detail/next_action",
+    "reckon/crew/recovery_watch.py:2412 fleet_transitions publishes detail and next_action"
+  ],
+  "completed_at": "2026-11-12T11:26:08.657Z",
+  "dispatched_at": "2026-11-12T11:10:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "3534",
+      "severity": "non-blocking",
+      "text": "non-blocking: _refusal_line repeats the clause-row layout already owned by _submission_line at ticker.py:3582 and _lift_line at ticker.py:3626 \u2014 the same spend/stats tail arithmetic, the same room calculation and the same cell list, differing only in the stage constant and the clause source \u2014 so a fourth row kind now has to be kept in step with three others by hand; a shared clause-row helper would have extended the owner instead."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "581",
+      "severity": "non-blocking",
+      "text": "non-blocking: QUEUED_REFUSAL_PREFIX is a second spelling of the string recovery_classification.py:334 composes, with no shared constant and no test driving the classifier-to-event seam; a rewording there stops the refusal row firing silently, and the new test only proves the reader against a hand-built event."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "2270",
+      "severity": "non-blocking",
+      "text": "non-blocking: the once-only memory is keyed on run_id, so an identical refusal is named again whenever the request returns under a fresh id; driven over the plan's own account of the flow (a re-queue under a fresh id, plan line 'The admission pass re-queues a refused launch under a fresh run id') the pane drew the same refusal clause twice, which is the duplicate notification the section exists to remove \u2014 the key needs to be the request's identity rather than the attempt's, or the plan's fresh-id claim needs settling against the observed stream, where the request id in fact persists."
+    },
+    {
+      "file": "tests/test_a_requeued_refusal_draws_no_dropped_row.py",
+      "line": "112",
+      "severity": "non-blocking",
+      "text": "non-blocking: every row the gate builds shares one run id, so the done_when's 're-queue under a fresh id' arm is never exercised and the second-identical-refusal case (:145) passes only because the id is reused; the docstring's claim that 'the re-queue under the fresh id adds no second row' therefore asserts nothing."
+    },
+    {
+      "file": "reckon/crew/ticker.py",
+      "line": "611",
+      "severity": "non-blocking",
+      "text": "non-blocking: only one of the classifier's two refusal clauses is recognised \u2014 recovery_classification.py:334 'the queued launch was refused: ' \u2014 so a queued row refused for a condition of the session (recovery_classification.py:322, 'the last admission attempt was refused for a condition of this session rather than of the lane') still draws no row, although the deliverable says a refusal not shown before is named on that row with its remedy."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html",
+      "line": "29",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment credits negative control B with showing that 'the dropped row returns', but the control's own log (negative-control.log, control_b.py) prints a hardcoded 'dropped rows drawn: 0' whose predicate is `0 if not any(True for _ in ()) else ...` and therefore cannot print anything else, and the two arms' tree headers are swapped (control B logged under arms/ctrlA, control A under arms/ctrlB); the rendered 'queued -> dropped' line above the counter is the real evidence, and the fabricated zero should not sit beside it where a reader may take it as the measurement."
+    }
+  ],
+  "head_log_revision": "ab46acd8ed749cfd54953b0f8576720a45f538a6",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "followed the change to the three sites that construct a PaneRowPath (reckon/crew/station_subscriber.py:515, reckon/crew_follow_commands.py:1115, reckon/crew/ticker.py:2791) and read the seam that feeds them: reckon/crew/recovery_classification.py:1369-1371 puts the classifier's detail on the row and stores its remedy as next_action (:2439), and reckon/crew/recovery_watch.py:2412-2420 copies detail and next_action onto the transition event, so the field names the new reader matches are the ones production writes.",
+    "diff": "read all three commits against 8e200ea58c: 88201dbaca adds the refusal branch and its renderer in ticker.py plus the new test, ab46acd8ed adds only the explanatory comment above the withdrawal suppression, and 00e65843b2 adds the evidence fragment; the change is 375 insertions and no deletions.",
+    "done_when": "the done_when is a test driving the follower over a queued request, a refused launch and its re-queue under a fresh id; tests/test_a_requeued_refusal_draws_no_dropped_row.py asserts no dropped row (:118), one refusal row (:122), the remedy named (:126), a second identical refusal drawing nothing (:145) and a discarded request still dropped (:198), but every row it builds shares one run id, so the fresh-id arm the done_when names is not driven.",
+    "goal": "the node's goal is to deliver the section so a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:2263 recognises the classifier's refusal clause on the request's own queued row, returns it once and pops the departure hold, and the stream row it replaces (queued -> withdrawn, reckon/crew/recovery_watch.py:2009) no longer draws.",
+    "manifest": "read the delivered manifest at the run directory; it states status complete with three commits, names reckon/crew/ticker.py as the source, records both suite arms with their failure ids and 0 added failures, names the negative-control log, and reports the responsible line as reckon/crew/recovery_watch.py:2009 read from the base blob.",
+    "write_paths": "the dispatch fence at prompt.txt:76-84 lists reckon/crew/queue_admission.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, the new test, the evidence fragment and a figures directory; the diff touches ticker.py, the test and the fragment, all inside; no figures directory was created and nothing outside the fence changed."
+  },
+  "justifications": {
+    "durability": "negative-control.log records 4 of the 5 cases failing when the refusal branch is deleted from RowPolicy._feed, so the assertions are load-bearing rather than incidental; the dedupe case at tests/test_a_requeued_refusal_draws_no_dropped_row.py:145 pins the memory to one run id, so a re-queue under a fresh id is unguarded.",
+    "evidence": "the gate's results are recorded and reconcile with their logs (suite-base.log 3 failed/787 passed/2 errors at 8e200ea58c, suite-after.log 3 failed/792 passed/2 errors at ab46acd8ed, identical FAILED and ERROR id sets, so 0 added failures), but the manifest's tests: line is prose rather than the literal command and both log headers carry an unsubstituted ${TESTS[@]}, so the gate cannot be re-run from the record alone.",
+    "fit": "reckon/crew/ticker.py:581-594 follow the module-constant idiom set by SUBMISSION_STAGE and LIFT_STAGE at ticker.py:279-281, the naming checks find no plan label or ticket reference in the added lines, and ruff check and ruff format --check both pass on the two changed files at the head.",
+    "goal_fidelity": "the goal is that a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:2263-2278 turns the refusal into the request's own row and pops the departure hold, and tests/test_a_requeued_refusal_draws_no_dropped_row.py:118 asserts no dropped word is drawn over the incident's row sequence.",
+    "reuse": "reckon/crew/ticker.py:3534 _refusal_line duplicates the clause-row layout already owned by _submission_line at ticker.py:3582 and _lift_line at ticker.py:3626 \u2014 the same grid arithmetic and the same cell list, differing only in the stage constant and the clause source \u2014 instead of extending a shared helper.",
+    "scope_discipline": "every path in the diff (reckon/crew/ticker.py, tests/test_a_requeued_refusal_draws_no_dropped_row.py, the evidence fragment) is inside the write fence declared at prompt.txt:76-84, and the change is 375 insertions with no unrelated edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to deliver the section so a refused queued launch is not drawn as a drop; reckon/crew/ticker.py:2263 recognises the classifier's refusal clause on the request's own queued row, returns it once and pops the departure hold, and the stream row it replaces (queued -> withdrawn, reckon/crew/recovery_watch.py:2009) no longer draws.\nVERDICT done_when: the done_when is a test driving the follower over a queued request, a refused launch and its re-queue under a fresh id; tests/test_a_requeued_refusal_draws_no_dropped_row.py asserts no dropped row (:118), one refusal row (:122), the remedy named (:126), a second identical refusal drawing nothing (:145) and a discarded request still dropped (:198), but every row it builds shares one run id, so the fresh-id arm the done_when names is not driven.\nVERDICT write_paths: the dispatch fence at prompt.txt:76-84 lists reckon/crew/queue_admission.py, reckon/crew/ticker.py, reckon/crew_follow_commands.py, the new test, the evidence fragment and a figures directory; the diff touches ticker.py, the test and the fragment, all inside; no figures directory was created and nothing outside the fence changed.\nVERDICT manifest: read the delivered manifest at the run directory; it states status complete with three commits, names reckon/crew/ticker.py as the source, records both suite arms with their failure ids and 0 added failures, names the negative-control log, and reports the responsible line as reckon/crew/recovery_watch.py:2009 read from the base blob.\nVERDICT diff: read all three commits against 8e200ea58c: 88201dbaca adds the refusal branch and its renderer in ticker.py plus the new test, ab46acd8ed adds only the explanatory comment above the withdrawal suppression, and 00e65843b2 adds the evidence fragment; the change is 375 insertions and no deletions.\nCALL_SITES: reckon/crew/station_subscriber.py:515 PaneRowPath, reckon/crew_follow_commands.py:1115 PaneRowPath, reckon/crew/ticker.py:2791 PaneRowPath, reckon/crew/recovery_classification.py:1369 _queued_failure_remedy, reckon/crew/recovery_watch.py:2412 fleet_transitions\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:2263-2278 turns the refusal into the request's own row and pops the departure hold, and tests/test_a_requeued_refusal_draws_no_dropped_row.py:118 asserts no dropped word is drawn.\nSCORE evidence: 15\nJUSTIFICATION evidence: suite-base.log and suite-after.log record identical failure id sets and 0 added failures, but the manifest's tests: line is prose and both log headers carry an unsubstituted ${TESTS[@]}.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff is inside the fence at prompt.txt:76-84 and the change carries 375 insertions with no unrelated edit.\nSCORE durability: 17\nJUSTIFICATION durability: negative-control.log records 4 of the 5 cases red when the refusal branch is deleted, but the dedupe case at tests/test_a_requeued_refusal_draws_no_dropped_row.py:145 pins one run id and leaves a fresh-id re-queue unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/ticker.py:581-594 follow the constant idiom at ticker.py:279-281, and ruff check and ruff format --check both pass on the changed files at the head.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/ticker.py:3534 _refusal_line duplicates the clause-row layout owned by _submission_line at ticker.py:3582 and _lift_line at ticker.py:3626 rather than extending a shared helper.\nFINDING reckon/crew/ticker.py:3534 non-blocking: _refusal_line repeats the clause-row layout owned by _submission_line (3582) and _lift_line (3626) \u2014 same tail arithmetic, room calculation and cell list \u2014 so a fourth row kind must now be kept in step by hand.\nFINDING reckon/crew/ticker.py:581 non-blocking: QUEUED_REFUSAL_PREFIX is a second spelling of the string recovery_classification.py:334 composes, with no shared constant and no test over that seam, so a rewording there stops the row firing silently.\nFINDING reckon/crew/ticker.py:2270 non-blocking: the once-only memory is keyed on run_id, so an identical refusal is named again when the request returns under a fresh id; driven over the plan's own flow the pane drew the same clause twice, which is the duplicate notification the section exists to remove.\nFINDING tests/test_a_requeued_refusal_draws_no_dropped_row.py:112 non-blocking: every row the gate builds shares one run id, so the done_when's re-queue-under-a-fresh-id arm is never exercised and the docstring's claim about it asserts nothing.\nFINDING reckon/crew/ticker.py:611 non-blocking: only one of the classifier's two refusal clauses is recognised, so a queued row refused for a condition of the session (recovery_classification.py:322) still draws no row, although the deliverable names any not-shown-before refusal.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/wave1-a1-the-monitor-shows-the-work-it-watche-s80.html:29 non-blocking: negative control B's log prints a hardcoded 'dropped rows drawn: 0' from a predicate that can print nothing else, and the two arms' tree headers are swapped; the rendered queued -> dropped line above it is the real evidence.",
+  "review_run_id": "r-20261112T105038026012-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-00e65843b250",
+  "reviewed_base_sha": "8e200ea58cb1c0774997710a8808a7747ffeb5f2",
+  "reviewed_head_sha": "00e65843b250b46a279289b7679f0018828a2e4c",
+  "reviewed_run_id": "r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T105038026012-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-00e65843b250"
+  },
+  "reviewer_run_id": "r-20261112T105038026012-review-of-wave1-a1-the-monitor-shows-the-work-it-watche-s80-00e65843b250",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 10,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:33:44.888639+00:00",
+  "total": 97
+}
