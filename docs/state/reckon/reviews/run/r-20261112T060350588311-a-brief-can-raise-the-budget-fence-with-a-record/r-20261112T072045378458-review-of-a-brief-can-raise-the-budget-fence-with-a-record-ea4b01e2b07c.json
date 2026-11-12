@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/node.py:1508 (validate_node bounded check)",
+    "reckon/crew_dispatch_commands.py:1345 (--over-fence option)",
+    "reckon/crew/dispatch.py:3091 (node.as_dict onto the run record)"
+  ],
+  "completed_at": "2026-11-12T07:37:25.958Z",
+  "dispatched_at": "2026-11-12T07:24:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-a-brief-can-raise-the-budget-fence-with-a-record-ea4b01e2b07c",
+      "recorded_at": "2026-11-12T09:55:54.456309+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html",
+      "line": 42,
+      "severity": "blocking",
+      "text": "the fragment states that a queued request drops over_fence_reason because _node_from_pointer rebuilds the node field by field without naming it, but _node_from_pointer iterates fields(TaskNode) at reckon/crew/queue_admission.py:228 and carries every declared field; a stored node rebuilt through it returns over_fence_reason unchanged, so the outside-scope claim, repeated in the manifest, names a defect that does not exist and would drive a needless repair node"
+    },
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html",
+      "line": 33,
+      "severity": "non-blocking",
+      "text": "the arms table records the after arm at b1754bab while the log the manifest cites for it, logs/after-arm.log, carries the header '# revision: ea4b01e2b07c', so the table's revision column disagrees with the receipt it points a reader at"
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against c4eff770 (a63f92f5e7, 6e20309d5b, b1754bab09, ea4b01e2b0); two files changed, +94 lines, no production module touched",
+    "done_when": "the done_when names tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and a base-vs-after no-new-failure arm; baseline_suite and after_suite carry that exact command with 58 passed at c4eff770 and 60 passed at ea4b01e2, and logs/base-arm.log and logs/after-arm.log each end in a bare EXIT=0 line",
+    "goal": "the node's goal is that a brief can raise the budget fence with a recorded reason; the diff adds the arms at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:275 and :298 on top of the base arms at :159 and :177 that already pass and carry the reason onto the node",
+    "manifest": "read; it records 58 passed at base with no failure added, the declared control at 3 failed 57 passed EXIT=1 and a strip probe at 1 failed 8 passed EXIT=1, and one outside-scope claim that the production code does not support",
+    "write_paths": "the declared paths were reckon/crew/node.py, tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and the evidence fragment; the diff touches only the test file and the fragment, and node.py is untouched because the bounded check at reckon/crew/node.py:1508 already read node.over_fence_reason.strip()"
+  },
+  "justifications": {
+    "durability": "tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:275 reddens when strip is dropped from reckon/crew/node.py:1508 and :298 reddens when the reason clause is ignored, shown in logs/strip-probe.log and logs/negative-control.log.",
+    "evidence": "logs/base-arm.log and logs/after-arm.log carry revision, tree and command on their header lines and a terminal EXIT=0 line, though the fragment's arms table names a different after-arm revision than the cited log.",
+    "fit": "both added tests build a TaskNode and call validate_node exactly as the surrounding arm at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:177 does, and introduce no plan or ticket identifier.",
+    "goal_fidelity": "the goal's behaviour is exercised at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:177 and :298, with the reason carried onto the node at :159.",
+    "reuse": "the diff adds no production definition; the arms reuse TaskNode, validate_node, FENCE, OVER_BUDGET and REASON, and a search of reckon/crew for another over-fence admission mechanism found only the owner at reckon/crew/node.py:1508.",
+    "scope_discipline": "every path in the diff is one of the node's declared write paths, tests/test_a_budget_may_exceed_its_fence_with_a_reason.py and docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the node's stated goal and the diff; a brief raises the fence with a recorded reason through reckon/crew/node.py:1508, and the added arms at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:275 and :298 extend its coverage.\nVERDICT done_when: read the done_when against the recorded arms; logs/base-arm.log (c4eff770, 58 passed, EXIT=0) and logs/after-arm.log (ea4b01e2, 60 passed, EXIT=0) measure it and add no failure.\nVERDICT write_paths: read the declared paths and the diff; the only touched paths are the test file and docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html, both declared.\nVERDICT manifest: read; it records the four arms and their results, and one outside-scope claim about reckon/crew/queue_admission.py:198 that the code does not bear out.\nVERDICT diff: read commit by commit against c4eff770; two files, +94 lines, no production code touched, and node.py is unchanged because the behaviour predated the node.\nCALL_SITES: reckon/crew/node.py:1508 (validate_node), reckon/crew_dispatch_commands.py:1345 (--over-fence option), reckon/crew/dispatch.py:3091 (as_dict onto the run record)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the goal's behaviour is exercised at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:177 and :298 and the reason reaches the node at :159.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-arm.log and logs/after-arm.log each end in EXIT=0 with a header naming revision and command, though the fragment's arm table names a different after-arm revision than the log it cites.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path is one of the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:275 and :298 redden under the recorded mutations in logs/strip-probe.log and logs/negative-control.log.\nSCORE fit: 18\nJUSTIFICATION fit: the added arms follow the surrounding TaskNode and validate_node idiom at tests/test_a_budget_may_exceed_its_fence_with_a_reason.py:177.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition that duplicates a mechanism; the owner of the check is reckon/crew/node.py:1508 and the arms call it.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:42 blocking: the outside-scope claim that a queued node drops over_fence_reason is false, since reckon/crew/queue_admission.py:228 rebuilds from fields(TaskNode) and carries it.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/a-brief-can-raise-the-budget-fence-with-a-record.html:33 non-blocking: the arms table records the after arm at b1754bab while the cited logs/after-arm.log header names ea4b01e2.\n",
+  "review_run_id": "r-20261112T072045378458-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ea4b01e2b07c",
+  "reviewed_base_sha": "c4eff7707068362553dc49173df280fd5cbdf254",
+  "reviewed_head_sha": "ea4b01e2b07cb1a2c66c20b9e4ad5891616b02e4",
+  "reviewed_run_id": "r-20261112T060350588311-a-brief-can-raise-the-budget-fence-with-a-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:13:49.965763+00:00",
+  "total": 110
+}

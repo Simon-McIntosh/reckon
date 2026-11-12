@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="27">
+<meta name="plan-version" content="28">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -98,6 +98,9 @@
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261111T080412277167-ab-clive-a-gate-halts-only-on-substance-s3" data-who="reckon-build" data-when="2026-11-11T08:27:50.796Z">
     <div class="r-comment-body"><p>§3 was already satisfied at base e14d057042 — `crew dispatch --over-fence REASON` (reckon/crew_dispatch_commands.py) stores the reason on the node as over_fence_reason, TaskNode.as_dict() carries it onto the run record and the ledger row's node_definition, and the bounded check at reckon/crew/node.py:1508 admits an over-fence budget only when that reason is non-blank; without it the refusal names --over-fence and an in-fence budget is untouched. Gate 7 passed, census suite 51 passed in both arms, negative control 2 failed / 5 passed with the reason clause dropped.</p></div>
 </div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261112T072045378458-review-of-a-brief-can-raise-the-budget-fence-with-a-record-ea4b01e2b07c" data-who="reckon-build" data-when="2026-11-12T07:37:25.958Z">
+    <div class="r-comment-body"><p>reviewed r-20261112T060350588311-a-brief-can-raise-the-budget-fence-with-a-record at base c4eff770..head ea4b01e2 — the two added arms are independent guards (blank reason refused, whitespace-padded reason admits) and both redden under the recorded mutations, and the review adds one blocking finding: the landed evidence fragment asserts a queue_admission defect that does not exist</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261107T173532496808-resume-changes-run-budget" data-who="reckon-build" data-when="2026-11-07T18:48:07.600Z">
     <div class="r-comment-body"><p>crew resume takes --time-budget (recorded on the run's node, each change kept in budget_changes naming the figure it replaced and the reason where one was given) and --over-fence REASON — a 25m run resumed at 45m composes its resumed fence as deadline 2031-01-01T01:45:00Z from the pinned launch and stores 45m, a 90m resume above the 60m fence is refused naming --over-fence without --over-fence and accepted with a reason the run then keeps; the importer gate ran 377 tests at head and 374 at base, 0 failures either arm.</p></div>
 </div>
@@ -126,7 +129,7 @@
     <div class="r-comment-body"><p>Verified the existing heavy compute budget floor without changing product source or tests: focused regression 5 passed; negative control 2 failed, 3 passed and H200 budget 6h becomes 8m; declared suite 51 passed at base and head; importer cohort 155 passed at base and head, zero added failures. Evidence fragment has the unique node slug and passes reckon audit-doc.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261112T071728958783-review-of-the-picker-never-budgets-below-the-compute-a-bri-da59df00accf" data-who="reckon-build" data-when="2026-11-12T07:37:00.418Z">
-    <div class="r-comment-body"><p>Reviewer verdict for r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri at head da59df00ac from base c4eff77070: the node delivered an evidence fragment only, the picker budget floor it certifies is present at that revision and its guard is proven load-bearing by a red negative control (2 failed, 3 passed, EXIT=1); scored goal_fidelity 18, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 20, added_failure_count 0, two non-blocking findings on the fragment&#x27;s log citation and an unreceipted ruff claim.</p></div>
+    <div class="r-comment-body"><p>Reviewer verdict for r-20261112T060543442651-the-picker-never-budgets-below-the-compute-a-bri at head da59df00ac from base c4eff77070: the node delivered an evidence fragment only, the picker budget floor it certifies is present at that revision and its guard is proven load-bearing by a red negative control (2 failed, 3 passed, EXIT=1); scored goal_fidelity 18, evidence 16, scope_discipline 20, durability 15, fit 18, reuse 20, added_failure_count 0, two non-blocking findings on the fragment's log citation and an unreceipted ruff claim.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T221855825224-review-of-answer-only-edit-owes-no-review-0601bc4fc2f7" data-who="reckon-build" data-when="2026-11-07T22:56:40.043Z">
     <div class="r-comment-body"><p>review of run r-20261107T174332129120-answer-only-edit-owes-no-review at 162fcb20..0601bc4f read commit by commit: the accepted-edit coverage feature lands and its seven cases pass, with 0 added failures against the base; one blocking defect found — `crew review --plan X --accept-edits "&lt;reason&gt;" --dry-run` writes the accepted-edits entry and commits the record, reproduced with the node's own fixture (probe-dry-run.log, 1 failed, EXIT=1); scores goal_fidelity 18, evidence 17, scope_discipline 11, durability 15, fit 17, reuse 17</p></div>
