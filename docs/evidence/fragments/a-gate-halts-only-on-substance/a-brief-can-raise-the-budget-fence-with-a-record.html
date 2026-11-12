@@ -36,16 +36,21 @@
     </tbody>
   </table>
 
-  <p>The after arm adds two passing tests over the base arm's population: no
-  failure is added, and the two new ids are the blank and padded arms.</p>
+  <p>The after arm adds three passing tests over the base arm's population: no
+  failure is added, and the new ids are the blank and padded arms and the queued
+  round-trip arm.</p>
 
-  <p><strong>What stands outside this node.</strong> A queued request's node is
-  rebuilt field by field in <code>_node_from_pointer</code>
-  (<code>reckon/crew/queue_admission.py:198</code>), and it does not name
-  <code>over_fence_reason</code>, so where the option is declared, an
-  over-fence reason recorded on a request that queues is dropped before the
-  launch that judges it. That file is claimed by concurrent nodes and lies
-  outside this node's write scope, so the repair is reported rather than made
-  here. The declared option is in
-  <code>reckon/crew_dispatch_commands.py</code>.</p>
+  <p><strong>A claim in this record that was wrong, and how it was settled.</strong>
+  An earlier version of this fragment reported, as work standing outside the
+  node's scope, that the queued request's rebuild
+  (<code>_node_from_pointer</code>, <code>reckon/crew/queue_admission.py:198</code>)
+  dropped <code>over_fence_reason</code> and would refuse a queued request at
+  launch. Review refused it, and the code agrees with the review: the rebuild
+  iterates <code>fields(TaskNode)</code> and carries every declared field, with
+  only <code>manifest_path</code> and <code>write_paths</code> deliberately
+  rewritten. Measured on a stored node: the reason survives the rebuild
+  unchanged, and a stored node with the field removed rebuilds as empty. Nothing
+  is owed to a repair node, and the arm now asserting this sits in the check's
+  own file so the statement is tested rather than asserted. The declared option
+  is in <code>reckon/crew_dispatch_commands.py</code>.</p>
 </section>
