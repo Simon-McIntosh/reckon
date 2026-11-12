@@ -3309,17 +3309,6 @@ def _ledger_ever_tracked(path: Path) -> bool | None:
     return bool(logged.stdout.strip())
 
 
-def _create_run_file(target: Path, encoded: str) -> None:
-    """Publish complete bytes exclusively, without exposing a partial record."""
-    with tempfile.TemporaryDirectory(
-        dir=target.parent, prefix=f".{target.name}."
-    ) as directory:
-        staged = Path(directory) / target.name
-        _store.write_atomically(staged, lambda handle: handle.write(encoded))
-        # Linking refuses an existing destination without replacing its history.
-        os.link(staged, target)
-
-
 def append_run(
     project: str,
     record: Mapping[str, Any],
@@ -3398,7 +3387,8 @@ def append_run(
     encoded = serialize_run(stored_record)
     target.parent.mkdir(parents=True, exist_ok=True)
     try:
-        _create_run_file(target, encoded)
+        with target.open("x", encoding="utf-8") as stream:
+            stream.write(encoded)
     except FileExistsError as exc:
         raise LedgerError(refusal) from exc
     _bump_generation(project)
@@ -3488,7 +3478,7 @@ def _split_project_runs(project: str, docs: Path, *, dry_run: bool) -> dict[str,
         if target.exists() or target.is_symlink():
             continue
         target.parent.mkdir(parents=True, exist_ok=True)
-        _create_run_file(target, serialize_run(row))
+        target.write_text(serialize_run(row), encoding="utf-8")
         entry["written"] += 1
     if entry["written"]:
         _bump_generation(project)
