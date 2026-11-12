@@ -1,0 +1,41 @@
+<article class="r-evidence-fragment" id="an-open-git-operation-refuses-a-promotion-before-its-work">
+  <h2 id="an-open-git-operation-refuses-a-promotion-before-its-work-title">An open git operation refuses a promotion before its work</h2>
+  <p id="an-open-git-operation-refuses-a-promotion-before-its-work-outcome">
+    Promotion now judges the checkout's git state at the top of
+    <code>complete</code>, before the ledger is read or any store is opened. An
+    open merge, rebase, cherry-pick or revert is refused there, naming the
+    operation, instead of being reached inside the landing checks after the
+    promotion had already done its work. In a serial sweep that late refusal
+    delayed every later promotion by a whole promotion's time.
+  </p>
+  <table id="an-open-git-operation-refuses-a-promotion-before-its-work-preappend">
+    <caption>
+      Ledger loads and run-store constructions before the refusal, counted by
+      wrappers over one <code>crew complete --gate not-run</code> of a review
+      run on a 200-run crew home, with each open-operation marker set in turn.
+    </caption>
+    <thead>
+      <tr><th>arm</th><th>ledger loads before refusal</th><th>run-store constructions before refusal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>base, open operation</td><td>2</td><td>0</td></tr>
+      <tr><td>head, open operation</td><td>0</td><td>0</td></tr>
+      <tr><td>head, clean checkout (control)</td><td>at least 1</td><td>0</td></tr>
+    </tbody>
+  </table>
+  <p id="an-open-git-operation-refuses-a-promotion-before-its-work-controls">
+    The zero is shown to mean something: on a clean checkout the same wrappers
+    see the ledger read a promotion makes, and the run-store counter is shown
+    to see a construction made directly in the test. With the early refusal
+    removed, all five open-operation cases fail at 2 ledger loads and the two
+    control tests stay green, which is the declared negative control.
+  </p>
+  <p id="an-open-git-operation-refuses-a-promotion-before-its-work-arms">
+    On the <code>all_debug</code> partition, one arm at a time: the base arm
+    (the node's write-scope tests as they exist at the base revision) ran 51
+    passed, and the head arm 58 passed, a delta of the seven added tests and
+    no added failure. Across the 112 test files importing the changed modules,
+    both arms report the same 38 pre-existing failures and 767 passes, with
+    byte-identical failure sets.
+  </p>
+</article>
