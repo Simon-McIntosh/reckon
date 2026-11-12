@@ -20,13 +20,13 @@
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-informs" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-blocks" content="">
-  <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;],&quot;s5&quot;:[&quot;a-read-costs-what-changed#s3&quot;],&quot;s9&quot;:[&quot;a-read-costs-what-changed#s5&quot;]}">
+  <meta name="plan-section-depends-on" content="{&quot;s7&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;a-read-costs-what-changed#s5&quot;,&quot;a-read-costs-what-changed#s6&quot;],&quot;s4&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s3&quot;:[&quot;a-read-costs-what-changed#s2&quot;],&quot;s6&quot;:[&quot;a-read-costs-what-changed#s2&quot;,&quot;a-read-costs-what-changed#s3&quot;,&quot;work-is-never-stuck-behind-the-admission-loop#s19&quot;],&quot;s5&quot;:[&quot;a-read-costs-what-changed#s3&quot;],&quot;s9&quot;:[&quot;a-read-costs-what-changed#s5&quot;],&quot;s19&quot;:[&quot;a-read-costs-what-changed#s18&quot;]}">
   <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;descoped&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;descoped&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;deferred&quot;}">
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="92">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="93">
+<meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -139,10 +139,11 @@
     <div class="r-fu-body"><p>§2 starts at once. §3 follows §2, and §5 follows §3, because both write <code>reckon/_store.py</code>. §6 follows §2, §3 and work-is-never-stuck-behind-the-admission-loop §19. §7 follows §2, §3, §5 and §6. §4 was folded into §2.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-costs-what-changed</pre>
     </article>
-<article class="r-fu" data-id="f-arcwc-002" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-11-05" data-recommends-skill="/reckon-build a-read-costs-what-changed §9" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-arcwc-002" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-11-05" data-recommends-skill="/reckon-build a-read-costs-what-changed §9" data-resolved-at="2026-11-12T00:35:20+00:00" data-resolved-by="">
     <h4 class="r-fu-title">Build §9 after §5</h4>
     <div class="r-fu-body"><p>§5 has landed. §9 carries its distributed-path remainder: a summary read of one plan on a distributed store still calls <code>compose_project_state</code>. It waits on §5 through <code>plan-section-depends-on</code> and writes <code>reckon/mcp_views.py</code> and <code>reckon/project_state.py</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-read-costs-what-changed §9</pre>
+    <p class="r-fu-outcome">§9 stays deferred per c-defer-s9 until a timed distributed read_plan summary shows compose_project_state is a material share; no section schedules that measurement, so this followup is closed rather than left executable.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -184,6 +185,9 @@
 </div>
 <div class="r-comment" data-section="_top" data-id="c-arcwc-s20-landed" data-who="" data-when="">
     <div class="r-comment-body"><p>§20 landed at <code>e26cc0e8e4</code> (run <code>r-20261111T205432239034-runs-for-node-reads-by-node</code>). <code>runs_for_node</code> writes its project test as <code>+"project"</code>, so the planner chooses <code>idx_runs_node</code> on both stores. The answer, project scoping included, is unchanged. The worker's regression test failed at base (one failed, one passed) and passed at head. Its importer arms showed 44 identical failures at base and head, with none added. The review scored 120 of 120. The station census after landing is recorded beside this comment.</p></div>
+</div>
+<div class="r-comment" data-section="_top" data-id="c-arcwc-s20-census" data-who="" data-when="">
+    <div class="r-comment-body"><p>Station census after §20, at 22:37Z on 11 November (<code>~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-strace-after-s20.txt</code>, profile <code>~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-profile-after-s20-30s.raw</code>). The station read 276.9 MiB in 30 seconds, and 254.5 MiB of that, 65,262 reads, was still <code>run_store.db</code>. Every run-store sample in the profile was still <code>runs_for_node</code>. The station process started at about 22:18Z, before §20 merged at 22:31Z, so it was running the old query. The census is repeated after the station reloads onto main, and that reading closes this measure.</p></div>
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261107T161917748363-index-review-findings-by-repository-path-so-a-dispatch-reads" data-who="reckon-build" data-when="2026-11-07T17:10:45.247Z">
     <div class="r-comment-body"><p>§11 findings_by_path answers from an index keyed on the review store's stat identity; on the live store `_open_findings` for one dispatch's write paths falls from 133.6 s to 1.33 s on the second call in a process (first call unchanged at 66.3 s), with the three index facts and their negative control held by tests/test_findings_are_indexed_by_path.py.</p></div>
