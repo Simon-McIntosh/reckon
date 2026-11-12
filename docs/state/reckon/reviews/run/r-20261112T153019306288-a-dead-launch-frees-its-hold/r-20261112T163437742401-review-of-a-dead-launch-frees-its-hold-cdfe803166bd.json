@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite gate-base.log at 05684b28df records 51 passed EXIT=0 and after_suite gate-after.log at 55b64132d9 records 56 passed EXIT=0, so the set difference is empty; the wider importing arms also differ only by the two floaters the manifest names (test_resume_reaps_its_child.py::test_a_shortlived_launcher_leaves_a_worker_that_survives_and_completes red only at base, and one extra -n 4 variant of test_spawn_retries_a_vanished_bind.py::test_a_spawn_refused_over_a_vanished_protected_bind_is_retried that passes 7/7 alone).",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2967",
+    "reckon/crew/dispatch.py:3666",
+    "reckon/crew/resumption.py:1802",
+    "reckon/crew/resumption.py:1528"
+  ],
+  "completed_at": "2026-11-12T16:56:06.446Z",
+  "dispatched_at": "2026-11-12T16:43:00Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_launch.py",
+      "line": "2469",
+      "severity": "non-blocking",
+      "text": "the docstring points the safety argument at :func:`_launch_still_newest`, which does not exist; the fence is _refuse_superseded_launch at line 2773."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "3666",
+      "severity": "non-blocking",
+      "text": "the fresh-dispatch supervisor start re-reads only the span release, never its launch reservation, so the new age release can admit a relaunch while the stalled fresh dispatch still spawns; two supervisors for one run. Repair belongs to the node owning dispatch.py."
+    },
+    {
+      "file": "tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py",
+      "line": "232",
+      "severity": "non-blocking",
+      "text": "asserts the read-back supervisor pid against the pid the fixture wrote into the reservation, so the two sides move together; the guard is the preceding held-is-not-None assertion."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to free a launch reservation whose attempt never reached its worker; reckon/crew/dispatch_launch.py:2454 _unreached_launch releases a reservation naming no supervisor, whose attempt left no worker record, past UNREACHED_LAUNCH_BOUND_SECONDS, and reckon/crew/dispatch_launch.py:2754 _record_unreached_launch files the attempt receipt on every path that ends a launch before its supervisor, so the goal is met.\nVERDICT done_when: the done_when names four cases in tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py plus matched importing arms, a negative control and ruff; the file carries five cases covering those four, gate-base.log records 51 passed EXIT=0, gate-after.log 56 passed EXIT=0, importing-base.log 23 failed/658 passed and importing-after.log 23 failed/663 passed with only the two named floaters differing, and negative-control.log 1 failed/4 passed EXIT=1 \u2014 every figure read from the log on disk.\nVERDICT write_paths: the declared paths are reckon/crew/dispatch_launch.py, tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py, the fragment under docs/evidence/fragments/a-dispatch-returns-without-its-worker/ and an unused figures directory; the diff touches only the first three and nothing else.\nVERDICT manifest: read; it records status complete, the three commits, each arm's log path, the base arm's scaffolding failure attributed and re-run in a git worktree, and the ruff delta; I checked each figure against its log and re-ran the named test file at head in a scratch tree (5 passed EXIT=0).\nVERDICT diff: read all three commits 65682c8350 and 55b64132d9 and cdfe803166 against base 05684b28df; reckon/crew/dispatch_launch.py changes 220 lines around reservation_in_flight, adds the receipt writer, the fence and the 1800 s bound, the test file is new with 272 lines and the fragment is new with 60 lines.\nCALL_SITES: reckon/crew/dispatch.py:2967 (dispatch reserves the launch attempt), reckon/crew/dispatch.py:3666 (the fresh dispatch starts its supervisor and records the reservation's supervisor), reckon/crew/resumption.py:1802 (a resume reserves the launch attempt), reckon/crew/resumption.py:1528 (a resume launches through supervised_launch, so it passes the fence)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_launch.py:2484 returns not-held for the reported shape (live pid, supervisor_pid null, no worker record, past the bound) and :2754 writes the receipt that frees the raising case, so the goal is met, though the goal's safety claim holds only on the supervised_launch path.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-after.log at 55b64132d9 records 56 passed EXIT=0 and gate-base.log at 05684b28df 51 passed EXIT=0, the new cases assert the done_when's four shapes, and I reproduced the declared mutation red (1 failed, 1 EXIT=1); the recorded control reverted only the age reading, not the receipt, so it exercises one of the two cases the plan names, and the plan's station-stderr investigation is recorded only as the run-directory facts in the manifest's evidence_inputs.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in `git diff --stat 05684b28df..cdfe803166` \u2014 reckon/crew/dispatch_launch.py, the new test file and the fragment \u2014 is inside the manifest's orientation_write_paths, and no other file changed.\nSCORE durability: 18\nJUSTIFICATION durability: I reinstated each regression in a scratch tree at head and each guarding case reddened \u2014 the base reading reddens test_a_stale_reservation_naming_a_live_pid_is_not_held_and_a_relaunch_is_admitted, dropping the receipt call reddens test_a_launch_that_raises_leaves_its_exit_receipt_and_frees_the_hold, and dropping the fence reddens test_a_launch_whose_attempt_was_retaken_starts_no_supervisor; the one weak assertion is at tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py:232.\nSCORE fit: 16\nJUSTIFICATION fit: the changes follow the module's shape \u2014 UNREACHED_LAUNCH_BOUND_SECONDS sits beside STEP_WAIT_CEILING_SECONDS at reckon/crew/dispatch_launch.py:4427 and the helpers are private with mechanism names \u2014 but the docstring at reckon/crew/dispatch_launch.py:2469 cites a fence name that exists nowhere.\nSCORE reuse: 18\nJUSTIFICATION reuse: a search of reckon/crew for an owner of an age-bounded reservation release found none \u2014 refuse_a_released_launch at reckon/crew/dispatch_refusals.py:284 refuses on the span record, not a reservation, and _record_holds_a_worker at reckon/crew/dispatch_launch.py:2109 answers a different question (any attempt's receipts from a pointer) \u2014 so the added helpers extend no owner but duplicate none.\nFINDING reckon/crew/dispatch_launch.py:2469 non-blocking: the docstring states that the fence \"in :func:`_launch_still_newest` is what makes the release safe\", but no such symbol exists in the module \u2014 the fence is _refuse_superseded_launch at line 2773 \u2014 so a reader chasing the safety argument is sent to nothing.\nFINDING reckon/crew/dispatch.py:3666 non-blocking: the age release admits a relaunch while a fresh dispatch is still stalled, and that path starts its supervisor without re-reading the launch reservation (it re-reads only the span release at :3665), so a revived fresh dispatch and its relaunch can both spawn a supervisor for one run; the repair belongs to the node that owns dispatch.py, which this node was not fenced to write.\nFINDING tests/test_a_launch_that_never_reached_its_worker_frees_its_hold.py:232 non-blocking: the assertion compares held[\"supervisor_pid\"] with the supervisor pid the test itself wrote into the reservation at :227, so the two sides move together; the load-bearing guard in that case is the preceding held-is-not-None assertion.\n",
+  "review_node": "review-of-a-dead-launch-frees-its-hold-cdfe803166bd",
+  "review_run_id": "r-20261112T163437742401-review-of-a-dead-launch-frees-its-hold-cdfe803166bd",
+  "reviewed_base_sha": "05684b28df2ad46a2c3d66511b409f7714d5a075",
+  "reviewed_head_sha": "cdfe803166bdb2400a4a04cb2e5f514258abe2ac",
+  "reviewed_run_id": "r-20261112T153019306288-a-dead-launch-frees-its-hold",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T17:01:48.304298+00:00",
+  "total": 105
+}
