@@ -1,0 +1,76 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T00:04:03.623Z",
+  "dispatched_at": "2026-11-11T23:51:25Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261111T233851824611-plan-review-of-a-read-costs-what-changed/plan.html:186",
+      "id": "anchors_resolve-1",
+      "reason": "\u00a720's own done-when requires the coordinator to record the run store's share after landing, and a reader who trusts this sentence believes the section's real-store effect was verified when no such record exists; the fix is the one already applied to \u00a716, \u00a717 and \u00a718, a census comment with the share and the file paths, or deletion of the claim.",
+      "text": "the \u00a720 landing comment says \"The station census after landing is recorded beside this comment\", but the next comment is `c-run-r-20261107T161917748363` on \u00a711 and no comment anywhere in the plan carries a census figure; the census was in fact run (`~/.config/reckon/crew/runs/r-20261110T144727201340-station-tick-reads-only-what-changed/logs/station-strace-after-s20.txt` at 23:37, `station-profile-after-s20-30s.raw` at 23:38, one minute after the plan commit fc150c2b49 at 23:36:57), so the plan promises a record it does not hold",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261111T233851824611-plan-review-of-a-read-costs-what-changed/plan.html:23",
+      "id": "wiring-1",
+      "reason": "the plan's own convention records every consumed section (`s3` on `s2`, `s5` on `s3`, `s9` on `s5`), and without `s19: [a-read-costs-what-changed#s18]` a dispatcher can release \u00a719 while \u00a718 is unlanded, which is exactly the ordering \u00a719's own write path assumes; the omission is one metadata line.",
+      "text": "`plan-section-depends-on` declares no dependency for \u00a719, yet \u00a719's Why is \u00a718's landed review and its deliverable strengthens `tests/test_a_promotion_profile_refresh_costs_its_row.py`, the test \u00a718 created",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261111T233851824611-plan-review-of-a-read-costs-what-changed/plan.html:142",
+      "id": "wiring-2",
+      "reason": "a coordinator queueing from the followup would dispatch work the plan has deliberately deferred, and the revival condition has no node to produce it, so the followup body or prompt must carry the deferral condition (or the declaration must move), which is a plan edit rather than a build.",
+      "text": "followup f-arcwc-002 remains an open, executable `/reckon-build a-read-costs-what-changed \u00a79` prompt whose stated wait (\"\u00a75 has landed\") is now satisfied, while `plan-section-declarations` declares `s9` deferred and `c-defer-s9` says \u00a79 resumes only if a timed distributed `read_plan(view=\"summary\")` shows `compose_project_state` is a material share \u2014 and no section schedules that measurement",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "fc150c2b494fdd32ea079185b0a29d49142f0217",
+  "plan_fingerprint": "f9bde6bd059d3849703d32ad4ec12bdecd784e2e14ee8d87eb9fd5fe0b05444f",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 92,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261111T233851824611-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "245fc34e5c26de3fba258d8621d125ee037aa538",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the \u00a720 landing comment's station census \"recorded beside this comment\" resolves to no comment, though the census files exist on disk; every commit sha, fragment path and plan href I checked resolves (`29c09238b7`, `e26cc0e8e4` and the \u00a716\u2013\u00a718 release commit anchors are all ancestors of HEAD; `a-read-costs-what-changed-landed.html`, `fold-guard-test-tells-fold-from-rebuild.html`, `runs-for-node-reads-by-node.html` and `work-is-never-stuck-behind-the-admission-loop#s19` all exist).",
+    "done_when": "pass \u2014 \u00a719 and \u00a720 each declare a negative control that can fail (removing the stamp or date comparison; the base revision's `idx_runs_project` query plan), and the \u00a719 comment records which case each mutation turns red.",
+    "evidence_paths": "pass \u2014 the \u00a719 and \u00a720 fragments sit under `docs/evidence/fragments/a-read-costs-what-changed/`, and the profile and census artifacts the comments cite are under the station run's `logs/` directory, both durable paths.",
+    "naming": "pass \u2014 the new comments name mechanisms and records, with no plan labels, stage names or ticket numbers in symbols or filenames.",
+    "reasoning": "pass \u2014 the landing comments' figures match the sources they cite: \u00a719's mutations each record `1 failed, 2 passed` with the pre-strengthening base passing all three, \u00a720's importer arms record 44 identical failures at base and head with none added, and the review scores (120/120 both) match the stored review comments; the \u00a718 re-profile's zeros each name the section that removed the cost and carry the station-restart caveat.",
+    "single_goal": "pass \u2014 \u00a719 strengthens one test and \u00a720 changes one query's index choice; each has one deliverable.",
+    "wiring": "a finding \u2014 the section dependency map omits \u00a719's dependency on \u00a718 (its deliverable strengthens the test \u00a718 created), and followup f-arcwc-002 still carries an executable `/reckon-build \u2026 \u00a79` prompt while \u00a79 is declared deferred."
+  },
+  "section_digests": {
+    "_document": "aae80dff63a36fc9e634b3727158e73e425773f10b6e1493d8c274511a9c2e01",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:31:22.095946+00:00",
+  "total": null
+}
