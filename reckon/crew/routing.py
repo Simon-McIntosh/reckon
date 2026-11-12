@@ -2370,31 +2370,15 @@ _WORKTREE_CONFIG_LOCK_POLL_SECONDS = 0.05
 
 def _shared_worktree_config_enabled(repo: Path) -> bool:
     """Whether the shared configuration already enables per-worktree config."""
-    result = subprocess.run(
-        [
-            "git",
-            "-C",
-            str(repo),
-            "config",
-            "--bool",
-            "--get",
-            "extensions.worktreeConfig",
-        ],
-        capture_output=True,
-        text=True,
-        check=False,
+    result = _git(
+        repo, "config", "--bool", "--get", "extensions.worktreeConfig", check=False
     )
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
 def _shared_config_lock(repo: Path) -> Path:
     """The lock git takes to write the shared configuration."""
-    result = subprocess.run(
-        ["git", "-C", str(repo), "rev-parse", "--git-common-dir"],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
+    result = _git(repo, "rev-parse", "--git-common-dir", check=False)
     common = Path(result.stdout.strip()) if result.returncode == 0 else Path(".git")
     if not common.is_absolute():
         common = repo / common
@@ -2420,12 +2404,7 @@ def _enable_shared_worktree_config(repo: Path) -> bool:
     lock = _shared_config_lock(repo)
     deadline = time.monotonic() + _WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS
     while True:
-        result = subprocess.run(
-            ["git", "-C", str(repo), "config", "extensions.worktreeConfig", "true"],
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        result = _git(repo, "config", "extensions.worktreeConfig", "true", check=False)
         if not result.returncode:
             return True
         detail = result.stderr.strip() or result.stdout.strip()
@@ -2454,11 +2433,8 @@ def _give_worktree_minimal_stat(repo: Path, path: Path) -> None:
     Enabling it there leaves the main checkout at the default comparison.
     """
     _enable_shared_worktree_config(repo)
-    result = subprocess.run(
-        ["git", "-C", str(path), "config", "--worktree", "core.checkStat", "minimal"],
-        capture_output=True,
-        text=True,
-        check=False,
+    result = _git(
+        path, "config", "--worktree", "core.checkStat", "minimal", check=False
     )
     if result.returncode:
         detail = result.stderr.strip() or result.stdout.strip()
