@@ -1,0 +1,107 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite records 2 errors (tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and ::test_claim_move_aside_is_not_a_staged_write, both attributed by the manifest to the git-less baseline extraction), after_suite records 0 failures, so the set difference is empty",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The server stops answering one of the two requests (e.g. an id is dropped or a notification is answered), so the response id list is no longer [1, 2].",
+      "file": "tests/test_anchored_edit.py",
+      "line": 439
+    },
+    {
+      "condition_to_fail": "serverInfo.name changes away from the declared test assertion 'reckon-anchored-edit', which no value in the request supplies.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 442
+    },
+    {
+      "condition_to_fail": "Either tool is dropped from or added to the tools/list answer; the expected pair is written in the test, not read from _TOOLS.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 444
+    },
+    {
+      "condition_to_fail": "An unsupported method stops returning a -32601 JSON-RPC error (e.g. it returns no response, which _serve_capture's unpacking rejects).",
+      "file": "tests/test_anchored_edit.py",
+      "line": 449
+    },
+    {
+      "condition_to_fail": "Any module in _SLOW_COMPONENTS (mcp, mcp.server.fastmcp, reckon._store, reckon._worker_fence) is imported at module load; the negative control proves this fires by restoring the eager imports.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 522
+    },
+    {
+      "condition_to_fail": "The instrument itself stops seeing imports, so the positive control fails instead of the guard; it is not a check that the server is fast.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 523
+    }
+  ],
+  "assertion_note": "see assertion_analysis",
+  "base_log_revision": "994610e0bcf328d18bb62bf3ba1838e7c4f311ba",
+  "call_site_count": 3,
+  "call_sites": [
+    "pyproject.toml:51 console script reckon-anchored-edit = reckon.anchored_edit:main",
+    "reckon/_worker_fence.py:403 _seed_anchored_edit registers the server as 'python -m reckon.anchored_edit' in the seeded settings",
+    "reckon/_backends.py:1548 _anchored_edit_flags registers the same command for the codex arm at :1423"
+  ],
+  "completed_at": "2026-11-11T19:18:26.980Z",
+  "dispatched_at": "2026-11-11T18:58:24Z",
+  "findings": [
+    {
+      "file": "reckon/anchored_edit.py",
+      "line": "626",
+      "severity": "non-blocking",
+      "text": "non-blocking: build_server() is now unreachable \u2014 git grep build_server 568b3c85 -- reckon/ tests/ returns only this definition \u2014 and it keeps a second, framework-registered copy of the two tool schemas beside the hand-written _TOOLS list at line 457, so an edit to the dead path would change nothing while reading as the served schema."
+    },
+    {
+      "file": "tests/test_anchored_edit.py",
+      "line": "441",
+      "severity": "non-blocking",
+      "text": "non-blocking: this assertion re-reads the protocolVersion literal the test passed in at line 422 and the server echoes it back at reckon/anchored_edit.py:548, so it moves with its own input and holds whatever version the server actually supports; lines 442 and 444 are independent and do guard their claims."
+    },
+    {
+      "file": "tests/test_anchored_edit.py",
+      "line": "522",
+      "severity": "non-blocking",
+      "text": "non-blocking: the recorded negative control is not the landed revision \u2014 the traceback in negative-control.log shows subprocess.run without the check=False argument that head carries, so the control that proves the guard fires predates the file's last edit; the assertion exercised is unchanged but the receipt's provenance is one edit older than the code."
+    }
+  ],
+  "head_log_revision": "568b3c85bd31c824d28cbbe5e22fe1f194e3e1c1",
+  "item_verdicts": {
+    "diff": "The single commit 568b3c85 replaces the FastMCP entry with a hand-written newline-delimited JSON-RPC loop (reckon/anchored_edit.py:596), defers reckon._worker_fence and reckon._store to first use (:152, :421), adds eleven tests and the landing fragment, and touches nothing outside the declared scope.",
+    "done_when": "The node done-when requires five before and five after cold-process initialize timings with the after arm under 1.5 s, a headless clive record showing status connected with its stream, a test that no measured-slow module is imported before the first request, and ruff clean on the staged paths; initialize-timings.log holds 5 before (3.035-7.322 s) and 5 after (0.233-0.317 s, EXIT=0), clive-session-stream.jsonl line 3 records connected with both tools offered, tests/test_anchored_edit.py:505 runs the console-script module cold and asserts report['before'] == [], and ruff check with ruff format --check pass on both staged files at 568b3c85.",
+    "goal": "The node goal is that reckon-anchored-edit answer initialize and tools/list inside the harness's two-second session-start snapshot; reckon/anchored_edit.py:596 serve() now answers both from a stdlib JSON-RPC loop and the clive session-start record lists both mcp__reckon-anchored-edit__ tools as connected.",
+    "manifest": "The source manifest.md reports status complete, one commit, the three changed paths, the after arm at 77 passed EXIT=0, the baseline arm at 72 passed with 2 errors, and every claimed log exists on disk and holds the stated result.",
+    "write_paths": "The source manifest declares reckon/anchored_edit.py, tests/test_anchored_edit.py and the landing fragment under docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/; git diff 994610e0bc..568b3c85 changes exactly those three files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit.py:522 fails on the regression it guards: restoring the eager module-level imports puts reckon._store and reckon._worker_fence in sys.modules before the first request and the assertion reddens, as negative-control.log records with EXIT=1.",
+    "evidence": "The four done-when items are all on disk and read: initialize-timings.log holds five before (3.035-7.322 s) and five after (0.233-0.317 s) with EXIT=0, clive-session-stream.jsonl line 3 records status connected with both tools, tests/test_anchored_edit.py:505-523 is the cold-import test, and ruff check/format pass at 568b3c85 (verified on an extraction, because this review worktree is not an ancestor of the reviewed head).",
+    "fit": "The module keeps its surrounding idiom, but reckon/anchored_edit.py:626 build_server() is left behind unreachable beside the hand-written tool schema at :457, so the file now carries two definitions of what the server offers.",
+    "goal_fidelity": "reckon/anchored_edit.py:596 serve() answers initialize and tools/list without importing the framework, and the clive session-start record lists reckon-anchored-edit as connected with both tools, so the goal is met at the layer the harness reads.",
+    "reuse": "git grep jsonrpc at 568b3c85 finds reckon/anchored_edit.py only and reckon/mcp.py uses FastMCP for a different server, so no repository-owned JSON-RPC loop was forked; the re-implementation of the mcp package's transport is the measured point of the change, though it leaves the schema defined twice.",
+    "scope_discipline": "git diff 994610e0bc..568b3c85 lists only reckon/anchored_edit.py, tests/test_anchored_edit.py and the landing fragment, each inside the declared write paths, with no unrelated reformatting."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that reckon-anchored-edit answer initialize and tools/list inside the harness's two-second session-start snapshot; reckon/anchored_edit.py:596 serve() answers both from a stdlib JSON-RPC loop and the clive session-start record lists both mcp__reckon-anchored-edit__ tools as connected.\nVERDICT done_when: The done-when asks for five before and five after cold-process initialize timings under 1.5 s, a headless clive record showing connected\nVERDICT write_paths: The manifest declares reckon/anchored_edit.py, tests/test_anchored_edit.py and the landing fragment; git diff 994610e0bc..568b3c85 changes exactly those three files.\nVERDICT manifest: read all of it; it states 77 passed EXIT=0 after and 72 passed with 2 errors before, and every log it names exists and holds the stated result.\nVERDICT diff: read commit by commit against the base; one commit, three files, 351 insertions and 20 deletions, all inside the declared scope.\nCALL_SITES: pyproject.toml:51, reckon/_worker_fence.py:_seed_anchored_edit, reckon/_backends.py:_anchored_edit_flags\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/anchored_edit.py:596 serve() answers initialize and tools/list before any framework import, and clive-session-stream.jsonl line 3 records the server connected with both tools offered.\nSCORE evidence: 18\nJUSTIFICATION evidence: initialize-timings.log records five before (3.035-7.322 s) and five after (0.233-0.317 s) with EXIT=0, clive line 3 records connected, tests/test_anchored_edit.py:505-523 is the cold-import test, and ruff passes on both staged files at 568b3c85.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 994610e0bc..568b3c85 is one of the three declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_anchored_edit.py:522 reddens when the eager imports are restored, as negative-control.log records with EXIT=1, though the log predates the head file's last edit.\nSCORE fit: 17\nJUSTIFICATION fit: the module follows its surroundings but reckon/anchored_edit.py:626 leaves build_server() unreachable beside the hand-written schema at :457.\nSCORE reuse: 16\nJUSTIFICATION reuse: git grep jsonrpc at 568b3c85 finds no repository-owned loop and reckon/mcp.py serves a different FastMCP server, so nothing is forked, but the tool schema is now defined twice in one file.\nFINDING reckon/anchored_edit.py:626 non-blocking: build_server() is unreachable and keeps a second schema definition beside _TOOLS at line 457.\nFINDING tests/test_anchored_edit.py:441 non-blocking: the protocolVersion assertion compares an echoed value with the same literal the test supplied at line 422.\nFINDING tests/test_anchored_edit.py:522 non-blocking: the negative-control log was captured from a test revision without the head's check=False argument.\n",
+  "review_run_id": "r-20261111T185555309723-review-of-anchored-server-starts-inside-the-snapshot-568b3c85bd31",
+  "reviewed_base_sha": "994610e0bcf328d18bb62bf3ba1838e7c4f311ba",
+  "reviewed_commits": [
+    "568b3c85bd31c824d28cbbe5e22fe1f194e3e1c1"
+  ],
+  "reviewed_head_sha": "568b3c85bd31c824d28cbbe5e22fe1f194e3e1c1",
+  "reviewed_run_id": "r-20261111T182122414790-anchored-server-starts-inside-the-snapshot",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 16,
+    "scope_discipline": 19
+  },
+  "self_comparison_assertions": [
+    "tests/test_anchored_edit.py:441 compares the returned protocolVersion with the same literal the test supplied at line 422, and reckon/anchored_edit.py:548 echoes the requested version, so the assertion holds for any echoed value and cannot detect wrong negotiation."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T19:10:00Z",
+  "total": 107
+}

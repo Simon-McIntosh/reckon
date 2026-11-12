@@ -308,12 +308,14 @@ def test_profile_owner_accepts_supplied_rows_without_a_ledger_read(
 
 @pytest.mark.parametrize("damage", ["stamp", "date", "missing"])
 def test_fold_inputs_must_match_the_served_stamp_and_date(history, monkeypatch, damage):
-    lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    expected = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    assert expected["rows"] == 50
     path = _fold_path(history)
     if damage == "missing":
         path.unlink()
     else:
         entry = json.loads(path.read_text())
+        entry["value"]["rows"] = entry["value"]["rows"][:25]
         if damage == "stamp":
             entry["key"] = "unrelated-source"
         else:
@@ -321,8 +323,10 @@ def test_fold_inputs_must_match_the_served_stamp_and_date(history, monkeypatch, 
         path.write_text(json.dumps(entry))
     build = Mock(wraps=lane_context.run_time_profile)
     monkeypatch.setattr(lane_context, "run_time_profile", build)
-    assert lane_context.refresh_run_time_profile(PROJECT, now=NOW)["rows"] == 50
-    assert build.call_count == 1
+    actual = lane_context.refresh_run_time_profile(PROJECT, now=NOW)
+    assert actual == expected
+    assert capabilities._read_pick_entry(history)["value"] == expected
+    build.assert_called_once_with(PROJECT, now=NOW)
 
 
 def test_fold_inputs_do_not_overwrite_another_projects_served_profile(history):

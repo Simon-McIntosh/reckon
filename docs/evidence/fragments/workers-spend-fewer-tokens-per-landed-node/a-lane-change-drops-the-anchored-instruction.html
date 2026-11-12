@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-evidence-for" content="reckon:workers-spend-fewer-tokens-per-landed-node">
+  <meta name="plan-verifies" content="reckon:workers-spend-fewer-tokens-per-landed-node#s11">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <title>A lane change drops the anchored instruction | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="a-lane-change-drops-the-anchored-instruction-landing" data-node="a-lane-change-drops-the-anchored-instruction" data-reckon="landed" data-when="2026-11-11">
+  <h2>A launch that seeds no anchored server drops the instruction it inherits</h2>
+  <p>Anchored edit owner <code>with_anchored_edit_instruction</code> now strips an existing block on every launch step before deciding whether to add one, and the launch caller <code>launch_plan</code> in <code>reckon/_backends.py</code> always asks it, so a lane change composed from the prompt file the previous anchored launch wrote no longer hands a baseline worker the names of tools its launch does not offer. The strip covers a launch whose flight key asks for the treatment but which seeds nothing (unfenced, operator settings, resume) and a carried block from either dialect body.</p>
+  <p><strong>Measure.</strong> <code>tests/test_anchored_edit_claude_arm.py</code> plus <code>tests/test_staged_write_inventory.py</code> read 84 passed at base <code>f238d113f</code> and 92 passed at head, zero added failures. Eight new cases carry the instruction in the composed prompt: four assert it is gone from a Claude-dialect and a codex launch that seed none (including a codex launch carrying a Claude body), two assert the unfenced Claude launch with the key on drops it, and two assert a seeding launch keeps exactly one copy.</p>
+  <p><strong>Falsified.</strong> With the strip deleted from the launch path, six of those cases fail (<code>EXIT=1</code>, six <code>FAILED</code> ids) while the seeding cases still pass, so the check is sensitive to the strip and to nothing else.</p>
+</article>
+</body>
+</html>

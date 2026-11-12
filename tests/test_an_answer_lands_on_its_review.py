@@ -249,6 +249,38 @@ def test_review_run_naming_the_middle_review_answers_its_finding(
     assert not stored[NEWEST_RUN]["responses"]
 
 
+def test_review_run_naming_a_review_that_did_not_raise_the_finding_is_refused(
+    three_reviews,
+) -> None:
+    """A name the store cannot honour is refused, and nothing is answered.
+
+    ``--review-run`` selects among the reviews that raise the finding, so a
+    name matching none of them is a mistake in the command rather than a
+    reason to write the answer onto whichever review is newest.
+    """
+    result = _answer(
+        "--answer",
+        MIDDLE_FINDING,
+        "--review-run",
+        NEWEST_RUN,
+        "--acted",
+        "--note",
+        "The named review does not raise this finding.",
+    )
+    assert result.exit_code == 1, result.output
+    error = json.loads(result.stdout)
+    assert error["error"] == "crew_error"
+    assert "--review-run" in error["detail"]
+    assert MIDDLE_RUN in error["detail"], (
+        "the refusal names the reviews that do raise it"
+    )
+
+    stored = _stored_by_run()
+    assert not any(record["responses"] for record in stored.values()), (
+        "a refused answer is written to no review"
+    )
+
+
 def test_review_run_reaches_a_review_that_no_longer_covers_the_plan(project) -> None:
     """A named review answers even when no stored review covers the plan.
 

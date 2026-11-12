@@ -1,0 +1,141 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "digests": {
+        "s18": "5dc81bcbd20aa17f3d5b7465567649c7326d05a1641bc37acea1c1c7433f076d"
+      },
+      "reason": "the edits restate the cause and fixture the read-back's findings asked for",
+      "units": [
+        "s18"
+      ],
+      "when": "2026-11-12T01:22:23.967933+00:00"
+    }
+  ],
+  "completed_at": "2026-11-11T22:47:43.996Z",
+  "dispatched_at": "2026-11-11T22:36:36Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261111T223247346272-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:134",
+      "id": "done_when-1",
+      "reason": "without a reproduction of the cited defect the node's negative control cannot fire, and a worker would discover only at the gate that its fixture proves nothing.",
+      "text": "\u00a718's fixture prints \"warning lines naming a test node and a `warnings summary` block\", but a pytest warnings summary line never begins with `FAILED` or `ERROR` and so is not read as a failing id by the parser the negative control restores; the cited defect line is `ERROR    imas_codex.standard_names.export:export.py:3553 Withholding a from catalog export: \u2026` in `head-suite-archive.log:145`, a logging record that the base parser matches only because of its `ERROR` prefix on the next line's start. A fixture built as described cannot make the first case fail at base, so the done-when measures nothing.",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-promotion-reads-the-evidence-it-is-given/r-20261111T223247346272-plan-review-of-a-promotion-reads-the-evidence-it-is-given/plan.html:134",
+      "id": "reasoning-1",
+      "reason": "the plan's own fixture design follows from the stated cause, so a misnamed cause is what produces the fixture that cannot fail.",
+      "text": "\u00a718's Why calls the misread lines \"two warning lines printed by `tests/standard_names/test_catalog_layout_hierarchy.py::TestOrderingCycleDetection`\", and its Deliverable says \"a warning summary included\" is never read as a failing id, but the evidence in that run's head arm log is `ERROR    imas_codex.standard_names.export:export.py:3553 Withholding a from catalog export: hierarchy cycle relationships: \u2026` (line 145), a logging record whose `ERROR` prefix is the whole cause: `_pytest_failure_ids` reads a log through `_GATE_FAILURE_RE = ^(?:FAILED|ERROR)\\s+(.+)$` (`reckon/crew/review.py:1797`, `reckon/crew/review.py:2186`), and the review record's `added_failure_ids` for that run are exactly those two logging strings. Naming the cause as a warning directs the reader at pytest's warnings summary, which the reader already ignores; the endpoint still excludes printed lines, however it is described.",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+  "plan_fingerprint": "073aff1bf6d5008fbbe895db20fccbfcd2f4ebfc4e23ca53b18829a371eaba1e",
+  "plan_slug": "a-promotion-reads-the-evidence-it-is-given",
+  "plan_version": 116,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a718's fixture now prints a captured logging record beginning ERROR and a module:file:line location, the line the base parser misreads",
+      "reason": "",
+      "when": "2026-11-12T00:52:59.050443+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a718's Why now names the cause: captured ERROR log records matched by the FAILED|ERROR line pattern, not pytest's warnings summary",
+      "reason": "",
+      "when": "2026-11-12T00:53:54.600364+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a718's Why now names the cause: captured ERROR log records matched by the FAILED|ERROR line pattern, not pytest's warnings summary",
+      "reason": "",
+      "when": "2026-11-12T00:57:15.353916+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a718's Why now names the cause: captured ERROR log records matched by the FAILED|ERROR line pattern, not pytest's warnings summary",
+      "reason": "",
+      "when": "2026-11-12T00:58:01.954219+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "note": "\u00a718's fixture now prints a captured logging record beginning ERROR and a module:file:line location, the line the base parser misreads",
+      "reason": "",
+      "when": "2026-11-12T00:52:59.050443+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "2bd754f7b7ff1ac3e618b9aa03f1a3c76d79fb9c",
+      "commit_basis": "edit",
+      "note": "\u00a718's Why now names the cause: captured ERROR log records matched by the FAILED|ERROR line pattern, not pytest's warnings summary",
+      "reason": "",
+      "when": "2026-11-12T00:58:01.954219+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/a-promotion-reads-the-evidence-it-is-given/r-20261111T223247346272-plan-review-of-a-promotion-reads-the-evidence-it-is-given.json",
+  "review_run_id": "r-20261111T223247346272-plan-review-of-a-promotion-reads-the-evidence-it-is-given",
+  "reviewed_blob_sha": "d2d7cfb6fe7c51f50b5961d4154e95503b473553",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the cited runs `r-20261111T033929508961-sib-process-quantity-collision` and `r-20261111T150606194953-sib-stranded-pool-admission` both exist under the crew runs directory with their arm logs, the cited `tests/standard_names/test_catalog_layout_hierarchy.py` resolves in imas-codex with `class TestOrderingCycleDetection` at line 719, and `reckon/crew/promotion_records.py` exists and does read gate logs.",
+    "done_when": "a finding \u2014 \u00a718's done-when fixture prints \"warning lines naming a test node and a `warnings summary` block\", a shape the cited parser does not read as a failure, so the base parser it restores would report zero added failures and the negative control cannot redden.",
+    "evidence_paths": "pass \u2014 the gate logs sit under the run directory, and the new test and the write path both live in the repository, not in a scratchpad or node-local temp path.",
+    "naming": "pass \u2014 the new test file name and the section text describe the mechanism, and no plan label, ticket number or version tag reaches a symbol or comment.",
+    "reasoning": "a finding \u2014 the root cause is named as \"warning lines\" and \"a warning summary\", but the cited lines are ERROR-level logging records, and it is their `ERROR` prefix, not a pytest warning, that the current reader matches; the stated cause is the right defect described against the wrong evidence shape.",
+    "single_goal": "pass \u2014 \u00a718 carries one deliverable: the arm-log reader stops treating a line a test printed as a failing node id.",
+    "wiring": "pass \u2014 s18 declares no dependency and needs none: s14 and s16, the sections that also write `reckon/crew/promotion_records.py`, are already done, so no order is being violated and the open followup f-aprteig-018 carries the build invocation."
+  },
+  "section_digests": {
+    "_document": "c89fa7af34972311bb92f5dc4b506349b04b6bad9457f094247e8d35c3b81b40",
+    "s1": "5eac0eb57fbf9fccaeee6fb2da59c42ca24c4433f0cffcb4b7de1b6b04324b6c",
+    "s10": "6eded2e6a5570026a61a372a16d3db3742c440d6e2301a8cbc745329a0aa00f9",
+    "s11": "660a4e592122dacd85dcf8340cbd8617de596dccebc87e8fa42f837393d9fc36",
+    "s12": "550cf547388f373020c35c77420464f06ed4636f9d95b52fcd3266cac0bf0e11",
+    "s13": "2a128b5aaa7df7a064e132b982fa9c92c8ed7a03cc656ba0d1d9e87174336e0e",
+    "s14": "75ff492347584a3997696dd59937811debb6ac4159d034205ec33ffb54807e9d",
+    "s15": "620380b3d79c245d6219424330ab9d9ed11e7ee01e3bc84d6609ee062bbe9303",
+    "s16": "9072354fb4ba67955dd864c1f84a0e417cfa37b331a0ba91b8ec8b7314ee5187",
+    "s17": "96bf0561074e260a1f48db854f1bcbf6fdb99d82aa4049f7cd9e736e05eb7dff",
+    "s18": "d54610cccee67314051086928e1bf7b742b73bedc573ac331e98c7529de1bf59",
+    "s2": "259d093654ecf00609d51d02f39bb21a9feda5af8b5626a64e881f7e85d5abe4",
+    "s3": "479c8ebc617467c2744513e850433e87af52a3d22110620dcfdfb48f9975d081",
+    "s4": "bc5eebc33cf8175dd508f65245c7126745fc3e87a3e75e6229c55004ae265f62",
+    "s5": "f597850868c537fd163cabb422a3322df0e81659a7ceda007a561f633c75c9bf",
+    "s6": "2e81c0cbe61ef60fc16acb159e81912b5b6263e9d12b8059efbd9482d722976c",
+    "s7": "a015e1ea2396b50fe1763afc13f7b9ab2e452b85287b48a63a06e3503c3f2674",
+    "s8": "f0d1ed6febbf8f9ad2c9d36e204cfd29684121da43f557cf62b470c78f3de6b4",
+    "s9": "08ec740250081eecbaeb8dd5092c4149694553aa4b674594f5236d37c1560127"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:09:58.406302+00:00",
+  "total": null
+}

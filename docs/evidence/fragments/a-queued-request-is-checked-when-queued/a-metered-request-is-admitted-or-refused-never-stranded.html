@@ -1,0 +1,71 @@
+<section id="a-metered-request-is-admitted-or-refused-never-stranded-landing">
+  <h2>A request on another lane now carries the reason no pass launches it</h2>
+
+  <p><strong>What changed.</strong> The admission pass narrows the queue to the
+  lane it drains, and a request queued on any other lane was dropped by that
+  narrowing with nothing recorded for it: no verdict row, no hold on the
+  request, no launch attempt. A coordinator reading such a request could not
+  tell it apart from one nothing had looked at, which is the state three
+  requests on the metered lane sat in for 25 to 60 minutes.
+  <code>admit_once</code> in <code>reckon/crew/queue_admission.py</code> now
+  records an admission attempt on every queued request its lane filter leaves
+  out &mdash; a <code>held-on-other-lane</code> pass hold naming the lane the
+  request is queued on and the lane the drainer serves, in the pass result and
+  on the pointer &mdash; so a request on any lane either launches once its waits
+  are met or is refused at once with a readable reason.</p>
+
+  <p><strong>The cause, and what the record shows.</strong> The three cited
+  requests (r-20261111T162051424939-fixture-tolerance,
+  r-20261111T162227953552-signed-pulse-bounds,
+  r-20261111T192521253689-edge-train-overshoot) are no longer in the crew home:
+  their live pointers were discarded before this node ran, and neither the run
+  store nor the admission verdict log retains them. The cause is therefore
+  established from the code path rather than from their own records. Two facts
+  narrow it. Every other way a pass leaves a request alone writes a hold, a
+  failure or a verdict row &mdash; the allowance hold, the gate hold, the claim
+  hold, the retry back-off, the earlier-overlap hold, the plan-review hold, and
+  the launch refusal all record themselves. The lane filter records nothing,
+  and it is the only step that removes a request from the pass's view. A
+  request whose recorded backend is not the lane the drainer runs, in a flight
+  that does not name that drainer's lane as the project's local lane, is
+  therefore queued forever with no attempt recorded.</p>
+
+  <p><em>Honest limit of this finding:</em> under the live flight
+  (<code>local_backend: clive</code>, service
+  <code>crew admit --lane clive</code>) the filter's second clause does include
+  metered requests, so the filter alone does not explain every one of the three
+  under that exact configuration. What this node proves is the hole itself &mdash;
+  the one exclusion that strands silently &mdash; and it closes it so that the
+  state cannot recur unnoticed on any lane.</p>
+
+  <h3 id="a-metered-request-is-admitted-or-refused-never-stranded-measured">Measured</h3>
+
+  <p>The new test queues three ready requests on a stubbed metered lane in a
+  temporary crew home, one by each entry path that was observed &mdash; a batch
+  entry naming <code>"backend": "codex"</code>, a <code>crew queue edit
+  --backend codex</code> of an already-queued local request, and a dispatch
+  naming the metered lane &mdash; runs one admission pass, and requires each
+  request to carry a recorded attempt naming its lane. With the recording in
+  place all three carry it; with the silent filter restored the pass produces
+  no verdict row at all and the first request fails the assertion below.</p>
+
+  <table id="a-metered-request-is-admitted-or-refused-never-stranded-arms">
+    <caption>Each arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>the new test, with the recording</td><td>1 passed</td></tr>
+      <tr><td>the new test, run against the base revision's admission pass</td><td>1 failed &mdash;
+      "the batch-queued request &hellip; carries no admission attempt: the pass
+      left it queued with nothing recorded (pass verdicts: [])"</td></tr>
+      <tr><td>the 109 test files importing the changed modules, base revision
+      <code>7e49ae1</code></td><td>184 failed, 649 passed, 2 errors in 162&nbsp;s
+      (the base arm is red already, on this checkout's pre-existing failures)</td></tr>
+      <tr><td>the same files at this head</td><td>183 failed, 652 passed in
+      162&nbsp;s &mdash; <strong>no failure added</strong>;
+      the one base failure that does not recur is
+      <code>test_a_stamp_refused_once_is_asked_about_again</code>, which passes
+      here</td></tr>
+    </tbody>
+  </table>
+</section>

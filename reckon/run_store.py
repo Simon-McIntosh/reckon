@@ -1019,9 +1019,11 @@ def runs_for_node(node: str, *, project: str | None = None) -> list[dict[str, An
                     ).fetchall()
                 )
             else:
+                # A node is selective; keep the project filter from choosing
+                # an index that walks every run belonging to the project.
                 rows.extend(
                     connection.execute(
-                        'SELECT "payload" FROM "runs" WHERE "node" = ? AND "project" = ?',
+                        'SELECT "payload" FROM "runs" WHERE "node" = ? AND +"project" = ?',
                         (str(node), str(project)),
                     ).fetchall()
                 )

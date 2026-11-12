@@ -1,0 +1,75 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3444 _dispatch_composed_review calls record_re_review_prediction after the review run is launched",
+    "reckon/crew/recovery_review_dispatch.py:2485 _dispatch_text_review_for_run calls _record_shadow_outcome when a stored review is read back",
+    "reckon/mcp.py:2872 serve_crew_view reached from the crew MCP tool, serving the review-need branch at reckon/mcp_views.py:4889",
+    "reckon/crew_run_commands.py:573 crew view CLI calls serve_crew_view with the view name unchanged"
+  ],
+  "completed_at": "2026-11-11T22:57:40.037Z",
+  "dispatched_at": "2026-11-11T22:38:10Z",
+  "findings": [
+    {
+      "file": "reckon/mcp_budget.py",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the newly registered crew view has no entry in VIEW_BUDGETS, so review-need is the only crew view served with no declared character row, and tests/test_every_default_read_fits.py:82 does not list it either, so nothing measures its size; review_need.shadow_view returns every recorded row including each row's goal, done-when and prior-review summary, which is exactly the shape every other crew row exists to cap."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/re-review-need-in-shadow.html",
+      "line": "43",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured paragraph now says the gate was run at the base revision and at the delivered head but records neither a pass count nor an exit code, and it drops the importer-arm comparison the previous version carried, so the committed fragment alone cannot show the gate passed."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185601723958-re-review-need-in-shadow/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the importer arm is recorded at revision 4e61a0478d, which precedes the fix commit 5e0db5cedb, so the done_when's arm measurement (the test files importing the modified modules add no failure against the base revision) does not cover the delivered head; the two later commits' code changes are outside that comparison."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1363",
+      "severity": "non-blocking",
+      "text": "non-blocking: only the git-cannot-diff branch (:1369) is exercised by test_a_re_review_whose_earlier_revision_cannot_be_read_is_unmeasured, whose reason assertion matches 'revision' in both the no-revision (:1363) and unreadable-tree (:1365) messages, so a regression that sent either of those two branches to the judge as an empty diff would stay green."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_re_review_need_is_predicted_in_shadow.py:392 and :419 go through dispatch_review_for_run and wiring-controls.log records CONTROL1_EXIT=1 and CONTROL2_EXIT=1 at revision 35cd5151a1 when each wiring line is removed, and the view assertion now uses the literal 96, but two of the three unmeasured branches at recovery_review_dispatch.py:1363 and :1365 remain unguarded.",
+    "evidence": "armed-after.log ends '63 passed' EXIT=0 at 35cd5151a1 and armed-base.log '51 passed' EXIT=0 at 8c5c7ad5, both on all_debug, so added_failure_count is 0, but the importer arm stops at 4e61a0478d and the fragment at docs/evidence/fragments/work-flows-to-the-lane/re-review-need-in-shadow.html:43 records no pass count.",
+    "fit": "reckon/mcp_views.py:4889 follows the neighbouring view branches and reckon/crew/review_need.py:311-316 now states the mechanism rather than a person, but the view is served without a declared row in reckon/mcp_budget.py:22 where every other crew view has one.",
+    "goal_fidelity": "reckon/crew/review_need.py:381 records the judgement with its inputs and :419 writes the outcome beside it, recovery_review_dispatch.py:1355 records an unreadable re-review as unmeasured rather than a zero, and the counts are now served at reckon/mcp_views.py:4889.",
+    "reuse": "reckon/crew/recovery_review_dispatch.py:1367 reuses _diff_between and _changed_paths_between, and reckon/mcp_views.py:4889 extends the existing view dispatcher and the CrewArgs literal at reckon/_mcp_tools.py:110 rather than adding a second surface.",
+    "scope_discipline": "git diff da305d74a3..35cd5151a1 changes only the six files inside the node's declared write paths and leaves reckon/crew/query.py untouched."
+  },
+  "prior_findings_resolved": [
+    "recovery_review_dispatch.py:1356 (empty diff judged as a confident zero) is repaired at :1355-1374 and guarded by the new unmeasured test.",
+    "review_need.py:355 (comment attributing the decision to a person) is rewritten at :356-358 to the mechanism.",
+    "test file :174 (no test reached the production wiring) is answered by the two reflex tests, both reddened by wiring-controls.log at the delivered revision.",
+    "test file :319 (assertion compared against the implementation's own constant) is replaced by the literal 96.",
+    "review_need.py:464 (view reachable only from a test) is repaired by reckon/mcp_views.py:4016/:4889 and reckon/_mcp_tools.py:110.",
+    "manifest.md:11 (duplicated gate command) is rewritten to a single command."
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: section 8's goal is that a second or later code review is judged before dispatch with the judgement and its inputs recorded against the review run and the outcome recorded beside it, with a view of what each threshold would have skipped; the landed commits repair that record and reckon/mcp_views.py:4889 now serves the view.\nVERDICT done_when: the done_when names tests/test_a_re_review_need_is_predicted_in_shadow.py with a temporary crew home and a stubbed Jev; the file at head covers a first review carrying none, a second carrying the prediction and inputs, the outcome beside it, the two-threshold counts and an unavailable judge, adds the unmeasured path and both production wirings, and armed-after.log ends '63 passed' EXIT=0.\nVERDICT write_paths: the node declares review_need.py, recovery_review_dispatch.py, query.py, mcp_views.py, _mcp_tools.py, the test file, the evidence fragment and a figure directory; every path in da305d74a3..35cd5151a1 is inside that list and query.py and the figure directory are untouched.\nVERDICT manifest: read; it records 63 passed at head and 51 at base, two wiring controls red at head in wiring-controls.log, and an importer arm whose head revision is 4e61a0478d, before the fix commit.\nVERDICT diff: read both commits against da305d74a3 \u2014 5e0db5cedb records an unreadable re-review as unmeasured, drives both wiring lines through the reflex and registers the view on both surfaces, and 35cd5151a1 restates the evidence fragment; six files change, two of them production code.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3444 _dispatch_composed_review calls record_re_review_prediction, reckon/crew/recovery_review_dispatch.py:2485 _dispatch_text_review_for_run calls _record_shadow_outcome, reckon/mcp.py:2872 serves the review-need branch at reckon/mcp_views.py:4889, reckon/crew_run_commands.py:573 is the crew view CLI reaching the same function\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/review_need.py:381 records the judgement with its inputs and :419 writes the outcome beside it, recovery_review_dispatch.py:1355 records an unreadable re-review as unmeasured rather than a zero, and the counts are served at reckon/mcp_views.py:4889.\nSCORE evidence: 15\nJUSTIFICATION evidence: armed-after.log ends '63 passed' EXIT=0 at 35cd5151a1 and armed-base.log '51 passed' EXIT=0 at 8c5c7ad5, both on all_debug, so added_failure_count is 0, but the importer arm stops at 4e61a0478d and the fragment at docs/evidence/fragments/work-flows-to-the-lane/re-review-need-in-shadow.html:43 records no pass count.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff da305d74a3..35cd5151a1 changes only the six files inside the node's declared write paths and leaves reckon/crew/query.py untouched.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_re_review_need_is_predicted_in_shadow.py:465 and :497 redden under CONTROL1_EXIT=1 and CONTROL2_EXIT=1 in wiring-controls.log at revision 35cd5151a1, and :332 uses the literal 96, but two of the three unmeasured branches at recovery_review_dispatch.py:1363 and :1365 remain unguarded.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/mcp_views.py:4889 follows the neighbouring view branches and reckon/crew/review_need.py:311 now states the mechanism rather than a person, but the view is served without a declared row in reckon/mcp_budget.py:22 where every other crew view has one.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/recovery_review_dispatch.py:1367 reuses _diff_between and _changed_paths_between, and reckon/mcp_views.py:4889 extends the existing view dispatcher and the CrewArgs literal at reckon/_mcp_tools.py:110 rather than adding a second surface.\nFINDING reckon/mcp_budget.py:22 non-blocking: the newly registered crew view has no VIEW_BUDGETS row, so review-need is the only crew view served with no declared character bound and tests/test_every_default_read_fits.py:82 does not list it, leaving an all-rows answer unmeasured.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/re-review-need-in-shadow.html:43 non-blocking: the Measured paragraph records no pass count or exit code and drops the importer-arm comparison, so the committed fragment alone cannot show the gate passed.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185601723958-re-review-need-in-shadow/manifest.md:17 non-blocking: the importer arm is recorded at 4e61a0478d, before the fix commit 5e0db5cedb, so the done_when's arm comparison does not cover the delivered head.\nFINDING reckon/crew/recovery_review_dispatch.py:1363 non-blocking: only the git-cannot-diff branch at :1369 is exercised, and the reason assertion matches both that message and the no-revision one, so a regression sending :1363 or :1365 to the judge as an empty diff would stay green.\n",
+  "review_run_id": "r-20261111T222504964295-review-of-re-review-need-in-shadow-35cd5151a100",
+  "reviewed_base_sha": "da305d74a3c13365c388ae28750962505253aa1c",
+  "reviewed_head_sha": "35cd5151a100d4a45a46621a6630047b70684acd",
+  "reviewed_run_id": "r-20261111T185601723958-re-review-need-in-shadow",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T23:12:00+00:00",
+  "total": 107
+}

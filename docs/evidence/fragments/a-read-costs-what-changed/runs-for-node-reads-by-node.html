@@ -1,0 +1,15 @@
+<section id="runs-for-node-reads-by-node-evidence">
+  <h3>Node lookups use the node index on both run stores</h3>
+  <p>The project predicate remains a filter while unary plus prevents its index from competing with the selective node index. The regression traces the actual SELECT on temporary hot and archive stores, each holding 200 distinct nodes in one project and a same-node row in another project. Scoped results contain two records; unscoped results contain four.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Changed source</th></tr></thead>
+    <tbody>
+      <tr><td>Scoped query plan, hot and archive</td><td>idx_runs_project</td><td>idx_runs_node</td></tr>
+      <tr><td>Unscoped query plan, hot and archive</td><td>idx_runs_node</td><td>idx_runs_node</td></tr>
+      <tr><td>Regression negative control</td><td>1 failed, 1 passed</td><td>2 passed</td></tr>
+      <tr><td>Node tests with staged-write inventory</td><td>51 passed</td><td>53 passed</td></tr>
+      <tr><td>Run-store importer tests on all_debug</td><td>377 passed, 44 failed</td><td>377 passed, the same 44 failed; zero added failure ids</td></tr>
+    </tbody>
+  </table>
+  <p>The negative control fails <code>test_node_lookup_uses_node_index[sample]</code> after its answer-equality assertion passes. All four executed query plans name <code>idx_runs_node</code> with the changed source. Ruff check and format check are clean on both changed Python paths. Matched importer evidence was produced by job 1311028; raw logs, imported-module paths, revisions and failure identities remain with the run manifest. The coordinator owns the post-landing station census.</p>
+</section>

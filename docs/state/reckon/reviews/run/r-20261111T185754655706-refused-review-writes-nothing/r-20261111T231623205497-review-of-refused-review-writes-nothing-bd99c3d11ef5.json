@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "0 added is derived from the reviewed run's baseline_suite and after_suite, whose failure_ids are both empty; the manifest's importer arms agree (logs/importer-base.log 159 failed and logs/importer-head.log 159 failed, 1222 vs 1227 passed).",
+  "completed_at": "2026-11-11T23:48:13.510Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-refused-review-writes-nothing-bd99c3d11ef5",
+      "recorded_at": "2026-11-12T02:14:56.425475+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T23:31:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "refused-review-writes-nothing",
+      "recorded_at": "2026-11-12T01:52:40.295953+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_refused_plan_review_writes_nothing.py",
+      "line": 106,
+      "severity": "blocking",
+      "text": "`ruff format --check` fails at the reviewed head; a7ad775e36 replaced the inline lambda with `_launched(CONFIG)`, leaving a `monkeypatch.setattr(...)` call wrapped over three lines that ruff collapses to one (verified: checking the file as committed at bd99c3d11e exits 1, and the same file was formatted at e46e82f0), and the section's done_when requires ruff format --check to add no findings on the staged paths while the manifest records no ruff result."
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 3749,
+      "severity": "non-blocking",
+      "text": "`_review_launch_kind` duplicates the backend selection that reckon/crew/routing.py:202 `resolve_role` already owns, omitting its `by_spec_level` and `by_capability_class` overlays, so a project that routes the review role at a spec level or capability class resolves a different backend here than the dispatch does and the guard judges the wrong launch."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the reviewed node's goal is that a review is refused for delivery only where the dispatch judges its launch, so a refused review writes no report directory; the diff at a7ad775e36 adds `_review_launch_kind` and gates `session_delivery_refusal` on `\"cli\"` at reckon/crew/plan_review.py:3798, while an in-harness launch answers nothing.\nVERDICT done_when: the section's done_when names the follower-refusal test, an importer-arm no-added-failure clause, a negative control and a ruff clean check; the manifest records 56 passed in logs/after-arm.log, importer arms at 159 failed on both sides (no added failures) and a red control in logs/negative-control-repair.log, but records no ruff result and `ruff format --check` fails on the test file at the reviewed head.\nVERDICT write_paths: the manifest declares reckon/crew/plan_review.py, reckon/crew_run_commands.py, tests/test_a_refused_plan_review_writes_nothing.py and the evidence fragment; `git diff --stat e46e82f0..bd99c3d11e` lists exactly those four files.\nVERDICT manifest: read in full; it states complete, with 56 passed (after arm), the base arm at 49 passed/2 errors, importer arms adding no failure, the negative control red on the `--answer` assertion, and no blockers.\nVERDICT diff: read commit by commit against base e46e82f0; a7ad775e36 gates the delivery guard on the review role's launch and leaves answer-flag commands to the verb, f0506fe016 passes the project to `flight.resolve` by keyword, bd99c3d11e updates the evidence fragment; 137 added and 10 deleted lines, all inside the declared scope.\nCALL_SITES: reckon/crew_run_commands.py:199 (`_install_carried_answer` callback calling the wrapper), reckon/crew/dispatch_plan.py:1231 (the dispatch's `launch_kind == \"cli\"` gate the guard mirrors), reckon/crew/routing.py:202 (`resolve_role`, the backend-selection owner)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3798 answers the refusal only for a `cli` launch, matching the dispatch gate at reckon/crew/dispatch_plan.py:1231, but reckon/crew/plan_review.py:3749 resolves that launch more narrowly than the dispatch does.\nSCORE evidence: 12\nJUSTIFICATION evidence: logs/after-arm.log records 56 passed and logs/importer-head.log vs logs/importer-base.log record no added failure, but the done_when's ruff format clause is unrecorded in the manifest and fails on tests/test_a_refused_plan_review_writes_nothing.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat e46e82f0..bd99c3d11e` is one of the four declared write paths and the change adds no unrelated code.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_refused_plan_review_writes_nothing.py:225 fails if the `_review_launch_kind` gate is removed and :200 fails if the answer-flag branch is dropped, though `_launched` accepts positional and keyword so the f0506fe016 keyword fix rests on the importer arm rather than this file.\nSCORE fit: 14\nJUSTIFICATION fit: the guard follows the surrounding style in reckon/crew/plan_review.py, but the test at tests/test_a_refused_plan_review_writes_nothing.py:106 is left unformatted against the repository's ruff format contract.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/plan_review.py:3749 re-implements the review role's backend selection owned by reckon/crew/routing.py:202 `resolve_role` without its by_spec_level/by_capability_class overlays.\nFINDING tests/test_a_refused_plan_review_writes_nothing.py:106 blocking: `ruff format --check` fails at the reviewed head; a7ad775e36 replaced the inline lambda with `_launched(CONFIG)`, leaving a `monkeypatch.setattr(...)` call wrapped over three lines that ruff collapses to one (verified: checking the file as committed at bd99c3d11e exits 1, and the same file was formatted at e46e82f0), and the section's done_when requires ruff format --check to add no findings on the staged paths while the manifest records no ruff result.\nFINDING reckon/crew/plan_review.py:3749 non-blocking: `_review_launch_kind` duplicates the backend selection that reckon/crew/routing.py:202 `resolve_role` already owns, omitting its `by_spec_level` and `by_capability_class` overlays, so a project that routes the review role at a spec level or capability class resolves a different backend here than the dispatch does and the guard judges the wrong launch.\n",
+  "review_run_id": "r-20261111T231623205497-review-of-refused-review-writes-nothing-bd99c3d11ef5",
+  "reviewed_base_sha": "e46e82f0cb7895edc5419fc55886a8eb6e8a5797",
+  "reviewed_head_sha": "bd99c3d11ef5fb6bd6f592568010a4fda44f229f",
+  "reviewed_run_id": "r-20261111T185754655706-refused-review-writes-nothing",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 14,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:37:15.595236+00:00",
+  "total": 85
+}

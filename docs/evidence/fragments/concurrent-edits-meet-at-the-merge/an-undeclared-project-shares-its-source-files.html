@@ -1,0 +1,37 @@
+<section id="an-undeclared-project-shares-its-source-files-evidence">
+  <h3>An undeclared project shares its source files; the classes git cannot merge stay exclusive</h3>
+  <p>A project that carries no <code>shared-write-paths.json</code>, or one whose
+  declaration names no <code>shared_roots</code> key, now admits two concurrent
+  file claims on the same source file. The policy is computed once in
+  <code>reckon/crew/runs.py</code>, which every claim check already calls
+  (dispatch, admission, queue edit, widen and promotion), so the answer cannot
+  drift between them.</p>
+  <p>The classes a textual merge cannot reconcile stay exclusive in every
+  project, declared or not: a plan document, a cumulative evidence record,
+  generated state, a figure topic directory, the dependency manifest and lock,
+  a generated receipt, and any binary file. They are listed once in
+  <code>DEFAULT_EXCLUSIVE_PATHS</code> (plus the binary-content probe) and read
+  both by the undeclared default and by a declared project's exclusivity check.
+  A declaration that cannot be read still shares nothing, and the refusal it
+  causes names the declaration. A declaration naming <code>shared_roots</code>,
+  even an empty list, governs as before. Directory claims remain exclusive.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Focused head contract</td><td>75 passed, 0 failed</td></tr>
+      <tr><td>Importer arm at base <code>87f837f</code></td><td>15 failed, 148 passed, 2 errors</td></tr>
+      <tr><td>Importer arm at head <code>80d9cde</code></td><td>3 failed, 172 passed</td></tr>
+      <tr><td>Added failures against base</td><td>0</td></tr>
+      <tr><td>Negative control</td><td>restores the share-nothing undeclared default; the first case refuses</td></tr>
+      <tr><td>Ruff check and format</td><td>no findings on the staged paths</td></tr>
+    </tbody>
+  </table>
+  <p>The three remaining importer failures are real dispatches that need the
+  harness hook-trust handshake, which cannot be established from a fenced tree;
+  all three fail identically at the base revision. Twelve base failures healed:
+  they were claim-mechanics cases whose temporary projects declared nothing, so
+  they were measuring the superseded exclusive-by-default rule. Each of those
+  fixtures now writes a declaration naming an empty <code>shared_roots</code>
+  list, which keeps every path exclusive and leaves the case measuring
+  refusal, widening and promotion scope exactly as written.</p>
+</section>

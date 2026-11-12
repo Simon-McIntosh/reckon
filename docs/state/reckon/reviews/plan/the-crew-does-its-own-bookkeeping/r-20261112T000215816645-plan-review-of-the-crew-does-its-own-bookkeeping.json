@@ -1,0 +1,112 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "efd0ee8c-9d4e-4fa3-a440-ac05791d4758",
+      "digests": {
+        "s36": "aab6ee075c24cb4cf5880e0a3037da1df1640ba8de38153ec944887545d5a352"
+      },
+      "reason": "the edit measures the second sweep, as the read-back's finding asked",
+      "units": [
+        "s36"
+      ],
+      "when": "2026-11-12T00:38:41.479306+00:00"
+    }
+  ],
+  "completed_at": "2026-11-12T00:13:26.940Z",
+  "dispatched_at": "2026-11-12T00:07:07Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/the-crew-does-its-own-bookkeeping/r-20261112T000215816645-plan-review-of-the-crew-does-its-own-bookkeeping/plan.html:199",
+      "id": "done_when-1",
+      "reason": "a worker taking the case literally builds a round with an open finding and an open dimension, gets two commits after the fix, and either fails a gate it cannot pass or widens the deliverable into batching writes, which the endpoint does not state.",
+      "text": "\u00a736's second case says the test \"drives `_fold_findings_into_round` twice for one round and asserts one commit in total\", but the fold makes two commits on its first sweep whenever the round carries one open finding and one open dimension (the finding record write and the dimension write each go through `commit_record_write` as separate commits to the same file); \"one commit in total\" holds only for a round whose finding is already folded, and the section does not say the fixture is built that way",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "4d7a94d2aa19a141df0e30c55472bc9a2e43303a",
+  "plan_fingerprint": "a8feee5c6d0b9a2e33af5fd8526793fd7a853554f7a6746aecdd2377eccd15b6",
+  "plan_slug": "the-crew-does-its-own-bookkeeping",
+  "plan_version": 166,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "4d7a94d2aa19a141df0e30c55472bc9a2e43303a",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a736's second case now asserts a second sweep of the same round adds no commit, whatever the first sweep made",
+      "reason": "",
+      "when": "2026-11-12T00:34:21.448128+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "4d7a94d2aa19a141df0e30c55472bc9a2e43303a",
+      "commit_basis": "edit",
+      "note": "\u00a736's second case now asserts a second sweep of the same round adds no commit, whatever the first sweep made",
+      "reason": "",
+      "when": "2026-11-12T00:34:21.448128+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-crew-does-its-own-bookkeeping/r-20261112T000215816645-plan-review-of-the-crew-does-its-own-bookkeeping.json",
+  "review_run_id": "r-20261112T000215816645-plan-review-of-the-crew-does-its-own-bookkeeping",
+  "reviewed_blob_sha": "058ef1b3c8e4720392002d721a5f4b80a66d94e2",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `_fold_findings_into_round` resolves at `reckon/crew/recovery_repair_dispatch.py:866`, `record_finding_disposition` at `reckon/crew/review_dispositions.py:507`, `record_dimension_disposition` at `:304`, and `commit_record_write` (imported at `review_dispositions.py:46`) at `reckon/crew/review_records.py:387`; the cited commit subject `fix(review): commit an answer on a committed review record` is the literal message at `review_records.py:423`.",
+    "done_when": "a finding \u2014 \u00a736's second case asserts \"one commit in total\" from two sweeps of `_fold_findings_into_round`, a count reachable only if the round carries no open finding.",
+    "evidence_paths": "pass \u2014 every log is stated as \"under the run directory\", a durable path, with a revision header, the literal command, and an `EXIT=` tail; no scratchpad or node-local path is named.",
+    "naming": "pass \u2014 the new test file's name states the behaviour it checks and carries no plan label, ticket number or version tag.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence: `_build_disposition_entry` stamps `recorded_at: datetime.now(UTC)` on every call (`review_dispositions.py:295`), both writers then rewrite and call `commit_record_write` with no identity check, and the fold's dimension loop has no already-folded guard while its finding loop does, which is exactly the re-stamping flood the Why describes; the deliverable is checkable by byte and commit-count comparison.",
+    "single_goal": "pass \u2014 \u00a736 delivers one endpoint, that recording an already-stored disposition writes no file and makes no commit; the \"folds each finding and each dimension once\" clause is that same endpoint observed through the repair reflex.",
+    "wiring": "pass \u2014 \u00a736 declares no depends-on and needs none: grep of the plan finds no other section (landed or open) that touches `reckon/crew/review_dispositions.py` or `recovery_repair_dispatch._fold_findings_into_round`, so there is no edge missing and no wrong edge."
+  },
+  "section_digests": {
+    "_document": "e252c2ef900883c0b6cc1ec2d3f8bb6cd94b1bb4de621483830979cf8df44ed8",
+    "s1": "843bb65a273798e31ae7d542e71c3172be8db96af98b3b5fa5582c0e4b7052b8",
+    "s10": "383abdaed093dc9135b7930e907d6aeaaeff313c10da917e0f90ef21242cc000",
+    "s11": "eb071af115c6cb885404bfcecff89e32a49dff5e2320cb170f63c531701d4409",
+    "s12": "cf7304fd49c4d28e5bca798e2fca486ef137e59bce341c819316936d77daf719",
+    "s13": "751a9cd019e8296d87aa5d4f4e45f8a29d84381081120d349dc5bd6b19125ed3",
+    "s14": "37143d66ebad07f999845341b909080392b4fffa341c7553bbece98ce2d93af1",
+    "s15": "327a3b6261f327ba147b39dd2d6fbd1ce595e493e1834f8eb9ef957ea33f55c6",
+    "s16": "b00866bef3eac6b9e6366326c72cc81f2dc329fceeda767034f4d47aeb80f4e6",
+    "s17": "f7a6d1fb09a597263b98f3f9db11f0a156337a303d2ccf5eb3b0d44899d7956f",
+    "s18": "526aabfb15ccc6205c07b6cf24a8c3fd22579f4776d2bd7a971164251a7d6f95",
+    "s19": "0e85b55be35103b90e318507ff6f86e1f640ef451c18250a9bcb4cb4f2e7c1b0",
+    "s2": "0fe853c67da217879c5c8672e5902b9a76353e03c761fc4b411b7d92af3feb8f",
+    "s20": "949f4ed4b742b4afba912a3943856d1af84c9226addd2df16be2024644c5f1ea",
+    "s21": "7e1c07b0431d4b47d90d44bc5d92db9ab1bb89fe6de6fb2f0fb79f61c04261ef",
+    "s22": "5cb33a844f041e4d88c2d1f7620411b91bbffd0c6605f939520cfa7178756424",
+    "s23": "b1aa58f1dbd4f559cc20a27b9f735c21e1c558ba2ab75ee90c390f1a649c6a44",
+    "s24": "dcacf6665c2b437d62dfd9ebfb5bd1f979f111d5438fc6145701595e4d7468bb",
+    "s25": "b78dc61ddf33b375b1ce609a25ab41c3b7817ded96a1793e664ead8b6f3be994",
+    "s26": "a0ac709c25dc1d649a9bc70dde6b95c8d7afc430dbf8b8e48c19f08f2376ad18",
+    "s27": "49ce0a37b0cad84e9368042e65abb86b3b21c26be54662c589f95d4b26b968a3",
+    "s28": "48313038856ace751ca6d643dbc5ad6e21b18bac1172db9f777e7b5beb0479be",
+    "s29": "cee16ef0e6d7471aa27d3b5ae38b60037bec4bcd730f4c11b81e48711461a50e",
+    "s3": "82923ffe5453d6953374033d35019e07de5b29917533560cbc5730ff737bbe8f",
+    "s30": "fdce4967024d4ebfc8a44747ea2c0a96aa18bc07db75515c17b0afae103f69ef",
+    "s31": "5333cee87b09332d7450646c97dabdc86ad909af957946a6fdda1082587d485d",
+    "s32": "dfb8569df7bcdfabd4c3e302a28bb3124d2ee99755ea04b21520cee5174726ff",
+    "s33": "148aaac0cc669386999a283c3e219503e7f5f8a280d9d7dc220b08782569bd95",
+    "s34": "1cf321c9f3ca0b669848c91bcc9a4f5811092bee4e96bb2986561dd97d67bc55",
+    "s35": "27c4976f734b2df6860ad37146ed7e117232ad0f2c9df466e8b7090747b007c2",
+    "s36": "1bbc8c4e53a94f9416aad1a35b6a18db248eb464f0cd7039780df326a3dbc342",
+    "s4": "725c875cfeb877f71fdc01870943889b9c403c08aa0ee675bdbb100c60d896ee",
+    "s5": "7c304261c964b9ccae1e7148a9bffe48cc81416987e9ed2e9d50d6c5a77df7b7",
+    "s6": "f293425c956b5e910273b5c23cfe8ee7a3a4c1d5565a0c10742e9f7beee7c269",
+    "s7": "97a25d1bcb177fd8366f65079625d64835768889b839d6734ae89fa8e922189b",
+    "s8": "1e02f8193f9402b4cf070a0f78feb68f2e3d79a9bb21f00d7c10f33032ed6f37",
+    "s9": "c5acdc2406e91d62930f4e8772839567aca54b6df3e16cbe65878db520b53043"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:31:04.981615+00:00",
+  "total": null
+}

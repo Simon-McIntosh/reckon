@@ -1,0 +1,64 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2354 dispatch calls record_section_hold with section_hold_verdict",
+    "reckon/crew/queue_admission.py:2406 _record_readiness_verdicts calls section_hold_verdict at :2413 and records it at :2427",
+    "reckon/crew/queue_admission.py:1400 _record_pass_hold compares the verdict when deciding whether to renew a record",
+    "reckon/crew/obligations.py:1151 reads recorded_pass_hold and renders its verdict as the reason a coordinator sees"
+  ],
+  "completed_at": "2026-11-11T22:31:40.407Z",
+  "dispatched_at": "2026-11-11T22:17:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3846",
+      "severity": "non-blocking",
+      "text": "non-blocking: the new function re-computes `name.split(\":\", 1)[0] in SECTION_HOLD_KINDS`, a classification section_hold already performs at :3820-3821 and _readiness_blocker_names at :3920, so the rule deciding which names are authored blockers now has three copies in one module and a change to SECTION_HOLD_KINDS or the name format must be applied to each; returning the verdict from section_hold, which already holds authored and waited, would keep one derivation for the names and the verdict they imply."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "2413",
+      "severity": "non-blocking",
+      "text": "non-blocking: `verdict = section_hold_verdict(hold)` on the admission-pass path is covered by no assertion \u2014 the two added tests read the pointer after a dispatch, and an admission pass skips a request whose refs carry no readiness ref, so restoring the literal \"held-on-readiness\" at :2413 and :2427 leaves every test green while the unreadable-plan fallback at :3818 would again record a declared wait as a readiness hold."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read both commits from ba00d850d8 to 946e6d8ff1; 71f76173db is a pure rename of the evidence fragment one level up (0 insertions, 0 deletions, but its body describes the verdict change its child carries), and 946e6d8ff1 adds `section_hold_verdict` at `reckon/crew/queue_admission.py:3837`, routes `reckon/crew/dispatch.py:2357` and `reckon/crew/queue_admission.py:2413`/`:2427` through it, and adds two verdict assertions at `tests/test_a_held_request_names_its_hold.py:151` and `:180`.",
+    "done_when": "The done_when names `tests/test_a_held_request_names_its_hold.py`; `suite-after.log` records 56 passed at 946e6d8ff1 ending `EXIT=0` and `suite-base.log` records 51 passed at 2e4cf597da ending `EXIT=0`, so the two imports add no failure, and `negative-control.log` ends `EXIT=1` with the decision and gate cases red under the restored wording.",
+    "goal": "The node's goal is that a request held on its section's readiness names its blocker by kind and id in the dispatch result, the recorded hold and the admission verdict; the increments complete it, with `reckon/crew/queue_admission.py:3837` deriving the recorded verdict from the same names `section_hold` composes and `reckon/crew/dispatch.py:2357` routing the dispatch hold through it.",
+    "manifest": "Read; it names the five commits with a `commit_note` at line 15 disclosing that 71f76173db carries the fragment move only, and its `baseline_suite` and `after_suite` lines are now the armed JSON the contract requires, each pointing at the log this review read.",
+    "write_paths": "The fence grants `reckon/crew/dispatch.py`, `reckon/crew/queue_admission.py`, `tests/test_a_held_request_names_its_hold.py` and `docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold.html`; the incremental diff touches exactly those four files and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_held_request_names_its_hold.py:180 fails if the dispatch hold reverts to a literal `held-on-readiness`, but the pass-side derivation at reckon/crew/queue_admission.py:2413 is exercised by no assertion.",
+    "evidence": "suite-after.log records 56 passed at 946e6d8ff1 with `EXIT=0` against suite-base.log's 51 passed at 2e4cf597da, so the recorded gate measures the done_when and adds no failure.",
+    "fit": "section_hold_verdict at reckon/crew/queue_admission.py:3837 follows the module's docstring-stating-the-mechanism idiom and its neighbours at :3774, though `held-on-waits` departs from the adverb form of the existing `held-on-readiness` and `held-on-claim` verdicts.",
+    "goal_fidelity": "reckon/crew/dispatch.py:2357 now reports the same verdict the names imply, so a declared wait is no longer labelled a readiness hold in the recorded hold a coordinator reads.",
+    "reuse": "section_hold_verdict re-derives at reckon/crew/queue_admission.py:3846-3849 the authored-versus-waited split section_hold already computes at :3820-3821, so the kind rule is now written three times in one module.",
+    "scope_discipline": "every path in the incremental diff \u2014 dispatch.py, queue_admission.py, the node's test and the fragment \u2014 is inside the four declared write paths, and 71f76173db also repairs the prior review's out-of-scope fragment placement."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that a request held on its section's readiness names its blocker by kind and id in the dispatch result, the recorded hold and the admission verdict; the increments complete it, with `reckon/crew/queue_admission.py:3837` deriving the recorded verdict from the same names `section_hold` composes and `reckon/crew/dispatch.py:2357` routing the dispatch hold through it.\nVERDICT done_when: The done_when names `tests/test_a_held_request_names_its_hold.py`; `suite-after.log` records 56 passed at 946e6d8ff1 ending `EXIT=0` and `suite-base.log` records 51 passed at 2e4cf597da ending `EXIT=0`, so the two imports add no failure, and `negative-control.log` ends `EXIT=1` with the decision and gate cases red under the restored wording.\nVERDICT write_paths: The fence grants `reckon/crew/dispatch.py`, `reckon/crew/queue_admission.py`, `tests/test_a_held_request_names_its_hold.py` and `docs/evidence/fragments/work-flows-to-the-lane/held-request-names-its-hold.html`; the incremental diff touches exactly those four files and nothing else.\nVERDICT manifest: Read; it names the five commits with a `commit_note` at line 15 disclosing that 71f76173db carries the fragment move only, and its `baseline_suite` and `after_suite` lines are now the armed JSON the contract requires, each pointing at the log this review read.\nVERDICT diff: Read both commits from ba00d850d8 to 946e6d8ff1; 71f76173db is a pure rename of the evidence fragment one level up (0 insertions, 0 deletions, but its body describes the verdict change its child carries), and 946e6d8ff1 adds `section_hold_verdict` at `reckon/crew/queue_admission.py:3837`, routes `reckon/crew/dispatch.py:2357` and `reckon/crew/queue_admission.py:2413`/`:2427` through it, and adds two verdict assertions at `tests/test_a_held_request_names_its_hold.py:151` and `:180`.\nCALL_SITES: reckon/crew/dispatch.py:2354 dispatch calls record_section_hold with section_hold_verdict, reckon/crew/queue_admission.py:2406 _record_readiness_verdicts calls section_hold_verdict at :2413 and records it at :2427, reckon/crew/queue_admission.py:1400 _record_pass_hold compares the verdict when deciding whether to renew a record, reckon/crew/obligations.py:1151 reads recorded_pass_hold and renders its verdict as the reason a coordinator sees\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:2357 now reports the same verdict the names imply, so a declared wait is no longer labelled a readiness hold in the recorded hold a coordinator reads.\nSCORE evidence: 18\nJUSTIFICATION evidence: suite-after.log records 56 passed at 946e6d8ff1 with `EXIT=0` against suite-base.log's 51 passed at 2e4cf597da, so the recorded gate measures the done_when and adds no failure.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the incremental diff \u2014 dispatch.py, queue_admission.py, the node's test and the fragment \u2014 is inside the four declared write paths, and 71f76173db also repairs the prior review's out-of-scope fragment placement.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_held_request_names_its_hold.py:180 fails if the dispatch hold reverts to a literal `held-on-readiness`, but the pass-side derivation at reckon/crew/queue_admission.py:2413 is exercised by no assertion.\nSCORE fit: 16\nJUSTIFICATION fit: section_hold_verdict at reckon/crew/queue_admission.py:3837 follows the module's docstring-stating-the-mechanism idiom and its neighbours at :3774, though `held-on-waits` departs from the adverb form of the existing `held-on-readiness` and `held-on-claim` verdicts.\nSCORE reuse: 13\nJUSTIFICATION reuse: section_hold_verdict re-derives at reckon/crew/queue_admission.py:3846-3849 the authored-versus-waited split section_hold already computes at :3820-3821, so the kind rule is now written three times in one module.\nFINDING reckon/crew/queue_admission.py:3846 non-blocking: the new function re-computes `name.split(\":\", 1)[0] in SECTION_HOLD_KINDS`, a classification section_hold already performs at :3820-3821 and _readiness_blocker_names at :3920, so the rule deciding which names are authored blockers now has three copies in one module and a change to SECTION_HOLD_KINDS or the name format must be applied to each; returning the verdict from section_hold, which already holds authored and waited, would keep one derivation for the names and the verdict they imply.\nFINDING reckon/crew/queue_admission.py:2413 non-blocking: `verdict = section_hold_verdict(hold)` on the admission-pass path is covered by no assertion \u2014 the two added tests read the pointer after a dispatch, and an admission pass skips a request whose refs carry no readiness ref, so restoring the literal \"held-on-readiness\" at :2413 and :2427 leaves every test green while the unreadable-plan fallback at :3818 would again record a declared wait as a readiness hold.\n",
+  "review_run_id": "r-20261111T221150590216-review-of-held-request-names-its-hold-946e6d8ff1b5",
+  "reviewed_base_sha": "ba00d850d8d6511bccea4fb1081de773994f5779",
+  "reviewed_head_sha": "946e6d8ff1b55e11654a98acd1b98057c1501654",
+  "reviewed_run_id": "r-20261111T185654778148-held-request-names-its-hold",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 13,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T23:42:10.152163+00:00",
+  "total": 102
+}

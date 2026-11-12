@@ -1277,6 +1277,163 @@ def _judge_head_move(
     return verdicts.get(run_id)
 
 
+def _blocking_findings(review: Mapping[str, Any]) -> int:
+    """How many findings a stored review declared as blocking its landing."""
+    return sum(
+        1
+        for finding in review_module.normalised_findings(review)
+        if review_module.declared_severity(finding)
+        == review_module.BLOCKING_FINDING_SEVERITY
+    )
+
+
+def _record_shadow_outcome(
+    record: Mapping[str, Any], review: Mapping[str, Any]
+) -> None:
+    """Record what a judged review found, beside the judgement it was given.
+
+    The judgement was written before the review was dispatched and the store
+    keeps it; this is the half that makes the row a measurement rather than a
+    guess. It is written when the review is read back, which is the first moment
+    the reflex can see the outcome, and a review the shadow never judged writes
+    nothing — a first review's outcome has no prediction to sit beside.
+    """
+    project = str(record.get("project") or "")
+    dispatched = record.get(_review_dispatch_field()) or {}
+    review_run_id = str(dispatched.get("run_id") or "") or str(
+        review.get("review_run_id") or ""
+    )
+    if not project or not review_run_id:
+        return
+    findings = review_module.normalised_findings(review)
+    blocking = _blocking_findings(review)
+    review_need.record_outcome(
+        project=project,
+        review_run_id=review_run_id,
+        outcome="blocking" if blocking else "clean",
+        findings={"blocking": blocking, "findings": len(findings)},
+    )
+
+
+def _prior_review(project: str, run_id: str) -> dict[str, Any] | None:
+    """The review a run already holds, or None when it holds none.
+
+    A stored review is what makes the review now being dispatched a further
+    review rather than a first one, so this read is the shadow's ordinal and not
+    a second reading of the store for its own sake.
+    """
+    try:
+        review = review_module.read_review(project, run_id)
+    except (OSError, ValueError):
+        return None
+    return review if isinstance(review, Mapping) else None
+
+
+def re_review_prediction(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The judgement a further code review is dispatched on, and its inputs.
+
+    None is returned for a first review, for a plan review and for a review of a
+    review: the shadow measures re-reviews, and a row for a first review would
+    corrupt the population the view counts. An unanswerable judge is *not* None
+    — it is a prediction recorded as unavailable, so a service that is down is
+    visible in the tally rather than quietly missing from it.
+    """
+    if record.get("subject") == "plan" or _is_review_node(record):
+        return None
+    project = str(fields.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    head = str(fields.get("head") or "")
+    if not project or not run_id or not head:
+        return None
+    prior = _prior_review(project, run_id)
+    if prior is None:
+        return None
+    tree = _review_tree(record)
+    prior_head = review_described_head(prior, tree=tree)
+    # A re-review that cannot be read is recorded as unmeasured, never as a low
+    # probability: an empty diff here would reach the judge as "unchanged" and
+    # come back as a confident zero, which is the one value the tally must not
+    # invent. The reason travels with the row so the tally can say why.
+    unmeasured = ""
+    paths: list[str] | None = None
+    diff = ""
+    if not prior_head:
+        unmeasured = "the earlier review names no resolvable revision"
+    elif tree is None:
+        unmeasured = "the run's tree is not readable"
+    else:
+        measured = _diff_between(tree, prior_head, head)
+        if measured is None:
+            unmeasured = "git cannot diff the earlier review's revision from this head"
+        else:
+            diff = measured
+            paths = _changed_paths_between(tree, prior_head, head)
+    node = record.get("node") or {}
+    goal = str(node.get("goal") or "")
+    done_when = str(node.get("done_when") or "")
+    findings = review_module.normalised_findings(prior)
+    prior_summary = {
+        "review_run_id": str(prior.get("review_run_id") or ""),
+        "reviewed_head_sha": prior_head,
+        "status": str(prior.get("status") or ""),
+        "total": prior.get("total"),
+        "findings": findings,
+        "blocking_findings": _blocking_findings(prior),
+    }
+    verdict = (
+        review_need.Verdict(None, None, "unjudged", unmeasured)
+        if unmeasured
+        else review_need.predict_blocking(
+            goal=goal,
+            done_when=done_when,
+            diff=diff,
+            prior=prior_summary,
+        )
+    )
+    return {
+        "verdict": verdict,
+        "inputs": {
+            "goal": goal,
+            "done_when": done_when,
+            "reviewed_run_id": run_id,
+            "head": head,
+            "previous_reviewed_head": prior_summary["reviewed_head_sha"],
+            "paths": list(paths or ()),
+            "diff_chars": len(diff),
+            "prior_review": prior_summary,
+        },
+    }
+
+
+def record_re_review_prediction(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    review_run_id: str,
+) -> Path | None:
+    """Judge a further review of this run and record the judgement on its row.
+
+    The row is keyed by the review run, so the judgement is taken once that run
+    exists to be judged: a review the lane held was not dispatched, and a row
+    for it would put a guess in the tally with no review to answer it. Nothing
+    here decides anything — the review has already been dispatched — so an
+    unanswerable judge costs the row its probability and nothing else.
+    """
+    if not review_run_id:
+        return None
+    shadow = re_review_prediction(record, fields)
+    if shadow is None:
+        return None
+    return review_need.record_prediction(
+        project=str(fields.get("project") or ""),
+        review_run_id=review_run_id,
+        reviewed_run_id=str(record.get("run_id") or ""),
+        verdict=shadow["verdict"],
+        inputs=shadow["inputs"],
+    )
+
+
 def carry_review_forward(
     record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -2321,6 +2478,11 @@ def _dispatch_text_review_for_run(
             "reason": f"the run is not awaiting review ({row['classification']})",
         }
     review, review_error = _stored_review(record)
+    if review:
+        # The review is stored, which is the moment its outcome becomes known:
+        # a row the shadow judged is completed here, and any other review
+        # writes nothing.
+        _record_shadow_outcome(record, review)
     if review is not None or review_error:
         # A stored review is evidence, readable or not. Regenerating over an
         # unparseable one would discard what the reviewer actually wrote, so
@@ -3279,6 +3441,7 @@ def _dispatch_composed_review(
         }
 
     review_run_id = str(launched.get("run_id") or "")
+    record_re_review_prediction(record, fields, review_run_id)
     record_dispatch(
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",

@@ -2170,7 +2170,11 @@ def _set_meta(html_text: str, name: str, content: str) -> str:
     tag = f'<meta name="{name}" content="{_esc(content)}">'
     pat = re.compile(rf'<meta\s+name="{re.escape(name)}"[^>]*>', re.IGNORECASE)
     if pat.search(html_text):
-        return pat.sub(tag, html_text, count=1)
+        # A callable replacement, never `tag` itself: `tag` carries the stored
+        # value, and re.sub reads a replacement string as a template, so a
+        # backslash in that value (`§` from JSON ASCII escaping, `\d`, a
+        # Windows path) is parsed as an escape — an error, or a silent rewrite.
+        return pat.sub(lambda _match: tag, html_text, count=1)
     # insert before </head>, else after <body>
     idx = html_text.lower().find("</head>")
     if idx != -1:

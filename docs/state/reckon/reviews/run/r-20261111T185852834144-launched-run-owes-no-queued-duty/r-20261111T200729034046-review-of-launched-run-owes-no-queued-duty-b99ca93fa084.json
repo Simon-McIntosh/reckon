@@ -1,0 +1,52 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T20:21:44.422Z",
+  "dispatched_at": "2026-11-11T20:09:58Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1058,
+      "severity": "non-blocking",
+      "text": "QUEUED_POINTER_DUTY_KINDS omits run-stalled, a row derived only while the pointer reads queued (reckon/crew/obligations.py:1308-1310), so a stalled request launched during a held tick keeps a stale row offering to reprioritise or drop a run that is already working."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": 1086,
+      "severity": "non-blocking",
+      "text": "A pointer that parses as an object with no phase resolves to the empty string at reckon/crew/obligation_snapshot.py:1086 and settles the queued duty, although a phase-less pointer is no more evidence that the run moved than an unparseable one, which the sentinel keeps."
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "The done_when required both suite arms on all_debug; the manifest names a /tmp scratch tree on the fleet node and no sbatch or srun appears in any run log, so the arms ran in place although they are seconds long."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/mcp_views.py:4617 and reckon/hooks/coordinator_obligations.py:1512",
+    "diff": "one commit, three files, all inside scope",
+    "done_when": "tests/test_a_launched_run_owes_no_queued_duty.py covers the held snapshot through the view and the stop hook, 3 passed",
+    "goal": "the landed change settles the queued duty kinds against the run pointer's live phase",
+    "manifest": "read; it records 59 passed at head against 56 at base and a negative-control failure",
+    "write_paths": "every changed path is inside the declared write paths"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is to stop the obligations view, the stop hook and the follower listing a duty for a run whose pointer has left the duty's phase; the landed change settles three queued duty kinds against the pointer's phase in reckon/crew/obligation_snapshot.py:1131, the one function both readers call.\nVERDICT done_when: the done_when names tests/test_a_launched_run_owes_no_queued_duty.py with a held snapshot, the view and the stop hook; that file exists at tests/test_a_launched_run_owes_no_queued_duty.py:1 and its three cases exercise exactly those three claims plus a witness for the defect; a re-run here reports 3 passed.\nVERDICT write_paths: I read the declared write paths from the dispatch detail (reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, the new test, the queued-redispatch test, the evidence fragment); every path the diff touches is inside them.\nVERDICT manifest: I read the source manifest; it records status complete, gate after-arm.log '59 passed', base-arm.log '56 passed', negative-control.log '1 failed, 2 passed', and the scratch module path it imported.\nVERDICT diff: read commit by commit against 2e4cf597da81; one commit, three files, +343/-11: the phase settlement in reckon/crew/obligation_snapshot.py, the new test file, and the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4617, reckon/hooks/coordinator_obligations.py:1512\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1131 settles a listed run's queued row on its pointer's live phase, which is what all three readers serve, but QUEUED_POINTER_DUTY_KINDS at reckon/crew/obligation_snapshot.py:1058 omits run-stalled, so the deliverable's general claim holds for three of the four queued-phase kinds.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at tests/test_a_launched_run_owes_no_queued_duty.py:150 fails without the comparison (negative-control.log) and the arm counts reconcile 56 -> 59, but both arms ran in place on the fleet node although the done_when named all_debug.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/obligation_snapshot.py, tests/test_a_launched_run_owes_no_queued_duty.py and the evidence fragment, all inside the declared write paths, and adds nothing the goal does not imply.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_launched_run_owes_no_queued_duty.py:157 re-serves the held snapshot after the pointer moves and drives the stop hook in a subprocess, so reverting the phase comparison reddens it; the unreadable-pointer branch at reckon/crew/obligation_snapshot.py:1082 and the run-queued and queued-contract-refused kinds have no test.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:1058 repeats the kind literals rather than importing the derivation, matching the banner at reckon/crew/obligation_snapshot.py:1018, and the commit is conventional with a body.\nSCORE reuse: 14\nJUSTIFICATION reuse: I searched reckon/crew for a pointer-phase reader and found runs.read_pointer (raises on both absent and malformed), run_paths._read_json_file (None for both) and recovery_classification._review_pointer_phase:666 (two-state, private); none carries the absent-vs-unreadable distinction this needs or is importable under the module banner, so _live_pointer_phase is a near-copy of the last, and a shared tolerant reader in runs.py would have served all three.\nFINDING reckon/crew/obligation_snapshot.py:1058 non-blocking: QUEUED_POINTER_DUTY_KINDS omits run-stalled, a row derived only while the pointer reads queued (reckon/crew/obligations.py:1308-1310), so a stalled request launched during a held tick keeps a stale row offering to reprioritise or drop a run that is already working; the deliverable's 'never list a duty for a run whose pointer has since left the phase' therefore holds for three of the four queued-phase kinds.\nFINDING reckon/crew/obligation_snapshot.py:1086 non-blocking: a pointer that parses as an object with no phase resolves to the empty string and settles the queued duty, although a pointer carrying no phase is no more evidence that the run moved than an unparseable one, which the sentinel deliberately keeps.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185852834144-launched-run-owes-no-queued-duty/manifest.md:18 non-blocking: the done_when required both suite arms measured on all_debug, and baseline_suite names a /tmp scratch tree on the fleet node with no sbatch or srun anywhere in the run's logs, so the arms ran in place although they are seconds long.\n",
+  "review_run_id": "r-20261111T200729034046-review-of-launched-run-owes-no-queued-duty-b99ca93fa084",
+  "reviewed_base_sha": "2e4cf597da81c04da1ae305ece1289fd6c74e47d",
+  "reviewed_head_sha": "b99ca93fa0840033b268db27c7ba0bdfc5bac4c6",
+  "reviewed_run_id": "r-20261111T185852834144-launched-run-owes-no-queued-duty",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:01:13.712157+00:00",
+  "total": 98
+}

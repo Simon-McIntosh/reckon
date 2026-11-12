@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:1539",
+    "reckon/crew/dispatch_claims.py:2169",
+    "reckon/crew/queue_admission.py:2290",
+    "reckon/crew/queue_admission.py:5458",
+    "reckon/crew/queue_edit.py:240",
+    "reckon/crew/promotion_scope.py:603",
+    "reckon/crew/promotion_scope.py:812"
+  ],
+  "completed_at": "2026-11-11T22:53:35.563Z",
+  "dispatched_at": "2026-11-11T22:39:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking test-shape note.",
+      "recorded_at": "2026-11-12T01:15:29.792404+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking manifest note.",
+      "recorded_at": "2026-11-12T01:16:36.444707+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "Non-blocking note on the policy reader.",
+      "recorded_at": "2026-11-12T01:17:16.592037+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "Non-blocking note on the \u00a72 test file.",
+      "recorded_at": "2026-11-12T01:17:53.794838+00:00"
+    }
+  },
+  "findings": [
+    "tests/test_an_undeclared_project_shares_its_source_files.py:47",
+    "manifest.md:20",
+    "reckon/crew/runs.py:1714",
+    "tests/test_a_source_file_is_shared_by_default.py:221"
+  ],
+  "notes": "Read-only review of run r-20261111T195213891626-an-undeclared-project-shares-its-source-files at head 6af5b68b from base 87f837f1. Read the node's goal, done-when and declared write paths from its dispatch prompt and the plan section, its manifest, the four commits against base, the new test file and the \u00a72 test file, the evidence fragment, gate2-importer-base.log, gate3-importer-head.log, negative-control.log, base2-ids.txt, head2-ids.txt, added2-ids.txt, and sacct rows for jobs 1311060 and 1311067. Verified added_failure_count 0 and the twelve healed ids by set difference rather than by the manifest's summary. Confirmed no production caller iterates the returned set, so the empty-set-with-default_share design is safe for all seven call sites. No file was edited, no suite was re-run and no mutation was applied.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that an undeclared project shares its source files; reckon/crew/runs.py:1770-1828 gives a project with no declaration, or one naming no shared_roots key, a default that admits concurrent file claims, keeps directory claims exclusive, keeps the DEFAULT_EXCLUSIVE_PATHS classes refused, and leaves an unreadable declaration sharing nothing while naming itself.\nVERDICT done_when: the done-when is tests/test_an_undeclared_project_shares_its_source_files.py with a red negative control, plus the importer arm at base 87f837f against one at head, one arm at a time on all_debug with at most -n 4; the manifest records every clause with a log on disk, and sacct shows jobs 1311060 and 1311067 COMPLETED on partition all_debug, matching the two arms.\nVERDICT write_paths: read orientation_write_paths at manifest line 5; the diff touches 19 paths, of which the five declared product/test paths, the evidence fragment and the declaration all lie inside them, and the fourteen claim-mechanics test files were widened into the scope by the coordinator and recorded as such at manifest line 48.\nVERDICT manifest: read; it reports status complete with four commits, the focused head count, both importer arms with their failure ids, the ruff result, and the declared negative control whose log reddens test_two_source_file_claims_both_launch; it wrongly states assertion_premise_edits as none.\nVERDICT diff: read the four commits against the base; 471bf98 adds DEFAULT_EXCLUSIVE_PATHS, the binary probe and the default share to reckon/crew/runs.py and '*.receipt' to docs/state/reckon/shared-write-paths.json, 363633b adds the evidence fragment, 80d9cde adds an empty shared_roots declaration to fourteen fixtures plus one inverted case in tests/test_a_source_file_is_shared_by_default.py, and 6af5b68 records the widened arm.\nCALL_SITES: reckon/crew/dispatch_claims.py:1539, reckon/crew/dispatch_claims.py:2169, reckon/crew/queue_admission.py:2290, reckon/crew/queue_admission.py:5458, reckon/crew/queue_edit.py:240, reckon/crew/promotion_scope.py:603, reckon/crew/promotion_scope.py:812\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:1776-1783 returns a default-share policy for a missing declaration and for a project of none, and runs.py:1708-1726 keeps every DEFAULT_EXCLUSIVE_PATHS class and any binary file refused whoever claims it.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate2-importer-base.log and gate3-importer-head.log carry their revision, literal command and EXIT= line, base2-ids.txt minus head2-ids.txt is empty so added_failure_count is 0 with 12 healed, and sacct confirms both arms ran COMPLETED on all_debug.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every changed path is either declared at manifest line 5 or among the fourteen fixtures the coordinator widened at manifest line 48, and the one inverted assertion sits in a declared test file as the plan permits.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_undeclared_project_shares_its_source_files.py:140 asserts two claims both launch and its recorded negative control reddens exactly that case when the share-nothing default is restored, so the guard is proven to fire rather than merely observed green.\nSCORE fit: 16\nJUSTIFICATION fit: the policy stays in the one function at reckon/crew/runs.py:1749-1827 that every claim check already calls, its names state the mechanism, and no plan or ticket identifier appears in the diff.\nSCORE reuse: 15\nJUSTIFICATION reuse: DEFAULT_EXCLUSIVE_PATHS at reckon/crew/runs.py:1624 is defined once and read by both the default at runs.py:1708 and a declared project's check at runs.py:1716, but the added harness_handshake fixture at tests/test_an_undeclared_project_shares_its_source_files.py:47 duplicates the one owned at tests/test_a_queued_launch_keeps_the_run_record.py:60 instead of importing or hoisting it.\nFINDING tests/test_an_undeclared_project_shares_its_source_files.py:47 non-blocking: the harness_handshake fixture copies the body owned at tests/test_a_queued_launch_keeps_the_run_record.py:60, and the same body is copied again into tests/test_a_source_file_is_shared_by_default.py, so four test modules now carry the handshake and a change to the probe answer must be made four times.\nFINDING manifest.md:20 non-blocking: assertion_premise_edits reads none, but tests/test_a_source_file_is_shared_by_default.py:171 inverts a refusal into an admission for the declaration-without-shared_roots case, so the field understates what the diff changed.\nFINDING reckon/crew/runs.py:1714 non-blocking: _default_class returns BINARY_RECEIPT_CLASS, a sentence, into the slot the callers render as a pattern, so reckon/crew/queue_edit.py:275 and reckon/crew/promotion_scope.py:689 print 'exclusive pattern \"binary or generated receipt\"', which reads as a pattern the project never declared.\nFINDING tests/test_a_source_file_is_shared_by_default.py:221 non-blocking: the only case covering exclusivity through a project that does declare shared_roots uses that project's own exclusive_patterns, so nothing exercises DEFAULT_EXCLUSIVE_PATHS for a declared project; the claim that both paths read the one list rests on the JSON parity case at tests/test_an_undeclared_project_shares_its_source_files.py:193 rather than on behaviour.",
+  "review_run_id": "r-20261111T223359893523-review-of-an-undeclared-project-shares-its-source-files-6af5b68bfd37",
+  "reviewed_base_sha": "87f837f10452bce6b2ddeb4adaf0bd84a4b7e772",
+  "reviewed_commits": [
+    "471bf98366fe682821ce18566a5d6fba5d11d388",
+    "363633b94fead3f61658217a74bc62cef69d147b",
+    "80d9cde9fd23123bae41788aa7df8ae08874e064",
+    "6af5b68bfd37380e59fd8e2ad268ea3769748e27"
+  ],
+  "reviewed_head_sha": "6af5b68bfd37380e59fd8e2ad268ea3769748e27",
+  "reviewed_run_id": "r-20261111T195213891626-an-undeclared-project-shares-its-source-files",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T22:50:45Z",
+  "total": 104
+}

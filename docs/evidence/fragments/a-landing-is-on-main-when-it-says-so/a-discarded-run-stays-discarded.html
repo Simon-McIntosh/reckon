@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-landing-is-on-main-when-it-says-so">
+  <meta name="plan-title" content="A discarded run stays discarded">
+  <title>A discarded run stays discarded | reckon</title>
+</head>
+<body>
+<main>
+  <section id="a-discarded-run-stays-discarded-guard">
+    <h2>Settled deliveries do not reopen merge repair</h2>
+    <p>The direct merge-repair path and the pending-landing pass share one
+      disposition check. It reads both discard-marker locations through
+      <code>promotion.discard_recorded</code>. Remote-primary ancestry is read
+      through <code>merge.head_on_remote_branch</code>: a delivered head already
+      on that branch clears its pending record without rebuilding a pointer or
+      resuming a worker. A settled repair keeps the complete conflict receipt,
+      including advice that the landing queue records as the refusal remedy.
+      A settled original marked pointer is removed through the existing attempt
+      check before worktree release; a newer attempt keeps its pointer.
+      Local ancestry alone retains an outstanding push.
+      A discarded head that has not landed remains stopped; its pending record
+      is retained for coordinator reconciliation. Genuine unlanded conflicts
+      keep their existing marking, advice, and resumption path.</p>
+    <p>The isolated tests cover both entry points, both discard-marker locations,
+      heads at and behind the primary tip, a local merge whose push is outstanding,
+      real conflicting edits verified by <code>git merge-tree</code>, a discarded
+      conflict through the public landing queue, and settled cleanup through both
+      repair entry points with matching and newer pointer attempts.</p>
+  </section>
+  <section id="a-discarded-run-stays-discarded-control">
+    <h2>Evidence that detects the defect</h2>
+    <p>At base <code>75d29d701cf46aa19ff26734793c777b419f8ebc</code>, the
+      original ten-case reproduction reports <strong>8 failed, 2 passed in
+      17.60s</strong>, <code>EXIT=1</code>. Every discarded and landed variant
+      fails at <code>assert not runs.pointer_path(RUN_ID).exists()</code>;
+      both genuine-conflict controls pass. The negative-control capture and
+      matched base/head receipts are durable in this run's manifest directory.</p>
+    <p>The caller and cleanup reproduction at reviewed head
+      <code>6848e56f38156f5361c089414d3f6ebf9d544b06</code> reports
+      <strong>3 failed, 2 passed, 11 deselected in 11.98s</strong>:
+      the queue raises <code>KeyError: 'advice'</code> and both original-pointer
+      cleanup cases fail while the two newer-attempt controls pass. The repair
+      retains the receipt's fields and reuses the marked-pointer release guard
+      for the settled path. Its final acceptance receipts are in the manifest.</p>
+    <p>The matched importer measurements use separate <code>all_debug</code>
+      jobs, pinned scratch trees, the shared project environment, and module-path
+      provenance printed by each arm. Final acceptance counts, exact commands,
+      failure IDs, and log paths are recorded in the delivery manifest.</p>
+  </section>
+  <section id="a-discarded-run-stays-discarded-inventory">
+    <h2>Existing records are left for the coordinator</h2>
+    <p>The read-only inventory found <strong>3 of 13</strong> pending records
+      with heads on the mounted primary branch; two also carry recorded discards.
+      They are the concurrent-launch, launch-span, and run-store-retirement runs
+      identified in the manifest, with their full run IDs and head revisions.
+      Each also has a live pointer. The coordinator should clear the stale pending
+      record, check worker liveness and attempt identity, and reconcile any
+      resurrected marked pointer through the existing discard workflow. This
+      node changes none of those records or pointers. Each ancestry probe also
+      recognises the primary tip itself as a positive control.</p>
+  </section>
+</main>
+</body>
+</html>
