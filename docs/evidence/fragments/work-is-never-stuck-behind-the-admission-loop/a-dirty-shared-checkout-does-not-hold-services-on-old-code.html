@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>§51 — A dirty shared checkout does not hold services on old code</title>
+</head>
+<body>
+<h1 id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-title">A dirty shared checkout does not hold services on old code</h1>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-outcome">A declared
+service is restarted onto the committed head within one supervisor check of main
+moving, even while the shared checkout's working tree carries uncommitted edits.
+The replacement is started from a published image of the committed tree, so those
+edits are never code the service runs, and the running copy holds that image's
+lease for its own life, so a prune cannot remove the code it imports. A code
+identity that cannot be read is reported as uncompared rather than adopted.</p>
+
+<h2 id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-repro">Reproduction at the base revision</h2>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-repro-text">At
+<code>121eead60c</code> a declared service running stamp A, a committed head
+moved to stamp B, and a dirty working tree left it running A: the restart
+decision consulted the working-tree trust verdict and adopted the copy. The
+node's test file, run against the base module, fails both cases
+(<code>2 failed</code>, <code>EXIT=1</code>); the run log is
+<code>logs/reproduction-base.log</code> under the run directory.</p>
+
+<h2 id="a-dirty-shared-checkout-doing-measure">Measure</h2>
+
+<p id="a-dirty-shared-checkout-does-not-hold-services-on-old-code-measure">Head arm
+<code>55 passed</code>, <code>EXIT=0</code> across the node's four cases and
+<code>tests/test_staged_write_inventory.py</code>; base arm <code>51 passed</code>,
+<code>EXIT=0</code> across <code>tests/test_staged_write_inventory.py</code> (the node's
+test file does not exist at the base revision). The importer arms ran on the
+<code>all_debug</code> partition, one arm at a time at <code>-n 4</code>: 25 files at
+head (<code>14 failed, 268 passed</code>) and the base tree's own resolved set at
+the base revision (<code>14 failed, 264 passed</code>), with the same 14 failure ids
+in both — the codex launch refusal a compute node reports — so the change adds no
+importer failure. Negative controls: restoring the refusal to base behaviour
+fails <code>test_a_dirty_checkout_restarts_a_service_onto_the_committed_head</code>
+and <code>test_a_prune_after_the_restart_keeps_the_replacements_image</code>;
+dropping the replacement's image lease fails only the prune case; deleting the
+dirty-tree duty fails
+<code>test_a_dirty_tree_after_a_moved_head_asks_for_a_service_reload</code>. Ruff
+check and format add no findings on the staged paths.</p>
+</body>
+</html>
