@@ -2962,25 +2962,31 @@ def dispatch_review_for_run(
     dry_run: bool = False,
 ) -> dict[str, Any]:
     """Dispatch the text review and, when needed, its separate figure review."""
+    lifecycle = record
     if record.get("subject") != "plan" and not _is_review_run(record):
         from reckon.crew import obligations, resumption
 
         run_id = str(record.get("run_id") or "")
         # A sweep's snapshot can predate a resume begun during classification.
-        # Read the pointer at composition so every guard sees that attempt.
-        record = read_pointer(run_id)
-        launching = record.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
+        # Guards read the current attempt; composition keeps caller inputs.
+        try:
+            lifecycle = read_pointer(run_id)
+        except CrewError:
+            if runs.pointer_path(run_id).exists():
+                raise
+        record = {**lifecycle, **record}
+        launching = lifecycle.get(resumption.RESUME_LAUNCH_IN_FLIGHT)
         reason = ""
         if isinstance(launching, Mapping):
             reason = "the run has a resume launching; its delivery is not settled"
-        elif runs.record_process_alive(record) is True:
+        elif runs.record_process_alive(lifecycle) is True:
             reason = "the run's recorded process is alive; its delivery is not settled"
-        elif record.get("attempt_kind") == "resume" and not _resumed_attempt_delivered(
-            record
-        ):
+        elif lifecycle.get(
+            "attempt_kind"
+        ) == "resume" and not _resumed_attempt_delivered(lifecycle):
             reason = "the resumed attempt has not delivered; no review is composed"
         elif run_id in obligations._acknowledgements_in_force(
-            str(record.get("project") or ""), now=datetime.now(UTC)
+            str(lifecycle.get("project") or ""), now=datetime.now(UTC)
         ):
             reason = "the run's obligations are deferred; no review is composed"
         if reason:
@@ -2990,7 +2996,7 @@ def dispatch_review_for_run(
                 "refused": True,
                 "reason": reason,
             }
-    refusal = _resume_superseded_refusal(record, dry_run=dry_run)
+    refusal = _resume_superseded_refusal(lifecycle, dry_run=dry_run)
     if refusal is not None:
         return refusal
     refusal = _open_review_refusal(record, dry_run=dry_run)

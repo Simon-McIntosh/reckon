@@ -198,3 +198,33 @@ def test_a_recorded_resume_before_its_head_stamp_waits_for_delivery(world):
     )
     _sweep()
     assert world.heads == [world.head]
+
+
+def test_caller_review_inputs_survive_the_lifecycle_refresh(world, monkeypatch):
+    stored = runs.read_pointer(RUN)
+    stored["backend"] = "stored-lane"
+    stored["brief"] = "stored-brief"
+    runs._write_json(runs.pointer_path(RUN), stored)
+    caller = {
+        **stored,
+        "backend": "caller-lane",
+        "brief": "caller-brief",
+        "manifest_commits": [world.head],
+        "node": {
+            **stored["node"],
+            "lane_declaration": {"backend": "caller-lane"},
+        },
+    }
+    composed = []
+
+    def compose(record, **kwargs):
+        composed.append(record)
+        return {"run_id": RUN, "dispatched": True, "review_run_id": "r-review"}
+
+    monkeypatch.setattr(reviews, "_dispatch_text_review_for_run", compose)
+    _sweep(caller)
+    assert len(composed) == 1
+    assert composed[0]["backend"] == "caller-lane"
+    assert composed[0]["brief"] == "caller-brief"
+    assert composed[0]["manifest_commits"] == [world.head]
+    assert composed[0]["node"]["lane_declaration"] == {"backend": "caller-lane"}
