@@ -1,0 +1,50 @@
+<section id="acceptance-check-holds-no-lease-landing">
+  <h2>An acceptance judgement leaves coordinator completion available</h2>
+  <p>The bounded sweep workers keep their in-process run claim while judging,
+  and leave the cross-host promotion lease available. Acceptance takes that
+  lease after the commit checks and integrated gate replay pass. Under the
+  lease it re-reads the live delivery, its current head, stored review,
+  manifest and gate evidence before calling completion. A coordinator that
+  completed the run during judgement therefore leaves no second promotion.</p>
+  <p>A refusal is persisted in the run directory through the shared JSON
+  writer. Its key covers the run and attempt, worktree and checkout heads,
+  review content, manifest and gate-log identities, gate command and commits,
+  and the remote branch tip and commit availability. An unchanged refusal
+  returns its recorded reason without repeating commit ancestry checks or
+  gate replay. The remote tip is still read outside the lease, so a push from
+  another checkout can release the refusal.</p>
+  <table id="acceptance-check-holds-no-lease-measures">
+    <caption>Measurements run on all_debug, one arm at a time; importer arms
+    use four workers. Logs carry the revision, command, imported module and
+    working directory, and end with the process exit status.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Baseline armed gate at <code>ea4fefcd442a8530b7f61a3c79f625728970133a</code></td>
+        <td>51 passed, <code>EXIT=0</code>; the new test does not yet exist.</td></tr>
+      <tr><td>Defect reproduction with the new check and unchanged product code</td>
+        <td>2 failed, 53 passed, <code>EXIT=1</code>. Coordinator completion
+        refuses on the promotion lease, and three unchanged sweeps run three
+        commit checks.</td></tr>
+      <tr><td>Armed gate with the repair</td><td>61 passed,
+        <code>EXIT=0</code>: ten new cases and 51 staged-write checks.</td></tr>
+      <tr><td>Baseline importer arm, 135 files</td><td>27 failed, 1533 passed,
+        3 errors, <code>EXIT=1</code>.</td></tr>
+      <tr><td>Head importer arm, the same 135 files</td><td>28 failed,
+        1532 passed, 3 errors, <code>EXIT=1</code>. One added failure identity;
+        none removed.</td></tr>
+      <tr><td>Declared mutation applied to the repaired product code:
+        take the lease before the commit check</td><td>The coordinator-completion
+        test fails on the lease refusal: 1 failed, <code>EXIT=1</code>.</td></tr>
+    </tbody>
+  </table>
+  <p>The new cases exercise a separate coordinator process during a blocked
+  commit check; one judgement across three unchanged sweeps, followed by a
+  new judgement after the head moves; invalidation when the review, manifest
+  or gate log changes; promotion after a remote push; coordinator completion
+  between judgement and promotion; and refusal to promote an earlier
+  judgement after the head, attempt or review changes.</p>
+  <p>The focused behaviour is verified, but the no-added-failures importer
+  measure is not met. The manifest records the out-of-scope failure for the
+  coordinator; this delivery makes no repair or attribution beyond its
+  granted paths.</p>
+</section>
