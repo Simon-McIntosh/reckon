@@ -238,6 +238,31 @@ def _carry_answer_to_delivered_copies(
     return written
 
 
+def _disposition_already_stored(stored: Any, entry: Mapping[str, Any]) -> bool:
+    """Whether ``stored`` already answers exactly as ``entry`` would.
+
+    Every field the caller is writing must match the stored entry; the one
+    field that is not compared is ``recorded_at``, which every build stamps
+    afresh. A caller recording the answer already on the record therefore
+    writes nothing: re-stamping the entry and committing the record again lands
+    a commit whose content is unchanged.
+
+    A stored entry carrying a field the new one does not is still a match when
+    every field of the new entry agrees, because the entry shape is closed per
+    kind: a fold writes ``node``, an exemption writes ``reason``, and a
+    deferral writes its run and rule. ``recorded_at`` is the only field that is
+    expected to differ between two recordings of one answer.
+    """
+    if not isinstance(stored, Mapping):
+        return False
+    for field, value in entry.items():
+        if field == "recorded_at":
+            continue
+        if stored.get(field) != value:
+            return False
+    return True
+
+
 def _build_disposition_entry(
     kind: str | None, node: str | None, reason: str | None
 ) -> dict[str, Any]:
@@ -362,6 +387,8 @@ def record_dimension_disposition(
         )
     dispositions = record.get(DIMENSION_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    if _disposition_already_stored(merged.get(dimension_name), disposition):
+        return path
     merged[dimension_name] = disposition
     record[DIMENSION_DISPOSITIONS_KEY] = merged
 
@@ -496,6 +523,8 @@ def _record_code_finding_disposition(
         )
     dispositions = record.get(FINDING_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    if _disposition_already_stored(merged.get(str(finding_index)), disposition):
+        return path
     merged[str(finding_index)] = dict(disposition)
     record[FINDING_DISPOSITIONS_KEY] = merged
 
@@ -620,6 +649,8 @@ def _write_disposition_against_finding(
         )
     dispositions = record.get(FINDING_DISPOSITIONS_KEY)
     merged = dict(dispositions) if isinstance(dispositions, Mapping) else {}
+    if _disposition_already_stored(merged.get(str(finding_index)), disposition):
+        return path
     merged[str(finding_index)] = dict(disposition)
     record[FINDING_DISPOSITIONS_KEY] = merged
 
