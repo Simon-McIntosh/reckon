@@ -49,6 +49,11 @@
     <p>§16 landed at <code>5426731d0f</code> (reviewed head <code>b99ca93f</code>, run <code>r-20261111T185852834144-launched-run-owes-no-queued-duty</code>). The obligations snapshot now compares each queued duty with the run's current pointer, so the obligations view, the stop hook and the follower no longer list a queued duty for a run that has launched, even when they read a snapshot taken before the launch. A request still queued keeps its duty. Its review raised three non-blocking findings, deferred at landing under §4. The <code>run-stalled</code> kind is not in the settled set. A pointer that parses with no phase settles its duty. The arms ran on the fleet node rather than <code>all_debug</code>.</p>
   </section>
 
+  <section id="s11-held-request-names-its-hold" data-evidence-origin="append">
+    <h2>§11 — a held request names the hold it is under</h2>
+    <p>§11 landed at <code>c433d5f434</code> (reviewed head <code>946e6d8f</code>, run <code>r-20261111T185654778148-held-request-names-its-hold</code>). A request held on its section's readiness now names its blocker by kind and id: an open decision's key or a closed gate's id. The name appears in the dispatch result, the queued pointer's recorded hold and the admission verdict. A hold on a declared section wait keeps its own verdict and names the wait's ref. The first review's two blocking findings were repaired: an evidence fragment written one directory too deep, and suite arms recorded as prose. The landing accepted the transient fragment path, and the coordinator added the missing <code>negative_control_log</code> pointer to the manifest, keeping the delivered copy beside it. The control log shows the declared mutation failing both decision and gate cases. The re-review's two non-blocking findings were deferred at landing: one classification copied three times in <code>queue_admission.py</code>, and the admission-pass verdict line left unasserted.</p>
+  </section>
+
 </main>
 </body>
 </html>
