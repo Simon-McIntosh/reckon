@@ -65,6 +65,10 @@ _GENERATOR_FOOTER = re.compile(
 DEFAULT_ATTEMPTS = 8
 DEFAULT_RETRY_SECONDS = 0.25
 
+# Bound remote operations even when SSH, a transport helper or a hook stalls.
+REMOTE_TIMEOUT_SECONDS = 30
+SSH_CONNECT_TIMEOUT_SECONDS = 10
+
 # The port-443 route: GitHub serves SSH there for hosts that refuse port 22.
 # ``GIT_SSH_COMMAND`` carries it because git builds the ssh invocation itself,
 # so naming ``ssh.github.com:443`` there routes the push without a wrapper.
@@ -193,14 +197,40 @@ def _run(
     input: str | None = None,
     env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
-    return subprocess.run(
-        ["git", "-C", str(repo), *args],
-        input=input,
-        capture_output=True,
-        text=True,
-        check=False,
-        env=env,
-    )
+    remote = bool(args) and args[0] in {"ls-remote", "fetch"}
+    if remote:
+        env = dict(os.environ if env is None else env)
+        ssh = (env.get("GIT_SSH_COMMAND") or "").strip()
+        if ssh:
+            env["GIT_SSH_COMMAND"] = (
+                f"{ssh} -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+            )
+        elif "GIT_SSH" not in env:
+            configured = _run(repo, "config", "--get", "core.sshCommand", env=env)
+            # Only an absent setting permits the default: Git owns configured
+            # identities, proxies and wrappers, and reports config errors itself.
+            if configured.returncode == 1:
+                env["GIT_SSH_COMMAND"] = (
+                    f"ssh -o ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}"
+                )
+    command = ["git", "-C", str(repo), *args]
+    try:
+        return subprocess.run(
+            command,
+            input=input,
+            capture_output=True,
+            text=True,
+            check=False,
+            env=env,
+            timeout=REMOTE_TIMEOUT_SECONDS if remote else None,
+        )
+    except subprocess.TimeoutExpired:
+        return subprocess.CompletedProcess(
+            command,
+            124,
+            "",
+            f"git {args[0]} timed out after {REMOTE_TIMEOUT_SECONDS} seconds",
+        )
 
 
 def _rev_parse(repo: Path, revision: str) -> str:
@@ -824,13 +854,17 @@ def _first_parent(repo: Path, commit: str) -> str:
 
 
 def _port22_refused(text: str) -> bool:
-    """Whether a failure reads as an SSH connection refused on port 22.
-
-    The signal is Git's own ssh error, ``connect to host <h> port 22:
-    Connection refused``, which is what a compute node reports for GitHub.
-    """
+    """Whether SSH could not connect on port 22 and may need another route."""
     low = (text or "").lower()
-    return "connection refused" in low and ("port 22" in low or ":22" in low)
+    return ("port 22" in low or ":22" in low) and any(
+        cause in low
+        for cause in (
+            "connection refused",
+            "connection timed out",
+            "network is unreachable",
+            "no route to host",
+        )
+    )
 
 
 def _port443_env() -> dict[str, str]:

@@ -2,9 +2,11 @@ from __future__ import annotations
 
 # Imports below the definitions resolve sibling cycles after names are bound.
 # ruff: noqa: E402
+import contextlib
 import json
 import shlex
 import subprocess
+import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -607,73 +609,18 @@ def _scope_tree(record: Mapping[str, Any]) -> Path | None:
     return None
 
 
-def _newest_cited_commit(record: Mapping[str, Any], tree: Path | None) -> str:
-    """The newest commit the manifest cites by ancestry, or empty.
-
-    A manifest's ``commits:`` field is a citation list, not an ordered history:
-    a worker may write it newest-first, oldest-first or in the order the work
-    landed. Reading its last entry as the head therefore picks the oldest commit
-    of a newest-first list, so the candidates are compared by ancestry instead,
-    which holds whatever order they were written in. An entry that does not
-    resolve to a commit in ``tree`` is left out rather than guessed, and git
-    answering nothing leaves the caller its other readers.
-    """
-    manifest = Path(str(record.get("manifest_path") or ""))
-    try:
-        data = parse_manifest(manifest.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return ""
-    entries = data.get("commits") or []
-    if isinstance(entries, str):
-        entries = [entries]
-    if tree is None:
-        return ""
-    # Deferred: the review modules import this package's siblings, so the
-    # import is made where it is used rather than at load.
-    from reckon.crew.recovery_review_subject import _resolve_commit
-
-    revisions: list[str] = []
-    for entry in entries:
-        resolved = _resolve_commit(tree, str(entry).strip(), cached=True)
-        if resolved and resolved not in revisions:
-            revisions.append(resolved)
-    if len(revisions) < 2:
-        return revisions[0] if revisions else ""
-    try:
-        result = subprocess.run(
-            [
-                "git",
-                "-C",
-                str(tree),
-                "rev-list",
-                "--topo-order",
-                "--max-count=1",
-                *revisions,
-            ],
-            check=False,
-            capture_output=True,
-            text=True,
-            timeout=30,
-        )
-    except (OSError, subprocess.SubprocessError):
-        return ""
-    lines = result.stdout.split()
-    if result.returncode != 0 or not lines:
-        return ""
-    return lines[0]
-
-
 def _run_head(record: Mapping[str, Any]) -> str:
     """The revision the run's work is delivered at, or empty when unreadable.
 
     An after arm is evidence about the tree the run delivers, so the revision it
     must record is the run's head. While the worktree is readable its ``HEAD``
     is that answer, and ``_run_head_for_review`` reads it. Once the worktree has
-    been reclaimed the manifest's citations are the only evidence left, and the
-    newest of them by ancestry is the head — the review path reads the last
-    entry instead, which is right only for a list written in landing order.
-    An empty answer means no head could be read, and the caller then holds no
-    revision to compare against rather than refusing on one.
+    been reclaimed the manifest's citations are the only evidence left, and
+    ``_record_carried_head`` resolves them by ancestry — the same reader a
+    review uses, so a review and a promotion of one run name one head whichever
+    order the citations were written in. An empty answer means no head could be
+    read, and the caller then holds no revision to compare against rather than
+    refusing on one.
     """
     # Deferred: the review modules import this package's siblings, so the
     # import is made where it is used rather than at load.
@@ -682,13 +629,9 @@ def _run_head(record: Mapping[str, Any]) -> str:
         _run_head_for_review,
         _worktree_reclaimed,
     )
-    from reckon.crew.recovery_review_subject import _review_tree
 
     if not _worktree_reclaimed(record):
         return _run_head_for_review(record)
-    newest = _newest_cited_commit(record, _review_tree(record))
-    if newest:
-        return newest
     return _record_carried_head(record)
 
 
@@ -1027,6 +970,92 @@ def _arm_missing_fields(
     return missing
 
 
+def _measured_arm_tree(
+    record: Mapping[str, Any],
+) -> tuple[Path, Path, str, str] | None:
+    """The trees and revisions a measured arm pair runs over, or ``None``.
+
+    The head tree is the run's own worktree — the tree its delivery ships — and
+    the base tree is checked out at the run's base revision, so the pair the
+    landing measures is the pair the run's own armed command was meant to
+    measure. A record that names no worktree, no base revision, or no readable
+    repository cannot be measured and the caller keeps the refusal it had.
+    """
+    worktree = str(record.get("worktree") or "").strip()
+    repository = str(record.get("repo") or "").strip()
+    base_sha = str(record.get("base_sha") or "").strip()
+    tree = Path(worktree) if worktree else Path(repository)
+    repo = Path(repository) if repository else tree
+    if not (worktree and base_sha and tree.is_dir() and repo.is_dir()):
+        return None
+    return repo, tree, base_sha, str(worktree)
+
+
+def _measure_missing_arms(
+    run_id: str, record: Mapping[str, Any], head: str, command: str
+) -> dict[str, Any] | None:
+    """Run the armed command at both revisions for a run whose arms cannot be used.
+
+    A missing arm, an arm recorded at another revision and an arm naming another
+    command all leave the run without the pair its own landing needs, and the
+    refusal that used to follow cost the worker a resume over evidence the
+    landing can take itself. The reading is the armed command at the base and at
+    the head, submitted to the configured measurement partition, and it is
+    recorded on the run as measured by the landing rather than replacing the
+    run's own manifest.
+    """
+    from reckon.crew import landing_measure, queue_landing
+
+    trees = _measured_arm_tree(record)
+    if trees is None or not head:
+        return None
+    repo, tree, base_sha, _worktree = trees
+    try:
+        timeout = queue_landing._measure_timeout(record)
+        config = queue_landing._measure_config(record)
+        with landing_measure.base_checkout(repo, base_sha, timeout) as base_tree:
+            return landing_measure.armed_observations(
+                command=command,
+                tree=tree,
+                base_tree=base_tree,
+                base_sha=base_sha,
+                head_sha=head,
+                logs_dir=run_dir(run_id) / "landing-measure" / "armed",
+                test_files=_node_test_files(record),
+                timeout=timeout,
+                project=str(record.get("project") or ""),
+                config=config,
+            )
+    except (OSError, ValueError, landing_measure.BaseCheckoutError):
+        return None
+
+
+def _record_measured_arms(run_id: str, head: str, measured: Mapping[str, Any]) -> None:
+    """Keep a landing-measured arm pair where a later reader can open it.
+
+    The pair is written beside the run's other landing evidence and onto the
+    live pointer, so a promotion, a retry and a retry's coordinator all read one
+    record of what the landing measured and at which head.
+    """
+    record = {"head": head, "measured_at": time.time(), **dict(measured)}
+
+    def write(directory: Path) -> None:
+        directory.mkdir(parents=True, exist_ok=True)
+        (directory / "measured-arms.json").write_text(
+            json.dumps(record, indent=2, sort_keys=True), encoding="utf-8"
+        )
+
+    with contextlib.suppress(OSError):
+        write(run_dir(run_id) / "landing-measure")
+
+    def amend(pointer: dict[str, Any]) -> dict[str, Any]:
+        pointer["suite_measured_arms"] = record
+        return pointer
+
+    with contextlib.suppress(CrewError, OSError, ValueError):
+        _mutate_pointer(run_id, amend)
+
+
 def _evaluate_suite_delta(
     run_id: str,
     record: Mapping[str, Any],
@@ -1081,6 +1110,7 @@ def _evaluate_suite_delta(
     baseline = manifest.get("baseline_suite")
     after = manifest.get("after_suite")
     head = _run_head(record)
+    measured_by_landing = False
     missing: list[str] = []
     if not manifest_present:
         missing.append("manifest")
@@ -1124,6 +1154,14 @@ def _evaluate_suite_delta(
                     "so no baseline and after suite pair is required"
                 ),
             }
+        measured_arms = _measure_missing_arms(run_id, record, head, suite_command)
+        if measured_arms and not measured_arms.get("unreadable"):
+            _record_measured_arms(run_id, head, measured_arms)
+            baseline = measured_arms["baseline_suite"]
+            after = measured_arms["after_suite"]
+            measured_by_landing = True
+            missing = []
+    if missing:
         refusal = {
             "status": "refused",
             "suite_command": suite_command,
@@ -1216,6 +1254,10 @@ def _evaluate_suite_delta(
         "added_failure_ids": added,
         "failure_attribution": attribution,
         "waiver_reason": waiver or None,
+        # Whether these arms are the landing's own measurement rather than the
+        # ones the run recorded. A reader comparing this pair with the run's
+        # manifest needs to know which of the two it is looking at.
+        "measured_by": "landing" if measured_by_landing else "run",
         # Whether the base tree held none of this scope's test files. The
         # delta is then measured against the empty set, which is the honest
         # baseline for a change that creates the tests it is measured by, and

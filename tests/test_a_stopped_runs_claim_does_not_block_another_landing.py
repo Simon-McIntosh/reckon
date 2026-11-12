@@ -53,6 +53,9 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     (root / "seed.txt").write_text("seed\n", encoding="utf-8")
     for arguments in (
         ("init", "-q", "-b", "main"),

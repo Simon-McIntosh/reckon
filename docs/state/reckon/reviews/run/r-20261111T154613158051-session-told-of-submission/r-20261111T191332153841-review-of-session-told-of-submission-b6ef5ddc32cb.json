@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-11T19:47:14.698Z",
+  "dispatched_at": "2026-11-11T19:36:09Z",
+  "emission": [
+    "VERDICT goal: the reviewed node's goal is that the admit pass writes one row of its own kind to the submitting session's watch stream within the pass that launches it (docs/plans/work-flows-to-the-lane.html \u00a75); the two gained commits change no runtime behaviour, repairing the new test file's import block at tests/test_a_session_is_told_when_its_work_is_submitted.py:13 and recording that repair at docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:21.",
+    "VERDICT done_when: the done_when names tests/test_a_session_is_told_when_its_work_is_submitted.py with four arms and a negative control plus ruff clean on the manifest's five committed paths; the manifest records 82 passed EXIT=0 at the repair head d3c238c927 against 77 passed EXIT=0 at 8ed04a011d, and I verified the ruff clause live at b6ef5ddc32: ruff check over the five committed paths reports 'All checks passed!' (EXIT=0) and ruff format --check reports 5 files already formatted (EXIT=0).",
+    "VERDICT write_paths: the manifest declares reckon/crew/queue_admission.py, reckon/crew/watch_unit.py, reckon/crew/ticker.py, tests/test_a_session_is_told_when_its_work_is_submitted.py, tests/test_crew_ticker.py and the evidence fragment; both gained commits touch only the test file and the fragment, each inside that set.",
+    "VERDICT manifest: read; it records status complete, the import-block repair at d3c238c927, both arms re-measured at the repair head and the base revision, and both negative controls, and every claim the two gained commits make reconciles with a log I opened or a check I ran live.",
+    "VERDICT diff: read both gained commits against 93e51942c74a: d3c238c927 replaces the test file's straight stdlib imports with from-imports and rewrites the uses at lines 48-191, and b6ef5ddc32 adds the repair paragraph and extends the negative-control paragraph in the fragment; 12 insertions, 11 deletions, all inside the declared scope.",
+    "CALL_SITES: none",
+    "SCORE goal_fidelity: 19",
+    "JUSTIFICATION goal_fidelity: tests/test_a_session_is_told_when_its_work_is_submitted.py:15-19 now orders identically under a default isort section and one that sorts by module across import forms, which is exactly what the gained commits set out to do, and no assertion or call in the file changed.",
+    "SCORE evidence: 18",
+    "JUSTIFICATION evidence: docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:21 and :23 state the repair and both controls, and I confirmed at b6ef5ddc32 that ruff check is clean (EXIT=0) and ruff format --check clean (EXIT=0) over the five committed paths, while negative-control.log and negative-control-lint.log carry EXIT=1 for the two mutations.",
+    "SCORE scope_discipline: 20",
+    "JUSTIFICATION scope_discipline: the two gained commits touch only tests/test_a_session_is_told_when_its_work_is_submitted.py and docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html, both inside the manifest's declared write paths, and no plan file or shared index.",
+    "SCORE durability: 15",
+    "JUSTIFICATION durability: the gained commits add no assertion, so the change's own regressions are held by the measured lint control negative-control-lint.log (I001 at line 13, EXIT=1 at 93e51942) rather than by a test, while the behavioural guards in tests/test_a_session_is_told_when_its_work_is_submitted.py:205 redden when the row write is removed (negative-control.log, 3 failed, EXIT=1).",
+    "SCORE fit: 19",
+    "JUSTIFICATION fit: tests/test_a_session_is_told_when_its_work_is_submitted.py:15-19 now carries a uniform from-import stdlib block matching the surrounding suite's import idiom and the repository ruff contract.",
+    "SCORE reuse: 20",
+    "JUSTIFICATION reuse: neither gained commit adds a function, class or module, so no capability is forked; the notice-renderer duplication recorded earlier at reckon/crew/ticker.py:3437 is untouched by them.",
+    "FINDING docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:23 non-blocking: the behavioural negative control is described as captured 'in a scratch worktree at the fragment's delivered head', but negative-control.log's own header names revision 5231455b83, which is neither the repair head d3c238c927 nor the reviewed head b6ef5ddc32, so the fragment's pointer to that evidence went stale when the repair commit moved the head."
+  ],
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "evidence pointer only: the negative-control log ran the declared mutation at 5231455b; the landing record names the reviewed head b6ef5ddc",
+      "recorded_at": "2026-11-11T20:17:43.991401+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html",
+      "line": 23,
+      "severity": "non-blocking",
+      "text": "the behavioural negative control is described as captured in a scratch worktree at the delivered head, but negative-control.log's header names revision 5231455b83, neither the repair head d3c238c927 nor the reviewed head b6ef5ddc32; the pointer went stale when the repair commit moved the head"
+    }
+  ],
+  "justifications": {
+    "durability": "the gained commits add no assertion, so the change's own regressions are held by the measured lint control negative-control-lint.log (I001 at line 13, EXIT=1 at 93e51942) rather than by a test, while the behavioural guards in tests/test_a_session_is_told_when_its_work_is_submitted.py:205 redden when the row write is removed (negative-control.log, 3 failed, EXIT=1).",
+    "evidence": "docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:21 and :23 state the repair and both controls, and I confirmed at b6ef5ddc32 that ruff check is clean (EXIT=0) and ruff format --check clean (EXIT=0) over the five committed paths, while negative-control.log and negative-control-lint.log carry EXIT=1 for the two mutations.",
+    "fit": "tests/test_a_session_is_told_when_its_work_is_submitted.py:15-19 now carries a uniform from-import stdlib block matching the surrounding suite's import idiom and the repository ruff contract.",
+    "goal_fidelity": "tests/test_a_session_is_told_when_its_work_is_submitted.py:15-19 now orders identically under a default isort section and one that sorts by module across import forms, which is exactly what the gained commits set out to do, and no assertion or call in the file changed.",
+    "reuse": "neither gained commit adds a function, class or module, so no capability is forked; the notice-renderer duplication recorded earlier at reckon/crew/ticker.py:3437 is untouched by them.",
+    "scope_discipline": "the two gained commits touch only tests/test_a_session_is_told_when_its_work_is_submitted.py and docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html, both inside the manifest's declared write paths, and no plan file or shared index."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T191332153841-review-of-session-told-of-submission-b6ef5ddc32cb",
+  "review_scope": "commits gained since the review at 93e51942c74a4917af2a879ae5eee9f239958b25",
+  "reviewed_base_sha": "93e51942c74a4917af2a879ae5eee9f239958b25",
+  "reviewed_head_sha": "b6ef5ddc32cb1fb2acae8b7352ae07fdd3de3e29",
+  "reviewed_run_id": "r-20261111T154613158051-session-told-of-submission",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:14:21.097244+00:00",
+  "total": 111,
+  "verdicts": {
+    "diff": "read both gained commits against 93e51942c74a: d3c238c927 replaces the test file's straight stdlib imports with from-imports and rewrites the uses at lines 48-191, and b6ef5ddc32 adds the repair paragraph and extends the negative-control paragraph in the fragment; 12 insertions, 11 deletions, all inside the declared scope.",
+    "done_when": "the done_when names tests/test_a_session_is_told_when_its_work_is_submitted.py with four arms and a negative control plus ruff clean on the manifest's five committed paths; the manifest records 82 passed EXIT=0 at the repair head d3c238c927 against 77 passed EXIT=0 at 8ed04a011d, and I verified the ruff clause live at b6ef5ddc32: ruff check over the five committed paths reports 'All checks passed!' (EXIT=0) and ruff format --check reports 5 files already formatted (EXIT=0).",
+    "goal": "the reviewed node's goal is that the admit pass writes one row of its own kind to the submitting session's watch stream within the pass that launches it (docs/plans/work-flows-to-the-lane.html \u00a75); the two gained commits change no runtime behaviour, repairing the new test file's import block at tests/test_a_session_is_told_when_its_work_is_submitted.py:13 and recording that repair at docs/evidence/fragments/work-flows-to-the-lane/session-told-of-submission.html:21.",
+    "manifest": "read; it records status complete, the import-block repair at d3c238c927, both arms re-measured at the repair head and the base revision, and both negative controls, and every claim the two gained commits make reconciles with a log I opened or a check I ran live.",
+    "write_paths": "the manifest declares reckon/crew/queue_admission.py, reckon/crew/watch_unit.py, reckon/crew/ticker.py, tests/test_a_session_is_told_when_its_work_is_submitted.py, tests/test_crew_ticker.py and the evidence fragment; both gained commits touch only the test file and the fragment, each inside that set."
+  }
+}

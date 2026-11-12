@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T20:02:40.812Z",
+  "dispatched_at": "2026-11-11T19:51:25Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking and outside the deliverable: deleting the now-uncalled record_landed_exemptions and its one test caller is a separate cleanup reported to the lead",
+      "recorded_at": "2026-11-11T20:30:54.835007+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking and outside the deliverable: one commit per deferred finding is correct and bounded by the review size; batching the writes is an optimisation",
+      "recorded_at": "2026-11-11T20:31:07.171084+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 136,
+      "severity": "non-blocking",
+      "text": "record_landed_exemptions is now dead production code: its only caller is tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:698, and it is named after the exact behaviour this change removed (closing unreviewed findings as exempted). A future caller reaching for it would close a finding the landing rule now leaves open; it should be retired together with the test that still exercises it."
+    },
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 686,
+      "severity": "non-blocking",
+      "text": "record_landed_deferrals resolves the stored record once at :666 to choose the indexes and then calls _write_disposition_against_finding per index, which resolves the record again and commits once per finding, so a landing with N deferred findings now performs N+1 store reads and N commits where the previous implementation wrote the record once. Behaviour is correct; the repeated resolution and commit is avoidable churn on the record's history."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta's goal is to answer the dimension-reuse finding and the folded recovery-path finding; reckon/crew/findings.py:274 undisposed_finding_indexes and reckon/crew/review_dispositions.py:565 _write_disposition_against_finding are the one selector and one writer it adds.\nVERDICT done_when: done_when names tests/test_a_non_blocking_finding_is_deferred_at_landing.py with its four cases plus armed base and after arms; the manifest records 469de49600 at 93 passed / 1 pre-existing failure and d5df510 at 36 passed and 51 passed / 1 pre-existing failure.\nVERDICT write_paths: read the manifest's declared paths plus the resume advice that widened the run to recovery_review_acceptance.py; every path in git diff 710664cfd2..469de49600 is inside them.\nVERDICT manifest: read; it records both armed arms with revisions, commands, failure ids and 0 added failures, three negative controls, and the residual dead function.\nVERDICT diff: read all five commits against 710664cfd2; the one selector, the one writer, the recovery-path switch and the two new arms are the whole of it, with the evidence fragment updated beside them.\nCALL_SITES: reckon/crew/queue_landing.py:1351 (_undisposed_finding_guard calling undisposed_finding_indexes), reckon/crew/queue_landing.py:2078 (_land_deliveries calling record_landed_deferrals), reckon/crew/recovery_review_acceptance.py:487 (accept_clean_review calling record_landed_deferrals), reckon/crew/review_dispositions.py:554 (record_finding_disposition calling _write_disposition_against_finding), reckon/crew_run_commands.py:1095 (the dispose verb calling record_finding_disposition), reckon/crew/recovery_repair_dispatch.py:897 (calling record_finding_disposition), reckon/crew/recovery_review_acceptance.py:170 (record_landed_exemptions calling record_finding_disposition)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1351 and reckon/crew/review_dispositions.py:678 both read findings.undisposed_finding_indexes, so the guard and the deferral cannot diverge, and recovery_review_acceptance.py:487 records through the landing writer.\nSCORE evidence: 16\nJUSTIFICATION evidence: the arms in logs/head_arm_recovery_final.log and logs/base_arm_recovery.log are complete with EXIT lines and the same single pre-existing failure, but the manifest records no ruff result for the staged paths that the done_when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 710664cfd2..469de49600 lies inside the manifest's write paths, including the recovery_review_acceptance.py scope the resume advice widened.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_non_blocking_finding_is_deferred_at_landing.py:294 fails with KeyError deferred_findings without 2c66b0f195 (logs/negative_control_recovery.log, EXIT=1) and :213 fails with the renumbered index without 738effc81e (logs/negative_control_index.log, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: findings.py:274 and review_dispositions.py:565 follow the module's keyword-only, docstringed idiom with no plan or stage identifier in any added name, but recovery_review_acceptance.py:136 leaves record_landed_exemptions as dead code.\nSCORE reuse: 19\nJUSTIFICATION reuse: the delta removes the duplicated enumerator and writer it was repaired for, leaving one selector at findings.py:274 and one write path at review_dispositions.py:565, and review_dispositions.py:686 re-resolves the record per finding rather than once.\nFINDING reckon/crew/recovery_review_acceptance.py:136 non-blocking: record_landed_exemptions is dead production code whose only caller is tests/test_the_lander_leaves_a_red_run_to_its_coordinator.py:698, and it is named after the exemption the landing rule no longer writes.\nFINDING reckon/crew/review_dispositions.py:686 non-blocking: record_landed_deferrals resolves the record at :666 and then re-resolves and commits it once per finding inside _write_disposition_against_finding, doing N+1 store reads and N commits where one write sufficed.\n",
+  "review_run_id": "r-20261111T194500307592-review-of-non-blocking-deferred-at-landing-469de4960006",
+  "reviewed_base_sha": "710664cfd2fc44455eabd5b0561a8e6f9786c882",
+  "reviewed_head_sha": "469de4960006fcba516d5157f67022d4c82d3fe8",
+  "reviewed_run_id": "r-20261111T154328431125-non-blocking-deferred-at-landing",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:27:49.467343+00:00",
+  "total": 109
+}

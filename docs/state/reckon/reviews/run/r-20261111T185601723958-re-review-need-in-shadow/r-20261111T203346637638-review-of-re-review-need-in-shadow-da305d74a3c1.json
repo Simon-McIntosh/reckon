@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3424 _dispatch_composed_review calls record_re_review_prediction, reached in production from dispatch_review_for_run:2848 via _dispatch_text_review_for_run:2864",
+    "reckon/crew/recovery_review_dispatch.py:2465 _dispatch_text_review_for_run calls _record_shadow_outcome when a review is already stored"
+  ],
+  "completed_at": "2026-11-11T20:51:44.324Z",
+  "dispatched_at": "2026-11-11T20:36:12Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "1356",
+      "severity": "non-blocking",
+      "text": "non-blocking: an unresolvable prior head or a failed git diff yields diff=\"\", which review_need.judge at review_need.py:253 maps to Verdict(False, 0.0), so a row is written with available=True and probability=0.0. An unmeasured re-review therefore enters the threshold tally as a confident skip, contradicting shadow_view's own rule at review_need.py:473 that an unmeasured row is never counted clean; the neighbouring _judge_head_move at :1251 takes the opposite idiom, returning None when there is no diff."
+    },
+    {
+      "file": "reckon/crew/review_need.py",
+      "line": "355",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment on SHADOW_ROWS_FOR_DECISION (:355) and the shadow section comment at :313 both attribute the threshold decision to a person (\"the lead's decision\", \"the lead decides\"), which the repository's comment-hygiene rule bans; state the mechanism (the count of measured rows at which a threshold is supported) instead."
+    },
+    {
+      "file": "tests/test_a_re_review_need_is_predicted_in_shadow.py",
+      "line": "174",
+      "severity": "non-blocking",
+      "text": "non-blocking: every test calls record_re_review_prediction or _record_shadow_outcome directly, so neither production call site (recovery_review_dispatch.py:3424, :2465) is exercised; deleting either wiring line leaves the whole file green, which is exactly the regression the node exists to prevent."
+    },
+    {
+      "file": "tests/test_a_re_review_need_is_predicted_in_shadow.py",
+      "line": "319",
+      "severity": "non-blocking",
+      "text": "non-blocking: assert view[\"rows_needed\"] == review_need.SHADOW_ROWS_FOR_DECISION - 4 compares the value under test against the same constant the implementation reads at review_need.py:512, so both sides move together and the assertion holds whatever the code does; :210 has the same shape against SHADOW_ROOT_NAME."
+    },
+    {
+      "file": "reckon/crew/review_need.py",
+      "line": "464",
+      "severity": "non-blocking",
+      "text": "non-blocking: shadow_view has no production caller after the crew view registration was withdrawn in 4e61a0478d, so the \"view of what each threshold would have skipped\" the goal asks for is reachable only from a test; the run records this under outside_scope as needing reckon/_mcp_tools.py, which is outside its fence."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185601723958-re-review-need-in-shadow/manifest.md",
+      "line": "11",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line carries the pytest command twice, so the recorded gate as written would re-run with -m pytest (a marker expression matching nothing) and exit 5; the log's own '# command:' header is the only faithful record of what ran."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_re_review_need_is_predicted_in_shadow.py:157 and :174 do fail on the declared negative control (negative-control.log reddens 5 cases), but no test reaches the production call sites at recovery_review_dispatch.py:3424 and :2465, so the wiring that makes a dispatch actually judge a review is unguarded.",
+    "evidence": "baseline-suite.log ends '51 passed' EXIT=0, after-suite.log '59 passed' EXIT=0 and revert-check.log '65 passed' EXIT=0, and importer-arms.log and importer-arm-head.log both report 52 failed / 1154 passed / 3 errors over the same 112-file arm with identical 55-id sets, so added_failure_count is 0; the malformed manifest tests line at manifest.md:11 costs the record its re-runnable gate command.",
+    "fit": "reckon/crew/recovery_review_dispatch.py:1343 guards with the same 'subject == plan or _is_review_node' predicate the neighbouring dispatch functions use at :2731 and :2872, and review_need.py:318 reuses the existing judge at :231, but :1356 diverges from _judge_head_move:1251 and review_need.py:313/:355 carry role attribution.",
+    "goal_fidelity": "reckon/crew/review_need.py:378 records the verdict keyed by review run with its inputs, :416 records the outcome beside it, and recovery_review_dispatch.py:1343 returns None for a first review, but the view at review_need.py:464 has no production caller.",
+    "reuse": "review_need.py:318 reuses the existing judge at :231 and its answer cache rather than adding a second predictor, and recovery_review_dispatch.py:1290 reuses review_module.normalised_findings and declared_severity; the new per-project row store at review_need.py:361 is a second JSON store beside the answer cache at :105 and beside the prediction-vs-outcome loop in reckon/calibration.py, which it neither extends nor duplicates.",
+    "scope_discipline": "git diff 8c5c7ad581829874b7f7bf463fdd5f61bfc7e48d..da305d74a3 changes only review_need.py, recovery_review_dispatch.py, the new test file and one evidence fragment, all inside the four declared write paths, and the withdrawn mcp_views registration leaves no residue at the head."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is to record the existing review_need.judge verdict on each second or later code review with a view of what each threshold would have skipped; reckon/crew/review_need.py:378 and recovery_review_dispatch.py:1310 implement the record, but the view at review_need.py:464 has no production caller since the registration was withdrawn.\nVERDICT done_when: The done_when names tests/test_a_re_review_need_is_predicted_in_shadow.py with a temporary crew home and a stubbed Jev; the file covers a first review carrying none, a second carrying the prediction and its inputs, the outcome beside it, the two-threshold counts and an unavailable judge, and after-suite.log records '59 passed' EXIT=0 while the negative control reddens 5 cases.\nVERDICT write_paths: The node declares six paths; git diff 8c5c7ad581829874b7f7bf463fdd5f61bfc7e48d..da305d74a3 changes four files, every one of them inside that list, and query.py, mcp_views.py and the figure directory are untouched.\nVERDICT manifest: Read; it states 65 passed EXIT=0 on the gate, the two importer arms at 55 identical failing-and-erroring ids, and a negative control replacing the prediction write with a bare return; its logs on disk support each figure, though its tests: line repeats the command.\nVERDICT diff: Read all four commits against 8c5c7ad5 \u2014 af36d33511 adds the judgement, the store and the outcome write, 4eac6791ea adds the evidence fragment, 4e61a0478d withdraws the crew view registration that added one importer failure, and da305d74a3 records the arm comparison.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3424 _dispatch_composed_review calls record_re_review_prediction, reached in production from dispatch_review_for_run:2848 via _dispatch_text_review_for_run:2864\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/review_need.py:378 records the verdict keyed by review run with its inputs, :416 records the outcome beside it, and recovery_review_dispatch.py:1343 returns None for a first review, but the view at review_need.py:464 has no production caller.\nSCORE evidence: 14\nJUSTIFICATION evidence: baseline-suite.log, after-suite.log and revert-check.log each end EXIT=0 and both importer arms report the same 55 failing-and-erroring ids, but manifest.md:11 records the gate command twice so it cannot be re-run as written and the gate never exercises a dispatch call site.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff 8c5c7ad5..da305d74a3 changes only the four files inside the declared write paths, and the withdrawn mcp_views registration leaves no residue at the head.\nSCORE durability: 12\nJUSTIFICATION durability: the negative control reddens 5 cases, but no test reaches recovery_review_dispatch.py:3424 or :2465, so deleting either wiring line leaves tests/test_a_re_review_need_is_predicted_in_shadow.py green.\nSCORE fit: 15\nJUSTIFICATION fit: recovery_review_dispatch.py:1343 reuses the neighbouring 'subject == plan or _is_review_node' guard, but :1356 diverges from _judge_head_move:1251 and review_need.py:313/:355 attribute the decision to a person.\nSCORE reuse: 16\nJUSTIFICATION reuse: review_need.py:318 reuses the existing judge at :231 rather than adding a second predictor, but review_need.py:361 adds a second JSON store beside the answer cache at :105 and beside reckon/calibration.py.\nFINDING reckon/crew/recovery_review_dispatch.py:1356 non-blocking: an unresolvable prior head or failed git diff yields an empty diff, which judge maps to probability 0.0 with available=True, so an unmeasured re-review enters the threshold tally as a confident skip against review_need.py:473's own rule.\nFINDING reckon/crew/review_need.py:355 non-blocking: SHADOW_ROWS_FOR_DECISION's comment and the section comment at :313 attribute the decision to a person, which the comment-hygiene rule bans.\nFINDING tests/test_a_re_review_need_is_predicted_in_shadow.py:174 non-blocking: no test exercises the production call sites at recovery_review_dispatch.py:3424 and :2465, so deleting either wiring line leaves the file green.\nFINDING tests/test_a_re_review_need_is_predicted_in_shadow.py:319 non-blocking: the assertion compares against the same SHADOW_ROWS_FOR_DECISION constant the implementation reads, so both sides move together and it holds whatever the code does.\nFINDING reckon/crew/review_need.py:464 non-blocking: shadow_view has no production caller at this head, so the view the goal asks for is reachable only from a test.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185601723958-re-review-need-in-shadow/manifest.md:11 non-blocking: the tests line carries the command twice and would re-run with no marker match.\n",
+  "review_run_id": "r-20261111T203346637638-review-of-re-review-need-in-shadow-da305d74a3c1",
+  "reviewed_base_sha": "8c5c7ad581829874b7f7bf463fdd5f61bfc7e48d",
+  "reviewed_head_sha": "da305d74a3c13365c388ae28750962505253aa1c",
+  "reviewed_run_id": "r-20261111T185601723958-re-review-need-in-shadow",
+  "scores": {
+    "durability": 12,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 16,
+    "reuse": 16,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:55:00+00:00",
+  "total": 91
+}

@@ -1,0 +1,91 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T17:53:23.194Z",
+  "dispatched_at": "2026-11-11T17:41:27Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/the-monitor-reads-each-fact-once.html:585",
+      "id": "wiring-1",
+      "reason": "without a \u00a728 prompt the section has no entry point in its own chain, so a coordinator reading the followups re-dispatches \u00a722 and never queues the section this review was asked to read.",
+      "text": "`s28` remains `implementable` but no followup in the plan carries its build prompt: the only open followup is `f-tmref-008` (\u00a722), and the earlier answer to this finding resolved `f-tmref-009`/`f-tmref-010` (\u00a723/\u00a724) without adding a \u00a728 entry point",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "0aac2c5fe1496fd2ba0ef7be54027cf57eafeb9a",
+  "plan_fingerprint": "1f8d8b9bde9a2498fc6104209aae1c7ac14bd8d9ec3f6920f2003e4709b90e0e",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 179,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "0aac2c5fe1496fd2ba0ef7be54027cf57eafeb9a",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "an open followup, f-tmref-011, now carries \u00a728's build invocation",
+      "reason": "",
+      "when": "2026-11-11T18:27:31.388250+00:00"
+    }
+  ],
+  "responses": {
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "0aac2c5fe1496fd2ba0ef7be54027cf57eafeb9a",
+      "commit_basis": "edit",
+      "note": "an open followup, f-tmref-011, now carries \u00a728's build invocation",
+      "reason": "",
+      "when": "2026-11-11T18:27:31.388250+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/the-monitor-reads-each-fact-once/r-20261111T173243273216-plan-review-of-the-monitor-reads-each-fact-once.json",
+  "review_run_id": "r-20261111T173243273216-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "c090489f5d4d2f4e82392424d1fd98ed1f9d9711",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/station.py` and `reckon/crew/obligations.py` exist, `dispatch_review_for_run` resolves at `reckon/crew/recovery_review_dispatch.py:2656`, the quoted \"inspect the follower's review pass\" is at `reckon/crew/obligations.py:771`, and the \"alive but slow \u2026 in the \u2026 stage\" line is `slow_station_note` at `reckon/hooks/coordinator_obligations.py:1146-1163`; the cited imas-efit-3c review run belongs to that host's crew home and is attributed as such, not to this repository.",
+    "done_when": "pass \u2014 the revised second case (\"holds the station in its slow stage past the window with the reflex unable to run\") is falsifiable, and the declared negative control (run the reflex only after the refresh stage completes) makes the first case dispatch late, so the head assertion fails at base.",
+    "evidence_paths": "pass \u2014 the done-when puts every log under the run directory with its revision and literal command, and the timing arms run on the all_debug partition.",
+    "naming": "pass \u2014 `tests/test_a_slow_refresh_does_not_hold_the_review_reflex.py` and the write paths name the mechanism, with no plan label, ticket number or version tag in code.",
+    "reasoning": "pass \u2014 the stated root cause matches the cited evidence (\u00a710 moved the review reflex into the station's tick, and the station snapshot already records `tick_stage`/`tick_age_seconds` for `per-project-refresh`), and the command the obligation must name exists as `reckon crew recover --dispatch-reviews`; the write-paths line is a scope declaration the earlier review declined and is left as-is.",
+    "single_goal": "pass \u2014 both clauses are one outcome, the review reflex no longer silently held by a slow station stage, closed by one verdict: timely dispatch, or an overdue obligation the coordinator can act on.",
+    "wiring": "a finding \u2014 `s28` is declared `implementable` at line 585 while the plan's followup chain carries no `/reckon-build the-monitor-reads-each-fact-once \u00a728` prompt."
+  },
+  "section_digests": {
+    "_document": "598d5335d7e762ccfad21d47b51738d7736baaf88bf89b4f5edb0f3186c3d011",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:17:06.177860+00:00",
+  "total": null
+}

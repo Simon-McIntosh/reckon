@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "Lines 69-73 retain the read result, two-attempt and route checks after filtering config calls; restoring refusal-only fallback loses the independently stubbed head or second attempt and fails those checks.",
+    "Lines 251-252 fail if the configured executable is bypassed: the default ssh exits 97 and does not produce the calls file; the four-case reproduction at the previous reviewed head records exactly this failure.",
+    "Lines 254-255 fail if Git invokes the wrapper for the wrong host or upload-pack path; the expected argv are fixed independently of the runner result.",
+    "Line 256 fails if the runner injects a ConnectTimeout option into a configured wrapper; the calls file is first proved present and lines 254-255 prove that it contains actual Git transport arguments.",
+    "Lines 258-263 fail if the core.sshCommand identity or proxy options are discarded or reordered before the executable receives them.",
+    "Line 265 fails if ls-remote does not advertise the commit created independently in origin; lines 267-271 fail if fetch returns success without transferring that origin commit into the initially empty destination object store.",
+    "No added assertion compares an output solely to an input echoed by the same implementation: the commit expectation is created in the independent origin repository and the fetch assertion probes destination object existence using a separate Git invocation."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from)",
+    "reckon/crew_run_commands.py:3622 (completion remote-head guard)",
+    "reckon/crew/merge.py:890 (_push_and_confirm through _remote_head)"
+  ],
+  "completed_at": "2026-11-12T02:58:41Z",
+  "dispatched_at": "2026-11-12T02:49:30Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T010554384046-a-remote-read-is-bounded/transport-final-suite.log",
+    "after_revision": "1e16e4ac121dbf3a4637aac58cabb78b2bfd0a37",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T010554384046-a-remote-read-is-bounded/transport-base-suite.log",
+    "baseline_revision": "4478f2ca58d0bf07456cab0fa35033b7a4c30671",
+    "importer_added_failure_ids": []
+  },
+  "findings": [],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from), reckon/crew_run_commands.py:3622 (completion remote-head guard), reckon/crew/merge.py:890 (_push_and_confirm through _remote_head)",
+    "diff": "Read commits 3bc4da9fe1e9561725278433c2f3ccd3b67ef7cb and 1e16e4ac121dbf3a4637aac58cabb78b2bfd0a37 individually from previously reviewed a53193255be4fdc7c53b7b4747e06c56dd113c2e; the transport guard, four real-Git cases and evidence update address the earlier blocking finding.",
+    "done_when": "Source prompt.txt:128 is supported by transport-final-suite.log (67 passed in 15.81s, EXIT=0), the eight-failure negative control, identical six importer failure IDs, and clean transport-pre-stage.log.",
+    "goal": "Source prompt.txt:38 requires bounded remote reads and timed-out port-22 retry; the delta in reckon/crew/merge.py:203-215 preserves configured transports while retaining the existing remote timeout.",
+    "manifest": "Source manifest.md names both repair commits, completed baseline_suite and after_suite receipts, four-case reviewed-head reproduction and six pre-existing importer failures; the opened logs agree.",
+    "write_paths": "Source prompt.txt:80-84 declares merge.py, the regression file and evidence fragment; both new commits change only those three paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_remote_read_is_bounded.py:251-271 fails when plain ssh shadows either configured transport because the default exits 97, and independently checks wrapper argv and the advertised or fetched fixture commit.",
+    "evidence": "transport-override-reproduction.log records four configured-transport failures at a53193255be4, transport-final-suite.log records 67 passes at 1e16e4ac121d, and matched importer logs record the same six failures.",
+    "fit": "reckon/crew/merge.py:208-215 uses the existing runner and Git configuration precedence with mechanism-based names and comments, and transport-pre-stage.log records clean scoped Ruff checks.",
+    "goal_fidelity": "reckon/crew/merge.py:203-215 leaves core.sshCommand and GIT_SSH selection to Git, resolving the reviewed transport override while the ls-remote/fetch wall-clock timeout remains in force.",
+    "reuse": "The change extends merge.py:_run; capability searches for SSH selection and upload-pack stubs found tests/test_a_reviewed_head_lands_without_touching_the_index.py:48-65, whose route-retry fixture does not own configured-transport preservation, and the new test adds that distinct check without a new production helper.",
+    "scope_discipline": "The two-commit delta touches only reckon/crew/merge.py, tests/test_a_remote_read_is_bounded.py and the declared evidence fragment, as declared in source prompt.txt:80-84."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires bounded remote reads and timed-out port-22 retry; the delta in reckon/crew/merge.py:203-215 preserves configured transports while retaining the existing remote timeout.\nVERDICT done_when: Source prompt.txt:128 is supported by transport-final-suite.log (67 passed in 15.81s, EXIT=0), the eight-failure negative control, identical six importer failure IDs, and clean transport-pre-stage.log.\nVERDICT write_paths: Source prompt.txt:80-84 declares merge.py, the regression file and evidence fragment; both new commits change only those three paths.\nVERDICT manifest: Source manifest.md names both repair commits, completed baseline_suite and after_suite receipts, four-case reviewed-head reproduction and six pre-existing importer failures; the opened logs agree.\nVERDICT diff: Read commits 3bc4da9fe1e9561725278433c2f3ccd3b67ef7cb and 1e16e4ac121dbf3a4637aac58cabb78b2bfd0a37 individually from previously reviewed a53193255be4fdc7c53b7b4747e06c56dd113c2e; the transport guard, four real-Git cases and evidence update address the earlier blocking finding.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from), reckon/crew_run_commands.py:3622 (completion remote-head guard), reckon/crew/merge.py:890 (_push_and_confirm through _remote_head)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:203-215 leaves core.sshCommand and GIT_SSH selection to Git, resolving the reviewed transport override while the ls-remote/fetch wall-clock timeout remains in force.\nSCORE evidence: 20\nJUSTIFICATION evidence: transport-override-reproduction.log records four configured-transport failures at a53193255be4, transport-final-suite.log records 67 passes at 1e16e4ac121d, and matched importer logs record the same six failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit delta touches only reckon/crew/merge.py, tests/test_a_remote_read_is_bounded.py and the declared evidence fragment, as declared in source prompt.txt:80-84.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_remote_read_is_bounded.py:251-271 fails when plain ssh shadows either configured transport because the default exits 97, and independently checks wrapper argv and the advertised or fetched fixture commit.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/merge.py:208-215 uses the existing runner and Git configuration precedence with mechanism-based names and comments, and transport-pre-stage.log records clean scoped Ruff checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change extends merge.py:_run; capability searches for SSH selection and upload-pack stubs found tests/test_a_reviewed_head_lands_without_touching_the_index.py:48-65, whose route-retry fixture does not own configured-transport preservation, and the new test adds that distinct check without a new production helper.\n",
+  "review_limitations": "Delta-only static review of the two new commits plus recorded gate receipts; no test rerun or source mutation; reviewed_base_sha is the previous review head, while the source baseline_suite remains its original declared base.",
+  "review_run_id": "r-20261112T024223806169-review-of-a-remote-read-is-bounded-1e16e4ac121d",
+  "reviewed_base_sha": "a53193255be4fdc7c53b7b4747e06c56dd113c2e",
+  "reviewed_head_sha": "1e16e4ac121dbf3a4637aac58cabb78b2bfd0a37",
+  "reviewed_run_id": "r-20261112T010554384046-a-remote-read-is-bounded",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T03:06:41.757449+00:00",
+  "total": 120
+}

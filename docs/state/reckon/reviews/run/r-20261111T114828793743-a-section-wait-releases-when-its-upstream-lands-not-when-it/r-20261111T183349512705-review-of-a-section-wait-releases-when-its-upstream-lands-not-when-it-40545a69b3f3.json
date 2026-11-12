@@ -1,0 +1,107 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_section_readiness_state",
+    "reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state",
+    "reckon/crew/queue_admission.py:_ref_state"
+  ],
+  "completed_at": "2026-11-11T18:48:24.861Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T19:00:58.178365+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T19:01:08.327752+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T18:35:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T18:59:31.055445+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T18:59:50.431469+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T19:00:04.646543+00:00"
+    },
+    "3": {
+      "kind": "folded",
+      "node": "a-section-wait-releases-when-its-upstream-lands-not-when-it",
+      "recorded_at": "2026-11-11T19:00:23.724454+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_wait_releases_when_its_upstream_lands.py",
+      "line": "148",
+      "severity": "blocking",
+      "text": "blocking: ruff format --check on the staged test file exits non-zero and would reformat the block added at :148-155, while the base revision's copy of the same file is already formatted, so the done_when's \"Ruff check and ruff format --check add no findings on the staged paths\" is unmet and no ruff log exists to have caught it."
+    },
+    {
+      "file": "tests/test_a_wait_releases_when_its_upstream_lands.py",
+      "line": "296",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added assertions do not distinguish the index-free read from the indexed one -- :296 builds the ledger index from the just-promoted document with the default ledger.load and :298 then calls the guard, so restoring use_index=True at reckon/crew/queue_admission.py:3373 leaves every case passing; no fixture ever leaves a stale index for the guard to disagree with."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html",
+      "line": "111",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"Fresh trees\" paragraph reports 56 passed at the revision whose failure was reported as though that were the reproduction, but logs/repro-224-clean.log and logs/repro-224-hostile.log both record 56 passed EXIT=0 at 224dc0f7b3, so the reported release was never reproduced and the index explanation at :59 is an untested hypothesis rather than an observed cause."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3373",
+      "severity": "non-blocking",
+      "text": "non-blocking: the index-free read walks the aggregate and every per-run document on each pass instead of reusing the warm index, and the guard's promoted branch then repeats that same walk inside runs._unloaded_sections, so a section whose run was promoted pays two full ledger scans per pass per waiting request while the fragment's \"Cost\" paragraph at docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html:67 still describes the cached read."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 224dc0f7b3..40545a69b3; c98330911f changes one keyword argument to ledger.load plus fixture pinning and one direct guard assertion, and 40545a69b3 updates the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases, a negative control, a suite delta on all_debug and clean ruff check and format; logs/armed-after_suite.log records 56 passed EXIT=0 and logs/armed-baseline_suite.log 51 passed EXIT=0, logs/base-revision-reproduction.log records 2 failed/1 passed EXIT=1, but no ruff run is recorded and a ruff format --check of the staged test file reports it would be reformatted.",
+    "goal": "the node goal is that a section wait releases when its upstream lands, not when it is declared done; the two commits gained since the prior review make the promoted-row read index-free at reckon/crew/queue_admission.py:3373 and pin the fixture's cache home at tests/test_a_wait_releases_when_its_upstream_lands.py:140, which serves that goal.",
+    "manifest": "read; it lists ten commits, both armed suite arms with revision, command, exit_status and log_path, the two negative-control logs, and a complete checkpoint and landing line.",
+    "write_paths": "the diff touches docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html, reckon/crew/queue_admission.py and tests/test_a_wait_releases_when_its_upstream_lands.py, and all three are inside the declared write paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_releases_when_its_upstream_lands.py:296 builds the index through an indexed ledger.load before :298 calls the guard, so reverting reckon/crew/queue_admission.py:3373 to the default indexed read leaves all five cases green.",
+    "evidence": "the armed arms are recorded and reconcile with their logs, but the done_when's ruff clause was never run and tests/test_a_wait_releases_when_its_upstream_lands.py:148 does not satisfy ruff format --check while the base revision's copy does.",
+    "fit": "the new comment and assertion follow the file's idiom, but the staged test file fails the repository's own ruff format --check at tests/test_a_wait_releases_when_its_upstream_lands.py:148.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3373 reads the ledger's run documents directly, which is the freshness the section-wait guard needs and matches the drain's own read at reckon/crew/runs.py:2404.",
+    "reuse": "reckon/crew/queue_admission.py:3373 routes through ledger.load, whose unindexed read is already the owner's idiom at reckon/crew/runs.py:2404 and reckon/crew/picker/lane_context.py:920, so nothing is forked, though the guard's second ledger read through runs._unloaded_sections duplicates the same derivation in the same call.",
+    "scope_discipline": "every path in git diff --stat 224dc0f7b3..40545a69b3 is one of the three declared write paths."
+  },
+  "plan_section": "s40",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a section wait releases when its upstream lands, not when it is declared done; the two commits gained since the prior review make the promoted-row read index-free at reckon/crew/queue_admission.py:3373 and pin the fixture's cache home at tests/test_a_wait_releases_when_its_upstream_lands.py:140, which serves that goal.\nVERDICT done_when: the done_when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases, a negative control, a suite delta on all_debug and clean ruff check and format; logs/armed-after_suite.log records 56 passed EXIT=0 and logs/armed-baseline_suite.log 51 passed EXIT=0, logs/base-revision-reproduction.log records 2 failed/1 passed EXIT=1, but no ruff run is recorded and a ruff format --check of the staged test file reports it would be reformatted.\nVERDICT write_paths: the diff touches docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html, reckon/crew/queue_admission.py and tests/test_a_wait_releases_when_its_upstream_lands.py, and all three are inside the declared write paths.\nVERDICT manifest: read; it lists ten commits, both armed suite arms with revision, command, exit_status and log_path, the two negative-control logs, and a complete checkpoint and landing line.\nVERDICT diff: read commit by commit over 224dc0f7b3..40545a69b3; c98330911f changes one keyword argument to ledger.load plus fixture pinning and one direct guard assertion, and 40545a69b3 updates the evidence fragment.\nCALL_SITES: reckon/crew/queue_admission.py:_section_readiness_state, reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state, reckon/crew/queue_admission.py:_ref_state\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3373 reads the ledger's run documents directly, which is the freshness the section-wait guard needs and matches the drain's own read at reckon/crew/runs.py:2404.\nSCORE evidence: 10\nJUSTIFICATION evidence: the armed arms are recorded and reconcile with their logs, but the done_when's ruff clause was never run and tests/test_a_wait_releases_when_its_upstream_lands.py:148 does not satisfy ruff format --check while the base revision's copy does.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 224dc0f7b3..40545a69b3 is one of the three declared write paths.\nSCORE durability: 8\nJUSTIFICATION durability: tests/test_a_wait_releases_when_its_upstream_lands.py:296 builds the index through an indexed ledger.load before :298 calls the guard, so reverting reckon/crew/queue_admission.py:3373 to the default indexed read leaves all five cases green.\nSCORE fit: 13\nJUSTIFICATION fit: the new comment and assertion follow the file's idiom, but the staged test file fails the repository's own ruff format --check at tests/test_a_wait_releases_when_its_upstream_lands.py:148.\nSCORE reuse: 8\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:3373 routes through ledger.load, whose unindexed read is already the owner's idiom at reckon/crew/runs.py:2404 and reckon/crew/picker/lane_context.py:920, so nothing is forked, though the guard's second ledger read through runs._unloaded_sections duplicates the same derivation in the same call.\nFINDING tests/test_a_wait_releases_when_its_upstream_lands.py:148 blocking: ruff format --check on the staged test file exits non-zero and would reformat the block added at :148-155, while the base revision's copy of the same file is already formatted, so the done_when's \"Ruff check and ruff format --check add no findings on the staged paths\" is unmet and no ruff log exists to have caught it.\nFINDING tests/test_a_wait_releases_when_its_upstream_lands.py:296 non-blocking: the added assertions do not distinguish the index-free read from the indexed one -- :296 builds the ledger index from the just-promoted document with the default ledger.load and :298 then calls the guard, so restoring use_index=True at reckon/crew/queue_admission.py:3373 leaves every case passing; no fixture ever leaves a stale index for the guard to disagree with.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html:111 non-blocking: the \"Fresh trees\" paragraph reports 56 passed at the revision whose failure was reported as though that were the reproduction, but logs/repro-224-clean.log and logs/repro-224-hostile.log both record 56 passed EXIT=0 at 224dc0f7b3, so the reported release was never reproduced and the index explanation at :59 is an untested hypothesis rather than an observed cause.\nFINDING reckon/crew/queue_admission.py:3373 non-blocking: the index-free read walks the aggregate and every per-run document on each pass instead of reusing the warm index, and the guard's promoted branch then repeats that same walk inside runs._unloaded_sections, so a section whose run was promoted pays two full ledger scans per pass per waiting request while the fragment's \"Cost\" paragraph at docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html:67 still describes the cached read.\n",
+  "review_run_id": "r-20261111T183349512705-review-of-a-section-wait-releases-when-its-upstream-lands-not-when-it-40545a69b3f3",
+  "reviewed_base_sha": "224dc0f7b3c1c00a78f77b34ade9e12516d2aa29",
+  "reviewed_head_sha": "40545a69b3f37ac965de0ee288e0daeb73551c1c",
+  "reviewed_run_id": "r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it",
+  "scores": {
+    "durability": 8,
+    "evidence": 10,
+    "fit": 13,
+    "goal_fidelity": 17,
+    "reuse": 8,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:57:12.958749+00:00",
+  "total": 76
+}

@@ -1,0 +1,85 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:392 acceptance selects the review for a head",
+    "reckon/crew/promotion_release.py:1127 promotion reads the stored review before releasing",
+    "reckon/crew/obligations.py:1671 obligations' _selected_review, memoised through file_memo",
+    "reckon/crew/queue_landing.py:174 the landing queue's review read",
+    "reckon/crew_run_commands.py:987 the crew run command's stored-review read",
+    "reckon/crew/recovery_review_subject.py:1493 the review reflex's select_review_for_head"
+  ],
+  "completed_at": "2026-11-12T00:21:07.559Z",
+  "dispatched_at": "2026-11-12T00:07:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "a-tick-reads-the-review-store-once",
+      "recorded_at": "2026-11-12T00:55:41.022126+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "a-tick-reads-the-review-store-once",
+      "recorded_at": "2026-11-12T00:56:04.884515+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "604",
+      "severity": "non-blocking:",
+      "text": "non-blocking: _read_review_once re-implements reckon/file_memo.py:439 memoized_key, the repository's owner of a bounded memo against a caller-carried change key (deep copies in and out, LRU eviction); reckon/crew/obligations.py:1667 already memoises select_review_for_head through that owner, so this is a second capability for the same job and it drops the owner's lock and 50,000-entry bound for an unguarded 1024-entry dict. Fold into a follow-up that routes the answer through file_memo.memoized_key."
+    },
+    {
+      "file": "reckon/crew/recovery_memo.py",
+      "line": "635",
+      "severity": "non-blocking:",
+      "text": "non-blocking: the eviction pop(next(iter(_READ_REVIEW_ANSWERS))) is a check-then-act across two bytecodes with no lock, so two threads reaching a miss concurrently can select the same first key and the second pop raises KeyError inside a producer tick; file_memo's locked LRU at reckon/file_memo.py:456 does not have this window. Fold into the same follow-up."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "six production callers verified: recovery_review_acceptance.py:392, promotion_release.py:1127, obligations.py:1671, queue_landing.py:174, crew_run_commands.py:987 and the reflex at recovery_review_subject.py:1493 all reach the changed selections, and none of them supplies a record without project and run_id, so none bypasses the cache path.",
+    "diff": "read commit by commit against e8c403dbf82: 4083687d03 adds _review_read_inputs and _read_review_once and routes two readings through them, 0bf5abda69 is a test-iteration tidy, 534c4912d7 adds the landing fragment; four files, all inside the declared scope, no unrelated edit.",
+    "done_when": "the done_when asks for a new tests/test_a_tick_reads_the_review_store_once.py proving a second unchanged tick reads no review, and re-reads on an in-place rewrite and a rewritten manifest; the file at tests/test_a_tick_reads_the_review_store_once.py:359-382 adds the growing-stream case, the pre-existing cases cover the rewrites, and the manifest records 58 passed EXIT=0 with the base arm and negative control beside it.",
+    "goal": "the node's goal is that one producer tick answers every run's stored review from a per-tick read of the review store and re-reads only when an input of that answer moved; reckon/crew/recovery_memo.py:604-636 keys the answer on _review_read_inputs and reckon/crew/recovery_review_subject.py:142-165 serves both selections from it, so a tick whose only move is a worker stream reads no review.",
+    "manifest": "read; it reports the gate at tests/test_a_tick_reads_the_review_store_once.py with test_staged_write_inventory.py, names the five log files, records the base arm 51 passed/6 errors EXIT=1 and the head arm 58 passed EXIT=0, and its landing line states the 40-read base reproduction.",
+    "write_paths": "read the six declared paths (recovery_review_subject.py, recovery_memo.py, review_records.py, the new test file, the landing fragment, the figures directory); every path in the diff is inside them, review_records.py and the figures directory were not needed and were not written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_tick_reads_the_review_store_once.py:382 asserts the second tick's counter dict equals {\"enumerations\": 1}, an expectation derived independently of the code's arguments, and logs/negative-control.log shows it reddening with 39 per-run reads when the two source modules are restored to base.",
+    "evidence": "logs/after-arm-git.log records 58 passed EXIT=0 at revision 0bf5abda69 and logs/base-arm-git.log records 51 passed, 6 errors EXIT=1 at e8c403db, and logs/negative-control.log records 1 failed, 6 passed EXIT=1 naming test_a_live_runs_growing_stream_reads_no_review with read:r-author-00..39 at 1 on the second tick; the base arm's six are fixture errors from the retired shared tick, so the defect's base reproduction rests on the negative-control arm rather than on the base arm.",
+    "fit": "the new block at reckon/crew/recovery_memo.py:597-636 sits beside _TICK_CLASSIFICATION_INPUTS and reuses _classification_key, following the module's own memo idiom, and the added names (_review_read_inputs, _read_review_once, _TICK_REVIEW_READ_INPUTS) describe the mechanism with no plan or stage label.",
+    "goal_fidelity": "reckon/crew/recovery_review_subject.py:142 and :151 route select_review_for_head's head and newest selections through _read_review_once, and :1462 does the same for newest_review_for_headless_run, so a tick whose only move is a worker stream answers from the earlier read, which the added case at tests/test_a_tick_reads_the_review_store_once.py:382 asserts as a zero-read second tick.",
+    "reuse": "reckon/crew/recovery_memo.py:604 re-implements reckon/file_memo.py:439 memoized_key (bounded cache, deep copy in and out, caller-carried change key), which reckon/crew/obligations.py:1667 already applies to this very function, so the addition duplicates an owner rather than extending it.",
+    "scope_discipline": "git diff --stat e8c403db..534c4912d7 lists only reckon/crew/recovery_memo.py, reckon/crew/recovery_review_subject.py, tests/test_a_tick_reads_the_review_store_once.py and the landing fragment, all inside the six declared write paths, and nothing outside the goal's subject changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that one producer tick answers every run's stored review from a per-tick read of the review store and re-reads only when an input of that answer moved; reckon/crew/recovery_memo.py:604-636 keys the answer on _review_read_inputs and reckon/crew/recovery_review_subject.py:142-165 serves both selections from it, so a tick whose only move is a worker stream reads no review.\nVERDICT done_when: the done_when asks for a new tests/test_a_tick_reads_the_review_store_once.py proving a second unchanged tick reads no review, and re-reads on an in-place rewrite and a rewritten manifest; tests/test_a_tick_reads_the_review_store_once.py:359-382 adds the growing-stream case, the pre-existing cases cover the rewrites, and the manifest records 58 passed EXIT=0 with the base arm and negative control beside it.\nVERDICT write_paths: read the six declared paths (recovery_review_subject.py, recovery_memo.py, review_records.py, the new test file, the landing fragment, the figures directory); every path in the diff is inside them, and review_records.py and the figures directory were not needed.\nVERDICT manifest: read; it reports the gate at tests/test_a_tick_reads_the_review_store_once.py with test_staged_write_inventory.py, names its five logs, and records base 51 passed/6 errors EXIT=1 against head 58 passed EXIT=0.\nVERDICT diff: read commit by commit against e8c403dbf82; 4083687d03 adds _review_read_inputs and _read_review_once and routes two readings through them, 0bf5abda69 tidies the test iteration, 534c4912d7 adds the landing fragment; four files, all inside the declared scope.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:392, reckon/crew/promotion_release.py:1127, reckon/crew/obligations.py:1671, reckon/crew/queue_landing.py:174, reckon/crew_run_commands.py:987, reckon/crew/recovery_review_subject.py:1493\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_subject.py:142 and :151 route select_review_for_head's head and newest selections through _read_review_once and :1462 does the same for newest_review_for_headless_run.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-arm-git.log records 58 passed EXIT=0 at 0bf5abda69 and logs/negative-control.log records 1 failed EXIT=1 with read:r-author-00..39 at 1 on the second tick, though the base arm's six are fixture errors rather than the defect's own assertion.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e8c403db..534c4912d7 lists only the two source modules, the test file and the landing fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_tick_reads_the_review_store_once.py:382 asserts the second tick equals {\"enumerations\": 1}, an expectation independent of the code's arguments, and logs/negative-control.log reddens it at EXIT=1.\nSCORE fit: 18\nJUSTIFICATION fit: the block at reckon/crew/recovery_memo.py:597-636 sits beside _TICK_CLASSIFICATION_INPUTS and reuses _classification_key, and its names describe the mechanism with no plan label.\nSCORE reuse: 4\nJUSTIFICATION reuse: reckon/crew/recovery_memo.py:604 re-implements reckon/file_memo.py:439 memoized_key, which reckon/crew/obligations.py:1667 already applies to this same function, rather than extending that owner.\nFINDING reckon/crew/recovery_memo.py:604 non-blocking: _read_review_once duplicates file_memo.memoized_key (reckon/file_memo.py:439), the owner of a bounded deep-copying memo against a caller-carried change key that obligations.py:1667 already uses for this function, and drops its lock and 50,000-entry bound for an unguarded 1024-entry dict.\nFINDING reckon/crew/recovery_memo.py:635 non-blocking: pop(next(iter(_READ_REVIEW_ANSWERS))) is an unlocked check-then-act, so two threads reaching a miss concurrently can select the same key and the second pop raises KeyError inside a producer tick.\n",
+  "review_run_id": "r-20261112T000420800208-review-of-a-tick-reads-the-review-store-once-534c4912d755",
+  "reviewed_base_sha": "e8c403dbf82f39ee05c1487953f58bf0b02ec947",
+  "reviewed_head_sha": "534c4912d755d9de5ee3d0d5fe58a9c3cb14ca4f",
+  "reviewed_run_id": "r-20261111T224037800115-a-tick-reads-the-review-store-once",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T000420800208-review-of-a-tick-reads-the-review-store-once-534c4912d755"
+  },
+  "reviewer_run_id": "r-20261112T000420800208-review-of-a-tick-reads-the-review-store-once-534c4912d755",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 4,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:43:08.039556+00:00",
+  "total": 97
+}

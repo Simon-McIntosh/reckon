@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "0 added is derived from the reviewed run's baseline_suite and after_suite, whose failure_ids are both empty. The named importer arms add 8 failures at head (logs/importer-head.log 167 failed vs logs/importer-base.log 159 failed), which the blocking finding records.",
+  "completed_at": "2026-11-11T20:25:05.929Z",
+  "dispatched_at": "2026-11-11T20:12:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "refused-review-writes-nothing",
+      "recorded_at": "2026-11-11T23:36:18.155639+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": 193,
+      "severity": "blocking",
+      "text": "the guard runs ahead of _run_review's own argument validation, so a malformed review command is answered with a follower refusal instead of its argument error (tests/test_an_answer_says_what_was_done.py:100 now fails because --answer is never named), and the done_when's importer-arm no-added-failure clause is unmet at 8 added failures"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 3769,
+      "severity": "non-blocking",
+      "text": "forcing watcher_live True excludes the project-producer condition, so a review dispatched to a cli backend while no watcher process is live still composes into the plan's report directory and is refused only at dispatch"
+    },
+    {
+      "file": "reckon/crew/plan_review.py",
+      "line": 3775,
+      "severity": "non-blocking",
+      "text": "the refusal reuses the dispatch's wording, whose remedy names --no-watch, a flag the review verb does not offer, so the remedy the refusal states cannot be followed here"
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185754655706-refused-review-writes-nothing/logs/base-suite.log",
+      "line": 7,
+      "severity": "non-blocking",
+      "text": "the base arm's log ends EXIT=0 while its own summary reports 2 errors and the manifest declares exit_status 1 for the same log, so that receipt cannot be reconciled with itself"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that every session refusal a plan review can raise is answered before composing, so a refused review writes nothing; reckon/crew_run_commands.py:193 calls the new guard before original(**kwargs) reaches _run_review, and the test shows the report directory is never created.\nVERDICT done_when: the done_when names tests/test_a_refused_plan_review_writes_nothing.py plus an importer-arm no-added-failure clause, a negative control and ruff; the manifest records the test (53 passed) and the negative control (1 failed on the named assertion) and ruff reports no findings on the three staged files, but the importer clause is unmet at head 167 failed against base 159.\nVERDICT write_paths: the node's declared write_paths are reckon/crew/plan_review.py, reckon/crew_run_commands.py, tests/test_a_refused_plan_review_writes_nothing.py and the evidence fragment; git diff --stat 2e4cf597..e46e82f0 lists exactly those four files.\nVERDICT manifest: read in full; it states the test command and 53 passed, the negative control red on the unchanged-directory assertion, the importer delta of 8 added failures under outside_scope, and no blockers.\nVERDICT diff: read commit by commit against base 2e4cf597; b756294b adds session_delivery_refusal and its call site, c6491e04 reorders one assertion so the declared control is reached, e46e82f0 adds the landing fragment; 279 added lines, no deletions, nothing outside scope.\nCALL_SITES: reckon/crew_run_commands.py:_install_carried_answer, reckon/cli.py:221, reckon/mcp_crew_actions.py:318, reckon/crew_dispatch_commands.py:_run_review, reckon/crew/dispatch_plan.py:1254\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:3739 answers every session-scoped condition before composition, but the producer condition is excluded at plan_review.py:3769 so one write-then-refuse path remains.\nSCORE evidence: 10\nJUSTIFICATION evidence: logs/after-arm.log records EXIT=0 with the 53-passed summary in a separate after-arm.body, and the done_when's importer clause is recorded as unmet at 8 added failures in logs/importer-head.log.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat 2e4cf597..e46e82f0 is one of the four declared write paths and the change is purely additive.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_refused_plan_review_writes_nothing.py:139 fails if the guard is removed or moved after composition, as logs/negative-control.log shows.\nSCORE fit: 16\nJUSTIFICATION fit: the module follows the surrounding guard style, but reckon/crew_run_commands.py:134 claims every condition is answered while the same change deliberately excludes one.\nSCORE reuse: 18\nJUSTIFICATION reuse: reckon/crew/plan_review.py:3739 reuses dispatch_watch._unmet_follower_conditions and _FollowerAdmissionUnmet rather than forking the condition logic that dispatch_watch.py:_watcher_delivery_admission owns.\nFINDING reckon/crew_run_commands.py:193 blocking: the guard runs ahead of _run_review's own argument validation, so a malformed review command is answered with a follower refusal instead of its argument error (tests/test_an_answer_says_what_was_done.py:100 now fails because --answer is never named), and the done_when's importer-arm no-added-failure clause is unmet \u2014 the importer arms add 8 failures at head.\nFINDING reckon/crew/plan_review.py:3769 non-blocking: forcing watcher_live True excludes the project-producer condition, so a review dispatched to a cli backend while no watcher process is live still composes into the plan's report directory and is refused only at dispatch, the write-then-refuse shape the plan's section describes.\nFINDING reckon/crew/plan_review.py:3775 non-blocking: the refusal reuses the dispatch's wording, whose remedy names --no-watch, a flag the review verb does not offer, so the remedy the refusal states cannot be followed at this call site.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T185754655706-refused-review-writes-nothing/logs/base-suite.log:7 non-blocking: the base arm's log ends EXIT=0 while its own summary reports 2 errors, and the manifest declares exit_status 1 for the same log, so that receipt cannot be reconciled with itself.\n",
+  "review_run_id": "r-20261111T200747600010-review-of-refused-review-writes-nothing-e46e82f0cb78",
+  "reviewed_base_sha": "2e4cf597da81c04da1ae305ece1289fd6c74e47d",
+  "reviewed_head_sha": "e46e82f0cb7895edc5419fc55886a8eb6e8a5797",
+  "reviewed_run_id": "r-20261111T185754655706-refused-review-writes-nothing",
+  "scores": {
+    "durability": 19,
+    "evidence": 10,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:05:18.296150+00:00",
+  "total": 100
+}

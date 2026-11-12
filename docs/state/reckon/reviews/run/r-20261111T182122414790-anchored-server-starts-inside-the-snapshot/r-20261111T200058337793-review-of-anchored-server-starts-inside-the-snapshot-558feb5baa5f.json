@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "measured: baseline_suite records 72 passed with 2 errors (tests/test_staged_write_inventory.py::test_every_staged_write_reaches_the_owner and ::test_claim_move_aside_is_not_a_staged_write, both attributed by the manifest to the git-less baseline extraction), after_suite records 77 passed with 0 failures at the reviewed head, so the set difference is empty",
+  "assertion_analysis": [
+    {
+      "condition_to_fail": "The initialize answer omits serverInfo or names something other than the module constant the server builds the field from; the assertion does not fail when the advertised name itself changes, because both sides read the same constant.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 441
+    },
+    {
+      "condition_to_fail": "The initialize answer declares different or absent capabilities; the expected mapping {\"tools\": {\"listChanged\": false}} is written in the test and no request supplies it.",
+      "file": "tests/test_anchored_edit.py",
+      "line": 442
+    }
+  ],
+  "assertion_note": "see assertion_analysis",
+  "base_log_revision": "994610e0bcf328d18bb62bf3ba1838e7c4f311ba",
+  "call_site_count": 3,
+  "call_sites": [
+    "pyproject.toml:51 console script reckon-anchored-edit = reckon.anchored_edit:main",
+    "reckon/_worker_fence.py:403 _seed_anchored_edit registers the server as 'python -m reckon.anchored_edit --root ...' in seeded settings",
+    "reckon/_backends.py:1548 _anchored_edit_flags builds the same argv for the codex arm, gated at :1423"
+  ],
+  "completed_at": "2026-11-11T20:16:02.239Z",
+  "dispatched_at": "2026-11-11T20:05:27Z",
+  "findings": [
+    {
+      "file": "tests/test_anchored_edit.py",
+      "line": "441",
+      "severity": "non-blocking",
+      "text": "non-blocking: this assertion compares the initialize answer's serverInfo.name with reckon.anchored_edit.SERVER_NAME, the same constant reckon/anchored_edit.py:555 writes into that field, so the two sides move together and an advertised-name change leaves it true; the literal it replaced was independent, and the removed assertion leaves protocolVersion untested, so this increment traded a guard for a self-comparison."
+    },
+    {
+      "file": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-server-starts-inside-the-snapshot.html",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the harness records a server still importing as 'pending', while the node's own serve() docstring at reckon/anchored_edit.py:603 says 'unconnected', and no log in the run records either state name (the clive log only records the connected case), so the record carries an unverified claim about harness behaviour in two conflicting forms."
+    }
+  ],
+  "head_log_revision": "558feb5baa5f3c805b23afdf0a978264eebf3d3c",
+  "item_verdicts": {
+    "diff": "Read commit by commit: 81319b7 deletes build_server() and its lazy FastMCP import from reckon/anchored_edit.py, and 558feb5 corrects the fragment's claim that the framework is imported lazily and replaces the initialize test's protocolVersion assertion with an independent capabilities assertion and a serverInfo name assertion against the module constant.",
+    "done_when": "The done-when asks for five before and five after cold-process initialize timings with the after arm under 1.5 s, a headless clive record showing status connected with its stream, a cold-import test in tests/test_anchored_edit.py, and ruff clean on the staged paths; initialize-timings.log holds 3.035-7.322 s before and 0.233-0.317 s after with EXIT=0, clive-session.log and its stream record status connected with both tools offered, tests/test_anchored_edit.py:485-524 is the cold-import test, and ruff check and ruff format --check pass on both head files as re-run by this review.",
+    "goal": "The node goal is that reckon-anchored-edit answer initialize and tools/list inside the harness's two-second session-start snapshot; the reviewed increment removes the unreachable build_server() that the previous review named, so reckon/anchored_edit.py:596 serve() is now the module's only server path, and it changes no runtime behaviour of the cold-start answers.",
+    "manifest": "The source manifest reports status complete, three commits, three changed paths, an after arm of 77 passed EXIT=0 and a baseline of 72 passed with 2 errors it attributes to a git-less extraction; each named log exists on disk and holds the stated result.",
+    "write_paths": "The source manifest declares reckon/anchored_edit.py, tests/test_anchored_edit.py and the landing fragment; git diff 568b3c85..558feb5baa changes exactly those three files (5 insertions, 24 deletions) and nothing else."
+  },
+  "justifications": {
+    "durability": "The cold-import guard still fails on its regression (negative-control.log records EXIT=1 with report['before'] holding reckon._store and reckon._worker_fence), but the increment weakened the initialize test at tests/test_anchored_edit.py:441 by comparing serverInfo.name with the constant reckon/anchored_edit.py:555 uses to build that field.",
+    "evidence": "Every done-when item is on disk and read: initialize-timings.log records 3.035-7.322 s before and 0.233-0.317 s after (EXIT=0), clive-session-stream.jsonl records status connected with both tools at 568b3c85, after-suite.log records 77 passed EXIT=0 at the head, and ruff passes on the head files; the clive arm predates the head, which tests/test_anchored_edit.py:396 covers by driving the console script through the real MCP client at the head.",
+    "fit": "Removing build_server leaves one declaration of the served tool surface in reckon/anchored_edit.py, beside _TOOLS at :455, and the file stays ruff-clean at the head.",
+    "goal_fidelity": "The increment deletes the only remaining framework-registered definition in reckon/anchored_edit.py (build_server, removed in 81319b7), leaving :596 serve() as the sole server path, so the cold-start answers the goal measures come from one implementation and no runtime behaviour changed.",
+    "reuse": "The increment adds no definition; it removes a duplicate of the capability serve() already provides, and git grep jsonrpc over reckon/ finds no other JSON-RPC serving loop that either could have been extended.",
+    "scope_discipline": "git diff 568b3c85..558feb5baa is confined to reckon/anchored_edit.py, tests/test_anchored_edit.py and the declared landing fragment, and the only module change is the deletion of dead code."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that reckon-anchored-edit answer initialize and tools/list inside the harness's two-second session-start snapshot; the reviewed increment 568b3c85..558feb5baa deletes the unreachable build_server() from reckon/anchored_edit.py, so :596 serve() is the module's only server path and no runtime behaviour changed.\nVERDICT done_when: the done-when asks for five before and five after cold-process initialize timings under 1.5 s, a headless clive record showing connected with its stream, a cold-import test, and ruff clean; initialize-timings.log records 3.035-7.322 s before and 0.233-0.317 s after with EXIT=0, clive-session-stream.jsonl records status connected with both tools, tests/test_anchored_edit.py:485-524 is the cold-import test, and this review re-ran ruff check and ruff format --check clean on both head files.\nVERDICT write_paths: the manifest declares reckon/anchored_edit.py, tests/test_anchored_edit.py and the landing fragment, and git diff 568b3c85..558feb5baa changes exactly those three files and nothing else.\nVERDICT manifest: read; it reports status complete, three commits, three changed paths, an after arm of 77 passed EXIT=0 and a baseline of 72 passed with 2 attributed errors, and every log it names exists and holds the stated result.\nVERDICT diff: read commit by commit; 81319b7 deletes build_server() and its lazy FastMCP import from reckon/anchored_edit.py, and 558feb5 corrects the fragment's framework-import claim and rewrites the initialize test's assertions.\nCALL_SITES: pyproject.toml:51, reckon/_worker_fence.py:403, reckon/_backends.py:1548, reckon/_backends.py:1423\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the increment deletes the only remaining framework-registered definition in reckon/anchored_edit.py, leaving :596 serve() as the sole server path with no runtime change.\nSCORE evidence: 18\nJUSTIFICATION evidence: initialize-timings.log records 3.035-7.322 s before and 0.233-0.317 s after with EXIT=0, and after-suite.log records 77 passed EXIT=0 at the head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 568b3c85..558feb5baa touches only the three declared paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_anchored_edit.py:441 now compares serverInfo.name against the constant reckon/anchored_edit.py:555 uses to build it, so it moves with its own input.\nSCORE fit: 20\nJUSTIFICATION fit: removing build_server leaves one tool-surface declaration beside _TOOLS at reckon/anchored_edit.py:455, ruff-clean at the head.\nSCORE reuse: 20\nJUSTIFICATION reuse: the increment removes duplication rather than adding a definition, and git grep jsonrpc over reckon/ finds no other JSON-RPC loop to extend.\nFINDING tests/test_anchored_edit.py:441 non-blocking: the assertion compares the initialize answer's serverInfo.name with reckon.anchored_edit.SERVER_NAME, the same constant reckon/anchored_edit.py:555 writes into that field, so an advertised-name change leaves it true, and the removal of the protocolVersion assertion leaves that field untested.\nFINDING docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-server-starts-inside-the-snapshot.html:8 non-blocking: the fragment says the harness records a slow server as 'pending' while reckon/anchored_edit.py:603 says 'unconnected', and no log in the run records either state name.\n",
+  "review_run_id": "r-20261111T200058337793-review-of-anchored-server-starts-inside-the-snapshot-558feb5baa5f",
+  "reviewed_base_sha": "568b3c85bd31c824d28cbbe5e22fe1f194e3e1c1",
+  "reviewed_commits": [
+    "81319b7cca5a9af5c912dab3b092244ca9696be2",
+    "558feb5baa5f3c805b23afdf0a978264eebf3d3c"
+  ],
+  "reviewed_head_sha": "558feb5baa5f3c805b23afdf0a978264eebf3d3c",
+  "reviewed_run_id": "r-20261111T182122414790-anchored-server-starts-inside-the-snapshot",
+  "scores": {
+    "durability": 17,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_comparison_assertions": [
+    "tests/test_anchored_edit.py:441 compares the returned serverInfo.name with reckon.anchored_edit.SERVER_NAME, the same constant reckon/anchored_edit.py:555 writes into that field, so renaming the advertised server keeps the assertion true; the literal it replaced ('reckon-anchored-edit') would have reddened on that change, and after the swap no assertion covers protocolVersion at all."
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:12:12Z",
+  "total": 114
+}

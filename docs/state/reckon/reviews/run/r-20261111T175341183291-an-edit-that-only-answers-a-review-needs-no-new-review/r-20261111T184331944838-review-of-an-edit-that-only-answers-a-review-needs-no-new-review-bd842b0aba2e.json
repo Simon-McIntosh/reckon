@@ -1,0 +1,73 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2916",
+    "reckon/crew_dispatch_commands.py:2933",
+    "reckon/mcp_edit_plan.py:2195",
+    "reckon/mcp_deadlines.py:741",
+    "reckon/crew/routing.py:2847",
+    "reckon/crew/queue_admission.py:4581"
+  ],
+  "completed_at": "2026-11-11T18:56:21.506Z",
+  "dispatched_at": "2026-11-11T18:46:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "A quoted timing differs from the recorded log; the pass count and conclusion match the log.",
+      "recorded_at": "2026-11-11T19:14:45.986595+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "No source changed, so the ruff clause had nothing to check; the record names that.",
+      "recorded_at": "2026-11-11T19:15:11.758781+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "the measure paragraph quotes \"60 passed in 35.84s at head cfccd6e272\", but the head log the manifest records (suite_head.log) reads \"60 passed in 37.28s\" at bd842b0aba and no log in the run directory carries 35.84s; the quoted figure cannot be reconciled with the log it is offered as evidence for, though the conclusion it supports still holds at the recorded head."
+    },
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html",
+      "line": 27,
+      "severity": "non-blocking",
+      "text": "the scope paragraph says ruff check and ruff format --check \"add no findings on the two staged source paths\", but this node staged only the fragment and changed no source, so the paths it ran over were unmodified, and no ruff log is on disk, leaving the claim inline-only."
+    }
+  ],
+  "justifications": {
+    "durability": "the node adds no assertion; durability rests on the pre-existing covering test, which negctl.log shows failing when the acceptance record is ignored.",
+    "evidence": "both suite logs name their revision and command and end EXIT=0, and negctl.log shows the guard firing, but the fragment's head-arm duration does not match the stored head log.",
+    "fit": "the fragment follows the neighbouring evidence pages, carrying plan-* metas, a data-reckon=landed article and node-id-prefixed element ids.",
+    "goal_fidelity": "the behaviour the goal names is present and green at head via reckon/crew/plan_review.py:1297, and the node's landed artefact is the evidence fragment which records it.",
+    "reuse": "the node adds no definition; the capability's sole owner is reckon/crew/plan_review.py accept_edits, and a search of reckon/ found only that module's definitions and its callers.",
+    "scope_discipline": "the whole diff is the single new evidence fragment, inside the declared write paths, and no product source or test file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an edit answering a review owes no new review; the capability is present at bd842b0aba2e3de58c2b61193b248490b4b80440 in reckon/crew/plan_review.py:2767 (accept_edits), :2748 (acceptable_edit_units) and the acceptance-aware branch of review_coverage at :1297, and the node's only committed change is the evidence fragment docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html.\nVERDICT done_when: the done-when names tests/test_an_edit_that_answers_a_review_is_covered.py with a negative control; the manifest records the suite pair 60 passed EXIT=0 in both arms (suite_base.log at 36a0d1a16249246e4dd41aacdfd5ea102cd290af, suite_head.log at bd842b0aba2e3de58c2b61193b248490b4b80440) and the control log negctl.log reading 2 failed, 7 deselected, EXIT=1, and the run directory holds the importer arms at 74 failed / 876 passed / 3 errors EXIT=1 in both arms with the 77 failing ids identical.\nVERDICT write_paths: the node was fenced to reckon/crew/plan_review.py, tests/test_an_edit_that_answers_a_review_is_covered.py, docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html and docs/figures/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review; the diff touches only the fragment, inside that scope.\nVERDICT manifest: read; it declares status complete, commits cfccd6e272 and bd842b0aba, records the base and after suite arms with log paths and failure ids, names negctl.log as the negative control, and states that the node changes no product source and no test.\nVERDICT diff: read commit by commit against 36a0d1a16249246e4dd41aacdfd5ea102cd290af: cfccd6e272 and bd842b0aba add one 30-line file, docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html, and nothing else, which matches the manifest's claim that the capability was already landed at base.\nCALL_SITES: reckon/crew_dispatch_commands.py:2916, reckon/crew_dispatch_commands.py:2933, reckon/mcp_edit_plan.py:2195, reckon/mcp_deadlines.py:741, reckon/crew/routing.py:2847, reckon/crew/queue_admission.py:4581\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: the behaviour the goal names is present and green at bd842b0aba2e3de58c2b61193b248490b4b80440 via reckon/crew/plan_review.py:1297, and the node's landed artefact is the evidence fragment docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html:19, which records it.\nSCORE evidence: 16\nJUSTIFICATION evidence: the two suite logs name their revision and command and end EXIT=0 at bd842b0aba2e3de58c2b61193b248490b4b80440 (suite_head.log) against a base arm at 36a0d1a16249246e4dd41aacdfd5ea102cd290af, and negctl.log shows the guard firing, but the fragment's head-arm duration does not match the stored head log.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole diff is the single new path docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html, inside the declared write paths, and no product source or test file is touched.\nSCORE durability: 15\nJUSTIFICATION durability: the node adds no assertion of its own, so durability rests on the pre-existing tests/test_an_edit_that_answers_a_review_is_covered.py:260 and :278, which negctl.log shows failing when _accepted_edit_units ignores the acceptance record (2 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the neighbouring evidence pages, carrying plan-* metas, a data-reckon=\"landed\" article and element ids prefixed with the node id (docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html:21-27).\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition; the capability's sole owner is reckon/crew/plan_review.py:2767 accept_edits, and a search of reckon/ for accept_edits, acceptable_edit_units and review_coverage found only that module's definitions and its callers, no second implementation.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html:26 non-blocking: the measure paragraph quotes \"60 passed in 35.84s at head cfccd6e272\", but the head log the manifest records (suite_head.log) reads \"60 passed in 37.28s\" at bd842b0aba and no log in the run directory carries 35.84s or names cfccd6e272 as a suite-pair arm, so the quoted figure cannot be reconciled with the log it is offered as evidence for; the conclusion it supports (60 passed in both arms) is still true at the recorded head.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/an-edit-that-only-answers-a-review-needs-no-new-review.html:27 non-blocking: the scope paragraph says ruff check and ruff format --check \"add no findings on the two staged source paths\", but this node staged only the fragment and changed no source, so the paths it ran over were unmodified, and no ruff log is on disk, leaving the claim inline-only in the manifest's artifacts field.\n",
+  "review_run_id": "r-20261111T184331944838-review-of-an-edit-that-only-answers-a-review-needs-no-new-review-bd842b0aba2e",
+  "reviewed_base_sha": "36a0d1a16249246e4dd41aacdfd5ea102cd290af",
+  "reviewed_head_sha": "bd842b0aba2e3de58c2b61193b248490b4b80440",
+  "reviewed_run_id": "r-20261111T175341183291-an-edit-that-only-answers-a-review-needs-no-new-review",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T19:12:34.068443+00:00",
+  "total": 106,
+  "verdicts": {
+    "diff": "two commits, one new 30-line evidence file, nothing else.",
+    "done_when": "the named test passes with its negative control; the suite pair reads 60 passed EXIT=0 in both arms and the control log reads 2 failed EXIT=1; the importer arms are identical at base and head.",
+    "goal": "the capability is present at head in reckon/crew/plan_review.py and the landed change is the evidence fragment recording it.",
+    "manifest": "read; declares complete, both suite arms with logs, the negative control, and that no product source or test changed.",
+    "write_paths": "the diff touches only the declared evidence fragment."
+  }
+}

@@ -1,0 +1,120 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": {
+    "self_referential_assertions": "None found: pid expectations use independently spawned child identities, and physical signal effects are checked separately; metadata bounds are limited validity checks, not claimed as full correctness guards.",
+    "tests/test_crew_census.py:151,152,153": "Fail if owner liveness is bypassed, all processes are spared, or argv establishes ownership; independently launched live/dead/decoy processes distinguish these outcomes. The recorded elif True mutation fails all four source cases.",
+    "tests/test_crew_census.py:156,157": "Fail if ancestry is no longer excluded or unrecorded processes are classified as owned; expected ancestors come from os and known unrecorded stubs.",
+    "tests/test_crew_census.py:159,160,161,162": "Fail on negative age, invalid running state, lost wait-channel read or wrong cwd; metadata validity checks do not independently establish exact age or wait-channel accuracy.",
+    "tests/test_crew_census.py:164": "Fails if duplicate aggregation drops either registered follower or emits the wrong session/count/pids; expectation comes from two separately launched children.",
+    "tests/test_crew_census.py:179,181,182,183,184,186,187,188": "Fail on CLI refusal, missing/wrong/extra target output, no successful stop, wrong actual signal, or killing either live-owner or argv-only control; OS returncode and poll provide independent effects.",
+    "tests/test_crew_census.py:194,195,196": "Fail if dry-run refuses, omits its planted orphan or sends a signal; child poll is independent of report data.",
+    "tests/test_crew_census.py:203,208,209": "Fail if expired producer is not initially listed or apply ignores renewed lease and kills it; renewal changes the authoritative record after report capture.",
+    "tests/test_crew_census.py:231,232": "Fail if foreign/reused/incomplete producer registrations authorize selection or lose the spared explanation; remove each verification branch to make its parameter case red.",
+    "tests/test_crew_census.py:245": "Fails if the supported follower-owner environment stamp is ignored; fixture supplies owner encoding and independent child pid.",
+    "tests/test_crew_census.py:252,253": "Fail if apply ignores a mismatched captured target start-time and signals the child; this checks target-report mismatch rather than actual kernel PID reuse.",
+    "tests/test_crew_census.py:262,263,265": "Fail if run-pointer ownership cannot select/stop its child or apply rewrites/deletes the pointer; before bytes are a preserved independent file snapshot, not an echoed result.",
+    "tests/test_crew_census.py:274,278,279": "Fail if escalation is omitted, signals/target differ, actual SIGKILL does not occur, or re-scanning adds a later orphan to the original stop set.",
+    "tests/test_crew_census.py:287,288,295,296": "Fail if live followers are selected, duplicate reporting is lost/wrong, empty apply gains targets, or either live follower is stopped.",
+    "tests/test_crew_census.py:310,311": "Fail if malformed or foreign ownership is treated as proof of death instead of spared unknown.",
+    "tests/test_crew_census.py:322,324,329": "Fail if pidfd PermissionError is swallowed into success, the refusal is missing/wrong, or a child is signalled despite refusal; stubbed error is an injected external condition with literal expected semantics.",
+    "tests/test_crew_census.py:344,345": "Fail if a colliding foreign/reused registration masks the matching local follower registration or attributes the wrong kind; do not cover the no-matching-registration stamped case identified in the finding.",
+    "tests/test_crew_census.py:354,355,359,360": "Fail if matching contradictory registrations select a process, omit the ambiguity reason, allow apply targets or kill the process.",
+    "tests/test_crew_census.py:57,58,85": "Fixture controls fail if child readiness is absent or the deliberately ended owner remains alive; these establish real process state independently of census.",
+    "tests/test_crew_help_names_its_state.py:24": "Added expectation is consumed by existing independent command help comparison; removing the census state description makes it fail.",
+    "tests/test_skill_contracts.py:1410": "Added expected verb/flag map is compared with independent registered commands and skill text; removing census or --apply from either authoritative surface makes its existing assertions fail."
+  },
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/cli.py:403 imports crew_run_commands to register crew commands",
+    "reckon/crew_run_commands.py:41 crew_census calls census and apply_census",
+    "reckon/crew/census.py:339 apply_census calls census to revalidate each listed target"
+  ],
+  "completed_at": "2026-11-12T02:45:49Z",
+  "dispatched_at": "2026-11-12T02:36:27Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "crew-census-lists-and-stops-ownerless",
+      "recorded_at": "2026-11-12T03:02:35.921677+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "crew-census-lists-and-stops-ownerless",
+      "recorded_at": "2026-11-12T03:02:51.534319+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/census.py",
+      "line": "125",
+      "severity": "blocking",
+      "text": "blocking: When choices contains only a foreign-host or reused-pid registration, matching is empty but the fallback selects that unrelated record and returns unknown at lines 139-142 before examining RECKON_OWNER_PID, RECKON_FOLLOWER_OWNER or RECKON_RUN_ID; a local process with a valid dead-owner stamp is therefore spared and omitted from the target list, so ignore registrations that do not identify this process when resolving other valid ownership sources and add stamped/run collision cases."
+    },
+    {
+      "file": "reckon/crew/census.py",
+      "line": "50",
+      "severity": "blocking",
+      "text": "blocking: The new module duplicates process environment decoding owned by reckon/crew/process_signal.py:_process_environment, follower-owner decoding owned by reckon/crew/follower_registration.py:_parse_follower_owner, and the producer expiry predicate owned by reckon/crew/runs.py:watch_lease_remaining; these additions neither wrap nor extend those owners and create separate safety decisions, so reuse the parsers and extend the lease owner with a record/clock-aware primitive for census snapshot evaluation."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "completed": true,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T210250166348-crew-census-lists-and-stops-ownerless/inventory-head-suite.log",
+      "sha256": "bfaf9331ae51f0cd8b828e28abfb5f4c986fe6d393779d86c8e614a11fa976a4",
+      "summary": "152 passed in 22.25s"
+    },
+    "baseline_suite": {
+      "completed": true,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T210250166348-crew-census-lists-and-stops-ownerless/inventory-baseline-suite.log",
+      "sha256": "ae0a7a97be6a009681f226284ab8e799bafd4bd15e12b7e775cea1417b6cdfd7",
+      "summary": "129 passed in 17.92s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read all five commits from e5707e3bb94e78637b32c90b435a810aa4a0e105 through 41097b7c51c5c48adebbe0d4011c79b81901e002; the eight-file additive change implements the command, tests and guidance, with remaining collision and reuse defects in reckon/crew/census.py.",
+    "done_when": "The source prompt.txt:131 names planted-process, help, skill and importer gates; inventory-baseline-suite.log and inventory-head-suite.log record 129 and 152 passes with EXIT=0, while collision-verification/negative-control.log records four expected failures.",
+    "goal": "The source prompt.txt:38 requires recorded-owner census and exact-pid apply; reckon/crew/census.py:125 still lets a nonmatching registration mask valid stamped ownership.",
+    "manifest": "Read source manifest.md including revision pair, five commits, scope extension and completed suite receipts; its final test-file SHA-256 agrees with committed tests/test_skill_contracts.py at 41097b7c51c5c48adebbe0d4011c79b81901e002.",
+    "write_paths": "The source manifest.md orientation_write_paths and scope_note declare the six original files plus the two explicitly widened skill-contract paths; all eight changed files are covered."
+  },
+  "justifications": {
+    "durability": "tests/test_crew_census.py:151 rejects live-owner selection in the recorded four-source mutation and its apply cases verify real exit signals and surviving controls, but tests/test_crew_census.py:332 covers registration collisions only when another matching registration exists.",
+    "evidence": "The source inventory-baseline-suite.log and inventory-head-suite.log carry completed 129-pass and 152-pass summaries and EXIT=0, and the latter's test SHA-256 matches tests/test_skill_contracts.py at the reviewed head.",
+    "fit": "reckon/crew_run_commands.py:41 uses the existing Click/JSON command idiom and reckon/crew/census.py names mechanisms without forbidden release or plan labels.",
+    "goal_fidelity": "reckon/crew/census.py:125 returns a stale registration's unknown result before a valid environment owner can be considered, so some recorded dead owners are omitted despite the otherwise complete CLI implementation.",
+    "reuse": "reckon/crew/census.py:50,174,216 independently reimplement process_signal.py:131 environment decoding, follower_registration.py:593 owner decoding and runs.py:4004 watch_lease_remaining instead of extending those capability owners.",
+    "scope_discipline": "The eight changed paths in the exact diff match source manifest.md orientation_write_paths plus its explicit scope_note widening for skills/reckon-build/SKILL.md and tests/test_skill_contracts.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source prompt.txt:38 requires recorded-owner census and exact-pid apply; reckon/crew/census.py:125 still lets a nonmatching registration mask valid stamped ownership.\nVERDICT done_when: The source prompt.txt:131 names planted-process, help, skill and importer gates; inventory-baseline-suite.log and inventory-head-suite.log record 129 and 152 passes with EXIT=0, while collision-verification/negative-control.log records four expected failures.\nVERDICT write_paths: The source manifest.md orientation_write_paths and scope_note declare the six original files plus the two explicitly widened skill-contract paths; all eight changed files are covered.\nVERDICT manifest: Read source manifest.md including revision pair, five commits, scope extension and completed suite receipts; its final test-file SHA-256 agrees with committed tests/test_skill_contracts.py at 41097b7c51c5c48adebbe0d4011c79b81901e002.\nVERDICT diff: Read all five commits from e5707e3bb94e78637b32c90b435a810aa4a0e105 through 41097b7c51c5c48adebbe0d4011c79b81901e002; the eight-file additive change implements the command, tests and guidance, with remaining collision and reuse defects in reckon/crew/census.py.\nCALL_SITES: reckon/cli.py:403 imports crew_run_commands to register crew commands, reckon/crew_run_commands.py:41 crew_census calls census and apply_census, reckon/crew/census.py:339 apply_census calls census to revalidate each listed target\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/census.py:125 returns a stale registration's unknown result before a valid environment owner can be considered, so some recorded dead owners are omitted despite the otherwise complete CLI implementation.\nSCORE evidence: 20\nJUSTIFICATION evidence: The source inventory-baseline-suite.log and inventory-head-suite.log carry completed 129-pass and 152-pass summaries and EXIT=0, and the latter's test SHA-256 matches tests/test_skill_contracts.py at the reviewed head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The eight changed paths in the exact diff match source manifest.md orientation_write_paths plus its explicit scope_note widening for skills/reckon-build/SKILL.md and tests/test_skill_contracts.py.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_crew_census.py:151 rejects live-owner selection in the recorded four-source mutation and its apply cases verify real exit signals and surviving controls, but tests/test_crew_census.py:332 covers registration collisions only when another matching registration exists.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew_run_commands.py:41 uses the existing Click/JSON command idiom and reckon/crew/census.py names mechanisms without forbidden release or plan labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/census.py:50,174,216 independently reimplement process_signal.py:131 environment decoding, follower_registration.py:593 owner decoding and runs.py:4004 watch_lease_remaining instead of extending those capability owners.\nFINDING reckon/crew/census.py:125 blocking: When choices contains only a foreign-host or reused-pid registration, matching is empty but the fallback selects that unrelated record and returns unknown at lines 139-142 before examining RECKON_OWNER_PID, RECKON_FOLLOWER_OWNER or RECKON_RUN_ID; a local process with a valid dead-owner stamp is therefore spared and omitted from the target list, so ignore registrations that do not identify this process when resolving other valid ownership sources and add stamped/run collision cases.\nFINDING reckon/crew/census.py:50 blocking: The new module duplicates process environment decoding owned by reckon/crew/process_signal.py:_process_environment, follower-owner decoding owned by reckon/crew/follower_registration.py:_parse_follower_owner, and the producer expiry predicate owned by reckon/crew/runs.py:watch_lease_remaining; these additions neither wrap nor extend those owners and create separate safety decisions, so reuse the parsers and extend the lease owner with a record/clock-aware primitive for census snapshot evaluation.\n",
+  "reuse_search": {
+    "definitions": "_integer is local strict normalization; _processes adds census metadata but forks environment decoding; _ancestry adds exclusion with no identical owner found; _ownership_records adds census indexing with no identical owner found; _owner adds precedence but forks follower parsing; _owner_alive composes existing liveness yet forks lease expiry; census adds aggregate report; pidfd helpers add identity-bound signalling absent from existing bare-pid/group signal owner; apply_census adds report-bounded revalidation; crew_census extends the established command module; test helpers are local fixtures.",
+    "searched": "Capability searches for environment reads, owner parsing/liveness, producer lease expiry, ancestry and process signalling over reckon/crew; opened process_signal.py, follower_registration.py, process_liveness.py and runs.py."
+  },
+  "review_method": "Read-only review; no suite rerun, mutation or production process sweep.",
+  "review_run_id": "r-20261112T022706521573-review-of-crew-census-lists-and-stops-ownerless-41097b7c51c5",
+  "reviewed_base_sha": "e5707e3bb94e78637b32c90b435a810aa4a0e105",
+  "reviewed_head_sha": "41097b7c51c5c48adebbe0d4011c79b81901e002",
+  "reviewed_run_id": "r-20261111T210250166348-crew-census-lists-and-stops-ownerless",
+  "scope_evidence": "Source manifest.md scope_note explicitly records user-authorized widening to the two additional paths.",
+  "scores": {
+    "durability": 18,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T02:59:41.569533+00:00",
+  "total": 100
+}

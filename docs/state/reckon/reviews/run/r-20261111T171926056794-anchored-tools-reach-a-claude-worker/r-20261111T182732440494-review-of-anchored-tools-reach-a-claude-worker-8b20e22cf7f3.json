@@ -1,0 +1,67 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs: baseline_suite (c560a4445, gate-base.log) exit 1 / 71 passed with 2 errors and failure_ids []; after_suite (8b20e22cf7, gate-head.log) exit 0 / 83 passed, failure_ids []. The base arm's exit 1 comes from two collection errors in tests/test_staged_write_inventory.py, which the reviewed manifest attributes to running from a git archive with no checkout; it records no failing ids on either arm, so added failures = 0.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3394",
+    "reckon/crew/dispatch_sessions.py:1345",
+    "reckon/crew/dispatch_sessions.py:1868",
+    "reckon/crew/resumption.py:532",
+    "reckon/crew/dispatch.py:3050"
+  ],
+  "completed_at": "2026-11-11T18:37:49.041Z",
+  "dispatched_at": "2026-11-11T18:29:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/prompts.py",
+      "line": "662",
+      "severity": "non-blocking",
+      "summary": "with_claude_anchored_edit_instruction duplicates the prompt-append capability owned by with_anchored_edit_instruction at reckon/crew/prompts.py:621: both build f'{prompt.rstrip()}\\n\\n{ANCHORED_EDIT_HEADING}\\n<body>\\n' and differ only in body text and in the dialect they gate on, so the owner is not extended but forking",
+      "text": "non-blocking: reckon/crew/prompts.py:662 adds with_claude_anchored_edit_instruction beside the existing owner with_anchored_edit_instruction at line 621. Both functions do the same thing \u2014 append ANCHORED_EDIT_HEADING body to a prompt after rstripping it \u2014 and differ only in the body text and in which dialect they admit; the owner already takes a backend and gates on a dialect, so it could have carried a claude body. The duplication is small (one f-string and a docstring) and the constant is shared, so the cost is drift rather than a second mechanism, but a later change to the heading or the append framing now has two sites to update."
+    },
+    {
+      "file": "reckon/_backends.py",
+      "line": "3115",
+      "severity": "non-blocking",
+      "summary": "the new anchored instruction is appended without stripping one the incoming prompt already carries, unlike the figure listing three lines above at line 3101 which strips for exactly this reason, so a prompt composed from a run's stored prompt.txt and re-launched on a seeding Claude lane gains a second copy of the instruction",
+      "text": "non-blocking: reckon/_backends.py:3115 appends the anchored instruction unconditionally where the prompt already may carry one. The same function strips a figure listing first (line 3101, with its rationale at line 2880: 'a lane change composes from the run's prompt file, which a fresh dispatch has already written with a listing') precisely so a second copy is never handed over, and the new append has no equivalent strip. A re-launch whose prompt comes from a store that already holds the instruction therefore carries it twice; the effect is cosmetic rather than harmful, because a repeated instruction is idempotent, which is why this does not hold the node."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified the landed helper against the four production callers of _backends.launch_plan; only those can reach reckon/_backends.py:3112, and the node's own test files were excluded from the set.",
+    "diff": "Read one commit, 8b20e22cf7 'feat(crew): name the anchored tools in a seeding Claude launch's prompt', 132 insertions across four files: a guarded append in reckon/_backends.py:3112, a new instruction constant and helper in reckon/crew/prompts.py:648-695, two parametrised test cases in tests/test_anchored_edit_claude_arm.py:210-256, and one evidence fragment; no deletions.",
+    "done_when": "The done-when asks for two headless clive session records (unfixed, which must fail the offered-tools criterion, and fixed), a test in tests/test_anchored_edit_claude_arm.py, and clean ruff; the test and ruff hold, but the 'fixed' record (probe-fixed.stream.jsonl) records the server still 'pending' at session start, so the done-when's own fixed-arm criterion is not met and the reviewed manifest says so in its artifacts and blockers lines.",
+    "goal": "The node's goal is to make a Claude-dialect run whose launch seeds the anchored edit server offer those tools at session start and name them in its prompt; the landed diff (reckon/_backends.py:3112, reckon/crew/prompts.py:662) satisfies the 'name them in its prompt' half only, and the reviewed manifest's blockers line records that the session-start half is unmet.",
+    "manifest": "Read at .../r-20261111T171926056794-anchored-tools-reach-a-claude-worker/manifest.md; it states 83 passed at head, 71 passed with 2 errors at base c560a4445, a negative control of 2 failed with EXIT=1, and names gate-head.log, gate-base.log and negative-control.log, all three of which I opened and which carry the results claimed.",
+    "write_paths": "The reviewed manifest declares seven write paths (reckon/_worker_fence.py, reckon/_backends.py, reckon/crew/prompts.py, reckon/crew/dispatch_launch.py, tests/test_anchored_edit_claude_arm.py, and two docs/evidence paths); all four changed paths in the diff are inside that set, and reckon/_worker_fence.py and reckon/crew/dispatch_launch.py are untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit_claude_arm.py:223 asserts 'read_anchored' in plan.prompt and the test reddens with the production append removed, as negative-control.log shows (2 failed, EXIT=1), and its sibling at line 244 asserts plan.prompt == 'node prompt' for each non-seeding launch, so both directions of the guard are pinned.",
+    "evidence": "The gate recorded at gate-head.log is '83 passed' EXIT=0 and is a real gate, but it measures only the prompt half; the done-when's fixed headless-clive arm (probe-fixed.stream.jsonl) still reads 'pending', so the run's own quantitative criterion for the offered-tools half fails and the manifest records that honestly rather than claiming it.",
+    "fit": "reckon/crew/prompts.py:648 reuses the existing ANCHORED_EDIT_HEADING constant and the module's pattern of a named instruction constant with a short wrapper, and no added name carries a plan, ticket or version identifier.",
+    "goal_fidelity": "reckon/_backends.py:3112 appends the prompt instruction, so the naming half of the goal lands, while the session-start half the same goal states is recorded unmet in the reviewed manifest's blockers line and nothing in the diff reaches reckon/anchored_edit.py where the measured repair lives.",
+    "reuse": "reckon/crew/prompts.py:662 adds a second prompt-append function beside with_anchored_edit_instruction at line 621 rather than extending that owner with a dialect-keyed body, duplicating its append framing and its docstring shape.",
+    "scope_discipline": "Every path in the diff (reckon/_backends.py, reckon/crew/prompts.py, tests/test_anchored_edit_claude_arm.py, docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/anchored-tools-reach-a-claude-worker.html) is inside the seven declared write paths, and the out-of-scope repair is recorded under outside_scope instead of being edited."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to make a Claude-dialect run whose launch seeds the anchored edit server offer those tools at session start and name them in its prompt; reckon/_backends.py:3112 satisfies the naming half and the reviewed manifest's blockers line records the session-start half as unmet.\nVERDICT done_when: the done-when names two headless clive session records, a test in tests/test_anchored_edit_claude_arm.py and clean ruff; the test runs at gate-head.log (83 passed, EXIT=0) but probe-fixed.stream.jsonl still reads 'pending', so the done-when's fixed-arm criterion is not met.\nVERDICT write_paths: read the manifest's seven declared paths; every one of the four paths in the diff is inside them, and two declared paths (reckon/_worker_fence.py, reckon/crew/dispatch_launch.py) are untouched.\nVERDICT manifest: read; it states 83 passed at head, 71 passed with 2 errors at base c560a4445, and a 2-failed negative control, naming gate-head.log, gate-base.log and negative-control.log, each of which I opened and matches.\nVERDICT diff: read the single commit 8b20e22cf7 against base c560a4445193; 132 insertions in four files, all inside the declared scope, adding a guarded append, an instruction constant and helper, two parametrised test cases and one evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:3394, reckon/crew/dispatch_sessions.py:1345, reckon/crew/dispatch_sessions.py:1868, reckon/crew/resumption.py:532, reckon/crew/dispatch.py:3050\nSCORE goal_fidelity: 11\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3112 lands the prompt half only, and the session-start half the goal states is recorded unmet in the reviewed manifest's blockers line.\nSCORE evidence: 12\nJUSTIFICATION evidence: gate-head.log records 83 passed EXIT=0 but measures only the prompt half, while the done-when's fixed headless-clive arm (probe-fixed.stream.jsonl) still reads 'pending'.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: all four paths in the diff are inside the seven declared write paths, and the out-of-scope repair is recorded under outside_scope rather than edited.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_anchored_edit_claude_arm.py:223 reddens with the production append removed, as negative-control.log shows (2 failed, EXIT=1), and line 244 pins the reverse direction.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/prompts.py:648 reuses ANCHORED_EDIT_HEADING and adds no plan, ticket or version identifier to any name.\nSCORE reuse: 10\nJUSTIFICATION reuse: reckon/crew/prompts.py:662 duplicates the append framing of with_anchored_edit_instruction at line 621 instead of extending that owner with a dialect-keyed body.\nFINDING reckon/crew/prompts.py:662 non-blocking: with_claude_anchored/with_anchored_edit_instruction duplicate the same prompt-append capability; the owner takes a backend already.\nFINDING reckon/_backends.py:3115 non-blocking: the instruction is appended without stripping an existing copy, unlike the figure listing stripped at line 3101 for the same reason.\n",
+  "review_run_id": "r-20261111T182732440494-review-of-anchored-tools-reach-a-claude-worker-8b20e22cf7f3",
+  "reviewed_base_sha": "c560a4445193f06b58de30b990c3386e6d0c3734",
+  "reviewed_head_sha": "8b20e22cf7f3ce2e796d8b8a35361a145430b611",
+  "reviewed_run_id": "r-20261111T171926056794-anchored-tools-reach-a-claude-worker",
+  "reviewer": "review-of-anchored-tools-reach-a-claude-worker-8b20e22cf7f3",
+  "reviewer_run_id": "r-20261111T182732440494-review-of-anchored-tools-reach-a-claude-worker-8b20e22cf7f3",
+  "scores": {
+    "durability": 17,
+    "evidence": 12,
+    "fit": 17,
+    "goal_fidelity": 11,
+    "reuse": 10,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:45:16.750271+00:00",
+  "total": 85
+}

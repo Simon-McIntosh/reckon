@@ -167,6 +167,16 @@ real continuation.
    release, before anything else edits the plan. `reckon-create` states the same
    step for a new plan and references this definition rather than restating it.
 
+   **Answer first, then edit once.** Promote the review run and answer every
+   finding before the plan changes at all: an answer is refused once the plan
+   has moved past the stored review ("the newest stored review … no longer
+   covers the plan"). Then make every edit the findings call for in one burst,
+   commit it, and compose one review of the result. Interleaving answer, edit
+   and compose turns each fix into two rounds; measured 2026-11-11 on one plan,
+   five content rounds in a day, most spent re-answering findings the edits had
+   already met. A prose edit outside the done-when usually owes no new round, so
+   put a clarification there when the done-when already holds.
+
 ```html
 <!-- ❌ WRONG — stub body -->
 <h2 id="s3">§3 · Implementation</h2>

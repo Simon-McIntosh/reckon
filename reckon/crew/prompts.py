@@ -617,17 +617,57 @@ ANCHORED_EDIT_INSTRUCTION = (
     "current lines; retry from those anchors instead of re-reading the file."
 )
 
+ANCHORED_EDIT_CLAUDE_INSTRUCTION = (
+    "Read files with read_anchored and change them with edit_anchored rather "
+    "than Edit, Write or a shell command. Every line is shown as N:HHH|text, "
+    "so an edit is addressed by N:HHH, or by HHH alone when exactly one line "
+    "carries that hash; creating a file the run did not have is still Write. "
+    "A stale anchor refuses the whole call and returns the region's current "
+    "lines, so retry from those anchors instead of re-reading the file. This "
+    "harness defers MCP tools behind its search: when the anchored tools are "
+    "not in your tool list, load them with ToolSearch and the query\n"
+    "  select:mcp__reckon-anchored-edit__read_anchored,"
+    "mcp__reckon-anchored-edit__edit_anchored"
+)
 
-def with_anchored_edit_instruction(prompt: str, backend: Mapping[str, object]) -> str:
-    """Add the anchored edit steering line to a codex worker's prompt.
+# The body each dialect's harness needs, keyed by dialect name. Both are the
+# same treatment stated for a different harness: codex keeps its own
+# ``apply_patch`` and is steered away from it, while the Claude harness has the
+# built-in edits disallowed and needs the route to a server the list may not
+# name yet.
+ANCHORED_EDIT_INSTRUCTIONS = {
+    "claude": ANCHORED_EDIT_CLAUDE_INSTRUCTION,
+    "codex": ANCHORED_EDIT_INSTRUCTION,
+}
 
-    Codex cannot be told to stop using its own ``apply_patch``, so the argv
-    that offers the anchored server and this instruction are the two halves of
-    one treatment: the server makes the tool callable and the prompt is what
-    makes the worker reach for it. The line is stated only when the launch
-    actually carries the server, which for codex is exactly when the backend's
-    ``anchored_edit`` key is true — the ``-c`` overrides depend on nothing else.
+
+def with_anchored_edit_instruction(
+    prompt: str, backend: Mapping[str, object], *, at_launch: bool = False
+) -> str:
+    """Add the anchored edit steering instruction a treated worker's harness needs.
+
+    Each dialect is steered differently. Codex cannot be told to stop using its
+    own ``apply_patch``, so its instruction is what makes the worker reach for
+    the server the argv also offers; its ``-c`` overrides depend on nothing but
+    the key, so the instruction may be stated at dispatch. The Claude harness
+    disallows the built-in edits instead, and its body names the search route
+    that reaches the server when it answers after the session-start snapshot.
+
+    ``at_launch`` states whether the caller is the launch step, which knows
+    what that launch actually seeded, rather than prompt composition holding
+    the flight key. Only the launch step can tell a Claude run carrying the
+    server from one that seeded none, so a Claude instruction is added only
+    there; at dispatch a Claude backend composes no instruction and gets the
+    one its launch earns.
+
+    A block already present is removed first, so a lane change that composes
+    from a prompt file a launch already wrote keeps exactly one. The same strip
+    runs on a launch that seeds no anchored server: a run moved off an anchored
+    backend to a baseline one hands its worker no instruction naming tools the
+    new launch does not offer.
     """
+    if at_launch:
+        prompt = prompt_without_anchored_edit_instruction(prompt)
     if not isinstance(backend, Mapping) or backend.get("anchored_edit") is not True:
         return prompt
     from reckon import _backends
@@ -638,11 +678,29 @@ def with_anchored_edit_instruction(prompt: str, backend: Mapping[str, object]) -
         # A backend whose harness cannot be named composes no launch either;
         # naming a tool it will not have would be the worse answer.
         return prompt
-    if dialect.name != "codex":
+    if dialect.name == "claude":
+        body = ANCHORED_EDIT_CLAUDE_INSTRUCTION if at_launch else None
+    else:
+        body = ANCHORED_EDIT_INSTRUCTIONS.get(dialect.name)
+    if body is None:
         return prompt
-    return (
-        f"{prompt.rstrip()}\n\n{ANCHORED_EDIT_HEADING}\n{ANCHORED_EDIT_INSTRUCTION}\n"
-    )
+    prompt = prompt_without_anchored_edit_instruction(prompt)
+    return f"{prompt.rstrip()}\n\n{ANCHORED_EDIT_HEADING}\n{body}\n"
+
+
+def prompt_without_anchored_edit_instruction(prompt: str) -> str:
+    """Drop an anchored edit instruction block an earlier composition appended.
+
+    A lane change composes from the run's prompt file, which a launch has
+    already written with one, and the launch that follows appends its own —
+    leaving the block in place would hand the worker the same instruction
+    twice. Only a whole block comes out: the heading and one of the dialect
+    bodies exactly as they were written, so text a worker's own prompt carries
+    after the block stays where it is.
+    """
+    for body in ANCHORED_EDIT_INSTRUCTIONS.values():
+        prompt = prompt.replace(f"\n\n{ANCHORED_EDIT_HEADING}\n{body}", "")
+    return prompt
 
 
 def compose_prompt(

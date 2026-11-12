@@ -1,0 +1,260 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T17:35:41.053Z",
+  "dispatched_at": "2026-11-11T17:28:41Z",
+  "findings": [
+    {
+      "anchor": "reckon/crew/gc.py:505",
+      "id": "duplicate_owner-1",
+      "reason": "it fixes the node's write paths to gc.py and process_liveness.py and makes the existing two walkers part of the same pass, instead of one more copy of one traversal.",
+      "text": "\u00a72 asks for \"a sweep that removes only files whose pid is not running... and prints each removal\", which is the existing `garbage_collect`/`retention_sweep` contract with `--apply` and its printed removal list; the plan leaves the host module unnamed (\"named in the manifest\") and so invites a parallel sweep, when gc.py already carries two `/proc` walkers of its own \u2014 `_scratch_process_holders` (reckon/crew/gc.py:1071) and `_processes_holding` (reckon/crew/gc.py:1374) \u2014 and a third would be the fourth copy of the same traversal; liveness, including the zombie rule \u00a72's \"pid is not running\" depends on, is owned by `process_alive` (reckon/crew/process_liveness.py:12) and `record_process_liveness` (reckon/crew/process_liveness.py:353), already imported by gc.py:57",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review_need.py:1",
+      "id": "duplicate_owner-2",
+      "reason": "the node brief must extend review_need's prompt and `Verdict` record with the outcome-vs-prediction pairing and reuse its threshold, rather than stand up a second Jev predictor beside it.",
+      "text": "\u00a78's \"Jev judgement of the probability that it finds a blocking defect is recorded on the review run's ledger row, with the inputs it was given\" is the module that already exists: `review_need.judge` takes typed `Change` inputs plus goals, is thresholded by `review_need_threshold` (reckon/flight.py:1027), caches on the exact inputs, and is already called for a second-and-later run review at reckon/crew/recovery_review_dispatch.py:1217 and for a plan review at reckon/crew/plan_review.py:1364; a second predictor with its own prompt, its own cached inputs and its own threshold view is the parallel mechanism the rubric exists to catch \u2014 the plan's write paths (\"the picker module that calls Jev\") do not name review_need.py at all",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/watch_unit.py:386",
+      "id": "duplicate_owner-3",
+      "reason": "it names watch_unit.py and query.py as the row vocabulary's owners so the new kind is added once, in the set the reader parses.",
+      "text": "\u00a75's \"one row of its own kind\" on the session's watch stream has an owner: `seat_moved_row` (reckon/crew/watch_unit.py:386) and `announce_seat_moved` (:429) write the existing kind, and the kind vocabulary is read back by `parse_watch_row` (reckon/crew/query.py:1362); the plan again defers the module (\"the watch-row writer module (named in the manifest)\"), so a worker may write rows directly from queue_admission.py and split the vocabulary between two writers and one reader",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/review_dispositions.py:481",
+      "id": "duplicate_owner-4",
+      "reason": "the section must extend the disposition owner and unify the kind vocabulary, or its \"by hand is refused\" assertion lands in a branch that a second writer bypasses.",
+      "text": "\u00a74's new `deferred` kind must be added where finding dispositions are already owned, `review_dispositions.py` (writer at :481 and :572, \"by the code path that does the deciding\"), yet the plan's write paths name only queue_landing.py, findings.py and \"the disposition CLI module\"; the closed kind set is meanwhile already expressed in two unreconciled places \u2014 the dispatch in `finding_disposition` (reckon/crew/findings.py:223-229, kinds spelled inline as branches) and the sibling `DIMENSION_DISPOSITION_KINDS` tuple (reckon/crew/review.py:3941) \u2014 so \"recording a `deferred` disposition by hand is refused\" has no single place to be enforced, and the census is: findings.py:223, findings.py:226, review.py:3941, review_dispositions.py:481, review_dispositions.py:572",
+      "type": "duplicate_owner",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/queue_admission.py",
+      "id": "deep_module-1",
+      "reason": "with one function returning a typed hold (kind + id) that dispatch, admission and the roadmap all render, \u00a710 and \u00a711 become one change in one place instead of edits to a dozen shallow call sites, and the plan's own done-when stops resting on cross-implementation agreement.",
+      "text": "\u00a710's decision-scoped hold and \u00a711's \"name the hold\" are the fourth and fifth dimensions of one decision that no module owns: the hold vocabulary is computed across queue_admission.py (17 sites), dispatch.py (3), runs.py (4), dispatch_batch.py (2), ticker.py (2), obligation_snapshot.py, mcp_views.py and node.py, and \u00a710's done-when requires dispatch and admission to agree while \u00a76 requires \"queue admission and the launch-time check give the same answer\" \u2014 a test asserting two implementations agree is the signature of a rule with no single owner",
+      "type": "deep_module",
+      "would_change": true
+    },
+    {
+      "anchor": "reckon/crew/dispatch_batch.py",
+      "id": "thin_wrapper-1",
+      "reason": "either drop the field and let \u00a73's unconditional admit stand, or state what it still gates; as written it adds an accepted-and-inert option to the queue grammar the plan also refuses unknown fields against.",
+      "text": "\u00a712 adds `allow_unreconciled_runs` to a batch entry that \"is accepted and recorded on the request and has whatever effect the single-dispatch flag has\", while \u00a73 concurrently makes that flag change nothing (`--allow-unreconciled-runs` keeps parsing and changes nothing), so the field carries a waiver no longer honoured \u2014 surface that exists only to mirror a retired behaviour",
+      "type": "thin_wrapper",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:56",
+      "id": "interface_budget-1",
+      "reason": "each of the six must account in its own text for the surface it adds, and \u00a73's retention of `--allow-unreconciled-runs` beside \u00a712's copy of it is the one retirement the plan could take and does not.",
+      "text": "measured against public_definitions 2506, cli_options 473, mcp_views 15, refusal_families 25: \u00a72 adds a sweep entry point and \u00a74 a disposition kind plus a new refusal family, \u00a75 a watch-row kind, \u00a78 a view (mcp_views 15\u219216), \u00a712 two batch fields (cli_options family) and \u00a714 a new `edit_plan` verb that must be served in the documented op grammar (`op_vocab`, reckon/mcp_edit_plan.py:1504) \u2014 six sections adding to four of the four families, and none of the six names what it retires or merges, or says why nothing can be",
+      "type": "interface_budget",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/work-flows-to-the-lane.html:118",
+      "id": "interface_budget-2",
+      "reason": "the brief must name mcp_edit_plan.py as the verb and grammar owner, or the new op is invisible to every caller that reads op_vocab.",
+      "text": "\u00a714's write paths name `reckon/mcp.py` and `reckon/_store.py` for a new `edit_plan` verb, but the op vocabulary, its dispatcher and its served grammar live in `reckon/mcp_edit_plan.py` (`Verbs (the \"op\" key): set | append | resolve | lock | accept | gate | pass | fail | retire_prose | move` at :1504, and the `op_vocab` the tool returns to clients), so a node briefed from these paths adds a verb the served grammar does not carry and the plan's own \"in one versioned write\" is never assembled",
+      "type": "interface_budget",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+  "plan_fingerprint": "8f7f226a07b1a3a69319b72ebfd14d9b0ea2fc96a47b998b543c0e217896ce6d",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 9,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-1",
+      "note": "s2's run hosts its sweep in reckon/crew/gc.py beside the existing walkers; its code review judges reuse of _processes_holding and _scratch_process_holders",
+      "reason": "",
+      "when": "2026-11-11T18:00:45.497459+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-2",
+      "note": "s8's node brief names review_need.judge as the predictor to extend and record beside the outcome; the plan's endpoint already reads as that measurement and is unchanged",
+      "reason": "",
+      "when": "2026-11-11T18:01:47.746351+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-3",
+      "note": "s5's run writes its row through reckon/crew/watch_unit.py and renders it in ticker.py; no second writer",
+      "reason": "",
+      "when": "2026-11-11T18:02:17.008922+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "duplicate_owner-4",
+      "note": "s4's run adds the deferred kind in reckon/crew/review_dispositions.py; its code review judges the two inline kind sets",
+      "reason": "",
+      "when": "2026-11-11T18:02:54.183289+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "deep_module-1",
+      "note": "s10 and s11's node briefs require the hold decision and its name to come from one function every caller reads",
+      "reason": "",
+      "when": "2026-11-11T18:03:28.177304+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "thin_wrapper-1",
+      "note": "s12 drops allow_unreconciled_runs; it carries allow_unreviewed_plan only",
+      "reason": "",
+      "when": "2026-11-11T18:03:41.867278+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "interface_budget-1",
+      "reason": "each added surface is the endpoint the lead asked for (a sweep, a deferral kind, a submission row, a shadow view, a review waiver in batch, a decision withdrawal); s12's backlog field is dropped, and each node's code review judges what it can retire",
+      "when": "2026-11-11T18:04:00.550395+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "finding": "interface_budget-2",
+      "note": "s14's write paths now name reckon/mcp_edit_plan.py, which owns the op vocabulary and its served grammar",
+      "reason": "",
+      "when": "2026-11-11T18:04:11.947036+00:00"
+    }
+  ],
+  "responses": {
+    "deep_module-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s10 and s11's node briefs require the hold decision and its name to come from one function every caller reads",
+      "reason": "",
+      "when": "2026-11-11T18:03:28.177304+00:00"
+    },
+    "duplicate_owner-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s2's run hosts its sweep in reckon/crew/gc.py beside the existing walkers; its code review judges reuse of _processes_holding and _scratch_process_holders",
+      "reason": "",
+      "when": "2026-11-11T18:00:45.497459+00:00"
+    },
+    "duplicate_owner-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s8's node brief names review_need.judge as the predictor to extend and record beside the outcome; the plan's endpoint already reads as that measurement and is unchanged",
+      "reason": "",
+      "when": "2026-11-11T18:01:47.746351+00:00"
+    },
+    "duplicate_owner-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s5's run writes its row through reckon/crew/watch_unit.py and renders it in ticker.py; no second writer",
+      "reason": "",
+      "when": "2026-11-11T18:02:17.008922+00:00"
+    },
+    "duplicate_owner-4": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s4's run adds the deferred kind in reckon/crew/review_dispositions.py; its code review judges the two inline kind sets",
+      "reason": "",
+      "when": "2026-11-11T18:02:54.183289+00:00"
+    },
+    "interface_budget-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "each added surface is the endpoint the lead asked for (a sweep, a deferral kind, a submission row, a shadow view, a review waiver in batch, a decision withdrawal); s12's backlog field is dropped, and each node's code review judges what it can retire",
+      "when": "2026-11-11T18:04:00.550395+00:00"
+    },
+    "interface_budget-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s14's write paths now name reckon/mcp_edit_plan.py, which owns the op vocabulary and its served grammar",
+      "reason": "",
+      "when": "2026-11-11T18:04:11.947036+00:00"
+    },
+    "thin_wrapper-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "15217b4d85093021374cb41b55feb3308e1044b0",
+      "commit_basis": "edit",
+      "note": "s12 drops allow_unreconciled_runs; it carries allow_unreviewed_plan only",
+      "reason": "",
+      "when": "2026-11-11T18:03:41.867278+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-flows-to-the-lane.v9.json",
+  "review_run_id": "r-20261111T172636763932-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "3b8e956c8943635aefe425b79ae03d810f80fa68",
+  "rubric": "design",
+  "rubric_items": {
+    "deep_module": "a finding \u2014 the hold/readiness decision the plan edits has no single owner: the refusal vocabulary is computed in queue_admission.py (17 sites), dispatch.py (3), runs.py (4), dispatch_batch.py (2), ticker.py (2), obligation_snapshot.py, mcp_views.py, so \u00a710's named-section hold and \u00a711's named hold are each spread across a dozen shallow sites rather than one function.",
+    "duplicate_owner": "a finding \u2014 four duplicate owners named below (sweep, Jev predictor, watch-row writer, disposition vocabulary), each with the file to extend.",
+    "interface_budget": "a finding \u2014 public_definitions 2506, cli_options 473, mcp_views 15, refusal_families 25; \u00a72 (sweep entry point), \u00a74 (a new disposition kind plus a new refusal), \u00a75 (a new watch-row kind), \u00a78 (a new view), \u00a712 (two batch fields) and \u00a714 (a new edit_plan verb, served in the op_vocab grammar) each add surface and none names what it retires or merges, or states why nothing can be.",
+    "reuse_search": "a finding \u2014 the reuse map is now named for each endpoint: \u00a72's sweep duplicates gc.py/process_liveness.py, \u00a78's predictor duplicates reckon/crew/review_need.py, \u00a75's row duplicates watch_unit.py's row writer, \u00a74's disposition kind must live in review_dispositions.py; \u00a77 and \u00a710 extend machinery that already exists (review.py:408 REVIEWED_HEAD_KEY, findings.py:208 finding_dispositions).",
+    "thin_wrapper": "a finding \u2014 \u00a712's allow_unreconciled_runs batch field mirrors a waiver that \u00a73 has just made inert, so the field is surface over no behaviour."
+  },
+  "section_digests": {
+    "_document": "af67975f8c77c5dbde7b4e6ec030dbf994a1fc36682907a9b855dd5e41fc8054",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "de8b6f7cd2585d2ec25626d1e67c4f922a94a61027d9237c245d096797e9d058",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "6d2e063d7be900a87f2e35838933c4be318b30a3d3dd9ac63554ff8b49e2a0c7",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:57:24.289028+00:00",
+  "total": null
+}

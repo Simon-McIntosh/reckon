@@ -8,8 +8,9 @@ from pathlib import Path
 
 import pytest
 
-from reckon import crew
+from reckon import _backends, crew
 from reckon.crew import queue_admission, queue_edit, runs
+from reckon.hooks.install import worker_inbox_group
 from tests.helpers.git import git
 from tests.test_a_queued_run_is_admitted import (
     CONFIG,
@@ -22,6 +23,37 @@ from tests.test_a_queued_run_is_admitted import (
 
 SOURCE = "pkg/source.py"
 EXCLUSIVE = "docs/plans/*.html"
+
+
+@pytest.fixture(autouse=True)
+def harness_handshake(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Answer the harness hook-trust handshake without a writable harness home.
+
+    Composing a launch argv asks the installed harness which inbox hook
+    definition it will load, which needs a writable harness home. The subject
+    here is the sharing policy, so the handshake is answered from the
+    definition the argv already carries.
+    """
+    handshake = {
+        "result": {
+            "data": [
+                {
+                    "errors": [],
+                    "hooks": [
+                        {
+                            "key": "/<session-flags>/config.toml:post_tool_use:0:0",
+                            "currentHash": "sha256:" + "a" * 64,
+                            "source": "sessionFlags",
+                            "eventName": "postToolUse",
+                            "handlerType": "command",
+                            "command": worker_inbox_group()["hooks"][0]["command"],
+                        }
+                    ],
+                }
+            ]
+        }
+    }
+    monkeypatch.setattr(_backends, "run_probe", lambda probe: handshake)
 
 
 @pytest.fixture()
@@ -134,14 +166,15 @@ def test_directory_claims_share_their_files_under_a_shared_root(
     assert owner["run_id"] != joiner["run_id"]
 
 
-def test_a_project_without_shared_roots_keeps_its_default(repository: Path) -> None:
+def test_a_declaration_without_shared_roots_takes_the_default(
+    repository: Path,
+) -> None:
+    """A declaration naming no ``shared_roots`` key shares source files by default."""
     _declare(repository, roots=False)
     owner = _dispatch(repository, "owner", SOURCE)
+    joiner = _dispatch(repository, "joiner", SOURCE)
 
-    with pytest.raises(crew.ScopeConflict) as refusal:
-        _dispatch(repository, "joiner", SOURCE)
-
-    assert refusal.value.run_id == owner["run_id"]
+    assert owner["run_id"] != joiner["run_id"]
 
 
 def test_explicit_shared_paths_still_work_without_roots(repository: Path) -> None:

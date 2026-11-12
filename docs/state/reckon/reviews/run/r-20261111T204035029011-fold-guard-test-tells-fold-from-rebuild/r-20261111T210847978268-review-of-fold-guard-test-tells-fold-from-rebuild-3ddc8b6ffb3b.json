@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "expected[\"rows\"] == 50",
+      "fails_if": "The initial ledger-backed refresh omits fixture rows; 50 is fixed by the fixture, not passed to refresh as an expected result.",
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": 312
+    },
+    {
+      "assertion": "actual == expected",
+      "fails_if": "Removing either stamp or date comparison admits the deliberately truncated 25-row samples; expected was captured from the complete 50-row ledger before damaging the sidecar and was never supplied as input to the second refresh.",
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": 327
+    },
+    {
+      "assertion": "persisted value == expected",
+      "fails_if": "Publishing a truncated or otherwise incorrect rebuilt profile changes the independently read disk value; removing the cache write alone can retain the previous good value, so this assertion is specifically a wrong-publication check.",
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": 328
+    },
+    {
+      "assertion": "build.assert_called_once_with(PROJECT, now=NOW)",
+      "fails_if": "Taking the fold branch passes rows= to the wrapped builder instead of requesting a ledger-backed build, or skips/repeats the build; PROJECT and NOW check forwarding, while the absence of rows= is the independent branch discriminator.",
+      "file": "tests/test_a_promotion_profile_refresh_costs_its_row.py",
+      "line": 329
+    }
+  ],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:1887 (_complete_locked)",
+    "reckon/crew/picker/lane_context.py:900-908 (guarded rebuild exercised by the test)"
+  ],
+  "completed_at": "2026-11-11T21:18:13Z",
+  "dispatched_at": "2026-11-11T21:12:11Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild/tests/test_a_promotion_profile_refresh_costs_its_row.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/head.log",
+      "revision": "3ddc8b6ffb3be202e95b8d93bfd0ed8f2b5f03a9",
+      "verified_summary": "74 passed in 70.30s (0:01:10)"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild/tests/test_a_promotion_profile_refresh_costs_its_row.py /home/ITER/mcintos/Code/.reckon-worktrees/reckon-c8f839407e49/1fb615a0-2801-4418-bbb4-c2914719e520/fold-guard-test-tells-fold-from-rebuild/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/baseline.log",
+      "revision": "7df41b097fc942b6f2f24e2366183264052d97e5",
+      "verified_summary": "74 passed in 59.45s"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "Read commits 6e0233ffb7149474565ad572b4c94b414016db0a and 3ddc8b6ffb3be202e95b8d93bfd0ed8f2b5f03a9 against 7df41b097fc942b6f2f24e2366183264052d97e5; seven added test lines and a six-line evidence fragment implement the declared test repair without product edits.",
+    "done_when": "Read prompt.txt:125-149; head.log records 74 passed, head-negative-stamp.log and head-negative-date.log each record the matching failure with EXIT=1, and both ruff logs end EXIT=0.",
+    "goal": "Read prompt.txt:38 and live section s19; tests/test_a_promotion_profile_refresh_costs_its_row.py:317 makes stale samples distinguishable and lines 327-329 require a complete rebuild.",
+    "manifest": "Read manifest.md and its baseline_suite/after_suite logs; both arms completed with 74 passed and zero failures, and both separate guard-removal logs identify the reviewed head.",
+    "write_paths": "Read prompt.txt:80-83; the exact base-to-head diff touches only the declared test file and docs/evidence/fragments/a-read-costs-what-changed/fold-guard-test-tells-fold-from-rebuild.html."
+  },
+  "justifications": {
+    "durability": "Removing either comparison at reckon/crew/picker/lane_context.py:900-901 returns a truncated profile that fails tests/test_a_promotion_profile_refresh_costs_its_row.py:327, independently of the complete profile captured before cache corruption.",
+    "evidence": "head.log records 74 passed with EXIT=0, while head-negative-stamp.log and head-negative-date.log each identify the removed comparison and fail the matching parameter at tests/test_a_promotion_profile_refresh_costs_its_row.py:327.",
+    "fit": "tests/test_a_promotion_profile_refresh_costs_its_row.py:310-329 extends the existing parameterized test using its fixture, Mock wrapping and JSON cache manipulation, with descriptive names and recorded clean ruff checks.",
+    "goal_fidelity": "tests/test_a_promotion_profile_refresh_costs_its_row.py:317 and 327-329 discriminate the 25-sample fold from the 50-row ledger rebuild for stamp, date and missing inputs.",
+    "reuse": "tests/test_a_promotion_profile_refresh_costs_its_row.py:310 extends the existing fold-validation test and reuses the existing refresh owner at reckon/crew/picker/lane_context.py:866, adding no function, class, module or duplicate mechanism.",
+    "scope_discipline": "The two commits touch only tests/test_a_promotion_profile_refresh_costs_its_row.py and the declared evidence fragment, both named in prompt.txt:80-83."
+  },
+  "negative_control_evidence": {
+    "head-negative-date.log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/head-negative-date.log",
+    "head-negative-stamp.log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/head-negative-stamp.log",
+    "reproduction-date.log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/reproduction-date.log",
+    "reproduction-stamp.log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild/reproduction-stamp.log"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live section s19; tests/test_a_promotion_profile_refresh_costs_its_row.py:317 makes stale samples distinguishable and lines 327-329 require a complete rebuild.\nVERDICT done_when: Read prompt.txt:125-149; head.log records 74 passed, head-negative-stamp.log and head-negative-date.log each record the matching failure with EXIT=1, and both ruff logs end EXIT=0.\nVERDICT write_paths: Read prompt.txt:80-83; the exact base-to-head diff touches only the declared test file and docs/evidence/fragments/a-read-costs-what-changed/fold-guard-test-tells-fold-from-rebuild.html.\nVERDICT manifest: Read manifest.md and its baseline_suite/after_suite logs; both arms completed with 74 passed and zero failures, and both separate guard-removal logs identify the reviewed head.\nVERDICT diff: Read commits 6e0233ffb7149474565ad572b4c94b414016db0a and 3ddc8b6ffb3be202e95b8d93bfd0ed8f2b5f03a9 against 7df41b097fc942b6f2f24e2366183264052d97e5; seven added test lines and a six-line evidence fragment implement the declared test repair without product edits.\nCALL_SITES: reckon/crew/promotion.py:1887 (_complete_locked), reckon/crew/picker/lane_context.py:900-908 (guarded rebuild exercised by the test)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_promotion_profile_refresh_costs_its_row.py:317 and 327-329 discriminate the 25-sample fold from the 50-row ledger rebuild for stamp, date and missing inputs.\nSCORE evidence: 20\nJUSTIFICATION evidence: head.log records 74 passed with EXIT=0, while head-negative-stamp.log and head-negative-date.log each identify the removed comparison and fail the matching parameter at tests/test_a_promotion_profile_refresh_costs_its_row.py:327.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two commits touch only tests/test_a_promotion_profile_refresh_costs_its_row.py and the declared evidence fragment, both named in prompt.txt:80-83.\nSCORE durability: 20\nJUSTIFICATION durability: Removing either comparison at reckon/crew/picker/lane_context.py:900-901 returns a truncated profile that fails tests/test_a_promotion_profile_refresh_costs_its_row.py:327, independently of the complete profile captured before cache corruption.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_promotion_profile_refresh_costs_its_row.py:310-329 extends the existing parameterized test using its fixture, Mock wrapping and JSON cache manipulation, with descriptive names and recorded clean ruff checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_a_promotion_profile_refresh_costs_its_row.py:310 extends the existing fold-validation test and reuses the existing refresh owner at reckon/crew/picker/lane_context.py:866, adding no function, class, module or duplicate mechanism.\n",
+  "reuse_search": "Searched fold stamp/date/input validation and refresh call sites; opened the existing parameterized test and lane_context.refresh_run_time_profile owner; no new definitions exist in the diff.",
+  "review_run_id": "r-20261111T210847978268-review-of-fold-guard-test-tells-fold-from-rebuild-3ddc8b6ffb3b",
+  "reviewed_base_sha": "7df41b097fc942b6f2f24e2366183264052d97e5",
+  "reviewed_head_sha": "3ddc8b6ffb3be202e95b8d93bfd0ed8f2b5f03a9",
+  "reviewed_run_id": "r-20261111T204035029011-fold-guard-test-tells-fold-from-rebuild",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T21:23:42.480361+00:00",
+  "total": 120
+}

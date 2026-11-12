@@ -10,7 +10,7 @@ import sys
 import threading
 import time
 import traceback
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Mapping, Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -24,6 +24,7 @@ from reckon.crew import (
     recovery_liveness,
     recovery_watch,
     resumption,
+    runs,
     station_obligations,
     station_store,
     station_subscriber,
@@ -279,9 +280,18 @@ class SweepBeat:
     ) -> None:
         while True:
             try:
-                self.sweep(
+                report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )
+                reviews = report.get("reviews") if isinstance(report, Mapping) else None
+                if isinstance(reviews, Mapping):
+                    for failure in reviews.get("failed") or ():
+                        print(
+                            f"station-sweep-run-failure: {project}/{session}/"
+                            f"{failure['run_id']}: {failure['error']}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
             except Exception:  # noqa: BLE001 - one session's sweep costs one pass
                 print(
                     f"station-sweep-failure: {project}/{session}: "
@@ -297,6 +307,127 @@ class SweepBeat:
                     return
                 moment = pending
                 self._last[key] = moment.timestamp()
+
+
+# How often the reflex's arm reads the live fleet on its own thread. The arm is
+# what decides a sweep is due, so this is the longest a delivery can wait for
+# one, and it is well inside the reflex's own window because a sweep takes time
+# of its own to reach the dispatch.
+REFLEX_BEAT_SECONDS = 30.0
+
+
+def _pointer_file_stamp(path: str) -> tuple[int, int]:
+    """The identity a manifest or pointer file presents between two reads."""
+    try:
+        stat = os.stat(path)
+    except (OSError, ValueError):
+        return (-1, -1)
+    return (stat.st_mtime_ns, stat.st_size)
+
+
+def _fleet_signature(pointers: Sequence[Mapping[str, Any]]) -> tuple[Any, ...]:
+    """What moved in the fleet since the last read, cheaply enough to re-read.
+
+    A sweep walks every live run, so a read that moved in nothing must not ask
+    for one. What a delivery moves is the manifest the worker writes and the
+    phase its pointer records, so those identities are the signature: the rest
+    of a pointer's fields churn without changing whether a review is owed.
+    """
+    signature = []
+    for pointer in pointers:
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id:
+            continue
+        signature.append(
+            (
+                run_id,
+                str(pointer.get("phase") or ""),
+                _pointer_file_stamp(str(pointer.get("manifest_path") or "")),
+            )
+        )
+    return tuple(sorted(signature))
+
+
+class ReflexBeat:
+    """Arm the review reflex from a thread of its own.
+
+    The reflex runs inside the station's tick, and the tick can spend minutes
+    in one per-project refresh. A run delivering during that stage waits for
+    the stage to finish before any sweep is asked for, which is how reviews
+    were dispatched six to ten minutes after delivery against a two-minute
+    window. So the arm runs here, on its own beat, reading the live fleet
+    rather than the tick's view: a session's sweep is requested when what the
+    fleet presents has moved since the last beat, and the sessions' own cadence
+    covers everything else. The tick keeps its own request, so a change the
+    tick reaches first is still armed at once; this thread is what keeps the
+    reflex beating while the tick is held.
+    """
+
+    def __init__(
+        self,
+        sweeps: SweepBeat,
+        *,
+        beat_seconds: float = REFLEX_BEAT_SECONDS,
+        clock: Callable[[], datetime] | None = None,
+        pointers: Callable[[], list[dict[str, Any]]] | None = None,
+        start: Callable[[Callable[[], None]], None] | None = None,
+    ) -> None:
+        self.sweeps = sweeps
+        self.beat_seconds = beat_seconds
+        self._clock = clock or (lambda: datetime.now(tz=UTC))
+        self._list = pointers if pointers is not None else runs.list_live
+        self._start = _start_thread if start is None else start
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+        self._signature: tuple[Any, ...] | None = None
+
+    def arm_once(self) -> None:
+        """Ask for each session's sweep when what the fleet presents has moved."""
+        try:
+            pointers = self._list()
+        except (OSError, ValueError):
+            return
+        signature = _fleet_signature(pointers)
+        pending = signature != self._signature
+        self._signature = signature
+        moment = self._clock()
+        grouped: dict[str, list[Mapping[str, Any]]] = {}
+        for pointer in pointers:
+            project = str(pointer.get("project") or "")
+            if project and str(pointer.get("run_id") or ""):
+                grouped.setdefault(project, []).append(pointer)
+        for project, records in sorted(grouped.items()):
+            for session in _sessions_to_sweep(records):
+                self.sweeps.request(project, session, moment=moment, changed=pending)
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.arm_once()
+            except Exception:  # noqa: BLE001 - a missed arm is retried next beat
+                print(
+                    "station-reflex-failure: the reflex arm could not read the fleet",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Arm once, then keep arming on its own thread."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-reflex", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop arming."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
 
 
 def _sessions_to_sweep(pointers: list[Mapping[str, Any]]) -> list[str]:
@@ -419,6 +550,7 @@ class Station:
         projects: Callable[[], Mapping[str, Path]] = flight.mounted_project_docs,
         stall_seconds: int = 900,
         sweeps: SweepBeat | None = None,
+        reflex_beat_seconds: float = REFLEX_BEAT_SECONDS,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
         self.store = store
@@ -429,6 +561,11 @@ class Station:
         # The review reflex and settle detection run here, once for every
         # session on the node, rather than in each follower.
         self.sweeps = SweepBeat() if sweeps is None else sweeps
+        # The arm that decides a sweep is due beats on a thread of its own, so a
+        # tick held in a slow stage cannot hold a delivered run's review.
+        self.reflex = ReflexBeat(
+            self.sweeps, beat_seconds=reflex_beat_seconds, clock=self.clock
+        )
         # The home this station's rows describe. A follower reads this store
         # only when its own home is the same one, because a store built from
         # another home holds another fleet's rows.
@@ -623,6 +760,7 @@ def run_station(
         )
         beat: StationBeat | None = None
         renewal: LeaseBeat | None = None
+        station: Station | None = None
         try:
             station = Station(store) if station_instance is None else station_instance
             reloader = StationReloader(store.root)
@@ -638,6 +776,9 @@ def run_station(
             beat.start()
             renewal = LeaseBeat(lease, guard=store.guard, renew_seconds=renew_seconds)
             renewal.start()
+            # The reflex's arm starts beside the beat, so a station whose first
+            # tick is slow still reviews a run delivered during it.
+            station.reflex.start()
             while not stopping:
                 if renewal.lost():
                     break
@@ -656,6 +797,8 @@ def run_station(
             if renewal.lost():
                 raise StationHeldError(f"station lost its lease at {lease.path}")
         finally:
+            if station is not None:
+                station.reflex.stop()
             if renewal is not None:
                 renewal.stop()
             if beat is not None:

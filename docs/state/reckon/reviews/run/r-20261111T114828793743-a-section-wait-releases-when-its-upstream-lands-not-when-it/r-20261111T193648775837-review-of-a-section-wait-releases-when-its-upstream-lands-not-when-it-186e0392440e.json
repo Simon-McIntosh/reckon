@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T19:57:20.697Z",
+  "dispatched_at": "2026-11-11T19:47:12Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The armed suite arms are re-recorded at the landed head before landing.",
+      "recorded_at": "2026-11-11T20:38:38.849412+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "A second live pointer for the same section can mask an earlier unlanded promotion; carried to a follow-up section in this plan.",
+      "recorded_at": "2026-11-11T20:38:56.536491+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-section-wait-releases-when-its-upstream-lands-not-when-it.html",
+      "line": 158,
+      "severity": "non-blocking",
+      "summary": "The no-regression claim is evidenced at 9d35ace1, an intermediate commit: logs/regression-suite.log records '# revision: 9d35ace1d4b69bafab5328fff81cc52766fe9ad5' and its tree is the worker worktree, while the reviewed head is 186e0392440e and five code commits land between the two (bf3ff50da6, 8e989cbf36, e12b9cd92e, c98330911f, fcf0b28227). The 30 pre-existing failures are identical at base and at that intermediate revision, but the identity is not shown at the head the node lands at, so the delta-zero claim rests on a revision the change later moved past."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": 3483,
+      "severity": "non-blocking",
+      "summary": "The promoted-run branch asks runs._unloaded_sections, whose covered set is every live pointer's section identity regardless of phase (reckon/crew/runs.py:2392). A second live or queued pointer for the same section therefore removes the section from the drain's pending set while an earlier promotion of that section is still off HEAD, so the guard answers not-unlanded and the candidate loop then finds that pointer undelivered and releases. A section whose earlier promotion has not landed can thus release its waiters when a re-dispatch of the same section is queued. Narrow: it needs a promotion and a re-dispatch of one section before the first lands."
+    }
+  ],
+  "justifications": {
+    "durability": "logs/negative-control.log shows the six tests at 5 failed, 1 passed under the declared mutation of _section_run_unlanded, and logs/negative-control-ledger-branch.log shows 2 failed, 4 passed with only the ledger branch removed, so the assertions redden on exactly the regressions they guard; no assertion compares a value against the same input the test handed in.",
+    "evidence": "The gate log logs/fresh-tree-head.log records revision 186e0392440e, 57 passed, EXIT=0, on all_debug (sacct job 1310900), and the base arm logs/armed-baseline_suite.log records 51 passed at bc6d7fd9; the regression comparison that backs the no-failure claim ran at 9d35ace1 rather than at the reviewed head, which is the finding cited at the fragment's line 158.",
+    "fit": "The added helpers follow the module's existing shape -- lazy in-function imports, a per-pass dict cache keyed by tuple, and module docstrings in the same voice as reckon/crew/queue_admission.py:3359-3403 -- and introduce no plan, section or ticket identifier.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3679-3691 returns PENDING while _section_run_unlanded holds a section's declaration done, and releases it only once the promoted revision is an ancestor of the registered checkout's HEAD.",
+    "reuse": "The guard wraps the owner of the capability (runs._unloaded_sections at reckon/crew/runs.py:2369) and reuses _revision_is_ancestor and section_record_id; it re-derives only the delivery window between pointer and promotion, which that owner does not cover, and extracts _manifest_status from the duplicated read at _request_state.",
+    "scope_discipline": "git diff --stat bc6d7fd9..186e0392 lists only three files, each inside the declared write paths, and carries no unrelated edit."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T193648775837-review-of-a-section-wait-releases-when-its-upstream-lands-not-when-it-186e0392440e",
+  "reviewed_base_sha": "bc6d7fd9f1306f21d21daa58f44f235265e6cca3",
+  "reviewed_head_sha": "186e0392440e90d6913c08a9890ef4e965a3beb7",
+  "reviewed_run_id": "r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T20:35:49.062592+00:00",
+  "total": 107,
+  "verdicts": {
+    "call_sites": "reckon/crew/queue_admission.py:3592 (_wait_state to _section_readiness_state), :3643 (_wait_state to _ref_state), :3854 (dispatch_waits to _dispatch_nonrun_wait_state), :4028 (resolve_waits to _wait_state), :5837 and :5854 (admit_once passing the readiness cache), and reckon/crew/promotion.py:779 via _release_waiters.",
+    "diff": "Read commit by commit over bc6d7fd9..186e0392: eight code commits build and then narrow the guard (delivery hold, unregistered checkout hold, discard release, drain-derivation read, index read, per-pass caching) and four evidence commits record them; no commit touches anything outside the three paths.",
+    "done_when": "The done_when names tests/test_a_wait_releases_when_its_upstream_lands.py with its negative control, base-revision delta on the importing test files, and ruff on the staged paths; the manifest records each of the three and logs/negative-control.log shows 5 failed, 1 passed, EXIT=1 against the declared mutation.",
+    "goal": "The node's goal is that a section wait releases when its upstream lands rather than when it is declared done; reckon/crew/queue_admission.py:3403-3513 adds _section_run_unlanded and consults it at the three section-ref resolution points (_ref_state:3960, _section_readiness_state:3684, _dispatch_nonrun_wait_state:3753).",
+    "manifest": "Read: status complete, twelve commits, changed_paths the three files, baseline_suite 51 passed EXIT=0 at bc6d7fd9 and after_suite 57 passed EXIT=0 at 186e0392, negative_control_log named as a bare path and its run recorded at 5 failed, 1 passed.",
+    "write_paths": "The declared paths are reckon/crew/queue_admission.py, tests/test_a_wait_releases_when_its_upstream_lands.py, the fragment under docs/evidence/fragments/a-queue-holds-the-whole-plan/ and a figures directory; git diff --stat bc6d7fd9..186e0392 shows exactly three files, all inside that scope, and the figures directory was left unused."
+  }
+}

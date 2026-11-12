@@ -1,0 +1,135 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "fails_if": "Restoring the module-level _publish_exec_identity() call at import makes the file exist again; proven red by logs/negative-control.log.",
+      "lines": "61-62"
+    },
+    {
+      "fails_if": "Removing _retire_exec_identity() from _NodeDispatchClaim.release leaves the file behind after the subprocess exits.",
+      "lines": "81-83"
+    },
+    {
+      "fails_if": "Retiring on the refusal path without the held counter check unlinks the identity of the still-held first claim, so :95 reddens; not retiring at release fails :97.",
+      "lines": "89,95,97"
+    },
+    {
+      "fails_if": "Dropping exec_identity from the claim record raises KeyError at :104; breaking the reclaim decision fails :109-111. Not a regression guard for this change, since it passes at base too.",
+      "lines": "104,109-111"
+    },
+    {
+      "fails_if": "A sweep that keeps every file, or removes the live pid's file, or prints nothing, fails these four assertions; the sweep does not exist at base, so it is red there.",
+      "lines": "132-136"
+    },
+    {
+      "fails_if": "A sweep that unlinks regardless of apply removes the file and fails :147.",
+      "lines": "146-147"
+    },
+    {
+      "fails_if": "A sweep that accepts a live pid without comparing start time against the file's mtime keeps the file and fails :160.",
+      "lines": "160-161"
+    }
+  ],
+  "assertion_independence": "No added assertion compares a value the test supplied against the code's own echo of it. The nearest is tests/test_an_execution_identity_is_published_with_its_claim.py:104, where both sides derive from the module token _EXEC_IDENTITY; it still reddens if the claim record omits exec_identity, but it cannot detect a wrong token on both sides, so the guard there is the key's presence rather than its value.",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2912 (_claim_node_dispatch on the dispatch path)",
+    "reckon/crew/gc.py:2085 (--sweep-exec-identities main path)",
+    "reckon/crew/dispatch_claims.py:738 (_claim_holder_is_alive reads the identity file for the reclaim decision)",
+    "reckon/crew/runs.py:4692 (process_liveness re-export the sweep does not use)"
+  ],
+  "completed_at": "2026-11-11T17:06:15.755Z",
+  "dispatched_at": "2026-11-11T16:52:43Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "id": "fbdfb2aa9b0",
+      "line": "537",
+      "severity": "non-blocking",
+      "text": "non-blocking: _execution_is_live re-implements process_alive (owner reckon/crew/process_liveness.py:12, re-exported at reckon/crew/runs.py:4692) and drops its zombie rule at process_liveness.py:33-34, so a pid the kernel still lists as Z passes os.kill(pid, 0) and gets a start time and its identity file is kept, leaving the file of a process that has exited, exactly the case section 2's sweep is meant to remove; extend the owner rather than restating it."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "id": "ff8f51f6869",
+      "line": "517",
+      "severity": "non-blocking",
+      "text": "non-blocking: _process_start_epoch re-parses the /proc/<pid>/stat field layout that reckon/crew/process_liveness.py:503-514 (_process_stat_fields, _process_start_time) already owns, making a third copy of the comm-parenthesis and field-19 knowledge; an epoch accessor on the owner would give the sweep what it needs without the copy."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "id": "fef5ead75f1",
+      "line": "587",
+      "severity": "non-blocking",
+      "text": "non-blocking: the sweep writes 'removing identity file ...' to stderr for every entry it would remove even when apply=False, so a report pass states removals it did not make while tests/test_an_execution_identity_is_published_with_its_claim.py:146 treats the same report as a dry run; print a would-remove wording unless apply."
+    },
+    {
+      "file": "tests/test_a_reexec_never_orphans_a_dispatch.py",
+      "id": "f26169eafba",
+      "line": "51",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed change makes this pre-existing assertion fail at 90617f00b9, because an import no longer publishes an identity file; the file is outside this node's write fence, so the merged suite stays red until a paired node deletes the subprocess-import assertion at lines 41-51, which the coordinator must queue before promotion measures the merged head."
+    },
+    {
+      "file": "docs/plans/work-flows-to-the-lane.html",
+      "id": "fe05cab73be",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the plan's measure names all_debug for both arms, and the manifest records them run in the fleet allocation (job 1291586) instead; the gates took 13 s and 24 s so the result stands, but the named environment was not used and the deviation is unrecorded in the manifest."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Four production call sites verified: dispatch.py:2912, gc.py:2085, dispatch_claims.py:738, runs.py:4692.",
+    "diff": "Read 90617f00b9 against d5df5102; four files, +351/-4, reviewed line by line.",
+    "done_when": [
+      "plan section 2 line 56 names five behaviours plus a negative control; tests/test_an_execution_identity_is_published_with_its_claim.py:55-161 asserts each, and logs/head-arm.log, base-arm.log and negative-control.log record 58 passed EXIT=0, 6 failed/50 passed EXIT=1 and 1 failed/6 passed EXIT=1."
+    ],
+    "goal": "Read source prompt.txt:38 and plan section 2 at docs/plans/work-flows-to-the-lane.html:56; identity is published only by _retain_exec_identity and removed with the last claim, and the sweep is hosted at reckon/crew/gc.py:555.",
+    "manifest": "Read; records head 58 passed EXIT=0, base 6 failed/50 passed EXIT=1 with 2 scaffolding setup errors, negative control 1 failed EXIT=1, and the out-of-scope failing assertion.",
+    "write_paths": "manifest orientation_write_paths lists four paths and the commit touches exactly those four."
+  },
+  "justifications": {
+    "durability": "tests/test_an_execution_identity_is_published_with_its_claim.py:61 reddens on the reinstated import-time publish, proven by logs/negative-control.log, and :95 reddens if the refusal path retires a still-held claim's file; :104 compares two writes of the module's own token rather than an independent source.",
+    "evidence": "logs/head-arm.log and logs/base-arm.log name their revision, tree, command, module.__file__ and cwd and end in a bare EXIT line, but the arms ran in the fleet allocation (job 1291586) where docs/plans/work-flows-to-the-lane.html:56 names all_debug.",
+    "fit": "reckon/crew/gc.py:555-595 follows the module's report-dict and lazy-import idiom, and its names (_retain_exec_identity, _retire_exec_identity, sweep_exec_identities) carry no plan or ticket identifier.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:630-660 and :934-985 publish only on a claim and remove on the last one, but reckon/crew/gc.py:537 keeps a zombie pid's file because it omits process_liveness.py:33-34's zombie rule.",
+    "reuse": "reckon/crew/gc.py:517 and :537 re-implement /proc stat parsing and the liveness decision that reckon/crew/process_liveness.py:503-514 and :12 already own and reckon/crew/runs.py:4692 re-exports, without extending that owner.",
+    "scope_discipline": "Every path in 90617f00b9 (dispatch_claims.py, gc.py, the new test, the evidence fragment) is inside manifest orientation_write_paths, and the sweep's host module is the one the plan lets the manifest name."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38 and plan section 2 at docs/plans/work-flows-to-the-lane.html:56; the landed change publishes claims/exec-<pid>.identity only from _retain_exec_identity and removes it with the last claim, and hosts a sweep at reckon/crew/gc.py:555.\nVERDICT done_when: plan section 2 line 56 names five behaviours plus a negative control; tests/test_an_execution_identity_is_published_with_its_claim.py:55-161 asserts each one, and logs/head-arm.log, logs/base-arm.log and logs/negative-control.log record 58 passed EXIT=0, 6 failed/50 passed EXIT=1 and 1 failed/6 passed EXIT=1.\nVERDICT write_paths: Read manifest orientation_write_paths; git show --stat 90617f00b9 touches exactly those four files and nothing else.\nVERDICT manifest: Read; it records head 58 passed, base 6 failed plus 2 scaffolding setup errors, the negative control 1 failed, and the out-of-scope failing assertion at tests/test_a_reexec_never_orphans_a_dispatch.py:41-51.\nVERDICT diff: Read commit 90617f00b9 against d5df5102, four files and +351/-4: dispatch_claims.py publishes on claim and retires on release, refusal and failed record write; gc.py adds sweep_exec_identities and its CLI flag; a new test file and an evidence fragment.\nCALL_SITES: reckon/crew/dispatch.py:2912 (_claim_node_dispatch on the dispatch path), reckon/crew/gc.py:2085 (--sweep-exec-identities main path), reckon/crew/dispatch_claims.py:738 (_claim_holder_is_alive reads the identity file for the reclaim decision), reckon/crew/runs.py:4692 (process_liveness re-export the sweep does not use)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_claims.py:630-660 and :934-985 publish only on a claim and remove on the last one, but reckon/crew/gc.py:537 keeps a zombie pid's file because it omits process_liveness.py:33-34's zombie rule.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head-arm.log:1-5 and logs/base-arm.log:1-5 name their revision, tree, command, module.__file__ and cwd and end in a bare EXIT line, but the arms ran in the fleet allocation (job 1291586) where docs/plans/work-flows-to-the-lane.html:56 names all_debug.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Every path in 90617f00b9 (dispatch_claims.py, gc.py, the new test, the evidence fragment) is inside manifest orientation_write_paths, and the sweep's host module is the one the plan lets the manifest name.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_execution_identity_is_published_with_its_claim.py:61 reddens on the reinstated import-time publish, proven by logs/negative-control.log, and :95 reddens if the refusal path retires a still-held claim's file; :104 compares two writes of the module's own token rather than an independent source.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/gc.py:555-595 follows the module's report-dict and lazy-import idiom, and its names (_retain_exec_identity, _retire_exec_identity, sweep_exec_identities) carry no plan or ticket identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/gc.py:517 and :537 re-implement /proc stat parsing and the liveness decision that reckon/crew/process_liveness.py:503-514 and :12 already own and reckon/crew/runs.py:4692 re-exports, without extending that owner.\nFINDING reckon/crew/gc.py:537 non-blocking: _execution_is_live re-implements process_alive (owner reckon/crew/process_liveness.py:12, re-exported at reckon/crew/runs.py:4692) and drops its zombie rule at process_liveness.py:33-34, so a pid the kernel still lists as Z passes os.kill and gets os.kill(pid, 0) success plus a start time and its identity file is kept, leaving the file of a process that has exited exactly the case section 2's sweep is meant to remove; extend the owner rather than restating it.\nFINDING reckon/crew/gc.py:517 non-blocking: _process_start_epoch re-parses the /proc/<pid>/stat field layout that reckon/crew/process_liveness.py:503-514 (_process_stat_fields, _process_start_time) already owns, making a third copy of the comm-parenthesis and field-19 knowledge; an epoch accessor on the owner would give the sweep what it needs without the copy.\nFINDING reckon/crew/gc.py:587 non-blocking: the sweep writes 'removing identity file ...' to stderr for every entry it would remove even when apply=False, so a report pass states removals it did not make while tests/test_an_execution_identity_is_published_with_its_claim.py:146 acts on the same report as a dry run; print a would-remove wording unless apply.\nFINDING tests/test_a_reexec_never_orphans_a_dispatch.py:51 non-blocking: the landed change makes this pre-existing assertion fail at 90617f00b9, because an import no longer publishes an identity file; the file is outside this node's write fence, so the merged suite stays red until a paired node deletes the subprocess-import assertion at lines 41-51, which the coordinator must queue before promotion measures the merged head.\nFINDING docs/plans/work-flows-to-the-lane.html:56 non-blocking: the plan's measure names all_debug for both arms, and the manifest records them run in the fleet allocation (job 1291586) instead; the gates took 13 s and 24 s so the result stands, but the named environment was not used and the deviation is unrecorded in the manifest.\n",
+  "reuse_search": {
+    "added_definitions": "reckon/crew/dispatch_claims.py adds _retain_exec_identity and _retire_exec_identity; reckon/crew/gc.py adds _process_start_epoch, _execution_is_live and sweep_exec_identities.",
+    "capabilities": [
+      "publish/retire a per-execution identity file",
+      "read a pid's kernel start time from /proc",
+      "decide whether a pid is still the running process",
+      "sweep stale state out of a crew directory"
+    ],
+    "owners_opened": [
+      "reckon/crew/dispatch_claims.py:_publish_exec_identity",
+      "reckon/crew/process_liveness.py:_process_stat_fields",
+      "reckon/crew/process_liveness.py:_process_start_time",
+      "reckon/crew/process_liveness.py:process_alive",
+      "reckon/crew/runs.py (re-export block at 4685-4700)",
+      "reckon/crew/gc.py:_expired_picker_views and garbage_collect"
+    ],
+    "verdict": "The identity-file pair extends _publish_exec_identity and is new; the sweep is a new capability with no owner. _process_start_epoch and _execution_is_live duplicate process_liveness.py's owner instead of extending it."
+  },
+  "review_run_id": "r-20261111T164818688660-review-of-identity-published-with-its-claim-90617f00b961",
+  "reviewed_base_sha": "d5df5102389d90012d3c05f26e01ef5c92b801d7",
+  "reviewed_head_sha": "90617f00b961190a92ee7dc64dc8c37dac625461",
+  "reviewed_run_id": "r-20261111T154129120140-identity-published-with-its-claim",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T17:21:39.210611+00:00",
+  "total": 95
+}

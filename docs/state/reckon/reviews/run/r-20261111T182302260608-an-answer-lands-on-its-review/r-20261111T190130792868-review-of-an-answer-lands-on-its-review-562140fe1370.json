@@ -1,0 +1,54 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2959",
+    "reckon/crew_dispatch_commands.py:3061",
+    "reckon/mcp_views.py:4571",
+    "reckon/crew/routing.py:2850",
+    "reckon/mcp_deadlines.py:674"
+  ],
+  "completed_at": "2026-11-11T19:24:05.765Z",
+  "dispatched_at": "2026-11-11T19:03:21Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "it states the negative control ran \"in a scratch tree at the head revision\", but negative-control.log reads \"# revision: 994610e0bc...+selector-by-plan_version\" with module /tmp/mcintos-ansfix-ptRR8C/neg/reckon/crew/plan_review.py - the base commit with the head test overlaid - so the revision the record names is not the one its own log supports, even though the mutation and its failing id are real and the conclusion still holds because base and head carry an identical plan_review.py; the manifest's negative_control_note repeats the same claim."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_an_answer_lands_on_its_review.py:271 reddens if the refusal stops firing, since a fall-through to the covering review would answer MIDDLE_FINDING and exit 0, but the node's negative control mutates the selector rather than this guard.",
+    "evidence": "base-node.log and head-node.log each carry revision, tree, command and a bare EXIT=0, and head-population.failed holds 43 ids against base-population.failed's 47 with no id added, but negative-control.log's header names 994610e0bc rather than the head the fragment claims.",
+    "fit": "the added case at tests/test_an_answer_lands_on_its_review.py:252 follows the file's idiom - a docstring stating the rule, the three_reviews fixture, and assert messages - and introduces no name the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/plan_review.py:1099 reduces a finding's raisers to the newest by plan commit, and tests/test_an_answer_lands_on_its_review.py:252 witnesses the other half, that a name matching no raiser is refused.",
+    "reuse": "the change adds no definition; a search of tests/ for \"does not raise finding\" and for --review-run found no existing case for this refusal, so it does not fork a capability the repository already owns.",
+    "scope_discipline": "git diff 994610e0bc..562140fe13 changes only tests/test_an_answer_lands_on_its_review.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html, both declared."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that an answer lands on the stored review that raised its finding; at head 562140fe13 that behaviour is carried by reckon/crew/plan_review.py:1082 (_newest_by_plan_commit), :1055 (_record_is_newer) over :1023 (_commit_is_ancestor), :1099 (newest_covering_review) and the refusal at reckon/crew_dispatch_commands.py:3041-3053, and the node's landed change is the test that makes the refusal fire, tests/test_an_answer_lands_on_its_review.py:252.\nVERDICT done_when: the done_when names tests/test_an_answer_lands_on_its_review.py with a negative control, the plan_review-importer population at -n 4 one arm at a time on all_debug, and ruff on the staged paths; the manifest records every one with a log, and I re-ran the named file at the worktree head: 5 passed, EXIT=0.\nVERDICT write_paths: the declared paths are reckon/crew/plan_review.py, reckon/crew_dispatch_commands.py, tests/test_an_answer_lands_on_its_review.py, an evidence fragment and a figures directory; the diff touches only tests/test_an_answer_lands_on_its_review.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html, both inside the declaration.\nVERDICT manifest: read; it declares status complete, the two commits, gate 56 passed at head against 55 at base with EXIT=0 in both arms, a population arm adding no failure id, and a negative control whose log reads 1 failed 55 passed EXIT=1 on an id the head arm passes.\nVERDICT diff: two commits against 994610e0bc, fe8b34f872 adding the 32-line refusal case and 562140fe13 the 31-line evidence fragment, with no product source; I confirmed from the base revision that the commit-order selector already stood at 994610e0bc:reckon/crew/plan_review.py:1082 with both call sites in the tree, so the node's change is a test and a record, which the verify-rather-than-reimplement route allows.\nCALL_SITES: reckon/crew_dispatch_commands.py:2959, reckon/crew_dispatch_commands.py:3061, reckon/mcp_views.py:4571, reckon/crew/routing.py:2850, reckon/mcp_deadlines.py:674\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/plan_review.py:1099 reduces a finding's raisers to the newest by plan commit, and tests/test_an_answer_lands_on_its_review.py:252 witnesses the other half, that a name matching no raiser is refused.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-node.log and head-node.log each carry revision, tree, command and a bare EXIT=0, and the head-population.failed set holds 43 ids against base-population.failed's 47 with no id added, but negative-control.log's header names 994610e0bc rather than the head the fragment claims.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 994610e0bc..562140fe13 changes only tests/test_an_answer_lands_on_its_review.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html, both declared.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_an_answer_lands_on_its_review.py:271 reddens if the refusal stops firing, since a fall-through to the covering review would answer MIDDLE_FINDING and exit 0, but the node's negative control mutates the selector rather than this guard.\nSCORE fit: 18\nJUSTIFICATION fit: the added case at tests/test_an_answer_lands_on_its_review.py:252 follows the file's idiom \u2014 a docstring stating the rule, the three_reviews fixture, and assert messages \u2014 and introduces no name the naming rules forbid.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no definition; a search of tests/ for \"does not raise finding\" and for --review-run found no existing case for this refusal, so it extends the CLI's own coverage rather than forking a mechanism.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html:26 non-blocking: it states the negative control ran \"in a scratch tree at the head revision\", but negative-control.log reads \"# revision: 994610e0bc...+selector-by-plan_version\" with module /tmp/mcintos-ansfix-ptRR8C/neg/reckon/crew/plan_review.py \u2014 the base commit with the head test overlaid \u2014 so the revision the record names is not the one its own log supports, even though the mutation and its failing id are real and the conclusion still holds because base and head carry an identical plan_review.py; the manifest's negative_control_note repeats the same claim.",
+  "review_run_id": "r-20261111T190130792868-review-of-an-answer-lands-on-its-review-562140fe1370",
+  "reviewed_base_sha": "994610e0bcf328d18bb62bf3ba1838e7c4f311ba",
+  "reviewed_head_sha": "562140fe137027191858a02435fdafd587843ba1",
+  "reviewed_run_id": "r-20261111T182302260608-an-answer-lands-on-its-review",
+  "scores": {
+    "durability": 17,
+    "evidence": 16,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T19:44:14.760457+00:00",
+  "total": 109,
+  "verdicts": {
+    "diff": "two commits against 994610e0bc (fe8b34f872 test case, 562140fe13 evidence fragment), no product source, and the base revision already carried the selector at 994610e0bc:reckon/crew/plan_review.py:1082 with both call sites.",
+    "done_when": "the named test file passes at head (head-node.log 56 passed EXIT=0, base-node.log 55 passed EXIT=0) and I re-ran it here: 5 passed EXIT=0; the population pair adds no failure id; ruff check and ruff format --check are clean on the staged test.",
+    "goal": "the behaviour lives in reckon/crew/plan_review.py:1082/:1055/:1099 and the refusal at reckon/crew_dispatch_commands.py:3041-3053; the node's landed change is the test at tests/test_an_answer_lands_on_its_review.py:252 that makes the refusal fire.",
+    "manifest": "read; declares complete, two commits, both gate arms with logs, a population arm adding no failure id, and a negative control log reading 1 failed 55 passed EXIT=1 on an id the head arm passes.",
+    "write_paths": "the diff touches only tests/test_an_answer_lands_on_its_review.py and docs/evidence/fragments/a-queued-request-is-checked-when-queued/an-answer-lands-on-its-review.html, both inside the declared paths."
+  }
+}

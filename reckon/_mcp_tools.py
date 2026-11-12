@@ -107,6 +107,7 @@ class CrewArgs(BaseModel):
         "models",
         "velocity",
         "scores",
+        "review-need",
         "plan-review",
         "findings",
     ] = "summary"

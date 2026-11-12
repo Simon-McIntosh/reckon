@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A plan commit releases the requests backing off on it">
+  <meta name="plan-summary" content="A queued launch refused because its plan's working tree differed from base now fingerprints the plan's committed blob at HEAD, so the next admission pass after the commit attempts it instead of waiting out its back-off; a request refused for any other reason keeps that back-off.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s15">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="admission,queue,backoff,plan-visibility">
+  <title>A plan commit releases the requests backing off on it — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="plan-commit-releases-backoff-record" data-node="plan-commit-releases-backoff" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="plan-commit-releases-backoff-head">A plan commit releases the requests backing off on it</h2>
+
+  <p id="plan-commit-releases-backoff-defect">A queued launch is refused with
+  <code>PlanVisibilityError</code> while the plan file's working tree differs from base,
+  and the refusal is recorded with a bounded back-off. The dependency guard already
+  fingerprints the plan file, but it fingerprints the <em>file</em>: committing an edit
+  leaves every byte of it where it was, so the one thing that cured the refusal was the
+  one thing no fingerprint could see. Measured on 11 November: queued requests failed
+  launch on an uncommitted plan eight times between 16:04 and 16:07Z, the plan landed at
+  about 16:07, and those requests sat <code>held-on-retry-backoff</code> to
+  <code>retry_at</code> 16:16:10 and launched from 16:16:44 — about nine minutes each,
+  with the lane open.</p>
+
+  <p id="plan-commit-releases-backoff-change"><code>reckon/crew/queue_admission.py</code>
+  now records <code>failure_plan_commit</code> when the recorded failure is a plan
+  refusal: the blob <code>HEAD</code> holds for the plan file, read with <code>git -C
+  &lt;repo&gt; rev-parse HEAD:docs/plans/&lt;plan&gt;.html</code>. A blob identity is the
+  committed content, so it moves when the commit moves and not when the file does; a plan
+  no commit holds yet reads <code>absent</code>, which the first commit that lands it also
+  changes. <code>_retry_backoff_hold</code> compares that stamp for a request whose
+  failure is a <code>PlanVisibilityError</code> and attempts it on the pass that differs,
+  before <code>retry_at</code>. The stamp is recorded only for that refusal and dropped
+  when a later failure is anything else, so a stamp left from an earlier plan refusal
+  cannot release a request the plan never held. The field joins
+  <code>QUEUED_LIFE_KEYS</code>, so a launched pointer keeps it under
+  <code>admission_history</code> rather than carrying it as live-run state.</p>
+
+  <p id="plan-commit-releases-backoff-gate">The gate is the new
+  <code>tests/test_a_plan_commit_releases_its_backed_off_requests.py</code>: 3 passed,
+  <code>EXIT=0</code>. It builds its own temporary repository and crew home, edits the
+  plan without committing, and makes each attempt against the production check,
+  <code>routing.require_plan_section_visible</code>, so both the refusal the pass records
+  and the launch that later succeeds are the real ones. Case 1: the request is attempted
+  once, fails with the plan's own refusal, stays <code>held-on-retry-backoff</code> at a
+  pass before <code>retry_at</code>, stays held through a commit that touches only the
+  project index, and on the pass after the plan's commit is attempted again and launched —
+  <code>probe.attempted</code> reads <code>['r-plan', 'r-plan']</code> and the verdict is
+  <code>launched</code>. Case 2: a request refused by a <code>ValueError</code> records no
+  <code>failure_plan_commit</code> and is not attempted on the pass after the plan commit,
+  its verdict still <code>held-on-retry-backoff</code>. Case 3: with the plan still
+  uncommitted, the recorded stamp equals <code>git rev-parse
+  HEAD:docs/plans/plan-a.html</code> — the committed blob the working edit has not
+  replaced — and the request stays queued and held.</p>
+
+  <p id="plan-commit-releases-backoff-control">One mutation is applied and logged:
+  <em>ignore the plan's committed content; the first request must wait for its
+  retry_at</em>, deleting the comparison from <code>_retry_backoff_hold</code>. The run
+  fails <code>test_a_plan_commit_releases_the_request_it_refused</code> — 1 failed, 2
+  passed, <code>EXIT=1</code> — against 3 passed, <code>EXIT=0</code> at head, so the
+  release is the line the case measures and not an accident of the passes around it.</p>
+
+  <p id="plan-commit-releases-backoff-population">The files that import the modified module
+  add no failure against the base revision. The five central admission files —
+  <code>test_a_request_that_cannot_launch_costs_nothing.py</code>,
+  <code>test_a_queued_run_is_admitted.py</code>, <code>test_a_queued_launch_keeps_the_run_record.py</code>,
+  <code>test_a_successful_launch_is_recorded.py</code> and
+  <code>test_a_discard_keeps_the_admission_record.py</code> — run serially at
+  <code>81250b3e98</code> give 19 failed, 30 passed, <code>EXIT=1</code>, and at this head the
+  same 19 failed, 30 passed, <code>EXIT=1</code>: identical failure sets, so the change adds
+  none. Those 19 are pre-existing at the base revision. A wider arm over all 87 test files
+  naming <code>queue_admission</code> was submitted to <code>all_debug</code> and did not
+  yield a usable comparison: its base arm named a file absent from the base tree and
+  collected nothing, and its head arm ran under <code>-n 4</code> against the worktree's
+  shared environment and failed at the same character as the base revision does; the
+  bounding measurement above is the one this record rests on.</p>
+</article>
+</body>
+</html>

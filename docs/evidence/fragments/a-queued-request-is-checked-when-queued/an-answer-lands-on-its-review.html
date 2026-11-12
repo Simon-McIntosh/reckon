@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-queued-request-is-checked-when-queued">
+  <meta name="plan-title" content="An answer lands on the review that raised its finding">
+  <meta name="plan-summary" content="A plan's stored reviews are ordered by the plan commits they read rather than by the version integer they record, so the view a caller is served and the record an answer is written to are the newest review's; naming a review writes to that one, and a name matching no raiser is refused.">
+  <meta name="plan-evidence-for" content="reckon:a-queued-request-is-checked-when-queued">
+  <meta name="plan-verifies" content="reckon:a-queued-request-is-checked-when-queued#s4">
+  <meta name="plan-recorded-at" content="2026-11-11">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,reckon-tooling,plan-review">
+  <title>An answer lands on the review that raised its finding — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="an-answer-lands-on-its-review-note" class="r-note" data-node="an-answer-lands-on-its-review" data-reckon="landed" data-when="2026-11-11">
+  <h2 id="an-answer-lands-on-its-review-head">An answer lands on the review that raised its finding</h2>
+  <p id="an-answer-lands-on-its-review-rule">Reviews stored at successive plan commits record the server-managed <code>plan_version</code> scalar, which is not monotonic: a plan restated from version seven to three to five carries reviews whose version integers run <em>against</em> the commit order. Selecting the covering review by the largest version therefore serves an older review, and an answer written without <code>--review-run</code> lands on it instead of on the review that raised the finding.</p>
+  <p id="an-answer-lands-on-its-review-mechanism">The covering set is reduced by the plan commits the reviews read. <code>_newest_by_plan_commit</code> places each record against the current newest with <code>_record_is_newer</code>, which asks <code>_commit_is_ancestor</code> — the velocity module's own ancestry probe, not a second git call — and falls back to the review's timestamp when either commit is unreachable or the two have diverged. <code>read_plan_review</code> returns that record, so <code>crew view plan-review</code> serves it; <code>reckon crew review --answer</code> reduces the raisers of the named finding with <code>newest_covering_review</code>, so the answer lands on the same one. <code>--review-run</code> searches every stored review of the plan for the finding before the absence of a covering review is reported, so a review that no longer covers the plan still answers the finding it raised; the refusal fires only when no listed raiser carries the named run id, and it names the raisers it did find.</p>
+  <p id="an-answer-lands-on-its-review-verification">Verified at the base revision <code>994610e0bc</code>: the selector and both call sites were already in the tree, so this node reimplemented nothing. Its change is the one part of the deliverable no test made happen — the refusal. <code>test_review_run_naming_a_review_that_did_not_raise_the_finding_is_refused</code> names the newest review for the middle review's finding and asserts the command exits 1, that the detail names <code>--review-run</code> and the review that does raise it, and that no review carries a response afterwards. The fixture's three reviews are committed at versions 7, 3, 5 in that commit order with timestamps running against it, so a selector reading the version integer or the timestamp serves a different record and the suite says so. The node's gate reads 56 passed at the head and 55 at the base, the difference being this node's own test; <code>ruff check</code> and <code>ruff format --check</code> report no finding on the staged path.</p>
+  <p id="an-answer-lands-on-its-review-control">Negative control, the declared mutation — <code>_newest_by_plan_commit</code> put back to <code>max</code> by <code>plan_version</code> in a scratch tree at the head revision: 1 failed, 55 passed, <code>EXIT=1</code>, the failure <code>test_the_view_serves_the_review_at_the_newest_commit</code>, serving the version-7 review written at the oldest commit — an id the head arm passes.</p>
+  <p id="an-answer-lands-on-its-review-population">Population, one arm at a time at <code>-n 4</code> over the 86 test files that import <code>reckon.crew.plan_review</code>: base 47 failed / 702 passed, head 43 failed / 707 passed. The head adds no failing id; the four ids the head does not fail (<code>test_this_repository_reads_the_same_modules_as_the_reckon_listing</code> and three <code>test_a_matching_project_is_accepted_and_a_disagreeing_one_refused</code> cases) read the tree they run in, and the base arm ran in a committed snapshot rather than the worktree. The node's own file is 5 passed at the head and 4 at the base, and the staged-write inventory is 51 passed in both.</p>
+  <p id="an-answer-lands-on-its-review-logs">Logs in the run directory: <code>base-node.log</code>, <code>head-node.log</code>, <code>negative-control.log</code>, <code>base-population.log</code>, <code>head-population.log</code>.</p>
+</article>
+</body>
+</html>

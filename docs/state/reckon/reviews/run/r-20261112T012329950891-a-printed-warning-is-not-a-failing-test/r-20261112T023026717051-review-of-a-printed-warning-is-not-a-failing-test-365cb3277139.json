@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6d1ea919bb068f0d1ef3418b4b74804c3170ca88",
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/promotion_checks.py:1968 _control_failure_ids -> gate_log_failure_ids",
+    "reckon/crew/promotion_evidence.py:1141 gate_log_failure_ids",
+    "reckon/crew/promotion_evidence.py:1215 gate_log_failure_ids",
+    "reckon/crew/promotion_evidence.py:1260 gate_log_failure_ids (last_run=True)",
+    "reckon/crew/promotion_evidence.py:1464 _head_arm_log_failure_ids -> gate_log_failure_ids",
+    "reckon/crew/standing_suite.py:427 _pytest_failure_ids",
+    "reckon/crew/review.py:2895 added_failures_from_gate_logs -> gate_log_failure_ids",
+    "reckon/crew/review.py:2931 annotate_added_failures -> added_failures_from_gate_logs"
+  ],
+  "completed_at": "2026-11-12T02:45:40.730Z",
+  "dispatched_at": "2026-11-12T02:34:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "A one-token remainder is admitted deliberately so a manifest's bare ids still parse; the measured defect, multi-token log records, is closed.",
+      "recorded_at": "2026-11-12T03:13:36.447331+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review.py",
+      "line": "1806",
+      "severity": "non-blocking",
+      "text": "non-blocking: _FAILURE_BARE_ID_RE matches any single non-space token, so the predicate admits any line beginning FAILED/ERROR whose remainder is one token (for example 'ERROR OSError' printed by a test or a plugin) as a failing id; it is the residual of the same printed-record defect class, accepted deliberately so a manifest's bare test name still compares, and a reader wanting the plan's rule exactly could require the bare token to look like a test name."
+    }
+  ],
+  "head_log_revision": "821d641586206edadda0dd46403d05a999cbe077",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production readers that reach the changed function: promotion_checks.py:1968, promotion_evidence.py:1141, :1215, :1260 and :1464, standing_suite.py:427, and review.py's own added_failures_from_gate_logs:2895 and annotate_added_failures:2931.",
+    "diff": "read the three commits against base 6d1ea919b: 6829476db narrows _pytest_failure_ids to node-id-shaped ids; 821d64158 corrects the predicate so a bare test name stays an identity, which the shared matching rule at reckon/crew/review.py:2061 requires; 365cb32771 adds the evidence fragment; the new 128-line test file ships with the fix.",
+    "done_when": "the done_when asks for a test fed two arms with the same failing ids where the head also prints captured records asserting zero added failures, a second case with one real added id, a negative control restoring the base parser, importer-population arms at all_debug with -n 4 adding no failure, and clean ruff on the staged paths; the manifest records each, and I verified the armed pair (armed-base.log 51 passed, armed-after.log 54 passed, both EXIT=0), the negative control (negative-control.log 3 failed EXIT=1), the population delta (224 ids each, 0 added, 0 removed) and both ruff checks.",
+    "goal": "the node's goal is that a printed warning is not counted as a failing test; reckon/crew/review.py:1807 and :1820-1825 define and apply the captured-record exclusion, so a line such as 'ERROR package.module:file.py:3553 message' is no longer read as a failing id.",
+    "manifest": "read; status complete, commits 6829476db, 821d64158 and 365cb3277, changed_paths naming review.py, the new test and the fragment, tests and test_logs naming the armed pair, the population arms and the negative control, baseline_suite (6d1ea919b, 0 failures) and after_suite (821d6415, 0 failures).",
+    "write_paths": "the fence was reckon/crew/review.py, reckon/crew/promotion_records.py, tests/test_a_printed_warning_is_not_a_failure.py, the evidence fragment and a figures directory; the diff touches only review.py, the new test and the fragment, all inside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_a_printed_warning_is_not_a_failure.py:100 fails if the base parse is restored, which the recorded negative control demonstrates ((2, [two printed records]) against the asserted (0, [])), and :114-115 catches the opposite regression by requiring exactly the one genuinely added id.",
+    "evidence": "armed-base.log (rev 6d1ea919b) reads 51 passed EXIT=0 and armed-after.log (rev 821d6415) reads 54 passed EXIT=0 with zero failures at each arm; negative-control.log reads 3 failed EXIT=1 with the first case reporting (2, [the two printed records]); I re-derived the population logs with the landed code (224 ids at each arm, 0 added, 0 removed) and re-ran ruff check and ruff format --check on the landed files (clean).",
+    "fit": "the added helpers at reckon/crew/review.py:1805-1825 are module-private, describe the mechanism in their comments with no plan, sprint or ticket identifier and no attribution, and sit beside the _GATE_FAILURE_RE they constrain, matching the surrounding style at reckon/crew/review.py:1796.",
+    "goal_fidelity": "reckon/crew/review.py:1820-1825 rejects the captured-record shape and reckon/crew/review.py:2240 skips such a line, so a printed record is never read as a failing id while a node id, a collection-error .py path and a bare test name still are, exactly the plan's deliverable.",
+    "reuse": "the change extends the one reader at reckon/crew/review.py:2216 that reckon/crew/standing_suite.py:427 and the promotion readers already call, rather than adding a second reader; the repository still owns a separate broad parse at reckon/crew/landing_measure.py:210, left untouched because it is outside the fence and recorded under outside_scope.",
+    "scope_discipline": "git diff --stat 6d1ea919b..365cb32771 lists exactly reckon/crew/review.py, tests/test_a_printed_warning_is_not_a_failure.py and the evidence fragment, all inside the declared fence; promotion_records.py and the figures directory are declared but untouched, which is a subset rather than an excess."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a printed warning is not counted as a failing test; reckon/crew/review.py:1807 and :1820-1825 define and apply the captured-record exclusion, so a line such as 'ERROR package.module:file.py:3553 message' is no longer read as a failing id.\nVERDICT done_when: the done_when asks for a test fed two arms with the same failing ids where the head also prints captured records asserting zero added failures, a second case with one real added id, a negative control restoring the base parser, importer-population arms at all_debug with -n 4 adding no failure, and clean ruff on the staged paths; the manifest records each, and I verified the armed pair (armed-base.log 51 passed, armed-after.log 54 passed, both EXIT=0), the negative control (negative-control.log 3 failed EXIT=1), the population delta (224 ids each, 0 added, 0 removed) and both ruff checks.\nVERDICT write_paths: the fence was reckon/crew/review.py, reckon/crew/promotion_records.py, tests/test_a_printed_warning_is_not_a_failure.py, the evidence fragment and a figures directory; the diff touches only review.py, the new test and the fragment, all inside the fence.\nVERDICT manifest: read; status complete, commits 6829476db, 821d64158 and 365cb3277, changed_paths naming review.py, the new test and the fragment, tests and test_logs naming the armed pair, the population arms and the negative control, baseline_suite (6d1ea919b, 0 failures) and after_suite (821d6415, 0 failures).\nVERDICT diff: read the three commits against base 6d1ea919b: 6829476db narrows _pytest_failure_ids to node-id-shaped ids; 821d64158 corrects the predicate so a bare test name stays an identity, which the shared matching rule at reckon/crew/review.py:2061 requires; 365cb32771 adds the evidence fragment; the new 128-line test file ships with the fix.\nCALL_SITES: reckon/crew/promotion_checks.py:1968 _control_failure_ids -> gate_log_failure_ids, reckon/crew/promotion_evidence.py:1141 gate_log_failure_ids, reckon/crew/promotion_evidence.py:1215 gate_log_failure_ids, reckon/crew/promotion_evidence.py:1260 gate_log_failure_ids (last_run=True), reckon/crew/promotion_evidence.py:1464 _head_arm_log_failure_ids -> gate_log_failure_ids, reckon/crew/standing_suite.py:427 _pytest_failure_ids, reckon/crew/review.py:2895 added_failures_from_gate_logs -> gate_log_failure_ids, reckon/crew/review.py:2931 annotate_added_failures -> added_failures_from_gate_logs\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/review.py:1820-1825 rejects the captured-record shape and reckon/crew/review.py:2240 skips such a line, so a printed record is never read as a failing id while a node id, a collection-error .py path and a bare test name still are, exactly the plan's deliverable.\nSCORE evidence: 19\nJUSTIFICATION evidence: armed-base.log (rev 6d1ea919b) reads 51 passed EXIT=0 and armed-after.log (rev 821d6415) reads 54 passed EXIT=0 with zero failures at each arm; negative-control.log reads 3 failed EXIT=1 with the first case reporting (2, [the two printed records]); I re-derived the population logs with the landed code (224 ids at each arm, 0 added, 0 removed) and re-ran ruff check and ruff format --check on the landed files (clean).\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6d1ea919b..365cb32771 lists exactly reckon/crew/review.py, tests/test_a_printed_warning_is_not_a_failure.py and the evidence fragment, all inside the declared fence; promotion_records.py and the figures directory are declared but untouched, which is a subset rather than an excess.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_printed_warning_is_not_a_failure.py:100 fails if the base parse is restored, which the recorded negative control demonstrates ((2, [two printed records]) against the asserted (0, [])), and :114-115 catches the opposite regression by requiring exactly the one genuinely added id.\nSCORE fit: 19\nJUSTIFICATION fit: the added helpers at reckon/crew/review.py:1805-1825 are module-private, describe the mechanism in their comments with no plan, sprint or ticket identifier and no attribution, and sit beside the _GATE_FAILURE_RE they constrain, matching the surrounding style at reckon/crew/review.py:1796.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change extends the one reader at reckon/crew/review.py:2216 that reckon/crew/standing_suite.py:427 and the promotion readers already call, rather than adding a second reader; the repository still owns a separate broad parse at reckon/crew/landing_measure.py:210, left untouched because it is outside the fence and recorded under outside_scope.\nFINDING reckon/crew/review.py:1806 non-blocking: _FAILURE_BARE_ID_RE matches any single non-space token, so the predicate admits any line beginning FAILED/ERROR whose remainder is one token (for example 'ERROR OSError' printed by a test or a plugin) as a failing id; it is the residual of the same printed-record defect class, accepted deliberately so a manifest's bare test name still compares, and a reader wanting the plan's rule exactly could require the bare token to look like a test name.",
+  "review_run_id": "r-20261112T023026717051-review-of-a-printed-warning-is-not-a-failing-test-365cb3277139",
+  "reviewed_base_sha": "6d1ea919bb068f0d1ef3418b4b74804c3170ca88",
+  "reviewed_head_sha": "365cb3277139889a1d27777756efbb8c8ced883b",
+  "reviewed_run_id": "r-20261112T012329950891-a-printed-warning-is-not-a-failing-test",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T023026717051-review-of-a-printed-warning-is-not-a-failing-test-365cb3277139"
+  },
+  "reviewer_run_id": "r-20261112T023026717051-review-of-a-printed-warning-is-not-a-failing-test-365cb3277139",
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T03:11:16.560561+00:00",
+  "total": 116
+}

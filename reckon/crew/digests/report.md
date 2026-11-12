@@ -1,7 +1,7 @@
 # Worker role digest: report
 #
-# Generated from ~/.agents/AGENTS.md (sha256 adac47f10071622f25095d8c48b4eebed15e2008d81b38984dee650580602e78,
-# 114365 bytes, ~28592 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 29ceab9845b8a16b691e5e1e3edb4c593c8d4a3d013e9a38d331bd04537bf9e1,
+# 118749 bytes, ~29688 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -250,10 +250,14 @@ where a flagged hit is CORRECT and must be kept:
 false positive.
 ## Parallel Agent Safety
 
-- One worker, one worktree, one exclusive write scope. No two concurrent
-  workers write the same file even across worktrees — merging is the
-  orchestrator's job, sequentially, after auditing each manifest and
-  `git show --stat` against the declared scope.
+- One worker, one worktree. **Concurrent edits to one file from separate
+  worktrees are allowed (lead ruling 2026-10-24, restated 2026-11-11): never
+  hold or defer a node because another live run writes a file it needs.**
+- Exclusive write scope remains only where git cannot merge:
+  - a figure topic directory: figures are replaced wholesale, never combined;
+  - binary or generated receipts;
+  - a cumulative evidence record (`docs/evidence/archive/<plan>-landed.html`
+    and the like), which is spliced, never rewritten.
 - Workers commit locally (conventional subject AND a body), never push the
   primary branch, never merge/rebase/stash, and stage explicit paths only.
 - Durable delivery: every worker writes its manifest to an

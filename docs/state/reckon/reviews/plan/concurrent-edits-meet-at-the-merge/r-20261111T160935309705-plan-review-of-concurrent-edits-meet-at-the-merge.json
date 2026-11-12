@@ -1,0 +1,152 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-11T16:21:26.140Z",
+  "dispatched_at": "2026-11-11T16:11:50Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:161",
+      "id": "reasoning-1",
+      "reason": "a worker implements the list, so the binary case lands shared by default, contradicting both the clause it is written under and the ruling it cites.",
+      "text": "s6 cites the lead's global rules, whose exclusive list is \"a figure topic directory\", \"binary or generated receipts\" and \"a cumulative evidence record\", but its own enumeration is \"a plan, a cumulative evidence record, generated state, a figure topic directory, or a dependency lock\": binary objects (a PNG outside docs/figures, an .h5/.npz/.whl under a source root) are not in it, while the section's governing clause \u2014 \"unless the file is one a textual merge cannot reconcile\" \u2014 takes them in, so the list and the clause disagree and the plan outright omits a class the cited evidence states; the done-when then fixes five cases, none binary",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:74",
+      "id": "reasoning-2",
+      "reason": "the plan is the semantic authority at dispatch, and a coordinator or reviewer reading \u00a72 alone reads the opposite of what s6 tells the worker to build.",
+      "text": "\u00a72's deliverable still ends \"a project that declares no roots behaves exactly as now\", which is precisely the behaviour s6 reverses, and s6 amends only \"\u00a72's test cases\" without amending this sentence, so the plan now states both that an undeclared project shares nothing and that it shares its source files",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:161",
+      "id": "reasoning-3",
+      "reason": "the section states the condition but not its coverage, so a worker implementing \"names no shared_roots key\" can plausibly route a corrupt declaration into the new share-everything default unless told which way it goes and given a case for it.",
+      "text": "s6 separates only \"names no shared_roots key\" from \"no declaration\" and from \"an empty list\", while reckon/crew/runs.py's reader has a third state: an unparseable declaration returns the same frozenset() as an absent one (reckon/crew/runs.py:1686, under the docstring at :1679 saying \"Missing or malformed declarations share nothing\"), so a corrupt declaration and an absent one are indistinguishable at the point s6 changes, and the machine state the plan's condition tests exists in two states the plan treats as one",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:22",
+      "id": "wiring-1",
+      "reason": "one declaration line (`s6: [s2]`) both records the dependency and fixes the ordering; the same class of gap was already answered for s5, whose dependency was added.",
+      "text": "plan-section-depends-on declares only s4:[s2,s3] and s5:[s2], but s6 states that both the new default and \u00a72's declaration check \"read that one list\" (which \u00a72 introduced), that \"\u00a72's test cases change only where a declaration without a shared_roots key now takes the default\", and it writes tests/test_a_source_file_is_shared_by_default.py, a file s2 created; the queue orders only what is declared, so s6 can be admitted against a tree with no shared_roots support",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+  "plan_fingerprint": "9251efb5f81722483746f6ae1d6031fd502f8e0e6080adc37130485dcb91b8fd",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 39,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:30:58.229387+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "finding": "reasoning-2",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:11.589002+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "finding": "reasoning-3",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:25.646339+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:39.018274+00:00"
+    }
+  ],
+  "responses": {
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:30:58.229387+00:00"
+    },
+    "reasoning-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:11.589002+00:00"
+    },
+    "reasoning-3": {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:25.646339+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "c179a7518b02d29791bd62cf11e30ec67ce78a83",
+      "commit_basis": "edit",
+      "note": "\u00a76 adds binary and generated receipts to the exclusive classes with a case, keeps a malformed declaration sharing nothing and named in the refusal, waits on \u00a72, and \u00a72's closing sentence notes \u00a76's default",
+      "reason": "",
+      "when": "2026-11-11T16:31:39.018274+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/Code/reckon/docs/state/reckon/reviews/plan/concurrent-edits-meet-at-the-merge/r-20261111T160935309705-plan-review-of-concurrent-edits-meet-at-the-merge.json",
+  "review_run_id": "r-20261111T160935309705-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "efcb33ba857a529bfce284d9cc751b5068de40e8",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 every path named by s6, s7 and s8 exists at HEAD, including reckon/path_classes.py, the four reckon/crew/digests/*.md, skills/reckon-build/references/coordinator-reference.md and tests/test_worker_digest.py::test_the_committed_digests_are_current_on_this_host (:365).",
+    "done_when": "pass \u2014 s6 names a control that restores sharing-nothing (first case refuses), s7 a control that restores the retired key (generation raises DigestError, reproduced at HEAD), and s8 a control that restores the retired sentence; each unit's measure can fail.",
+    "evidence_paths": "pass \u2014 logs are placed under the run directory with a header revision, the literal command and a trailing EXIT=, and the report itself goes to the run's durable report path.",
+    "naming": "pass \u2014 the new test files are named by behaviour (test_an_undeclared_project_shares_its_source_files.py, test_a_source_file_is_shared_by_default.py) and no plan label, stage name or ticket number reaches a symbol or a comment.",
+    "reasoning": "findings \u2014 the plan's default-exclusive enumeration drops a class the ruling it cites keeps, \u00a72's own prose still asserts the pre-s6 behaviour, and the malformed-declaration state the code carries is left unstated so its direction can flip.",
+    "single_goal": "pass \u2014 s6 is the undeclared-project default, s7 the digest, s8 the skill text; the \u00a72 test amendment in s6 is the same goal's consequence, not a second deliverable.",
+    "wiring": "a finding \u2014 s6 consumes \u00a72's shared_roots policy and edits \u00a72's test file, and `plan-section-depends-on` declares only s4 and s5."
+  },
+  "section_digests": {
+    "_document": "64f7f67e64cee414aaf885ff6e547fdba7487785f530b0a84b1844e016209020",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s2": "e02dadfb2a870b9e0eecdfe1d96ac4ff162f05de4b24104472afed04ff7916ba",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "1798a391ddafd00b96ddd4993837988c06e9cf179ac88c9cbaf4df6e1d0947d4",
+    "s7": "9e07feae77865a57d989ea02f10c0b69b3867dfe8f8a9b684e67be62750f6560",
+    "s8": "c0c2b4ab76c3adbd96cc5fa0191b8793a15bcef1b15d35af1b7c16db59bb89e4"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:28:11.543940+00:00",
+  "total": null
+}

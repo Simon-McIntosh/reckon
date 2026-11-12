@@ -18,10 +18,7 @@ from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError, is_collectible_test_path
 from reckon.crew.promotion_records import _node_test_files
-from reckon.crew.recovery_review_acceptance import (
-    _review_accepts_promotion,
-    record_landed_exemptions,
-)
+from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 
 _run_srun = subprocess.run
 
@@ -1332,29 +1329,38 @@ def _review_added_failure_guard(review: Mapping[str, Any] | None) -> str:
 def _undisposed_finding_guard(review: Mapping[str, Any] | None) -> str:
     """The refusal a finding nobody has answered raises, or "".
 
-    Landing on an undisposed finding would record a judgement nobody made: the
-    exemption the landing pass used to write was its own decision, taken after
-    the fact, not the reviewer's and not the coordinator's.
+    Only a finding that withholds the landing refuses it: one that declares the
+    blocking severity, and one that declares nothing at all, since an unreadable
+    severity is a judgement the reviewer left unstated. A finding the reviewer
+    declared non-blocking is carried forward unjudged — the landing records it
+    as deferred once the run lands, and it stays open work from there — so it
+    does not hold the run.
+
+    The split is the deferral writer's, not a second reading of the severities:
+    :func:`reckon.crew.findings.undisposed_finding_indexes` names both halves, so
+    the guard admits exactly the findings that writer records and refuses the
+    rest, and the index the refusal prints is the index the writer keys against.
     """
     from reckon.crew import findings as findings_module
+    from reckon.crew import review as review_module
 
     if not isinstance(review, Mapping):
         return ""
+    findings = findings_module._record_findings(review)
     open_rows: list[str] = []
-    for index, finding in enumerate(findings_module._record_findings(review)):
-        if not str(finding.get("text") or "").strip():
-            continue
-        if findings_module.finding_disposition(review, index) != "open":
-            continue
+    for index in findings_module.undisposed_finding_indexes(
+        review, holding_landing=True
+    ):
+        finding = findings[index]
+        severity = review_module.declared_severity(finding)
         path = str(finding.get("path") or "").strip()
         line = str(finding.get("line") or "").strip()
         anchor = f"{path}:{line}" if path and line else path or f"finding {index}"
-        severity = str(finding.get("severity") or "unstated severity")
-        open_rows.append(f"{anchor} ({severity})")
+        open_rows.append(f"{anchor} ({severity or 'unstated severity'})")
     if not open_rows:
         return ""
     return (
-        f"{RED_SUITE_GUARD}: the run's review carries findings with no "
+        f"{RED_SUITE_GUARD}: the run's review carries blocking findings with no "
         "disposition: " + "; ".join(open_rows)
     )
 
@@ -2030,9 +2036,9 @@ def _land_deliveries() -> dict[str, Any]:
             continue
         # The review's non-blocking findings do not hold the landing, and the
         # finding a reviewer raised must not vanish with the pointer that
-        # carried it. Exemptions are recorded only once the landing has
-        # succeeded: a refusal here leaves the run unlanded, and marking its
-        # findings exempted would say a landing happened that did not.
+        # carried it. Each one is deferred only once the landing has succeeded:
+        # a refusal here leaves the run unlanded, and recording a deferral would
+        # say a landing happened that did not.
         try:
             _record_attempt(
                 run_id,
@@ -2067,8 +2073,10 @@ def _land_deliveries() -> dict[str, Any]:
         if accepted:
             landed.append(run_id)
             try:
-                record_landed_exemptions(
-                    project, run_id, review, reviewed_head_sha=head
+                from reckon.crew import review_dispositions as dispositions_module
+
+                dispositions_module.record_landed_deferrals(
+                    project, run_id, reviewed_head_sha=head
                 )
             except (OSError, ValueError) as exc:
                 # The landing stands; only the record of what the reviewer
@@ -2079,7 +2087,7 @@ def _land_deliveries() -> dict[str, Any]:
                         "session": str(pointer.get("session") or ""),
                         "guard": (
                             "the run landed but its review's non-blocking "
-                            "findings could not be recorded as exempted: "
+                            "findings could not be recorded as deferred: "
                             f"{type(exc).__name__}: {exc}"
                         ),
                     }

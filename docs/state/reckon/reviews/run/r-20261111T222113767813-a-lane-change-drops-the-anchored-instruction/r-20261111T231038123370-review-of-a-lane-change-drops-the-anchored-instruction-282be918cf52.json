@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "Derived from the reviewed run's own gate logs. baseline_suite (f238d113fa, logs/baseline-suite.log) ran '84 passed in 15.87s' with a trailing EXIT=0 and failure_ids []; after_suite (282be918cf, logs/after-suite.log) ran '92 passed in 31.09s' with a trailing EXIT=0 and failure_ids []. Neither arm records a failing id, so added failures = 0 over an eight-test increase. Both logs carry '# revision:', '# tree:', '# command:', '# module.__file__:' and '# resolved_cwd:' header lines, and the base arm's module resolved from its own scratch tree.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/dispatch.py:3050",
+    "reckon/crew/dispatch.py:3394",
+    "reckon/crew/dispatch_sessions.py:1345",
+    "reckon/crew/dispatch_sessions.py:1868",
+    "reckon/crew/resumption.py:532",
+    "reckon/_backends.py:3120"
+  ],
+  "completed_at": "2026-11-11T23:38:29.475Z",
+  "dispatched_at": "2026-11-11T23:20:05Z",
+  "findings": [
+    {
+      "file": "tests/test_anchored_edit_claude_arm.py",
+      "line": "298",
+      "severity": "non-blocking",
+      "summary": "the motivating path is asserted only at the launch seam; no test drives a lane change through reckon/crew/dispatch_sessions.py:1620 _lane_prompt, which composes the prompt from the run's stored prompt.txt that holds the carried block",
+      "text": "non-blocking: tests/test_anchored_edit_claude_arm.py:298 hands the carried block straight to launch_plan, so what is pinned is that the launch strips a prompt already holding the block. The path the node exists for reads that prompt from disk first (reckon/crew/dispatch_sessions.py:1620 _lane_prompt, from record['prompt_path']), and nothing asserts the two compose as claimed. The composition is a verbatim concat there and the launch seam sees its output unchanged, so the risk is small and the case tests the unit that owns the strip; it is recorded because the node's stated subject is the lane change itself, and a future edit that rewrote or re-ordered the block in _lane_prompt could leave every new case green."
+    },
+    {
+      "file": "runs/r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction/logs/baseline-suite.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "summary": "the base arm's '# command:' header omits the RECKON_INVENTORY_REVISION assignment the manifest records as part of the command that ran, so the base arm cannot be reproduced from the log alone",
+      "text": "non-blocking: runs/r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction/logs/baseline-suite.log:4 records 'PYTHONPATH=. /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q tests/test_anchored_edit_claude_arm.py tests/test_staged_write_inventory.py', while the manifest's baseline_suite.command carries RECKON_INVENTORY_REVISION=f238d113fa89569f42ef7e54e4b6dd28a021bebe as well. That variable is load-bearing: tests/test_staged_write_inventory.py:27 reads it as the revision to inventory against, and the base arm runs in a scratch extraction with no checkout to derive one from. The manifest is the more accurate record and both arms passed, so nothing in the change is in doubt; the nit is that the log's own header, which is promotion's fallback when the manifest line is absent, names a command that would measure a different thing."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Searching reckon/ for launch_plan( and with_anchored_edit_instruction, six production sites can reach the change: the dispatch composition at reckon/crew/dispatch.py:3050 (at_launch=False), the launch it composes for at reckon/crew/dispatch.py:3394, the lane-change launch at reckon/crew/dispatch_sessions.py:1868 whose prompt is built by _lane_prompt at :1620 from the run's stored prompt.txt, the fresh-session path at reckon/crew/dispatch_sessions.py:1345, the resume path at reckon/crew/resumption.py:532, and the owner call itself at reckon/_backends.py:3120. The node's own test files were excluded.",
+    "diff": "Read commit by commit against f238d113fa. df56326268 makes the owner strip on every at_launch call (reckon/crew/prompts.py:669-670) and makes the launch caller always ask it (reckon/_backends.py:3118-3120), adding seven parametrised cases and one handshake stub in tests/test_anchored_edit_claude_arm.py; 282be918cf adds only the landing fragment docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/a-lane-change-drops-the-anchored-instruction.html (25 lines). Four paths changed, 143 insertions and 11 deletions, all inside the declared scope.",
+    "done_when": "The done-when asks for tests showing a carried instruction coming back out of a Claude-dialect launch and a codex launch that seed no server, exactly one copy for a seeding launch, and clean ruff on the staged paths. tests/test_anchored_edit_claude_arm.py:298 and :319 cover the seeding-none half over claude, clive and codex plus both dialects' carried bodies; :343 covers the one-copy half; I re-ran ruff check and ruff format --check on the three staged paths at head and got the same three pre-existing findings as at base (reckon/_backends.py:730, :3949, reckon/crew/prompts.py:960) and all three formatted.",
+    "goal": "The goal is that a prompt names the anchored tools exactly when the launch receiving it seeds the anchored server, dropping a carried instruction when it seeds none. reckon/crew/prompts.py:669-670 strips an existing block on every at_launch call before the backend key is consulted, and reckon/_backends.py:3120 calls the owner on every launch, so a launch that seeds nothing drops the block that reckon/crew/dispatch_sessions.py:1620 _lane_prompt composed from the previous launch's prompt file; the seeding path still appends exactly one copy at reckon/crew/prompts.py:687-688.",
+    "manifest": "Read at .../r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction/manifest.md; status complete, two commits, four changed paths, 84 passed at base f238d113f and 92 at head, a negative control of 6 failed with EXIT=1, and it opens the three logs it names, all of which carry the figures claimed. Its baseline_suite.command carries one variable the log header omits, recorded as a non-blocking finding.",
+    "write_paths": "The manifest declares five write paths (reckon/crew/prompts.py, reckon/_backends.py, tests/test_anchored_edit_claude_arm.py, and the fragment and figures directories under docs/). git diff --stat f238d113f..282be918cf shows exactly four changed paths, all inside that set; the figures directory is unused, as the contract requires since the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_anchored_edit_claude_arm.py:298 reddens both when the owner's at_launch strip at reckon/crew/prompts.py:669 is removed and when the caller reverts to calling the owner only under 'if anchored_edit' at reckon/_backends.py:3120, and negative-control.log records the first mutation producing 6 FAILED ids with EXIT=1 while the two seeding cases still pass.",
+    "evidence": "logs/after-suite.log carries '# revision: 282be918cf...', '# module.__file__' resolving under the reviewed worktree, '92 passed in 31.09s' and a bare EXIT=0, and logs/baseline-suite.log carries the base revision and its own scratch tree with '84 passed' and EXIT=0, so both arms are recorded rather than claimed.",
+    "fit": "reckon/crew/prompts.py:669 places the strip as the function's first act, matching the sibling strip idiom the launch path already uses for the figure listing, and the added names (_answer_the_hook_trust_handshake, test_a_launch_seeding_none_drops_the_carried_instruction) carry no plan, ticket or version label.",
+    "goal_fidelity": "reckon/_backends.py:3120 now calls the owner on every launch, and reckon/crew/prompts.py:669-670 strips before the key is consulted, so the prompt a lane change composes from the previous launch's file is corrected by the launch that receives it; the strip covers both dialect bodies and the seeding path still appends exactly one.",
+    "reuse": "The change extends the owner with_anchored_edit_instruction at reckon/crew/prompts.py:644 and reuses its existing strip helper prompt_without_anchored_edit_instruction at :691; no new mechanism is introduced, and the launch path keeps its single composition point.",
+    "scope_discipline": "git diff --stat f238d113f..282be918cf lists four paths, all inside the five declared write paths, the second commit carries documentation only, and no plan or index file is touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a prompt names the anchored tools exactly when the launch receiving it seeds the anchored server and drops a carried instruction when it seeds none; reckon/crew/prompts.py:669 strips on every launch step and reckon/_backends.py:3120 calls it unconditionally, so the launch's resolved seeding fact decides.\nVERDICT done_when: the done-when names tests for a carried instruction coming out of a Claude-dialect and a codex launch that seed none, one copy for a seeding launch, and clean ruff; tests/test_anchored_edit_claude_arm.py:298, :319 and :343 assert each clause and the manifest records 84 passed at base and 92 at head, with ruff unchanged between the two revisions on the staged paths.\nVERDICT write_paths: read the manifest's five declared paths; the four paths in the diff are all inside them and the figures directory is unused.\nVERDICT manifest: read; status complete, two commits, 84 to 92 passed, a 6-failed negative control with EXIT=1, naming the three logs, every one of which I opened and matches what it states.\nVERDICT diff: read both commits against base f238d113fa - df56326268 changes the strip placement and its caller plus seven test cases, 282be918cf adds the landing fragment only; four files, all inside scope.\nCALL_SITES: reckon/crew/dispatch.py:3050, reckon/crew/dispatch.py:3394, reckon/crew/dispatch_sessions.py:1345, reckon/crew/dispatch_sessions.py:1868, reckon/crew/resumption.py:532, reckon/_backends.py:3120\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/_backends.py:3120 asks the owner on every launch and reckon/crew/prompts.py:669 strips before consulting the key, so a lane change off an anchored backend hands its worker no instruction for tools the new launch does not seed.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/after-suite.log ends '92 passed in 31.09s' with EXIT=0 at revision 282be918cf and logs/baseline-suite.log ends '84 passed' with EXIT=0 at f238d113fa, both with header revision, tree, command and module path.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff --stat f238d113f..282be918cf is one of the five declared write paths, and the second commit adds only the landing fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_anchored_edit_claude_arm.py:298 fails both if reckon/crew/prompts.py:669 loses its strip and if reckon/_backends.py:3120 returns to calling the owner only under 'if anchored_edit', as negative-control.log records with 6 FAILED ids and EXIT=1.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/prompts.py:669 states the strip as the function's first act, mirroring the figure-listing strip the same launch path already runs, and no added name carries a plan, ticket or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends the existing owner with_anchored_edit_instruction at reckon/crew/prompts.py:644 and reuses prompt_without_anchored_edit_instruction at :691 rather than adding a second strip mechanism.\nFINDING tests/test_anchored_edit_claude_arm.py:298 non-blocking: the carried block is handed straight to launch_plan, so no case drives the lane-change composition at reckon/crew/dispatch_sessions.py:1620 that reads it from the run's prompt.txt, leaving that path covered only at the launch seam.\nFINDING runs/r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction/logs/baseline-suite.log:4 non-blocking: the log's own '# command:' header omits the RECKON_INVENTORY_REVISION assignment the manifest's baseline_suite.command carries, so the base arm cannot be reproduced from the log alone.\n",
+  "review_run_id": "r-20261111T231038123370-review-of-a-lane-change-drops-the-anchored-instruction-282be918cf52",
+  "reviewed_base_sha": "f238d113fa89569f42ef7e54e4b6dd28a021bebe",
+  "reviewed_head_sha": "282be918cf529959271976eeb0ea2a493476b6b3",
+  "reviewed_run_id": "r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction",
+  "reviewer": "review-of-a-lane-change-drops-the-anchored-instruction-282be918cf52",
+  "reviewer_run_id": "r-20261111T231038123370-review-of-a-lane-change-drops-the-anchored-instruction-282be918cf52",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T23:57:19.000Z",
+  "total": 114
+}

@@ -1,0 +1,111 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertion": "tests/test_one_run_cannot_stop_a_sweep.py:105 ledger rows == [r-review-third]",
+      "fails_if": "Promotion is reported without a real ledger row, or the failed or vanished run is also promoted."
+    },
+    {
+      "assertion": "tests/test_one_run_cannot_stop_a_sweep.py:97 self_promoted == [r-review-third]",
+      "fails_if": "The first run's raise aborts iteration before the third, or the vanished second is reconstructed and promoted."
+    },
+    {
+      "assertion": "tests/test_one_run_cannot_stop_a_sweep.py:123 failed == [{run_id: r-review-first, error: ValueError: unreadable ledger row}]",
+      "fails_if": "The unexpected error is swallowed, loses its identity or its type and message; the message text comes from the test's own raise, but the report key and the Type: message shape are prescribed independently by the code under test."
+    },
+    {
+      "assertion": "tests/test_one_run_cannot_stop_a_sweep.py:151 calls == [review, plan-review]",
+      "fails_if": "A failure in the test's stub review pass skips the plan-review pass or reorders the two."
+    },
+    {
+      "assertion": "tests/test_one_run_cannot_stop_a_sweep.py:172 four diagnostic lines over two passes",
+      "fails_if": "The station suppresses per-run diagnostics or a first pass blocks the second request."
+    }
+  ],
+  "assertion_independence": "No assertion compares a value the test supplied against itself: expected run ids, report categories, vanished classification and ledger rows are literals or real ledger reads, while the injected LedgerError and ValueError only trigger the code path and never supply an expected result.",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/resumption.py:2538 dispatch_awaiting_reviews inside sweep",
+    "reckon/crew/station.py:283 SweepBeat._run consuming reviews.failed",
+    "reckon/crew_dispatch_commands.py:285 result.get(\"reviews\") consumer of the sweep report"
+  ],
+  "completed_at": "2026-11-12T02:16:59.825Z",
+  "dispatched_at": "2026-11-12T01:58:44Z",
+  "failure_delta_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/review-sweep-t8w8r_ff/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/review-sweep-t8w8r_ff/tree/tests/test_one_run_cannot_stop_a_sweep.py /tmp/review-sweep-t8w8r_ff/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T005821643873-one-run-cannot-stop-a-sweep/final-suite.log",
+      "revision": "c5cf18d11ed6f74a4d2770223774fa0b8a0f2367"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/review-sweep-_imuaogo/tree /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/review-sweep-_imuaogo/tree/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T005821643873-one-run-cannot-stop-a-sweep/base-suite.log",
+      "revision": "22e69a0cd2d8a7447e5515f38644458ff9fab93d"
+    }
+  },
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking: the re-raise for a pointer that vanishes mid-promotion is untested and reports such a run as vanished rather than refused; landed under the critical-work directive, and the gap is noted on \u00a729 for the follow-on sweep section",
+      "recorded_at": "2026-11-12T02:31:36.786925+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 625,
+      "severity": "non-blocking",
+      "text": "The added re-raise on a missing pointer is exercised by no test and contradicts the function's own contract that a dict is returned whenever a review run was considered; because the sweep re-reads the pointer at line 712, a missing pointer is already classified vanished before promotion, so this branch is reachable only when the pointer disappears during promotion, where a partially completed promotion would be reported as vanished rather than as a refusal."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 3 production call sites",
+    "diff": "Read 3a1928b6256ad9afdcb5d5d6e5532c0864dda72d and c5cf18d11ed6f74a4d2770223774fa0b8a0f2367 against 22e69a0cd2d8; the first restructures the sweep loop and adds six cases, the second adds the evidence fragment.",
+    "done_when": "Read the fence-evidence measure in prompt.txt and opened final-suite.log (57 passed, EXIT=0), base-suite.log (51 passed, EXIT=0), negative-suite.log (6 failed, EXIT=1) and importer-delta.json (0 added ids); the gate asserts the named measure.",
+    "goal": "Read the goal in prompt.txt and section 29; reckon/crew/recovery_review_acceptance.py:703-824 gives each run its own boundary so a raise costs only that run's turn.",
+    "manifest": "Read the manifest; its baseline_suite and after_suite blocks reconcile with the log headers and EXIT lines I opened, and its status reads complete.",
+    "write_paths": "Read the six declared paths against git show --stat of both commits; all five changed paths are demanded by the goal and none fall outside the fence."
+  },
+  "justifications": {
+    "durability": "tests/test_one_run_cannot_stop_a_sweep.py:97-108 asserts the third review's real ledger row and the exact failed and vanished identities, and the same file's six cases all fail against base product code (negative-suite.log), but the re-raise added at reckon/crew/recovery_review_acceptance.py:625 is exercised by no case.",
+    "evidence": "final-suite.log records 57 passed and EXIT=0 at c5cf18d11ed6, base-suite.log records 51 passed and EXIT=0 at 22e69a0cd2d8, negative-suite.log records 6 failed with EXIT=1 and importer-delta.json records 0 added unique ids; the done-when's ruff check and ruff format --check receipts exist only in the worker stream ('All checks passed!', '4 files already formatted', exit_code 0) and name no log path in the manifest's test_logs.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:820-824 extends the existing report dict with the failed list vocabulary reckon/crew/plan_review.py:4223 already uses, and reckon/crew/station.py:288-295 follows the file's existing stderr diagnostic-and-flush convention.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:703-824 wraps each pointer's review, acceptance and repair turn in one boundary and records failed and vanished identities, and reckon/crew/resumption.py:2545 and :2570 keep the review and plan-review passes independent of each other.",
+    "reuse": "No owner of per-run isolation existed for this sweep \u2014 the search covered reckon/crew/recovery_watch.py per-pass boundaries, reckon/crew/plan_review.py:4223 failed-list vocabulary and reckon/crew/runs.py read_pointer/pointer_path \u2014 and the addition modifies dispatch_awaiting_reviews, resumption.sweep and SweepBeat._run in place rather than adding a parallel mechanism.",
+    "scope_discipline": "Both commits touch only reckon/crew/recovery_review_acceptance.py, reckon/crew/resumption.py, reckon/crew/station.py, tests/test_one_run_cannot_stop_a_sweep.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/one-run-cannot-stop-a-sweep.html, every one of them inside the six declared write paths."
+  },
+  "negative_control": {
+    "interpretation": "All six new cases fail against base product code, so the regression cases are proven to fire rather than merely observed green.",
+    "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T005821643873-one-run-cannot-stop-a-sweep/negative-suite.log",
+    "quote": "E           reckon.ledger.LedgerError: could not stage review write: index.lock held",
+    "summary": "6 failed, 51 passed in 11.72s; EXIT=1"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The goal is to isolate each run in the station's review pass so one run's failure never aborts its session's sweep; reckon/crew/recovery_review_acceptance.py:703-824 gives every pointer's review, acceptance and repair turn one exception boundary and reports each failure.\nVERDICT done_when: The measure names the three-run LedgerError and vanished-pointer case, the ValueError case, the importer arms and ruff; final-suite.log records 57 passed with EXIT=0 at c5cf18d11ed6, negative-suite.log records 6 failed with EXIT=1 at base naming exactly the six new cases, and importer-delta.json records 0 added unique ids.\nVERDICT write_paths: The six declared paths cover three runtime modules, one test file and the landing fragment; both commits change five paths, each inside that fence.\nVERDICT manifest: The manifest reads complete and its baseline_suite and after_suite blocks name the same revisions, commands and log paths whose headers and EXIT=0 lines I opened.\nVERDICT diff: Commit 3a1928b6256ad9afdcb5d5d6e5532c0864dda72d moves the per-pointer body inside one try, adds failed and vanished lists, narrows promote_review_run_itself with a re-raise and widens two sweep-pass boundaries and adds per-run station diagnostics; c5cf18d11ed6 adds docs/evidence/fragments/the-monitor-reads-each-fact-once/one-run-cannot-stop-a-sweep.html.\nCALL_SITES: reckon/crew/resumption.py:2538 dispatch_awaiting_reviews inside sweep, reckon/crew/station.py:283 SweepBeat._run consuming reviews.failed, reckon/crew_dispatch_commands.py:285 result.get(\"reviews\") consumer of the sweep report\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:703-824 wraps each pointer's review, acceptance and repair turn in one boundary and records failed and vanished identities, and reckon/crew/resumption.py:2545 and :2570 keep the review and plan-review passes independent of each other.\nSCORE evidence: 18\nJUSTIFICATION evidence: final-suite.log records 57 passed and EXIT=0 at c5cf18d11ed6, base-suite.log records 51 passed and EXIT=0 at 22e69a0cd2d8, negative-suite.log records 6 failed with EXIT=1 and importer-delta.json records 0 added unique ids; the done-when's ruff check and ruff format --check receipts exist only in the worker stream ('All checks passed!', '4 files already formatted', exit_code 0) and name no log path in the manifest's test_logs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Both commits touch only reckon/crew/recovery_review_acceptance.py, reckon/crew/resumption.py, reckon/crew/station.py, tests/test_one_run_cannot_stop_a_sweep.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/one-run-cannot-stop-a-sweep.html, every one of them inside the six declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_one_run_cannot_stop_a_sweep.py:97-108 asserts the third review's real ledger row and the exact failed and vanished identities, and the same file's six cases all fail against base product code (negative-suite.log), but the re-raise added at reckon/crew/recovery_review_acceptance.py:625 is exercised by no case.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:820-824 extends the existing report dict with the failed list vocabulary reckon/crew/plan_review.py:4223 already uses, and reckon/crew/station.py:288-295 follows the file's existing stderr diagnostic-and-flush convention.\nSCORE reuse: 20\nJUSTIFICATION reuse: No owner of per-run isolation existed for this sweep, and the addition modifies dispatch_awaiting_reviews, resumption.sweep and SweepBeat._run in place rather than adding a parallel mechanism.\nFINDING reckon/crew/recovery_review_acceptance.py:625 non-blocking: the added re-raise on a missing pointer is exercised by no test and contradicts the function's documented dict-returning contract, and because the sweep re-reads the pointer at line 712 a missing pointer is already classified vanished before promotion, so the branch is reachable only when a pointer disappears during promotion.\n",
+  "reuse_search": "Searched reckon/crew by capability for per-run isolation, vanished-pointer classification and failed-list report vocabulary; opened reckon/crew/recovery_watch.py:3383-3443 (per-pass boundaries), reckon/crew/plan_review.py:4223 (failed list) and reckon/crew/runs.py:131/1065 (pointer_path, read_pointer). No owner isolates one run inside this sweep and the change extends the existing loop, sweep passes and station beat in place.",
+  "review_run_id": "r-20261112T015622246537-review-of-one-run-cannot-stop-a-sweep-c5cf18d11ed6",
+  "reviewed_base_sha": "22e69a0cd2d8a7447e5515f38644458ff9fab93d",
+  "reviewed_head_sha": "c5cf18d11ed6f74a4d2770223774fa0b8a0f2367",
+  "reviewed_run_id": "r-20261112T005821643873-one-run-cannot-stop-a-sweep",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T02:20:00+00:00",
+  "total": 114
+}

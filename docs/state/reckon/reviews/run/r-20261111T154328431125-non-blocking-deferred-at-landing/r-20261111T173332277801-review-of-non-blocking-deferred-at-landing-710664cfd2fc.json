@@ -1,0 +1,79 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-11T18:03:06.637Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-non-blocking-deferred-at-landing-710664cfd2fc",
+      "recorded_at": "2026-11-11T19:48:14.270986+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-11T17:38:51Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "non-blocking-deferred-at-landing",
+      "recorded_at": "2026-11-11T19:06:53.399986+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "non-blocking-deferred-at-landing",
+      "recorded_at": "2026-11-11T19:07:11.859186+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "non-blocking-deferred-at-landing",
+      "recorded_at": "2026-11-11T19:07:24.041723+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "the real store resolution and commit are exercised by the rewritten arm in tests/test_a_run_a_review_does_not_block_lands.py, as the finding itself records",
+      "recorded_at": "2026-11-11T19:07:34.796989+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 619,
+      "severity": "non-blocking",
+      "text": "deferred_finding_indexes filters on the finding's literal \"text\" field while every other reader resolves the claim through review.finding_claim (text, summary, detail, title). A plan or code record whose claim sits under summary/detail/title is admitted by the landing guard and shown by the findings view, but silently never deferred, so it keeps disposition open with no record of the run that landed over it. One added definition, two readers of the same field, disagreeing."
+    },
+    {
+      "file": "reckon/crew/review_dispositions.py",
+      "line": 600,
+      "severity": "non-blocking",
+      "text": "deferred_finding_indexes duplicates recovery_review_acceptance._excusable_finding_indexes (:66) and its _finding_blocks predicate (:40): both enumerate the unanswered findings whose declared severity is non-blocking, by the same declared_severity call. record_landed_deferrals (:630) likewise re-implements the store-resolve/merge/_write_record/_carry_answer_to_delivered_copies/commit_record_write plumbing that record_finding_disposition (:507) already owns, rather than sharing it. The duplicated enumerator is where the divergence recorded above comes from."
+    },
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": 478,
+      "severity": "non-blocking",
+      "text": "The recovery acceptance path still calls record_landed_exemptions for the same unanswered non-blocking findings the landing pass now defers, so a run that lands through recovery closes them as work while the same run landed through queue_landing leaves them open. The evidence fragment names the vocabulary is the defect being repaired: an exemption is a judgement the pass made, which is why queue landing stopped writing it. That file is outside this node's declared write paths, so the divergence needs its own node."
+    },
+    {
+      "file": "tests/test_a_non_blocking_finding_is_deferred_at_landing.py",
+      "line": 74,
+      "severity": "non-blocking",
+      "text": "The plan's done_when asks that this file show its cases with a temporary repository and crew home; the fixture instead stands down stored_record, _carry_answer_to_delivered_copies and commit_record_write, so this file never exercises the real store resolution or the commit it replaces. The real path is covered by the rewritten arm in tests/test_a_run_a_review_does_not_block_lands.py, so the behaviour is measured, but not in the file the done_when names."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a run with only non-blocking or follow-on findings lands, each recorded as a rule-made deferral that stays open; reckon/crew/queue_landing.py:1353 now admits a non-blocking finding and reckon/crew/review_dispositions.py:686 writes the deferred entry naming the run and the rule.\nVERDICT done_when: done_when names tests/test_a_non_blocking_finding_is_deferred_at_landing.py with four cases plus armed base and after arms; the manifest records those arms (logs/head_arm2.log 91 passed 1 failed EXIT=1, logs/base_arm2.log 36 passed 1 failed EXIT=1) and the negative control (logs/negative_control.log 3 failed 1 passed EXIT=1).\nVERDICT write_paths: read the manifest's declared paths and the resume advice that widened them; every path in the diff - reckon/crew/queue_landing.py, reckon/crew/findings.py, reckon/crew/review_dispositions.py, both rewritten test files, the new test and the evidence fragment - is inside that scope.\nVERDICT manifest: read; it states both armed arms with revisions, commands and failure ids, the negative control, and 0 added failures; the one failure it names reproduces identically at the base revision in logs/base_arm2.log.\nVERDICT diff: read all three commits against d5df5102; the guard change, the new disposition kind and writer, the reader's open flag and the deferred path in _land_deliveries are the whole of it, with no unrelated change.\nCALL_SITES: reckon/crew/queue_landing.py:1373 (_red_suite_guard calling _undisposed_finding_guard), reckon/crew/queue_landing.py:2078 (_land_deliveries calling record_landed_deferrals), reckon/crew/findings.py:326 (the open flag _read_record_rows serves at :482 to the findings view at :710 and :953), reckon/crew/review_dispositions.py:265 (the dispose verb refusal, reached through dispose_commands), reckon/crew/repair.py:279 (parse_finding_disposition), reckon/velocity.py:2947 (disposition counting)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1353 admits the non-blocking finding and review_dispositions.py:686 records the deferral, but the same class of finding is still closed as exempted on the recovery path at recovery_review_acceptance.py:478.\nSCORE evidence: 15\nJUSTIFICATION evidence: the arms in logs/head_arm2.log and logs/base_arm2.log are complete with EXIT lines and the same single pre-existing failure, but the base arm runs neither the new test file nor a ruff record, and the done_when asks for the new test in the base tree.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff d5df5102..710664cfd2 is inside the manifest's write paths as widened by resume-1-advice.txt.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_non_blocking_finding_is_deferred_at_landing.py:119 asserts the guard admits the two non-blocking and one follow-on finding and that all three read deferred naming the run, which the declared mutation reddens; the summary/detail claim branch at review_dispositions.py:619 has no arm.\nSCORE fit: 19\nJUSTIFICATION fit: findings.py:57 declares the new kind beside the existing disposition vocabulary and review_dispositions.py:600 follows the module's docstring style, with no plan, stage or ticket identifier in any added name.\nSCORE reuse: 5\nJUSTIFICATION reuse: review_dispositions.py:600 duplicates recovery_review_acceptance.py:66 and its :40 predicate, and :630 re-implements the record write that review_dispositions.py:507 already owns.\nFINDING reckon/crew/review_dispositions.py:619 non-blocking: the deferral rule filters on the literal text field while the rest of the readers resolve the claim through review.finding_claim, so a summary/detail-shaped finding is admitted and never deferred.\nFINDING reckon/crew/review_dispositions.py:600 non-blocking: the unanswered-non-blocking enumerator and the landing record write duplicate recovery_review_acceptance.py:66 and review_dispositions.py:507 instead of extending either owner.\nFINDING reckon/crew/recovery_review_acceptance.py:478 non-blocking: the recovery path still records exemptions for the findings queue landing now defers, so the same run is closed as work on one landing path and left open on the other.\nFINDING tests/test_a_non_blocking_finding_is_deferred_at_landing.py:74 non-blocking: the fixture stands down the store instead of using the temporary repository and crew home the done_when names.\n",
+  "review_run_id": "r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc",
+  "reviewed_base_sha": "d5df5102389d90012d3c05f26e01ef5c92b801d7",
+  "reviewed_head_sha": "710664cfd2fc44455eabd5b0561a8e6f9786c882",
+  "reviewed_run_id": "r-20261111T154328431125-non-blocking-deferred-at-landing",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T18:39:51.657924+00:00",
+  "total": 93
+}

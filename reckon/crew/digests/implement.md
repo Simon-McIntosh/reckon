@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 adac47f10071622f25095d8c48b4eebed15e2008d81b38984dee650580602e78,
-# 114365 bytes, ~28592 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 29ceab9845b8a16b691e5e1e3edb4c593c8d4a3d013e9a38d331bd04537bf9e1,
+# 118749 bytes, ~29688 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -233,10 +233,14 @@ where a flagged hit is CORRECT and must be kept:
 false positive.
 ## Parallel Agent Safety
 
-- One worker, one worktree, one exclusive write scope. No two concurrent
-  workers write the same file even across worktrees — merging is the
-  orchestrator's job, sequentially, after auditing each manifest and
-  `git show --stat` against the declared scope.
+- One worker, one worktree. **Concurrent edits to one file from separate
+  worktrees are allowed (lead ruling 2026-10-24, restated 2026-11-11): never
+  hold or defer a node because another live run writes a file it needs.**
+- Exclusive write scope remains only where git cannot merge:
+  - a figure topic directory: figures are replaced wholesale, never combined;
+  - binary or generated receipts;
+  - a cumulative evidence record (`docs/evidence/archive/<plan>-landed.html`
+    and the like), which is spliced, never rewritten.
 - Workers commit locally (conventional subject AND a body), never push the
   primary branch, never merge/rebase/stash, and stage explicit paths only.
 - Durable delivery: every worker writes its manifest to an
@@ -430,6 +434,59 @@ mid-step.
 - **Only light work runs on the fleet node:** editing, git, reckon commands, and
   a focused test file or two (`-n 4` at most, done in about a minute). That's the
   whole list.
+- **Check where you are before every command that computes, not once per
+  session.** You are on the fleet node when `hostname` matches the `node` field of
+  `~/.local/state/fleet/record.json`, or when `$SLURM_JOB_ID` equals its `job_id`.
+  A worker launched by reckon is usually there, and so is a step started with
+  `srun --overlap --jobid=<fleet job>`. If the check says fleet node and the
+  command is not on the light list above, it goes to a partition. No judgement
+  call is involved:
+
+  ```bash
+  F=~/.local/state/fleet/record.json
+  [ "$(hostname -s)" = "$(jq -r .node $F | cut -d. -f1)" ] && echo "FLEET NODE: light work only"
+  ```
+
+- **Bright lines, any one of which makes a command heavy:** it starts more than
+  one CPU-bound process (a `multiprocessing` pool, `xargs -P`, `&`-backgrounded
+  loops, one process per name or per file, `pytest -n` above 4); it is a whole
+  test directory or a whole suite; it is expected to use more than about a minute
+  of CPU; it reads or writes a corpus, a census, a manifest population or a
+  graph-wide query result. Heavy commands run on `rigel` (no time limit, usually
+  idle) or `all_debug` (one hour). From inside the fleet job, submit with
+  `SLURM_JOB_ID` unset. A shell there inherits it, so a bare
+  `srun --partition=...` tries to start a step of the fleet job and hangs with
+  nothing in `squeue`, which was measured at ten minutes on 2026-11-12:
+
+  ```bash
+  env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=rigel --cpus-per-task=16 \
+    --mem=32G --time=04:00:00 --output=<gpfs-log> \
+    --wrap 'export TMPDIR=/tmp; cd <repo>; <command>; echo EXIT=$?'
+  ```
+
+  Inputs must live on GPFS (`~/.cache/<repo>-<topic>/`), because the job's node
+  cannot see the fleet node's `/tmp` or a session scratchpad under it.
+
+- **`srun --overlap --jobid=<fleet job>` is never a way to run computation.**
+  Overlap puts the work on the coordinators' own cores. It is for attaching
+  coordination tools to the fleet allocation, nothing else. Writing `--overlap`
+  in front of a script, a pytest run or a census is the defect this section
+  exists to stop.
+- **A tool that runs heavy work in the fleet job is a defect in that tool.**
+  Report it to the tool's owner (for reckon's lander or admit service, the reckon
+  coordinator) with the pids and command lines. Never work around it by
+  lowering priority: a niced process still holds cores and GPFS.
+- **Every brief for a worker that computes names its partition.** A worker runs
+  on the fleet node itself, so a brief that says only "on a compute partition"
+  leaves the worker to guess. Name `rigel` or `all_debug` and the `srun` form.
+
+Measured 2026-11-12 at 01:48 on 98dci4-clu-2023, two days after the 2026-11-10
+directive: load average 85, 86% user CPU, 8% idle. Fourteen `conv.py` processes
+of a standard-names review pass ran at about 90% CPU each, about thirteen cores,
+started by a session as `srun --overlap` step 1521 of the fleet job. A nova test
+suite ran at 560% CPU, started inside the fleet job by reckon's `crew admit`.
+Both should have been one `srun --partition=rigel` job each, and every other
+session's git and reckon commands queued behind them for minutes.
 - **Everything else goes to a partition, from the fleet node as from a login
   node:** suite arms, importer populations, solver or physics runs, census and
   corpus passes, builds and figure batches. CPU work goes to `all_debug` (one

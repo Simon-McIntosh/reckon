@@ -45,6 +45,9 @@ from reckon.crew import (
     review_records,
     runs,
 )
+from reckon.crew import (
+    repair as repair_module,
+)
 from reckon.crew import review as review_module
 from reckon.crew.node import (
     INTERRUPTED_RUN_PHASE,
@@ -751,8 +754,43 @@ def _reflex_review_window_seconds() -> int:
     return int(DEFAULT_SWEEP_SECONDS)
 
 
+def _station_slow_stage(
+    project: str, pointer: Mapping[str, Any], *, now: datetime
+) -> tuple[str, int] | None:
+    """The stage and age of a station tick the reflex is waiting behind.
+
+    A delivered run's review is armed by the station's tick, so a tick running
+    past the reflex's window in one stage is what holds the dispatch. The
+    reading is the one the pane's heading note prints, taken from the station's
+    own papertrail, so the duty and the note cannot name different work.
+    """
+    session = str(pointer.get("session") or "")
+    if not session:
+        return None
+    from reckon.crew import obligation_snapshot
+
+    try:
+        answer = obligation_snapshot.read_station_answer(project, session, now=now)
+    except (OSError, ValueError):
+        return None
+    if not isinstance(answer, Mapping):
+        return None
+    stage = str(answer.get("tick_stage") or "")
+    tick_age = answer.get("tick_age_seconds")
+    if not stage or not isinstance(tick_age, int):
+        return None
+    if tick_age <= _reflex_review_window_seconds():
+        return None
+    return stage, tick_age
+
+
 def _reflex_review_command(
-    project: str, pointer: Mapping[str, Any], *, age: int
+    project: str,
+    pointer: Mapping[str, Any],
+    *,
+    age: int,
+    dispatch: str = "",
+    now: datetime | None = None,
 ) -> str:
     """The duty's next action while an armed reflex owns the dispatch.
 
@@ -761,10 +799,30 @@ def _reflex_review_command(
     review, so nothing is lost, but the loser shows as dispatched then
     withdrawn. Naming the reflex as the owner, with the window its cadence
     gives, is what leaves one actor dispatching a run's review.
+
+    Past the window the reflex has not made good on that promise, so the duty
+    names what held it. A station tick running long in one stage is the case a
+    coordinator can act on, because the arm that starts each sweep can wait
+    behind that stage: the duty carries the stage, its age and the dispatch
+    that starts the review now, rather than sending the coordinator to inspect
+    a follower whose pass has nothing wrong with it.
     """
     session = str(pointer.get("session") or "")
     window = _reflex_review_window_seconds()
     if age > window:
+        held = _station_slow_stage(
+            project, pointer, now=now if now is not None else _utc_now()
+        )
+        if held is not None:
+            stage, stage_age = held
+            overdue = (
+                f"review overdue by {age // 60}m {age % 60}s: the station's tick "
+                f"has run {stage_age // 60}m {stage_age % 60}s in its {stage} "
+                "stage, which holds the reflex's sweep"
+            )
+            if dispatch:
+                return f"{overdue}; dispatch the review now with: {dispatch}"
+            return f"{overdue}; dispatch the review for session {session!r} now"
         return (
             f"review overdue by {age // 60}m {age % 60}s: session {session!r} "
             "has an armed follower, but its reflex has not dispatched this "
@@ -1746,6 +1804,43 @@ def _resolve_review_tier(row: Mapping[str, Any], pointer: Mapping[str, Any]) -> 
         return review_tiers.FULL
 
 
+def _coordinator_resume_in_flight(
+    pointer: Mapping[str, Any],
+    repair: Mapping[str, Any],
+    review: Mapping[str, Any],
+) -> bool:
+    """Whether a resume a person started is answering this round right now.
+
+    A coordinator who answers a repair by handing the run advice and resuming
+    it works the round inside the reviewed run, because the finding is about
+    that run's own worktree and its commit claim. While the resumed attempt
+    runs, the reflex cannot open a second repair for the same run: it is
+    refused for the live worker. So a ``repair-owed`` row names a duty nobody
+    can act on, and the stop hook holds every turn end on the refusal the
+    reflex already recorded.
+
+    The reflex's own resume is not this case. It records the round it opened as
+    an opening status on the pointer, and that attempt keeps the in-flight
+    reading. A live resume whose round record carries no opening status is the
+    one a person started, and it stands in for this duty while it runs.
+
+    The round is matched on the reviewed head: a live resume of a later round
+    than the review's says nothing about the findings this review raised, so
+    the duty is left standing.
+    """
+    if str(repair.get("status") or "") in recovery.REPAIR_ROUND_OPENING_STATUSES:
+        return False
+    recorded_round = str(repair.get("round_id") or "")
+    if recorded_round and recorded_round != repair_module.repair_round_id(review):
+        return False
+    from reckon.crew.resumption import _attempt_kind, _live_attempt_number
+
+    attempt = _live_attempt_number(pointer)
+    if attempt is None:
+        return False
+    return _attempt_kind(pointer, attempt) == "resume"
+
+
 def _review_duty_item(
     project: str,
     row: Mapping[str, Any],
@@ -1870,13 +1965,15 @@ def _review_duty_item(
     if review is not None:
         blocking = recovery_review_dispatch._undisposed_blocking_findings(review)
         if blocking:
+            repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
+            repair = repair if isinstance(repair, Mapping) else {}
+            if _coordinator_resume_in_flight(pointer, repair, review):
+                return None
             item = _live_item(row, kind="repair-owed", now=now)
             if head:
                 item["head"] = head
             if tier == review_tiers.NONE:
                 item["review_tier"] = tier
-            repair = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
-            repair = repair if isinstance(repair, Mapping) else {}
             status = str(repair.get("status") or "")
             item["reason"] = (
                 f"the newest review has {len(blocking)} open blocking finding(s); "
@@ -1989,7 +2086,18 @@ def _review_duty_item(
                 item["reason"] = held["reason"]
                 item["next_command"] = held["next_command"]
             else:
-                item["next_command"] = _reflex_review_command(project, pointer, age=age)
+                # The row's own action is the dispatch this duty replaces only
+                # while the reflex still owns it inside the window; past the
+                # window it travels into the replacement so the coordinator is
+                # handed the command that starts the review rather than a
+                # follower to read.
+                item["next_command"] = _reflex_review_command(
+                    project,
+                    pointer,
+                    age=age,
+                    dispatch=str(item.get("next_command") or ""),
+                    now=now,
+                )
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item

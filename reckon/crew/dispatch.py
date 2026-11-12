@@ -308,6 +308,7 @@ def queue_requests(
     """Validate a request batch, then use dispatch's queue writer for each."""
     from reckon.crew import queue_admission
     from reckon.crew.dispatch_admission import (
+        _require_write_paths_in_authority,
         admission_domain_findings,
         admission_refusals_and_warnings,
     )
@@ -333,6 +334,14 @@ def queue_requests(
         # binds.
         _lane_name, effective_backend = resolve_role_override(
             config, node.role, node.spec_level, lane
+        )
+        # The write-scope fence is judged here on the authority a launch
+        # resolves, so a batch entry whose path lies outside the repository and
+        # the delivery directories is refused while it is still a request. Left
+        # to the launch, that refusal would cost the queue position and reach
+        # nobody, and the entry could never run.
+        _require_write_paths_in_authority(
+            node, resolve_dispatch_authority(project, repo_root)
         )
         findings = admission_domain_findings(
             node, project=project, repository=repo_root
@@ -2317,15 +2326,23 @@ def dispatch(
     validated_refs: list[str] = []
     wait_projects: dict[str, str] = {}
     waiting: list[str] = []
+    wait_readiness_cache = readiness_cache if readiness_cache is not None else {}
     if stored_request and not member_refuses:
         validated_refs, wait_projects, waiting = queue_admission.dispatch_waits(
             node,
             repo_root=repo_root,
             project=project,
             run_id=str((existing or {}).get("run_id") or run_id),
-            readiness_cache=readiness_cache,
+            readiness_cache=wait_readiness_cache,
         )
     if waiting:
+        blockers = queue_admission.dispatch_wait_blockers(
+            node,
+            repo_root=repo_root,
+            project=project,
+            refs=validated_refs,
+            readiness_cache=wait_readiness_cache,
+        )
         queued, position, phase = _queue_validated_waits(
             _queued_request_record(
                 run_id=run_id,
@@ -2345,12 +2362,18 @@ def dispatch(
             wait_projects=wait_projects,
             max_requests=flight.queue_max_requests(config),
         )
-        held = LaneHeld(
-            {
-                "detail": "waiting on " + ", ".join(waiting),
-                "reason": "this section's waits have not landed",
-            }
+        hold = queue_admission.section_hold(
+            waiting,
+            project=project,
+            docs_dir=Path(str(repo_root)) / "docs",
+            cache=wait_readiness_cache,
         )
+        queue_admission.record_section_hold(
+            str(queued["run_id"]),
+            hold,
+            verdict=queue_admission.section_hold_verdict(hold),
+        )
+        held = LaneHeld({"detail": hold["detail"], "reason": hold["reason"]})
         held.queued = {
             "run_id": str(queued["run_id"]),
             "position": position,
@@ -2359,7 +2382,9 @@ def dispatch(
             # the pointer does not carry.
             "phase": phase,
             "waits": list(validated_refs),
-            "reason": "this section's waits have not landed",
+            "blockers": blockers,
+            "hold": hold["names"],
+            "reason": hold["reason"],
         }
         if held_selection is not None:
             # The hold that offered the local lane is kept in the outcome

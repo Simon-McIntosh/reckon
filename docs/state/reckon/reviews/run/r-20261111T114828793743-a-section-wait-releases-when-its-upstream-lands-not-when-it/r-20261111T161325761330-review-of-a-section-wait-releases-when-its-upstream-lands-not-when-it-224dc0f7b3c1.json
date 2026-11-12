@@ -1,0 +1,76 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/queue_admission.py:_section_readiness_state",
+    "reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state",
+    "reckon/crew/queue_admission.py:_ref_state",
+    "reckon/crew/promotion.py:_release_waiters_of_the_landed_section",
+    "reckon/crew/promotion.py:_release_waiters_of_a_discard",
+    "reckon/crew/queue_admission.py:advance_waiting_requests"
+  ],
+  "completed_at": "2026-11-11T16:37:48.196Z",
+  "dispatched_at": "2026-11-11T16:17:09Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The unreadable-ledger case holds through the manifest status as well; the branch it names is exercised by the promotion case, which removes the pointer as production does.",
+      "recorded_at": "2026-11-11T17:02:06.366613+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "The guard asks runs._unloaded_sections through a minimal declaration; promoting a public helper there is a consolidation the endpoint does not need.",
+      "recorded_at": "2026-11-11T17:02:18.847624+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_wait_releases_when_its_upstream_lands.py",
+      "line": "321",
+      "severity": "non-blocking",
+      "text": "non-blocking: `test_an_unreadable_ledger_holds_the_wait` never calls `_promote`, so at :327 the upstream run still has its live pointer and its manifest reads `complete`; the pre-change guard held that state through `_manifest_status` at reckon/crew/queue_admission.py:3479, so the assertion at :335 passes with the `rows is None` branch at :3419 removed and restored to `for row in rows or ()` \u2014 it cannot fail for the reason its docstring names. Calling `_promote(delivered)` before monkeypatching `ledger.load` would remove the pointer and make the assertion real; the branch itself is guarded by the first case and its control."
+    },
+    {
+      "file": "reckon/crew/queue_admission.py",
+      "line": "3459",
+      "severity": "non-blocking",
+      "text": "non-blocking: the guard reaches a cross-module private, `runs._unloaded_sections`, and satisfies its `section_declarations` predicate by fabricating `{section: \"implementable\"}` at :3462 \u2014 a plan shape no plan produces. A future change to what that owner does with a declaration (an added plan-status filter, say) would silently change this guard's answer to a question it did not ask through the owner's own contract; a public `runs` helper for a section's landed state would be the extension point."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 8e989cb..224dc0f: e12b9cd9 rewrites the promoted-run branch to call runs._unloaded_sections and keys identity through section_record_id, 1f893140 rewrites the evidence fragment to match, and 224dc0f7 corrects the fragment's citation of the head arm as a fresh-tree run.",
+    "done_when": "the done_when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases and a negative control; the landed file carries five tests at tests/test_a_wait_releases_when_its_upstream_lands.py:256, :301, :321, :338 and :354, logs/base-revision-reproduction.log records 2 failed/1 passed EXIT=1 at bc6d7fd, logs/negative-control.log records 4 failed/1 passed EXIT=1, and logs/negative-control-ledger-branch.log records 1 failed/4 passed EXIT=1 against the `_unloaded_sections` branch alone.",
+    "goal": "the node's goal is that a section wait releases when its upstream lands, not when it is declared done; reckon/crew/queue_admission.py:3378 `_section_run_unlanded` now answers a promoted run from the drain's own derivation at :3459 instead of a per-row `_revision_is_ancestor` scan, and it is consulted from all three section-ref resolution points (:3659, :3748, :3921).",
+    "manifest": "read; it records seven commits ending e12b9cd9 for the code, `56 passed` at the head arm against `51 passed` at the base arm, both EXIT=0, and names the two negative-control logs; its `after_suite.revision` is e12b9cd9 rather than the reviewed head 224dc0f, which changes only the evidence fragment.",
+    "write_paths": "the declared write paths are reckon/crew/queue_admission.py, tests/test_a_wait_releases_when_its_upstream_lands.py and the fragment under docs/evidence/fragments/a-queue-holds-the-whole-plan/; `git diff --stat 8e989cb..224dc0f` touches exactly those three files, and no figure directory was written."
+  },
+  "justifications": {
+    "durability": "tests/test_a_wait_releases_when_its_upstream_lands.py:256 fails when the `_unloaded_sections` branch is deleted, but :321 cannot fail for the branch it names because its fixture never promotes the upstream run.",
+    "evidence": "logs/armed-after_suite.log records `56 passed` EXIT=0 at e12b9cd9 against logs/armed-baseline_suite.log `51 passed` EXIT=0 at bc6d7fd, and both negative-control logs show the guard reddening, but logs/base-reproduction names a test id that exists in no committed revision.",
+    "fit": "the new code follows the module's lazy-import and `#:`-comment idiom at reckon/crew/queue_admission.py:3403-3421 and introduces no plan or ticket identifier in any symbol or comment.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:3459 asks the drain's own derivation whether the section is still unloaded, so a run whose pointer a promotion removed is now held through the project ledger rather than released.",
+    "reuse": "reckon/crew/queue_admission.py:3459 extends the repository's existing unloaded-section derivation at reckon/crew/runs.py:2348 instead of duplicating it, which is the fork the previous round's review named.",
+    "scope_discipline": "every path in `git diff --stat 8e989cb..224dc0f` is under the declared write paths, and the fragment edit is the only evidence prose the node wrote."
+  },
+  "plan_section": "s40",
+  "plan_slug": "a-queue-holds-the-whole-plan",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a section wait releases when its upstream lands, not when it is declared done; reckon/crew/queue_admission.py:3378 `_section_run_unlanded` now answers a promoted run from the drain's own derivation at :3459 instead of a per-row `_revision_is_ancestor` scan, and it is consulted from all three section-ref resolution points (:3659, :3748, :3921).\nVERDICT done_when: the done_when names tests/test_a_wait_releases_when_its_upstream_lands.py, a base-revision reproduction log, four cases and a negative control; the landed file carries five tests, logs/base-revision-reproduction.log records 2 failed/1 passed EXIT=1 at bc6d7fd, logs/negative-control.log records 4 failed/1 passed EXIT=1, and logs/negative-control-ledger-branch.log records 1 failed/4 passed EXIT=1 against the `_unloaded_sections` branch alone.\nVERDICT write_paths: the declared write paths are reckon/crew/queue_admission.py, tests/test_a_wait_releases_when_its_upstream_lands.py and the fragment under docs/evidence/fragments/a-queue-holds-the-whole-plan/; `git diff --stat 8e989cb..224dc0f` touches exactly those three files, and no figure directory was written.\nVERDICT manifest: read; it records seven commits ending e12b9cd9 for the code, `56 passed` at the head arm against `51 passed` at the base arm, both EXIT=0, and names the two negative-control logs; its after_suite revision is e12b9cd9 rather than the reviewed head 224dc0f, which changes only the evidence fragment.\nVERDICT diff: read commit by commit over 8e989cb..224dc0f: e12b9cd9 rewrites the promoted-run branch to call runs._unloaded_sections and keys identity through section_record_id, 1f893140 rewrites the evidence fragment to match, and 224dc0f7 corrects the fragment's citation of the head arm as a fresh-tree run.\nCALL_SITES: reckon/crew/queue_admission.py:_section_readiness_state, reckon/crew/queue_admission.py:_dispatch_nonrun_wait_state, reckon/crew/queue_admission.py:_ref_state, reckon/crew/promotion.py:_release_waiters_of_the_landed_section, reckon/crew/promotion.py:_release_waiters_of_a_discard, reckon/crew/queue_admission.py:advance_waiting_requests\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_admission.py:3459 asks the drain's own derivation whether the section is still unloaded, so a run whose pointer a promotion removed is now held through the project ledger rather than released.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/armed-after_suite.log records `56 passed` EXIT=0 at e12b9cd9 against logs/armed-baseline_suite.log `51 passed` EXIT=0 at bc6d7fd, and both negative-control logs show the guard reddening, but logs/base-revision-reproduction.log names a test id that exists in no committed revision.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in `git diff --stat 8e989cb..224dc0f` is under the declared write paths, and the fragment edit is the only evidence prose the node wrote.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_wait_releases_when_its_upstream_lands.py:256 fails when the `_unloaded_sections` branch is deleted, but :321 cannot fail for the branch it names because its fixture never promotes the upstream run.\nSCORE fit: 17\nJUSTIFICATION fit: the new code follows the module's lazy-import and `#:`-comment idiom at reckon/crew/queue_admission.py:3403-3421 and introduces no plan or ticket identifier in any symbol or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: reckon/crew/queue_admission.py:3459 extends the repository's existing unloaded-section derivation at reckon/crew/runs.py:2348 instead of duplicating it, which is the fork the previous round's review named.\nFINDING tests/test_a_wait_releases_when_its_upstream_lands.py:321 non-blocking: `test_an_unreadable_ledger_holds_the_wait` never calls `_promote`, so its upstream run keeps a live pointer and a `complete` manifest and the assertion passes with the `rows is None` branch reverted to `for row in rows or ()`.\nFINDING reckon/crew/queue_admission.py:3459 non-blocking: the guard calls the cross-module private `runs._unloaded_sections` with a fabricated `{section: \"implementable\"}` declaration map, so its answer depends on the owner's internal treatment of a plan shape no plan produces.\n",
+  "review_run_id": "r-20261111T161325761330-review-of-a-section-wait-releases-when-its-upstream-lands-not-when-it-224dc0f7b3c1",
+  "reviewed_base_sha": "8e989cbf3649a29aff8cd6a961f5bed148adc0e8",
+  "reviewed_head_sha": "224dc0f7b3c1c00a78f77b34ade9e12516d2aa29",
+  "reviewed_run_id": "r-20261111T114828793743-a-section-wait-releases-when-its-upstream-lands-not-when-it",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-11T16:55:58.499274+00:00",
+  "total": 108
+}

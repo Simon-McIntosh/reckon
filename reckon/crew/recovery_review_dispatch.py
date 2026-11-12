@@ -786,18 +786,65 @@ def _resolve_abbreviated_commit(repository: Path | None, text: str) -> str:
     return _resolve_commit(repository, text)
 
 
+def _newest_cited_revision(tree: Path | None, revisions: Sequence[str]) -> str:
+    """The newest of ``revisions`` by ancestry in ``tree``, or empty.
+
+    A manifest's ``commits:`` field is a citation list, not an ordered history,
+    so its entries are compared by ancestry rather than read in the order they
+    were written. One citation needs no query. A tree that cannot answer leaves
+    the caller its other readers rather than guessing, and the query is bounded
+    so a repository on a stalled filesystem cannot hold a caller open.
+    """
+    if not revisions:
+        return ""
+    if len(revisions) == 1:
+        return revisions[0]
+    if tree is None:
+        return ""
+    try:
+        completed = subprocess.run(
+            [
+                "git",
+                "-C",
+                str(tree),
+                "rev-list",
+                "--topo-order",
+                "--max-count=1",
+                *revisions,
+            ],
+            check=False,
+            capture_output=True,
+            text=True,
+            timeout=30,
+        )
+    except (OSError, subprocess.SubprocessError):
+        return ""
+    lines = completed.stdout.split()
+    if completed.returncode != 0 or not lines:
+        return ""
+    return lines[0]
+
+
 def _record_carried_head(record: Mapping[str, Any]) -> str:
     """The head a run's own record names, for a worktree that has been reclaimed.
 
     A manifest's ``commits:`` field is a run's last word on the revisions it
-    landed, so its last resolvable entry is the head the run reached. An entry
-    that is already an object id stands as itself; a shorter citation is
-    resolved to its full id through the run's repository, whose object store it
-    wrote into while the worktree existed, because workers cite abbreviated
-    ids. An entry git cannot resolve unambiguously is skipped rather than
-    guessed, and the pointer's own recorded head is read after the manifest,
-    because a run that has not yet written one still names the revision it was
-    dispatched against.
+    landed, but it is a citation list and not an ordered history: a worker may
+    write it newest-first, oldest-first or in the order the work landed. The
+    entries are therefore compared by ancestry and the newest is the head the
+    run reached. Reading position instead picks the oldest commit of a
+    newest-first list, which is the defect this reader and the promotion's
+    head resolver exist to avoid — promotion reads its head through this same
+    function, so a review and a promotion of one run cannot name different
+    heads.
+
+    An entry that is already an object id stands as itself where no tree can
+    answer; otherwise it is resolved through the run's tree, whose object store
+    the worktree wrote into before it was reclaimed, because workers cite
+    abbreviated ids. An entry git cannot resolve unambiguously is skipped
+    rather than guessed, and the pointer's own recorded head is read after the
+    manifest, because a run that has not yet written one still names the
+    revision it was dispatched against.
     """
     manifest = Path(str(record.get("manifest_path") or ""))
     try:
@@ -807,17 +854,20 @@ def _record_carried_head(record: Mapping[str, Any]) -> str:
     entries = data.get("commits") or []
     if isinstance(entries, str):
         entries = [entries]
-    repo_raw = str(record.get("repo") or "").strip()
-    repository = Path(repo_raw) if repo_raw and Path(repo_raw).is_dir() else None
-    for entry in reversed(list(entries)):
+    tree = _review_tree(record)
+    revisions: list[str] = []
+    for entry in entries:
         text = str(entry).strip()
-        sha = _object_id(text)
-        if sha:
-            return sha
-        if re.fullmatch(r"[0-9A-Fa-f]{7,64}", text):
-            resolved = _resolve_abbreviated_commit(repository, text)
-            if resolved:
-                return resolved
+        resolved = (
+            _resolve_commit(tree, text, cached=True) if tree else _object_id(text)
+        )
+        if resolved and resolved not in revisions:
+            revisions.append(resolved)
+    newest = _newest_cited_revision(tree, revisions)
+    if newest:
+        return newest
+    if revisions:
+        return revisions[-1]
     return _object_id(str(record.get("head") or "").strip())
 
 
@@ -1227,6 +1277,163 @@ def _judge_head_move(
     return verdicts.get(run_id)
 
 
+def _blocking_findings(review: Mapping[str, Any]) -> int:
+    """How many findings a stored review declared as blocking its landing."""
+    return sum(
+        1
+        for finding in review_module.normalised_findings(review)
+        if review_module.declared_severity(finding)
+        == review_module.BLOCKING_FINDING_SEVERITY
+    )
+
+
+def _record_shadow_outcome(
+    record: Mapping[str, Any], review: Mapping[str, Any]
+) -> None:
+    """Record what a judged review found, beside the judgement it was given.
+
+    The judgement was written before the review was dispatched and the store
+    keeps it; this is the half that makes the row a measurement rather than a
+    guess. It is written when the review is read back, which is the first moment
+    the reflex can see the outcome, and a review the shadow never judged writes
+    nothing — a first review's outcome has no prediction to sit beside.
+    """
+    project = str(record.get("project") or "")
+    dispatched = record.get(_review_dispatch_field()) or {}
+    review_run_id = str(dispatched.get("run_id") or "") or str(
+        review.get("review_run_id") or ""
+    )
+    if not project or not review_run_id:
+        return
+    findings = review_module.normalised_findings(review)
+    blocking = _blocking_findings(review)
+    review_need.record_outcome(
+        project=project,
+        review_run_id=review_run_id,
+        outcome="blocking" if blocking else "clean",
+        findings={"blocking": blocking, "findings": len(findings)},
+    )
+
+
+def _prior_review(project: str, run_id: str) -> dict[str, Any] | None:
+    """The review a run already holds, or None when it holds none.
+
+    A stored review is what makes the review now being dispatched a further
+    review rather than a first one, so this read is the shadow's ordinal and not
+    a second reading of the store for its own sake.
+    """
+    try:
+        review = review_module.read_review(project, run_id)
+    except (OSError, ValueError):
+        return None
+    return review if isinstance(review, Mapping) else None
+
+
+def re_review_prediction(
+    record: Mapping[str, Any], fields: Mapping[str, Any]
+) -> dict[str, Any] | None:
+    """The judgement a further code review is dispatched on, and its inputs.
+
+    None is returned for a first review, for a plan review and for a review of a
+    review: the shadow measures re-reviews, and a row for a first review would
+    corrupt the population the view counts. An unanswerable judge is *not* None
+    — it is a prediction recorded as unavailable, so a service that is down is
+    visible in the tally rather than quietly missing from it.
+    """
+    if record.get("subject") == "plan" or _is_review_node(record):
+        return None
+    project = str(fields.get("project") or "")
+    run_id = str(record.get("run_id") or "")
+    head = str(fields.get("head") or "")
+    if not project or not run_id or not head:
+        return None
+    prior = _prior_review(project, run_id)
+    if prior is None:
+        return None
+    tree = _review_tree(record)
+    prior_head = review_described_head(prior, tree=tree)
+    # A re-review that cannot be read is recorded as unmeasured, never as a low
+    # probability: an empty diff here would reach the judge as "unchanged" and
+    # come back as a confident zero, which is the one value the tally must not
+    # invent. The reason travels with the row so the tally can say why.
+    unmeasured = ""
+    paths: list[str] | None = None
+    diff = ""
+    if not prior_head:
+        unmeasured = "the earlier review names no resolvable revision"
+    elif tree is None:
+        unmeasured = "the run's tree is not readable"
+    else:
+        measured = _diff_between(tree, prior_head, head)
+        if measured is None:
+            unmeasured = "git cannot diff the earlier review's revision from this head"
+        else:
+            diff = measured
+            paths = _changed_paths_between(tree, prior_head, head)
+    node = record.get("node") or {}
+    goal = str(node.get("goal") or "")
+    done_when = str(node.get("done_when") or "")
+    findings = review_module.normalised_findings(prior)
+    prior_summary = {
+        "review_run_id": str(prior.get("review_run_id") or ""),
+        "reviewed_head_sha": prior_head,
+        "status": str(prior.get("status") or ""),
+        "total": prior.get("total"),
+        "findings": findings,
+        "blocking_findings": _blocking_findings(prior),
+    }
+    verdict = (
+        review_need.Verdict(None, None, "unjudged", unmeasured)
+        if unmeasured
+        else review_need.predict_blocking(
+            goal=goal,
+            done_when=done_when,
+            diff=diff,
+            prior=prior_summary,
+        )
+    )
+    return {
+        "verdict": verdict,
+        "inputs": {
+            "goal": goal,
+            "done_when": done_when,
+            "reviewed_run_id": run_id,
+            "head": head,
+            "previous_reviewed_head": prior_summary["reviewed_head_sha"],
+            "paths": list(paths or ()),
+            "diff_chars": len(diff),
+            "prior_review": prior_summary,
+        },
+    }
+
+
+def record_re_review_prediction(
+    record: Mapping[str, Any],
+    fields: Mapping[str, Any],
+    review_run_id: str,
+) -> Path | None:
+    """Judge a further review of this run and record the judgement on its row.
+
+    The row is keyed by the review run, so the judgement is taken once that run
+    exists to be judged: a review the lane held was not dispatched, and a row
+    for it would put a guess in the tally with no review to answer it. Nothing
+    here decides anything — the review has already been dispatched — so an
+    unanswerable judge costs the row its probability and nothing else.
+    """
+    if not review_run_id:
+        return None
+    shadow = re_review_prediction(record, fields)
+    if shadow is None:
+        return None
+    return review_need.record_prediction(
+        project=str(fields.get("project") or ""),
+        review_run_id=review_run_id,
+        reviewed_run_id=str(record.get("run_id") or ""),
+        verdict=shadow["verdict"],
+        inputs=shadow["inputs"],
+    )
+
+
 def carry_review_forward(
     record: Mapping[str, Any], *, config: Mapping[str, Any] | None = None
 ) -> dict[str, Any] | None:
@@ -1390,8 +1597,12 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
     speaks for a revision the run has finished with. The reflex records the
     attempt withdrawn rather than letting it stand, so the superseded attempt is
     visible and the run is free to be re-reviewed — or carried — at its new
-    head. A dispatch that already covers the current head, or a run not resumed
-    since the attempt was recorded, is left standing.
+    head. The attempt is ordered by the head it composed for, never by the
+    instant its dispatch record was written: that record is written after the
+    launch, so a review composed before a resume but recorded after it would
+    otherwise read as newer than the resume and be kept. A dispatch that speaks
+    for the head the run now carries, and one no resume has superseded, is left
+    standing.
 
     Only an attempt that never started is withdrawn. A review whose worker has
     launched is running, and a running review finishes: its verdict reaches the
@@ -1409,11 +1620,7 @@ def withdraw_superseded_review(record: Mapping[str, Any]) -> dict[str, Any] | No
         return None
     if str(recorded.get("status") or "") == "withdrawn":
         return None
-    resumed_at = _latest_resume_at(record)
-    if resumed_at is None:
-        return None
-    at = parse_utc(recorded.get("at"))
-    if at is not None and resumed_at <= at:
+    if _latest_resume_at(record) is None:
         return None
     review_run_id = str(recorded.get("run_id") or "")
     if _review_worker_launched(review_run_id):
@@ -2271,6 +2478,11 @@ def _dispatch_text_review_for_run(
             "reason": f"the run is not awaiting review ({row['classification']})",
         }
     review, review_error = _stored_review(record)
+    if review:
+        # The review is stored, which is the moment its outcome becomes known:
+        # a row the shadow judged is completed here, and any other review
+        # writes nothing.
+        _record_shadow_outcome(record, review)
     if review is not None or review_error:
         # A stored review is evidence, readable or not. Regenerating over an
         # unparseable one would discard what the reviewer actually wrote, so
@@ -3229,6 +3441,7 @@ def _dispatch_composed_review(
         }
 
     review_run_id = str(launched.get("run_id") or "")
+    record_re_review_prediction(record, fields, review_run_id)
     record_dispatch(
         status="dispatched",
         reason=f"the review dispatched automatically as run {review_run_id}",

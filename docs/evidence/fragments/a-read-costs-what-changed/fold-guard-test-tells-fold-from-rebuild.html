@@ -1,0 +1,6 @@
+<section id="fold-guard-test-tells-fold-from-rebuild">
+  <h3>Fold stamp and date comparisons reject incomplete samples</h3>
+  <p>The test caches 25 of the ledger's 50 samples under a mismatched stamp or date, then requires refresh to return and persist the complete ledger-backed profile and call the builder without supplied rows. The missing-cache case still requires the same rebuild.</p>
+  <p>Before strengthening the test, separately removing either comparison yielded <code>3 passed, 20 deselected</code>. With the strengthened test, removing the stamp comparison fails the stamp case and removing the date comparison fails the date case: each control records <code>1 failed, 2 passed, 20 deselected</code>. Both mutations execute the altered module in memory, leaving tracked product source unchanged.</p>
+  <p>The baseline and candidate two-file arms each passed 74 tests, with zero added failures. Ruff check and format check are clean on the changed test. The delivery manifest records the committed-head arm and the paths of both independent mutation logs.</p>
+</section>

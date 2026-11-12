@@ -48,6 +48,9 @@ def repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_HOME", str(config_home))
     root = tmp_path / "repo"
     (root / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (root / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     _write_resource(
         root / "docs" / "plans" / f"{PLAN}.html",
         {
@@ -95,7 +98,8 @@ def _pointer(
         "backend": "native",
         "created_at": "2026-10-01T06:00:00Z",
         "manifest_path": manifest_path,
-        "node": node or {"id": "node-a", "plan": PLAN, "section": "s1", "write_paths": []},
+        "node": node
+        or {"id": "node-a", "plan": PLAN, "section": "s1", "write_paths": []},
     }
     if extra:
         pointer.update(extra)

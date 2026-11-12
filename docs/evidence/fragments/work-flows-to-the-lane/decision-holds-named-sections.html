@@ -1,0 +1,50 @@
+<section id="decision-holds-named-sections">
+  <h3>Decisions hold their named sections</h3>
+  <p>The existing parser (<code>reckon/_plan_html.py</code>), typed model
+    (<code>reckon/_schema.py</code>), published schema and roadmap already retain
+    a decision's <code>sections</code>. Dispatch and admission consume the
+    roadmap's section verdicts. This delivery preserves that policy and adds
+    explicit blocker rows and decision keys to a held dispatch's response.</p>
+  <table>
+    <thead><tr><th>Decision</th><th>Independent section</th><th>Named section</th></tr></thead>
+    <tbody>
+      <tr><td>Open, names the transport section</td><td>Ready</td><td>Held by transport</td></tr>
+      <tr><td>Open, names no sections</td><td>Held by transport</td><td>Held by transport</td></tr>
+      <tr><td>Locked</td><td>Ready</td><td>Ready</td></tr>
+    </tbody>
+  </table>
+  <p>At base <code>2af4f4802e42b56abe730d1526f9cf7a8ab0d4bf</code>, the
+    scoped and whole-plan dispatch checks reproduced the missing decision key:
+    <code>"waits": ["readiness:proj:plan-a#s3"]</code> and
+    <code>"reason": "this section's waits have not landed"</code> contained
+    no <code>transport</code> key. The two locked-dispatch checks and the combined
+    reader/schema/roadmap check passed. Four admission cases initially stopped
+    at the test fixture's missing manifest path; the fixture now supplies it.</p>
+  <p>The armed base check collected <code>tests/test_staged_write_inventory.py</code>
+    and reported <strong>51 passed</strong>. The new test file covers the table
+    at dispatch and admission, reader/schema/roadmap parity and reuse of the
+    cached verdict. Admission's fixture supplies the existing hook-trust probe
+    and stubs the process launcher. It asserts exact launched run identities:
+    one for an open scoped decision, none for an open whole-plan decision and
+    both for either locked decision. The head gate at
+    <code>996742a06bfe4656a22b3fbecfc22cdc21fc587e</code> reported
+    <strong>61 passed</strong> on <code>all_debug</code>. Ignoring decision
+    sections produced <strong>3 failed, 7 passed</strong>: the unnamed dispatch,
+    admission and roadmap checks reject that mutation. Ruff check and format
+    check passed on all three changed Python paths.</p>
+  <p>The importer population was 334 files at base and 335 at head, with only
+    the new decision test added. Sequential <code>all_debug</code> arms with
+    four workers reported <strong>727 failed, 2283 passed, 6 errors</strong>
+    at base and <strong>722 failed, 2298 passed, 5 errors</strong> at head;
+    both skipped two tests. The raw head had two failure IDs absent from the
+    recorded base and eight base-only IDs. Paired controls of those two IDs
+    reported <strong>1 failed, 1 passed</strong> at base and
+    <strong>2 passed</strong> at head. The duplicate-row failure thus also
+    reproduces at base; the launcher-reaping failure did not persist in the
+    controls. These unstable outside-scope results remain explicit in the
+    manifest; the importer arm is not claimed green. An earlier extraction
+    lacked a Git index. Its three apparent additions passed paired controls
+    at both revisions; the final head extraction verified its index and clean
+    tracked status before testing. Full receipts and ID deltas are in the
+    run directory.</p>
+</section>

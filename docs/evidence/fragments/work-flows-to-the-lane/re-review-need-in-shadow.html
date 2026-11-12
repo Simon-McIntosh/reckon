@@ -1,0 +1,53 @@
+<section id="re-review-need-in-shadow-landing">
+  <h2>A re-review's predicted outcome is recorded beside what the review found</h2>
+
+  <p><strong>What changed.</strong> <code>reckon/crew/review_need.py</code> gains
+  a second question for the same judge: the probability that a further code
+  review of work an earlier review already read raises a finding that blocks
+  landing. It is asked under its own subject and its own criteria, because it is
+  a probability about a review's outcome rather than a yes-or-no about whether a
+  review is owed. <code>reckon/crew/recovery_review_dispatch.py</code> asks it
+  for a run that already holds a stored review — a first review is not judged —
+  and records the answer against the review run it has just dispatched, with the
+  inputs it was given: the goal, the done-when, the two revisions, the paths that
+  moved between them, the diff's size, and the earlier review's status, scores,
+  findings and blocking count. When the review is stored, the reflex records its
+  outcome beside the judgement.</p>
+
+  <p><strong>Nothing is skipped.</strong> Every re-review is dispatched whatever
+  the probability says. An unanswerable judge — the service down, an answer of
+  the wrong shape, a diff past the readable limit — records the row as
+  unavailable with its reason and leaves the dispatch untouched, so a stale
+  predictor cannot hold a review back. The judgement is taken once the review run
+  exists, because a review the lane held was never dispatched and a row for it
+  would put a guess about nothing into the population.</p>
+
+  <p><strong>The view.</strong> <code>crew view review-need</code> reports, over
+  the recorded rows, how many blocking re-reviews and how many clean ones each
+  threshold would have skipped, and how many judged rows with an outcome still
+  stand between the record and the hundred that a threshold needs before it can
+  be read as a skip rule. A row whose outcome has not arrived is counted as
+  pending and never as clean, so an unmeasured row cannot flatter a threshold.
+  The view is declared in <code>reckon/mcp_views.py</code> and in the crew tool's
+  argument model, which a parity test holds together, and its counts are served by
+  <code>review_need.shadow_view</code>.</p>
+
+  <p><strong>A row is never guessed.</strong> When the earlier review names no
+  resolvable revision, or git cannot diff the two revisions, the row is written
+  unavailable with that reason. Passing an empty change to the judge instead
+  would come back as a probability of zero, which reads to every threshold as a
+  confident clean skip — the one number the tally must never invent.</p>
+
+  <h3 id="re-review-need-in-shadow-measured">Measured</h3>
+
+  <p>Gate: <code>tests/test_a_re_review_need_is_predicted_in_shadow.py
+  tests/test_staged_write_inventory.py</code>, run on <code>all_debug</code> at
+  the base revision and at the delivered head, the command resolved at each arm's
+  own tree. The negative control replaces the prediction write with a bare return
+  and reddens five cases, naming the ledger-row assertion first. Two further
+  controls remove one production wiring line each — the prediction written after
+  a dispatch, and the outcome written when a review is stored — and each reddens
+  the test that drives that line through the reflex. The view's counts are pinned
+  at 0.25 and 0.5 against four planted rows: two skipped at 0.25 (one blocking,
+  one clean) and three at 0.5 (two blocking, one clean).</p>
+</section>

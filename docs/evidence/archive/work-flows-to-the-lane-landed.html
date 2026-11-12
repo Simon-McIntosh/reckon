@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane-landed">
+  <meta name="plan-title" content="Work Flows To The Lane — landed record">
+  <meta name="plan-summary" content="Landing record for Work Flows To The Lane: evidence appended by section.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <title>Work Flows To The Lane — landed record | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+ <main class="plan-doc">
+  <h1>Work Flows To The Lane — landed record</h1>
+  <p>Landing record for Work Flows To The Lane: evidence appended by section.</p>
+
+
+   <section id="s2-identity-published-with-its-claim" data-evidence-origin="append">
+    <h2>§2 — an execution identity is published with its claim</h2>
+    <p>§2 landed at merge <code>20da47addf</code> (reviewed head <code>232f77ed</code>, run <code>r-20261111T154129120140-identity-published-with-its-claim</code>). Importing <code>reckon.crew.dispatch_claims</code> no longer writes an <code>exec-&lt;pid&gt;.identity</code> file: a process publishes one only when it takes a node dispatch claim, and it is removed with that process's last claim. <code>reckon.crew.gc</code> gained a sweep that removes identity files whose pid is gone or reused and prints each removal. The armed arms read 6 failed and 53 passed at base <code>d5df5102</code>, and 61 passed at the head. The declared mutation, restoring the import-time publish, failed <code>test_importing_the_module_publishes_no_identity</code> and <code>test_changed_exec_identity_reclaims_claim_and_allows_new_dispatch</code> (<code>logs/negative-control.log</code>); the repair round's re-run kept only its exit line, so the landing recorded a negative-control waiver citing that log. The superseded import-time assertion in <code>tests/test_a_reexec_never_orphans_a_dispatch.py</code> now asserts the new rule.</p>
+  </section>
+
+  <section id="s4-non-blocking-deferred-at-landing" data-evidence-origin="append">
+    <h2>§4 — a finding that does not block is deferred at landing</h2>
+    <p>§4 landed at <code>921bc3d492</code> (reviewed head <code>469de496</code>, run <code>r-20261111T154328431125-non-blocking-deferred-at-landing</code>). A run whose review holds no undisposed blocking finding now lands. Each other open finding gets a <code>deferred</code> disposition naming the landed run and the rule, and stays listed as open work in the findings view. A finding with no stated severity, or a blocking one, still holds the run, and <code>crew dispose</code> refuses <code>deferred</code> by name. The queue landing path and the recovery acceptance path defer through one writer, and the tests that asserted the old hold were rewritten. Its re-review raised two non-blocking findings, both exempted: the now-uncalled <code>record_landed_exemptions</code>, reported to the lead as a cleanup, and one store commit per deferred finding.</p>
+  </section>
+
+  <section id="s5-session-told-of-submission" data-evidence-origin="append">
+    <h2>§5 — a session is told when its queued work is submitted</h2>
+    <p>§5 landed at <code>0147697ad8</code> (reviewed head <code>b6ef5ddc</code>, run <code>r-20261111T154613158051-session-told-of-submission</code>). When the admit service submits a session's queued request to a worker, that session's watch stream gains one row of its own kind in the same pass. The row names the run, plan section, lane, model, launch advice and the <code>crew tell</code> command that reaches the worker, and the session's pane draws it as one submitted line. The armed arms read 77 passed at base <code>8ed04a01</code> and 82 passed at the head, with no added failures. The declared mutation, removing the row write, failed three tests (<code>negative-control.log</code>).</p>
+  </section>
+
+  <section id="s2-live-sweep" data-evidence-origin="append">
+    <h2>§2 — the live claims directory swept</h2>
+    <p>On 11 November at about 21:50 UTC the coordinator swept the live claims directory <code>~/.config/reckon/crew/claims</code> as SLURM job 1311094 on <code>all_debug</code>. Before: 120,468 identity files, of which 53 were under one hour old, 16,894 between one and 24 hours, 10,820 between 24 and 48 hours, and 92,701 older than 48 hours. The landed sweep judges liveness from the local <code>/proc</code>, while the directory is shared by every node (§19), so this run removed only files older than 48 hours, which no claim-holding execution outlives. It removed 92,701, printing each removal to <code>~/.cache/reckon-identity-sweep/apply-20261111.log</code>. After: 27,771 identity files, all younger than 48 hours. The script is <code>~/.cache/reckon-identity-sweep/sweep.py</code>, and its dry run is <code>dry-run-20261111.log</code> beside it.</p>
+  </section>
+
+  <section id="s7-re-review-reads-what-changed" data-evidence-origin="append">
+    <h2>§7 — a re-review reads what changed since the review before it</h2>
+    <p>§7 landed at <code>f238d113fa</code> (reviewed head <code>2160ffdd</code>, run <code>r-20261111T185408798633-re-review-reads-what-changed</code>). A run's second or later code-review brief names the head the previous review read, the commits since it, and each finding that review raised with its disposition. It asks the reviewer to judge those commits and to say whether each earlier blocking finding is resolved; a first review's brief is unchanged. Its review raised one non-blocking finding, deferred at landing under §4: a stored finding with no claim is skipped, so the brief can call such a review empty.</p>
+  </section>
+
+  <section id="s16-launched-run-owes-no-queued-duty" data-evidence-origin="append">
+    <h2>§16 — a launched run owes no queued duty</h2>
+    <p>§16 landed at <code>5426731d0f</code> (reviewed head <code>b99ca93f</code>, run <code>r-20261111T185852834144-launched-run-owes-no-queued-duty</code>). The obligations snapshot now compares each queued duty with the run's current pointer, so the obligations view, the stop hook and the follower no longer list a queued duty for a run that has launched, even when they read a snapshot taken before the launch. A request still queued keeps its duty. Its review raised three non-blocking findings, deferred at landing under §4. The <code>run-stalled</code> kind is not in the settled set. A pointer that parses with no phase settles its duty. The arms ran on the fleet node rather than <code>all_debug</code>.</p>
+  </section>
+
+  <section id="s11-held-request-names-its-hold" data-evidence-origin="append">
+    <h2>§11 — a held request names the hold it is under</h2>
+    <p>§11 landed at <code>c433d5f434</code> (reviewed head <code>946e6d8f</code>, run <code>r-20261111T185654778148-held-request-names-its-hold</code>). A request held on its section's readiness now names its blocker by kind and id: an open decision's key or a closed gate's id. The name appears in the dispatch result, the queued pointer's recorded hold and the admission verdict. A hold on a declared section wait keeps its own verdict and names the wait's ref. The first review's two blocking findings were repaired: an evidence fragment written one directory too deep, and suite arms recorded as prose. The landing accepted the transient fragment path, and the coordinator added the missing <code>negative_control_log</code> pointer to the manifest, keeping the delivered copy beside it. The control log shows the declared mutation failing both decision and gate cases. The re-review's two non-blocking findings were deferred at landing: one classification copied three times in <code>queue_admission.py</code>, and the admission-pass verdict line left unasserted.</p>
+  </section>
+
+  <section id="s8-re-review-need-in-shadow" data-evidence-origin="append">
+    <h2>§8 — Jev&#x27;s re-review call is recorded beside its outcome</h2>
+    <p>§8 landed at <code>ff797f0c45</code>. Each second or later code review now records the existing <code>review_need.judge</code> verdict and its inputs on the review run's ledger row, and records the review's outcome (blocking finding or not) beside it once stored. An unresolvable prior head or a failed diff is recorded as unavailable, so it never counts as a confident skip. A registered crew view reports what each threshold would have skipped, and the tests exercise both production call sites. Reviewed clean at <code>35cd5151</code> after a repair round.</p>
+  </section>
+
+  <section id="s17-landing-measures-mismatched-arm" data-evidence-origin="append">
+    <h2>§17 — a landing measures a mismatched arm instead of refusing</h2>
+    <p>§17 landed at <code>05c8f2d152</code>. A landing whose recorded baseline or after arm is missing, recorded at another revision, or ran another command now runs the armed command itself at the revision it needs, on a compute partition, and records the arm as measured by the landing. Its own landing met the defect it fixes: its after arm was one evidence-only commit behind its head, so the coordinator ran the armed command at head <code>82010770</code> on <code>all_debug</code> (job 1311265, 57 passed) and recorded that arm, keeping the delivered manifest beside it.</p>
+  </section>
+
+  <section id="s19-identity-judged-on-its-host" data-evidence-origin="append">
+    <h2>§19 — an execution identity is judged on its own host</h2>
+    <p>§19 landed at <code>3fe4dd04ec</code>. An execution identity now records the host that published it. The sweep and the claim reclaim judge its liveness only on that host, and keep another host's identity until an age bound. Reviewed clean at <code>2254607a</code>.</p>
+  </section>
+
+</main>
+</body>
+</html>

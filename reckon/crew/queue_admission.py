@@ -494,7 +494,35 @@ def _launch_queued(
         with contextlib.suppress(OSError):
             _join_admitted_plan_review(pointer, str(launched["run_id"]))
         _carry_section_rederivation(pointer, str(launched["run_id"]))
+        _announce_submission(pointer, launched, steering=steering, options=options)
     return launched
+
+
+def _announce_submission(
+    pointer: Mapping[str, Any],
+    launched: Mapping[str, Any],
+    *,
+    steering: Path | None,
+    options: Mapping[str, Any],
+) -> None:
+    """Tell the coordinating session its request was submitted, in this pass.
+
+    The coordinator queued the request possibly hours earlier and cannot see
+    the moment it starts, so the row is written here rather than left to the
+    next tick's announcement. The advice is the text the worker was launched
+    with: its steering file where one exists, otherwise the comment the
+    request was queued with. A row that cannot be written costs the
+    announcement, never the launch that already happened.
+    """
+    from reckon.crew import watch_unit
+
+    advice = ""
+    if steering is not None:
+        with contextlib.suppress(OSError, ValueError):
+            advice = steering.read_text(encoding="utf-8")
+    if not advice:
+        advice = str(options.get("comment") or "")
+    watch_unit.announce_submission(pointer, launched, advice=advice)
 
 
 def _carry_section_rederivation(pointer: Mapping[str, Any], run_id: str) -> None:
@@ -1024,6 +1052,54 @@ def _file_stamp(path: str) -> str:
     return f"{stat.st_mtime_ns}:{stat.st_size}"
 
 
+def _plan_document_path(pointer: Mapping[str, Any]) -> str:
+    """The plan file a queued request's node names, inside its repository."""
+    node = dict(pointer.get("node") or {})
+    repo = str(pointer.get("repo") or "")
+    plan = str(node.get("plan") or "")
+    return str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
+
+
+def _plan_committed_stamp(pointer: Mapping[str, Any]) -> str:
+    """The plan's committed content, as HEAD names the blob that holds it.
+
+    Committing an edit leaves the plan file's working-tree stamp exactly where
+    it was, so the dependency guard cannot see the commit that cures a request
+    refused because its plan differed from base. The blob at HEAD *is* the
+    committed content, so it moves when the commit moves rather than when the
+    file does. A plan no commit holds yet reads ``absent``, which the first
+    commit that lands it also changes.
+    """
+    repo = str(pointer.get("repo") or "")
+    path = _plan_document_path(pointer)
+    if not repo or not path:
+        return "none"
+    try:
+        relative = Path(path).relative_to(Path(repo)).as_posix()
+    except ValueError:
+        return "outside"
+    result = subprocess.run(
+        ["git", "-C", repo, "rev-parse", f"HEAD:{relative}"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    blob = result.stdout.strip()
+    return blob if result.returncode == 0 and blob else "absent"
+
+
+def _is_plan_visibility_refusal(failure: Any) -> bool:
+    """Whether a recorded failure is the plan's own visibility refusing.
+
+    The launch raises ``PlanVisibilityError`` while the plan's working tree
+    differs from base, or while no commit holds the plan or the named section
+    at all. Each of those is cured by committing the plan, so the plan's
+    committed content is what releases the back-off; every other refusal keeps
+    its back-off untouched.
+    """
+    return _failure_text(failure).startswith("PlanVisibilityError")
+
+
 def _dependency_guard(
     pointer: Mapping[str, Any],
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None,
@@ -1047,11 +1123,8 @@ def _dependency_guard(
     node = dict(pointer.get("node") or {})
     repo = str(pointer.get("repo") or "")
     project = str(pointer.get("project") or "")
-    plan = str(node.get("plan") or "")
     brief = str(node.get("brief_path") or "")
-    plan_path = (
-        str(Path(repo) / "docs" / "plans" / f"{plan}.html") if repo and plan else ""
-    )
+    plan_path = _plan_document_path(pointer)
     host_config = ""
     project_config = ""
     try:
@@ -1805,6 +1878,12 @@ def _retry_backoff_hold(
     guard = pointer.get("failure_guard")
     if guard is not None and guard != _dependency_guard(pointer, config_for):
         return None
+    if _is_plan_visibility_refusal(failure):
+        # A commit moves the plan's blob at HEAD and nothing else, so this is
+        # the only comparison that sees the commit which cured the refusal.
+        stamped = pointer.get("failure_plan_commit")
+        if stamped is not None and stamped != _plan_committed_stamp(pointer):
+            return None
     retry_at = pointer.get("retry_at")
     if not retry_at:
         return None
@@ -1837,6 +1916,12 @@ def _stamp_failure(
     record["retry_at"] = (moment + _retry_delay(attempts)).isoformat()
     if guard is not None:
         record["failure_guard"] = dict(guard)
+    if _is_plan_visibility_refusal(failure):
+        record["failure_plan_commit"] = _plan_committed_stamp(record)
+    else:
+        # A stamp kept from an earlier plan refusal would release this one on a
+        # commit that never touched it.
+        record.pop("failure_plan_commit", None)
     return record
 
 
@@ -2377,6 +2462,63 @@ def _record_gated_verdicts(
         )
 
 
+def _record_readiness_verdicts(
+    result: dict[str, Any],
+    *,
+    live: Sequence[Mapping[str, Any]],
+    lane: str = "",
+    config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
+) -> None:
+    """Name what holds each request waiting on its section, and record the
+    blocker on the request itself.
+
+    A request waiting on a refs it declares is accounted for by that wait, but
+    a request held on its own section's readiness is held by a gate or an open
+    decision, and a pass otherwise records nothing for it: the request never
+    reaches the queue it launches from, so every other verdict skips it. The
+    hold and the request's own record carry the same blocker names, so a
+    coordinator reading the pass and one reading the pointer agree.
+    """
+    readonly: dict[str, Any] = {}
+    for pointer in live:
+        if str(pointer.get("phase") or "") not in WAITING_UPSTREAM_PHASES:
+            continue
+        if lane and str(pointer.get("backend")) != lane:
+            continue
+        refs = section_waits_for(pointer)
+        if not any(ref.startswith(READINESS_REF_PREFIX) for ref in refs):
+            continue
+        hold = section_hold(
+            refs,
+            project=str(pointer.get("project") or ""),
+            docs_dir=Path(str(pointer.get("repo") or "") or ".") / "docs",
+            cache=readonly,
+        )
+        allowance, source = _session_allowance_read(pointer, config_for=config_for)
+        verdict = section_hold_verdict(hold)
+        row = _verdict_row(
+            pointer,
+            allowance=allowance,
+            allowance_source=source,
+            verdict=verdict,
+            detail=hold["detail"],
+        )
+        row["reason"] = hold["reason"]
+        row["hold"] = list(hold["names"])
+        result["verdicts"].append(row)
+        _record_pass_hold(
+            pointer,
+            {
+                "verdict": verdict,
+                "reason": hold["reason"],
+                "detail": hold["detail"],
+                "hold": list(hold["names"]),
+            },
+            live=live,
+            moment=_now(),
+        )
+
+
 def _pass_verdict_record(
     result: Mapping[str, Any], *, lane: str, code_stamp: str
 ) -> dict[str, Any] | None:
@@ -2476,6 +2618,15 @@ PENDING = "pending"
 #: a gate id spelled like a section id is still read as a gate.
 GATE_REF_PREFIX = "gate:"
 REQUEST_REF_PREFIX = "run:"
+#: The ref a node's own section's readiness is waited on under. It names no
+#: upstream: it is the plan's hold on the section the request would build, and
+#: the blockers behind it are what a reader has to settle.
+READINESS_REF_PREFIX = "readiness:"
+
+#: The kinds of authored hold a plan puts on its own section. Each one is
+#: reported with the id its plan gives it, so a coordinator knows what to
+#: settle rather than going looking for an upstream that does not exist.
+SECTION_HOLD_KINDS = ("gate", "decision")
 
 #: The statuses a run's own manifest records when it delivered, and when it
 #: ended without delivering. They are the run vocabulary and not the plan's: a
@@ -2733,6 +2884,65 @@ def derive_wait_refs(node: TaskNode, *, repo_root: str | Path) -> list[str]:
     return list(dict.fromkeys(refs))
 
 
+def _own_readiness_ref(
+    node: TaskNode,
+    *,
+    project: str,
+    docs_dir: str | Path,
+    cache: dict[str, Any],
+    refs: Sequence[str],
+    read_own_verdict: bool = True,
+) -> str:
+    """The readiness ref a node's own section carries, or ``""`` for none.
+
+    A gate or an open decision on the section holds new work on it, and the
+    roadmap reports that hold as a blocker on the section. The ref is derived
+    here rather than by each caller, because a reader and a writer that derive
+    it differently disagree the moment one of them asks again: the dispatch and
+    the pass that re-reads the request both compose their waits through this,
+    so a held request stays held rather than being released by the next pass.
+    """
+    from reckon._schema import parse_plan_ref
+
+    if not read_own_verdict or node.waits_only_after:
+        return ""
+    if not _needs_own_section_verdict(node):
+        return ""
+    rows, _ = _readiness_rows(project, docs_dir, cache, node.plan, refs)
+    verdicts = (rows.get(node.plan) or {}).get("sections", {})
+    own = next(
+        (
+            verdict
+            for section, verdict in verdicts.items()
+            if normalize_section(section) == normalize_section(node.section)
+        ),
+        None,
+    )
+    holding_kinds = {
+        blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
+    }
+    explicit_gates = {
+        parsed.stage
+        for ref in refs
+        if ref.startswith(GATE_REF_PREFIX)
+        if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
+        and parsed.stage
+    }
+    held_gates = {
+        str(blocker.get("id") or blocker.get("gate") or "")
+        for blocker in (own or {}).get("blockers") or ()
+        if blocker.get("kind") == "gate"
+    }
+    if not holding_kinds & {"gate", "decision"}:
+        return ""
+    if held_gates and held_gates <= explicit_gates and "decision" not in holding_kinds:
+        return ""
+    identity = normalize_section(node.section)
+    if identity.startswith("§"):
+        identity = f"s{identity[1:]}"
+    return f"{READINESS_REF_PREFIX}{project}:{node.plan}#{identity}"
+
+
 def _validated_batch_waits(
     nodes: Sequence[TaskNode],
     run_ids: Mapping[str, str],
@@ -2859,44 +3069,16 @@ def _validated_batch_waits(
         # section, so a gate there appends no readiness ref. The flag would
         # otherwise leave exactly the gate waits in place that it exists to
         # drop.
-        if (
-            read_own_verdict
-            and not node.waits_only_after
-            and _needs_own_section_verdict(node)
-        ):
-            rows, _ = _readiness_rows(project, current_docs, cache, node.plan, refs)
-            verdicts = (rows.get(node.plan) or {}).get("sections", {})
-            own = next(
-                (
-                    verdict
-                    for section, verdict in verdicts.items()
-                    if normalize_section(section) == normalize_section(node.section)
-                ),
-                None,
-            )
-            holding_kinds = {
-                blocker.get("kind") for blocker in (own or {}).get("blockers") or ()
-            }
-            explicit_gates = {
-                parsed.stage
-                for ref in refs
-                if ref.startswith(GATE_REF_PREFIX)
-                if (parsed := parse_plan_ref(ref[len(GATE_REF_PREFIX) :])) is not None
-                and parsed.stage
-            }
-            held_gates = {
-                str(blocker.get("id") or blocker.get("gate") or "")
-                for blocker in (own or {}).get("blockers") or ()
-                if blocker.get("kind") == "gate"
-            }
-            if holding_kinds & {"gate", "decision"} and not (
-                held_gates
-                and held_gates <= explicit_gates
-                and "decision" not in holding_kinds
-            ):
-                refs.append(
-                    f"readiness:{section_key(project, node.plan, node.section)}"
-                )
+        readiness = _own_readiness_ref(
+            node,
+            project=project,
+            docs_dir=current_docs,
+            cache=cache,
+            refs=refs,
+            read_own_verdict=read_own_verdict,
+        )
+        if readiness:
+            refs.append(readiness)
         refs_by_run[run_id] = list(dict.fromkeys(refs))
         projects_by_run[run_id] = wait_projects
         edges[f"run:{run_id}"] = edge_set
@@ -3328,6 +3510,195 @@ def _gate_state(
     return SATISFIED
 
 
+def _manifest_status(run_id: str, *, issues: list[str] | None = None) -> str:
+    """One run's manifest status as that format's own reader parses it.
+
+    The reader is :func:`reckon.crew.reports.parse_manifest`, which reads a JSON
+    body as a JSON document. A status read as a ``status:`` line alone answers
+    empty for a JSON manifest -- a run that delivered reads as never having
+    delivered, and whatever waits on it is never released. A body no reader can
+    parse, or no manifest at all, is not evidence of delivery, so it answers
+    empty.
+    """
+    try:
+        manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
+        text = manifest.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return ""
+    from reckon.crew.reports import ManifestParseError, parse_manifest
+
+    try:
+        return str(parse_manifest(text, path=str(manifest)).get("status") or "")
+    except ManifestParseError as exc:
+        if issues is not None:
+            issues.append(f"{run_id}: refused manifest status or shape: {exc}")
+        return ""
+
+
+#: The readiness cache key under which one pass keeps the project's ledger rows.
+#: A pass resolves every waiting request against the same history, so reading it
+#: once per project rather than once per wait is what keeps a release tick from
+#: paying a ledger read per request.
+_SECTION_RUNS_CACHE_KEY = "section-runs"
+
+#: The readiness cache key under which one pass keeps the drain's answer for a
+#: section. The derivation reads the project's ledger on its own, so without a
+#: per-pass answer every request waiting on the section would pay for it again.
+_UNLOADED_CACHE_KEY = "section-unloaded"
+
+
+def _ledger_run_rows(
+    project: str, cache: dict[str, Any] | None
+) -> list[Mapping[str, Any]] | None:
+    """One project's committed run rows, or ``None`` when they cannot be read.
+
+    The index is keyed on the project's write generation, which every ledger
+    write path bumps, so a promotion recorded before this read is in the index
+    this read gets back rather than only in the documents behind it. Reading
+    through it is therefore both current and cheaper than walking the project's
+    run documents on every pass.
+    """
+    from reckon import ledger
+
+    key = (_SECTION_RUNS_CACHE_KEY, project)
+    if cache is not None and key in cache:
+        return cache[key]
+    try:
+        data, _version = ledger.load(project)
+        rows: list[Mapping[str, Any]] | None = [
+            row for row in data.get("runs") or () if isinstance(row, Mapping)
+        ]
+    except Exception:  # noqa: BLE001 - an unreadable ledger proves no landing
+        rows = None
+    if cache is not None:
+        cache[key] = rows
+    return rows
+
+
+def _section_run_unlanded(
+    project: str,
+    slug: str,
+    section: str,
+    *,
+    live: Sequence[Mapping[str, Any]],
+    cache: dict[str, Any] | None = None,
+) -> bool:
+    """Whether a run of one section has delivered or been promoted and not landed.
+
+    Marking a section done is committed just before its run is landed, so the
+    declaration alone does not say the section's code is in the registered
+    checkout's HEAD: between the two the section reads done while its revision
+    is still off HEAD, and anything released onto that base would run without
+    its upstream. A run therefore holds its section's waiters from delivery
+    until its promoted revision is an ancestor of HEAD -- the landed test the
+    queue already applies to a run ref, extended to cover a run that has
+    delivered and is not yet promoted.
+
+    A delivered run keeps its live pointer until promotion removes it, and a
+    promoted run reaches the project's ledger, so both records are read. A
+    discarded run will never land, so it holds nothing. A section with no run
+    at all -- one completed by hand -- has nothing to hold and releases as the
+    declaration says.
+    """
+    from reckon._plan_html import section_record_id
+    from reckon.crew import runs as runs_module
+    from reckon.crew.dispatch_sections import project_mount_repository
+    from reckon.crew.promotion_scope import _revision_is_ancestor
+
+    wanted = section_record_id(section)
+
+    def identifies(record: Mapping[str, Any]) -> bool:
+        node = record.get("node")
+        if not isinstance(node, Mapping):
+            node = {}
+        plan = str(node.get("plan") or record.get("plan") or "")
+        held = section_record_id(node.get("section") or record.get("section") or "")
+        return plan == slug and held == wanted
+
+    rows = _ledger_run_rows(project, cache)
+    if rows is None:
+        # A ledger that cannot be read says nothing about what was promoted, so
+        # a landing is unknown rather than absent. Holding is the answer
+        # :func:`_request_state` gives a record it cannot find.
+        return True
+
+    promoted: dict[str, str] = {}
+    for row in rows:
+        run_id = str(row.get("run_id") or "")
+        revision = str(row.get("promoted_revision") or "").strip()
+        if run_id and revision and not _discarded(run_id) and identifies(row):
+            promoted[run_id] = revision
+
+    # The runs of this section that may still land, each with the revision it
+    # records. A delivered run carries none until a promotion writes it.
+    candidates: list[tuple[str, str]] = []
+    for pointer in live:
+        if not isinstance(pointer, Mapping):
+            continue
+        run_id = str(pointer.get("run_id") or "")
+        if not run_id or not identifies(pointer):
+            continue
+        if str(pointer.get("phase") or "") in (
+            BLOCKED_UPSTREAM_PHASE,
+            *DEAD_RUN_PHASES,
+        ):
+            continue
+        if _discarded(run_id):
+            continue
+        candidates.append((run_id, str(pointer.get("promoted_revision") or "").strip()))
+
+    if not candidates and not promoted:
+        return False
+
+    if promoted:
+        # A promotion removes the live pointer before it records the revision,
+        # so in production this is the branch that answers. The landed state of
+        # a promoted run is the queue's own: the drain names declared work with
+        # no live request and no reachable promotion, so a section it does not
+        # name has landed and one it does name is still waiting. The derivation
+        # reads the project's ledger itself, so its answer is kept for the pass
+        # rather than recomputed for every request waiting on the same section.
+        key = (_UNLOADED_CACHE_KEY, project, slug, wanted)
+        unloaded = cache.get(key) if cache is not None else None
+        if unloaded is None:
+            unloaded = runs_module._unloaded_sections(
+                project,
+                live,
+                [(slug, {"section_declarations": {section: "implementable"}})],
+            )
+            if cache is not None:
+                cache[key] = unloaded
+        if any(section_record_id(name) == wanted for name in unloaded.get(slug) or ()):
+            return True
+
+    if not candidates:
+        return False
+
+    checkout = project_mount_repository(project)
+    if checkout is None:
+        # A project with no registered checkout offers no HEAD to read, so a
+        # run's landing is unknown rather than absent. Releasing would put a
+        # waiter onto a base the queue cannot show carries its upstream, so the
+        # wait is held -- the answer :func:`_request_state` gives a run ref whose
+        # project no mount names.
+        return True
+
+    def landed(revision: str) -> bool:
+        try:
+            return _revision_is_ancestor(checkout, revision, "HEAD")
+        except Exception:  # noqa: BLE001 - a broken probe proves no landing
+            return False
+
+    for run_id, candidate in candidates:
+        revision = candidate or promoted.get(run_id, "")
+        if revision:
+            if not landed(revision):
+                return True
+        elif _manifest_status(run_id) in RUN_DELIVERED_STATUSES:
+            return True
+    return False
+
+
 def _request_state(
     ref: str,
     *,
@@ -3347,25 +3718,7 @@ def _request_state(
             return ABANDONED
     if _discarded(run_id):
         return ABANDONED
-    try:
-        manifest = runs.run_dir(run_id) / runs.DEFAULT_MANIFEST_NAME
-        text = manifest.read_text(encoding="utf-8", errors="replace")
-    except OSError:
-        return PENDING
-    # The manifest's status is read by the reader that owns that format, which
-    # reads a JSON body as a JSON document. A status read here as a ``status:``
-    # line alone answers empty for a manifest written as JSON -- a run that
-    # delivered reads as never having delivered, and the request waiting on it
-    # is never released. A body no reader can parse is not evidence of delivery,
-    # so it stays pending.
-    from reckon.crew.reports import ManifestParseError, parse_manifest
-
-    try:
-        status = str(parse_manifest(text, path=str(manifest)).get("status") or "")
-    except ManifestParseError as exc:
-        if issues is not None:
-            issues.append(f"{run_id}: refused manifest status or shape: {exc}")
-        return PENDING
+    status = _manifest_status(run_id, issues=issues)
     if status in RUN_FAILED_STATUSES:
         return ABANDONED
     if status not in RUN_DELIVERED_STATUSES:
@@ -3429,6 +3782,7 @@ def _wait_state(
             project=project,
             docs_dir=docs_dir,
             cache=cache if cache is not None else {},
+            live=live,
         )
     if kind == "gate":
         return _gate_state(ref, rows=rows, inventory=inventory)
@@ -3477,6 +3831,7 @@ def _wait_state(
         rows=rows,
         inventory=inventory,
         dead_sections=dead_sections,
+        live=live,
         project=project,
         docs_dir=docs_dir,
         cache=cache,
@@ -3484,7 +3839,12 @@ def _wait_state(
 
 
 def _section_readiness_state(
-    ref: str, *, project: str, docs_dir: Path | None, cache: dict[str, Any]
+    ref: str,
+    *,
+    project: str,
+    docs_dir: Path | None,
+    cache: dict[str, Any],
+    live: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     from reckon._schema import parse_plan_ref
 
@@ -3503,6 +3863,14 @@ def _section_readiness_state(
         return PENDING
     status = _section_status(item, parsed.stage)
     if status == "done":
+        if _section_run_unlanded(
+            target_project,
+            parsed.slug,
+            normalize_section(parsed.stage),
+            live=live,
+            cache=cache,
+        ):
+            return PENDING
         return SATISFIED
     if status in {"descoped", "deferred", "failed", "blocked"}:
         return ABANDONED
@@ -3519,7 +3887,14 @@ def _section_readiness_state(
     return SATISFIED if verdict and verdict.get("ready") else PENDING
 
 
-def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> str:
+def _dispatch_nonrun_wait_state(
+    ref: str,
+    *,
+    project: str,
+    docs_dir: Path,
+    live: Sequence[Mapping[str, Any]] = (),
+    cache: dict[str, Any] | None = None,
+) -> str:
     """Read authored declarations without a portfolio scope-claim scan."""
     from reckon import _plan_html as plan_html_reader
     from reckon._schema import parse_plan_ref
@@ -3564,11 +3939,27 @@ def _dispatch_nonrun_wait_state(ref: str, *, project: str, docs_dir: Path) -> st
                     _plan_html(source_docs.parent, source.slug)
                 )
                 if _section_status(source_state, source.stage) == "done":
+                    if _section_run_unlanded(
+                        source.project or target_project,
+                        source.slug,
+                        normalize_section(source.stage),
+                        live=live,
+                        cache=cache,
+                    ):
+                        return PENDING
                     return SATISFIED
         return PENDING
     if parsed.stage:
         declaration = _section_status(state, parsed.stage)
         if declaration == "done":
+            if _section_run_unlanded(
+                target_project,
+                parsed.slug,
+                normalize_section(parsed.stage),
+                live=live,
+                cache=cache,
+            ):
+                return PENDING
             return SATISFIED
         if declaration in {"descoped", "deferred", "failed", "blocked"}:
             return ABANDONED
@@ -3644,7 +4035,11 @@ def dispatch_waits(
             for ref in refs
             if ref.startswith("readiness:")
             or _dispatch_nonrun_wait_state(
-                ref, project=owner_project, docs_dir=docs_dir
+                ref,
+                project=owner_project,
+                docs_dir=docs_dir,
+                live=live,
+                cache=readiness_cache,
             )
             != SATISFIED
         ]
@@ -3674,6 +4069,195 @@ def dispatch_waits(
     return refs, wait_projects, unmet
 
 
+def dispatch_wait_blockers(
+    node: TaskNode,
+    *,
+    repo_root: str | Path,
+    project: str,
+    refs: Sequence[str],
+    readiness_cache: dict[str, Any],
+) -> list[dict[str, Any]]:
+    """The roadmap blockers behind a dispatch's own readiness wait.
+
+    Consume the verdict that supplied the wait, including its decision keys;
+    neither the dispatcher nor admission reinterprets a decision's scope.
+    """
+    if not any(ref.startswith("readiness:") for ref in refs):
+        return []
+    rows, _ = _readiness_rows(
+        project,
+        Path(repo_root) / "docs",
+        readiness_cache,
+        node.plan,
+        [ref for ref in refs if not ref.startswith("readiness:")],
+    )
+    verdict = next(
+        (
+            verdict
+            for section, verdict in (rows.get(node.plan) or {})
+            .get("sections", {})
+            .items()
+            if normalize_section(section) == normalize_section(node.section)
+        ),
+        {},
+    )
+    return list(verdict.get("blockers") or ())
+
+
+def section_hold(
+    refs: Iterable[str],
+    *,
+    project: str = "",
+    docs_dir: str | Path | None = None,
+    cache: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Name what holds a request on its section, by kind and id.
+
+    Three different things put a request in a waiting phase, and only one of
+    them is an upstream that has not landed. A declared section wait names a
+    section, a gate or another request, and the ref is the thing to go and
+    settle. A hold on the request's own section is not a wait at all: it is a
+    gate or an open decision the roadmap reports as a blocker, and the readiness
+    ref that carries it names no upstream. A reader told "this section's waits
+    have not landed" goes looking for that upstream and finds nothing, so a
+    hold of that kind is reported by the kind and id its plan gives it.
+
+    The wording about waits is used only where every unmet ref is a declared
+    wait, so the reason a coordinator reads always names something that exists.
+
+    Returns ``names`` (one entry per blocker), ``detail`` (the phrase a hold
+    carries) and ``reason`` (the one-line reason). The three are derived here
+    rather than by each caller, so the dispatch answer, the recorded hold on the
+    pointer and the admission verdict cannot describe one hold two ways.
+
+    An unreadable plan falls back to the readiness ref itself: the hold is real
+    and the ref is what was read, which is more than a blocker id guessed from
+    nothing would be.
+    """
+    names: list[str] = []
+    for ref in refs:
+        text = str(ref).strip()
+        if not text:
+            continue
+        if not text.startswith(READINESS_REF_PREFIX):
+            names.append(text)
+            continue
+        resolved = _readiness_blocker_names(
+            text[len(READINESS_REF_PREFIX) :],
+            project=project,
+            docs_dir=docs_dir,
+            cache=cache if cache is not None else {},
+        )
+        names.extend(resolved or [text])
+    names = list(dict.fromkeys(names))
+    authored = [name for name in names if name.split(":", 1)[0] in SECTION_HOLD_KINDS]
+    waited = [name for name in names if name.split(":", 1)[0] not in SECTION_HOLD_KINDS]
+    if not names:
+        reason = ""
+    elif not waited:
+        reason = "this section is held by " + ", ".join(names)
+    elif not authored:
+        reason = "this section's waits have not landed"
+    else:
+        reason = (
+            "this section is held by "
+            + ", ".join(authored)
+            + ", and its waits have not landed"
+        )
+    return {"names": names, "detail": ", ".join(names), "reason": reason}
+
+
+def section_hold_verdict(hold: Mapping[str, Any]) -> str:
+    """The verdict a hold is recorded under.
+
+    A hold naming an authored blocker on the section is a readiness hold: the
+    work is waiting on something its plan has to settle. A hold whose every
+    name is a wait the section declares is waiting on an upstream, which is a
+    different thing for a reader to act on, so it is recorded as its own
+    verdict rather than as readiness.
+    """
+    kinds = {
+        str(name).split(":", 1)[0] for name in hold.get("names") or () if str(name)
+    }
+    if kinds & set(SECTION_HOLD_KINDS):
+        return "held-on-readiness"
+    return "held-on-waits"
+
+
+def record_section_hold(
+    run_id: str,
+    hold: Mapping[str, Any],
+    *,
+    verdict: str,
+    live: Sequence[Mapping[str, Any]] | None = None,
+    moment: datetime | None = None,
+) -> bool:
+    """Store on a queued request what holds it, naming the blocker.
+
+    The reason and the blocker names are written together with the verdict, so
+    a coordinator reading the pointer is told the same thing the dispatch
+    answer said. The write goes through the same writer an admission pass uses,
+    so a later admission hold replaces this one instead of sitting beside it,
+    and a pointer that cannot be written is reported rather than assumed.
+    """
+    if not run_id or not hold.get("names"):
+        return False
+    pointer = {"run_id": run_id}
+    _record_pass_hold(
+        pointer,
+        {
+            "verdict": verdict,
+            "reason": str(hold.get("reason") or ""),
+            "detail": str(hold.get("detail") or ""),
+            "hold": list(hold.get("names") or ()),
+        },
+        live=list(live if live is not None else ()),
+        moment=moment if moment is not None else _now(),
+    )
+    return True
+
+
+def _readiness_blocker_names(
+    ref: str,
+    *,
+    project: str,
+    docs_dir: str | Path | None,
+    cache: dict[str, Any],
+) -> list[str]:
+    """The gates and open decisions the roadmap reports as a section's blockers."""
+    from reckon._schema import parse_plan_ref
+
+    parsed = parse_plan_ref(ref)
+    if parsed is None or not parsed.stage or docs_dir is None:
+        return []
+    target_project = parsed.project or project
+    target_docs = _docs_for_project(
+        target_project, current_project=project, current_docs=Path(docs_dir)
+    )
+    if target_docs is None:
+        return []
+    rows, _inventory = _readiness_rows(target_project, target_docs, cache, parsed.slug)
+    verdict = next(
+        (
+            value
+            for section, value in (rows.get(parsed.slug) or {})
+            .get("sections", {})
+            .items()
+            if normalize_section(section) == normalize_section(parsed.stage)
+        ),
+        None,
+    )
+    names: list[str] = []
+    for blocker in (verdict or {}).get("blockers") or ():
+        kind = str(blocker.get("kind") or "")
+        if kind not in SECTION_HOLD_KINDS:
+            continue
+        identifier = str(blocker.get("id") or blocker.get("gate") or "").strip()
+        if identifier:
+            names.append(f"{kind}:{identifier}")
+    return names
+
+
 def unmet_waits(
     node: TaskNode,
     *,
@@ -3692,6 +4276,7 @@ def _ref_state(
     rows: Mapping[str, Mapping[str, Any]],
     inventory: Mapping[str, Mapping[str, Any]],
     dead_sections: set[tuple[str, str]],
+    live: Sequence[Mapping[str, Any]] = (),
     project: str = "",
     docs_dir: Path | None = None,
     cache: dict[str, Any] | None = None,
@@ -3703,8 +4288,8 @@ def _ref_state(
     parsed = parse_plan_ref(ref)
     if parsed is None:
         return PENDING
+    target_project = parsed.project or project
     if docs_dir is not None and cache is not None:
-        target_project = parsed.project or project
         target_docs = _docs_for_project(
             target_project, current_project=project, current_docs=docs_dir
         )
@@ -3729,6 +4314,8 @@ def _ref_state(
         return PENDING
     declaration = _section_status(item, section)
     if declaration == "done":
+        if _section_run_unlanded(target_project, slug, section, live=live, cache=cache):
+            return PENDING
         return SATISFIED
     if declaration in {"descoped", "deferred", "failed", "blocked"}:
         return ABANDONED
@@ -4083,12 +4670,28 @@ def _rederive_waits(
         tuple(node.after),
         node.waits_only_after,
     )
+    stored = section_waits_for(pointer)
     derived = None if cache is None else cache.get(key)
     if derived is None:
         derived = derive_wait_refs(node, repo_root=repo_root)
+        # The readiness ref is re-derived only for a request that carries one
+        # already. It is composed at queue time from the plan as it stood then,
+        # and a record that carries none was queued against a section under no
+        # authored hold; composing one here would add a wait the request never
+        # declared.
+        if any(ref.startswith(READINESS_REF_PREFIX) for ref in stored):
+            own = _own_readiness_ref(
+                node,
+                project=str(pointer.get("project") or "")
+                or _project_of_docs_dir(Path(repo_root) / "docs"),
+                docs_dir=Path(repo_root) / "docs",
+                cache=cache if cache is not None else {},
+                refs=derived,
+            )
+            if own and own not in derived:
+                derived = [*derived, own]
         if cache is not None:
             cache[key] = list(derived)
-    stored = section_waits_for(pointer)
     # ``derived`` is the whole of what the request waits on: derive_wait_refs
     # builds the request's own ``run:`` refs from the authored ``--after``, so
     # a stored ref the request never named is absent from it and is dropped
@@ -5272,6 +5875,7 @@ def admit_once(
         # batch queued in one call launch in dependency order.
         waits_started = time.monotonic()
         upstream = advance_waiting_requests(live)
+        _record_readiness_verdicts(result, live=live, lane=lane, config_for=config_for)
         result["released_plan_review"] = _release_plan_review_holds(
             live, config_for=config_for
         )
@@ -5297,7 +5901,10 @@ def admit_once(
                     lane == str(config.get("local_backend") or "") and backend != lane
                 )
 
+            excluded_by_lane = [pointer for pointer in queued if not included(pointer)]
             queued = [pointer for pointer in queued if included(pointer)]
+        else:
+            excluded_by_lane = []
         if local_gated:
             queued = [
                 pointer
@@ -5311,6 +5918,40 @@ def admit_once(
                     ).get("local_backend")
                     or ""
                 )
+            ]
+        # A request this pass's lane filter leaves out is otherwise invisible:
+        # no row, no hold and no attempt, so a coordinator reading the request
+        # cannot tell it apart from one nothing has looked at. The attempt is
+        # recorded here, naming the lane the request waits on, so a queued
+        # request on any lane carries the reason no pass has launched it.
+        for pointer in excluded_by_lane:
+            other = str(pointer.get("backend") or "")
+            record = {
+                "verdict": "held-on-other-lane",
+                "reason": (
+                    f"the request is queued on lane {other or 'the default lane'!r} "
+                    f"and this drainer serves {lane!r}, so no pass it runs will "
+                    "launch it; a drainer for that lane is what admits it"
+                ),
+                "recorded_at": moment.isoformat(),
+            }
+            _record_pass_hold(pointer, record, live=live, moment=moment)
+            result["verdicts"].append(
+                _verdict_row(
+                    pointer,
+                    allowance=None,
+                    allowance_source="this drainer serves another lane",
+                    verdict="held-on-other-lane",
+                    detail=record["reason"],
+                )
+            )
+            result["held"].append(str(pointer.get("run_id") or ""))
+            result.setdefault("hold_detail", {})[str(pointer.get("run_id") or "")] = (
+                record["reason"]
+            )
+            result["excluded_by_lane"] = [
+                *result.get("excluded_by_lane", ()),
+                str(pointer.get("run_id") or ""),
             ]
         # A queued pointer whose arrival time cannot be read has no place in the
         # ordering, and the ordering refuses such a pointer outright. That
@@ -5864,6 +6505,7 @@ QUEUED_LIFE_KEYS = (
     "failure_at",
     "failure_attempts",
     "failure_reported_at",
+    "failure_plan_commit",
     "failure_guard",
     "retry_at",
 )
