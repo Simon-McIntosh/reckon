@@ -14,8 +14,9 @@ sweep that re-dispatches what it already dispatched manufactures reviews. A
 refusal on one run must leave the rest dispatched, because a sweep that stops
 at the first refusal makes one refused dispatch look like a quiet fleet. A run
 awaiting review is itself an unreconciled run, so the composed command carries
-the unreconciled-runs waiver — without it the fence refuses the very dispatch
-that clears the backlog. A review run is never its own source run, keyed on
+the unreconciled-runs waiver and the review's own record says the waiver was
+requested, where a dispatch without it records the same run as backlog it ran
+over. A review run is never its own source run, keyed on
 the role it carried and on the node id it was minted with, so no sweep
 composes a review of a review.
 

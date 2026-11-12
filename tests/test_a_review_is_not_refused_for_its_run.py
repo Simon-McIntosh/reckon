@@ -1,16 +1,17 @@
 """A queued review keeps the unreconciled-runs waiver across its relaunch.
 
 A review holds the waiver because a run awaiting review *is* an unreconciled
-run: past the grace the fence refuses the very dispatch that reconciles it. The
-waiver reaches dispatch as ``unreconciled_override``; it is recorded on a queued
-request only through ``dispatch_options``, and the admission pass rebuilds it
-from there when the lane admits the request. A caller that passes the override
-without the option therefore queues a request that fails ``UnreconciledRuns`` on
-every admission pass — the deadlock. These cases drive the real reflex and
-composed-review dispatch paths, hold the lane, admit the queued request, and
-find the review launches while an implementation node dispatched in the same
-state is still refused. A stranded review's discard reason is read from wherever
-the discard recorded it, including the spool a never-launched request uses.
+run: past the grace its session's backlog names the very run its review
+reconciles. The waiver reaches dispatch as ``unreconciled_override``; it is
+recorded on a queued request only through ``dispatch_options``, and the
+admission pass rebuilds it from there when the lane admits the request. A
+caller that passes the override without the option therefore queues a request
+whose recorded backlog says the waiver was not requested. These cases drive the
+real reflex and composed-review dispatch paths, hold the lane, admit the queued
+request, and find the review launches asking for its waiver while an
+implementation node dispatched in the same state records the backlog without
+it. A stranded review's discard reason is read from wherever the discard
+recorded it, including the spool a never-launched request uses.
 """
 
 # ruff: noqa: F811 - the fixture is imported and also named as each test's parameter.
