@@ -299,26 +299,35 @@ def _pidfd_signal(descriptor: int, signum: int) -> None:
 
 
 def apply_census(
-    report: Mapping[str, Any], *, emit: Callable[[dict], None] | None = None
+    report: Mapping[str, Any],
+    *,
+    emit: Callable[[dict], None] | None = None,
+    before_signal: Callable[[dict], None] | None = None,
 ) -> list[dict]:
     """Revalidate each listed identity and owner before signalling its pidfd.
 
     Only listed pids can be stopped. A changed owner or a renewed producer lease
     is spared; the process descriptor prevents a recycled pid being signalled.
     Live pointers are read only and remain available for classified completion.
+
+    The revalidation walks the process table once for the whole sweep rather
+    than once per listed pid, so a sweep of many orphans costs one listing of
+    ``/proc`` and every row is judged against the same table. ``before_signal``
+    runs only for a row whose identity and owner still match, so a caller can
+    announce a stop it has just confirmed.
     """
     results = []
     home = Path(report["state_home"])
+    current = census(home=home) if report["orphaned"] else None
+    orphaned_by_pid = (
+        {item["pid"]: item for item in current["orphaned"]} if current else {}
+    )
     for row in report["orphaned"]:
         pid = row["pid"]
         result = {"pid": pid, "action": "spared"}
         descriptor = None
         try:
-            descriptor = _pidfd_open(pid)
-            current = census(home=home)
-            candidate = next(
-                (item for item in current["orphaned"] if item["pid"] == pid), None
-            )
+            candidate = orphaned_by_pid.get(pid)
             if (
                 candidate is None
                 or candidate["start_time"] != row["start_time"]
@@ -326,21 +335,27 @@ def apply_census(
             ):
                 result["reason"] = "process identity or recorded ownership changed"
             else:
-                _pidfd_signal(descriptor, signal.SIGTERM)
-                signals = ["SIGTERM"]
-                poller = select.poll()
-                poller.register(descriptor, select.POLLIN)
-                if not poller.poll(1000):
-                    _pidfd_signal(descriptor, signal.SIGKILL)
-                    signals.append("SIGKILL")
-                    exited = bool(poller.poll(1000))
+                descriptor = _pidfd_open(pid)
+                if _process_start_time(pid) != row["start_time"]:
+                    result["reason"] = "process identity changed before the signal"
                 else:
-                    exited = True
-                result.update(
-                    action="stopped" if exited else "refused", signals=signals
-                )
-                if not exited:
-                    result["reason"] = "process has not exited after SIGKILL"
+                    if before_signal is not None:
+                        before_signal({"pid": pid, "action": "stopping"})
+                    _pidfd_signal(descriptor, signal.SIGTERM)
+                    signals = ["SIGTERM"]
+                    poller = select.poll()
+                    poller.register(descriptor, select.POLLIN)
+                    if not poller.poll(1000):
+                        _pidfd_signal(descriptor, signal.SIGKILL)
+                        signals.append("SIGKILL")
+                        exited = bool(poller.poll(1000))
+                    else:
+                        exited = True
+                    result.update(
+                        action="stopped" if exited else "refused", signals=signals
+                    )
+                    if not exited:
+                        result["reason"] = "process has not exited after SIGKILL"
         except ProcessLookupError:
             result["reason"] = "process already exited"
         except (OSError, AttributeError) as exc:

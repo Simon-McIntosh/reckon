@@ -183,9 +183,7 @@ class CensusBeat:
                     flush=True,
                 )
 
-            for row in report["orphaned"]:
-                emit({"pid": row["pid"], "action": "stopping"})
-            census.apply_census(report, emit=emit)
+            census.apply_census(report, emit=emit, before_signal=emit)
             return True
 
     def _run(self) -> None:
@@ -214,7 +212,7 @@ class CensusBeat:
         """Stop requesting census passes and wait for this pass to finish."""
         self._stop.set()
         if self._thread is not None:
-            self._thread.join()
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
             self._thread = None
 
 
@@ -801,8 +799,14 @@ def run_station(
     lease: HostLease | None = None,
     beat_seconds: float | None = None,
     renew_seconds: float | None = None,
+    census_sweep: bool = False,
 ) -> None:
-    """Run the node's single station until stopped or one requested tick ends."""
+    """Run the node's single station until stopped or one requested tick ends.
+
+    ``census_sweep`` opts this station into stopping proven orphans. It is off
+    unless a caller asks for it: signalling a process is a destructive act, so
+    no station run takes it as a side effect of starting.
+    """
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
@@ -867,8 +871,9 @@ def run_station(
             # The reflex's arm starts beside the beat, so a station whose first
             # tick is slow still reviews a run delivered during it.
             station.reflex.start()
-            census_beat = CensusBeat(home=station.home)
-            census_beat.start()
+            if census_sweep:
+                census_beat = CensusBeat(home=station.home)
+                census_beat.start()
             while not stopping:
                 if renewal.lost():
                     break

@@ -93,7 +93,9 @@ def test_station_beat_stops_only_the_ownerless_stub(
         tick=tick,
     )
     monkeypatch.setattr(station, "StationReloader", lambda root: None)
-    station.run_station(once=True, store=store, station_instance=active)
+    station.run_station(
+        once=True, store=store, station_instance=active, census_sweep=True
+    )
     assert entered.is_set()
     assert owned.poll() is None
     assert foreign.poll() is None
@@ -149,3 +151,108 @@ def test_a_failed_census_is_reported_and_retried_next_beat(
         beat.stop()
     assert "station-census-failure" in capsys.readouterr().err
     assert beat._thread is None
+
+
+def _station_named(home, tick=lambda: None):
+    return SimpleNamespace(
+        home=home,
+        clock=lambda: datetime.now(tz=UTC),
+        reflex=SimpleNamespace(start=lambda: None, stop=lambda: None),
+        tick=tick,
+    )
+
+
+def test_a_station_that_did_not_opt_in_sends_no_signal(stubs, tmp_path, monkeypatch):
+    """A planted orphan survives a station run that never opted into the sweep."""
+    orphan = stubs(1)
+    store = station_store.StationStore(tmp_path / "runtime")
+    monkeypatch.setattr(station, "StationReloader", lambda root: None)
+
+    def refuse(*args, **kwargs):
+        raise AssertionError("a station that did not opt in ran the census")
+
+    with monkeypatch.context() as patched:
+        patched.setattr(census, "census", refuse)
+        patched.setattr(os, "kill", refuse)
+        patched.setattr(os, "pidfd_open", refuse)
+        patched.setattr(
+            signal,
+            "pidfd_send_signal",
+            refuse,
+            raising=False,
+        )
+        station.run_station(
+            once=True, store=store, station_instance=_station_named(tmp_path / "crew")
+        )
+    assert orphan.poll() is None, "an unopted station signalled a process"
+
+
+def test_the_census_thread_stops_when_the_station_exits(tmp_path, monkeypatch):
+    """run_station's finally stops the census thread it started."""
+    events = []
+
+    class RecordingBeat:
+        def __init__(self, *, home, beat_seconds=None):
+            self.home = home
+
+        def start(self):
+            events.append("start")
+
+        def stop(self):
+            events.append("stop")
+
+    monkeypatch.setattr(station, "CensusBeat", RecordingBeat)
+    monkeypatch.setattr(station, "StationReloader", lambda root: None)
+    store = station_store.StationStore(tmp_path / "runtime")
+    station.run_station(
+        once=True,
+        store=store,
+        station_instance=_station_named(tmp_path / "crew"),
+        census_sweep=True,
+    )
+    assert events == ["start", "stop"]
+
+
+def test_a_spared_orphan_is_never_announced_as_stopping(tmp_path, monkeypatch, capsys):
+    """The stop line follows the revalidation that confirms the target."""
+    report = {
+        "orphaned": [
+            {
+                "pid": 424242,
+                "start_time": "12345",
+                "owner": {"kind": "stamped", "source": "RECKON_OWNER_PID"},
+            }
+        ]
+    }
+    reports = [report, {"orphaned": []}]
+    monkeypatch.setattr(census, "census", lambda **kwargs: reports.pop(0))
+    beat = station.CensusBeat(home=tmp_path)
+    assert beat.beat_once() is True
+    records = [
+        json.loads(line.removeprefix("station-census: "))
+        for line in capsys.readouterr().err.splitlines()
+        if line.startswith("station-census: ")
+    ]
+    assert [row["action"] for row in records] == ["spared"]
+    assert records[0]["owner"] == report["orphaned"][0]["owner"]
+
+
+def test_apply_revalidates_a_whole_sweep_from_one_table_read(monkeypatch):
+    """One process-table walk answers every listed pid, not one per pid."""
+    calls = []
+
+    def counting(**kwargs):
+        calls.append(kwargs)
+        return {"orphaned": []}
+
+    monkeypatch.setattr(census, "census", counting)
+    report = {
+        "state_home": "/nonexistent-crew-home",
+        "orphaned": [
+            {"pid": pid, "start_time": str(pid), "owner": {"kind": "stamped"}}
+            for pid in (1001, 1002, 1003)
+        ],
+    }
+    results = census.apply_census(report)
+    assert len(calls) == 1, f"apply walked the table {len(calls)} times"
+    assert [row["action"] for row in results] == ["spared", "spared", "spared"]
