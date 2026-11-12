@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-title" content="A live launch holder retains its claim">
-  <meta name="plan-summary" content="Local holder liveness protects slow launches; release traces retain review subjects. Six new cases pass; the importer delta needs adjudication.">
+  <meta name="plan-summary" content="Local holder liveness protects slow launches; release traces retain review subjects. Six new cases pass; matched importer arms add no failures.">
   <meta name="plan-evidence-for" content="work-is-never-stuck-behind-the-admission-loop">
   <meta name="plan-recorded-at" content="2026-11-12">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="passed">
   <title>A live launch holder retains its claim | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -34,8 +34,8 @@
       <thead><tr><th>Measurement</th><th>Base</th><th>Repair</th></tr></thead>
       <tbody>
         <tr><td>New regression cases</td><td>3 failed, 3 passed</td><td>6 passed</td></tr>
-        <tr><td>Armed scoped gate</td><td>51 passed</td><td>57 passed</td></tr>
-        <tr><td>Importer population on all_debug</td><td>129 failed, 834 passed</td><td>131 failed, 838 passed</td></tr>
+        <tr><td>Armed scoped gate</td><td>55 passed</td><td>61 passed</td></tr>
+        <tr><td>Importer population on all_debug</td><td>129 failed, 834 passed</td><td>129 failed, 840 passed</td></tr>
       </tbody>
     </table>
     <p>The negative control ran the new checks against product code at
@@ -45,10 +45,22 @@
       assertion failed with <code>['r-held-launch'] != []</code>.
       The repair passes all six cases; ruff check and format check pass on
       the changed Python paths.</p>
+    <p>The abandoned-launch fixture dates its claim before the current pid's
+      process began, representing a reused pid rather than a live holder of that
+      claim. Commit <code>0c99497bad22b516c098f799fed292d06a0b78fa</code>
+      changes only that fixture; all 24 assertion syntax trees are unchanged.
+      Both release and resumed-launch refusal assertions pass.</p>
+    <p>The resumed scoped and importer arms ran on <code>all_debug</code>.
+      The base is <code>b770ff474971136579a565932036a37a4c76f0b8</code>.
+      The requested product head is
+      <code>a0530572937e36034cec614a2673ec227b6b53bd</code>, with the
+      corrected fixture explicitly overlaid from its committed revision above;
+      the logs and receipts name both identities.</p>
     <p>The matched importer arms cover 130 existing files, with the new file
-      added at the repair head. They add two failing test ids and remove none,
-      so the importer measure remains unmet. The worker manifest records the
-      required out-of-scope adjudication under <code>outside_scope</code>.
+      added at the repair head. Their 129 failing test ids are identical:
+      zero added and zero removed. The importer measure passes against the
+      recorded base. The preserved negative control demonstrates the live-holder
+      guard and review-subject checks fail against base product behavior.
       This record does not claim a merged-head or live-service verification.</p>
   </section>
 </main>
