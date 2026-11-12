@@ -7,10 +7,10 @@
   <meta name="reckon-type" content="evidence">
   <meta name="plan-slug" content="finished-pending-landing-retires-its-run">
   <meta name="plan-title" content="A finished pending landing retires its run">
-  <meta name="plan-summary" content="Three regression cases verify the existing retirement path; disabling retirement leaves the live pointer behind.">
+  <meta name="plan-summary" content="Four regression cases verify retirement and preservation of newer attempts; independent mutations prove both pointer assertions can fail.">
   <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s29">
-  <meta name="plan-commits" content="d51113cb69d9223d4abd3b5a15def2d668a814ac">
+  <meta name="plan-commits" content="d51113cb69d9223d4abd3b5a15def2d668a814ac,136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e">
   <meta name="plan-recorded-at" content="2026-11-13">
   <meta name="plan-verdict" content="passed">
   <title>A finished pending landing retires its run | reckon</title>
@@ -47,6 +47,26 @@
   condition in an extracted copy. <code>test_a_finished_pending_landing_retires_its_run</code> fails at
   <code>assert not runs.pointer_path(run["run_id"]).exists()</code>, after proving the repaired head
   reached the remote. Thus the test detects the declared defect rather than a failed merge or push.</p>
+  <h3 id="finished-pending-landing-retires-its-run-newer-attempt">A newer attempt retains its pointer and worktree</h3>
+  <p>The additional case writes a newer attempt after the pass has read the marked repair but before
+  its actual merge and push. It increments the attempt, marks the pointer running, and retains the
+  landing mark's older attempt identity. The pass finishes the repaired head on the remote and clears
+  its pending record. The test then proves the newer pointer is unchanged, its worktree still exists
+  at the repaired head, and Git still registers it. This case passes against the unchanged product
+  code at <code>f187424518493f36b7c234c1d33c53c27c2fe3d4</code> with the candidate test overlaid:
+  <code>1 passed in 2.85s</code>, <code>EXIT=0</code>, in <code>probe-newer.log</code>.</p>
+  <p>Commit <code>136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e</code> adds this case. A second independent
+  mutation removes the attempt comparison inside <code>_release_marked_pointer</code>, making the finish
+  unlink whatever pointer is live. <code>negative-newer.log</code> records
+  <code>1 failed in 3.04s</code>, <code>EXIT=1</code>:
+  <code>test_a_newer_attempt_keeps_its_pointer_and_worktree</code> fails at
+  <code>assert runs.pointer_path(run["run_id"]).is_file()</code>, after the remote commit and both
+  delivered function changes have been checked. The first control remains in <code>negative.log</code>;
+  the controls demonstrate opposite obligations: retire the finished attempt and preserve a newer one.</p>
+  <p>These additional measurements run on <code>all_debug</code> with a temporary extraction and isolated
+  test scratch removed on exit. The final armed command is
+  <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_finished_pending_landing_retires_its_run.py tests/test_staged_write_inventory.py</code>.
+  It runs after this evidence commit; the manifest records its actual final-head SHA, command and receipt.</p>
   <p>Durable logs live under
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/</code>:
   <code>baseline.log</code>, <code>reproduction-verified.log</code>, <code>importer-baseline.log</code>,
