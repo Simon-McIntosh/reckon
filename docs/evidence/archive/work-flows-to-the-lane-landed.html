@@ -129,6 +129,11 @@
     <p>§3 landed at <code>7c0246e1cc</code> (reviewed head <code>cc5e7cfe84</code>, run <code>r-20261112T160215702275-dispatch-over-the-backlog</code>). A direct dispatch and a batch entry from a session with overdue unreconciled runs now succeed, and the run, the held request and the ledger row record that backlog. The overdue runs stay in the session's obligations. Seven existing tests across five files asserted the retired refusal and were rewritten to assert the recorded backlog. They were granted in two rounds as review and importer arms found them, because the first dispatch had narrowed the write paths to fit the local context window. Both arms read the same ten failures at the base and at the head. The final review's one blocking finding cited a commit sha with two characters transposed. The real commit, <code>85df5f3562b7d20bf3de720be4f416b9971c1639</code>, is in the object store, so the finding was disposed as refuted. The run moved off codex to the local lane once a-gate-halts-only-on-substance §7 was recorded done, and it was landed by hand.</p>
   </section>
 
+  <section id="s24-split-dispatch" data-evidence-origin="append">
+    <h2>§24 — dispatch splits along its responsibilities</h2>
+    <p>§24 landed at <code>6f4c45605d</code> (reviewed head <code>27e092194d</code>, run <code>r-20261112T062614544790-split-dispatch</code>). <code>reckon/crew/dispatch.py</code> is now a 660-line facade over a <code>reckon/crew/dispatching/</code> package, and a surface test pins every exported and patched name. Three tests that read <code>dispatch.py</code>'s source were moved to follow the code to its new home. A reuse repair round made the facade's runtime-override forwarding extend <code>_CrewFacade</code> in <code>reckon/crew.py</code> instead of duplicating it, and the re-review scored 20 on every dimension. Two importer failures that first read as added, a killed worker's signal name and a duplicate session row, also reproduce at the base and are flaky there. The landing met a conflict in <code>dispatch.py</code> with §3, which had landed first. Its merge-repair round carried §3's recorded backlog into <code>dispatching/preparation.py</code>, and the pending landing finished it. On main, no dispatch path raises the retired refusal.</p>
+  </section>
+
 </main>
 </body>
 </html>
