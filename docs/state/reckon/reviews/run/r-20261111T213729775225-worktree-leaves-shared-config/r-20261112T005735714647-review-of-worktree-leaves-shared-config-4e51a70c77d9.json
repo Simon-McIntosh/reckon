@@ -1,0 +1,63 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/dispatch.py:2977 the only production caller of _create_worktree, which every dispatch of a node runs through",
+    "reckon/crew/routing.py:2360 _give_worktree_minimal_stat is called from _create_worktree on every successful creation",
+    "reckon/crew.py:87 _create_worktree is re-exported as the crew module's seam over routing"
+  ],
+  "completed_at": "2026-11-12T01:12:37.122Z",
+  "dispatched_at": "2026-11-12T01:00:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2422",
+      "severity": "non-blocking",
+      "text": "non-blocking: the bounded wait-out of a held git lock in this loop duplicates the capability reckon/crew/merge.py:658 `_run_waiting_out_a_held_index_lock` already owns \u2014 bounded attempts, a lock-presence test and an on_retry hook \u2014 and is written here with its own deadline constants (_WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS/_POLL at :2367-2368) and its own refusal wording, so the repository now holds a second policy for \"wait out a git lock, then refuse\" that can drift from the first; generalising that helper to take the lock path would have kept one."
+    },
+    {
+      "file": "reckon/crew/routing.py",
+      "line": "2432",
+      "severity": "non-blocking",
+      "text": "non-blocking: the retry fires on the prose \"could not lock config file\" in git's stderr while `_shared_config_lock` at :2390 has already resolved the lock path this function names in its refusal, so a git whose wording changes silently disables the retry and turns momentary contention back into the outright refusal this node exists to remove; merge.py:658 tests the lock file's presence rather than the message for exactly that reason."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "Read both commits against bf5030f: f782679b0d adds _shared_worktree_config_enabled, _shared_config_lock and _enable_shared_worktree_config and rewrites _give_worktree_minimal_stat (+72/-18) in reckon/crew/routing.py, 4e51a70c77 adds the 60-line evidence fragment, and the new test file's 180 lines add the four arms, all of it inside the declared scope.",
+    "done_when": "The done_when names tests/test_a_worktree_leaves_the_shared_config_alone.py and four behaviours; the manifest's after_suite records 55 passed at f782679b0d ending EXIT=0 and baseline_suite records 4 failed, 51 passed at bf5030f ending EXIT=1 whose first failure at base-arm.log:65 is the recorded lock refusal, negative-control.log ends EXIT=1 at 2 failed, 2 passed, and I re-measured the ruff clause at head: 8 findings on routing.py against 9 at the base revision, and the new test file clean under both ruff check and ruff format.",
+    "goal": "The node's goal is that creating a worktree leaves the shared checkout's configuration alone when extensions.worktreeConfig already reads true, waits out a held configuration lock for a bounded time before refusing, and still sets the worktree's own core.checkStat=minimal; reckon/crew/routing.py:2404 `_enable_shared_worktree_config` reads the setting with `git config --bool --get` and returns before any write, :2421-2438 retries and then names the lock, and :2441-2456 preserves the worktree write.",
+    "manifest": "Read; it is complete, names commits f782679b0d and 4e51a70c77, lists changed_paths matching the diff, and carries armed baseline_suite and after_suite JSON with completed true and log paths that exist; its after_suite names after-arm.log while the --basetemp run it also depends on is after-arm-basetemp.log, both green at 55 passed.",
+    "write_paths": "The fence grants reckon/crew/routing.py, tests/test_a_worktree_leaves_the_shared_config_alone.py, docs/evidence/fragments/work-flows-to-the-lane/worktree-leaves-shared-config.html and a figures directory; the two commits change exactly the first three files and write no figure."
+  },
+  "justifications": {
+    "durability": "tests/test_a_worktree_leaves_the_shared_config_alone.py:118-136 fails if the shared configuration is rewritten while it already reads true, and negative-control.log shows exactly that failure with the unconditional write restored (2 failed, 2 passed, EXIT=1); every added assertion compares a value read back from git or the filesystem, never a value the test itself supplied.",
+    "evidence": "base-arm.log:65 quotes the recorded refusal `error: could not lock config file .git/config: File exists` at bf5030f and after-arm-basetemp.log ends `55 passed` with `EXIT=0` at f782679b0d, so both armed JSON blocks the manifest records are backed by logs on disk; the partition claim (all_debug) rests on the manifest's word, since the arm logs' headers name tree and cwd rather than a job id.",
+    "fit": "reckon/crew/routing.py:2362-2438 follows the module's private-constant plus docstring-stating-the-mechanism idiom, and its symbols (_shared_worktree_config_enabled, _shared_config_lock, _enable_shared_worktree_config) name what they do with no plan, ticket or stage label.",
+    "goal_fidelity": "reckon/crew/routing.py:2404 returns without any write when the setting already reads true, :2421-2438 waits the lock out for a bound and then names it, and :2441-2456 still sets the worktree's own core.checkStat=minimal, which is the whole delivered goal.",
+    "reuse": "reckon/crew/routing.py:2422 re-implements the bounded lock-wait reckon/crew/merge.py:658 `_run_waiting_out_a_held_index_lock` already owns rather than extending it with a lock-path parameter, so the wait is written twice in one package.",
+    "scope_discipline": "git diff bf5030fbe80d 4e51a70c77d9 changes only reckon/crew/routing.py, tests/test_a_worktree_leaves_the_shared_config_alone.py and docs/evidence/fragments/work-flows-to-the-lane/worktree-leaves-shared-config.html, all three inside the fence's declared paths, and no figure was written."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that creating a worktree leaves the shared checkout's configuration alone when extensions.worktreeConfig already reads true, waits out a held configuration lock for a bounded time before refusing, and still sets the worktree's own core.checkStat=minimal; reckon/crew/routing.py:2404 `_enable_shared_worktree_config` reads the setting with `git config --bool --get` and returns before any write, :2421-2438 retries and then names the lock, and :2441-2456 preserves the worktree write.\nVERDICT done_when: The done_when names tests/test_a_worktree_leaves_the_shared_config_alone.py and four behaviours; the manifest's after_suite records 55 passed at f782679b0d ending EXIT=0 and baseline_suite records 4 failed, 51 passed at bf5030f ending EXIT=1 whose first failure at base-arm.log:65 is the recorded lock refusal, negative-control.log ends EXIT=1 at 2 failed, 2 passed, and I re-measured the ruff clause at head: 8 findings on routing.py against 9 at the base revision, and the new test file clean under both ruff check and ruff format.\nVERDICT write_paths: The fence grants reckon/crew/routing.py, tests/test_a_worktree_leaves_the_shared_config_alone.py, docs/evidence/fragments/work-flows-to-the-lane/worktree-leaves-shared-config.html and a figures directory; the two commits change exactly the first three files and write no figure.\nVERDICT manifest: Read; it is complete, names commits f782679b0d and 4e51a70c77, lists changed_paths matching the diff, and carries armed baseline_suite and after_suite JSON with completed true and log paths that exist; its after_suite names after-arm.log while the --basetemp run it also depends on is after-arm-basetemp.log, both green at 55 passed.\nVERDICT diff: Read both commits against bf5030f: f782679b0d adds _shared_worktree_config_enabled, _shared_config_lock and _enable_shared_worktree_config and rewrites _give_worktree_minimal_stat (+72/-18) in reckon/crew/routing.py, 4e51a70c77 adds the 60-line evidence fragment, and the new test file's 180 lines add the four arms, all of it inside the declared scope.\nCALL_SITES: reckon/crew/dispatch.py:2977 the only production caller of _create_worktree, which every dispatch of a node runs through, reckon/crew/routing.py:2360 _give_worktree_minimal_stat is called from _create_worktree on every successful creation, reckon/crew.py:87 _create_worktree is re-exported as the crew module's seam over routing\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/routing.py:2404 returns without any write when the setting already reads true, :2421-2438 waits the lock out for a bound and then names it, and :2441-2456 still sets the worktree's own core.checkStat=minimal, which is the whole delivered goal.\nSCORE evidence: 16\nJUSTIFICATION evidence: base-arm.log:65 quotes the recorded refusal `error: could not lock config file .git/config: File exists` at bf5030f and after-arm-basetemp.log ends `55 passed` with `EXIT=0` at f782679b0d, so both armed JSON blocks the manifest records are backed by logs on disk; the partition claim (all_debug) rests on the manifest's word, since the arm logs' headers name tree and cwd rather than a job id.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff bf5030fbe80d 4e51a70c77d9 changes only reckon/crew/routing.py, tests/test_a_worktree_leaves_the_shared_config_alone.py and docs/evidence/fragments/work-flows-to-the-lane/worktree-leaves-shared-config.html, all three inside the fence's declared paths, and no figure was written.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_worktree_leaves_the_shared_config_alone.py:118-136 fails if the shared configuration is rewritten while it already reads true, and negative-control.log shows exactly that failure with the unconditional write restored (2 failed, 2 passed, EXIT=1); every added assertion compares a value read back from git or the filesystem, never a value the test itself supplied.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/routing.py:2362-2438 follows the module's private-constant plus docstring-stating-the-mechanism idiom, and its symbols (_shared_worktree_config_enabled, _shared_config_lock, _enable_shared_worktree_config) name what they do with no plan, ticket or stage label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/routing.py:2422 re-implements the bounded lock-wait reckon/crew/merge.py:658 `_run_waiting_out_a_held_index_lock` already owns rather than extending it with a lock-path parameter, so the wait is written twice in one package.\nFINDING reckon/crew/routing.py:2422 non-blocking: the bounded wait-out of a held git lock in this loop duplicates the capability reckon/crew/merge.py:658 `_run_waiting_out_a_held_index_lock` already owns \u2014 bounded attempts, a lock-presence test and an on_retry hook \u2014 and is written here with its own deadline constants (_WORKTREE_CONFIG_LOCK_TIMEOUT_SECONDS/_POLL at :2367-2368) and its own refusal wording, so the repository now holds a second policy for \"wait out a git lock, then refuse\" that can drift from the first; generalising that helper to take the lock path would have kept one.\nFINDING reckon/crew/routing.py:2432 non-blocking: the retry fires on the prose \"could not lock config file\" in git's stderr while `_shared_config_lock` at :2390 has already resolved the lock path this function names in its refusal, so a git whose wording changes silently disables the retry and turns momentary contention back into the outright refusal this node exists to remove; merge.py:658 tests the lock file's presence rather than the message for exactly that reason.\n",
+  "review_run_id": "r-20261112T005735714647-review-of-worktree-leaves-shared-config-4e51a70c77d9",
+  "reviewed_base_sha": "bf5030fbe80d8b99a0bf3ae8a7553466e169da62",
+  "reviewed_head_sha": "4e51a70c77d97d4c19e52321e28d85789263eac6",
+  "reviewed_run_id": "r-20261111T213729775225-worktree-leaves-shared-config",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T03:38:51.400208+00:00",
+  "total": 92
+}
