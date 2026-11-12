@@ -1,0 +1,64 @@
+<section id="measured-arm-reads-its-receipt" class="evidence-fragment">
+  <h2>§26 — A measured arm is read by its receipt, not the log's last line</h2>
+  <p>
+    A partitioned arm's job script prints <code>EXIT=&lt;status&gt;</code> from its
+    own trap, and the scheduler then writes lines of its own after that receipt.
+    Both real base logs the section names end that way:
+    <code>EXIT=1</code> on one line and
+    <code>srun: error: … Exited with exit code 1</code> after it. The reader
+    matched the receipt only as the log's last line, so both arms were judged
+    unreadable with status 3 and the measured pair was discarded.
+  </p>
+  <p>
+    That falls hardest on exactly the nodes the measurement exists for. A node
+    that adds a test has a red base arm by construction, because its new test
+    fails where the change is absent, so its base log is the one carrying both
+    the receipt and the scheduler's line after it.
+  </p>
+  <p>
+    The receipt is now read on its own line, last match wins, because the trap
+    prints after everything the arm itself ran. The reason an arm cannot be read
+    is carried from the runner to the arm, so the landing-measured refusal names
+    the arm and says which of the two it was: no receipt at all, or a receipt
+    disagreeing with the status the job returned.
+  </p>
+  <h3 id="measured-arm-reads-its-receipt-cases">What the measure shows</h3>
+  <table id="measured-arm-reads-its-receipt-table">
+    <thead>
+      <tr><th>Log tail</th><th>Outcome</th></tr>
+    </thead>
+    <tr>
+      <td>Two <code>FAILED</code> ids, <code>EXIT=1</code>, then an
+        <code>srun: error</code> line</td>
+      <td>exit status 1 and exactly those two ids</td>
+    </tr>
+    <tr>
+      <td>That red base beside a green head (<code>EXIT=0</code>)</td>
+      <td>lands clean, zero added failures; the pair is written to
+        <code>measured-arms.json</code> and onto the run's pointer</td>
+    </tr>
+    <tr>
+      <td>Test output with no receipt</td>
+      <td>no measured pair; refusal names the baseline arm and says it carries
+        no exit receipt</td>
+    </tr>
+    <tr>
+      <td>A receipt of <code>EXIT=1</code> under a job that returned 0</td>
+      <td>no measured pair; refusal names the arm and both statuses</td>
+    </tr>
+  </table>
+  <p>
+    Neither refusal says the arm did not run: an arm that produced test output
+    did run, and the record now says what was actually missing.
+  </p>
+  <p>
+    Negative control: reading the receipt only as the log's last line again
+    makes the red-base case unreadable and the run case refuse.
+  </p>
+  <p>
+    Suite arms, one at a time: base revision <code>9b577c60</code> over the
+    resolved scope reads <code>51 passed</code>, <code>EXIT=0</code>; head
+    <code>cadd0db0</code> reads <code>56 passed</code> <code>EXIT=0</code>, zero
+    added failures.
+  </p>
+</section>
