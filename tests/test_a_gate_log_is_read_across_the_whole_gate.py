@@ -71,8 +71,7 @@ def _ctest_run(names: list[str], total: int, exit_status: int) -> str:
     """One ctest label's run, as ctest writes it, ending in its own capture."""
     failed = len(names)
     body = "".join(
-        f"\t{index} - {name} (Failed)\n"
-        for index, name in enumerate(names, start=1)
+        f"\t{index} - {name} (Failed)\n" for index, name in enumerate(names, start=1)
     )
     return (
         f"Test project /build\n"
@@ -195,7 +194,11 @@ def test_a_pytest_log_is_still_read_from_its_last_run(tmp_path: Path) -> None:
         _guard(
             tmp_path,
             TWO_PYTEST_RUNS,
-            _arm(tmp_path, count=2, ids=["tests/test_x.py::test_one", "tests/test_x.py::test_two"]),
+            _arm(
+                tmp_path,
+                count=2,
+                ids=["tests/test_x.py::test_one", "tests/test_x.py::test_two"],
+            ),
             command=PYTEST_COMMAND,
         )
     assert "failure_count records 2" in str(refused.value)
