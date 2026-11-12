@@ -62,6 +62,35 @@
     <code>resumed-importer-comparison.json</code>. The initial three added
     failure IDs are tracked explicitly in that comparison; no product source
     changed during the test migration.</p>
+  <h4 id="split-dispatch-runtime-diagnosis">Repeated runtime diagnosis</h4>
+  <p>Before any product or test edit, both formerly added runtime cases were
+    executed three times at the base and three times at the test-migration head,
+    on a separate <code>all_debug</code> allocation. The follower case passed
+    3/3 at each revision. The killed-worker case passed 3/3 at the base and
+    2/3 at the head, so two additional bounded capture samples were taken.</p>
+  <table id="split-dispatch-runtime-counts">
+    <thead><tr><th>Case and observations</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Killed worker, requested three repetitions</td><td>3 passed</td><td>2 passed, 1 failed</td></tr>
+      <tr><td>Killed worker, five capture repetitions</td><td>5 passed</td><td>5 passed</td></tr>
+      <tr><td>Killed worker, ten capture repetitions</td><td>8 passed, 2 failed</td><td>10 passed</td></tr>
+      <tr><td>Own-session follower, requested three repetitions</td><td>3 passed</td><td>3 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The base failure receipts contain a real worker PID, one emitted worker
+    stream record, empty stderr, and <code>exit_code=null</code>,
+    <code>signal=null</code> and <code>signal_name=null</code>. They reproduce
+    the head's failed signal assertion. This missing wait-status receipt is
+    therefore pre-existing intermittent behavior. The supervisor implementation
+    is unchanged between the measured revisions. No product repair or test
+    patch-target migration was indicated, and no assertion was changed.</p>
+  <p>The requested two-ID comparison has no head-only failure after including
+    the baseline stability evidence. The follower duplicate symptom was not
+    reproduced in the requested repetitions; this is not a claim that it can
+    never recur. <code>diagnosis-comparison.json</code> retains every requested
+    and supplemental observation, including the initial head failure, and links
+    the captured base receipts. The final expanded exact-command arm receipts
+    and their full revisions are recorded in the run manifest.</p>
   <p>Durable receipts are under
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch</code>:
     <code>baseline-armed.log</code>, <code>head-armed.log</code>,
