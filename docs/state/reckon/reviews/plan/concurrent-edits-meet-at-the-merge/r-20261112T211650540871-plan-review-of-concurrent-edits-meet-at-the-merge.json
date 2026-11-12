@@ -1,0 +1,59 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-12T21:26:48.013Z",
+  "dispatched_at": "2026-11-12T21:18:52Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:173",
+      "id": "done_when-1",
+      "reason": "as written the gate can pass while the dead worker still holds the repair for ever, which is the exact defect the section was opened to repair.",
+      "text": "\u00a79's done-when reads \"The merge repair is not held, or is held with a reason naming the dead pid and the command that releases it\", so a node can satisfy it by keeping the hold and only enriching the reason; nothing in the code names a release command, and the section's write paths (recovery_repair_dispatch.py and one test) cannot add one, so the second branch is both the behaviour \u00a79 exists to remove and unimplementable within its scope",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/concurrent-edits-meet-at-the-merge.html:181",
+      "id": "reasoning-1",
+      "reason": "the plan's endpoint is that the cited 32/0 log agrees with its arm, and a count-only reading of \"the whole gate\" cannot reach it for any real suite arm.",
+      "text": "\u00a711 makes only the failure count read across the whole gate, but `_receipt_mismatches` also compares `failure_ids` through `gate_log_failure_ids(..., last_run=True)`, and `ledger.suite_observation_missing_fields` refuses an arm with no `failure_ids` list, so the cited arm necessarily carries 32 ids that the clean last run does not report and the landing still refuses for its ids; the done-when's arm (\"an arm recording 32\") can omit ids and pass without touching that path, while the real imas-efit arm cannot",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ea4fefcd442a8530b7f61a3c79f625728970133a",
+  "plan_fingerprint": "06f1212e94d23250e9a4afad3808892d101f02b5263ac5c8058787f69a383ffd",
+  "plan_slug": "concurrent-edits-meet-at-the-merge",
+  "plan_version": 56,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261112T211650540871-plan-review-of-concurrent-edits-meet-at-the-merge",
+  "reviewed_blob_sha": "0da6c646c34f127e4472c05f67631d1423155f7a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 recovery_repair_dispatch.py:360 is the exact held reason, pending_landing.py:262 is the exact refusal and :229 is `_require_repair_gate`, and promotion_evidence.py:1378 falls inside `_receipt_mismatches`, the function that reads `last_run_text` (at :1370).",
+    "done_when": "a finding \u2014 \u00a79's done-when admits two outcomes, one of which leaves the repair held with an explanatory reason, so the gate can pass without the release the deliverable requires (plan.html:173).",
+    "evidence_paths": "pass \u2014 every log is required under the run directory, headed by its revision and literal command and terminated by a bare EXIT= line, and the gates run on all_debug one arm at a time.",
+    "naming": "pass \u2014 the added sections coin no symbol, and the run ids they quote are evidence in plan text, not names carried into code.",
+    "reasoning": "a finding \u2014 \u00a711's endpoint is not reachable as scoped: the same refusal path compares the arm's `failure_ids` against the last run, and a suite arm cannot omit them, so a count-only fix leaves the reported refusal standing (plan.html:181).",
+    "single_goal": "pass \u2014 each of \u00a79, \u00a710 and \u00a711 names one deliverable, with its extra cases acting as regression guards rather than second goals.",
+    "wiring": "pass \u2014 the three added sections depend on nothing still outstanding (\u00a73, which owns the repair round and the gate check, is already done), and the new followup f-cem-002 covers \u00a79\u2013\u00a711."
+  },
+  "section_digests": {
+    "_document": "fa6497017aa35b9dd73c680f5bdd56bd47a6a267840133262b0fd3711c8bfb5e",
+    "s1": "3b65e328477dcad431890ad6e57cffb8c8385c67744b318213b4ad9eea2ee1c1",
+    "s10": "e8472937ce59a6c791cb2b42a60eee597bc2ae3a43d0db9ae5cc9ebe61cc8d49",
+    "s11": "0c8bea81c0d757ee0b1ac6531d6dfe0273e9e91f346fbf5cc531af6ea4f414a4",
+    "s2": "bd0097b598a59627cecc4193f6a0815cc60aa0926670d4db5cb738cef62049a4",
+    "s3": "675d18417ee1df0c38d4ff105292833f6aee25b598a13faeee5014f08a3de827",
+    "s4": "16684fd478883b396d5e8f5e3a562edb3b727dcf5ff6e6a326afc75b84b32254",
+    "s5": "f192ba5b1e26f6e57e9650504aca535703eb93332d1030dd1a75fe040ef041e7",
+    "s6": "a3972e388ac76ab83edc0fc942d90bdfa8b94d9a04ee5d436ddf459d03859173",
+    "s7": "9e07feae77865a57d989ea02f10c0b69b3867dfe8f8a9b684e67be62750f6560",
+    "s8": "c0c2b4ab76c3adbd96cc5fa0191b8793a15bcef1b15d35af1b7c16db59bb89e4",
+    "s9": "b94b9832ca750bf9b3ddb954cbc218f234ad555429abc127957351c5c38f64ad"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:43:19.769735+00:00",
+  "total": null
+}
