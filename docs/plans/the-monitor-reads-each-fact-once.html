@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="191">
+<meta name="plan-version" content="192">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -632,10 +632,11 @@ staged paths.</p>
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §21</pre>
     <p class="r-fu-outcome">§21 landed (8ddc359bf1) and is closed; the remaining producer cost is §22.</p>
     </article>
-<article class="r-fu" data-id="f-tmref-008" data-status="open" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10 01:40" data-recommends-skill="" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-tmref-008" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10 01:40" data-recommends-skill="" data-resolved-at="2026-11-12T03:08:23+00:00" data-resolved-by="reckon-c0">
     <h4 class="r-fu-title">Read the review store once per tick</h4>
     <div class="r-fu-body"><p>§20 and §21 landed without moving the producer's busy share; the profile now points at per-run review-store reads.</p></div>
     <pre class="r-fu-prompt">/reckon-build the-monitor-reads-each-fact-once §22</pre>
+    <p class="r-fu-outcome">§22 landed on 12 November and is declared done.</p>
     </article>
 <article class="r-fu" data-id="f-tmref-009" data-status="resolved" data-capability-version="1.0" data-capability-class="orchestrator" data-written-by="reckon-build" data-written-at="2026-11-10 22:10" data-recommends-skill="" data-resolved-at="2026-11-11T17:15:20+00:00" data-resolved-by="reckon-c0">
     <h4 class="r-fu-title">Land §23 and re-measure the station</h4>
@@ -663,6 +664,9 @@ staged paths.</p>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-tmref-s29-landed" data-who="" data-when="">
+    <div class="r-comment-body"><p>§29 landed (run <code>r-20261112T005821643873-one-run-cannot-stop-a-sweep</code>, head <code>c5cf18d11e</code>, merged after its landing was cut off following promotion). <code>dispatch_awaiting_reviews</code> now isolates each run: a failure is recorded in the report with the run id and the error, and the pass continues. A pointer that vanished is recorded and skipped. <code>resumption.sweep</code> catches any error from either review pass, and the station prints <code>station-sweep-run-failure</code> naming each failed run. The worker's six regression cases pass, its armed gate passed 57 at head against 51 at base, and its importer arms on <code>all_debug</code> added no failure. The review scored 114 of 120. Its one non-blocking finding is exempted: a re-raise for a pointer that vanishes during promotion is untested, and it reports such a run as vanished rather than as a refusal. reckon-d1's further proposals are still to file as their own sections: a single station with lease-gated sweeps, sweep failures surfaced as obligation rows, and tolerant ledger reads.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261027T202938546292-review-of-the-reflex-and-settle-run-in-the-station-4b29942255a1" data-who="reckon-build" data-when="2026-10-27T20:44:33.695Z">
     <div class="r-comment-body"><p>Independent review of r-20261027T043138933185-the-reflex-and-settle-run-in-the-station at head 4b29942255a141f113901d3beba117a3616b4f8a from base 9e363fe50e058ed2bd9cc3b2548eb6f8353aa3c4. Scored goal_fidelity 18, evidence 17, scope_discipline 17, durability 17, fit 16, reuse 13. Three non-blocking findings, no blocking finding.</p></div>
 </div>
@@ -965,9 +969,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="_top" data-id="c-tmref-s29-landed" data-who="" data-when="">
-    <div class="r-comment-body"><p>§29 landed (run <code>r-20261112T005821643873-one-run-cannot-stop-a-sweep</code>, head <code>c5cf18d11e</code>, merged after its landing was cut off following promotion). <code>dispatch_awaiting_reviews</code> now isolates each run: a failure is recorded in the report with the run id and the error, and the pass continues. A pointer that vanished is recorded and skipped. <code>resumption.sweep</code> catches any error from either review pass, and the station prints <code>station-sweep-run-failure</code> naming each failed run. The worker's six regression cases pass, its armed gate passed 57 at head against 51 at base, and its importer arms on <code>all_debug</code> added no failure. The review scored 114 of 120. Its one non-blocking finding is exempted: a re-raise for a pointer that vanishes during promotion is untested, and it reports such a run as vanished rather than as a refusal. reckon-d1's further proposals are still to file as their own sections: a single station with lease-gated sweeps, sweep failures surfaced as obligation rows, and tolerant ledger reads.</p></div>
 </div>
 </section>
 </main>
