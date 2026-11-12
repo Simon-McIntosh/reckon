@@ -280,9 +280,18 @@ class SweepBeat:
     ) -> None:
         while True:
             try:
-                self.sweep(
+                report = self.sweep(
                     project, session=session, now=moment, writer=dict(SWEEP_WRITER)
                 )
+                reviews = report.get("reviews") if isinstance(report, Mapping) else None
+                if isinstance(reviews, Mapping):
+                    for failure in reviews.get("failed") or ():
+                        print(
+                            f"station-sweep-run-failure: {project}/{session}/"
+                            f"{failure['run_id']}: {failure['error']}",
+                            file=sys.stderr,
+                            flush=True,
+                        )
             except Exception:  # noqa: BLE001 - one session's sweep costs one pass
                 print(
                     f"station-sweep-failure: {project}/{session}: "
