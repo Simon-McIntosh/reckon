@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/obligations.py:_classified_rows",
+    "reckon/crew/obligations.py:obligations",
+    "reckon/crew/queue_admission.py:queued_placements",
+    "reckon/crew/obligation_snapshot.py:_placements",
+    "reckon/crew/directory.py:_queued_rows",
+    "reckon/crew/query.py"
+  ],
+  "completed_at": "2026-11-12T12:53:40.979Z",
+  "dispatched_at": "2026-11-12T12:42:18Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T110348511503-launched-run-is-never-queued/base-arm.log",
+      "line": "1",
+      "severity": "non-blocking",
+      "text": "The done_when requires the matched arms to run as an all_debug partition job, but the worker's stream shows the base and after arms ran as plain Bash inside the fleet allocation (job 1291586) and the log headers name only a /tmp scratch tree with no partition; the measurement is complete and readable, yet the venue clause is unmet and should be re-produced on all_debug if that clause is load-bearing."
+    },
+    {
+      "file": "tests/test_a_launched_run_is_never_queued.py",
+      "line": "138",
+      "severity": "non-blocking",
+      "text": "The duty assertion pins only the negative (kind != 'run-queued' and no position), so a regression that gave the launched pointer a different but still wrong duty would pass; asserting the duty the manifest implies (the finished run's promotion) would make the test guard the goal's positive half."
+    },
+    {
+      "file": "tests/test_a_launched_run_is_never_queued.py",
+      "line": "156",
+      "severity": "non-blocking",
+      "text": "The final assertion rereads the pointer the fixture itself wrote and compares its phase to a literal, so it holds whatever the production change does and adds no guard; it is a fixture self-check rather than coverage of the defect."
+    },
+    {
+      "file": "tests/test_a_launched_run_is_never_queued.py",
+      "line": "147",
+      "severity": "non-blocking",
+      "text": "The docstring says the test asserts the row's own classification is the queued one, but the body asserts only queue_admission.awaits_a_lane_slot and a fixture phase read; no classification row is examined, so the docstring overstates what the test covers."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit (one commit, c5baa7d29b); it adds the predicate, switches queued_placements to it, blanks a stale queued phase before classification in _classified_rows, and adds the test and fragment.",
+    "done_when": "The done_when names tests/test_a_launched_run_is_never_queued.py reproducing the stale field; gate.log shows that file passing at head and negative-control-base.log shows it failing at 752a45069c, though the venue clause names an all_debug partition job that the arms did not use.",
+    "goal": "The node's goal is that a launched run is never read as queued; queue_admission.awaits_a_lane_slot (reckon/crew/queue_admission.py:5733) and its two readers implement exactly that.",
+    "manifest": "Read; it records status complete, the gate pair at 54 passed, matched arms 9 failed/72 passed/2 errors at base against 9 failed/77 passed at head, and names its logs.",
+    "write_paths": "The manifest declares obligations.py, queue_admission.py, the test file and the fragment; git diff 752a45069c..c5baa7d29b changes exactly those four paths and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launched_run_is_never_queued.py:122 and :138 both fail at base against the real defect, but :156 asserts only the fixture's own write and :138 pins only the negative, so a wrong non-queued duty would pass.",
+    "evidence": "gate.log records 54 passed at c5baa7d29b and negative-control-base.log records 3 failed with the stale pointer at position 1, but the matched arms in base-arm.log and after-arm.log ran in place rather than as the all_debug partition job the done_when names.",
+    "fit": "reckon/crew/queue_admission.py:5733 follows the module's predicate idiom and names the rule by mechanism, though the test docstring at tests/test_a_launched_run_is_never_queued.py:147 describes an assertion the body does not make.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:5733 adds awaits_a_lane_slot and queue_admission.py:5789 and obligations.py:1067 both read it, so a pointer in phase queued carrying launched_at holds no place and owes no run-queued duty.",
+    "reuse": "reckon/crew/queue_admission.py owns QUEUED_PHASE and queued_placements, and a search of reckon/crew for an existing is-this-queued predicate found none, so awaits_a_lane_slot extends the owner rather than forking a capability.",
+    "scope_discipline": "the diff against 752a45069c changes only obligations.py, queue_admission.py, tests/test_a_launched_run_is_never_queued.py and the node's fragment, all four inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a launched run is never read as queued; reckon/crew/queue_admission.py:5733 defines awaits_a_lane_slot and both readers use it.\nVERDICT done_when: the done_when names tests/test_a_launched_run_is_never_queued.py; gate.log shows 54 passed at head and negative-control-base.log shows the same tests failing at base.\nVERDICT write_paths: the manifest declares four paths and git diff 752a45069c..c5baa7d29b changes exactly those four.\nVERDICT manifest: read; it states the gate pair, the matched arms and the negative control with log paths.\nVERDICT diff: read commit by commit; one commit adds the predicate, its two readers, the regression test and the fragment.\nCALL_SITES: reckon/crew/obligations.py:_classified_rows, reckon/crew/obligations.py:obligations, reckon/crew/queue_admission.py:queued_placements, reckon/crew/obligation_snapshot.py:_placements, reckon/crew/directory.py:_queued_rows, reckon/crew/query.py\n",
+  "review_run_id": "r-20261112T123325581650-review-of-launched-run-is-never-queued-c5baa7d29bda",
+  "reviewed_base_sha": "752a45069c12cfbcd25f2656fb9d774cf7b3ff9b",
+  "reviewed_head_sha": "c5baa7d29bdaa1f78f0021f0fda0f4999768b701",
+  "reviewed_run_id": "r-20261112T110348511503-launched-run-is-never-queued",
+  "scores": {
+    "durability": 15,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T13:00:22.205436+00:00",
+  "total": 103
+}
