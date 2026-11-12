@@ -31,6 +31,7 @@ import hashlib
 import re
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Any
 
 from reckon._timestamps import parse_iso
@@ -492,6 +493,107 @@ def _run_fence(run_record: Mapping[str, Any] | None) -> list[str]:
     if not isinstance(declared, (list, tuple)):
         return []
     return [str(path).strip() for path in declared if str(path).strip()]
+
+
+def _within_tree(path: Path, root: Path) -> bool:
+    """Whether a path lies at or under a directory, compared resolved."""
+    try:
+        resolved = path.resolve()
+        base = root.resolve()
+    except OSError:
+        return False
+    return resolved == base or base in resolved.parents
+
+
+def _run_worktree(run_record: Mapping[str, Any] | None) -> Path | None:
+    """The worktree the reviewed run was given, when the record names one."""
+    if not run_record:
+        return None
+    text = str(run_record.get("worktree") or "").strip()
+    if not text:
+        return None
+    path = Path(text).expanduser()
+    return path if path.is_dir() else None
+
+
+def _run_record_files(run_record: Mapping[str, Any] | None) -> list[Path]:
+    """The run's own files outside its worktree: its directory and its manifest.
+
+    A run's manifest, gate logs and streams live under the crew home, not in the
+    repository the run was cut from, so they are named from the record rather
+    than from any checkout. An absent record or run id contributes nothing.
+    """
+    if not run_record:
+        return []
+    found: list[Path] = []
+    declared = str(run_record.get("manifest_path") or "").strip()
+    if declared:
+        found.append(Path(declared).expanduser())
+    run_id = str(run_record.get("run_id") or "").strip()
+    if run_id:
+        from reckon.crew import runs as runs_module
+
+        found.append(runs_module.run_dir(run_id))
+    return found
+
+
+def _cites_tree_or_file(
+    path: str, roots: Sequence[Path], files: Sequence[Path]
+) -> bool:
+    """Whether a cited path names a file that exists in one of the given places.
+
+    A relative citation is resolved against each root, never against whatever
+    checkout happens to be current: the run's own tree is where the files a
+    finding can be about actually are. Existence is required either way, because
+    a citation to a name that holds nothing is not a file the run's worker can
+    change, and treating it as one would open a round with nothing to edit.
+    """
+    text = str(path or "").strip()
+    if not text:
+        return False
+    cited = Path(text).expanduser()
+    if cited.is_absolute():
+        for own in files:
+            try:
+                if cited.resolve() == own.resolve():
+                    return True
+            except OSError:
+                continue
+        return any(_within_tree(cited, root) and cited.is_file() for root in roots)
+    for root in roots:
+        candidate = root / text
+        if _within_tree(candidate, root) and candidate.is_file():
+            return True
+    return False
+
+
+def finding_cites_run_worktree(path: str, run_record: Mapping[str, Any] | None) -> bool:
+    """Whether a finding's path names a file in the reviewed run's own worktree.
+
+    This is the reach a repair's *write scope* may use: the run's worktree is a
+    checkout of the repository, so a file there is repository work the repair can
+    be granted a claim on. A file one directory away from where its brief
+    declared it is still in that tree, which is the case that used to be read as
+    the fleet's own record and left the round with nothing to edit.
+    """
+    worktree = _run_worktree(run_record)
+    if worktree is None:
+        return False
+    return _cites_tree_or_file(path, [worktree], [])
+
+
+def finding_cites_run_own_file(path: str, run_record: Mapping[str, Any] | None) -> bool:
+    """Whether a finding's path names anything the reviewed run itself holds.
+
+    The run's worktree, its own directory under the crew home and the manifest
+    the record names are all places its worker wrote and can change, so a finding
+    citing any of them is work rather than a record outside its reach. This is
+    the reach that decides whether a round opens; it is wider than the write
+    scope's reach because a run's record directory carries no claim to grant.
+    """
+    worktree = _run_worktree(run_record)
+    roots = [worktree] if worktree is not None else []
+    return _cites_tree_or_file(path, [*roots, *_run_record_files(run_record)], [])
 
 
 def repair_write_scope(
