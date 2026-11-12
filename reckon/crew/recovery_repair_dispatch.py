@@ -343,12 +343,17 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
     holds an assistant record only while that turn is producing work. A resumed
     turn has ended once its stream's last record is the result line a finished
     turn writes, so a finished resume no longer reads as a turn in progress and
-    does not hold the round busy forever. A run recording no process and
-    carrying no unfinished resumed turn is left free to be repaired.
+    does not hold the round busy forever. An unfinished stream is only evidence
+    about a turn whose process is still there: a recorded process proved gone
+    leaves the stream behind it, so an unfinished resume is read as a turn in
+    progress only while no recorded process is proved dead. A run recording no
+    process and carrying no unfinished resumed turn is left free to be repaired.
     """
-    if runs.record_process_alive(record, process_alive) is True:
+    pointer_alive = runs.record_process_alive(record, process_alive)
+    if pointer_alive is True:
         return "the reviewed run's worker is live"
-    if _worker_record_liveness(record) is True:
+    worker_alive = _worker_record_liveness(record)
+    if worker_alive is True:
         return "the reviewed run's worker is live"
     found = _record_newest_stream(record)
     if (
@@ -357,6 +362,8 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
         and _stream_holds_assistant_record(found[0])
         and _newest_stream_last_record_type(record) != STREAM_RESULT_RECORD_TYPE
     ):
+        if pointer_alive is False or worker_alive is False:
+            return ""
         return "the reviewed run has a resumed turn in progress"
     return ""
 
