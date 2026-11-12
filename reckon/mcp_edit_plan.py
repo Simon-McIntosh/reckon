@@ -1326,7 +1326,7 @@ def _op_target_path(op: dict[str, Any]) -> str | None:
             return None
         ident = op.get("id")
         return f"{target}.{ident}" if ident else target
-    if verb in ("lock", "accept"):
+    if verb in ("lock", "accept", "withdraw"):
         key = op.get("key")
         return f"decisions.{key}" if key else "decisions"
     if verb in ("gate", "pass", "fail"):
@@ -1502,8 +1502,8 @@ def _edit_plan(
     ``doc_type`` (version = state.version). Untyped edits retain compatibility
     only when the leaf slug identifies one live artifact unambiguously.
 
-    Verbs (the "op" key): set | append | resolve | lock | accept | gate | pass |
-    fail | retire_prose | move. See read_plan(
+    Verbs (the "op" key): set | append | resolve | lock | accept | withdraw |
+    gate | pass | fail | retire_prose | move. See read_plan(
     ..., with_schema=True)["op_vocab"] for the full op grammar.
 
     Create: edit_plan(..., expected_version=0, create=True) on a NON-existent
