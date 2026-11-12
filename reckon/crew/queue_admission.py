@@ -1982,6 +1982,23 @@ def _release_stranded_launches(
     return released
 
 
+def _requeued_request(request: Mapping[str, Any], run_id: str) -> dict[str, Any]:
+    """The request written back as a queued pointer under the id it already has.
+
+    A launch the reaper marked failed is an attempt, not a different request:
+    the id a dispatch printed is the one a coordinator records and later acts
+    on, so the re-queue keeps it. Anything reading one request's own history
+    across its attempts — the pane's once-only refusal row is one such reader —
+    therefore keys on the run id, and this is the line that makes that hold. A
+    fresh id here would make every re-queue look like a new request to those
+    readers, and would leave the printed id naming nothing.
+    """
+    restored = copy.deepcopy(dict(request))
+    restored["run_id"] = str(run_id)
+    restored["phase"] = "queued"
+    return restored
+
+
 def _requeue_admitted_failures(
     live: list[dict[str, Any]], *, verdicts: list[dict[str, Any]] | None = None
 ) -> list[str]:
@@ -2001,9 +2018,7 @@ def _requeue_admitted_failures(
             continue
         failures = list(pointer.get("launch_failures") or ())
         failure = dict(failures[-1]) if failures else {}
-        restored = copy.deepcopy(dict(request))
-        restored["run_id"] = str(pointer["run_id"])
-        restored["phase"] = "queued"
+        restored = _requeued_request(request, str(pointer["run_id"]))
         restored["queued_at"] = _utc_now()
         restored.setdefault("created_at", restored["queued_at"])
         # Stamp the re-queue with the same back-off a failed attempt records, so

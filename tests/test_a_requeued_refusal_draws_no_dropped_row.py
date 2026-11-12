@@ -8,7 +8,10 @@ fleet and come back, which it reads as a departure: on 2026-10-21 the pane drew
 ``dropped -> queued`` 34 seconds later. The request kept its place throughout.
 
 What the pane owes the coordinator is the refusal and the remedy, once: a queued
-request refused again for the same reason is the remedy it already has.
+request refused again for the same reason is the remedy it already has. What
+makes "again" the same request is the run id, which the admission pass keeps
+when it re-queues a refused attempt, so the read is not a second definition of
+a request's identity beside the queue's own.
 
 The rows below drive ``PaneRowPath`` for the pane's own session, as the follower
 does, and render every row it releases through one ``Ticker``, so the assertions
@@ -24,7 +27,6 @@ from reckon.crew import ticker
 SESSION = "s-own"
 PROJECT = "reckon"
 PLAN = "the-monitor-shows-the-work-it-watches"
-SECTION = "80"
 NODE = "a-limit-reset-is-one-record"
 REFUSAL = (
     "the queued launch was refused: PlanReviewMissingError: section 73 of the "
@@ -36,11 +38,15 @@ REMEDY = "reckon crew review --plan the-monitor-shows-the-work-it-watches"
 def _row(
     from_state: str | None, to_state: str, run_id: str, **extra: Any
 ) -> dict[str, Any]:
-    """One transition row as the project's watcher writes it."""
+    """One transition row as the project's watcher writes it.
+
+    The fields are the classified snapshot's own: project, session, plan and
+    node id, with no section, which is what ``recovery_classification`` emits
+    and therefore all a reader of the row may key on.
+    """
     event: dict[str, Any] = {
         "project": PROJECT,
         "plan": PLAN,
-        "section": SECTION,
         "event": "transition",
         "run_id": run_id,
         "node": NODE,
@@ -86,43 +92,37 @@ def _refused_launch(
     *,
     at: float,
     refusal: str = REFUSAL,
-    requeue_id: str | None = None,
-    section: str = SECTION,
 ) -> list[dict[str, Any]]:
     """Drive the rows of one refused launch attempt, returning what it drew.
 
-    The second pointer is the request written back by the admission pass. The
-    pass keeps the request's run id across the re-queue — it rewrites the
-    pointer it took the attempt from, and the launch itself continues that
-    request — so the id is stated on every row rather than defaulted, and
-    ``requeue_id`` exists only so a test can say what it means when the rows
-    do not share one.
+    The second pointer is the request written back by the admission pass, which
+    keeps the run id the request already carried — ``queue_admission``'s
+    ``_requeued_request`` is that write, and a test below pins it. So one
+    request's attempts and re-queues share an id here, as they do in the fleet,
+    and two requests do not.
     """
-    second = run_id if requeue_id is None else requeue_id
     drawn: list[dict[str, Any]] = []
     for offset, event in enumerate(
         (
             # The request arrives and queues for a slot, then its launch is
             # attempted: the attempt's pointer is released and the request is
             # written back, so the follower sees it leave the fleet and return.
-            _row(None, "dispatched", run_id, section=section),
+            _row(None, "dispatched", run_id),
             _row(
                 "dispatched",
                 "queued",
                 run_id,
                 detail="waiting for a local lane slot",
                 next_action="wait for a local lane slot",
-                section=section,
             ),
-            _row("queued", "withdrawn", run_id, section=section),
-            _row(None, "dispatched", second, section=section),
+            _row("queued", "withdrawn", run_id),
+            _row(None, "dispatched", run_id),
             _row(
                 "dispatched",
                 "queued",
-                second,
+                run_id,
                 detail=refusal,
                 next_action=REMEDY,
-                section=section,
             ),
         )
     ):
@@ -138,8 +138,9 @@ def test_a_refused_launch_draws_no_dropped_row_and_no_second_queued_row() -> Non
     words = _words([(row, "") for row in drawn])
     assert "dropped" not in words
     # The refusal is the one row the launch attempt owes: the refusal and the
-    # remedy the classifier named. The re-queue under the fresh id adds no
-    # second row of its own, because the request's word never left queued.
+    # remedy the classifier named. The re-queue adds no second row of its own,
+    # because the request's word never left queued and the id it comes back
+    # under is the one the pane already holds the refusal against.
     assert len(drawn) == 1
     row = drawn[0]
     assert row.get(ticker.QUEUED_REFUSED_FIELD) is not None
@@ -192,33 +193,52 @@ def test_a_refusal_the_request_has_not_shown_before_is_named_again() -> None:
     assert len([row for row, _ in rows if row.get(ticker.QUEUED_REFUSED_FIELD)]) == 1
 
 
-def test_a_requeue_under_a_fresh_pointer_id_is_the_same_request() -> None:
-    """The re-queue's own pointer id does not make it a second request.
+def test_a_requeued_request_under_the_id_it_keeps_is_one_refusal() -> None:
+    """A second attempt of the same request does not restate the remedy.
 
-    The admission pass writes a refused request back as a fresh pointer, and the
-    pointer a later pass publishes need not carry the id the first one did. The
-    request is the work the session asked for, so the refusal is named once for
-    it: the rows state a different run id on the second attempt, and the pane
-    still draws one row.
+    The admission pass re-queues a refused request under the id the request
+    already carried, so both attempts publish that id: the pane holds the
+    refusal against it and draws nothing the second time, which is the duplicate
+    notification this node exists to remove.
     """
     pane = _Pane()
     first = _refused_launch(pane, "r-first", at=1000.0)
     assert len(first) == 1
-    second = _refused_launch(pane, "r-first", at=1100.0, requeue_id="r-second")
+    second = _refused_launch(pane, "r-first", at=1100.0)
     assert [row for row, _ in pane.flush(now=9000.0)] == []
     assert second == []
+
+
+def test_the_requeue_keeps_the_run_id_the_pane_keys_on() -> None:
+    """The identity the pane's once-only memory rests on is the queue's own.
+
+    ``_requeued_request`` is where a refused attempt becomes a queued pointer
+    again, and it writes the pointer back under the id the request already had.
+    A fresh id there would make one request read as two to the pane, so the
+    guard is asserted at the write rather than assumed from the row shape.
+    """
+    from reckon.crew.queue_admission import _requeued_request
+
+    request = {"project": PROJECT, "node": {"plan": PLAN, "id": NODE}}
+    restored = _requeued_request(request, "r-first")
+    assert restored["run_id"] == "r-first"
+    assert restored["phase"] == "queued"
+    # A copy, so the request the pass read is not mutated by the write.
+    assert "run_id" not in request
+    assert restored is not request
 
 
 def test_a_different_request_is_named_on_its_own_row() -> None:
     """Another request of the same session is not the refusal already given.
 
     The once-only memory belongs to the request, not to the pane: a second
-    request for another section carries its own refusal and names it, which is
-    what tells a coordinator which of two queued requests is stuck.
+    request, carrying its own run id from its own dispatch, names its own
+    refusal — which is what tells a coordinator which of two queued requests is
+    stuck.
     """
     pane = _Pane()
     assert len(_refused_launch(pane, "r-first", at=1000.0)) == 1
-    other = _refused_launch(pane, "r-third", at=1100.0, section="81")
+    other = _refused_launch(pane, "r-third", at=1100.0)
     assert len(other) == 1
     assert REFUSAL in str(other[0].get(ticker.QUEUED_REFUSED_FIELD))
 

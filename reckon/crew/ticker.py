@@ -620,24 +620,19 @@ def queued_refusal(event: Mapping[str, Any]) -> str:
     return detail
 
 
-def request_key(event: Mapping[str, Any]) -> str:
-    """What names one queued request across its re-queues.
+def refusal_key(event: Mapping[str, Any]) -> str:
+    """What names one queued request for the refusal the pane has already named.
 
-    A queue entry is the work a session asked for, not the pointer that carries
-    it: the queue refuses a second request for the same
-    (project, plan, section, node) and answers with the existing one, so those
-    four fields plus the session name a request for its whole life. The run id
-    is the fallback for a row that does not carry them — it is the identity the
-    admission pass preserves across a re-queue, and the only handle a bare row
-    has.
+    The run id, because a refused launch does not mint one: the admission pass
+    writes the request back under the id the request already carries, so the
+    attempts and the re-queues of one request all publish that id and a
+    different request publishes a different one. The queue's own record of a
+    request's identity is ``runs._node_identity`` — the plan, section and node
+    id a pointer names — and it is deliberately not read here: the classified
+    transition row carries the project, session, plan and node id and no
+    section, so composing that tuple from the row would restate a definition
+    this module does not own and read a field the row never has.
     """
-    fields = (
-        str(event.get(project_key) or "").strip()
-        for project_key in ("project", "plan", "section", "node", "session")
-    )
-    parts = tuple(fields)
-    if all(parts):
-        return "\x1f".join(parts)
     return str(event.get("run_id") or "")
 
 
@@ -1740,14 +1735,13 @@ class RowPolicy:
         # the state word, because a run's pane word passes through the review
         # and back; the attempt is what decides whether a delivery is fresh.
         self._launches: dict[str, int] = {}
-        # request key -> the refusal clauses this pane has already named for the
+        # run id -> the refusal clauses this pane has already named for that
         # request. A request refused again for the same reason carries the
         # remedy the reader already has, so the row is not news and prints
-        # nothing; a refusal the request has not shown before prints once.
-        # Keyed on the request rather than the pointer, because the admission
-        # pass writes a refused request back as a fresh pointer and a later
-        # launch may publish it under a new id: the request is the work the
-        # session asked for, which is what :func:`request_key` names.
+        # nothing; a refusal the request has not shown before prints once. The
+        # key is :func:`refusal_key`: the admission pass re-queues a refused
+        # request under the id it already had, so one request's attempts and
+        # re-queues share an id while two requests do not.
         self._refusals: dict[str, set[str]] = {}
 
     @property
@@ -2296,7 +2290,7 @@ class RowPolicy:
             # drop: the row that proves the request survived cancels it.
             self._departures.pop(run_id, None)
             self._held.pop(run_id, None)
-            seen = self._refusals.setdefault(request_key(event), set())
+            seen = self._refusals.setdefault(refusal_key(event), set())
             if refusal in seen:
                 return []
             seen.add(refusal)
