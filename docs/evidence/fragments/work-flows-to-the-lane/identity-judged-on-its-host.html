@@ -41,12 +41,12 @@
     ran on <code>all_debug</code>, one at a time, no <code>-n</code>.</caption>
     <thead><tr><th>arm</th><th>tree</th><th>result</th></tr></thead>
     <tbody>
-      <tr><td>base suite (new test copied in, and the staged-write inventory)</td>
+      <tr><td>base suite (the staged-write inventory only, the new test file not
+        existing at this revision)</td>
         <td><code>a4ca8b6c</code> as a detached worktree</td>
-        <td>3 failed, 52 passed, <code>EXIT=1</code> — the three arms that need
-        the host field, and no others</td></tr>
-      <tr><td>after suite (same two files)</td>
-        <td>worktree head <code>2b6a3006</code></td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>after suite (the new test and the staged-write inventory)</td>
+        <td>worktree head <code>2254607a</code></td>
         <td>55 passed, <code>EXIT=0</code></td></tr>
       <tr><td>negative control: the host field ignored in the sweep</td>
         <td><code>2b6a3006</code> with the declared mutation</td>
@@ -55,12 +55,12 @@
     </tbody>
   </table>
 
-  <p><strong>The base arm's failures are the ones this node removes.</strong>
-  All three name behaviour the base revision cannot have: keeping a foreign
-  host's file inside the bound, removing it beyond the bound, and refusing to
-  reclaim a claim held from another host. The fourth arm, a file naming this
-  host and a dead pid, passes at the base revision as well, because local
-  judgement there is already correct and this change leaves it untouched. The
-  counts in this table are the summary lines of the arm logs the run directory
-  holds.</p>
+  <p><strong>The negative control is what shows the check fires.</strong> With
+  the sweep's host branch replaced by <code>if False</code>, a foreign host's
+  file falls through to local pid judgement and is removed inside the bound —
+  the defect this change removes — and the captured stderr names that removal.
+  The fourth arm, a file naming this host and a dead pid, is removed at both
+  the head and the mutation, because local judgement there is already correct
+  and this change leaves it untouched. The counts in this table are the summary
+  lines of the arm logs the run directory holds.</p>
 </section>
