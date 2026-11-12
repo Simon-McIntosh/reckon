@@ -1,0 +1,67 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 1,
+  "call_sites": [
+    "reckon/crew/dispatch_claims.py:990 _claim_node_dispatch reclaim decision (from reckon/crew/dispatch.py:2912) and reckon/crew/gc.py:2129 sweep_exec_identities (python -m reckon.crew.gc --sweep-exec-identities)"
+  ],
+  "completed_at": "2026-11-11T23:05:56.634Z",
+  "dispatched_at": "2026-11-11T22:52:09Z",
+  "findings": [
+    {
+      "file": "tests/test_an_identity_is_judged_on_its_own_host.py",
+      "line": "64",
+      "severity": "non-blocking",
+      "text": "The beyond-the-bound test fails at the base revision on AttributeError for EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS rather than on a behaviour difference: the pre-change sweep already removed a foreign host's file whose pid is dead locally, so the assertion would have held at a4ca8b6c had the constant existed, and the landing fragment's claim that all three base failures name behaviour the base cannot have is not true of this one (it only guards the new code against keeping such a file forever)."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "614",
+      "severity": "non-blocking",
+      "text": "An identity file that cannot be read falls through to local pid judgement: read_exec_identity returns None and the host reads as unknown, so a foreign host's file whose token cannot be read is removed inside the bound when its pid is absent here \u2014 the same removal this node exists to prevent \u2014 while _foreign_identity_is_kept deliberately keeps a file whose stat fails. Both unreadable cases should keep the file."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T214015365474-identity-judged-on-its-host/manifest.md",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "rubric.risk asserts the two pre-existing identity test files pass unchanged, but no recorded arm ran them: head-arm.log covers only tests/test_an_identity_is_judged_on_its_own_host.py and tests/test_staged_write_inventory.py, so the compatibility of the pre-existing tests with the new `<host>\\n<token>` file format is a reading rather than a measurement."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatch_claims.py:990 reclaim decision inside _claim_node_dispatch (reached from reckon/crew/dispatch.py:2912), reckon/crew/gc.py:2129 sweep_exec_identities on the python -m reckon.crew.gc --sweep-exec-identities path",
+    "diff": "pass \u2014 read commit by commit against a4ca8b6c: 2b6a3006 changes the identity format, the sweep's foreign-host bound and the reclaim rule, and 2254607a adds only the landing fragment.",
+    "done_when": "pass \u2014 the done-when names tests/test_an_identity_is_judged_on_its_own_host.py; its four tests cover kept-inside-the-bound, removed-beyond-it, this-host dead pid removed, and the foreign claim not reclaimed at dispatch_claims.py:741-788.",
+    "goal": "pass \u2014 the goal is to record the publishing host in each execution identity and judge liveness only on that host; reckon/crew/dispatch_claims.py:642-657 writes `<host>\\n<token>` and both readers consume it.",
+    "manifest": "pass \u2014 read; it states the three arms with their logs, records 55 passed EXIT=0 at the head against 3 failed EXIT=1 at the base, and names the negative control log at its bare path.",
+    "write_paths": "pass \u2014 every path in the diff is among the declared reckon/crew/dispatch_claims.py, reckon/crew/gc.py, the new test and the landing fragment; the docs/figures path was not needed because the done-when names no artifact."
+  },
+  "justifications": {
+    "durability": "tests/test_an_identity_is_judged_on_its_own_host.py:55 fails if the sweep removes a foreign host's file inside the bound, which negative-control.log shows by reinstating that regression, and :81 and :100 fail if the sweep stops removing a this-host dead pid or if a foreign claim is reclaimed.",
+    "evidence": "reckon/crew/gc.py and reckon/crew/dispatch_claims.py arms are recorded in baseline-arm.log (3 failed, 52 passed, EXIT=1 at a4ca8b6c) and head-arm.log (55 passed, EXIT=0 at 2254607a), and the declared mutation is red in negative-control.log, but the beyond-the-bound failure at base is an AttributeError on the new constant rather than a behaviour difference.",
+    "fit": "the two public helpers at reckon/crew/dispatch_claims.py:614 and :629 follow the module's private-helper and prose-docstring idiom, and EXEC_IDENTITY_FOREIGN_HOST_MAX_AGE_SECONDS at reckon/crew/gc.py:526 is mechanism-named with no plan or ticket reference.",
+    "goal_fidelity": "reckon/crew/dispatch_claims.py:642-644 writes the publishing host above the token and reckon/crew/gc.py:613-626 keeps a foreign host's file inside the bound, so both readers named by the goal now judge on the host.",
+    "reuse": "the search over reckon/crew for an existing host-tagged identity reader found none: claims.py:456 and fleet_supervisor.py:292 hold host judgement for a run pointer and a short hostname, not for an identity file, so the change extends the one identity-file mechanism rather than forking a second.",
+    "scope_discipline": "git diff a4ca8b6c..2254607a touches only reckon/crew/dispatch_claims.py, reckon/crew/gc.py, tests/test_an_identity_is_judged_on_its_own_host.py and docs/evidence/fragments/work-flows-to-the-lane/identity-judged-on-its-host.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: pass \u2014 the goal is to record the publishing host in each execution identity and judge liveness only on that host; reckon/crew/dispatch_claims.py:642-657 writes the host above the token and both readers consume it.\nVERDICT done_when: pass \u2014 the done-when names tests/test_an_identity_is_judged_on_its_own_host.py, whose tests cover kept-inside-the-bound, removed-beyond-it, this-host dead pid removed and the foreign claim not reclaimed.\nVERDICT write_paths: pass \u2014 every path in the diff is inside the declared write paths; no figure was written because the done-when names no artifact.\nVERDICT manifest: pass \u2014 it records the three arms with their logs, 55 passed EXIT=0 at the head against 3 failed EXIT=1 at the base, and names the negative control log at its bare path.\nVERDICT diff: pass \u2014 2b6a3006 changes the identity format, the sweep's foreign-host bound and the reclaim rule; 2254607a adds only the landing fragment.\nCALL_SITES: reckon/crew/dispatch_claims.py:990 _claim_node_dispatch (from reckon/crew/dispatch.py:2912), reckon/crew/gc.py:2129 sweep_exec_identities (python -m reckon.crew.gc --sweep-exec-identities)\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 18\nSCORE fit: 18\nSCORE reuse: 19\n",
+  "review_run_id": "r-20261111T224736111945-review-of-identity-judged-on-its-host-2254607a7a0b",
+  "reviewed_base_sha": "a4ca8b6cb29c102e8b56c9e8eeec68b70be89c3b",
+  "reviewed_head_sha": "2254607a7a0b43c4e2943e9e5560195b2984c8a3",
+  "reviewed_run_id": "r-20261111T214015365474-identity-judged-on-its-host",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:01:50.665070+00:00",
+  "total": 111
+}
