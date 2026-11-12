@@ -5730,6 +5730,23 @@ def fair_share_admission_order(
     return priorities_first(order)
 
 
+def awaits_a_lane_slot(pointer: Mapping[str, Any]) -> bool:
+    """Whether this pointer is a request the pass has still to launch.
+
+    The queued phase is written when a request is stored and advanced when the
+    pass launches it, and the launch records ``launched_at`` on the pointer in
+    its own write. A pointer therefore carries both for as long as the phase
+    write has not followed: a run that has launched, and may have finished,
+    still reads ``queued``. Counting it as queued hides the run's real duty
+    behind a wait that is already over and publishes a queue place it no longer
+    holds, so a pointer carrying ``launched_at`` is never read as queued
+    whatever its phase says.
+    """
+    if str(pointer.get("phase") or "") != QUEUED_PHASE:
+        return False
+    return not (pointer.get("launched_at") or pointer.get("launch_recorded_at"))
+
+
 def queued_placements(
     pointers: Sequence[Mapping[str, Any]],
     *,
@@ -5769,7 +5786,7 @@ def queued_placements(
     queued = [
         pointer
         for pointer in pointers
-        if str(pointer.get("phase") or "") == QUEUED_PHASE
+        if awaits_a_lane_slot(pointer)
         and (not lane or str(pointer.get("backend") or "") == lane)
         and parse_utc(pointer.get("queued_at")) is not None
     ]

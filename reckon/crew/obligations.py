@@ -1056,7 +1056,19 @@ def _classified_rows(project: str) -> list[dict[str, Any]]:
     """
     rows: list[dict[str, Any]] = []
     for pointer in _live_pointers(project):
-        row = recovery.classify_pointer(pointer)
+        # A pointer whose phase still reads queued while it carries
+        # ``launched_at`` was launched and never had its phase advanced, so the
+        # queued phase says nothing about the run. Classifying it as stored
+        # hides the duty the run actually owes -- a finished run's promotion --
+        # behind a queue wait that is already over, so the phase is left for
+        # the classifier to read from the run's own manifest and process.
+        subject = pointer
+        if (
+            not queue_admission.awaits_a_lane_slot(pointer)
+            and str(pointer.get("phase") or "") == queue_admission.QUEUED_PHASE
+        ):
+            subject = {**pointer, "phase": ""}
+        row = recovery.classify_pointer(subject)
         refusal = _queued_contract_refusal(pointer, row)
         if refusal is not None:
             row["contract_refusal"] = refusal
