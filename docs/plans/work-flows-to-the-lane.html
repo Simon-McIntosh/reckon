@@ -10,7 +10,7 @@
   <meta name="plan-summary" content="The local lane offered 38 worker slots while 9 ran and 35 waited on coordinators; dispatch and landing stop waiting on coordinator bookkeeping.">
   <meta name="plan-status" content="active">
   <meta name="plan-roi" content="high">
-  <meta name="plan-effort-hours" content="17.0">
+  <meta name="plan-effort-hours" content="18.0">
   <meta name="plan-capability-version" content="1.0">
   <meta name="plan-capability-class" content="general">
   <meta name="plan-capability-reasoning" content="deep">
@@ -20,11 +20,11 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-section-depends-on" content="{&quot;s3&quot;:[&quot;a-gate-halts-only-on-substance#s7&quot;],&quot;s9&quot;:[&quot;work-flows-to-the-lane#s2&quot;,&quot;work-flows-to-the-lane#s3&quot;,&quot;work-flows-to-the-lane#s4&quot;,&quot;work-flows-to-the-lane#s5&quot;,&quot;work-flows-to-the-lane#s6&quot;]}">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;implementable&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;implementable&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;implementable&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;implementable&quot;}">
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="60">
+<meta name="plan-version" content="61">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -141,6 +141,10 @@
 <section data-reckon="section" data-id="s20" data-effort-hours="0.75" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Why.</strong> On 11 November the review of §11's run raised two blocking findings. One was an evidence fragment written one directory deeper than its declared path, existing only in the run's worktree. The other was suite arms recorded as prose in the run's manifest, under the crew home. The repair reflex declined the round as decline-only: <code>no finding cites a repository path among the 2 blocking finding(s)</code>. Both defects were the worker's to fix, and the run would otherwise have sat refused at landing until a coordinator resumed it by hand.</p><p><strong>Deliverable.</strong> A blocking finding that cites a path the run created in its own worktree, or the run's own manifest or logs, opens a repair round like one citing a path in the main checkout. A round is declined only when no blocking finding cites anything the run's worker can change, and the decline names each finding and why it is out of reach.</p><p><strong>Done when</strong> a new <code>tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py</code> shows, with a temporary repository and crew home: a blocking finding citing a file present only in the run's worktree opens a repair round; one citing the run's manifest opens one; and one citing a path outside both the repository and the run's directory is declined, naming that finding. Negative control: resolving paths against the main checkout alone makes the first case decline. The test files importing the modified modules add no failure against the base revision, measured on <code>all_debug</code>, one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/recovery_repair_dispatch.py</code>, <code>reckon/crew/repair.py</code> and the new test.</p>
 
+    <h2 id="s21">§21 — A landing reads the control the run recorded</h2>
+<section data-reckon="section" data-id="s21" data-effort-hours="1.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<p><strong>Why.</strong> Three of this plan's landings on 11 and 12 November were refused on the negative control, not on the code. §2's guard read a repair round's control log that kept only its exit line, while the run's first control log named both failing tests. §5's manifest named a lint log as its control log, while <code>negative-control.log</code> held the real run. §11's manifest named no control log at all, though <code>negative-control.log</code> in its run directory showed the declared mutation failing two tests. Each needed a coordinator waiver or a hand-edited manifest line. §17 made the landing measure mismatched suite arms; it does not cover the control.</p><p><strong>Deliverable.</strong> When the control log a manifest names is missing, names no failing test id, or is not a run of the declared mutation, the landing looks in the run's own directory for a log of the declared mutation that records a non-zero exit and at least one failing test id the head arm passes, and admits the control on that log, recording which log it used. When no such log exists, the landing runs the declared mutation itself on a compute partition, as §17 does for an arm, and admits or refuses on that run.</p><p><strong>Done when</strong> a new <code>tests/test_a_landing_reads_the_control_the_run_recorded.py</code> shows, with a temporary repository and crew home: a manifest naming a log with only an exit line, while the run directory holds a valid control log, is admitted on the valid log and records it; a manifest naming no control log is admitted on the run directory's valid log; a run with no valid control log anywhere has the landing run the mutation, admitting when it fails a test and refusing when it does not. Negative control: reading only the manifest-named log makes the first case refuse. The test files importing the modified modules add no failure against the base revision, measured on <code>all_debug</code>, one arm at a time with at most <code>-n 4</code>. Ruff check and ruff format --check add no findings on the staged paths. Write paths: <code>reckon/crew/promotion_evidence.py</code>, <code>reckon/crew/landing_measure.py</code> and the new test.</p>
+
     <section data-reckon="followups" id="followups" class="r-followups">
 <h2><span class="sec">§</span> Followups</h2>
 <article class="r-fu" data-id="f-wftl-001" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-create" data-written-at="2026-11-11" data-recommends-skill="/reckon-build work-flows-to-the-lane" data-resolved-at="2026-11-11T16:53:33+00:00" data-resolved-by="reckon-build">
@@ -155,10 +159,16 @@
     <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §10</pre>
     <p class="r-fu-outcome">superseded by f-wftl-003: sections 17 to 19 were added after this followup was written; sections 2, 4 and 5 have landed</p>
     </article>
-<article class="r-fu" data-id="f-wftl-003" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-11-11" data-recommends-skill="/reckon-build work-flows-to-the-lane §17" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wftl-003" data-status="resolved" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-11-11" data-recommends-skill="/reckon-build work-flows-to-the-lane §17" data-resolved-at="2026-11-12T05:30:23+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §3, §6 to §19</h4>
     <div class="r-fu-body"><p>§2, §4 and §5 have landed. §3 waits on <code>a-gate-halts-only-on-substance</code> §7; §9 waits on §2 to §6 and a window the coordinator opens; the rest, including §17, §18 and §19, are independent.</p></div>
     <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §17</pre>
+    <p class="r-fu-outcome">superseded by f-wftl-004: twelve sections have landed and section 21 was added</p>
+    </article>
+<article class="r-fu" data-id="f-wftl-004" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-build" data-written-at="2026-11-12" data-recommends-skill="/reckon-build work-flows-to-the-lane §21" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §3, §6, §9, §12, §14, §18, §20 and §21</h4>
+    <div class="r-fu-body"><p>§2, §4, §5, §7, §8, §10, §11, §13, §15, §16, §17 and §19 have landed. §6 and §18 are in review or repair. §3 waits on <code>a-gate-halts-only-on-substance</code> §7. §9 waits on §6 and a measurement window the coordinator opens. §12, §14, §20 and §21 are independent.</p></div>
+    <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §21</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
