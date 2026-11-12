@@ -312,6 +312,27 @@ def _promotion_host_lease(run_id: str) -> Iterator[HostLease]:
         lease.release()
 
 
+def _landing_checkout(
+    record: Mapping[str, Any], root: str | Path | None
+) -> Path | None:
+    """The checkout a promotion's landing commit would be written into.
+
+    Resolved the way the landing gate resolves it, so the early judgement of
+    the checkout's git state names the same repository the landing commit later
+    does: the project's registered mount decides it when one exists, and a run
+    whose record names none falls back to the repository the record carries.
+    """
+    project = str(record.get("project") or "")
+    landing_root: str | Path | None = root
+    if project and project_mount_repository(project) is not None:
+        landing_root = resolve_project_repository(project, root, flag="--checkout-path")
+    if landing_root is None:
+        landing_root = record.get("repo")
+    return (
+        Path(landing_root).expanduser().resolve() if landing_root is not None else None
+    )
+
+
 def complete(
     run_id: str,
     *,
@@ -406,6 +427,14 @@ def complete(
                     would_wait_for_pick=awaiting_pick,
                 )
             return _complete_withdrawn_run(run_id, record)
+        # Whether a landing commit can be written at all depends only on the
+        # checkout's git state, and nothing else promotion reads changes that
+        # answer. A checkout carrying a peer's open merge, rebase, cherry-pick
+        # or revert is refused here, before the ledger is read or any store is
+        # opened, rather than after the minutes of work whose only possible end
+        # is this same refusal — work that in a serial sweep delays every later
+        # promotion by as much.
+        _require_committable_checkout(_landing_checkout(record, root), run_id)
         # A run review delivers its record inside its own run directory and the
         # supervisor files it into the store when the worker ends. A supervisor
         # that died before that filing leaves the record where the reviewer
