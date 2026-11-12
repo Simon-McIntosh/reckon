@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:812 dispatch_repair_for_run",
+    "reckon/crew/recovery_repair_dispatch.py:1584 _repairable_scope round-opens decision via opening_reach",
+    "reckon/crew/recovery_repair_dispatch.py:1592 _decline_only_reason",
+    "reckon/crew/recovery_repair_dispatch.py:1609 _repairable_scope granted write scope via scope_reach"
+  ],
+  "commits_read": [
+    "d92af4764e53d3a7fe87c7a9cde75580e7f960b5",
+    "a559003295c208cff0ffe89aff6a2c4342c53f52"
+  ],
+  "completed_at": "2026-11-12T11:07:18.416Z",
+  "dispatched_at": "2026-11-12T10:58:45Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/finding-on-own-file-opens-its-repair.html",
+      "line": "37",
+      "severity": "non-blocking",
+      "text": "the fragment states the importer population ran \"266 passed at base and 266 passed at head\" at d92af4764, but the run's only importer logs (logs/baseline-importers.log and logs/after-importers.log, stamped 07:09 and 07:10, before the 08:54 refactor) carry no revision header, so a pre-refactor measurement is presented as head evidence and the done_when's importer clause is unmeasured at the landed head; nothing in the repository still references the removed _run_record_files, _within_tree or _cites_tree_or_file names, so the risk the arm would have covered is nil."
+    },
+    {
+      "file": "reckon/crew/repair.py",
+      "line": "550",
+      "severity": "non-blocking",
+      "text": "the deleted _within_tree wrapped both Path.resolve calls in an OSError guard returning False, so the predicate was total, while _cites_own_path resolves resolved_own and the cited candidate outside any guard; an unresolvable path in the run's own places now raises out of the review sweep's decline decision instead of declining the round, which is a narrow regression because a traceback replaces a recorded decline."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "four production call sites verified: recovery_review_acceptance.py:812 enters dispatch_repair_for_run, which builds opening_reach and scope_reach at recovery_repair_dispatch.py:1567-1568 and spends them on the two _repairable_scope calls at :1584 and :1609 and on _decline_only_reason at :1592.",
+    "diff": "read both commits against e82aa6bb; d92af4764 deletes _within_tree and _cites_tree_or_file, merges _run_record_files and the worktree lookup into _run_own_paths, adds _cites_own_path importing reckon._worker_fence._within_any, and repairs three docstrings, while a5590032 changes only the evidence fragment's measure paragraph.",
+    "done_when": "the done_when is the new test file's four cases plus a declared negative control, a zero-delta importer arm and no ruff findings on the staged paths; the manifest records after2-gate.log at d92af4764 (55 passed, EXIT=0), base2-gate.log at 38301b5 (51 passed, EXIT=0) and negative-control.log at d92af4764 (2 failed, 2 passed, EXIT=1), but the importer 266 figure rests on pre-refactor logs with no revision header and the ruff clause has no log at all.",
+    "goal": "the source node's goal is that a blocking finding citing a file the run created in its worktree, or the run's own manifest or logs, opens a repair round; the delta deletes repair.py's private _within_tree and defers containment to the fence's _within_any at reckon/crew/repair.py:545,550, while _run_own_paths still carries the worktree, the manifest and the run directory, so the goal's behaviour is preserved and the four cases still pass.",
+    "manifest": "read; status complete, commits c4ac026f2 through a5590032, base2-gate.log, after2-gate.log and negative-control.log named with measurement_module and measurement_cwd for the scratch-tree base arm, and the pre-existing red test at tests/test_a_decline_only_round_names_what_it_declined.py disclosed under outside_scope.",
+    "write_paths": "the four declared paths are reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py and the evidence fragment; git diff --stat e82aa6bb..a5590032 lists exactly those four files, 46 insertions and 61 deletions, and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:249-252 and :277-280 pair a len(calls)==1 and status==resumed assertion with the advice-text check, and negative-control.log shows those two cases reddening under the mutation at the landed head.",
+    "evidence": "after2-gate.log (55 passed, EXIT=0 at d92af4764) and negative-control.log (2 failed, 2 passed, EXIT=1 at d92af4764) are recorded and reconcile with the manifest, but the fragment at docs/evidence/fragments/work-flows-to-the-lane/finding-on-own-file-opens-its-repair.html:37 presents a 266-passed importer arm as head evidence when the only importer logs predate the refactor.",
+    "fit": "the added names _run_own_paths and _cites_own_path describe mechanism, and the lazy import at reckon/crew/repair.py:545 follows reckon/anchored_edit.py:161.",
+    "goal_fidelity": "reckon/crew/repair.py:563 and :582 route both reaches through the one _cites_own_path while _run_own_paths at :518 keeps the worktree, the manifest and the run directory, so no reach the goal names was dropped.",
+    "reuse": "the fourth copy of resolved containment named by the prior review is deleted and the reach now calls reckon/_worker_fence.py:1075 _within_any, the owner of the multi-root form, rather than re-implementing it.",
+    "scope_discipline": "git diff --stat e82aa6bb..a5590032 names exactly the four declared write paths and neither commit touches a plan or a state file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a blocking finding citing a file the run created in its worktree, or the run's own manifest or logs, opens a repair round; the delta deletes repair.py's private _within_tree and defers containment to the fence's _within_any at reckon/crew/repair.py:545,550, while _run_own_paths still carries the worktree, the manifest and the run directory, so the goal's behaviour is preserved and the four cases still pass.\nVERDICT done_when: the done_when is the new test file's four cases plus a declared negative control, a zero-delta importer arm and no ruff findings on the staged paths; the manifest records after2-gate.log at d92af4764 (55 passed, EXIT=0), base2-gate.log at 38301b5 (51 passed, EXIT=0) and negative-control.log at d92af4764 (2 failed, 2 passed, EXIT=1), but the importer 266 figure rests on pre-refactor logs with no revision header and the ruff clause has no log at all.\nVERDICT write_paths: the four declared paths are reckon/crew/recovery_repair_dispatch.py, reckon/crew/repair.py, tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py and the evidence fragment; git diff --stat e82aa6bb..a5590032 lists exactly those four files, 46 insertions and 61 deletions, and nothing outside them.\nVERDICT manifest: read; status complete, commits c4ac026f2 through a5590032, base2-gate.log, after2-gate.log and negative-control.log named with measurement_module and measurement_cwd for the scratch-tree base arm, and the pre-existing red test at tests/test_a_decline_only_round_names_what_it_declined.py disclosed under outside_scope.\nVERDICT diff: read both commits against e82aa6bb; d92af4764 deletes _within_tree and _cites_tree_or_file, merges _run_record_files and the worktree lookup into _run_own_paths, adds _cites_own_path importing reckon._worker_fence._within_any, and repairs three docstrings, while a5590032 changes only the evidence fragment's measure paragraph.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:812 dispatch_repair_for_run, reckon/crew/recovery_repair_dispatch.py:1584 _repairable_scope round-opens decision via opening_reach, reckon/crew/recovery_repair_dispatch.py:1592 _decline_only_reason, reckon/crew/recovery_repair_dispatch.py:1609 _repairable_scope granted write scope via scope_reach\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/repair.py:563 and :582 route both reaches through the one _cites_own_path while _run_own_paths at :518 keeps the worktree, the manifest and the run directory, so no reach the goal names was dropped.\nSCORE evidence: 14\nJUSTIFICATION evidence: after2-gate.log (55 passed, EXIT=0 at d92af4764) and negative-control.log (2 failed, 2 passed, EXIT=1 at d92af4764) are recorded and reconcile with the manifest, but the fragment at docs/evidence/fragments/work-flows-to-the-lane/finding-on-own-file-opens-its-repair.html:37 presents a 266-passed importer arm as head evidence when the only importer logs predate the refactor.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e82aa6bb..a5590032 names exactly the four declared write paths and neither commit touches a plan or a state file.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_finding_on_a_runs_own_file_opens_its_repair.py:249-252 and :277-280 pair a len(calls)==1 and status==resumed assertion with the advice-text check, and negative-control.log shows those two cases reddening under the mutation at the landed head.\nSCORE fit: 19\nJUSTIFICATION fit: the added names _run_own_paths and _cites_own_path describe mechanism, and the lazy import at reckon/crew/repair.py:545 follows reckon/anchored_edit.py:161.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fourth copy of resolved containment named by the prior review is deleted and the reach now calls reckon/_worker_fence.py:1075 _within_any, the owner of the multi-root form, rather than re-implementing it.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/finding-on-own-file-opens-its-repair.html:37 non-blocking: the fragment states the importer population ran \"266 passed at base and 266 passed at head\" at d92af4764, but the run's only importer logs (logs/baseline-importers.log and logs/after-importers.log, stamped 07:09 and 07:10, before the 08:54 refactor) carry no revision header, so a pre-refactor measurement is presented as head evidence and the done_when's importer clause is unmeasured at the landed head; nothing in the repository still references the removed _run_record_files, _within_tree or _cites_tree_or_file names, so the risk the arm would have covered is nil.\nFINDING reckon/crew/repair.py:550 non-blocking: the deleted _within_tree wrapped both Path.resolve calls in an OSError guard returning False, so the predicate was total, while _cites_own_path resolves resolved_own and the cited candidate outside any guard; an unresolvable path in the run's own places now raises out of the review sweep's decline decision instead of declining the round, which is a narrow regression because a traceback replaces a recorded decline.\n",
+  "review_run_id": "r-20261112T105655465934-review-of-finding-on-own-file-opens-repair-a559003295c2",
+  "review_scope": "the commits the run gained since its head was last reviewed at e82aa6bb9769615fecb7bf8ee34ca3589579f1e5",
+  "reviewed_base_sha": "e82aa6bb9769615fecb7bf8ee34ca3589579f1e5",
+  "reviewed_head_sha": "a559003295c208cff0ffe89aff6a2c4342c53f52",
+  "reviewed_run_id": "r-20261112T053157549848-finding-on-own-file-opens-repair",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "raw_text": "",
+    "reviewer_run_id": "r-20261112T105655465934-review-of-finding-on-own-file-opens-repair-a559003295c2"
+  },
+  "reviewer_run_id": "r-20261112T105655465934-review-of-finding-on-own-file-opens-repair-a559003295c2",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:47:34.029300+00:00",
+  "total": 110
+}
