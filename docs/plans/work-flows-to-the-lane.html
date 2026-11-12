@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="54">
+<meta name="plan-version" content="56">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -186,6 +186,9 @@
 <div class="r-comment" data-section="s13" data-id="c-run-r-20261111T231623205497-review-of-refused-review-writes-nothing-bd99c3d11ef5" data-who="reckon-build" data-when="2026-11-11T23:48:13.510Z">
     <div class="r-comment-body"><p>review record for r-20261111T185754655706-refused-review-writes-nothing at head bd99c3d11e: status parsed, six dimension scores (goal_fidelity 17, evidence 12, scope_discipline 20, durability 17, fit 14, reuse 5), added_failure_count 0, and two findings — one blocking (ruff format --check fails on tests/test_a_refused_plan_review_writes_nothing.py:106) and one non-blocking (plan_review._review_launch_kind duplicates routing.resolve_role's backend selection).</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261112T015333388111-review-of-refused-review-writes-nothing-14f72d0d357f" data-who="reckon-build" data-when="2026-11-12T02:15:48.775Z">
+    <div class="r-comment-body"><p>Review of run r-20261111T185754655706-refused-review-writes-nothing at head 14f72d0d357f (gained commit 14f72d0d35 only, base bd99c3d11e): parses, scores goal_fidelity 18, evidence 15, scope_discipline 20, durability 19, fit 18, reuse 20, added_failure_count 0, and records two non-blocking findings — the guard resolves the review role without the dispatch&#x27;s spec_level, and the done_when&#x27;s importer arms were measured one commit before the reviewed head.</p></div>
+</div>
 <div class="r-comment" data-section="s15" data-id="c-run-r-20261111T185831299202-plan-commit-releases-backoff" data-who="reckon-build" data-when="2026-11-11T19:58:35.509Z">
     <div class="r-comment-body"><p>§15 — a plan commit releases the requests backing off on it: `reckon/crew/queue_admission.py` now records the plan's committed blob at HEAD (`failure_plan_commit`) when a launch refusal is a `PlanVisibilityError`, and `_retry_backoff_hold` attempts the request on the pass that finds it changed, before `retry_at`; the stamp is kept only for that refusal so any other failure keeps its back-off. Gate `tests/test_a_plan_commit_releases_its_backed_off_requests.py` 3 passed, `EXIT=0`, against 1 failed / `EXIT=1` under the declared mutation; suite arms base 51 passed `EXIT=0`, head 54 passed `EXIT=0`.</p></div>
 </div>
@@ -290,6 +293,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s18" data-id="c-run-r-20261112T005735714647-review-of-worktree-leaves-shared-config-4e51a70c77d9" data-who="reckon-build" data-when="2026-11-12T01:12:37.122Z">
+    <div class="r-comment-body"><p>Independent review of r-20261111T213729775225-worktree-leaves-shared-config over bf5030fbe80d8b99a0bf3ae8a7553466e169da62..4e51a70c77d97d4c19e52321e28d85789263eac6: parsed record scoring goal_fidelity 18, evidence 16, scope_discipline 18, durability 18, fit 17, reuse 5 (total 92), added_failure_count 0 over base arm 4 failed/51 passed at bf5030f and head arm 55 passed at f782679b0d, with two non-blocking findings — the lock-wait loop at routing.py:2422 duplicates merge.py:658's bounded-lock-wait owner, and the retry at routing.py:2432 keys on git's stderr prose though the lock path is already resolved at :2390. No blocking finding; the node's done_when is met.</p></div>
 </div>
 </section>
 </main>
