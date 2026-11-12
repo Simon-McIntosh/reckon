@@ -1,0 +1,68 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "7df41b097fc942b6f2f24e2366183264052d97e5",
+  "call_sites": [
+    "reckon/crew/dispatch_batch.py:748 _queue_batch -> dispatch.queue_requests per entry",
+    "reckon/crew/queue_admission.py:4257 queue_requests -> dispatch.queue_requests",
+    "reckon/crew_dispatch_commands.py:1581 _queue_dispatch_batch (crew dispatch --batch)"
+  ],
+  "completed_at": "2026-11-11T22:50:54.880Z",
+  "dispatched_at": "2026-11-11T22:19:08Z",
+  "findings": [
+    {
+      "file": "tests/test_a_batch_entry_faces_the_write_scope_check.py",
+      "line": "46",
+      "severity": "non-blocking",
+      "text": "the local helper _direct_refusal rebuilds the same crew dispatch --dry-run argv from the same (entry, repository) pair that tests/test_every_path_meets_the_node_contract.py:195 _dry_run already builds in the module this test imports three other helpers from, so a new dispatch flag now has to be added in two places; it duplicates rather than extends that owner and could be folded into it."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-faces-the-write-scope-check-a-direct-dispatch.html",
+      "line": "15",
+      "severity": "non-blocking",
+      "text": "the head importer arm adds two failure ids against the base, and the timing attribution rests on a '12 passed in 11.9 s' alone-run that has no log path among the manifest's test_logs, so a promotion reviewer cannot open the receipt for the claim that neither id is a real regression."
+    }
+  ],
+  "head_log_revision": "8daa9d4043cd173b69ff320c9cac03f260bb0ce8",
+  "item_verdicts": {
+    "call_sites": "traced the production runtime callers of queue_requests: reckon/crew/dispatch_batch.py:748 (batch entry path), reckon/crew/queue_admission.py:4257 (staged-write-stamping wrapper), reached from reckon/crew_dispatch_commands.py:1581 (crew dispatch --batch).",
+    "diff": "read all three commits against 7df41b097f: 8daa9d4043 the product change and test, 28740df205 and d65bb493b4 the landing fragment's record and its wider importer arm, 161 insertions and no deletions anywhere.",
+    "done_when": "read the section done-when (gate test with its negative control, importer tests adding no failure against the base at -n 4 on all_debug, ruff clean): baseline-arm.log 51 passed and after-arm.log 53 passed both EXIT=0, after-arm.log and negative-control.log are on disk under the run directory, and ruff check with a writable cache reports 'All checks passed!' on both staged paths.",
+    "goal": "read the node goal 'A batch entry faces the write-scope check a direct dispatch does' against the diff: reckon/crew/dispatch.py:343-345 adds exactly that check to queue_requests, on the authority a launch resolves.",
+    "manifest": "read the run's manifest.md: status complete, gate command named, seven logs listed, the negative control named with its red log, and the two added wide-arm ids attributed to timing; the alone-pass run it cites has no log path in the manifest.",
+    "write_paths": "read the declared write paths reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, tests/test_a_batch_entry_faces_the_write_scope_check.py and the plan's evidence fragment and figures directories: every path in the diff is inside them and crew_dispatch_commands.py was left untouched because it needed no change."
+  },
+  "justifications": {
+    "durability": "the negative control in negative-control.log wraps the added call in 'if False' and the test reddens with {'ok': True, 'queued': 1, 'refused': 0}, so the guard is proved to fire rather than assumed; the equality assertion at tests/test_a_batch_entry_faces_the_write_scope_check.py:118 compares two independently produced strings, the batch row against the dry-run CLI's own detail.",
+    "evidence": "baseline-arm.log reads 51 passed EXIT=0 at 7df41b097f and after-arm.log 53 passed EXIT=0 at 8daa9d4043, and wide-fail-base.txt vs wide-fail-after.txt differ by exactly two ids whose alone-pass run has no log on disk, so one of them (test_crew_tool_carries_the_write_verbs.py::test_each_action_matches_its_cli_verb[queue-drop]) was re-run here and passes alone at head.",
+    "fit": "reckon/crew/dispatch.py:338-345 comments state the mechanism and why the check belongs at queue time, matching the surrounding loop's prose style, and no added name carries a plan, phase or plan-section label.",
+    "goal_fidelity": "reckon/crew/dispatch.py:343-345 runs _require_write_paths_in_authority on the authority a launch resolves before the admission findings and before queue_one stores anything, so the batch entry is refused at queue time in the same sentence the direct path emits (verified equal by probe: both sides read 'write path ... resolves outside the authorised work repository').",
+    "reuse": "the production change extends the owner (reckon/crew/dispatch_admission.py:2103 _require_write_paths_in_authority) rather than forking it, but the added test helper _direct_refusal... see finding: tests/test_a_batch_entry_faces_the_write_scope_check.py:46 duplicates tests/test_every_path_meets_the_node_contract.py:195 _dry_run, so the rubric's at-most-5 clause applies.",
+    "scope_discipline": "git diff 7df41b097f d65bb493b4 shows only reckon/crew/dispatch.py (+9), tests/test_a_batch_entry_faces_the_write_scope_check.py (new, 133) and the landing fragment (+19), all inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch entry faces the write-scope check a direct dispatch runs; reckon/crew/dispatch.py:343-345 adds exactly that call, and the equality probe shows both paths emit the identical refusal sentence.\nVERDICT done_when: the section done-when is the gate test with its negative control, the importer population adding no failure against the base at -n 4 on all_debug, and ruff clean; baseline-arm.log reads 51 passed EXIT=0 at 7df41b097f, after-arm.log 53 passed EXIT=0 at 8daa9d4043, negative-control.log is red EXIT=1, and ruff reports no findings on both staged paths.\nVERDICT write_paths: the declared scope is reckon/crew/dispatch.py, reckon/crew_dispatch_commands.py, tests/test_a_batch_entry_faces_the_write_scope_check.py and the plan's landing fragment and figure directories; git diff 7df41b097f d65bb493b4 touches only dispatch.py (+9), the new test (133) and the landing fragment (+19), all inside it.\nVERDICT manifest: read; it records status complete, the gate command and result on both revisions, seven logs on disk, the negative control, and a timing attribution for the two wide-arm ids that cites no log.\nVERDICT diff: read commit by commit against 7df41b097f; three commits, three files, 161 insertions and no deletions, and the product change calls the existing fence instead of adding a parallel rule.\nCALL_SITES: reckon/crew/dispatch_batch.py:748 _queue_batch, reckon/crew/queue_admission.py:4257 queue_requests, reckon/crew_dispatch_commands.py:1581 _queue_dispatch_batch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:343-345 calls _require_write_paths_in_authority on the authority a launch resolves, before the admission findings and before any pointer is written.\nSCORE evidence: 17\nJUSTIFICATION evidence: the two gate arms (51 passed EXIT=0 at 7df41b097f, 53 passed EXIT=0 at 8daa9d4043) and the red negative control are on disk, but the alone-pass receipt behind the two added wide-arm ids is not logged.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/dispatch.py, tests/test_a_batch_entry_faces_the_write_scope_check.py, the landing fragment) is inside the declared write paths named in the manifest.\nSCORE durability: 19\nJUSTIFICATION durability: the negative control recorded in negative-control.log wraps the added call in 'if False' and the batch test reddens with {'ok': True, 'queued': 1, 'refused': 0}, so the guard is shown to fire on exactly the regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment at reckon/crew/dispatch.py:338-345 states the mechanism in the surrounding loop's own idiom and no added name or comment carries a plan or phase label.\nSCORE reuse: 5\nJUSTIFICATION reuse: the production change extends the owner at reckon/crew/dispatch_admission.py:2103, but the added helper at tests/test_a_batch_entry_faces_the_write_scope_check.py:46 duplicates tests/test_every_path_meets_the_node_contract.py:195 _dry_run, which is the rubric's at-most-5 case.\nFINDING tests/test_a_batch_entry_faces_the_write_scope_check.py:46 non-blocking: _direct_refusal duplicates the entry-preview argv builder tests/test_every_path_meets_the_node_contract.py:195 _dry_run rather than extending it, so a new dispatch flag must now be added in two places.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-batch-entry-faces-the-write-scope-check-a-direct-dispatch.html:15 non-blocking: the timing attribution for the two added importer failure ids cites a 12-passed alone run with no log among the manifest's test_logs, so the receipt for the claim cannot be opened.\n",
+  "review_run_id": "r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6",
+  "reviewed_base_sha": "7df41b097fc942b6f2f24e2366183264052d97e5",
+  "reviewed_head_sha": "d65bb493b4d6ac56654c115acf229e2b901882d8",
+  "reviewed_run_id": "r-20261111T204312623665-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "review_run_id": "r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6"
+  },
+  "reviewer_run_id": "r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:04:04.543352+00:00",
+  "total": 100
+}

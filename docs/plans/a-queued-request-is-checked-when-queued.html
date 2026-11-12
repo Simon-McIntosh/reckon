@@ -20,12 +20,12 @@
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="reckon-tooling,crew">
   <meta name="plan-after" content="work-is-never-stuck-behind-the-admission-loop">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;implementable&quot;,&quot;s11&quot;:&quot;implementable&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;implementable&quot;,&quot;s6&quot;:&quot;implementable&quot;,&quot;s7&quot;:&quot;implementable&quot;,&quot;s8&quot;:&quot;implementable&quot;,&quot;s9&quot;:&quot;done&quot;}">
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="52">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="53">
+<meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -162,6 +162,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261108T232922624067-a-batch-derives-an-absolute-write-path" data-who="reckon-build" data-when="2026-11-09T00:51:53Z">
     <div class="r-comment-body"><p>landing: §9 keeps a leading slash in a derived write path, keeps a `./` prefix relative rather than reading its slash as a root, and refuses at queue time both a derived relative path that resolves nowhere and any path carrying a `..` segment; the gate `tests/test_a_batch_derives_an_absolute_write_path.py` reports 5 passed at head with each of its four negative controls red, the importers of `reckon.crew.dispatch_batch` report 20 passed at `cd1b826f2b`, and the supplied two-file suite reports 7 passed at base `5c474bd0e8` and 8 passed at the delivered head</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6" data-who="reckon-build" data-when="2026-11-11T22:50:54.880Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261111T204312623665 (a-batch-entry-faces-the-write-scope-check-a-direct-dispatch, 7df41b097f..d65bb493b4): parsed record, scores goal_fidelity 20 / evidence 17 / scope_discipline 20 / durability 19 / fit 19 / reuse 5, no blocking finding — the batch queue path now runs the same write-scope fence the direct dispatch runs (single test re-run here: 2 passed), verified red under the worker&#x27;s negative control; two non-blocking findings: the new test helper duplicates an existing dry-run argv builder, and the timing attribution for the two added importer ids has no alone-run log on disk.</p></div>
 </div>
 </section>
 </main>
