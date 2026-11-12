@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="638">
+<meta name="plan-version" content="639">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -1649,6 +1649,9 @@
 <div class="r-comment" data-section="s72" data-id="c-run-r-20261112T104739253000-an-open-git-operation-refuses-a-promotion-before-its-work" data-who="reckon-build" data-when="2026-11-12T11:19:12.244Z">
     <div class="r-comment-body"><p>An open merge, rebase, cherry-pick or revert now refuses at the top of `complete`, before any ledger read or store construction; the new test drives `crew complete --gate not-run` over a 200-run crew home and measures zero ledger loads and zero run-store constructions before the refusal, against two ledger loads at base.</p></div>
 </div>
+<div class="r-comment" data-section="s74" data-id="c-run-r-20261112T194338617413-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-c203e0e247e1" data-who="reckon-build" data-when="2026-11-12T20:05:33.858Z">
+    <div class="r-comment-body"><p>Reviewed r-20261112T191137457543 at base d2e5fb667e..head c203e0e247: the deferral meets the goal (a promotion returns without waiting on its copy's deletion) but two blocking findings hold it — the hourly retention_sweep never calls the worktree trash sweep, so deferred copies are never reclaimed by a recurring service, and gate-head.log carries no pytest summary or EXIT= line, leaving the head gate's status unreadable.</p></div>
+</div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261013T020049137583-review-of-one-read-walks-the-tree-once-bfef50fdf25b" data-who="reckon-build" data-when="2026-10-13T02:11:18.051Z">
     <div class="r-comment-body"><p>the review for r-20261013T013021469313-one-read-walks-the-tree-once is stored as a parsed record scoring all six dimensions (total 107/120: goal_fidelity 20, evidence 13, scope_discipline 20, durability 19, fit 16, reuse 19) recording reviewed_base_sha f43062fc8bbedba891a3522e2ffce306ee31b86c and reviewed_head_sha bfef50fdf25bbc9c93105d59986a9d0bd01beef2 with added_failure_count 0 and added_failure_ids [], and carrying one blocking finding (the head gate log cited by after_suite is truncated, its summary and EXIT= line lost to a redundant re-run cancelled at 02:00:19Z) and one follow-on finding (the head revision recorded in after_suite names neither the tree the figure was measured on).</p></div>
 </div>
@@ -1664,8 +1667,8 @@
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-10-13T00:25:00Z">
     <div class="r-comment-body"><p>§9 landed. The cold time is the plan parse, repeated five or six times per file through four memo kinds, each building its own soup. §11 carries the fix. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s9-cold-attribution">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s74" data-id="c-run-r-20261112T194338617413-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-c203e0e247e1" data-who="reckon-build" data-when="2026-11-12T20:05:33.858Z">
-    <div class="r-comment-body"><p>Reviewed r-20261112T191137457543 at base d2e5fb667e..head c203e0e247: the deferral meets the goal (a promotion returns without waiting on its copy&#x27;s deletion) but two blocking findings hold it — the hourly retention_sweep never calls the worktree trash sweep, so deferred copies are never reclaimed by a recurring service, and gate-head.log carries no pytest summary or EXIT= line, leaving the head gate&#x27;s status unreadable.</p></div>
+<div class="r-comment" data-section="s75" data-id="c-run-r-20261112T195500222423-review-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597" data-who="reckon-build" data-when="2026-11-12T20:10:13.135Z">
+    <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once at head 4c28ca09b597 scores goal_fidelity 18, evidence 12, scope_discipline 19, durability 13, fit 17, reuse 5, with one blocking finding — the fleet half of the parity assertion in the landed test compares two empty (None, 0) readings and cannot fail — and three non-blocking findings on forked test helpers, the unrecorded all_debug partition, and an unlogged second mutant; the record is stored at review-records/ under the reviewed run&#x27;s directory</p></div>
 </div>
 </section>
 </main>
