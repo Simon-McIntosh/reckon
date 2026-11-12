@@ -5,6 +5,7 @@ import fnmatch as fnmatch
 import hashlib as hashlib
 import inspect as inspect
 import json as json
+import math as math
 import os as os
 import re as re
 import shlex as shlex
@@ -4003,27 +4004,44 @@ def drop_watch_seat(project: str, handle: Any) -> None:
 WATCH_SEAT_LOST_EXIT = 75
 
 
+def watch_lease_remaining_from_record(
+    record: Mapping[str, Any],
+    *,
+    now: float | None = None,
+    lease_seconds: float | None = None,
+) -> float | None:
+    """Seconds left from a captured producer registration and an epoch clock.
+
+    Missing or non-finite renewal timestamps establish no expiry. Supplying
+    ``now`` judges an already captured snapshot without another clock or file
+    read. ``lease_seconds`` preserves an interval captured when taking a seat.
+    """
+    value = record.get("lease_renewed_at")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    try:
+        renewed = float(value)
+    except OverflowError:
+        return None
+    if not math.isfinite(renewed):
+        return None
+    interval = producer_lease_seconds() if lease_seconds is None else lease_seconds
+    instant = _utc_epoch_seconds() if now is None else now
+    return interval - (instant - renewed)
+
+
 def watch_lease_remaining(
     project: str, *, lease_seconds: float | None = None
 ) -> float | None:
-    """Seconds left on the producer's own lease, or None with no instant recorded.
+    """Read seconds left on a producer lease, or None without a known renewal.
 
-    The single lapse predicate: the producer's tick, its wait between polls and
-    the renewal itself all read this, so no two of them can disagree about when
-    a lease has fallen behind. ``lease_seconds`` lets a caller that captured the
-    interval when the seat was taken keep using it.
-
-    The producer writes the instant when it takes the seat, and every live
-    follower pushes it forward on its wait pass. A registration with no instant
-    at all is not a lapsed one — the file may simply have gone missing, which a
-    later wake-up recreates — so only a recorded instant that has fallen a full
-    interval behind ends the seat.
+    The producer's tick, wait and renewal share the snapshot calculation with
+    readers of captured registrations. Only a recorded instant that has fallen
+    a full interval behind establishes expiry.
     """
-    renewed = watch_lease_renewed_at(project)
-    if renewed is None:
-        return None
-    interval = producer_lease_seconds() if lease_seconds is None else lease_seconds
-    return interval - (_utc_epoch_seconds() - renewed)
+    return watch_lease_remaining_from_record(
+        read_watch_registration(project), lease_seconds=lease_seconds
+    )
 
 
 def watch_lease_lapsed(project: str) -> bool:
