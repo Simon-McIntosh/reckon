@@ -1365,9 +1365,9 @@ def _receipt_mismatches(
     """Name every figure in a suite arm the cited log does not agree with.
 
     The arm is the receipt: the exit status, the failure count and the failure
-    ids a worker asserted for one gate. The log is the evidence. What the receipt
-    describes depends on how its runner writes a log. A pytest
-    log holding two runs holds two attempts at one suite, so its figures are the
+    ids a worker asserted for one gate. The log is the evidence. What the
+    receipt describes depends on how its runner writes a log. A pytest log
+    holding two runs holds two attempts at one suite, so its figures are the
     last run's, the one the status comes from: a receipt copied from the first
     run's figures beside the second run's status passes every check that reads
     only the tail. A ctest gate runs ctest once per label into one log, so its
@@ -1397,8 +1397,8 @@ def _receipt_mismatches(
         measured = _log_failure_count(read_text)
         if measured is not None and measured != recorded_count:
             mismatches.append(
-                f"its failure_count records {recorded_count} and the log's last "
-                f"run names {measured} failed or errored test(s)"
+                f"its failure_count records {recorded_count} and the log names "
+                f"{measured} failed or errored test(s)"
             )
     recorded_ids = arm.get("failure_ids")
     if isinstance(recorded_ids, list) and all(
@@ -1409,14 +1409,14 @@ def _receipt_mismatches(
             matched = review_module.failure_ids_match(recorded_ids, log_ids)
             if matched.unmatched_head:
                 mismatches.append(
-                    "the log's last run reports "
+                    "the log reports "
                     f"{sorted(matched.unmatched_head)!r}, which its failure_ids "
                     "do not cover"
                 )
             if matched.unmatched_base:
                 mismatches.append(
                     f"its failure_ids name {sorted(matched.unmatched_base)!r}, "
-                    "which the log's last run does not report"
+                    "which the log does not report"
                 )
     return mismatches
 
@@ -1547,9 +1547,9 @@ def _require_gate_log_agrees(
             f"{log_path!r} does not agree with the {arm_name} arm that "
             f"describes it: {'; '.join(mismatches)}. Found: a receipt figure "
             "that disagrees with its log. The arm and the log are two records "
-            "of one run, so a figure only the first of two runs in the log "
-            "could produce is a receipt copied from that run. Correct the arm "
-            "to the last run's figures, or re-run the gate into its own log"
+            "of one gate, and a figure only one part of the log could produce "
+            "is a receipt copied from another. Correct the arm to the figures "
+            "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
     if _PYTEST_COMMAND.search(command):
