@@ -243,6 +243,7 @@ def test_a_missing_snapshot_invalidates_the_shared_decision(queued_edit, monkeyp
 def test_an_unpersisted_decision_is_reported_as_unknown(queued_edit, monkeypatch):
     from reckon import metadata_index
 
+    monkeypatch.setattr(review_need, "judge", lambda *_args, **_kwargs: {})
     monkeypatch.setattr(metadata_index, "_write_persisted_memo", lambda *_args: None)
     response = _edit(queued_edit)
     assert response["review_owed"] is None
