@@ -1,0 +1,65 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: after_suite (after-arm.log at 36ddd1cf6a) records 59 passed EXIT=0 with no FAILED line, baseline_suite (base-arm.log at 7aa21029e0) records 55 passed EXIT=0 with no FAILED line, so the set difference over the node's declared gate is empty. The wider importers arm (importers-arm.log) shows 3 failed of 210 selected at head against tests/test_crew.py and tests/test_closure_fence_agreement.py, which assert the refusal this node removes; those are recorded under the reviewed manifest's outside_scope and are outside the node's declared gate, so they are not counted here. I re-ran the node's named test file at the reviewed head and saw 4 passed in 19.15s, and ruff check --no-cache plus ruff format --check over the three changed Python paths reported all checks passed and 3 files already formatted.",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:2269 (crew_dispatch passes unreconciled_override=allow_unreconciled_runs into dispatch)",
+    "reckon/crew/queue_admission.py:461 (admission launch passes unreconciled_override=True; now only sets source=admission-launch)",
+    "reckon/crew/promotion.py:1703 (promotion copies dispatch_field(record, 'unreconciled_override') onto the ledger row)",
+    "reckon/crew/plan_review.py:5824 (plan-review dispatch passes unreconciled_override=True)",
+    "reckon/crew/plan_review.py:6574 (plan-review re-dispatch passes unreconciled_override=True)",
+    "reckon/crew/recovery_review_dispatch.py:3419 (review re-dispatch passes allow_unreconciled_runs through)",
+    "reckon/crew_dispatch_commands.py:1942 (CLI drops the flag into dispatch_options)"
+  ],
+  "completed_at": "2026-11-12T17:21:14.735Z",
+  "dispatched_at": "2026-11-12T17:13:43Z",
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "2122",
+      "severity": "non-blocking",
+      "text": "non-blocking: tests/test_crew.py:2122 test_dispatch_refuses_every_unreconciled_run_past_the_grace, tests/test_crew.py:2209 test_cli_dispatch_reports_unreconciled_runs_on_its_own_exit_code and tests/test_closure_fence_agreement.py:207 test_dispatch_refuses_only_the_unreconciled_subset still assert the refusal the landed change removes and are red at head (importers-arm.log: 3 failed, 207 deselected; the cli case fails with 'assert 8 == 6'). They are outside the node's write fence and are correctly recorded under outside_scope rather than edited, but the project suite is red at the reviewed head until a node rewrites them to assert the recorded backlog."
+    },
+    {
+      "file": "reckon/crew/dispatch_plan.py",
+      "line": "1291",
+      "severity": "non-blocking",
+      "text": "non-blocking: _session_unreconciled_refusal at reckon/crew/dispatch_plan.py:1291 now has no caller anywhere in reckon/ after reckon/crew/dispatch.py dropped its only use, yet it is still re-exported at reckon/crew/dispatch.py:4265. It is the builder for the refusal this change removes, so its removal was implied by the goal and leaving it keeps a dead public name alive."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 7aa21029e0 to 6da1c0a4ed; two commits, 36ddd1cf6a carries the dispatch.py hunk (refusal raise and inline waiver dict replaced by _recorded_backlog and queue_requests writing the backlog onto each stored request) plus the two test files, and 6da1c0a4ed adds only the 52-line landing fragment.",
+    "done_when": "the done_when names a new test with four cases plus a negative control and a no-added-failure arm; tests/test_a_dispatch_is_not_refused_on_its_backlog.py:162,190,212,227 cover the direct dispatch, the batch entry, the no-backlog case and the surviving obligation, the negative control declares the reinstated refusal, and after-arm.log records 59 passed EXIT=0 against base-arm.log 55 passed EXIT=0.",
+    "goal": "the node goal is to let a direct dispatch and a queue-time check succeed for a session holding overdue unreconciled runs while recording that backlog on the run; reckon/crew/dispatch.py:1664 _recorded_backlog returns the session's overdue rows and reckon/crew/dispatch.py:3403 writes them to the run record as unreconciled_override, with the refusal raise at reckon/crew/dispatch.py:2050 removed, so both routes succeed and record.",
+    "manifest": "read; it reports status complete, a head gate of 59 passed against 55 passed at base, a negative control of 4 failed and 4 passed, ruff and the field contract under evidence_inputs, and names four logs on disk which I opened and confirmed match those figures.",
+    "write_paths": "the manifest declares reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the two test files, the landing fragment and an unused figure directory; the diff touches dispatch.py, both test files and the fragment, every one inside the fence, and queue_admission.py needed no edit."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows the reinstated refusal reddening four tests across both files (test_a_direct_dispatch_runs_over_the_backlog_and_records_it, test_a_batch_entry_runs_over_the_backlog_and_records_it, test_the_overdue_run_stays_a_listed_obligation, and test_a_direct_dispatch_records_the_backlog_it_runs_over), so the guards fail when the change regresses.",
+    "evidence": "the gate over the node's declared write scope reports 59 passed EXIT=0 at head and 55 passed EXIT=0 at base in after-arm.log and base-arm.log; I re-ran tests/test_a_dispatch_is_not_refused_on_its_backlog.py at the reviewed head and saw 4 passed, though the done_when's ruff clause is verified only by me and not recorded by the worker.",
+    "fit": "the helper at reckon/crew/dispatch.py:1664 is named by what it returns, carries a mechanism docstring, and follows the surrounding keyword-only style of the dispatch module.",
+    "goal_fidelity": "reckon/crew/dispatch.py:1664 records the session's own overdue rows and the two call sites at reckon/crew/dispatch.py:1700 and :2057 use it, so the direct and batch routes both proceed and both name the runs they were made over.",
+    "reuse": "_recorded_backlog reuses overdue_unreconciled_runs and _partition_session_rows at reckon/crew/dispatch.py:1672 rather than adding a second backlog reader or a second record field, and both call sites now share it; the only fork left is the orphaned refusal builder.",
+    "scope_discipline": "every path in the diff is inside the fence declared at the manifest's orientation_write_paths, but reckon/crew/dispatch_plan.py:1291 keeps the now-uncalled refusal builder, which the goal implied removing."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to let a direct dispatch and a queue-time check succeed for a session holding overdue unreconciled runs while recording that backlog on the run; reckon/crew/dispatch.py:1664 _recorded_backlog returns the session's overdue rows and reckon/crew/dispatch.py:3403 writes them to the run record as unreconciled_override, with the refusal raise removed, so both routes succeed and record.\nVERDICT done_when: the done_when names a new test with four cases plus a negative control and a no-added-failure arm; tests/test_a_dispatch_is_not_refused_on_its_backlog.py:162,190,212,227 cover the direct dispatch, the batch entry, the no-backlog case and the surviving obligation, the negative control declares the reinstated refusal, and after-arm.log records 59 passed EXIT=0 against base-arm.log 55 passed EXIT=0.\nVERDICT write_paths: the manifest declares reckon/crew/dispatch.py, reckon/crew/queue_admission.py, the two test files, the landing fragment and an unused figure directory; the diff touches dispatch.py, both test files and the fragment, every one inside the fence, and queue_admission.py needed no edit.\nVERDICT manifest: read; it reports status complete, a head gate of 59 passed against 55 passed at base, a negative control of 4 failed and 4 passed, and names four logs on disk which I opened and confirmed match those figures.\nVERDICT diff: read commit by commit from 7aa21029e0 to 6da1c0a4ed; 36ddd1cf6a carries the dispatch.py hunk plus the two test files, and 6da1c0a4ed adds only the 52-line landing fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:2269, reckon/crew/queue_admission.py:461, reckon/crew/promotion.py:1703, reckon/crew/plan_review.py:5824, reckon/crew/plan_review.py:6574, reckon/crew/recovery_review_dispatch.py:3419, reckon/crew_dispatch_commands.py:1942\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:1664 records the session's own overdue rows and the two call sites at reckon/crew/dispatch.py:1700 and :2057 use it, so the direct and batch routes both proceed and both name the runs they were made over.\nSCORE evidence: 18\nJUSTIFICATION evidence: after-arm.log records 59 passed EXIT=0 at head against base-arm.log 55 passed EXIT=0 at base over the declared write scope, and I re-ran tests/test_a_dispatch_is_not_refused_on_its_backlog.py at head seeing 4 passed, though the done_when's ruff clause is unrecorded in the manifest.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff is inside the manifest's declared write paths, but reckon/crew/dispatch_plan.py:1291 keeps the now-uncalled refusal builder the goal implied removing.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows the reinstated refusal reddening four tests across both test files, so each guard fails when the change regresses.\nSCORE fit: 18\nJUSTIFICATION fit: the helper at reckon/crew/dispatch.py:1664 is named by what it returns, carries a mechanism docstring, and follows the keyword-only style of the dispatch module.\nSCORE reuse: 17\nJUSTIFICATION reuse: _recorded_backlog reuses overdue_unreconciled_runs and _partition_session_rows at reckon/crew/dispatch.py:1672 rather than adding a second backlog reader, with only the orphaned refusal builder left as a fork.\nFINDING tests/test_crew.py:2122 non-blocking: tests/test_crew.py:2122, tests/test_crew.py:2209 and tests/test_closure_fence_agreement.py:207 still assert the refusal the landed change removes and are red at head (importers-arm.log: 3 failed, 207 deselected), correctly recorded under outside_scope but needing a node to rewrite them.\nFINDING reckon/crew/dispatch_plan.py:1291 non-blocking: _session_unreconciled_refusal now has no caller in reckon/ and is still re-exported at reckon/crew/dispatch.py:4265, leaving a dead public name for the refusal this change retires.",
+  "review_node": "review-of-dispatch-over-the-backlog-6da1c0a4edd0",
+  "review_run_id": "r-20261112T165158783035-review-of-dispatch-over-the-backlog-6da1c0a4edd0",
+  "reviewed_base_sha": "7aa21029e0aeda5fb61e0a003d5489224041880a",
+  "reviewed_head_sha": "6da1c0a4edd0cf8dc6eaf9ef73fcf0704eb9f41d",
+  "reviewed_run_id": "r-20261112T160215702275-dispatch-over-the-backlog",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T17:33:19.989966+00:00",
+  "total": 109
+}
