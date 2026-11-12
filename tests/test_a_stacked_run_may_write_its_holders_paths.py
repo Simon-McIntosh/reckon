@@ -101,6 +101,10 @@ def _held_repository(
     repo = tmp_path / "repo"
     (repo / "nova" / "equilibrium").mkdir(parents=True)
     (repo / "docs" / "plans").mkdir(parents=True)
+    (repo / "docs" / "state" / PROJECT).mkdir(parents=True)
+    (repo / "docs" / "state" / PROJECT / "shared-write-paths.json").write_text(
+        json.dumps({"shared_roots": []}), encoding="utf-8"
+    )
     (repo / "docs" / "plans" / "fixture.html").write_text(
         _plan_document(), encoding="utf-8"
     )
