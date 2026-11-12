@@ -572,6 +572,49 @@ LAUNCH_HORIZON = 120.0
 # churn row shares.
 LAUNCH_FIELD = "pane_launch"
 
+# The sentence the recovery classifier composes when a queued request's own
+# launch attempt was refused, and the remedy it names in the same row's
+# ``next_action``. A refused attempt leaves the request in ``queued``, holding
+# its place, so the refusal is the one fact on that row a coordinator must act
+# on and the only thing that distinguishes it from the ordinary row saying the
+# request waits for a slot.
+QUEUED_REFUSAL_PREFIX = "the queued launch was refused: "
+
+# The row field the row policy sets on the request's row when it names a
+# refusal the pane has not shown before. A refusal is news once: a request
+# refused again for the same reason is the same remedy the coordinator already
+# has, so the second identical refusal carries nothing. The field holds the
+# clause the pane prints, so the renderer needs no second look at the row.
+QUEUED_REFUSED_FIELD = "pane_queued_refused"
+
+# The stage word a refusal row carries in the role column. The row is the
+# request speaking about its own launch rather than a run changing state, so
+# the column names what the row is; the request's own role stays in the job
+# cell's own facts and the clause names the work by its node.
+REFUSAL_STAGE = "refused"
+
+
+def queued_refusal(event: Mapping[str, Any]) -> str:
+    """The refusal a queued row names, with the remedy the classifier composed.
+
+    A queued row carries the refusal only while the request's latest attempt
+    failed for a reason a coordinator must clear; an ordinary queued row's
+    detail names the slot it waits for. The remedy is the command the
+    classifier wrote into ``next_action`` — the reader that owns it is
+    ``_queued_failure_remedy`` in ``reckon.crew.recovery_classification``, and
+    the row prints what that reader decided rather than deriving a second
+    answer here.
+    """
+    if str(event.get("to_state") or "") != "queued":
+        return ""
+    detail = str(event.get("detail") or "").strip()
+    if not detail.startswith(QUEUED_REFUSAL_PREFIX):
+        return ""
+    remedy = str(event.get("next_action") or "").strip()
+    if remedy and remedy not in detail:
+        return f"{detail} — {remedy}"
+    return detail
+
 
 # The dispatch vocabulary, verbatim. Kept here rather than derived from a
 # config so that a role is known the moment it is dispatched; the word IS the
@@ -1545,6 +1588,12 @@ def stream_carries(event: Mapping[str, Any]) -> bool:
         # was printed by this pane, or the run was drawn before it ended. The
         # mark carries that judgement so this rule stays a function of the row.
         return True
+    if event.get(QUEUED_REFUSED_FIELD):
+        # A queued request whose launch was refused, named once per refusal.
+        # The request keeps its place and its word, so this row is the only
+        # notice a coordinator gets that the launch will repeat the same
+        # refusal until the remedy is run.
+        return True
     if _pane_word(event) in CARRIED_PANE_WORDS:
         return True
     return (
@@ -1666,6 +1715,11 @@ class RowPolicy:
         # the state word, because a run's pane word passes through the review
         # and back; the attempt is what decides whether a delivery is fresh.
         self._launches: dict[str, int] = {}
+        # run_id -> the refusal clauses this pane has already named for the
+        # request. A request refused again for the same reason carries the
+        # remedy the reader already has, so the row is not news and prints
+        # nothing; a refusal the request has not shown before prints once.
+        self._refusals: dict[str, set[str]] = {}
 
     @property
     def lift_groups(self) -> frozenset[str]:
@@ -2049,6 +2103,18 @@ class RowPolicy:
             return False
         if str(event.get("to_state") or "") == "withdrawn":
             return False
+        if (
+            str(event.get("to_state") or "") == "discarded"
+            and str(event.get("from_state") or "") == "queued"
+        ):
+            # A queued request that was really discarded has no run behind it,
+            # so this row is the only account of the work going away and it
+            # keeps its word: the pane never drew the request, because a queued
+            # request waiting for a slot is not news. A withdrawal and a
+            # departure stay silent — a refused launch's pointer is released
+            # and rewritten by the next admission pass, and the request it
+            # belongs to is still queued.
+            return True
         if _pane_word(event) == "landed":
             return self._printed.get(run_id) == "delivered"
         return bool(self._printed.get(run_id))
@@ -2179,6 +2245,27 @@ class RowPolicy:
         from_state = event.get("from_state")
         to_state = str(event.get("to_state") or "")
         kind = (from_state, to_state)
+
+        # A refused launch leaves the request queued, so the row that carries
+        # the refusal is the request's own and not a move: no hold, no round
+        # trip and no settle rule speaks to it, and the word the pane holds for
+        # the request must not move with it. Each refusal the request has not
+        # shown before prints once; the same refusal again is the remedy the
+        # coordinator already has and prints nothing.
+        refusal = queued_refusal(event)
+        if refusal:
+            # The request is still held, so a departure this pane is sitting on
+            # for the run is the launch attempt's released pointer and not a
+            # drop: the row that proves the request survived cancels it.
+            self._departures.pop(run_id, None)
+            self._held.pop(run_id, None)
+            seen = self._refusals.setdefault(run_id, set())
+            if refusal in seen:
+                return []
+            seen.add(refusal)
+            marked = {**event, QUEUED_REFUSED_FIELD: refusal}
+            self._note_printed(run_id, event)
+            return [marked]
 
         # A departure is held while the run is away. A row that lands the run
         # back in the word the pane last showed cancels the hold and drops both
@@ -3218,6 +3305,8 @@ class Ticker:
         """
         if is_submission_row(event):
             return self._submission_line(event)
+        if event.get(QUEUED_REFUSED_FIELD):
+            return self._refusal_line(event)
         node = str(event.get("node") or event.get("run_id") or "unknown")
         # The row names its own project, so the model column is sized from the
         # project layer its dispatch would read rather than a project-less
@@ -3423,6 +3512,54 @@ class Ticker:
             (f"{self._job_cell(job, LIMIT_STAGE, group, ''):<{NODE}}", self.hue(group)),
             (" " * GAP, None),
             (elide(limit_reset_text(event, paced=self._paced_groups[key]), room), None),
+            (" " * GAP, None),
+            *spend,
+            (" " * GAP, None),
+            *stats,
+        ]
+        shadow = is_shadow(event)
+        return "".join(
+            self._paint(text, "dim" if shadow and style is not None else style)
+            for text, style in cells
+        )
+
+    def _refusal_line(self, event: Mapping[str, Any]) -> str:
+        """One queued request whose launch was refused, as a clause naming it.
+
+        The request keeps its place and stays ``queued``, so the row carries no
+        transition: the refusal and the remedy that clears it are the whole of
+        the news, and the pane's memory for the request stays on the word it
+        already held. The clause takes the room the transition columns leave
+        the way the submission row's does, so a narrow pane drops the tail of
+        the command rather than wrapping.
+        """
+        spend = self._spend_cells(event, "queued")
+        stats = self._stats(event)
+        run_id = str(event.get("run_id") or "")
+        node = str(event.get("node") or run_id)
+        if str(event.get("event") or "").strip():
+            # The request's own word does not move, so the next row's left half
+            # reads the word this row left the pane holding.
+            self._reported[run_id] = "queued"
+        job = _job_name(node, event.get("role"))
+        tail = (
+            GAP
+            + sum(len(text) for text, _ in spend)
+            + GAP
+            + sum(len(text) for text, _ in stats)
+        )
+        room = self._grid_width() - CLOCK - GAP - ROLE - GAP - NODE - GAP - tail
+        cells: list[tuple[str, Any]] = [
+            (f"{local_clock(event.get('observed_at')):<{CLOCK}}", "dim"),
+            (" " * GAP, None),
+            (f"{REFUSAL_STAGE:<{ROLE}}", "dim"),
+            (" " * GAP, None),
+            (
+                f"{self._job_cell(job, REFUSAL_STAGE, run_id, ''):<{NODE}}",
+                self.hue(node),
+            ),
+            (" " * GAP, None),
+            (elide(str(event.get(QUEUED_REFUSED_FIELD) or ""), room), None),
             (" " * GAP, None),
             *spend,
             (" " * GAP, None),
