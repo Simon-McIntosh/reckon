@@ -1,6 +1,9 @@
 """A write and queued admission share the review decision for the same inputs."""
 
 import json
+import os
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -248,3 +251,130 @@ def test_an_unpersisted_decision_is_reported_as_unknown(queued_edit, monkeypatch
     response = _edit(queued_edit)
     assert response["review_owed"] is None
     assert "could not be persisted" in response["review_owed_error"]
+
+
+_FRESH_COVERAGE_READ = r"""
+import json
+from pathlib import Path
+import sys
+from types import SimpleNamespace
+
+from reckon import _store, flight
+from reckon.crew import queue_admission, review_need, runs
+from reckon.mcp_deadlines import _review_owed_fields
+
+inputs = json.load(sys.stdin)
+home = Path(inputs["home"])
+repo = Path(inputs["repo"])
+write = _store.write_atomically
+
+def isolated_write(target, *args, **kwargs):
+    path = Path(target).resolve()
+    assert path.is_relative_to(home) or path.is_relative_to(repo), path
+    return write(target, *args, **kwargs)
+
+_store.write_atomically = isolated_write
+flight.resolve = lambda *args, **kwargs: SimpleNamespace(config=inputs["config"])
+review_need.PROMPT_PATH = Path(inputs["prompt"])
+review_need._shared_prompt.cache_clear()
+client = review_need._client()
+client.JEV_MODEL = inputs["model"]
+calls = {"judge": 0, "service": 0}
+
+
+def ask(state, questions, **kwargs):
+    calls["service"] += 1
+    return {"answers": {key: {"noul": 1.0} for key in questions}}
+
+
+judge = review_need.judge
+
+
+def counted_judge(*args, **kwargs):
+    calls["judge"] += 1
+    return judge(*args, **kwargs)
+
+
+client.ask = ask
+review_need.judge = counted_judge
+response = _review_owed_fields(
+    "sample", "fixture", inputs["plan"], uncovered_before=set()
+)
+detail = queue_admission._plan_review_owed(
+    inputs["pointer"], config_for=lambda pointer: {"plan_review_gate": "enforce"}
+)
+print(json.dumps({"owed": response["review_owed"], "admission": detail,
+                  "calls": calls, "crew_home": str(runs.crew_home())}))
+"""
+
+
+def _fresh_coverage_read(inputs):
+    source = Path(__file__).resolve().parents[1]
+    result = subprocess.run(
+        [sys.executable, "-c", _FRESH_COVERAGE_READ],
+        input=json.dumps(inputs),
+        text=True,
+        capture_output=True,
+        check=True,
+        cwd=source,
+        timeout=30,
+        env=dict(os.environ, PYTHONPATH=str(source), PYTHONDONTWRITEBYTECODE="1"),
+    )
+    return json.loads(result.stdout)
+
+
+@pytest.mark.parametrize("changed", ["instructions", "criteria", "checklist", "model"])
+def test_a_fresh_reader_rejudges_when_the_review_policy_changes(
+    queued_edit,
+    monkeypatch,
+    changed,
+):
+    repo, path, pointer, _original, _replacement, _sidecar = queued_edit
+    home = runs.crew_home().parent
+    policy = json.loads(review_need.PROMPT_PATH.read_text())
+    prompt = home / "review-policy.json"
+    prompt.write_text(json.dumps(policy))
+    monkeypatch.setattr(review_need, "PROMPT_PATH", prompt)
+    review_need._shared_prompt.cache_clear()
+    calls = []
+
+    def no_review(state, questions, **kwargs):
+        calls.append(state)
+        return {"answers": {key: {"noul": 0.0} for key in questions}}
+
+    monkeypatch.setattr(review_need._client(), "ask", no_review)
+    try:
+        response = _edit(queued_edit)
+        assert response["review_owed"] == []
+        assert len(calls) == 1, "the initial decision must reach the judge"
+        inputs = {
+            "home": str(home),
+            "repo": str(repo),
+            "plan": str(path),
+            "pointer": pointer,
+            "prompt": str(prompt),
+            "model": review_need._client().JEV_MODEL,
+            "config": runs.resolved_tick_config("sample"),
+        }
+        unchanged = _fresh_coverage_read(inputs)
+        assert unchanged["owed"] == [] and unchanged["admission"] is None
+        assert unchanged["calls"] == {"judge": 0, "service": 0}, (
+            "a fresh process must reuse the persisted decision before an input changes"
+        )
+        if changed == "instructions":
+            policy["instructions"] += " Apply the amended review requirement."
+        elif changed == "criteria":
+            policy["criteria"]["true"] += " Apply the amended review requirement."
+        elif changed == "checklist":
+            policy["checks"]["plan"].append("check the amended review requirement")
+        else:
+            inputs["model"] += "-changed"
+        prompt.write_text(json.dumps(policy))
+        current = _fresh_coverage_read(inputs)
+        print("policy change:", changed, "fresh reading:", current)
+        assert current["calls"] == {"judge": 1, "service": 1}
+        assert {entry["unit"] for entry in current["owed"]} == {"delivery"}
+        assert "uncovered units: delivery;" in current["admission"]
+        assert current["crew_home"] == str(home / "crew")
+    finally:
+        review_need._shared_prompt.cache_clear()
