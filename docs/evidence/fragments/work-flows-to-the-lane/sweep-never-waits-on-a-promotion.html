@@ -1,0 +1,60 @@
+<section id="sweep-never-waits-on-a-promotion-landing">
+  <h2>A session's sweep runs its promotions beside itself</h2>
+
+  <p><strong>What changed.</strong> The review pass in
+  <code>reckon/crew/recovery_review_acceptance.py</code> promoted each finished
+  review and accepted each clean one in the sweep's own thread, so a session
+  holding several reviews dispatched no new review until the last promotion
+  returned. The pass now runs in two phases: every review it owes is
+  dispatched in the walk over the runs, and only then is each promotion and
+  acceptance handed to a worker of its own.</p>
+
+  <p><strong>The workers.</strong> <code>PromotionWorkers</code> in
+  <code>reckon/crew/resumption.py</code> runs them at most
+  <code>config["promotion"]["width"]</code> at a time — two when no layer
+  configures it — and the sweep waits
+  <code>config["promotion"]["wait_seconds"]</code> (180 s by default) for the
+  ones it started. A promotion still running at the end keeps running, so the
+  sweep's own time is bounded by that wait rather than by the sum of the
+  promotions. Each worker holds the run's cross-host promotion lease for the
+  whole job and an in-process claim, and a second sweep reaching a run already
+  being promoted reports it in flight instead of promoting it beside the first.
+  A promotion that raises is reported against its run in the sweep's
+  <code>failed</code> list, and the next sweep reads the run as still awaiting
+  acceptance and tries again.</p>
+
+  <p><strong>The measure.</strong> <code>tests/test_a_sweep_never_waits_on_a_promotion.py</code>
+  runs a temporary crew home with a stubbed promotion that takes a configured
+  time and a stubbed review dispatch. Six assertions hold: the newly delivered
+  run's review is dispatched before the first promotion completes; under a
+  width of two the peak concurrent promotions is exactly two and all four
+  complete; a failed promotion is named on its run and retried by the next
+  sweep; two sweeps never promote the same run at once; the status record and
+  recovery log carry what the report named.</p>
+
+  <table id="sweep-never-waits-on-a-promotion-arms">
+    <caption>Each arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>. Both ran
+    on <code>all_debug</code>, one at a time, <code>-n 4</code>, over the 60
+    test files that import the modified modules.</caption>
+    <thead><tr><th>arm</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>base <code>fe9af3caa</code></td><td>6 failed, 483 passed, 3 errors</td></tr>
+      <tr><td>head with this change</td><td>8 failed, 487 passed, 3 errors</td></tr>
+      <tr><td>armed gate (this node's test plus the staged-write inventory)</td><td>57 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>declared mutation: promotions run inside the sweep</td>
+        <td><code>FAILED</code> the dispatch-first assertion, <code>EXIT=1</code></td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>What the delta says.</strong> Two failure ids are added at the head
+  and none are fixed. One is
+  <code>test_one_run_cannot_stop_a_sweep.py::test_ledger_failure_and_vanished_pointer_leave_the_third_promoted[True]</code>,
+  whose fixture unlinks a later run's pointer from inside an earlier run's
+  promotion and expects that run to read as vanished — an ordering only serial
+  promotions give, and it fails two runs in three on its own. That repair
+  belongs in the fixture and is outside this node's write scope. The other,
+  <code>test_the_pane_carries_counts_not_names.py::test_a_settle_with_outstanding_runs_prints_no_line_and_still_emits</code>,
+  passes six of six in isolation at this head and failed only inside the
+  60-file parallel arm.</p>
+</section>
