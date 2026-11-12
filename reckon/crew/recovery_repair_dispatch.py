@@ -421,20 +421,19 @@ def _repairable_scope(
 ) -> list[str]:
     """The repository source and test paths among a repair's finding paths.
 
-    Duplicates collapse to their first occurrence and record paths are dropped,
-    except where the caller's ``reach`` holds that the reviewed run itself has
-    the file — a citation into its own worktree is repository work, not one of
-    the fleet's records,
-    so the repair is never granted a record outside its run's fence — a run
-    directory, a manifest, a gate log or a review-store path. A path inside the
-    reviewed run's own fence is kept whatever its spelling, so a finding under
-    the run's granted ``docs/figures/`` or ``docs/evidence/`` subtree is
-    repairable rather than mistaken for the fleet's own record. Empty answers
-    "every finding cites only run records or evidence documents", which the
-    caller reads as no repair to dispatch. The population is the caller's: the
-    decline decision passes the blocking findings' own cited paths, and the
-    composed scope passes the node's write paths, so the two can never disagree
-    about which paths are records.
+    Duplicates collapse to their first occurrence, and a record path is dropped
+    so the repair is never granted the fleet's own bookkeeping outside its run's
+    fence — a run directory, a manifest, a gate log or a review-store path. Two
+    exceptions are kept: a path the caller's ``reach`` holds that the reviewed
+    run itself has, which makes a citation into its own worktree repository work
+    rather than a record, and a path inside the reviewed run's own fence, which
+    is kept whatever its spelling so a finding under the run's granted
+    ``docs/figures/`` or ``docs/evidence/`` subtree is repairable rather than
+    mistaken for the fleet's own record. Empty answers "every finding cites only
+    run records or evidence documents", which the caller reads as no repair to
+    dispatch. The population is the caller's: the decline decision passes the
+    blocking findings' own cited paths, and the composed scope passes the node's
+    write paths, so the two can never disagree about which paths are records.
     """
     scope: list[str] = []
     for path in paths:

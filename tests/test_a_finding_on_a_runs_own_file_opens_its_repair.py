@@ -2,10 +2,9 @@
 
 A review that raises a blocking finding against the run's own work — an evidence
 fragment written one directory deeper than its declared path, a suite arm
-recorded as prose in the run's manifest — is reporting a defect its worker can
-fix. The reflex used to read any path under the fleet's record prefixes, and any
-absolute path, as the fleet's own bookkeeping and decline the round, so the run
-sat refused at landing until a coordinator resumed it by hand.
+recorded as prose in the run's manifest — reports a defect its worker can fix.
+The round therefore opens on anything the run itself holds, and declines only
+when a blocking finding cites nothing its worker can change.
 
 These cases drive the reflex through the sweep with the resume stubbed, each one
 against a temporary repository and crew home. The first cites a file that exists
