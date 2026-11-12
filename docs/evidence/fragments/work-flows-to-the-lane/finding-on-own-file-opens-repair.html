@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="A finding on the run's own file opens its repair">
+  <meta name="plan-summary" content="The repair reflex now reads two reaches over the reviewed run's own files: a round opens when a blocking finding cites anything the run itself holds — a file in its worktree, its manifest, its own logs — while the write scope is granted only from the worktree, which is the one of the two a claim can cover. A round that still declines names each blocking finding it could not reach, by stable id and the path as cited.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s20">
+  <meta name="plan-verdict" content="pass">
+  <title>A finding on the run's own file opens its repair &mdash; evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<main class="plan-doc">
+  <h1 id="finding-on-own-file-opens-reckon-title">A finding on the run's own file opens its repair</h1>
+  <p id="finding-on-own-file-opens-reckon-defect">A review raised two blocking findings against a run's own work: an evidence fragment written one directory deeper than its declared path, and suite arms recorded as prose in the run's manifest under the crew home. The repair reflex declined the round as decline-only &mdash; <code>no finding cites a repository path among the 2 blocking finding(s)</code> &mdash; because any absolute path, and any path under <code>docs/evidence/</code> or <code>docs/figures/</code> outside the run's declared fence, was read as the fleet's own bookkeeping. Both defects were the worker's to fix, and the run would otherwise have sat refused at landing until a coordinator resumed it by hand.</p>
+
+  <p id="finding-on-own-file-opens-reckon-change">The reflex now reads two reaches over the run's own files, and they are deliberately different. Whether a round <em>opens</em> is decided on everything the reviewed run itself holds: <code>repair.finding_cites_run_own_file()</code> resolves a cited path against the run's worktree, the manifest the record names, and the run directory under the crew home. What the round may be <em>granted</em> stays narrower &mdash; <code>repair.finding_cites_run_worktree()</code> resolves against the worktree alone, because a checkout of the repository is work a claim can cover while the run's record directory is written without one. Both predicates are pure and live in <code>reckon/crew/repair.py</code>, so the composer and the reflex agree about which paths a round can reach; <code>reckon/crew/recovery_repair_dispatch.py</code> threads them through the record-path rule and the scope filter. A round that still declines now names every blocking finding it could not reach, by stable id and by the path as cited, instead of reporting only a count.</p>
+
+  <section id="finding-on-own-file-opens-reckon-cases">
+    <h2>The cases the node pins</h2>
+    <ul>
+      <li id="finding-on-own-file-opens-reckon-case-worktree">A blocking finding citing <code>docs/evidence/fragments/fixture/deeper/landed.html</code>, which exists only in the reviewed run's worktree, resumes the run with that path in the composed advice; the round records <code>resumed</code>.</li>
+      <li id="finding-on-own-file-opens-reckon-case-manifest">A blocking finding citing the run's own <code>manifest.md</code> under its run directory opens the round and is carried into the advice.</li>
+      <li id="finding-on-own-file-opens-reckon-case-outside">A blocking finding citing a file outside the repository and outside the run's directory declines, and the reason names both that path and the finding's stable id.</li>
+      <li id="finding-on-own-file-opens-reckon-case-control">Resolving the same worktree-only citation against the main checkout alone declines the round, which is what shows the first case passes because the worktree is consulted rather than because every citation is accepted.</li>
+    </ul>
+  </section>
+
+  <section id="finding-on-own-file-opens-reckon-measure">
+    <h2>Measure</h2>
+    <p id="finding-on-own-file-opens-reckon-measure-arms">The node gate ran both arms in scratch trees on <code>all_debug</code>, the module under test resolving from each tree: the base arm at <code>38301b5</code> read 51 passed, exit 0; the head arm at <code>c4ac026f2</code> read 55 passed, exit 0, the four new cases included. The negative control applied the declared mutation to a scratch tree at <code>c4ac026f2</code> &mdash; resolve finding paths against the main checkout alone &mdash; and failed exactly the two cases that need the run's own file: <code>test_a_file_only_in_the_runs_worktree_opens_its_repair</code> and <code>test_a_finding_on_the_runs_manifest_opens_its_repair</code>, 2 failed and 2 passed, exit 1. The importer population &mdash; 31 test files naming the modified modules &mdash; ran one arm at a time on <code>all_debug</code> at <code>-n 4</code>: 266 passed at base and 266 passed at head, no failure id on either side. Ruff check and <code>ruff format --check</code> report no findings on the three staged paths. Logs, commands, the module path each arm imported and its resolved working directory are in the run manifest.</p>
+  </section>
+</main>
+</body>
+</html>
