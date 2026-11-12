@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>A promotion that ends unfinished is retried</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="an-unfinished-promotion-is-retried-landing" data-node="an-unfinished-promotion-is-retried" data-reckon="landing" data-when="2026-11-12">
+  <h2>An unleased landing record with no promoted row is retired, so the run is promotable again</h2>
+  <p>The interrupted state is a pending-landing record written by a promotion that then stopped, a live pointer, and no promoted ledger row. The landing pass only finished a record whose run had a promoted row, so that record outlived every pass; and the landing pass refused the run because its recorded attempt never produced a receipt, so nothing retried the promotion.</p>
+  <p>The pass now reads that state as ended when the record is older than <code>UNFINISHED_PROMOTION_SECONDS</code> (60 s, against a promotion that claims its lease within ~5 s of writing the record and a lease that goes stale after 30 s), the project's ledger proves the run has no row, and no promotion lease is held. It clears the record and rewrites the pointer's <code>admission_landing</code> status from <code>attempting</code> to <code>interrupted</code>, so the reflex promotes the run again. A held lease, a record written moments ago, an unreadable ledger, and a run whose promotion was never written all leave the record alone; the existing old-and-gone drop is unchanged.</p>
+  <p>The promotion step that can end between the record and the ledger row is the part of <code>promotion.complete</code> that runs under <code>_promotion_host_lease</code> before <code>_commit_landing_writes</code>: checkout committability, the run's gate and review evidence, and the ledger row write itself. <code>crew complete --land</code> writes the pending record before calling it, so any stop in that span leaves the state this pass now retires.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base <code>f1424548</code></th><th>Delivered <code>39f312d8</code></th></tr></thead>
+    <tbody>
+      <tr><td>Suite arms on all_debug</td><td>51 passed, EXIT=0</td><td>55 passed, EXIT=0</td></tr>
+      <tr><td>Added failing test ids</td><td>Reference population</td><td>0</td></tr>
+      <tr><td>Declared mutation (base sweep restored): new test file</td><td>1 failed, 3 passed, EXIT=1</td><td>4 passed</td></tr>
+    </tbody>
+  </table>
+  <p>The base arm resolves the suite template over the base tree, where the new test file does not exist, so it runs <code>tests/test_staged_write_inventory.py</code> alone; the after arm runs both files. The failing id under the declared mutation is <code>test_an_unfinished_promotion_is_retried_and_its_record_cleared</code>, which the after arm passes: at the base sweep the pass returned <code>[]</code> and left the record, the live pointer and the <code>attempting</code> marker in place, which is the reported stall reproduced from the run's own records.</p>
+  <p>Receipts live under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T210115593728-an-unfinished-promotion-is-retried/</code>: <code>base-arm.log</code>, <code>after-arm.log</code> and <code>negative-control.log</code>. Each log opens with its revision, tree, cwd and literal command, names the imported module, and ends with <code>EXIT=</code>. Staged-path lint and format checks are clean.</p>
+</article>
+</body>
+</html>
