@@ -944,8 +944,6 @@ def measure_run(
             unreadable = (
                 f"the {name} arm exceeded its {arm_bound_seconds:g}s bound"
                 if arm.timed_out
-                else f"the {name} arm {arm.unreadable_reason}"
-                if arm.unreadable_reason
                 else f"the {name} arm did not run"
             )
             break
