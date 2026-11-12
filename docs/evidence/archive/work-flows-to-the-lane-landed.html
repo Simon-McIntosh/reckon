@@ -124,6 +124,11 @@
     <p>§23 landed at <code>dac80c30d2</code> (reviewed head <code>94d44a6671</code>, run <code>r-20261112T062445761221-split-queue-admission</code>). <code>queue_admission</code> is split along its responsibilities, and a surface test pins that every name it exported is still reachable. The review scored 20 on every dimension, with no findings and no added failure; the importer arms share their failure ids exactly. The run waited on the codex lane's budget fence until the lane served again in the afternoon. The first landing was refused because both suite arms recorded the armed command with absolute paths, which the landing compares as text. The worker re-ran both arms with the exact armed text from each tree's root, and the coordinator then landed it by hand.</p>
   </section>
 
+  <section id="s3-dispatch-over-the-backlog" data-evidence-origin="append">
+    <h2>§3 — a coordinator&#x27;s own dispatch is not refused on its landing backlog</h2>
+    <p>§3 landed at <code>7c0246e1cc</code> (reviewed head <code>cc5e7cfe84</code>, run <code>r-20261112T160215702275-dispatch-over-the-backlog</code>). A direct dispatch and a batch entry from a session with overdue unreconciled runs now succeed, and the run, the held request and the ledger row record that backlog. The overdue runs stay in the session's obligations. Seven existing tests across five files asserted the retired refusal and were rewritten to assert the recorded backlog. They were granted in two rounds as review and importer arms found them, because the first dispatch had narrowed the write paths to fit the local context window. Both arms read the same ten failures at the base and at the head. The final review's one blocking finding cited a commit sha with two characters transposed. The real commit, <code>85df5f3562b7d20bf3de720be4f416b9971c1639</code>, is in the object store, so the finding was disposed as refuted. The run moved off codex to the local lane once a-gate-halts-only-on-substance §7 was recorded done, and it was landed by hand.</p>
+  </section>
+
 </main>
 </body>
 </html>
