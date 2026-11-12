@@ -1147,6 +1147,22 @@ def _shadow_control_marks(
     return marks
 
 
+def _profile_fold_anchor(
+    project: str, ledger_root: str | Path | None
+) -> dict[str, Any] | None:
+    """The ledger state a promotion's profile fold may extend, or ``None``.
+
+    Read before the append, from file metadata alone, so the fold that follows
+    can compare it with the state the stored profile was written against
+    without opening the ledger's index or any run document.
+    """
+
+    try:
+        return ledger.index_state_stamp(project, ledger_root)
+    except (OSError, ValueError, TypeError):
+        return None
+
+
 def _budget_overrun_facts(
     record: Mapping[str, Any], *, finished: str | None = None
 ) -> dict[str, Any]:
@@ -1878,6 +1894,11 @@ def _complete_locked(
         if comment.get("recorded"):
             run["outcome"] = ""
         already_promoted = False
+    # The ledger state the run-time profile fold may extend, read before the
+    # append moves it. A fold inside this promotion needs it to prove the
+    # samples a previous refresh stored are this history minus the row about to
+    # be written, so it can extend them without reading the ledger.
+    profile_anchor = _profile_fold_anchor(project, ledger_root)
     try:
         written = ledger.append_run(project, run, root=ledger_root)
     except ledger.LedgerError:
@@ -1906,14 +1927,19 @@ def _complete_locked(
         }
     # The promotion that moves a project's ledger is the one moment its profile
     # content changes, so it publishes the run-time profile the picks will later
-    # serve instead of letting a pick rebuild it. This runs after the append, for
-    # the promoted run's project, and never fails the promotion: the profile is
-    # an operational reading, and a build or cache write that fails leaves the
-    # previous reading in place rather than undoing a landed run.
+    # serve instead of letting a pick rebuild it. It hands the refresh the row it
+    # just wrote beside the ledger state it saw before writing it, so the fold
+    # extends the stored samples without decoding the ledger index or reading
+    # run documents; a promotion's cost therefore does not grow with the ledger.
+    # This never fails the promotion: the profile is an operational reading, and
+    # a cache write that fails leaves the previous reading in place rather than
+    # undoing a landed run.
     try:
         from reckon.crew.picker import lane_context as _lane_context
 
-        _lane_context.refresh_run_time_profile(project)
+        _lane_context.refresh_run_time_profile(
+            project, appended=(run,), anchor=profile_anchor
+        )
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
     committed_review_paths: list[Path] = []
