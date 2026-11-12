@@ -7,8 +7,9 @@ import shlex
 import shutil
 import socket
 import sys
+import tempfile
 import time
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from typing import TextIO
 
 from reckon import review_tiers
@@ -117,18 +118,17 @@ WITHHELD_REASONS = {
 ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
 
 
-def _sweep_worktree_trash(
-    repo: Path, *, apply: bool, announce: TextIO | None = None
+def _sweep_trash_directories(
+    trash_roots: Iterable[Path], *, apply: bool, announce: TextIO | None = None
 ) -> list[dict[str, Any]]:
-    """Remove leftover worktree trash a release's deletion step did not finish.
+    """Remove every directory a release left behind in a worktree trash root.
 
-    Trash is written only after a tree has been moved off its registered path
-    and deregistered, so removing it cannot strand a registered tree; a gc pass
-    that runs with ``apply`` deletes each directory and prints it.
+    Trash is written only after a release has moved a tree off its registered
+    path and deregistered it, so removing it cannot strand a registered tree; a
+    pass that runs with ``apply`` deletes each directory and names it.
     """
     rows: list[dict[str, Any]] = []
-    for root in _releasable_roots(repo):
-        trash_root = root / WORKTREE_TRASH_DIRNAME
+    for trash_root in trash_roots:
         if not trash_root.is_dir():
             continue
         for entry in sorted(trash_root.iterdir()):
@@ -147,6 +147,47 @@ def _sweep_worktree_trash(
                     )
             rows.append(row)
     return rows
+
+
+def _sweep_worktree_trash(
+    repo: Path, *, apply: bool, announce: TextIO | None = None
+) -> list[dict[str, Any]]:
+    """Sweep this checkout's trash roots, named through git."""
+    return _sweep_trash_directories(
+        (root / WORKTREE_TRASH_DIRNAME for root in _releasable_roots(repo)),
+        apply=apply,
+        announce=announce,
+    )
+
+
+def _mounted_trash_roots(repo: Path) -> list[Path]:
+    """The trash roots of a mounted project, named without asking git.
+
+    A managed root names each checkout's trees by a digest of its git directory,
+    which only git can compute, so the hourly pass reads the root one level deep
+    instead. That is one directory listing per project and starts no git
+    process, which is what keeps the pass cheap whatever a checkout carries.
+    """
+    override = os.environ.get("RECKON_WORKTREE_ROOT")
+    managed = (
+        Path(override).expanduser().resolve()
+        if override
+        else repo.parent / ".reckon-worktrees"
+    )
+    candidates = [managed, Path(tempfile.gettempdir()) / "reckon-worktrees"]
+    roots: list[Path] = []
+    for candidate in candidates:
+        if not candidate.is_dir():
+            continue
+        roots.extend(
+            entry / WORKTREE_TRASH_DIRNAME
+            for entry in sorted(candidate.iterdir())
+            if entry.is_dir()
+        )
+    # A worker's own `git worktree add` puts a tree inside its run directory,
+    # and that root's trash is shared by every project on this host.
+    roots.append(runs_dir() / WORKTREE_TRASH_DIRNAME)
+    return roots
 
 
 # The extraction's reason is held in its own constant rather than joining
@@ -1671,7 +1712,7 @@ RETENTION_PROGRESS_EVERY = 10
 
 #: The phases a pass times. Each prints one line to stderr as it completes, so a
 #: pass killed under its timeout still leaves a record of how far it got.
-RETENTION_PHASES = ("ledger", "judge", "scratch", "cache", "store", "log")
+RETENTION_PHASES = ("ledger", "judge", "trash", "scratch", "cache", "store", "log")
 
 
 def retention_log_path() -> Path:
@@ -1844,8 +1885,8 @@ def retention_sweep(
     caches: it starts no git process and inspects no worktree, because gc's
     worktree checks are where a pass over the whole home spent its time. Trash
     is only listed and removed — a tree reaches it after being moved off its
-    registered path and deregistered — so the sweep needs no git. It examines at most ``limit``
-    directories, so one pass stays short on shared storage; the rest wait for
+    registered path and deregistered — so the sweep needs no git. It examines
+    at most ``limit`` directories, so one pass stays short on shared storage; the rest wait for
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
 
@@ -1944,11 +1985,13 @@ def retention_sweep(
     # The hourly timer is the one pass that runs whatever this host is doing,
     # so a copy a promotion left behind is reclaimed here even when no session
     # runs `crew gc`; each directory removed is printed by name.
-    trash_rows: list[dict[str, Any]] = []
+    trash_roots: dict[str, Path] = {}
     for candidate in sorted({str(Path(root)) for root in roots.values()}):
-        trash_rows.extend(
-            _sweep_worktree_trash(Path(candidate), apply=apply, announce=sys.stderr)
-        )
+        for trash_root in _mounted_trash_roots(Path(candidate)):
+            trash_roots.setdefault(str(trash_root), trash_root)
+    trash_rows = _sweep_trash_directories(
+        trash_roots.values(), apply=apply, announce=sys.stderr
+    )
     trash_removed = [str(row["path"]) for row in trash_rows if row.get("removed")]
     _emit_phase("trash", started, phase_seconds)
 
