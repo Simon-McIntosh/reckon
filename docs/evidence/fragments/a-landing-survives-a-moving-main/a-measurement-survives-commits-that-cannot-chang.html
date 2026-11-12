@@ -1,0 +1,36 @@
+<section id="a-measurement-survives-commits-that-cannot-chang">
+  <h2>Measurement reuse verified on the committed tree</h2>
+  <p>The implementation this section describes and its focused test file are
+  already committed at the base revision
+  <code>b958dba4054a800e1bea8fa7c74d84033c286686</code>
+  (<code>reckon/crew/queue_landing.py</code> via <code>6e257846c5</code>,
+  <code>tests/test_a_landing_survives_a_moving_main.py</code>). The recorded
+  livelock does not reproduce at that revision, so this node preserves the
+  implementation and delivers verification evidence only. No product or test
+  source was changed.</p>
+  <table>
+    <thead><tr><th>Exercise</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Stored measurement followed by a commit touching only <code>docs/plans/</code></td><td>Lands without the suite pair being run again</td></tr>
+      <tr><td>Stored measurement followed by a commit touching <code>reckon/</code></td><td>Measures the delivery again</td></tr>
+      <tr><td>Docs-only move introduces a real merge conflict</td><td>Not landed on the stale measurement; verification refuses with a merge-conflict guard</td></tr>
+      <tr><td>A second delivery waits for a later pass</td><td>The deferred id sits in <code>deferred</code> with a nonempty reason in <code>deferred_reasons</code></td></tr>
+      <tr><td>Docs-only move during a measurement</td><td>Lands without deferring</td></tr>
+    </tbody>
+  </table>
+  <p>The gate at the base revision reports <strong>57 passed in 36.36s</strong>,
+  exit 0, over <code>tests/test_a_landing_survives_a_moving_main.py</code> and
+  <code>tests/test_staged_write_inventory.py</code>.</p>
+  <p>Negative control: replacing the population comparison with
+  <code>measured_main == primary</code> — treating every moved primary as
+  invalidating again — makes the docs-only case repeat its measurement:
+  <strong>1 failed in 10.34s</strong>, exit 1, naming
+  <code>test_a_docs_only_move_on_main_reuses_the_stored_measurement</code> with
+  the message “a measurement a docs-only move cannot change was repeated”. The
+  mutated source was restored byte-for-byte before the gate ran.</p>
+  <p>Reuse compares the measured inputs at both revisions: the committed
+  <code>reckon/</code> tree, <code>tests/</code>, <code>pyproject.toml</code>,
+  <code>uv.lock</code>, and the model catalogue. Anything unreadable is not
+  judged unchanged, so reuse requires a positive answer from git and from the
+  package identity the fleet's reload readers use.</p>
+</section>
