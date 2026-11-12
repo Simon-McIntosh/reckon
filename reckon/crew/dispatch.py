@@ -226,6 +226,7 @@ def _queued_request_record(
     queued_at: str,
     admitted_from: str = "",
     local: bool = True,
+    backlog: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """The request record a held local dispatch stores as one queued pointer.
 
@@ -262,6 +263,11 @@ def _queued_request_record(
             record[key] = value
     if admitted_from:
         record["admitted_from"] = admitted_from
+    if backlog is not None:
+        # A request held at dispatch records the backlog it was made over just
+        # as a launched run does, so the pointer says the same thing whichever
+        # way the request went.
+        record["unreconciled_override"] = dict(backlog)
     return record
 
 
@@ -404,9 +410,8 @@ def queue_requests(
                 "allow_unreviewed_plan": allow_unreviewed_plan,
             },
             queued_at=_utc_now(),
+            backlog=backlog,
         )
-        if backlog is not None:
-            record["unreconciled_override"] = backlog
         queued, position, phase = _queue_validated_waits(
             record,
             refs=refs_by_run[run_id],
@@ -2160,6 +2165,7 @@ def dispatch(
                             queued_at=_utc_now(),
                             local=resolution.backend
                             == str(config.get("local_backend") or ""),
+                            backlog=backlog,
                         ),
                         max_requests=flight.queue_max_requests(config),
                     )
@@ -2395,6 +2401,7 @@ def dispatch(
                 queued_at=_utc_now(),
                 admitted_from=admitted_from,
                 local=is_local,
+                backlog=backlog,
             ),
             refs=validated_refs,
             wait_projects=wait_projects,
@@ -2473,6 +2480,7 @@ def dispatch(
                 dispatch_options=dispatch_options,
                 queued_at=_utc_now(),
                 local=queued_backend_name == local_backend,
+                backlog=backlog,
             ),
             backend=backend,
             lane_allowance=lane_allowance,
@@ -2517,6 +2525,7 @@ def dispatch(
                     dispatch_options=dispatch_options,
                     queued_at=_utc_now(),
                     admitted_from=admitted_from,
+                    backlog=backlog,
                 ),
                 max_requests=flight.queue_max_requests(config),
             )
@@ -2588,6 +2597,7 @@ def dispatch(
                         lane_allowance=lane_allowance,
                         dispatch_options=dispatch_options,
                         queued_at=_utc_now(),
+                        backlog=backlog,
                     ),
                     max_requests=flight.queue_max_requests(config),
                 )
