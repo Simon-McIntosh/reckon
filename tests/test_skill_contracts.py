@@ -1407,6 +1407,7 @@ def test_ship_cli_instructions_match_registered_commands_and_flags() -> None:
             "--scope-changed",
         },
         ("crew", "check"): {"--manifest", "--review", "--run", "--record"},
+        ("crew", "census"): {"--apply"},
         ("crew", "directory"): {"--project", "--run", "--node"},
         ("crew", "dispatch"): {
             "--project",
