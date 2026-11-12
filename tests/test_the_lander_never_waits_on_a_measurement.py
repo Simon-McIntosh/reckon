@@ -271,3 +271,35 @@ def test_publication_records_reuse_the_completed_measurement(fleet, monkeypatch)
     assert record["population"]["main_sha"] == primary
     assert record["population"]["candidate_sha"] == candidate
     assert fleet["scheduler"].jobs == {}
+
+
+def test_a_finished_job_releases_width_even_when_its_delivery_is_held(fleet):
+    queue_landing.land_once()
+    fleet["scheduler"].finish("7000")
+    manifest = Path(runs.read_pointer(deliveries.RUN)["manifest_path"])
+    manifest.write_text(
+        manifest.read_text().replace("status: complete", "status: blocked")
+    )
+    result = queue_landing.land_once()
+    assert len(fleet["scheduler"].jobs) == 3
+    assert runs.read_pointer("r-third")["landing_measurement_job"]["job_id"] == "7002"
+    assert result["deferred"] == ["r-second", "r-third"]
+
+
+def test_a_restart_between_receipt_and_evidence_does_not_resubmit(fleet):
+    _cache_third(fleet)
+    queue_landing.land_once()
+    fleet["scheduler"].finish("7000")
+    runs._mutate_pointer(
+        deliveries.RUN,
+        lambda record: {
+            **record,
+            "landing_measurement_job": {
+                **record["landing_measurement_job"],
+                "status": "complete",
+            },
+        },
+    )
+    result = queue_landing.land_once()
+    assert result["landed"] == [deliveries.RUN]
+    assert len(fleet["scheduler"].jobs) == 2

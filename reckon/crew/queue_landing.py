@@ -1190,7 +1190,7 @@ def _scheduled_measurement(
     from reckon._store import write_json_atomically
 
     job = pointer.get("landing_measurement_job")
-    if isinstance(job, Mapping) and job.get("status") == "pending":
+    if isinstance(job, Mapping) and job.get("status") in {"pending", "complete"}:
         try:
             measured = landing_measure.read_measurement_job(job)
         except landing_measure.MeasurementJobError:
@@ -1895,12 +1895,7 @@ def _land_deliveries() -> dict[str, Any]:
     deferred_reasons: dict[str, str] = {}
     measured_this_pass = False
     live = sorted(runs.list_live(), key=_delivery_order)
-    active_measurements = {
-        str(pointer["run_id"])
-        for pointer in live
-        if isinstance(job := pointer.get("landing_measurement_job"), Mapping)
-        and job.get("status") == "pending"
-    }
+    active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
     # run directory holds thousands of entries on shared storage, and the pass
     # exists to stay off that cost.
@@ -2146,7 +2141,7 @@ def _land_deliveries() -> dict[str, Any]:
             _record_suite_evidence(run_id, measured)
         elif (_measure_config(pointer).get("landing") or {}).get(
             "measure_partition"
-        ) or run_id in active_measurements:
+        ) or pointer.get("landing_measurement_job"):
             if project not in history:
                 history[project] = _pass_history(live, project)
             try:

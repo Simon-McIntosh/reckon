@@ -196,6 +196,22 @@ def measurement_job_state(job: Mapping[str, Any]) -> str:
     return "UNKNOWN"
 
 
+def active_measurement_jobs(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Count scheduler work even when its delivery currently waits on review."""
+    active = set()
+    for pointer in pointers:
+        job = pointer.get("landing_measurement_job")
+        if not isinstance(job, Mapping) or job.get("status") != "pending":
+            continue
+        try:
+            state = measurement_job_state(job)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            state = "UNKNOWN"
+        if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+            active.add(str(pointer["run_id"]))
+    return active
+
+
 def read_measurement_job(job: Mapping[str, Any]) -> Measurement | None:
     """A terminal job needs both a successful receipt and a matching result."""
     job_id, log_path = str(job["job_id"]), str(job["log_path"])
