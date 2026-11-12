@@ -10,9 +10,8 @@ snapshot was written, while ``age_seconds`` beside it kept growing.
 The case publishes one delivered run's duty through the station's own sweep at
 a fixed instant, then reads the stored snapshot twice, 120 s apart, through
 ``live_payload`` -- the shape a pane is handed. The overdue figure the reason
-prints must equal the row's refreshed ``age_seconds`` less the reflex's window
-at each reading, and the two readings must differ by exactly the 120 s between
-them. At the base revision the second reading repeats the first figure, because
+prints must equal the row's refreshed ``age_seconds`` at each reading, and the
+two readings must differ by exactly the 120 s between them. At the base revision the second reading repeats the first figure, because
 the prose is served from the snapshot unchanged.
 """
 
@@ -173,10 +172,11 @@ def test_an_overdue_figure_tracks_the_clock(published: dict[str, Any]) -> None:
 
     window = int(first["reflex_window_seconds"])
     assert window > 0
+    assert first["age_seconds"] > window, "the duty is past the reflex's window"
     assert second["age_seconds"] - first["age_seconds"] == READING_GAP_SECONDS
 
     # The figure must move with the age beside it: two readings a fixed gap
     # apart cannot print the same overdue figure.
     assert _overdue_seconds(second) - _overdue_seconds(first) == READING_GAP_SECONDS
-    assert _overdue_seconds(first) == first["age_seconds"] - window
-    assert _overdue_seconds(second) == second["age_seconds"] - window
+    assert _overdue_seconds(first) == first["age_seconds"]
+    assert _overdue_seconds(second) == second["age_seconds"]

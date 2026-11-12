@@ -826,7 +826,6 @@ def _overdue_remedy(
     if age <= window:
         return None
     remedy: dict[str, Any] = {
-        "window_seconds": window,
         "session": str(pointer.get("session") or ""),
         "dispatch": dispatch,
     }
@@ -842,8 +841,7 @@ def _render_overdue_remedy(
     remedy: Mapping[str, Any], *, age: int, now: datetime
 ) -> str:
     """Compose an overdue duty's text from its intervals at one clock reading."""
-    window = int(remedy.get("window_seconds") or 0)
-    figure = _overdue_figure(int(age) - window)
+    figure = _overdue_figure(int(age))
     stage = str(remedy.get("stage") or "")
     if stage:
         stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
