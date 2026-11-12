@@ -24,7 +24,7 @@
   <title>A Landing Is On Main When It Says So | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="64">
+<meta name="plan-version" content="65">
 <meta name="plan-modified" content="2026-11-12">
 <meta name="plan-section-depends-on" content="{&quot;s6&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;],&quot;s7&quot;:[&quot;a-landing-is-on-main-when-it-says-so#s5&quot;]}">
 </head>
@@ -153,6 +153,9 @@ unfinished makes the fourth case's head absent from the remote. The test files i
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261112T024223806169-review-of-a-remote-read-is-bounded-1e16e4ac121d" data-who="reckon-build" data-when="2026-11-12T02:58:41Z">
     <div class="r-comment-body"><p>Independent delta review a53193255be4..1e16e4ac121d stored; six dimensions 20 each, no findings, zero added gate and importer failures.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261112T010554384046-a-remote-read-is-bounded" data-who="reckon-build" data-when="2026-11-12T02:31:44Z">
+    <div class="r-comment-body"><p>Bounded remote reads preserve core.sshCommand and GIT_SSH, append the connect timeout to explicit GIT_SSH_COMMAND and select plain ssh only when no transport is configured. Armed repair gate 67 passed; four configured-transport regressions fail at the reviewed head and pass after repair; matched importer arms each 6 failed, 101 passed, with zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-reopen-s2" data-who="reckon-build" data-when="2026-11-08T00:30:00Z">
     <div class="r-comment-body"><p>§2 reopened. It was descoped on the finding that no landing left a head unmerged. On 7 November reckon-0f measured one that did: <code>crew complete --land</code> on <code>r-20261107T152305119816</code> was killed by its time bound (exit 143) after pushing promote <code>c0ba9ee0af</code> (passed) and release <code>3deae1db06</code>. The monitor drew the run as landed, but none of its commits (<code>b1cfbd7d30</code>, <code>c0ec02d067</code>, <code>06c67c9893</code>) reached origin/main for about three hours, until <code>crew gc</code> withheld the tree and reckon-0f merged the head by hand. The done-when gains that fourth case. The same day, four <code>--land</code> calls exited 1 with a false "worktree withheld" after merging and pushing successfully (5bc89fc029, ea60b2749f, b706dae898 and r-20261107T100007560977); that is §3's.</p></div>
