@@ -1,0 +1,129 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "Fixture tick does not release or station fails to reach the held tick; setup liveness checks, not regression coverage.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:63,85"
+    },
+    {
+      "fails_if": "Disk holder is absent, PID unexpectedly exists, dispatch removes/replaces the lease, renewal stops past 0.5 seconds, or guard closes; holder() independently rereads persisted state rather than echoing the supplied owner.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:86,91-92,97-99"
+    },
+    {
+      "fails_if": "Dispatch requests another station, station thread cannot finish, or real run_station raises; restoring namespace-blind release fails the disk-holder assertion before these consequences.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:101,105-106"
+    },
+    {
+      "fails_if": "Initial claim fails, disk record cannot be read, or foreign/missing namespace permits early release and unlinks the lease; restoring the old release_holder fails line 124 in both parameter cases.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:115,123-125"
+    },
+    {
+      "fails_if": "Same-namespace claim/read fails or valid dead-holder cleanup is overrestricted or leaves the file; replacing release_holder with unconditional refusal fails line 134.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:130,133-135"
+    },
+    {
+      "fails_if": "Cross-namespace reader reattaches or changes ownership so the original cannot renew; restoring the old host/pid/job-only match fails line 146.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:142,146-147"
+    },
+    {
+      "fails_if": "Real successor is treated as owned, guard loss is not propagated, guard.check allows a write, token is altered or original release deletes successor; unconditional renewal success fails line 161 and guard refusal suppression fails line 164.",
+      "lines": "tests/test_a_sole_station_keeps_its_lease.py:152,161-168"
+    }
+  ],
+  "call_site_count": 8,
+  "call_sites": [
+    "reckon/crew/dispatch_watch.py:_ensure_node_station",
+    "reckon/crew/station.py:run_station",
+    "reckon/crew/station.py:LeaseBeat.renew_once",
+    "reckon/crew/fleet_supervisor.py:StationProcess.ensure",
+    "reckon/crew/watch_unit.py:watch_host_lease",
+    "reckon/crew/recovery_watch.py:unwatch",
+    "reckon/crew/runs.py:producer_live",
+    "reckon/crew/runs.py:_project_watch_claim"
+  ],
+  "caveats": [
+    "No attribution of every historic StationLeaseLostError is established; the live renewing lease and base regression demonstrate one real cause.",
+    "Coordinator owns refreshing all old lease readers and the two-hour production observation.",
+    "Importer receipts ran at implementation commit 84b64e24adf42c265c32b795524fe82d47a6f21b; only the evidence HTML differs at reviewed head.",
+    "Lint cleanliness is recorded in the source manifest; no standalone lint receipt was supplied."
+  ],
+  "completed_at": "2026-11-12T04:26:27Z",
+  "dispatched_at": "2026-11-12T04:17:20Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/station-lease-measure-lyljeqf1/head /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/station-lease-measure-lyljeqf1/head/tests/test_a_sole_station_keeps_its_lease.py /tmp/station-lease-measure-lyljeqf1/head/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/final-head-suite.log",
+      "measurement_cwd": "/tmp/station-lease-measure-lyljeqf1/head",
+      "measurement_module": "/tmp/station-lease-measure-lyljeqf1/head/reckon/crew/station.py",
+      "revision": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e",
+      "summary": "57 passed in 11.67s"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/station-lease-measure-zaxfxklx/base /home/ITER/mcintos/Code/reckon/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/station-lease-measure-zaxfxklx/base/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T032541772809-a-sole-station-keeps-its-lease/base-suite.log",
+      "measurement_cwd": "/tmp/station-lease-measure-zaxfxklx/base",
+      "measurement_module": "/tmp/station-lease-measure-zaxfxklx/base/reckon/crew/station.py",
+      "revision": "5bb73fb01223153182a97cfe13e193050cdd204b",
+      "summary": "51 passed in 9.64s"
+    }
+  },
+  "findings": [],
+  "independence_review": "No added assertion is a self-fulfilling input/output equality: disk-holder and successor-token comparisons read actual file state; fixture liveness assertions are not counted as the namespace guard.",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 8 production call site(s)",
+    "diff": "Read 84b64e24adf42c265c32b795524fe82d47a6f21b and 1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e separately against 5bb73fb01223153182a97cfe13e193050cdd204b; only namespace ownership checks, six regression cases and the evidence fragment were added.",
+    "done_when": "Source prompt.txt:119 requires a reproducing test, matched importer arms and clean lint; base-suite.log and final-head-suite.log record 51 and 57 passes, negative-control-final.log records four base failures, and importer logs share twelve failure IDs.",
+    "goal": "Source prompt.txt:38 requires finding sole-holder lease loss and preserving a slow tick; reckon/crew/host_lease.py:173 now refuses the cross-namespace eviction reproduced through the dispatch caller.",
+    "manifest": "Source manifest.md records both commits, cause, imported module paths and completed suite receipts matching the logs, and explicitly leaves production observation to the coordinator.",
+    "write_paths": "Source prompt.txt:80-85 declares the scope; the three changed paths in the base-to-head diff are the allowed lease module, regression test and evidence fragment."
+  },
+  "justifications": {
+    "durability": "Reinstating unrestricted release_holder makes tests/test_a_sole_station_keeps_its_lease.py:97 and :124 fail, and reinstating namespace-blind reattachment makes :146 fail, as the recorded base negative control demonstrates.",
+    "evidence": "Source base-suite.log, final-head-suite.log and negative-control-final.log provide revision-specific completed results and importer logs show zero added failures, while the historical restart attribution remains explicitly qualified in manifest.md:evidence_inputs.",
+    "fit": "reckon/crew/host_lease.py:24 and :38 extend the existing dataclass and atomic lease owner with mechanism-based names, conservative legacy-record handling and the surrounding read-error idiom.",
+    "goal_fidelity": "reckon/crew/host_lease.py:173 prevents a namespace-local failed PID probe from clearing the renewing host lease, with the dispatch slow-tick reproduction at tests/test_a_sole_station_keeps_its_lease.py:97.",
+    "reuse": "Namespace capability searches at the reviewed revision find only reckon/crew/host_lease.py:24, the production change extends that existing lease owner, and tests/test_the_station_holds_its_lease_while_it_beats.py:96 has no namespace-simulating fixture to reuse.",
+    "scope_discipline": "The diff changes only reckon/crew/host_lease.py, tests/test_a_sole_station_keeps_its_lease.py and the evidence fragment declared in source prompt.txt:80-85."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt:38 requires finding sole-holder lease loss and preserving a slow tick; reckon/crew/host_lease.py:173 now refuses the cross-namespace eviction reproduced through the dispatch caller.\nVERDICT done_when: Source prompt.txt:119 requires a reproducing test, matched importer arms and clean lint; base-suite.log and final-head-suite.log record 51 and 57 passes, negative-control-final.log records four base failures, and importer logs share twelve failure IDs.\nVERDICT write_paths: Source prompt.txt:80-85 declares the scope; the three changed paths in the base-to-head diff are the allowed lease module, regression test and evidence fragment.\nVERDICT manifest: Source manifest.md records both commits, cause, imported module paths and completed suite receipts matching the logs, and explicitly leaves production observation to the coordinator.\nVERDICT diff: Read 84b64e24adf42c265c32b795524fe82d47a6f21b and 1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e separately against 5bb73fb01223153182a97cfe13e193050cdd204b; only namespace ownership checks, six regression cases and the evidence fragment were added.\nCALL_SITES: reckon/crew/dispatch_watch.py:_ensure_node_station, reckon/crew/station.py:run_station, reckon/crew/station.py:LeaseBeat.renew_once, reckon/crew/fleet_supervisor.py:StationProcess.ensure, reckon/crew/watch_unit.py:watch_host_lease, reckon/crew/recovery_watch.py:unwatch, reckon/crew/runs.py:producer_live, reckon/crew/runs.py:_project_watch_claim\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/host_lease.py:173 prevents a namespace-local failed PID probe from clearing the renewing host lease, with the dispatch slow-tick reproduction at tests/test_a_sole_station_keeps_its_lease.py:97.\nSCORE evidence: 19\nJUSTIFICATION evidence: Source base-suite.log, final-head-suite.log and negative-control-final.log provide revision-specific completed results and importer logs show zero added failures, while the historical restart attribution remains explicitly qualified in manifest.md:evidence_inputs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The diff changes only reckon/crew/host_lease.py, tests/test_a_sole_station_keeps_its_lease.py and the evidence fragment declared in source prompt.txt:80-85.\nSCORE durability: 20\nJUSTIFICATION durability: Reinstating unrestricted release_holder makes tests/test_a_sole_station_keeps_its_lease.py:97 and :124 fail, and reinstating namespace-blind reattachment makes :146 fail, as the recorded base negative control demonstrates.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/host_lease.py:24 and :38 extend the existing dataclass and atomic lease owner with mechanism-based names, conservative legacy-record handling and the surrounding read-error idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: Namespace capability searches at the reviewed revision find only reckon/crew/host_lease.py:24, the production change extends that existing lease owner, and tests/test_the_station_holds_its_lease_while_it_beats.py:96 has no namespace-simulating fixture to reuse.\n",
+  "reuse_search": {
+    "capabilities": [
+      "PID namespace identity",
+      "namespace-aware lease release and reattachment",
+      "station slow-tick renewal fixture"
+    ],
+    "existing_test_owner_read": "tests/test_the_station_holds_its_lease_while_it_beats.py:96",
+    "production_owner": "reckon/crew/host_lease.py",
+    "result": "Existing renewal remains in station.LeaseBeat; only namespace identity capture is new. New fixture simulates a namespace boundary absent from existing lease helpers.",
+    "revision": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e"
+  },
+  "review_run_id": "r-20261112T040940851119-review-of-a-sole-station-keeps-its-lease-1fac8d89c0c6",
+  "reviewed_base_sha": "5bb73fb01223153182a97cfe13e193050cdd204b",
+  "reviewed_head_sha": "1fac8d89c0c6cc472a8bd45fb0d8d80ab551fb3e",
+  "reviewed_run_id": "r-20261112T032541772809-a-sole-station-keeps-its-lease",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T04:37:12.153472+00:00",
+  "total": 119
+}
