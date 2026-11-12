@@ -151,6 +151,79 @@ def test_a_changed_remote_releases_the_refusal_and_promotes(candidate):
     assert rows[0]["promoted_by"] == "review-acceptance"
 
 
+def test_a_changed_stored_review_rejudges_the_same_head(candidate, monkeypatch):
+    repository, _base, head = candidate
+    pointer = runs.read_pointer(RUN_ID)
+    manifest = Path(pointer["manifest_path"])
+    manifest_bytes = manifest.read_bytes()
+    remote_head = git(repository, "ls-remote", "origin", "refs/heads/main")
+    calls = []
+    original = acceptance._commits_missing_from
+
+    def counted(*args):
+        calls.append(args)
+        return original(*args)
+
+    monkeypatch.setattr(acceptance, "_commits_missing_from", counted)
+    for _ in range(3):
+        report = _sweep()
+        assert report["accepted"] == []
+        assert report["reports"][-1]["unmerged_commits"] == [head]
+    assert len(calls) == 1
+
+    path = review.review_path(PROJECT, RUN_ID, reviewed_head_sha=head)
+    record = json.loads(path.read_text())
+    record["scores"]["fit"] -= 1
+    record["total"] -= 1
+    review.store_review(record)
+    assert git(repository, "rev-parse", "HEAD") == head
+    assert git(repository, "ls-remote", "origin", "refs/heads/main") == remote_head
+    assert manifest.read_bytes() == manifest_bytes
+
+    report = _sweep()
+
+    assert report["accepted"] == []
+    assert report["reports"][-1]["unmerged_commits"] == [head]
+    assert len(calls) == 2
+    assert git(repository, "rev-parse", "HEAD") == head
+
+
+def test_missing_commits_reaching_primary_rejudges_the_same_head(
+    candidate, monkeypatch
+):
+    repository, _base, head = candidate
+    pointer = runs.read_pointer(RUN_ID)
+    manifest = Path(pointer["manifest_path"])
+    manifest_bytes = manifest.read_bytes()
+    path = review.review_path(PROJECT, RUN_ID, reviewed_head_sha=head)
+    review_bytes = path.read_bytes()
+    calls = []
+    original = acceptance._commits_missing_from
+
+    def counted(*args):
+        calls.append(args)
+        return original(*args)
+
+    monkeypatch.setattr(acceptance, "_commits_missing_from", counted)
+    for _ in range(3):
+        report = _sweep()
+        assert report["accepted"] == []
+        assert report["reports"][-1]["unmerged_commits"] == [head]
+    assert len(calls) == 1
+
+    git(repository, "push", "-q", "origin", "main")
+    assert git(repository, "rev-parse", "HEAD") == head
+    assert manifest.read_bytes() == manifest_bytes
+    assert path.read_bytes() == review_bytes
+
+    report = _sweep()
+
+    assert len(calls) == 2
+    assert report["accepted"] == [RUN_ID], report
+    assert not runs.pointer_path(RUN_ID).exists()
+    assert [row["run_id"] for row in ledger.runs(PROJECT, root=repository)] == [RUN_ID]
+
+
 @pytest.mark.parametrize("changed_input", ["review", "manifest", "gate_log"])
 def test_changed_refusal_inputs_are_judged_again(candidate, monkeypatch, changed_input):
     _repository, _base, commit = candidate
