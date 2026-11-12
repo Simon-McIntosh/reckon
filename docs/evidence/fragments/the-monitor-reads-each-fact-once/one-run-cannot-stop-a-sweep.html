@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <title>One failed run leaves the rest of its sweep running</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="one-run-cannot-stop-a-sweep-landing" data-node="one-run-cannot-stop-a-sweep" data-reckon="landing" data-when="2026-11-12">
+  <h2>A failed run costs its own turn</h2>
+  <p>The review pass isolates each pointer's review, acceptance and repair handling. Its report names exceptions under <code>failed</code> with the run id, exception type and message, and missing live pointers under <code>vanished</code>. The review self-promotion branch checks the live pointer before promotion can reconstruct it from durable records. The resume sweep contains unexpected exceptions from its review and plan-review passes separately, so either pass can fail while the other finishes and a report is returned. The station prints <code>station-sweep-run-failure</code> with the project, session, run id and error; its existing whole-session exception diagnostic remains.</p>
+  <p>Implementation commit <code>3a1928b6256ad9afdcb5d5d6e5532c0864dda72d</code> changes <code>recovery_review_acceptance.py</code>, <code>resumption.py</code> and <code>station.py</code>. Six cases in <code>tests/test_one_run_cannot_stop_a_sweep.py</code> use an isolated crew home and repository: a first review's promotion raises <code>LedgerError</code> and removes the second pointer, while the third still writes its real promotion ledger row; the same case returns normally through <code>resumption.sweep</code>; a <code>ValueError</code> leaves both other reviews promoted; either whole pass's unexpected error leaves a sweep report; and two station passes each print both failed run identities.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Base</th><th>Delivered code</th></tr></thead>
+    <tbody>
+      <tr><td>Armed gate</td><td>51 passed; EXIT=0</td><td>57 passed; EXIT=0</td></tr>
+      <tr><td>Importer population on all_debug</td><td>136 failed, 1015 passed, 4 errors; EXIT=1</td><td>136 failed, 1021 passed, 3 errors; EXIT=1</td></tr>
+      <tr><td>Unique failing or erroring importer ids</td><td>139</td><td>139; 0 added ids</td></tr>
+      <tr><td>Declared control: new tests against base product code</td><td>6 failed, 51 passed; EXIT=1</td><td>All six regression cases pass</td></tr>
+    </tbody>
+  </table>
+  <p>Base revision <code>22e69a0cd2d8a7447e5515f38644458ff9fab93d</code> raises <code>LedgerError: could not stage review write: index.lock held</code> out of the first case before the third run can be promoted. The matched arms run sequentially as separate <code>all_debug</code> jobs with at most four pytest workers and a per-test timeout. Their logs print the revision, extracted tree, actual imported module path, command and terminal exit status. The importer files are selected by Python imports of the three changed modules, with the new test file omitted where it does not exist at base. Ruff check and format check pass on the four changed Python paths.</p>
+  <p>The durable receipts are in <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T005821643873-one-run-cannot-stop-a-sweep/</code>: <code>base-suite.log</code>, <code>head-suite.log</code>, <code>base-importers.log</code>, <code>head-importers.log</code>, <code>negative-suite.log</code> and <code>importer-delta.json</code>. Plan state and merged-head verification remain with the coordinator.</p>
+</article>
+</body>
+</html>
