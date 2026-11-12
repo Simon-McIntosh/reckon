@@ -89,6 +89,11 @@
     <p>§14 landed at <code>145f513002</code> (reviewed head <code>19147e9e</code>, run <code>r-20261112T053149645420-decision-can-be-withdrawn</code>). An <code>edit_plan</code> op now withdraws an unlocked decision in one versioned write. The withdrawal is kept with its reason and date, the decision stops holding any section, and withdrawing a locked decision is refused. Its review was clean. The coordinator promoted and landed it by hand, because the session's sweep was busy promoting other reviews (§25).</p>
   </section>
 
+  <section id="s20-finding-on-own-file-opens-repair" data-evidence-origin="append">
+    <h2>§20 — a finding on a run&#x27;s own file opens its repair</h2>
+    <p>§20 landed at <code>9eb2ccf2aa</code> (reviewed head <code>a5590032</code>, run <code>r-20261112T053157549848-finding-on-own-file-opens-repair</code>). A blocking finding that cites a file the run created in its worktree, or the run's own manifest or logs, now opens a repair round instead of being declined as citing no repository path. Its first review raised a blocking finding that went through a repair round. The re-review at the new head was refused on the previous review's claim and never retried (filed as <code>the-monitor-reads-each-fact-once</code> §37); the coordinator dispatched it directly. The first landing was refused because the after arm was recorded before the repair commit; the worker re-ran both arms at the head on <code>all_debug</code>. The coordinator promoted and landed it by hand: the automatic lander had landed nothing in the session for several hours.</p>
+  </section>
+
 </main>
 </body>
 </html>
