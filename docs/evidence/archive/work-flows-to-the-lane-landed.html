@@ -94,6 +94,16 @@
     <p>§20 landed at <code>9eb2ccf2aa</code> (reviewed head <code>a5590032</code>, run <code>r-20261112T053157549848-finding-on-own-file-opens-repair</code>). A blocking finding that cites a file the run created in its worktree, or the run's own manifest or logs, now opens a repair round instead of being declined as citing no repository path. Its first review raised a blocking finding that went through a repair round. The re-review at the new head was refused on the previous review's claim and never retried (filed as <code>the-monitor-reads-each-fact-once</code> §37); the coordinator dispatched it directly. The first landing was refused because the after arm was recorded before the repair commit; the worker re-ran both arms at the head on <code>all_debug</code>. The coordinator promoted and landed it by hand: the automatic lander had landed nothing in the session for several hours.</p>
   </section>
 
+  <section id="s21-landing-reads-recorded-control" data-evidence-origin="append">
+    <h2>§21 — a landing reads the control the run recorded</h2>
+    <p>§21 landed at <code>db7f5f0b82</code> (reviewed head <code>61624f0583</code>, run <code>r-20261112T053204533907-landing-reads-recorded-control</code>). The negative-control gate reads the log the manifest names. If that log is missing or unusable, it reads a log of the declared mutation in the run's own directory, and failing that it runs the mutation itself over the base tree. It records <code>control_log_source</code> and <code>resolved_log</code> on the verdict row. The armed command read 6 failed and 51 passed at the base, with the head's new test copied into a base-revision tree, and 57 passed at the head. The declared mutation failed 6 tests. The change also touched <code>reckon/crew/promotion_checks.py</code>, which the done-when requires and the live plan names; the path was accepted at landing. The first landing attempt was refused because the base arm had not completed: pytest collected no tests when the new test file was absent at the base. The worker re-ran the base arm with the test copied into a base-revision tree. The coordinator landed it by hand.</p>
+  </section>
+
+  <section id="s12-batch-entry-carries-review-waiver" data-evidence-origin="append">
+    <h2>§12 — a batch entry carries the waivers a single dispatch accepts</h2>
+    <p>§12 landed at <code>18b67c33cd</code> (reviewed head <code>ad8f34b7d0</code>, run <code>r-20261112T053103325903-batch-entry-carries-review-waiver</code>). A batch entry may set <code>allow_unreviewed_plan</code>. The waiver rides the stored request's dispatch options, so admission admits the entry instead of holding it on the review gate. An entry without the waiver is held, and a misspelt field is refused by name. The armed command passed 55 tests at the head. At the base it read 2 failures from the new tests and 2 scaffolding errors, which came from a measurement tree with no git metadata; no failure was added. The negative control, which drops the field from the accepted entry fields, was refused as unknown. The review's three findings were disposed as exempted: they cite the run directory, and the arm logs they asked for were copied there. The coordinator landed it by hand.</p>
+  </section>
+
 </main>
 </body>
 </html>
