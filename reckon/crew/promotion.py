@@ -126,6 +126,7 @@ from reckon.crew.routing import (
     _shadow_patch_retained,
     _shadow_worktree_records,
     _signal_process_group,
+    deferring_worktree_copy_deletion,
     mounted_repository_projects,
     run_directory_of,
 )
@@ -1353,12 +1354,13 @@ def _complete_locked(
                 path = pointer_path(run_id)
                 _remove_promoted_pointer_or_defer(run_id, record)
                 retention = existing.get("worktree_retention")
-                release = _release_after_promotion(
-                    run_id,
-                    record,
-                    retention if isinstance(retention, Mapping) else None,
-                    gate=str(gate),
-                )
+                with deferring_worktree_copy_deletion():
+                    release = _release_after_promotion(
+                        run_id,
+                        record,
+                        retention if isinstance(retention, Mapping) else None,
+                        gate=str(gate),
+                    )
                 release, recorded = _record_release_on_ledger(
                     project=project,
                     root=ledger_root,
@@ -2026,13 +2028,17 @@ def _complete_locked(
         # ownership has already been copied onto the committed ledger row.
         capture = capture_run_session(record)
         _remove_promoted_pointer_or_defer(run_id, record)
-        release = _release_after_promotion(
-            run_id,
-            record,
-            worktree_retention,
-            process_already_ended=ended_writer,
-            gate=str(gate),
-        )
+        # The release runs inside this run's promotion lock, so the moved-aside
+        # copy is left to the trash sweep rather than deleted here: a copy
+        # deleted inline keeps a serial review sweep waiting on the filesystem.
+        with deferring_worktree_copy_deletion():
+            release = _release_after_promotion(
+                run_id,
+                record,
+                worktree_retention,
+                process_already_ended=ended_writer,
+                gate=str(gate),
+            )
         release, recorded = _record_release_on_ledger(
             project=project,
             root=ledger_root,
