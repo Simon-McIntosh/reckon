@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="188">
+<meta name="plan-version" content="189">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -959,6 +959,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
+</div>
+<div class="r-comment" data-section="s29" data-id="c-run-r-20261112T015622246537-review-of-one-run-cannot-stop-a-sweep-c5cf18d11ed6" data-who="reckon-build" data-when="2026-11-12T02:16:59.825Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261112T005821643873-one-run-cannot-stop-a-sweep at c5cf18d11ed6 against base 22e69a0cd2d8 stored as parsed: all six dimensions scored (goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 19, reuse 20), added_failure_count 0 with added_failure_ids [], one non-blocking finding on reckon/crew/recovery_review_acceptance.py:625.</p></div>
 </div>
 </section>
 </main>
