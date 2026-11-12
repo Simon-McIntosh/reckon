@@ -66,4 +66,38 @@
   <p>Ruff check and ruff format --check add no finding on the staged paths. The
   one format finding left in <code>reckon/crew/promotion_gate.py</code> is
   present at the base revision.</p>
+
+  <h3 id="gate-replay-runs-on-the-measure-partition-repair">Repair</h3>
+
+  <p><strong>A stale job log could pass a job that never ran.</strong> The
+  replay derived its job log from the caller's replay log
+  (<code>run_dir(run_id) / "verify-gate.log"</code>), so every verify-gate of a
+  run wrote the same file and nothing cleared it. When a submission was refused
+  by the scheduler, or the job was stopped before its step's redirect ran, the
+  previous attempt's log was still on disk, its <code>EXIT=0</code> was read
+  back, and the replay reported a gate that had passed without ever running.
+  The log is now truncated before every submission (<code>_replay_job_log</code>
+  writes an empty file), a log with no <code>EXIT=</code> receipt is unreadable
+  and reports status <code>3</code> rather than the client's return code, and
+  only the last receipt line in the log decides the status.</p>
+
+  <p><strong>One submission form.</strong> The argv and environment
+  construction moved to <code>landing_measure.partition_submission</code>, which
+  also returns the partition the bound selected; <code>_partition_runner</code>
+  calls it and the copies in <code>promotion_gate.py</code>
+  (<code>partition_job_*</code>, <code>partition_bound_text</code>,
+  <code>measure_partition_for</code>) are gone. The replay reads the flight's
+  declaration and passes it to the shared helper.</p>
+
+  <p><strong>Measured.</strong> Four new cases at
+  <code>8c9f0483bc</code>: the job's own log decides the verdict against a
+  client that returns 1 with a <code>FAILED</code> id, a log with no receipt
+  reports status 3 and a failed verdict, only the last receipt line counts, and
+  a stale <code>EXIT=0</code> log from an earlier attempt beside a submission
+  that writes nothing reports status 3 rather than that earlier verdict. The
+  file's eleven cases pass. The negative control removes the truncation line:
+  <code>test_a_stale_job_log_is_not_read_as_this_attempt_s_verdict</code> fails
+  and the other ten pass (<code>1 failed, 10 passed</code>, exit 1). The
+  landing measure's own partition tests (16 cases) pass unchanged against the
+  shared helper.</p>
 </section>
