@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "b958dba4054a800e1bea8fa7c74d84033c286686",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1681 land_once",
+    "reckon/crew/queue_landing.py:1542 _verified_measurement",
+    "reckon/crew/queue_admission.py:6654 land_once import and call",
+    "reckon/crew_run_commands.py:3564 _verified_measurement"
+  ],
+  "completed_at": "2026-11-12T07:52:23.867Z",
+  "dispatched_at": "2026-11-12T07:42:38Z",
+  "findings": [
+    {
+      "file": "tests/test_a_landing_survives_a_moving_main.py",
+      "line": "305",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks for a NEW test file with four claims, but this file and its four cases were already committed by 6e257846c5, an ancestor of the reviewed base b958dba405, so the node's diff adds no deliverable and the section's guard was landed by earlier work; the coordinator should attribute the implementation to 6e257846c5 rather than to this run."
+    },
+    {
+      "file": "docs/evidence/fragments/a-landing-survives-a-moving-main/a-measurement-survives-commits-that-cannot-chang.html",
+      "line": "36",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment ends with no newline at end of file, which is the one style deviation in an otherwise clean added file."
+    }
+  ],
+  "head_log_revision": "dfec8de57f0590c069d2fbe37ce5b5aa084fd4ba",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production paths that can reach the capability the fragment claims: reckon/crew/queue_landing.py land_once, _verified_measurement, their caller reckon/crew/queue_admission.py:6654, and reckon/crew_run_commands.py:3564.",
+    "diff": "read commit dfec8de57f against b958dba405 commit by commit; it is a single new 36-line evidence fragment and no other path.",
+    "done_when": "the done_when names a new tests/test_a_landing_survives_a_moving_main.py with four claims; the file carries those four cases at lines 305, 341, 366 and 428, but the delivered commit dfec8de57f adds no test, and the manifest's own gate over that file records 57 passed EXIT=0 at both b958dba405 and dfec8de57f.",
+    "goal": "the node goal is that a measurement survives commits that cannot change what it measured; reckon/crew/queue_landing.py:950 _moved_primary_keeps_the_measurement compares the measured input population at both revisions and :798 and :1565 use it to keep a stored measurement across a docs-only move.",
+    "manifest": "read; it states tests tests/test_a_landing_survives_a_moving_main.py plus tests/test_staged_write_inventory.py, baseline_suite and after_suite each completed with failure_count 0, and test_logs naming base-arm.log, after-arm.log and negative-control.log, all three of which were opened and match.",
+    "write_paths": "read the manifest's declared fence of reckon/crew/queue_landing.py, tests/test_a_landing_survives_a_moving_main.py, the evidence fragment and its figures directory; the diff touches only the fragment."
+  },
+  "justifications": {
+    "durability": "the guard for the claimed behaviour is tests/test_a_landing_survives_a_moving_main.py:305, which reddens when land_once re-measures a docs-only move (negative-control.log), and the node demonstrates that refusal rather than assuming it, though the node itself adds no assertion because its diff is a docs fragment.",
+    "evidence": "test_logs base-arm.log (rev b958dba405) and after-arm.log (rev dfec8de57f) each read 57 passed with a bare EXIT=0, and negative-control.log reads 1 failed with EXIT=1 naming test_a_docs_only_move_on_main_reuses_the_stored_measurement at tests/test_a_landing_survives_a_moving_main.py:315, matching the manifest's recorded figures.",
+    "fit": "the fragment follows the sibling evidence-fragment shape, takes the node id as its section anchor at docs/evidence/fragments/a-landing-survives-a-moving-main/a-measurement-survives-commits-that-cannot-chang.html:1, and the commit carries a conventional subject and a body with no plan identifier or attribution.",
+    "goal_fidelity": "the behaviour the goal names is present at reckon/crew/queue_landing.py:798, :1565 and :2023 through _moved_primary_keeps_the_measurement, but that implementation (commit 6e257846c5) and the four-claim test file are both ancestors of the reviewed base b958dba405, so the node's own commit adds only a docs fragment and produces none of the deliverable its done_when names.",
+    "reuse": "the node verified the existing queue_landing path rather than reimplementing it: reckon/crew/queue_landing.py:798 and :2023 already call _moved_primary_keeps_the_measurement and the population comparison at :911 is the single owner of deciding what a measurement depends on.",
+    "scope_discipline": "git show --stat dfec8de57f against b958dba405 lists one file, docs/evidence/fragments/a-landing-survives-a-moving-main/a-measurement-survives-commits-that-cannot-chang.html, inside the node's declared fence, and no product or test source is touched."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261112T072800285835-review-of-a-measurement-survives-commits-that-cannot-chang-dfec8de57f05",
+  "reviewed_base_sha": "b958dba4054a800e1bea8fa7c74d84033c286686",
+  "reviewed_head_sha": "dfec8de57f0590c069d2fbe37ce5b5aa084fd4ba",
+  "reviewed_run_id": "r-20261112T060610237668-a-measurement-survives-commits-that-cannot-chang",
+  "reviewer_run_id": "r-20261112T072800285835-review-of-a-measurement-survives-commits-that-cannot-chang-dfec8de57f05",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 17,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T11:53:45.488685+00:00",
+  "total": 106
+}
