@@ -1,0 +1,84 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_note": "Both arms the run recorded name tests/test_staged_write_inventory.py, which does not import the changed module: baseline_suite 51 passed (d2e5fb667e) and after_suite 51 passed (ba2a186e9d), so no added failure is derivable from them. The delta nevertheless reddens tests/test_a_retention_pass_is_bounded.py:238, which the arms do not cover; that break is recorded as finding 0 rather than in these two fields, which are defined as derived from the run's own arms.",
+  "base_log_revision": "d2e5fb667e77843edeaa73344ffd810d6afd100d",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/gc.py:2173 retention_sweep called by the module main the hourly timer's ExecStart invokes (-m reckon.crew.gc --apply, rendered at gc.py:2036)",
+    "reckon/crew_run_commands.py:2128 crew retention-sweep CLI",
+    "reckon/crew/promotion.py:2031 _release_after_promotion (the promotion whose deferral leaves the copy in the trash root this delta sweeps)"
+  ],
+  "completed_at": "2026-11-12T21:34:47.228Z",
+  "dispatched_at": "2026-11-12T21:16:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1953",
+      "severity": "blocking",
+      "text": "blocking: _emit_phase(\"trash\", ...) prints a seventh 'retention phase' line but RETENTION_PHASES (gc.py:1674) still names six, and tests/test_a_retention_pass_is_bounded.py:238 asserts len(timing_lines) == len(RETENTION_PHASES); the change therefore reddens a test the base revision passes. The worker's own logs carry the count: retention-trash-head.log prints 7 lines starting 'retention phase ' against retention-trash-revert.log's 6, and the tuple at gc.py:1674 has 6 entries. The node's done-when requires that 'the test files importing the changed modules add no failure against the base revision', and no arm ran this one, so the run recorded a green gate over a change that breaks it."
+    },
+    {
+      "file": "tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py",
+      "line": "253",
+      "severity": "non-blocking",
+      "text": "non-blocking: the trash assertion drives routing.garbage_collect, which only the 'crew gc' CLI reaches (reckon/crew_run_commands.py:2229) and which this commit leaves as it was, while the recurring path the deliverable is about is retention_sweep (gc.py:1948-1953); the done-when's 'The test drives one such pass' is therefore satisfied by the run-directory script retention-trash-check.py and not by any test in the repository, so the wiring has no regression guard."
+    },
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "1948",
+      "severity": "non-blocking",
+      "text": "non-blocking: the trash loop removes every entry of every project's trash root on every pass with no bound, while the same function's contract at gc.py:1846-1849 states that one pass 'examines at most limit directories, so one pass stays short on shared storage'; the GPFS rmtree this node took off the promotion path is now unbounded work in the hourly timer, so a backlog of copies makes one pass long exactly where the pass is relied on to be short."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion/after-suite.log",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: both suite arms record 'tests/test_staged_write_inventory.py', a file that does not import reckon/crew/gc.py, so the suite pair measures no behaviour this commit changes; the retention tests that do import it (tests/test_a_retention_pass_is_bounded.py, tests/test_the_retention_sweep_runs_on_its_own.py, tests/test_a_runs_scratch_is_removed_on_the_host_that_made_it.py) were not run at either revision."
+    }
+  ],
+  "head_log_revision": "ba2a186e9d1ea3766aa421d05a6676a79b32c9db",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified the two runtime entries that reach the change \u2014 the hourly timer's ExecStart (gc.py:2036 -> gc.py:2173) and the crew retention-sweep CLI (crew_run_commands.py:2128) \u2014 plus the promotion site that produces the trash (promotion.py:2031).",
+    "diff": "Read commit by commit against c203e0e247: ba2a186e9d adds an announce stream to _sweep_worktree_trash (gc.py:120, :145-149), a trash phase to retention_sweep (gc.py:1941-1953), two report keys (worktree_trash, worktree_trash_removed), a retention-log line per removal, and rewrites the fragment's two prose paragraphs to name the hourly pass.",
+    "done_when": "The done-when requires the copy be removed by a recurring pass of a reckon service already on the fleet and that 'the test drives one such pass'; the production half landed at gc.py:1948-1953 and is controlled head-pass/revert-fail in retention-trash-head.log vs retention-trash-revert.log, but no test drives retention_sweep \u2014 tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:253 still drives routing.garbage_collect, and the delta breaks tests/test_a_retention_pass_is_bounded.py:238.",
+    "goal": "The goal is that a promotion does not wait for its worktree copy's deletion and the copy is still reclaimed; the delta (reckon/crew/gc.py:1948-1953) puts the trash sweep on the hourly retention pass, so the reclaim half is now real \u2014 verified against gc.py:1652 RETENTION_INTERVAL = '1h' and gc.py:2036 ExecStart '-m reckon.crew.gc --apply'.",
+    "manifest": "Read; it records status complete, commits c203e0e247 and ba2a186e9d, a head gate of '2 passed in 14.28s' EXIT=0 at ba2a186e9d, both suite arms 51 passed, and the per-commit revert control for the trash sweep; it reports no run of the retention tests, which is where the landed change breaks a test.",
+    "write_paths": "The source node declared routing.py, promotion.py and the new test, and this repair node widened the fence to gc.py and the landing fragment; git diff --name-only c203e0e247..ba2a186e9d returns exactly reckon/crew/gc.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-wait-for-its-worktree-copy-s-deletion.html, both inside it."
+  },
+  "justifications": {
+    "durability": "No test in tests/ exercises the retention_sweep trash wiring: the node's own assertion at tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:253 drives routing.garbage_collect, which only the 'crew gc' CLI reaches (reckon/crew_run_commands.py:2229), so deleting gc.py:1948-1953 leaves every repository test green and only the run-directory script retention-trash-check.py would notice.",
+    "evidence": "The head/revert pair in retention-trash-head.log ('report_removed': 1, EXIT=0) and retention-trash-revert.log ('report_removed': null, EXIT=1) is a real independent control, but the two suite arms the manifest records run tests/test_staged_write_inventory.py, which never imports reckon/crew/gc.py, and no arm ran tests/test_a_retention_pass_is_bounded.py, so the gate could not see the break its own change causes at that file's line 238.",
+    "fit": "reckon/crew/gc.py:1953 emits a 'trash' phase that RETENTION_PHASES (gc.py:1674) does not declare, so the module's own phase vocabulary is now inconsistent with what it prints, and the rejoined docstring sentence at gc.py:1846-1849 reads as two sentences spliced at a line break.",
+    "goal_fidelity": "reckon/crew/gc.py:1948-1953 has retention_sweep sweep each project's trash root, so the moved-aside copy the promotion leaves behind is reclaimed by the hourly reckon-crew-retention timer (gc.py:2036 ExecStart '-m reckon.crew.gc --apply', gc.py:1652 interval '1h') and the deliverable's 'never left behind indefinitely' now holds.",
+    "reuse": "The change extends the existing owner rather than forking it: _sweep_worktree_trash (gc.py:120) is widened with an announce stream instead of a second removal policy, and _releasable_roots/WORKTREE_TRASH_DIRNAME in reckon/crew/routing.py:1346 and :1343 remain the only definitions of what trash is.",
+    "scope_discipline": "git diff --name-only = only reckon/crew/gc.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-wait-for-its-worktree-copy-s-deletion.html, both inside the widened fence this repair node names."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a promotion returns without waiting for its worktree copy's deletion while the copy is still reclaimed; reckon/crew/gc.py:1948-1953 puts the trash sweep on the hourly retention pass (gc.py:1652 interval '1h', gc.py:2036 ExecStart '-m reckon.crew.gc --apply'), so the reclaim half is now real and the goal is now met by landed code.\nVERDICT done_when: the done-when requires removal by a recurring pass of a fleet service and that 'the test drives one such pass'; the production half landed at reckon/crew/gc.py:1948-1953 and is controlled head-pass/revert-fail in retention-trash-head.log ('report_removed': 1, EXIT=0) against retention-trash-revert.log ('report_removed': null, EXIT=1), but no repository test drives retention_sweep \u2014 tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:253 still drives routing.garbage_collect, and the change breaks tests/test_a_retention_pass_is_bounded.py:238.\nVERDICT write_paths: git diff --name-only c203e0e247..ba2a186e9d returns exactly reckon/crew/gc.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-wait-for-its-worktree-copy-s-deletion.html, both inside the widened fence (gc.py plus the landing fragment) this repair node names, and nothing else changed.\nVERDICT manifest: read; it records status complete, commits c203e0e247 and ba2a186e9d, a head gate of '2 passed in 14.28s' EXIT=0 at ba2a186e9d, both suite arms at 51 passed (d2e5fb667e and ba2a186e9d), and a per-commit revert control for the trash sweep; it records no run of the retention tests that import the changed module.\nVERDICT diff: read commit by commit against c203e0e247; ba2a186e9d adds an announce stream to _sweep_worktree_trash (reckon/crew/gc.py:120, :145-149), a trash phase to retention_sweep (gc.py:1948-1953), two report keys, a retention-log line per removal, and rewrites the fragment's prose to name the hourly pass.\nCALL_SITES: reckon/crew/gc.py:2173 (retention_sweep, reached by the hourly timer's ExecStart at gc.py:2036), reckon/crew_run_commands.py:2128 (crew retention-sweep CLI), reckon/crew/promotion.py:2031 (_release_after_promotion, the promotion whose deferral leaves the copy this delta sweeps)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:1948-1953 sweeps each project's trash root from retention_sweep, so the hourly reckon-crew-retention timer now reclaims the copy a promotion leaves behind.\nSCORE evidence: 11\nJUSTIFICATION evidence: retention-trash-head.log ('report_removed': 1, EXIT=0) against retention-trash-revert.log ('report_removed': null, EXIT=1) is a real control, but both suite arms the manifest names run tests/test_staged_write_inventory.py, which does not import reckon/crew/gc.py.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff c203e0e247..ba2a186e9d touches only reckon/crew/gc.py and the landing fragment at docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-does-not-wait-for-its-worktree-copy-s-deletion.html.\nSCORE durability: 5\nJUSTIFICATION durability: no test exercises the retention_sweep trash wiring \u2014 tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:253 drives routing.garbage_collect, which only the 'crew gc' CLI reaches at reckon/crew_run_commands.py:2229 \u2014 and the delta instead reddens tests/test_a_retention_pass_is_bounded.py:238.\nSCORE fit: 13\nJUSTIFICATION fit: reckon/crew/gc.py:1953 emits a 'trash' phase that RETENTION_PHASES at gc.py:1674 does not declare, leaving the module printing a phase its own tuple does not name.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change widens the existing _sweep_worktree_trash (reckon/crew/gc.py:120) with an announce stream instead of adding a second removal policy, and routing.py:1343/:1346 still own what trash is.\nFINDING reckon/crew/gc.py:1953 blocking: _emit_phase(\"trash\", ...) prints a seventh 'retention phase' line while RETENTION_PHASES (gc.py:1674) still names six, and tests/test_a_retention_pass_is_bounded.py:238 asserts len(timing_lines) == len(RETENTION_PHASES), so the landed change reddens a test the base revision passes \u2014 the worker's own logs show 7 phase lines at head (retention-trash-head.log) against 6 at the revert (retention-trash-revert.log).\nFINDING tests/test_a_promotion_does_not_wait_for_its_worktree_copy_deletion.py:253 non-blocking: the trash assertion drives routing.garbage_collect, reached only by the 'crew gc' CLI (reckon/crew_run_commands.py:2229), not the hourly retention_sweep this commit wires, so the recurring path has no regression guard in the repository.\nFINDING reckon/crew/gc.py:1948 non-blocking: the trash loop removes every entry on every pass with no bound, while the same function's contract at gc.py:1846-1849 promises a pass bounded by 'limit' directories, so the GPFS rmtree moved off the promotion is now unbounded work in the hourly timer.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion/after-suite.log:4 non-blocking: both suite arms record tests/test_staged_write_inventory.py, which does not import reckon/crew/gc.py, so the pair measures nothing this commit changed and the retention tests were not run at either revision.",
+  "review_run_id": "r-20261112T205856616623-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-ba2a186e9d1e",
+  "reviewed_base_sha": "c203e0e247e1c095900a2f9227accff43ec7e46c",
+  "reviewed_head_sha": "ba2a186e9d1ea3766aa421d05a6676a79b32c9db",
+  "reviewed_run_id": "r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261112T205856616623-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-ba2a186e9d1e"
+  },
+  "scores": {
+    "durability": 5,
+    "evidence": 11,
+    "fit": 13,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T21:34:00+00:00",
+  "total": 88
+}
