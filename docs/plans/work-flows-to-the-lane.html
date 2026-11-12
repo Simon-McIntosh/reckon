@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="96">
+<meta name="plan-version" content="97">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -361,7 +361,7 @@
     <div class="r-comment-body"><p>§3 independent review of r-20261112T160215702275-dispatch-over-the-backlog at head cc5e7cfe84 against base 6da1c0a4ed (the commit the prior review landed at): the increment retires the backlog refusal across the seven tests that still asserted it, carries the recorded backlog onto held requests, removes the now-dead refusal builder, and updates the landing fragment; base 10 failed / 260 passed against head 10 failed / 264 passed with the same ten failure ids (added_failure_count 0), negative control red at 4 failed / 4 passed. One blocking finding: commit 85df5f35 is absent from the object store. Two non-blocking findings: stale gate figures in the landing fragment, and no test guarding the held-path backlog keyword.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261112T160215702275-dispatch-over-the-backlog" data-who="reckon-build" data-when="2026-11-12T19:02:01Z">
-    <div class="r-comment-body"><p>§3 — a direct dispatch, a batch entry and a request held for a later lane all now succeed for a session holding overdue unreconciled runs and record those runs on the record they write (unreconciled_override on pointer, held request and ledger row), the overdue runs stay listed as the session&#x27;s obligations, and --allow-unreconciled-runs parses and gates nothing; the base arm reports 10 failed / 260 passed at 7aa21029e0 against 10 failed / 264 passed at head cc5e7cfe84 with the same ten failure ids either side, and reinstating the refusal reddens the direct-dispatch case with UnreconciledRuns (4 failed, 4 passed).</p></div>
+    <div class="r-comment-body"><p>§3 — a direct dispatch, a batch entry and a request held for a later lane all now succeed for a session holding overdue unreconciled runs and record those runs on the record they write (unreconciled_override on pointer, held request and ledger row), the overdue runs stay listed as the session's obligations, and --allow-unreconciled-runs parses and gates nothing; the base arm reports 10 failed / 260 passed at 7aa21029e0 against 10 failed / 264 passed at head cc5e7cfe84 with the same ten failure ids either side, and reinstating the refusal reddens the direct-dispatch case with UnreconciledRuns (4 failed, 4 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
@@ -431,6 +431,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s24" data-id="c-run-r-20261112T191121862711-review-of-split-dispatch-57f62e1751cf" data-who="reckon-build" data-when="2026-11-12T19:26:29Z">
+    <div class="r-comment-body"><p>Independent review stored for af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670..57f62e1751cfacb0818d824710e9f568e2a06387; no blocking findings, one non-blocking reuse finding; added failures 0.</p></div>
 </div>
 </section>
 </main>

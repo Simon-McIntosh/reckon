@@ -1,0 +1,110 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "failure_condition": "Dropping a frozen export fails 624 (observed queue_requests); dropping or duplicating its home fails 630; binding a different object fails 632. The 603-name inventory is independent of the export map.",
+      "lines": "624,630,632"
+    },
+    {
+      "failure_condition": "645 is assignment readback only and does not establish propagation; removing facade forwarding leaves 645 green but fails 647 for readers, and asymmetric restoration fails 650. Expected sentinels are independent of the objects observed in concern globals.",
+      "lines": "645,647,648,650"
+    },
+    {
+      "failure_condition": "Removing run_dir or ATTEMPT_RECORD_NAME forwarding makes the moved helper return its original path or filename rather than the independently constructed sample/attempt.receipt expectation.",
+      "lines": "657"
+    },
+    {
+      "failure_condition": "Collapsing the package to one file fails 663; growing any discovered concern beyond 2000 lines fails 665.",
+      "lines": "663,665"
+    },
+    {
+      "failure_condition": "Leaving a listed cyclic binding as the unbound stub fails identity against the facade; deleting the declaration itself can evade this assertion, so it is supplementary coverage.",
+      "lines": "672"
+    },
+    {
+      "failure_condition": "The migrated inventories preserve existing assertions: removing one of the three hold calls or passing docs, omitting a refusal family, or disconnecting the moved launcher from the fleet gate fails the respective independent count/set/call-graph expectation.",
+      "lines": "test_a_pick_names_its_slow_stage.py:378-380; test_crew_refusal_visibility.py:_formatter_family_calls; test_the_fleet_gate_holds_dispatch.py:799"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew.py:_MODULE_EXPORTS dispatch entry",
+    "reckon/crew/queue_admission.py:396 _launch_queued import and :441 dispatch call",
+    "reckon/crew/queue_admission.py:4863 queue_requests import",
+    "reckon/crew/recovery_review_dispatch.py:3366 plan_dispatch call",
+    "reckon/crew/recovery_review_dispatch.py:3395 dispatch call"
+  ],
+  "completed_at": "2026-11-12T19:26:29Z",
+  "dispatched_at": "2026-11-12T19:18:25Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "646",
+      "severity": "non-blocking",
+      "text": "non-blocking: _DispatchFacade.__setattr__ duplicates the concern-wide runtime override forwarding owned by reckon/crew.py:218-222 instead of extending or wrapping it; maintaining independent forwarding implementations permits compatibility fixes to diverge."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read all five commits from af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670 through 57f62e1751cfacb0818d824710e9f568e2a06387; helper bodies retain their behavior, dispatch splits at an explicit keyword boundary, and later commits migrate source inventories and record evidence.",
+    "done_when": "Live section s24 requires surface identity, modules below 2000 lines, importer parity and a missing-export control; verified-head-armed.log records 135 passed, resumed-importer-comparison.json records the 284-file comparison, and verified-negative-control.log names the omitted queue_requests export.",
+    "goal": "The source dispatch-detail.json goal requires a responsibility split preserving imports and patches; reckon/crew/dispatch.py:629-659 binds the extracted homes and forwards legacy assignments.",
+    "manifest": "The source manifest names five commits, exact baseline/head commands, complete receipts and pre-existing runtime-flake diagnoses; verified-baseline-armed.log and verified-head-armed.log independently confirm its zero-failure armed pair.",
+    "write_paths": "The source manifest declares dispatch.py, dispatching/, the surface test and evidence paths; resume-1-advice.txt explicitly grants the three additional legacy test paths, covering all 15 changed paths."
+  },
+  "justifications": {
+    "durability": "tests/test_dispatch_split_keeps_its_surface.py:624 independently freezes the former exports and the omission receipt proves it fails for queue_requests, while :647 checks actual forwarding and :665 checks the size ceiling; cyclic-reader discovery at :671 remains implementation-derived.",
+    "evidence": "verified-baseline-armed.log and verified-head-armed.log carry exact revisions, imported module paths, completed summaries and EXIT=0, while resumed-importer-comparison.json and diagnosis-comparison.json preserve the broader red comparison and baseline reproductions.",
+    "fit": "reckon/crew/dispatch.py:643 follows the existing reckon/crew.py:215 facade idiom and the new dispatching module and callable names describe responsibilities without prohibited stage or version labels.",
+    "goal_fidelity": "reckon/crew/dispatch.py:629-659 preserves the facade while dispatching/preparation.py:105 and dispatching/launch.py:106 separate validation from launch without changing the normalized original bodies.",
+    "reuse": "reckon/crew/dispatch.py:646-650 duplicates the runtime override propagation already owned by reckon/crew.py:218-222 rather than extending or wrapping that owner, although the extracted business functions retain their existing owners.",
+    "scope_discipline": "All 15 paths in the base-to-head diff fall within the source manifest's declared scope plus the explicit three-test grant in resume-1-advice.txt."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source dispatch-detail.json goal requires a responsibility split preserving imports and patches; reckon/crew/dispatch.py:629-659 binds the extracted homes and forwards legacy assignments.\nVERDICT done_when: Live section s24 requires surface identity, modules below 2000 lines, importer parity and a missing-export control; verified-head-armed.log records 135 passed, resumed-importer-comparison.json records the 284-file comparison, and verified-negative-control.log names the omitted queue_requests export.\nVERDICT write_paths: The source manifest declares dispatch.py, dispatching/, the surface test and evidence paths; resume-1-advice.txt explicitly grants the three additional legacy test paths, covering all 15 changed paths.\nVERDICT manifest: The source manifest names five commits, exact baseline/head commands, complete receipts and pre-existing runtime-flake diagnoses; verified-baseline-armed.log and verified-head-armed.log independently confirm its zero-failure armed pair.\nVERDICT diff: Read all five commits from af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670 through 57f62e1751cfacb0818d824710e9f568e2a06387; helper bodies retain their behavior, dispatch splits at an explicit keyword boundary, and later commits migrate source inventories and record evidence.\nCALL_SITES: reckon/crew.py:_MODULE_EXPORTS dispatch entry, reckon/crew/queue_admission.py:396 _launch_queued import and :441 dispatch call, reckon/crew/queue_admission.py:4863 queue_requests import, reckon/crew/recovery_review_dispatch.py:3366 plan_dispatch call, reckon/crew/recovery_review_dispatch.py:3395 dispatch call\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch.py:629-659 preserves the facade while dispatching/preparation.py:105 and dispatching/launch.py:106 separate validation from launch without changing the normalized original bodies.\nSCORE evidence: 19\nJUSTIFICATION evidence: verified-baseline-armed.log and verified-head-armed.log carry exact revisions, imported module paths, completed summaries and EXIT=0, while resumed-importer-comparison.json and diagnosis-comparison.json preserve the broader red comparison and baseline reproductions.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All 15 paths in the base-to-head diff fall within the source manifest's declared scope plus the explicit three-test grant in resume-1-advice.txt.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_dispatch_split_keeps_its_surface.py:624 independently freezes the former exports and the omission receipt proves it fails for queue_requests, while :647 checks actual forwarding and :665 checks the size ceiling; cyclic-reader discovery at :671 remains implementation-derived.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/dispatch.py:643 follows the existing reckon/crew.py:215 facade idiom and the new dispatching module and callable names describe responsibilities without prohibited stage or version labels.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/dispatch.py:646-650 duplicates the runtime override propagation already owned by reckon/crew.py:218-222 rather than extending or wrapping that owner, although the extracted business functions retain their existing owners.\nFINDING reckon/crew/dispatch.py:646 non-blocking: _DispatchFacade.__setattr__ duplicates the concern-wide runtime override forwarding owned by reckon/crew.py:218-222 instead of extending or wrapping it; maintaining independent forwarding implementations permits compatibility fixes to diverge.\n",
+  "reuse_search": {
+    "owner": "reckon/crew.py:215-222 _CrewFacade owns facade override propagation; new _DispatchFacade duplicates it. _launch_dispatch extracts the existing dispatch tail; _unbound_dispatch_call supplies new cyclic-initialization refusal with no equivalent in the base facade. Other definitions move their existing capability rather than fork it.",
+    "searched": "Existing module override forwarding, cyclic dispatch binding, launch composition, queue storage, scope-claim restoration, comparisons and suite-prompt ownership in base dispatch.py, base reckon/crew.py and reviewed production callers."
+  },
+  "review_limits": "No suite rerun and no source edits. Broader importer evidence is the recorded migration-head pair; the final two commits only change the evidence fragment. added_failure_count uses the reviewed run own final baseline_suite and after_suite receipts.",
+  "review_run_id": "r-20261112T191121862711-review-of-split-dispatch-57f62e1751cf",
+  "reviewed_base_sha": "af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670",
+  "reviewed_head_sha": "57f62e1751cfacb0818d824710e9f568e2a06387",
+  "reviewed_run_id": "r-20261112T062614544790-split-dispatch",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "suite_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_worker_resumes_to_completion.py tests/test_a_pick_names_its_slow_stage.py tests/test_crew_refusal_visibility.py tests/test_dispatch_split_keeps_its_surface.py tests/test_follow_observes_other_sessions.py tests/test_the_fleet_gate_holds_dispatch.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/verified-head-armed.log",
+      "revision": "57f62e1751cfacb0818d824710e9f568e2a06387"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_killed_worker_resumes_to_completion.py tests/test_a_pick_names_its_slow_stage.py tests/test_crew_refusal_visibility.py tests/test_follow_observes_other_sessions.py tests/test_the_fleet_gate_holds_dispatch.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T062614544790-split-dispatch/verified-baseline-armed.log",
+      "revision": "af0c29f3b7e8856b078aee1f9fcbdaaa75ba9670"
+    }
+  },
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T19:36:18.016110+00:00",
+  "total": 101
+}
