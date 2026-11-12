@@ -149,6 +149,8 @@ DUTY_ROW_FIELDS = (
     # text quotes.
     "review_owner",
     "reflex_window_seconds",
+    # An overdue remedy's time-dependent intervals; see refresh_overdue_remedy.
+    "overdue_remedy",
     "refused_at",
     "queued_at",
     "worker_slots",
@@ -801,6 +803,103 @@ def _station_slow_stage(
     return stage, tick_age
 
 
+def _iso(instant: datetime) -> str:
+    """One instant as the UTC stamp the snapshot store reads back."""
+    return instant.astimezone(UTC).isoformat(timespec="seconds").replace("+00:00", "Z")
+
+
+def _age_of_instant(value: Any, *, now: datetime) -> int:
+    """The non-negative age in seconds of one stored instant."""
+    stamp = parse_utc(value)
+    if stamp is None:
+        return 0
+    return max(0, int((now - stamp).total_seconds()))
+
+
+def _overdue_figure(seconds: int) -> str:
+    """How an overdue interval is printed in a duty's remedy text."""
+    return f"{max(0, int(seconds)) // 60}m {max(0, int(seconds)) % 60}s"
+
+
+def _overdue_remedy(
+    project: str,
+    pointer: Mapping[str, Any],
+    *,
+    age: int,
+    dispatch: str,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """The time-dependent inputs of an overdue review duty's text.
+
+    An overdue figure belongs to the reader's clock, not to the instant the
+    snapshot was written. The figure is therefore kept as the interval it is
+    measured from — the duty's own age, and a station stage's age as the instant
+    that stage was observed — so a reader that refreshes the row's age can
+    compose the text again at its own instant instead of serving the figure the
+    writer printed. Returns ``None`` while the duty is still inside the reflex's
+    window, where its text carries no overdue figure.
+    """
+    window = _reflex_review_window_seconds()
+    if age <= window:
+        return None
+    remedy: dict[str, Any] = {
+        "session": str(pointer.get("session") or ""),
+        "dispatch": dispatch,
+    }
+    held = _station_slow_stage(project, pointer, now=now)
+    if held is not None:
+        stage, stage_age = held
+        remedy["stage"] = stage
+        remedy["stage_measured_from"] = _iso(now - timedelta(seconds=stage_age))
+    return remedy
+
+
+def _render_overdue_remedy(
+    remedy: Mapping[str, Any], *, age: int, now: datetime
+) -> str:
+    """Compose an overdue duty's text from its intervals at one clock reading."""
+    figure = _overdue_figure(int(age))
+    stage = str(remedy.get("stage") or "")
+    if stage:
+        stage_age = _age_of_instant(remedy.get("stage_measured_from"), now=now)
+        text = (
+            f"review overdue by {figure}: the station's tick has run "
+            f"{_overdue_figure(stage_age)} in its {stage} stage, which holds "
+            "the reflex's sweep"
+        )
+        dispatch = str(remedy.get("dispatch") or "")
+        if dispatch:
+            return f"{text}; dispatch the review now with: {dispatch}"
+        return f"{text}; dispatch the review for session {remedy.get('session')!r} now"
+    return (
+        f"review overdue by {figure}: session {remedy.get('session')!r} "
+        "has an armed follower, but its reflex has not dispatched this "
+        "run's review; inspect the follower's review pass"
+    )
+
+
+def refresh_overdue_remedy(row: Mapping[str, Any], *, now: datetime) -> dict[str, Any]:
+    """One duty row whose time-dependent remedy text is composed at ``now``.
+
+    A published snapshot stores a duty's age as the instant it is measured
+    from, and the reader turns it back into seconds against its own clock. The
+    remedy text beside it was composed once, at the writer's instant, so without
+    this the figure it prints stays at the value the snapshot was written with
+    while ``age_seconds`` grows — a stuck clock beside a moving one. The row
+    carries the intervals the figure is built from, so the text is composed
+    here at the reading instant, from the same refreshed age the row shows.
+    """
+    refreshed = dict(row)
+    remedy = refreshed.get("overdue_remedy")
+    if not isinstance(remedy, Mapping):
+        return refreshed
+    age = refreshed.get("age_seconds")
+    if isinstance(age, bool) or not isinstance(age, int):
+        return refreshed
+    refreshed["next_command"] = _render_overdue_remedy(remedy, age=age, now=now)
+    return refreshed
+
+
 def _reflex_review_command(
     project: str,
     pointer: Mapping[str, Any],
@@ -808,7 +907,7 @@ def _reflex_review_command(
     age: int,
     dispatch: str = "",
     now: datetime | None = None,
-) -> str:
+) -> tuple[str, dict[str, Any] | None]:
     """The duty's next action while an armed reflex owns the dispatch.
 
     Following the dispatch a missing review prints collides with the reflex's
@@ -823,33 +922,26 @@ def _reflex_review_command(
     behind that stage: the duty carries the stage, its age and the dispatch
     that starts the review now, rather than sending the coordinator to inspect
     a follower whose pass has nothing wrong with it.
+
+    The second element is the overdue remedy's time-dependent inputs, carried
+    on the duty so the text can be composed again at a later reading; it is
+    ``None`` while the duty is still inside the reflex's window.
     """
+    instant = now if now is not None else _utc_now()
+    remedy = _overdue_remedy(project, pointer, age=age, dispatch=dispatch, now=instant)
+    if remedy is not None:
+        return _render_overdue_remedy(remedy, age=age, now=instant), remedy
     session = str(pointer.get("session") or "")
     window = _reflex_review_window_seconds()
-    if age > window:
-        held = _station_slow_stage(
-            project, pointer, now=now if now is not None else _utc_now()
-        )
-        if held is not None:
-            stage, stage_age = held
-            overdue = (
-                f"review overdue by {age // 60}m {age % 60}s: the station's tick "
-                f"has run {stage_age // 60}m {stage_age % 60}s in its {stage} "
-                "stage, which holds the reflex's sweep"
-            )
-            if dispatch:
-                return f"{overdue}; dispatch the review now with: {dispatch}"
-            return f"{overdue}; dispatch the review for session {session!r} now"
-        return (
-            f"review overdue by {age // 60}m {age % 60}s: session {session!r} "
-            "has an armed follower, but its reflex has not dispatched this "
-            "run's review; inspect the follower's review pass"
-        )
     return (
-        f"the review reflex owns this dispatch: session {session!r} has an armed "
-        "follower, which composes the review for this run on its next sweep — "
-        f"expected within about {window} s (the follower's sweep cadence); "
-        "no manual dispatch is needed"
+        (
+            "the review reflex owns this dispatch: "
+            f"session {session!r} has an armed follower, which composes the "
+            "review for this run on its next sweep — expected within about "
+            f"{window} s (the follower's sweep cadence); no manual dispatch is "
+            "needed"
+        ),
+        None,
     )
 
 
@@ -2126,13 +2218,18 @@ def _review_duty_item(
                 # window it travels into the replacement so the coordinator is
                 # handed the command that starts the review rather than a
                 # follower to read.
-                item["next_command"] = _reflex_review_command(
+                item["next_command"], overdue_remedy = _reflex_review_command(
                     project,
                     pointer,
                     age=age,
                     dispatch=str(item.get("next_command") or ""),
                     now=now,
                 )
+                if overdue_remedy is not None:
+                    # Keep the intervals the overdue figure is built from, so
+                    # a reader of a published snapshot composes the text at its
+                    # own clock reading instead of serving a frozen figure.
+                    item["overdue_remedy"] = overdue_remedy
                 item["review_owner"] = "reflex"
                 item["reflex_window_seconds"] = _reflex_review_window_seconds()
     return item
