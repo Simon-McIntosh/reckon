@@ -627,7 +627,7 @@ def _recorded_review_dispatch(pointer: Mapping[str, Any]) -> Mapping[str, Any]:
     return {}
 
 
-def _stored_review_at_head(project: str, run_id: str, head: str) -> bool:
+def _stored_review_recorded(project: str, run_id: str, head: str) -> bool:
     """Whether the store holds a review record for ``head``, any rubric.
 
     A review run that reached its end has delivered only if it left a record:
@@ -635,14 +635,20 @@ def _stored_review_at_head(project: str, run_id: str, head: str) -> bool:
     revision ended without filing, and the revision is owed a review again.
     Every rubric counts, because the by-head selection reads one rubric at a
     time and a record it passes over is still a record waiting to be landed.
+
+    An empty ``head`` asks whether any record of the run is stored at all, which
+    is the question a reader with no resolved head can still answer without
+    paying for the resolution.
     """
-    if not project or not run_id or not head:
+    if not project or not run_id:
         return False
     try:
         rows = review_module.stored_records_for_run(project, run_id)
     except (OSError, ValueError):
         return False
     for _path, record in rows:
+        if not head:
+            return True
         named = str(record.get("reviewed_head_sha") or "")
         if named and recovery.same_revision(named, head):
             return True
@@ -678,7 +684,7 @@ def _delivered_review(
     review_pointer = recovery_review_dispatch._readable_standing_review(standing)
     if not recovery_classification._review_pointer_delivered(review_pointer):
         return "", {}
-    if not _stored_review_at_head(
+    if not _stored_review_recorded(
         str(pointer.get("project") or ""), str(pointer.get("run_id") or ""), head
     ):
         return "", {}
@@ -1034,8 +1040,7 @@ def _current_review_in_flight(pointer: Mapping[str, Any]) -> bool:
     :data:`REVIEW_AWAITING_PROMOTION_DUTY_KIND` — or, when the review read a
     revision the run has since moved past, as the review the new head is owed.
     """
-    delivered_head, _delivered_tree = recovery._review_head_and_tree(pointer)
-    if _delivered_review(pointer, delivered_head)[0]:
+    if _delivered_review(pointer, "")[0]:
         return False
     if _reflex_review_in_flight(pointer):
         return True
