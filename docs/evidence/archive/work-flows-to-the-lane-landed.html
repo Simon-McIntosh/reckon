@@ -104,6 +104,16 @@
     <p>§12 landed at <code>18b67c33cd</code> (reviewed head <code>ad8f34b7d0</code>, run <code>r-20261112T053103325903-batch-entry-carries-review-waiver</code>). A batch entry may set <code>allow_unreviewed_plan</code>. The waiver rides the stored request's dispatch options, so admission admits the entry instead of holding it on the review gate. An entry without the waiver is held, and a misspelt field is refused by name. The armed command passed 55 tests at the head. At the base it read 2 failures from the new tests and 2 scaffolding errors, which came from a measurement tree with no git metadata; no failure was added. The negative control, which drops the field from the accepted entry fields, was refused as unknown. The review's three findings were disposed as exempted: they cite the run directory, and the arm logs they asked for were copied there. The coordinator landed it by hand.</p>
   </section>
 
+  <section id="s18-worktree-leaves-shared-config" data-evidence-origin="append">
+    <h2>§18 — a worktree leaves the shared configuration alone</h2>
+    <p>§18 landed at <code>7694b2c500</code> (reviewed head <code>bf1e69b520</code>, run <code>r-20261111T213729775225-worktree-leaves-shared-config</code>). A worktree no longer writes the shared configuration. The review at the head raised no blocking finding and found no added failure. The run waited about 18 hours: the automatic lander never landed it. The first hand landing was refused because the after arm had been recorded one commit before the head, and that commit touched only the evidence fragment. The worker re-ran the armed command at the head, where it passed. The coordinator then landed it by hand.</p>
+  </section>
+
+  <section id="s6-shared-root-claim-never-holds" data-evidence-origin="append">
+    <h2>§6 — a claim under a shared root never holds a queued request</h2>
+    <p>§6 landed at <code>7d4e4dd28d</code> (reviewed head <code>bb32611df2</code>, run <code>r-20261111T154857625015-shared-root-claim-never-holds</code>). A claim under a shared root no longer holds a queued request. The review at the head raised no blocking finding and found no added failure. The run sat promotable for about 11 hours without the automatic lander picking it up. Its base arm had first run a command without the new test file, which a landing refuses. The worker re-ran the armed command over a base-revision tree with the head's new test copied in: the new tests fail at the base and pass at the head. The coordinator then landed it by hand. §9's measurement window waits on this section and on §3.</p>
+  </section>
+
 </main>
 </body>
 </html>
