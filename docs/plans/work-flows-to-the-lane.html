@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="112">
+<meta name="plan-version" content="113">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -390,7 +390,10 @@
     <div class="r-comment-body"><p>Independent review of r-20261112T202220671098-measured-arm-reads-its-receipt at head 33331794a63a, read against base 9b577c60be. The receipt reader at reckon/crew/landing_measure.py:763-790 does what the goal states and the suite carries a genuine mutation guard; the blocking defect is the reviewed run's own negative-control log, which holds three header lines and no result, so the record cannot show the mutation reddened the suite.</p></div>
 </div>
 <div class="r-comment" data-section="s26" data-id="c-run-r-20261112T220350596873-review-of-measured-arm-reads-its-receipt-4940fea0efbd" data-who="reckon-build" data-when="2026-11-12T22:19:55.117Z">
-    <div class="r-comment-body"><p>Independent review of commits 33331794a6..4940fea0ef (one docs commit recording the negative control&#x27;s measured result in the evidence fragment) is parsed with all six dimensions scored: goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20; zero added failures; one non-blocking finding that the fragment&#x27;s line 64 still cites 56 passed at cadd0db0 while the arm log and manifest record 4940fea0ef.</p></div>
+    <div class="r-comment-body"><p>Independent review of commits 33331794a6..4940fea0ef (one docs commit recording the negative control's measured result in the evidence fragment) is parsed with all six dimensions scored: goal_fidelity 20, evidence 18, scope_discipline 20, durability 18, fit 20, reuse 20; zero added failures; one non-blocking finding that the fragment's line 64 still cites 56 passed at cadd0db0 while the arm log and manifest record 4940fea0ef.</p></div>
+</div>
+<div class="r-comment" data-section="s26" data-id="c-run-r-20261112T202220671098-measured-arm-reads-its-receipt" data-who="reckon-build" data-when="2026-11-12T21:56:57Z">
+    <div class="r-comment-body"><p>Read a partitioned arm&#x27;s log by its EXIT receipt on its own line rather than as the log&#x27;s last line, so a red base arm whose log carries an srun line after the receipt yields its status and failure ids; the reason an arm cannot be read (no receipt, or a receipt disagreeing with the job status) is carried to the landing-measured refusal, which names the arm. Base arm 51 passed EXIT=0, head arm 56 passed EXIT=0, zero added failures.</p></div>
 </div>
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261112T215227342343-review-of-lander-never-waits-on-a-measurement-37a6b3f10912" data-who="reckon-build" data-when="2026-11-12T22:04:06Z">
     <div class="r-comment-body"><p>Independent review of base 56a51a776c678ed3efb1af7ca4c7733189c5fa43 to head 37a6b3f10912275c8da7b14c1e23c6b16c9622ba stores all six scores (20,20,20,17,20,20), zero added failures and one non-blocking test-independence finding.</p></div>
