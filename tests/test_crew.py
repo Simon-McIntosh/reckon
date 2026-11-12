@@ -2231,6 +2231,7 @@ def test_cli_dispatch_records_unreconciled_runs_on_its_run(
             "sess",
             "--repo",
             str(repo),
+            "--no-watch",
         ],
     )
 
