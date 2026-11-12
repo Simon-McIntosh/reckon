@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="56">
+<meta name="plan-version" content="57">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -105,6 +105,9 @@
 </div>
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6" data-who="reckon-build" data-when="2026-11-11T22:50:54.880Z">
     <div class="r-comment-body"><p>Reviewed run r-20261111T204312623665 (a-batch-entry-faces-the-write-scope-check-a-direct-dispatch, 7df41b097f..d65bb493b4): parsed record, scores goal_fidelity 20 / evidence 17 / scope_discipline 20 / durability 19 / fit 19 / reuse 5, no blocking finding — the batch queue path now runs the same write-scope fence the direct dispatch runs (single test re-run here: 2 passed), verified red under the worker's negative control; two non-blocking findings: the new test helper duplicates an existing dry-run argv builder, and the timing attribution for the two added importer ids has no alone-run log on disk.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T204312623665-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch" data-who="reckon-build" data-when="2026-11-11T21:34:59.826Z">
+    <div class="r-comment-body"><p>A batch entry now faces the write-scope check a direct dispatch does: dispatch.queue_requests resolves the dispatch authority for the entry and runs _require_write_paths_in_authority before any pointer is written, so a write path outside the repository and the delivery directories is refused at queue time in the same sentence the direct path emits (gate 53 passed at head 8daa9d4043 against 51 at base 7df41b097f; 326-file importer arm adds no attributable failure; negative control red with the batch entry queued).</p></div>
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261110T153757099316-review-of-a-batch-entry-is-refused-at-queue-time-for-the-node-contract-c8e0018c20fa" data-who="reckon-build" data-when="2026-11-10T15:55:37.169Z">
     <div class="r-comment-body"><p>Reviewed r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract at base 45a800ebe54f026ba1ad26dfb46fc71b49adbd7b and head c8e0018c20faa85a447664fa2660e07ae6afabfd: the node shipped only a test and an evidence fragment, because the queue-time refusal already exists at base in reckon/crew/dispatch.py:340; scores goal_fidelity 15, evidence 15, scope_discipline 19, durability 12, fit 14, reuse 5, with four non-blocking findings (duplicated fixture set, changelog docstring, a re-asserted existing guard, and a base arm that does not measure the importing test files).</p></div>
