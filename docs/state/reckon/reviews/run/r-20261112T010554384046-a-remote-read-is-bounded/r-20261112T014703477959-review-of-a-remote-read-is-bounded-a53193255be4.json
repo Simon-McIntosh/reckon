@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    "Lines 65-70: restoring the refusal-only predicate makes the timed-out/unreachable read return no head or only one attempt, failing the expected independently stubbed SHA, attempt count, route order and returned route checks.",
+    "Lines 109-112: readiness checks fail if the child never imports or imports a different source tree; these compare distinct processes, not a value merely echoed by the product.",
+    "Lines 120-132: restoring an unbounded runner makes communicate exceed three seconds after readiness and fail after proving the requested stub operation started; wrong timeout translation fails child status, on_branch, cause or detail assertions.",
+    "Lines 145-148: omitting timeout or connect options fails concrete timeout/routing assertions; replacing the caller GIT_SSH_COMMAND loses the independently supplied key and fails prefix preservation, but core.sshCommand and GIT_SSH are untested.",
+    "Lines 153-154: indiscriminate fallback on any port-22 or timeout error fails the authentication-error or port-443 negative cases.",
+    "Lines 174-179: restoring refusal-only fallback makes timed-out/no-route fetch report unreachable, with one fetch rather than two and no 443 second attempt.",
+    "No added product assertion compares an output only to the same value supplied as its expected input; the read SHA comes from a separate executable transport stub."
+  ],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from)",
+    "reckon/crew_run_commands.py:3622 (completion remote-head guard)",
+    "reckon/crew/merge.py:881 (_push_and_confirm through _remote_head)"
+  ],
+  "completed_at": "2026-11-12T01:58:57Z",
+  "dispatched_at": "2026-11-12T01:51:03Z",
+  "failure_delta_evidence": {
+    "after_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T010554384046-a-remote-read-is-bounded/final-suite.log",
+    "baseline_failure_ids": [],
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T010554384046-a-remote-read-is-bounded/base-suite.log",
+    "importer_delta": 0
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/merge.py",
+      "line": "203",
+      "severity": "blocking",
+      "text": "blocking: when GIT_SSH_COMMAND is absent, setting it to plain ssh plus ConnectTimeout overrides both repository core.sshCommand and GIT_SSH, discarding configured identity/proxy/wrapper commands; reads and fetches that worked before can now fail authentication or connectivity, and a push using core.sshCommand can succeed while its confirmation uses a different transport; preserve the effective configured command and add regression coverage for these paths."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Verified production callers: reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from), reckon/crew_run_commands.py:3622 (completion remote-head guard), reckon/crew/merge.py:881 (_push_and_confirm through _remote_head)",
+    "diff": "reviewed implementation commit 3546e12f2f0d52d2a09b100cedfbfbc585a39fe3 and evidence commit a53193255be4fdc7c53b7b4747e06c56dd113c2e individually against base 4478f2ca58d0bf07456cab0fa35033b7a4c30671; the transport-selection regression is at reckon/crew/merge.py:203-205.",
+    "done_when": "prompt.txt:127-128 is measured by final-suite.log (63 passed), negative-suite.log (8 failed, 55 passed), matched importer logs (identical six failures), and pre-stage.log (ruff checks pass).",
+    "goal": "prompt.txt:38 requires bounded remote reads and timed-out port-22 retry; reckon/crew/merge.py:198-225 and :847-858 implement these but the new environment overrides other supported SSH command settings.",
+    "manifest": "manifest.md records both commits, completed baseline_suite and after_suite receipts, negative controls and pre-existing importer failures, consistent with the logs read.",
+    "write_paths": "prompt.txt:80-84 declares merge.py, the regression test and the fragment/figure directory; all three changed files are inside those paths."
+  },
+  "justifications": {
+    "durability": "tests/test_a_remote_read_is_bounded.py:58-179 detects restoration of the missing timeout and retry logic but :142-148 covers only GIT_SSH_COMMAND and misses the newly overridden core.sshCommand/GIT_SSH paths.",
+    "evidence": "final-suite.log records 63 passed and EXIT=0 at the reviewed head, negative-suite.log records both sleeping operations exceeding the base-code bound, and matched importer logs have the same six failure IDs.",
+    "fit": "reckon/crew/merge.py extends its existing runner and retry predicate with mechanism-based names, but :203-205 bypasses Git's existing transport configuration precedence.",
+    "goal_fidelity": "reckon/crew/merge.py:198-225 bounds ls-remote/fetch and :847-858 expands retry causes, but :203-205 can replace a working configured SSH transport.",
+    "reuse": "capability searches for remote readers, SSH route retry, timeout handling and transport stubs identify reckon/crew/merge.py:_run/_port22_refused/_port443_env as the existing owners extended here; the test fixture models a sleeping git child beyond the existing SSH push stub in tests/test_a_reviewed_head_lands_without_touching_the_index.py:386-399.",
+    "scope_discipline": "the diff changes only reckon/crew/merge.py, tests/test_a_remote_read_is_bounded.py and the declared evidence fragment, with no unrelated change."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: prompt.txt:38 requires bounded remote reads and timed-out port-22 retry; reckon/crew/merge.py:198-225 and :847-858 implement these but the new environment overrides other supported SSH command settings.\nVERDICT done_when: prompt.txt:127-128 is measured by final-suite.log (63 passed), negative-suite.log (8 failed, 55 passed), matched importer logs (identical six failures), and pre-stage.log (ruff checks pass).\nVERDICT write_paths: prompt.txt:80-84 declares merge.py, the regression test and the fragment/figure directory; all three changed files are inside those paths.\nVERDICT manifest: manifest.md records both commits, completed baseline_suite and after_suite receipts, negative controls and pre-existing importer failures, consistent with the logs read.\nVERDICT diff: reviewed implementation commit 3546e12f2f0d52d2a09b100cedfbfbc585a39fe3 and evidence commit a53193255be4fdc7c53b7b4747e06c56dd113c2e individually against base 4478f2ca58d0bf07456cab0fa35033b7a4c30671; the transport-selection regression is at reckon/crew/merge.py:203-205.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:286 (_commits_missing_from), reckon/crew_run_commands.py:3622 (completion remote-head guard), reckon/crew/merge.py:881 (_push_and_confirm through _remote_head)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/merge.py:198-225 bounds ls-remote/fetch and :847-858 expands retry causes, but :203-205 can replace a working configured SSH transport.\nSCORE evidence: 20\nJUSTIFICATION evidence: final-suite.log records 63 passed and EXIT=0 at the reviewed head, negative-suite.log records both sleeping operations exceeding the base-code bound, and matched importer logs have the same six failure IDs.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff changes only reckon/crew/merge.py, tests/test_a_remote_read_is_bounded.py and the declared evidence fragment, with no unrelated change.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_remote_read_is_bounded.py:58-179 detects restoration of the missing timeout and retry logic but :142-148 covers only GIT_SSH_COMMAND and misses the newly overridden core.sshCommand/GIT_SSH paths.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/merge.py extends its existing runner and retry predicate with mechanism-based names, but :203-205 bypasses Git's existing transport configuration precedence.\nSCORE reuse: 20\nJUSTIFICATION reuse: capability searches for remote readers, SSH route retry, timeout handling and transport stubs identify reckon/crew/merge.py:_run/_port22_refused/_port443_env as the existing owners extended here; the test fixture models a sleeping git child beyond the existing SSH push stub in tests/test_a_reviewed_head_lands_without_touching_the_index.py:386-399.\nFINDING reckon/crew/merge.py:203 blocking: when GIT_SSH_COMMAND is absent, setting it to plain ssh plus ConnectTimeout overrides both repository core.sshCommand and GIT_SSH, discarding configured identity/proxy/wrapper commands; reads and fetches that worked before can now fail authentication or connectivity, and a push using core.sshCommand can succeed while its confirmation uses a different transport; preserve the effective configured command and add regression coverage for these paths.\n",
+  "review_limitations": "Static review and recorded receipts only; no source mutation or test rerun; configured-command regression established from the changed environment construction and installed Git documentation.",
+  "review_run_id": "r-20261112T014703477959-review-of-a-remote-read-is-bounded-a53193255be4",
+  "reviewed_base_sha": "4478f2ca58d0bf07456cab0fa35033b7a4c30671",
+  "reviewed_head_sha": "a53193255be4fdc7c53b7b4747e06c56dd113c2e",
+  "reviewed_run_id": "r-20261112T010554384046-a-remote-read-is-bounded",
+  "scores": {
+    "durability": 17,
+    "evidence": 20,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T02:10:04.167425+00:00",
+  "total": 111
+}
