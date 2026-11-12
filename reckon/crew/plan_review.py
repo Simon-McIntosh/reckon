@@ -3736,6 +3736,78 @@ def compose_burst_refusal(
     return None
 
 
+def _review_launch_kind(project: str) -> str:
+    """How a composed review of this project is launched, or empty if unknown.
+
+    The review role resolves to its backend through the routing the dispatch
+    itself uses, overlays included, so a refusal answered before composition
+    speaks for the launch that will carry it. An unreadable configuration
+    answers empty: the review is then left to the verb, which reports the
+    configuration it could not resolve rather than a delivery condition nobody
+    measured.
+    """
+    from reckon import flight
+    from reckon.crew import routing
+    from reckon.crew.node import CrewError
+
+    try:
+        config = flight.resolve(project=project).config or {}
+        _backend_name, backend = routing.resolve_role(config, "review")
+    except (flight.FlightConfigError, OSError, CrewError):  # the verb reports
+        return ""
+    return str(backend.get("launch") or "")
+
+
+def session_delivery_refusal(project: str, session: str) -> str | None:
+    """The refusal a review of this session would meet once composed, or None.
+
+    A plan review composes its brief, plan snapshot and sidecar into the plan's
+    report directory before the dispatch that carries it away, and the dispatch
+    is the first place a session's delivery is judged. So a session that would
+    hear nothing was refused only after its report directory had been written:
+    a composition refused that way leaves the directory behind when the caller
+    stops before the dispatch can discard it, and the next attempt reads a
+    report that no run backs.
+
+    The conditions answered here are the session's own — no follower registered
+    for it, a registered follower that is not delivering. The project's producer
+    is a separate, project-global condition that
+    :func:`_unmet_follower_conditions` also reports; it is judged where it is
+    measured, at dispatch, so this refusal answers only for the session it is
+    asked about.
+
+    A session is judged only where the dispatch judges it: a backend that does
+    not launch a command of its own — the calling harness's in-harness launch —
+    has no follower to deliver to, so its dispatch refuses only for the
+    project's producer and a review composed for it is not refused here. An
+    unnamed session is left to the verb, which names the missing flag.
+
+    Returns the text of the refusal the dispatch would raise, built by the same
+    chooser the dispatch uses, so a caller reads one wording whichever stage
+    refuses it.
+    """
+    from reckon.crew.dispatch_watch import (
+        _FollowerAdmissionUnmet,
+        _unmet_follower_conditions,
+    )
+
+    if not str(session or "").strip():
+        return None
+    if _review_launch_kind(project) != "cli":
+        return None
+    watch = runs.watch_state(project, session=session)
+    conditions = _unmet_follower_conditions(
+        project,
+        {**watch, "watcher_live": True},
+        session=session,
+    )
+    if not conditions:
+        return None
+    return str(
+        _FollowerAdmissionUnmet(project, watch, session=session, conditions=conditions)
+    )
+
+
 # ── The composition a quiet plan owes, and its would-not-change answers ─────
 # A coordinator must remember to compose a content review after authoring a
 # plan, and one paused at a rate limit cannot. The producer pass composes the
