@@ -40,6 +40,12 @@
         <td>the node's worktree</td>
         <td>55 passed, <code>EXIT=0</code></td>
       </tr>
+      <tr>
+        <td>repair arms: base at <code>bf5030f</code> (inventory file only) and
+        head at <code>1c39e08870</code></td>
+        <td>base extraction; the node's worktree</td>
+        <td>51 passed <code>EXIT=0</code>; then 55 passed <code>EXIT=0</code></td>
+      </tr>
     </tbody>
   </table>
 
@@ -57,4 +63,15 @@
   held, creation waits out a lock released inside the bound and succeeds; a
   lock held past the bound refuses, naming the lock; the new worktree reads
   <code>core.checkStat=minimal</code>.</p>
+
+  <p><strong>Review repair: the git calls reuse the module's own runner.</strong>
+  The configuration reads and writes first each built their own git subprocess
+  beside <code>_git</code>, the git runner this module already carries, so the
+  new path repeated that runner's argument shape, output capture and decoding.
+  All four calls now go through <code>_git</code>, and the worktree-config
+  region holds no hand-rolled subprocess call. The repair changes no behaviour,
+  which the suite arms show: reverting the repairing commit restores
+  four hand-rolled calls where the head has none, and the suite is green at the
+  head either way. Control:
+  <code>runs/…-worktree-leaves-shared-config/negative-control-reuse.log</code>.</p>
 </section>
