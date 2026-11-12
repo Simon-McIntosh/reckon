@@ -23,7 +23,7 @@
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S22">
 <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;deferred&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;implementable&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;deferred&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;done&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;done&quot;,&quot;s27&quot;:&quot;done&quot;,&quot;s28&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;done&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
-<meta name="plan-version" content="230">
+<meta name="plan-version" content="231">
 <meta name="plan-modified" content="2026-11-12">
 <meta name="plan-section-depends-on" content="{&quot;s21&quot;:[&quot;a-dispatch-returns-without-its-worker#s20&quot;],&quot;s24&quot;:[&quot;a-dispatch-returns-without-its-worker#s23&quot;],&quot;s25&quot;:[&quot;a-dispatch-returns-without-its-worker#s24&quot;],&quot;s4&quot;:[&quot;a-dispatch-returns-without-its-worker#s3&quot;],&quot;s7&quot;:[&quot;a-dispatch-returns-without-its-worker#s3&quot;],&quot;s9&quot;:[&quot;a-dispatch-returns-without-its-worker#s3&quot;],&quot;s15&quot;:[&quot;a-dispatch-returns-without-its-worker#s14&quot;],&quot;s27&quot;:[&quot;a-dispatch-returns-without-its-worker#s25&quot;]}">
 </head>
@@ -1456,6 +1456,12 @@
 <div class="r-comment" data-section="s27" data-id="c-run-r-20261109T155935374342-a-launch-claim-has-one-reader" data-who="reckon-build" data-when="2026-11-09T16:38:32.113Z">
     <div class="r-comment-body"><p>§27 — claim.json now has one path-taking reader, `reckon.crew.dispatch_claims.read_claim(run_directory, run_id)`; `read_launch_claim` delegates with `run_dir(run_id)` and `_claim_registration_for_worker` is a projection of it with no `claim.json` left in `dispatch_launch.py`; the new test shows both callers agree on 8 cases (gate: 8 passed), the claim-grace and launch-span tests pass unchanged (9 passed), and the negative control restoring a divergent local parse runs red with 2 failed including the agreement case.</p></div>
 </div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261112T163437742401-review-of-a-dead-launch-frees-its-hold-cdfe803166bd" data-who="reckon-build" data-when="2026-11-12T16:56:06.446Z">
+    <div class="r-comment-body"><p>Reviewed r-20261112T153019306288-a-dead-launch-frees-its-hold at head cdfe803166bdb2400a4a04cb2e5f514258abe2ac against base 05684b28df2ad46a2c3d66511b409f7714d5a075; the record is written and parses, scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 18, fit 16, reuse 18 (total 105), added_failure_count 0, with three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s28" data-id="c-run-r-20261112T153019306288-a-dead-launch-frees-its-hold" data-who="reckon-build" data-when="2026-11-12T16:32:29.435Z">
+    <div class="r-comment-body"><p>A launch that ends between taking its reservation and recording a supervisor now files the attempt&#x27;s exit receipt naming the cause, and a reservation that recorded no supervisor, left no worker record and is older than UNREACHED_LAUNCH_BOUND_SECONDS (1800 s) stops holding the run; a fence immediately before the supervisor start makes a release safe, so a superseded launch starts nothing. Gate: base and head arms each 51 passed EXIT=0, 52 importing files 23 failed/658 passed at base against 23 failed/663 passed at head (floater passes 7/7 at head standalone), negative control 1 failed EXIT=1.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20260923T114521056430-review-of-a-dispatch-returns-without-its-worker" data-who="reckon-ship" data-when="2026-09-23T12:35:43.928Z">
     <div class="r-comment-body"><p>read-back of a-dispatch-returns-without-its-worker: 44 multi-reading sentences, 30 material; ranked items resolved at 3f4a19c5</p></div>
 </div>
@@ -1584,9 +1590,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-20260928T1650-s21-currency-audit" data-who="s21-coord" data-when="2026-09-28T14:50:00Z">
     <div class="r-comment-body"><p>This is the S21 currency audit at <code>76e1bf93</code> (run r-20260928T133546218925-s21-audit-dispatch).</p><ul><li><b>Done, with passing tests:</b> §3 (5 passed), §5 (6 passed) and §7 (2 passed).</li><li><b>§9: superseded, now declared done.</b> The work landed under a-crew-process-ends-with-its-owner as <code>c4684acf</code>, and <code>tests/test_discard_releases_a_clean_worktree.py</code> reports 4 passed. The test name this section gives, test_discard_removes_an_empty_worktree.py, was never created.</li><li><b>§10: partly done.</b> test_dispatch_spawns_through_the_fleet.py reports 6 passed and test_fleet_supervisor.py 14 passed; the on-node half remains.</li><li><b>Still open:</b> §2 is partly done (its probe is opt-in), §6 has no asserting test, and §8's cap is still enforced.</li><li><b>Stale wording:</b> §4's skill paths are corrected to reckon-build. §8 still says "reckon-ship contract"; read it as reckon-build.</li></ul></div>
-</div>
-<div class="r-comment" data-section="s28" data-id="c-run-r-20261112T163437742401-review-of-a-dead-launch-frees-its-hold-cdfe803166bd" data-who="reckon-build" data-when="2026-11-12T16:56:06.446Z">
-    <div class="r-comment-body"><p>Reviewed r-20261112T153019306288-a-dead-launch-frees-its-hold at head cdfe803166bdb2400a4a04cb2e5f514258abe2ac against base 05684b28df2ad46a2c3d66511b409f7714d5a075; the record is written and parses, scoring goal_fidelity 17, evidence 17, scope_discipline 19, durability 18, fit 16, reuse 18 (total 105), added_failure_count 0, with three non-blocking findings.</p></div>
 </div>
 </section>
 </main>
