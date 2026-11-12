@@ -174,7 +174,8 @@ def test_a_station_that_did_not_opt_in_sends_no_signal(stubs, tmp_path, monkeypa
     with monkeypatch.context() as patched:
         patched.setattr(census, "census", refuse)
         patched.setattr(os, "kill", refuse)
-        patched.setattr(os, "pidfd_open", refuse)
+        patched.setattr(census, "_pidfd_open", refuse)
+        patched.setattr(census, "_pidfd_signal", refuse)
         patched.setattr(
             signal,
             "pidfd_send_signal",
@@ -216,13 +217,14 @@ def test_the_census_thread_stops_when_the_station_exits(tmp_path, monkeypatch):
 def test_a_spared_orphan_is_never_announced_as_stopping(tmp_path, monkeypatch, capsys):
     """The stop line follows the revalidation that confirms the target."""
     report = {
+        "state_home": str(tmp_path / "crew"),
         "orphaned": [
             {
                 "pid": 424242,
                 "start_time": "12345",
                 "owner": {"kind": "stamped", "source": "RECKON_OWNER_PID"},
             }
-        ]
+        ],
     }
     reports = [report, {"orphaned": []}]
     monkeypatch.setattr(census, "census", lambda **kwargs: reports.pop(0))
