@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="53">
+<meta name="plan-version" content="54">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -97,6 +97,9 @@
 <div class="r-comment" data-section="_top" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-09T01:35:00Z">
     <div class="r-comment-body"><p>§9 landed. A batch now derives a write path the section names absolutely as absolute. At queue time it refuses a derived path with a parent segment, or one that resolves nowhere under the repository, naming the sentence it came from. Run <code>r-20261108T232922624067-a-batch-derives-an-absolute-write-path</code>, head <code>ec1bd85f51</code>, after two repair rounds; review 112/120.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6" data-who="reckon-build" data-when="2026-11-11T22:50:54.880Z">
+    <div class="r-comment-body"><p>Reviewed run r-20261111T204312623665 (a-batch-entry-faces-the-write-scope-check-a-direct-dispatch, 7df41b097f..d65bb493b4): parsed record, scores goal_fidelity 20 / evidence 17 / scope_discipline 20 / durability 19 / fit 19 / reuse 5, no blocking finding — the batch queue path now runs the same write-scope fence the direct dispatch runs (single test re-run here: 2 passed), verified red under the worker's negative control; two non-blocking findings: the new test helper duplicates an existing dry-run argv builder, and the timing attribution for the two added importer ids has no alone-run log on disk.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261110T153757099316-review-of-a-batch-entry-is-refused-at-queue-time-for-the-node-contract-c8e0018c20fa" data-who="reckon-build" data-when="2026-11-10T15:55:37.169Z">
     <div class="r-comment-body"><p>Reviewed r-20261110T150554869217-a-batch-entry-is-refused-at-queue-time-for-the-node-contract at base 45a800ebe54f026ba1ad26dfb46fc71b49adbd7b and head c8e0018c20faa85a447664fa2660e07ae6afabfd: the node shipped only a test and an evidence fragment, because the queue-time refusal already exists at base in reckon/crew/dispatch.py:340; scores goal_fidelity 15, evidence 15, scope_discipline 19, durability 12, fit 14, reuse 5, with four non-blocking findings (duplicated fixture set, changelog docstring, a re-asserted existing guard, and a base arm that does not measure the importing test files).</p></div>
 </div>
@@ -163,8 +166,8 @@
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261108T232922624067-a-batch-derives-an-absolute-write-path" data-who="reckon-build" data-when="2026-11-09T00:51:53Z">
     <div class="r-comment-body"><p>landing: §9 keeps a leading slash in a derived write path, keeps a `./` prefix relative rather than reading its slash as a root, and refuses at queue time both a derived relative path that resolves nowhere and any path carrying a `..` segment; the gate `tests/test_a_batch_derives_an_absolute_write_path.py` reports 5 passed at head with each of its four negative controls red, the importers of `reckon.crew.dispatch_batch` report 20 passed at `cd1b826f2b`, and the supplied two-file suite reports 7 passed at base `5c474bd0e8` and 8 passed at the delivered head</p></div>
 </div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261111T221642213267-review-of-a-batch-entry-faces-the-write-scope-check-a-direct-dispatch-d65bb493b4d6" data-who="reckon-build" data-when="2026-11-11T22:50:54.880Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261111T204312623665 (a-batch-entry-faces-the-write-scope-check-a-direct-dispatch, 7df41b097f..d65bb493b4): parsed record, scores goal_fidelity 20 / evidence 17 / scope_discipline 20 / durability 19 / fit 19 / reuse 5, no blocking finding — the batch queue path now runs the same write-scope fence the direct dispatch runs (single test re-run here: 2 passed), verified red under the worker&#x27;s negative control; two non-blocking findings: the new test helper duplicates an existing dry-run argv builder, and the timing attribution for the two added importer ids has no alone-run log on disk.</p></div>
+<div class="r-comment" data-section="s10" data-id="c-run-r-20261111T222012810096-review-of-a-metered-request-is-admitted-or-refused-never-stranded-17d99ae660bd" data-who="reckon-build" data-when="2026-11-11T22:43:32.327Z">
+    <div class="r-comment-body"><p>Independent review of r-20261111T204643572670 at 7e49ae1..17d99ae6 stored as a parsed record: goal_fidelity 14, evidence 15, scope_discipline 19, durability 18, fit 18, reuse 18; added_failure_count 0 from 184 base / 183 head; two non-blocking findings (the landing fragment names the wrong test as the one non-recurring base failure; the test&#x27;s lane-name assertion is satisfied by the echoed backend).</p></div>
 </div>
 </section>
 </main>

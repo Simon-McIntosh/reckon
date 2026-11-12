@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failure_source": {
+    "after_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204643572670-a-metered-request-is-admitted-or-refused-never-stranded/gate-after.log",
+    "base_failure_count": 184,
+    "baseline_suite": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T204643572670-a-metered-request-is-admitted-or-refused-never-stranded/gate-base.log",
+    "head_failure_count": 183,
+    "method": "set difference of the FAILED lines in the two arms (head minus base), read from the reviewed run's own after_suite and baseline_suite gate logs rather than from the manifest's claim",
+    "no_longer_failing": [
+      "tests/test_a_metered_request_is_admitted_or_refused.py::test_every_metered_request_is_attempted_or_refused_naming_why"
+    ]
+  },
+  "call_sites": [
+    "reckon/crew/queue_admission.py:admit_until_stopped (manual pass, admit_once at :6180)",
+    "reckon/crew/queue_admission.py:admit_until_stopped (service loop, admit_once at :6209)",
+    "reckon/crew/obligations.py:1206 (_queued_row reads recorded_pass_hold)",
+    "reckon/crew/obligations.py:3198 (holder duty reads recorded_pass_hold)"
+  ],
+  "completed_at": "2026-11-11T22:43:32.327Z",
+  "dispatched_at": "2026-11-11T22:22:29Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/a-metered-request-is-admitted-or-refused-never-stranded.html",
+      "line": 67,
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing record names test_a_stamp_refused_once_is_asked_about_again as the one base failure that does not recur, but that test appears in neither gate log (grep count 0 in both), and the actual single non-recurring base failure is tests/test_a_metered_request_is_admitted_or_refused.py::test_every_metered_request_is_attempted_or_refused_naming_why, the new test passing where the base pass stranded the requests; the claim a reader will cite is false and the true one is stronger."
+    },
+    {
+      "file": "tests/test_a_metered_request_is_admitted_or_refused.py",
+      "line": 299,
+      "severity": "non-blocking",
+      "text": "non-blocking: 'assert METERED_BACKEND in reason' compares the reason against the constant the test itself queued the request on, and the reason is built at reckon/crew/queue_admission.py:5328 from the pointer's own backend, the same value, so a reason reading only the lane name would satisfy it; the load-bearing assertion is the non-empty attempt at :287, which does fail on the base revision, so this is a weak second assertion rather than the guard itself."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "admit_once is reached from admit_until_stopped (the manual pass at reckon/crew/queue_admission.py:6180 and the service loop at :6209), and the hold it writes is read back at reckon/crew/obligations.py:1206 and :3198.",
+    "diff": "read commit by commit against 7e49ae11494a: 5b8e406e61 adds 37 lines to admit_once and the 305-line test, b402953c0d adds the landing fragment and 17d99ae660 corrects its control row (413 insertions, no deletions).",
+    "done_when": "the done_when names tests/test_a_metered_request_is_admitted_or_refused.py passing with its negative control, both suite arms on all_debug one at a time with -n 4, and ruff clean on the staged paths; focused-test.log records 1 passed, negative-control.log records 1 failed with the predicted message, gate-base.log and gate-after.log each carry revision, module, cwd and a final EXIT= line, and I re-ran ruff on the landed files at 17d99ae6 (all checks passed; 3 files already formatted) because the run recorded no ruff log.",
+    "goal": "the node's goal is that a metered request is admitted or refused, never stranded; reckon/crew/queue_admission.py:5319-5349 records a held-on-other-lane pass hold and verdict row for each request the lane filter drops, so the strand is named rather than silent, but the request still stays queued with neither a launch nor a refusal in this codebase's sense (it enters result['held'], not result['failed']).",
+    "manifest": "read; status complete, commits 5b8e406e61, b402953c0d and 17d99ae660, changed_paths three files, tests and test_logs naming the four logs, baseline_suite 184 failed and after_suite 183 failed with failures_added_against_base []; every claim I checked against the artefacts held except the landing fragment's naming of the one non-recurring base failure.",
+    "write_paths": "read the source prompt's fence (reckon/crew/queue_admission.py, reckon/crew/fleet_supervisor.py, tests/test_a_metered_request_is_admitted_or_refused.py) and its manifest's declared paths; the diff touches only reckon/crew/queue_admission.py, the new test and the landing fragment, all inside that set, and fleet_supervisor.py needed no change."
+  },
+  "justifications": {
+    "durability": "tests/test_a_metered_request_is_admitted_or_refused.py:287 fails against the base revision's admission pass (negative-control.log), so removing the recording reddens it, but :299 only requires the echoed backend name and the done-when's launch-or-refuse conjunct is never asserted.",
+    "evidence": "gate-base.log and gate-after.log each begin with revision, module and cwd and end in a bare EXIT= line, negative-control.log reproduces the predicted 1 failed message, and the added-failure set derived from the two logs is empty; the landing fragment at line 67 misnames the one non-recurring base failure.",
+    "fit": "reckon/crew/queue_admission.py:5319-5349 records through _record_pass_hold and _verdict_row exactly as the neighbouring unplaced and gate holds do, and names the verdict by mechanism (held-on-other-lane) with no plan, gate or ticket label anywhere in the diff.",
+    "goal_fidelity": "reckon/crew/queue_admission.py:5323-5349 records why the pass will not launch a metered request but appends it to result['held'], so on a metered-only install the request stays queued indefinitely rather than launching or being refused, and the three cited requests had been discarded before the node ran (fragment lines 19-33 state that limit).",
+    "reuse": "the recording extends the existing hold owner (_record_pass_hold at reckon/crew/queue_admission.py:1418, _verdict_row at :2154) rather than forking one; my capability search over reckon/crew for 'record why a pass did not launch a request' found _record_gated_verdicts at :2376, which covers the fleet-gate cause only, so the new verdict is the sole semantic addition.",
+    "scope_discipline": "git diff --stat 7e49ae11494a..17d99ae660bd changes only reckon/crew/queue_admission.py, tests/test_a_metered_request_is_admitted_or_refused.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261111T222012810096-review-of-a-metered-request-is-admitted-or-refused-never-stranded-17d99ae660bd",
+  "reviewed_base_sha": "7e49ae11494a871bee5033583918faf44b3a6d4c",
+  "reviewed_head_sha": "17d99ae660bd7a99b28597852282991d79d45814",
+  "reviewed_run_id": "r-20261111T204643572670-a-metered-request-is-admitted-or-refused-never-stranded",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T00:11:05.769996+00:00",
+  "total": 102
+}
