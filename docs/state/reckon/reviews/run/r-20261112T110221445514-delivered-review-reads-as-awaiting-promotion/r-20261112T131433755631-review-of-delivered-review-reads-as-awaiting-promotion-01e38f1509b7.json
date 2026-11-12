@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "e52a171c540d2c2b35e17015701a46f8c30e4e99",
+  "call_site_count": 7,
+  "call_sites": [
+    "reckon/crew/obligations.py:3474",
+    "reckon/crew/obligations.py:1128",
+    "reckon/crew/obligation_snapshot.py:1364",
+    "reckon/crew/obligation_snapshot.py:1512",
+    "reckon/crew/station_subscriber.py:155",
+    "reckon/mcp_views.py:4641",
+    "reckon/hooks/coordinator_obligations.py:195"
+  ],
+  "completed_at": "2026-11-12T13:25:12.147Z",
+  "dimension_dispositions": {
+    "evidence": {
+      "kind": "folded",
+      "node": "repair-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7",
+      "recorded_at": "2026-11-12T13:50:35.741315+00:00"
+    },
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7",
+      "recorded_at": "2026-11-12T13:50:55.921355+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T13:16:46Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html",
+      "line": "26",
+      "severity": "blocking",
+      "text": "blocking: the recorded gate is not the done_when's measure -- no test file importing reckon.crew.obligations ran at base or head in matched arms (base-arm.log runs only the static census tests/test_staged_write_inventory.py, which does not import obligations), it ran in place rather than on all_debug, and the fragment's claim that \"at the base revision the same file fails the same case\" is unsupported because base-arm.log states the new test is absent at that revision; the changed _current_review_in_flight also governs the follower list at obligations.py:1128, so a regression there would land unmeasured."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "655",
+      "severity": "non-blocking",
+      "text": "non-blocking: _delivered_review_run re-implements the review-pointer phase read that recovery_classification.py:666 and recovery_review_dispatch.py:480 already own, and _delivered_review_promotion_command re-reads the same pointer a second time in the same duty build, forking a capability instead of extending its owner."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "2146",
+      "severity": "non-blocking",
+      "text": "non-blocking: the delivered branch never compares the head the delivered review read against the run's current head, and the superseded guard only fires when a stored record exists, so a delivered review of a superseded head reads awaiting-promotion and offers a promotion of the old revision while the run still owes a review of the new one."
+    }
+  ],
+  "head_log_revision": "01e38f1509b7c97728da9f6d2a613988de6b35dc",
+  "item_verdicts": {
+    "diff": "one commit read against e52a171; it adds REVIEW_AWAITING_PROMOTION_DUTY_KIND, DELIVERED_REVIEW_PHASES, _recorded_review_run_id, _delivered_review_run and _delivered_review_promotion_command, guards _current_review_in_flight, and adds the delivered branch in _review_duty_item, plus the new test and the fragment.",
+    "done_when": "the done_when's new test exists and asserts the behaviour, but its matched importer arms were not run: base-arm.log runs only tests/test_staged_write_inventory.py, a static staged-write census that never imports reckon.crew.obligations, and no test file importing obligations_module ran at either revision.",
+    "goal": "the node goal is that a delivered, unpromoted review reads as awaiting promotion; reckon/crew/obligations.py:2143-2185 sets kind review-awaiting-promotion, names the review run and offers its promotion command, so a run whose dispatched review delivered no longer reads review-missing.",
+    "manifest": "read; status complete, commits 01e38f1509b7, base arm 51 passed EXIT=0 and after arm 54 passed EXIT=0, negative control 1 failed 2 passed EXIT=1, and it discloses that the base reading is no duty at all rather than the plan's review-missing.",
+    "write_paths": "the node declared reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py, the evidence fragment and a figures directory; git diff e52a171..01e38f1 touches exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows forcing _delivered_review_run to return \"\" reddens tests/test_a_delivered_review_reads_as_awaiting_promotion.py:198, but the withdrawn and figure-field branches of _recorded_review_run_id at obligations.py:620-632 and the _live_review_runs consequence have no assertion.",
+    "evidence": "base-arm.log runs only tests/test_staged_write_inventory.py at e52a171 and after-arm.log adds the new test to the same census file, so the done_when's matched importer arms on all_debug are unmeasured while 57 test files import obligations_module.",
+    "fit": "the additions follow the module's docstring and naming idiom at reckon/crew/obligations.py:608-680, though DELIVERED_REVIEW_PHASES restates a delivered-run vocabulary the repository already declares at reckon/crew/queue_admission.py:2646.",
+    "goal_fidelity": "reckon/crew/obligations.py:2143-2185 builds the awaiting-promotion duty with the review run id and the classifier-composed promotion command, which is the goal as stated.",
+    "reuse": "_delivered_review_run at reckon/crew/obligations.py:648-668 re-reads a review run's own pointer phase, a capability recovery_classification._review_pointer_phase (reckon/crew/recovery_classification.py:666) and recovery_review_dispatch._readable_standing_review (reckon/crew/recovery_review_dispatch.py:480) already own, and extends neither.",
+    "scope_discipline": "the diff touches only obligations.py, the new test and the fragment, all inside the declared write paths, with no figure and no plan edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a delivered, unpromoted review reads as awaiting promotion; reckon/crew/obligations.py:2143-2185 sets kind review-awaiting-promotion, names the review run and offers its promotion command, so a run whose dispatched review delivered no longer reads review-missing.\nVERDICT done_when: the done_when's new test exists and asserts the behaviour, but its matched importer arms were not run: base-arm.log runs only tests/test_staged_write_inventory.py, a static staged-write census that never imports reckon.crew.obligations, and no test file importing obligations_module ran at either revision.\nVERDICT write_paths: the node declared reckon/crew/obligations.py, tests/test_a_delivered_review_reads_as_awaiting_promotion.py, the evidence fragment and a figures directory; git diff e52a171..01e38f1 touches exactly the first three and nothing else.\nVERDICT manifest: read; status complete, commits 01e38f1509b7, base arm 51 passed EXIT=0 and after arm 54 passed EXIT=0, negative control 1 failed 2 passed EXIT=1, and it discloses that the base reading is no duty at all rather than the plan's review-missing.\nVERDICT diff: one commit read against e52a171; it adds REVIEW_AWAITING_PROMOTION_DUTY_KIND, DELIVERED_REVIEW_PHASES, _recorded_review_run_id, _delivered_review_run and _delivered_review_promotion_command, guards _current_review_in_flight, and adds the delivered branch in _review_duty_item, plus the new test and the fragment.\nCALL_SITES: reckon/crew/obligations.py:3474 (_review_duty_item in the duty derivation), reckon/crew/obligations.py:1128 (_live_review_runs follower list), reckon/crew/obligation_snapshot.py:1364, reckon/crew/obligation_snapshot.py:1512, reckon/crew/station_subscriber.py:155, reckon/mcp_views.py:4641, reckon/hooks/coordinator_obligations.py:195\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/obligations.py:2143-2185 builds the awaiting-promotion duty with the review run id and the classifier-composed promotion command, which is the goal as stated.\nSCORE evidence: 7\nJUSTIFICATION evidence: base-arm.log runs only tests/test_staged_write_inventory.py at e52a171 and after-arm.log adds the new test to the same census file, so the done_when's matched importer arms on all_debug are unmeasured while 57 test files import obligations_module.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the diff touches only obligations.py, the new test and the fragment, all inside the declared write paths, with no figure and no plan edit.\nSCORE durability: 13\nJUSTIFICATION durability: negative-control.log shows forcing _delivered_review_run to return \"\" reddens tests/test_a_delivered_review_reads_as_awaiting_promotion.py:198, but the withdrawn branch and figure-field branch of _recorded_review_run_id at obligations.py:620-632, the unreadable-pointer branches, and the _live_review_runs consequence have no assertion.\nSCORE fit: 16\nJUSTIFICATION fit: the additions follow the module's docstring and naming idiom at reckon/crew/obligations.py:608-680, though DELIVERED_REVIEW_PHASES restates a delivered-run vocabulary the repository already declares at reckon/crew/queue_admission.py:2646.\nSCORE reuse: 5\nJUSTIFICATION reuse: _delivered_review_run at reckon/crew/obligations.py:648-668 re-reads a review run's own pointer phase, a capability recovery_classification._review_pointer_phase (reckon/crew/recovery_classification.py:666) and recovery_review_dispatch._readable_standing_review (reckon/crew/recovery_review_dispatch.py:480) already own, and extends neither.\nFINDING docs/evidence/fragments/the-monitor-reads-each-fact-once/delivered-review-reads-as-awaiting-promotion.html:26 blocking: the recorded gate is not the done_when's measure -- no test file importing reckon.crew.obligations ran at base or head in matched arms (base-arm.log runs only the static census tests/test_staged_write_inventory.py, which does not import obligations), it ran in place rather than on all_debug, and the fragment's claim that \"at the base revision the same file fails the same case\" is unsupported because base-arm.log states the new test is absent at that revision; the changed _current_review_in_flight also governs the follower list at obligations.py:1128, so a regression there would land unmeasured.\nFINDING reckon/crew/obligations.py:655 non-blocking: _delivered_review_run re-implements the review-pointer phase read that recovery_classification.py:666 and recovery_review_dispatch.py:480 already own, and _delivered_review_promotion_command re-reads the same pointer a second time in the same duty build, forking a capability instead of extending its owner.\nFINDING reckon/crew/obligations.py:2146 non-blocking: the delivered branch never compares the head the delivered review read against the run's current head, and the superseded guard only fires when a stored record exists, so a delivered review of a superseded head reads awaiting-promotion and offers a promotion of the old revision while the run still owes a review of the new one.\n",
+  "review_run_id": "r-20261112T131433755631-review-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7",
+  "reviewed_base_sha": "e52a171c540d2c2b35e17015701a46f8c30e4e99",
+  "reviewed_head_sha": "01e38f1509b7c97728da9f6d2a613988de6b35dc",
+  "reviewed_run_id": "r-20261112T110221445514-delivered-review-reads-as-awaiting-promotion",
+  "reviewer": "deepseek-v4.1-flash",
+  "reviewer_run_id": "r-20261112T131433755631-review-of-delivered-review-reads-as-awaiting-promotion-01e38f1509b7",
+  "scores": {
+    "durability": 13,
+    "evidence": 7,
+    "fit": 16,
+    "goal_fidelity": 17,
+    "reuse": 5,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T14:02:16.569224+00:00",
+  "total": 76
+}
