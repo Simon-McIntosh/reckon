@@ -1,0 +1,25 @@
+<article class="r-fragment" id="landing-reads-recorded-control" data-node="landing-reads-recorded-control">
+  <h2 id="landing-reads-recorded-control-title">A landing reads the control the run recorded</h2>
+
+  <p id="landing-reads-recorded-control-why">The negative-control gate judged the field rather than the run. A manifest naming a log with only its exit line, a manifest naming a lint log, and a manifest naming nothing all refused a passing run while the red log of the declared mutation sat in the run's own directory. Each case cost a coordinator waiver or a hand-edited manifest line, and the defect was in the reader rather than the evidence.</p>
+
+  <p id="landing-reads-recorded-control-what">Promotion now reads the manifest-named log first and keeps it whenever its run failed and it names at least one failing test id the head arm passes. When that log does not admit the control, the run's own directory is searched for a log of the declared mutation — files named for a control first, then in name order — and the log used is written on the verdict row as <code>control_log_source</code> and <code>resolved_log</code>. When the directory holds no such log, the landing runs the mutation itself: the node's own tests are run over a checkout of the run's base revision, where the repair is absent, submitted to the configured measurement partition as an armed arm is. A mutation that fails nothing is refused, and so is a run with no red log anywhere.</p>
+
+  <table id="landing-reads-recorded-control-cases">
+    <thead>
+      <tr><th>Case</th><th>Outcome</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Manifest names an exit-line-only log; run directory holds the red log</td><td>admitted on the run's log, recorded as <code>run-directory</code></td></tr>
+      <tr><td>Manifest names no log; run directory holds the red log</td><td>admitted on the run's log</td></tr>
+      <tr><td>Manifest names a log of another mutation; a valid one sits beside it</td><td>admitted on the valid log</td></tr>
+      <tr><td>Manifest names a valid log</td><td>admitted on that log; no other is read</td></tr>
+      <tr><td>No red log anywhere; the mutation fails a test the head arm passes</td><td>admitted as <code>landing-measure</code></td></tr>
+      <tr><td>No red log anywhere; the mutation fails nothing</td><td>refused, naming the measured run</td></tr>
+    </tbody>
+  </table>
+
+  <p id="landing-reads-recorded-control-measure">The node's own test file reads 6 passed at the head (<code>EXIT=0</code>); with the suite inventory file the head arm reads 57 passed. The declared mutation — reading only the manifest-named control log — makes the exit-line-only case refuse, and with the repair absent the same test file reads 6 failed, <code>EXIT=1</code>, every id one the head arm passes. The suite arms read 51 passed at the base revision (<code>EXIT=0</code>) and 57 passed at the head (<code>EXIT=0</code>).</p>
+
+  <p id="landing-reads-recorded-control-files">Changed: <code>reckon/crew/promotion_evidence.py</code> (control-log admission, directory search, mutation measurement), <code>reckon/crew/promotion_checks.py</code> (the gate reads the recorded control and records which log it used), <code>reckon/crew/landing_measure.py</code> (the mutation run over the base tree), and <code>tests/test_a_landing_reads_the_control_the_run_recorded.py</code>.</p>
+</article>
