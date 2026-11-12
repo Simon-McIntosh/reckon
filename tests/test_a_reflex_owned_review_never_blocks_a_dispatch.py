@@ -135,7 +135,7 @@ def test_a_session_waiting_inside_the_reflex_window_can_dispatch(delivered):
 
 
 @pytest.mark.parametrize("armed,expired", [(False, False), (True, True)])
-def test_a_run_without_a_current_reflex_wait_still_refuses_dispatch(
+def test_a_run_without_a_current_reflex_wait_is_dispatched_over_and_recorded(
     delivered, armed, expired
 ):
     pointer, config = delivered
@@ -145,10 +145,12 @@ def test_a_run_without_a_current_reflex_wait_still_refuses_dispatch(
         runs.follower_claim(PROJECT, SESSION, delivery="stream")
         if armed
         else nullcontext(),
-        pytest.raises(dispatch_module.UnreconciledRuns) as refused,
     ):
-        _dispatch(pointer, config)
-    assert [row["run_id"] for row in refused.value.runs] == [RUN]
+        result = _dispatch(pointer, config)
+    assert result["run_id"] != RUN
+    backlog = result["unreconciled_override"]
+    assert backlog["requested"] is False
+    assert [row["run_id"] for row in backlog["waived_runs"]] == [RUN]
 
 
 def test_the_next_sweep_composes_a_review_after_twice_the_window(delivered):
