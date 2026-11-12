@@ -2130,25 +2130,6 @@ def _require_declared_negative_control(
         "" if manifest is None else str(manifest.get("negative_control_log") or "")
     )
     check["log"] = delivered
-    if not delivered:
-        raise CrewError(
-            f"run {run_id!r} writes a check ({', '.join(test_paths)}) and declares "
-            f"the mutation {declaration!r} in its {NEGATIVE_CONTROL_FIELD} field, "
-            "but its manifest carries no negative_control_log path. Promotion "
-            "refuses a passing gate whose negative control was never run: keep the "
-            "log that mutation produced beside the passing one and name its path "
-            "in the manifest as `negative_control_log: <path>`"
-        )
-    text, resolved = _negative_control_log_text(delivered, manifest_path=manifest_path)
-    check["resolved_log"] = resolved
-    if text is None:
-        raise CrewError(
-            f"run {run_id!r} names negative_control_log {delivered!r}, which cannot "
-            "be read, so the mutation it was to evidence was never shown to fail. "
-            "Write the red log where the manifest can be read alongside it and "
-            "name that path"
-        )
-    control_ids = _control_failure_ids(text)
     head_ids = _head_suite_failure_ids(manifest)
     baseline_ids = _baseline_suite_failure_ids(manifest)
     # The head arm decides the control whenever it is readable; the baseline is
@@ -2160,16 +2141,6 @@ def _require_declared_negative_control(
         reference_ids: set[str] | None = head_ids
     else:
         reference_ids = baseline_ids
-    added = (
-        []
-        if reference_ids is None
-        else sorted(review_module.failure_ids_covered(reference_ids, control_ids))
-    )
-    recorded_exit = _recorded_exit_status(text)
-    run_failed = _control_run_shows_a_failure(text, recorded_exit)
-    check["control_exit_status"] = recorded_exit
-    check["control_run_failed"] = run_failed
-    check["control_failure_ids"] = sorted(control_ids)
     if baseline_ids is not None:
         check["baseline_failure_ids"] = sorted(baseline_ids)
     if head_ids is not None:
@@ -2180,6 +2151,86 @@ def _require_declared_negative_control(
         check["comparison_arm"] = "baseline_suite"
     else:
         check["comparison_arm"] = "after_suite"
+
+    # The log the manifest names is read first and kept whenever it admits the
+    # control. A run that named a lint log, kept only its exit line, or named
+    # nothing at all kept the red log elsewhere in its own directory as often as
+    # not, and the declaration is discharged by the run recorded rather than by
+    # the field's spelling: a log beside the manifest that shows the mutation
+    # failing is admitted, and the log used is written on the row.
+    text = ""
+    resolved = ""
+    source = ""
+    named_resolved = ""
+    named_text: str | None = None
+    if delivered:
+        named_text, named_resolved = _negative_control_log_text(
+            delivered, manifest_path=manifest_path
+        )
+        check["resolved_log"] = named_resolved
+        if named_text is not None:
+            # Kept so a refusal describes the log the manifest named even when
+            # another log is the one admitted.
+            text, resolved = named_text, named_resolved
+    if named_text is not None and _control_log_added_failure_ids(
+        named_text, reference_ids
+    ):
+        text, resolved, source = named_text, named_resolved, "manifest"
+    else:
+        beside = _run_directory_control_log(
+            Path(manifest_path).expanduser().parent if manifest_path else None,
+            reference_ids=reference_ids,
+            skip=[Path(named_resolved)] if named_resolved else (),
+        )
+        if beside is not None:
+            text, resolved = beside
+            source = "run-directory"
+
+    # With no log anywhere in the run's directory, the landing takes the
+    # reading itself: the declared mutation is run over the tree the repair is
+    # absent from, and its failures are the control the log would have carried.
+    measured_observation: Mapping[str, Any] | None = None
+    if not source:
+        measured = _measured_control(run_id, record, test_paths)
+        if measured is not None and measured.get("unreadable"):
+            check["control_measure_unreadable"] = str(measured.get("unreadable"))
+        elif measured is not None:
+            observation = measured.get("control_suite") or {}
+            measured_observation = observation
+            check["control_suite"] = dict(observation)
+            if reference_ids is not None and review_module.failure_ids_covered(
+                reference_ids, set(observation.get("failure_ids") or [])
+            ):
+                source = "landing-measure"
+                resolved = str(observation.get("log_path") or "")
+                try:
+                    text = Path(resolved).read_text(encoding="utf-8")
+                except (OSError, UnicodeError):
+                    text = ""
+    check["control_log_source"] = source or "none"
+    if source:
+        check["resolved_log"] = resolved
+
+    if source == "landing-measure" and measured_observation is not None:
+        recorded_exit = measured_observation.get("exit_status")
+        run_failed = recorded_exit not in (None, 0)
+        control_ids = {
+            review_module.canonical_node_id(str(test_id).strip())
+            for test_id in (measured_observation.get("failure_ids") or [])
+            if str(test_id).strip()
+        }
+    else:
+        recorded_exit = _recorded_exit_status(text)
+        run_failed = _control_run_shows_a_failure(text, recorded_exit)
+        control_ids = _control_failure_ids(text)
+    added = (
+        []
+        if reference_ids is None
+        else sorted(review_module.failure_ids_covered(reference_ids, control_ids))
+    )
+    check["control_exit_status"] = recorded_exit
+    check["control_run_failed"] = run_failed
+    check["control_failure_ids"] = sorted(control_ids)
     check["added_failure_ids"] = added
     # Both facts have to come from something only the run could have written: a
     # run that reports no failure in either its capture status or its runner's
@@ -2217,10 +2268,43 @@ def _require_declared_negative_control(
         )
     else:
         unexplained = ""
+    if not source:
+        # No log the run kept admits the control, so the refusal says what was
+        # looked at — the named log and the run's own directory — rather than
+        # only what a path holds: a run whose log lived beside its manifest is
+        # refused here only when that directory holds no red log either.
+        if not delivered:
+            unexplained = (
+                "its manifest names no negative_control_log, and no log in the "
+                "run's own directory adds a failing test id to the comparison arm"
+            )
+        elif named_text is None:
+            unexplained = (
+                f"negative_control_log {delivered!r} cannot be read, and no log "
+                "in the run's own directory adds a failing test id to the "
+                "comparison arm"
+            )
+        else:
+            unexplained = (
+                f"the log at {named_resolved!r} shows no failed control run: "
+                f"{unexplained}; no log in the run's own directory adds a failing "
+                "test id to the comparison arm"
+            )
+        measured_problem = check.get("control_measure_unreadable")
+        if measured_problem:
+            unexplained = (
+                f"{unexplained}; the landing could not measure the mutation "
+                f"itself either: {measured_problem}"
+            )
+        elif measured_observation is not None:
+            unexplained = (
+                f"{unexplained}; the landing ran the declared mutation itself and "
+                "it failed no test the comparison arm passes"
+            )
     if unexplained:
         refusal = (
-            f"run {run_id!r} declares the mutation {declaration!r} but the log at "
-            f"{resolved!r} shows no failed control run: {unexplained}. A control "
+            f"run {run_id!r} declares the mutation {declaration!r} but no log of "
+            f"that run shows it failing: {unexplained}. A control "
             "is admitted on its facts alone — a non-zero exit record and at least "
             "one failing test id the head arm does not fail, falling back to the "
             "baseline's failing ids only when the manifest records no readable "
@@ -3062,10 +3146,13 @@ def _delivered_review_payloads_for_commit(
 
 from reckon.crew.promotion_evidence import (
     _committed_scope,
+    _control_log_added_failure_ids,
     _control_run_shows_a_failure,
     _manifest_text,
+    _measured_control,
     _presented_commits_without_a_declaration,
     _recorded_exit_status,
+    _run_directory_control_log,
 )
 from reckon.crew.promotion_records import (
     _read_json_object,
