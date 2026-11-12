@@ -1,7 +1,7 @@
 # Worker role digest: implement
 #
-# Generated from ~/.agents/AGENTS.md (sha256 0c51970e4ef595f1a6399d8b108ff672e0d4722c3df5dea4e802b2e0712dd6c9,
-# 118303 bytes, ~29576 — the same policy holds for every
+# Generated from ~/.agents/AGENTS.md (sha256 29ceab9845b8a16b691e5e1e3edb4c593c8d4a3d013e9a38d331bd04537bf9e1,
+# 118749 bytes, ~29688 — the same policy holds for every
 # role; this digest retains the sections below and withholds the
 # coordinator-only delivery text.
 # Regenerate with: python -m reckon.crew.worker_digest
@@ -453,12 +453,19 @@ mid-step.
   test directory or a whole suite; it is expected to use more than about a minute
   of CPU; it reads or writes a corpus, a census, a manifest population or a
   graph-wide query result. Heavy commands run on `rigel` (no time limit, usually
-  idle) or `all_debug` (one hour):
+  idle) or `all_debug` (one hour). From inside the fleet job, submit with
+  `SLURM_JOB_ID` unset. A shell there inherits it, so a bare
+  `srun --partition=...` tries to start a step of the fleet job and hangs with
+  nothing in `squeue`, which was measured at ten minutes on 2026-11-12:
 
   ```bash
-  srun --partition=rigel --cpus-per-task=16 --mem=32G --time=04:00:00 \
-    bash -lc 'export TMPDIR=/tmp; cd <repo>; <command>' > <gpfs-log> 2>&1; echo EXIT=$?
+  env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=rigel --cpus-per-task=16 \
+    --mem=32G --time=04:00:00 --output=<gpfs-log> \
+    --wrap 'export TMPDIR=/tmp; cd <repo>; <command>; echo EXIT=$?'
   ```
+
+  Inputs must live on GPFS (`~/.cache/<repo>-<topic>/`), because the job's node
+  cannot see the fleet node's `/tmp` or a session scratchpad under it.
 
 - **`srun --overlap --jobid=<fleet job>` is never a way to run computation.**
   Overlap puts the work on the coordinators' own cores. It is for attaching
