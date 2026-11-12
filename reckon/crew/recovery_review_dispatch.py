@@ -610,6 +610,7 @@ def _record_review_dispatch(
     backend: str = "",
     reviewed_head: str = "",
     asks: Sequence[Mapping[str, Any]] | None = None,
+    claim: Mapping[str, Any] | None = None,
     rubric: str | None = None,
 ) -> None:
     """Write the reflex's outcome onto the run it acted for.
@@ -647,6 +648,11 @@ def _record_review_dispatch(
             # reader sees the lane that refused the review and the lane the
             # second answer named rather than only the outcome it produced.
             entry["asks"] = [dict(ask) for ask in asks]
+        if claim:
+            # A refusal on a claim names the run that holds it, so a later
+            # sweep can tell a refusal whose cause still stands from one the
+            # release has already lifted: the holder's own pointer answers.
+            entry["claim"] = dict(claim)
         pointer[dispatch_field] = entry
         return pointer
 
@@ -2814,6 +2820,83 @@ def _open_review_refusal(
     return None
 
 
+def _claim_the_refusal_names(exc: CrewError) -> dict[str, Any] | None:
+    """The run and path a write-scope refusal names, or None.
+
+    Only a refusal that names both a holder and the path it holds is stored:
+    the pair is what a later sweep asks the holder's own pointer about, so a
+    refusal recording neither would answer no question the sweep could put to
+    it.
+    """
+    run_id = str(getattr(exc, "run_id", "") or "")
+    path = str(getattr(exc, "claimed_path", "") or "")
+    if not run_id or not path:
+        return None
+    return {"run_id": run_id, "path": path}
+
+
+def claim_refusal_still_holds(claim: Mapping[str, Any]) -> bool:
+    """Whether the claim a refused review dispatch named still fences its paths.
+
+    The holder is asked through its own live pointer and the disposition every
+    other claim reader uses, so a holder that has been promoted, discarded or
+    stopped with an empty worktree releases the review exactly as it releases
+    any other dispatch. A holder whose pointer cannot be read names no run
+    anybody can observe, so it holds nothing.
+    """
+    from reckon.crew.node import claim_disposition
+
+    holder = str(claim.get("run_id") or "")
+    if not holder:
+        return False
+    try:
+        pointer = read_pointer(holder)
+    except (CrewError, OSError):
+        return False
+    if not pointer:
+        return False
+    return bool(claim_disposition(pointer).binding)
+
+
+def stored_claim_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
+    """The hold a refused review dispatch still stands under, or None.
+
+    A refusal on a claim is the one refusal a later sweep can lift by itself:
+    the cause is another run's claim, and that run's own record says whether it
+    still stands. While it does, the reflex composes nothing rather than
+    re-asking the same question every sweep and recording the same refusal. On
+    the sweep after the holder releases, this returns None and the dispatch
+    composes again. A refusal recorded before the run's head moved speaks for a
+    revision the run has left behind, so it holds nothing.
+    """
+    recorded = record.get(REVIEW_DISPATCH_FIELD)
+    if not isinstance(recorded, Mapping):
+        return None
+    if str(recorded.get("status") or "") != "refused":
+        return None
+    claim = recorded.get("claim")
+    if not isinstance(claim, Mapping):
+        return None
+    if not claim_refusal_still_holds(claim):
+        return None
+    head = str(_review_dispatch_fields(record)["head"] or "")
+    if not _review_head_covers(str(recorded.get("head") or ""), head):
+        return None
+    holder = str(claim.get("run_id") or "")
+    held_path = str(claim.get("path") or "")
+    return {
+        "run_id": str(record.get("run_id") or ""),
+        "dispatched": False,
+        "held_claim": True,
+        "claim_run_id": holder,
+        "reason": (
+            f"the review is held: run {holder!r} still claims "
+            f"{held_path or 'the review record'}, so the reflex composes it "
+            "again on the sweep after that run releases the claim"
+        ),
+    }
+
+
 def review_dispatch_refusal(record: Mapping[str, Any]) -> dict[str, Any] | None:
     """The refusal :func:`dispatch_review_for_run` would return, read without writing.
 
@@ -2881,6 +2964,9 @@ def dispatch_review_for_run(
     refusal = _open_review_refusal(record, dry_run=dry_run)
     if refusal is not None:
         return refusal
+    held = stored_claim_refusal(record)
+    if held is not None:
+        return held
     text_report = _dispatch_text_review_for_run(
         record,
         config=config,
@@ -3426,11 +3512,13 @@ def _dispatch_composed_review(
         # refusals all arrive here. The automatic path must not be the one place
         # they are skipped, so the refusal is recorded and reported rather than
         # caught and shrugged off.
+        claim = _claim_the_refusal_names(exc)
         record_dispatch(
             status="refused",
             reason=str(exc),
             backend=backend,
             reviewed_head=fields["head"],
+            claim=claim,
         )
         return {
             "run_id": run_id,

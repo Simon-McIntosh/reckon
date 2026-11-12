@@ -685,6 +685,23 @@ def _review_dispatch_refusal(
         return None
     if not _refusal_speaks_for_revision(recorded, row=row, head=head, now=now):
         return None
+    claim = recorded.get("claim")
+    if isinstance(
+        claim, Mapping
+    ) and recovery_review_dispatch.claim_refusal_still_holds(claim):
+        # The refusal's cause is another run's claim, and that run's own record
+        # says it still stands: the reflex is holding rather than retrying, so
+        # the duty names the claim to clear instead of a follower to inspect.
+        holder = str(claim.get("run_id") or "")
+        return {
+            "reason": str(recorded.get("reason") or "")
+            or "the review reflex refused this review's dispatch",
+            "next_command": (
+                f"the review is held while run {holder} claims its record; "
+                f"promote or release that run (`reckon crew observe --run "
+                f"{holder}`)"
+            ),
+        }
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
