@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="98">
+<meta name="plan-version" content="99">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -285,6 +285,12 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261111T205432239034-runs-for-node-reads-by-node" data-who="reckon-build" data-when="2026-11-11T21:22:22Z">
     <div class="r-comment-body"><p>Node lookups now use idx_runs_node on hot and archive stores while preserving scoped and unscoped records; regression 2 passed, negative control 1 failed/1 passed, importer arms 377 passed/44 identical failures each (zero added ids). Evidence: docs/evidence/fragments/a-read-costs-what-changed/runs-for-node-reads-by-node.html#runs-for-node-reads-by-node-evidence</p></div>
 </div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261112T120949700863-review-of-a-promotion-holds-no-profile-build-2a507bb8e2b7" data-who="reckon-build" data-when="2026-11-12T12:23:06.835Z">
+    <div class="r-comment-body"><p>Reviewed r-20261112T104303102350-a-promotion-holds-no-profile-build over 3801df115c..2a507bb8e2 (head 2a507bb8e2b7), scoring goal_fidelity 13, evidence 12, scope_discipline 20, durability 10, fit 18, reuse 17 (total 90), with added_failure_count 0, one blocking finding and two non-blocking findings; the record is stored under the reviewed run's review-records/ and parses.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261112T130757598549-review-of-a-promotion-holds-no-profile-build-23407bb875a2" data-who="reckon-build" data-when="2026-11-12T13:23:53.600Z">
+    <div class="r-comment-body"><p>Independent review of run r-20261112T104303102350-a-promotion-holds-no-profile-build over the two commits it gained since its prior review (2a507bb8e2..23407bb875): parsed, all six dimensions scored, one non-blocking finding, added failure count 0.</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261103T022300314104-a-persisted-answer-carries-its-code-version" data-who="reckon-build" data-when="2026-11-03T09:22:39.771Z">
     <div class="r-comment-body"><p>Persisted parses now carry the source digest of every module that produced them through one persisted-memo helper, and _store._read_state seeds the shared parse from discovery_state before reading; measured on a 40-plan store a fresh process reads one plan with 0 parses (base 1), an edited plan parses once while an untouched read parses 0, a changed _plan_html digest makes all 40 stored parses absent (40 parses on the rebuilding pass, 0 on the next), and a corrupt store still yields the parsed value, with both declared negative controls turning their named case red.</p></div>
 </div>
@@ -314,9 +320,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
-</div>
-<div class="r-comment" data-section="s21" data-id="c-run-r-20261112T120949700863-review-of-a-promotion-holds-no-profile-build-2a507bb8e2b7" data-who="reckon-build" data-when="2026-11-12T12:23:06.835Z">
-    <div class="r-comment-body"><p>Reviewed r-20261112T104303102350-a-promotion-holds-no-profile-build over 3801df115c..2a507bb8e2 (head 2a507bb8e2b7), scoring goal_fidelity 13, evidence 12, scope_discipline 20, durability 10, fit 18, reuse 17 (total 90), with added_failure_count 0, one blocking finding and two non-blocking findings; the record is stored under the reviewed run&#x27;s review-records/ and parses.</p></div>
 </div>
 </section>
 </main>
