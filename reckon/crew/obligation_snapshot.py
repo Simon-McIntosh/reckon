@@ -932,12 +932,17 @@ def payload_measured_from(payload: Mapping[str, Any], *, computed_at: datetime) 
 
 
 def _row_with_age(row: Any, instant: datetime) -> Any:
-    """One duty row with its measurement instant turned back into an age."""
+    """One duty row with its measurement instant turned back into an age.
+
+    The row's time-dependent remedy text is composed again from the refreshed
+    age, so a figure printed in prose moves with the clock exactly as the
+    numeric age beside it does.
+    """
     if not isinstance(row, Mapping):
         return row
     measured = dict(row)
     measured[_AGE_SECONDS] = _age_in_seconds(measured.pop(_AGE_SINCE, None), instant)
-    return measured
+    return _derivation_module().refresh_overdue_remedy(measured, now=instant)
 
 
 def _unreadable_record_remedy(finding: Mapping[str, Any]) -> str:
