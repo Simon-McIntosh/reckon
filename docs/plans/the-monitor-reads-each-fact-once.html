@@ -25,8 +25,8 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="183">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="184">
+<meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
   <main class="plan-doc">
@@ -796,6 +796,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261110T142718013800-tick-reads-the-review-store-once" data-who="reckon-build" data-when="2026-11-10T15:57:58Z">
     <div class="r-comment-body"><p>One review-store enumeration serves 40 runs per tick; unchanged ticks add 0 bound Path.stat calls, 0 os.stat calls and 0 read_review calls. The required per-run-stat mutation fails with 40 extra calls through each stat API. Manifest and named gate-log rewrites each refresh the annotation; a missing gate-log key input is repaired. Importer arms pass 91/97 and armed arms 51/57, with 0 added failures. [Evidence](/reckon/evidence/fragments/the-monitor-reads-each-fact-once/tick-reads-the-review-store-once.html#tick-reads-the-review-store-once-review-coverage).</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261112T000420800208-review-of-a-tick-reads-the-review-store-once-534c4912d755" data-who="reckon-build" data-when="2026-11-12T00:21:07.559Z">
+    <div class="r-comment-body"><p>independent review of r-20261111T224037800115-a-tick-reads-the-review-store-once at head 534c4912d7: goal_fidelity 19, evidence 18, scope_discipline 20, durability 18, fit 18, reuse 4; two non-blocking findings on the new answer cache in reckon/crew/recovery_memo.py.</p></div>
 </div>
 <div class="r-comment" data-section="s23" data-id="c-run-r-20261110T213833644491-review-of-held-worktrees-read-once-per-change-ec676fcad554" data-who="reckon-build" data-when="2026-11-10T22:03:27Z">
     <div class="r-comment-body"><p>Parsed independent review of a0c0431d011d96118a1a4c784cd723d766ec198d to ec676fcad5544604fc2e324a8d7f6bb692256779; all six dimensions scored, scoped added_failure_count 0, one blocking finding requiring a compliant separate-partition importer rerun.</p></div>
