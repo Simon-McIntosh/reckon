@@ -23,9 +23,9 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S26">
-<meta name="plan-version" content="147">
+<meta name="plan-version" content="148">
 <meta name="plan-modified" content="2026-11-12">
-<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;,&quot;s26&quot;:&quot;implementable&quot;}">
+<meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s10&quot;:&quot;done&quot;,&quot;s11&quot;:&quot;done&quot;,&quot;s12&quot;:&quot;done&quot;,&quot;s13&quot;:&quot;done&quot;,&quot;s14&quot;:&quot;done&quot;,&quot;s15&quot;:&quot;done&quot;,&quot;s16&quot;:&quot;done&quot;,&quot;s17&quot;:&quot;done&quot;,&quot;s18&quot;:&quot;done&quot;,&quot;s19&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s20&quot;:&quot;implementable&quot;,&quot;s21&quot;:&quot;done&quot;,&quot;s22&quot;:&quot;done&quot;,&quot;s23&quot;:&quot;done&quot;,&quot;s24&quot;:&quot;done&quot;,&quot;s25&quot;:&quot;implementable&quot;,&quot;s26&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;deferred&quot;,&quot;s5&quot;:&quot;done&quot;,&quot;s6&quot;:&quot;done&quot;,&quot;s7&quot;:&quot;done&quot;,&quot;s8&quot;:&quot;done&quot;,&quot;s9&quot;:&quot;done&quot;}">
 <meta name="plan-commits" content="f2ea9301,5b1759ab,428477c7">
 <meta name="plan-section-depends-on" content="{&quot;s14&quot;:[&quot;a-review-can-see-the-figure#s13&quot;],&quot;s15&quot;:[&quot;a-review-can-see-the-figure#s14&quot;],&quot;s16&quot;:[&quot;a-review-can-see-the-figure#s14&quot;],&quot;s19&quot;:[&quot;a-review-can-see-the-figure#s18&quot;],&quot;s21&quot;:[&quot;a-review-can-see-the-figure#s13&quot;],&quot;s20&quot;:[&quot;a-review-can-see-the-figure#s21&quot;,&quot;a-review-can-see-the-figure#s22&quot;,&quot;imas-ambix:a-tool-call-carries-no-model-markup#s3&quot;]}">
 </head>
@@ -405,6 +405,11 @@
     <h4 class="r-fu-title">Build §26: a dispose refusal names the rubric that holds the record</h4>
     <div class="r-fu-body"><p>A figure finding could not be disposed because the refusal did not name <code>--rubric figure</code>.</p></div>
     <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §26</pre>
+    </article>
+<article class="r-fu" data-id="f-arcstf-027" data-status="open" data-capability-version="1.0" data-capability-class="general" data-written-by="reckon-c0" data-written-at="2026-11-12" data-recommends-skill="/reckon-build a-review-can-see-the-figure §25" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Rewrite §25&#x27;s measure source before building it</h4>
+    <div class="r-fu-body"><p>Plan review r-20261112T202827987933 found that §25 reads figure measures through <code>review_record_refusals</code> (<code>reckon/crew/review.py</code>:949-962), which skips scores for a figure record. <code>FIGURE_REVIEW_ITEMS</code> (:394-401) is read by nothing, and a figure record's verdicts are <code>RUBRIC</code> report lines with no fixed place for measures. The completeness rule lives in <code>reckon/crew/recovery_review_subject.py</code>:1501-1530, outside §25's write paths. §25 needs its measure source and write paths restated before dispatch.</p></div>
+    <pre class="r-fu-prompt">/reckon-build a-review-can-see-the-figure §25</pre>
     </article>
 </section>
 
