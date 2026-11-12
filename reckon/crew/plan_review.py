@@ -1154,6 +1154,8 @@ def review_coverage(
     keeps both readers on that answer until an input changes. Plan bytes,
     review records, snapshot bytes and resolved configuration all participate
     in its identity; an absent snapshot cannot reuse a measured decision.
+    The judge's policy key carries its instructions, criteria, checklist and
+    model identity, so a covered decision cannot outlive the policy it used.
     """
     from reckon import _store, metadata_index
 
@@ -1168,12 +1170,22 @@ def review_coverage(
         snapshots.append(
             None if snapshot is None else file_memo.content_digest(snapshot)
         )
+    prompt = review_need._prompt_for(review_need.PLAN_SUBJECT)
+    # The judge owns policy identity; the outer key carries the plan-specific
+    # inputs, so only that key's policy portion needs to be represented here.
+    policy_key = review_need._cache_key(
+        review_need.PLAN_SUBJECT,
+        prompt["checks"][review_need.PLAN_SUBJECT],
+        {},
+        {},
+    )
     identity = _digest(
         {
             "plan": content,
             "reviews": records,
             "snapshots": snapshots,
             "config": config,
+            "review_policy": policy_key,
         }
     )
 
