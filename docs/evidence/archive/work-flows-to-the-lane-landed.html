@@ -69,6 +69,21 @@
     <p>§19 landed at <code>3fe4dd04ec</code>. An execution identity now records the host that published it. The sweep and the claim reclaim judge its liveness only on that host, and keep another host's identity until an age bound. Reviewed clean at <code>2254607a</code>.</p>
   </section>
 
+  <section id="s10-decision-holds-named-sections" data-evidence-origin="append">
+    <h2>§10 — a decision can hold only the sections it names</h2>
+    <p>§10 landed at <code>7a544fd631</code>. A decision can now name the sections it holds. A decision that names sections holds only those, at dispatch and at admission, and the hold names the decision's key; a decision naming no section holds the plan as before. Its first landing conflicted with main in <code>dispatch.py</code> and <code>queue_admission.py</code> after §11 landed, so the landing sent it back for a merge repair. The repaired head <code>c00cf4e0</code> keeps both the scoped hold and §11's named verdicts in one hold function. The lander finished the landing after its promotion.</p>
+  </section>
+
+  <section id="s13-refused-review-writes-nothing" data-evidence-origin="append">
+    <h2>§13 — a plan review refused for its session writes nothing</h2>
+    <p>§13 landed at <code>8b2d0043a4</code>. <code>crew review</code> now checks each session refusal it can raise before it composes a brief, so a refused review leaves no report directory. A review launched in-harness, which has no follower, is not refused for one. Its first review found the new guard ran ahead of argument validation, and a repair round fixed that along with a formatting finding. The re-review at <code>14f72d0d</code> raised only non-blocking findings, which were deferred at landing.</p>
+  </section>
+
+  <section id="s15-plan-commit-releases-backoff" data-evidence-origin="append">
+    <h2>§15 — a plan commit releases the requests backing off on it</h2>
+    <p>§15 landed at <code>f8d7cfd3c2</code>. A request backing off after a launch refused for an uncommitted plan is now retried at the first admit pass after the plan's committed content changes, whatever its <code>retry_at</code>. Its review was deleted as a stranded launch four times overnight (traces under <code>refusal-traces/</code>; the fix is <code>work-is-never-stuck-behind-the-admission-loop</code> §52), and the fifth review was clean. The admit service's lander promoted and landed it unaided, once the station sweep fixes were live. Reviewed head: <code>5740f22d</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
