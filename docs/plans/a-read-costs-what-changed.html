@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="99">
+<meta name="plan-version" content="100">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -290,6 +290,9 @@
 </div>
 <div class="r-comment" data-section="s21" data-id="c-run-r-20261112T130757598549-review-of-a-promotion-holds-no-profile-build-23407bb875a2" data-who="reckon-build" data-when="2026-11-12T13:23:53.600Z">
     <div class="r-comment-body"><p>Independent review of run r-20261112T104303102350-a-promotion-holds-no-profile-build over the two commits it gained since its prior review (2a507bb8e2..23407bb875): parsed, all six dimensions scored, one non-blocking finding, added failure count 0.</p></div>
+</div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261112T104303102350-a-promotion-holds-no-profile-build" data-who="reckon-build" data-when="2026-11-12T12:54:07Z">
+    <div class="r-comment-body"><p>A promotion folds its row into the run-time profile from the stored samples, so no index decode and no run-document read happens while the promotion lock is held, and the samples now carry across a UTC date roll instead of declining; a base the fold cannot extend is rebuilt rather than left stranded, since nothing else writes the profile. tests/test_a_promotion_holds_no_profile_build.py records zero profile-path decodes in the fresh-index and stale-index cases, serves 203 rows after three promotions, proves a yesterday-dated base folds with no ledger read, and proves a base keyed on a foreign aggregate is rebuilt to 201 rows including the promoted row.</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261103T022300314104-a-persisted-answer-carries-its-code-version" data-who="reckon-build" data-when="2026-11-03T09:22:39.771Z">
     <div class="r-comment-body"><p>Persisted parses now carry the source digest of every module that produced them through one persisted-memo helper, and _store._read_state seeds the shared parse from discovery_state before reading; measured on a 40-plan store a fresh process reads one plan with 0 parses (base 1), an edited plan parses once while an untouched read parses 0, a changed _plan_html digest makes all 40 stored parses absent (40 parses on the rebuilding pass, 0 on the next), and a corrupt store still yields the parsed value, with both declared negative controls turning their named case red.</p></div>
