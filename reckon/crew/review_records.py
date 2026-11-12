@@ -1820,6 +1820,49 @@ def record_for_review_run_anywhere(
     return path, dict(record)
 
 
+def review_run_record_rubrics(
+    project: str,
+    reviewed_run_id: str,
+    review_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[str]:
+    """The rubric families a review run's record for a run is stored under.
+
+    A lookup that filters by rubric can only answer ``None`` when the record it
+    was asked for is held under another family, and a caller reading that
+    ``None`` cannot tell the two cases apart: no record at all, or a record it
+    could reach by naming the family it is in. This answers the second question
+    without the filter, so a refusal can name what the store does hold.
+
+    The name returned is the record's own rubric, as the record carries it; a
+    text review is the empty name, because it is the family every record
+    without a rubric belongs to. The committed tree is read first and the
+    staging store after it, the same order
+    :func:`record_for_review_run_anywhere` reads. An empty list means no
+    readable record of the named review run belongs to this run.
+    """
+    name = str(review_run_id or "").strip()
+    if not name:
+        return []
+    families: list[str] = []
+
+    def _note(record: Mapping[str, Any]) -> None:
+        rubric = _review._review_record_rubric(record)
+        if rubric not in families:
+            families.append(rubric)
+
+    for _path, record in _committed_records_for_run(project, reviewed_run_id):
+        if str(record.get("review_run_id") or "").strip() == name:
+            _note(record)
+    staged = record_for_review_run(project, name, base_dir=base_dir)
+    if staged is not None:
+        _path, record = staged
+        if str(record.get("reviewed_run_id") or "").strip() == reviewed_run_id:
+            _note(record)
+    return families
+
+
 def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:
     """Whether an indexed record file can answer a lookup for head ``named``.
 

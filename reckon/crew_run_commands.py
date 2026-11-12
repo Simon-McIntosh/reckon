@@ -749,6 +749,61 @@ def crew_path(kind, project, run_id):
     click.echo(str(path))
 
 
+def _no_named_review_record_refusal(
+    project: str,
+    reviewed_run_id: str,
+    named_review: str,
+    rubric: str | None,
+) -> str:
+    """Why a named review run's record was not selected, and how to reach it.
+
+    A review run's record is stored under one rubric family, and the selection
+    is text by default, so a figure review named with ``--review`` alone
+    resolves to nothing. The refusal then has two cases that read the same to a
+    reader who cannot see the store: the review run produced no record at all,
+    or it produced one this selection never looked in. Naming the family and
+    the flag value that selects it is the difference between an operator
+    guessing and an operator answering the finding.
+
+    A family a disposition does not select is named as such rather than handed
+    over as a flag, because a command carrying a rubric the verb refuses is a
+    worse answer than none.
+    """
+    from reckon.crew import review as review_module
+    from reckon.crew import review_records as review_records_module
+
+    selected = f"--rubric {rubric}" if rubric else "the text review (no --rubric)"
+    families = [
+        family
+        for family in review_records_module.review_run_record_rubrics(
+            project, reviewed_run_id, named_review
+        )
+        if family != (rubric or "")
+    ]
+    if families:
+        family = families[0]
+        if family == review_module.FIGURE_REVIEW_RUBRIC:
+            held = (
+                f"its record is the {family} review, which this verb selects "
+                f"with --rubric {family}"
+            )
+        else:
+            held = (
+                f"its record is held under the {family!r} rubric, which a "
+                "disposition does not select"
+            )
+        return (
+            f"run {reviewed_run_id!r} carries no record from review run "
+            f"{named_review!r} in project {project!r} under {selected}; "
+            f"{held}"
+        )
+    return (
+        f"run {reviewed_run_id!r} carries no record from review run "
+        f"{named_review!r} in project {project!r}; --review names the "
+        "review run whose record the disposition answers"
+    )
+
+
 def _reviewed_head_from_run_records(project: str, reviewed_run_id: str) -> str:
     """The revision a run with no live pointer was reviewed at, from its records.
 
@@ -997,9 +1052,9 @@ def crew_dispose(
         )
         if named_record is None:
             raise click.ClickException(
-                f"run {reviewed_run_id!r} carries no record from review run "
-                f"{named_review!r} in project {project!r}; --review names the "
-                "review run whose record the disposition answers"
+                _no_named_review_record_refusal(
+                    project, reviewed_run_id, named_review, rubric
+                )
             )
         stored = named_record
         described = ""
