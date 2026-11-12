@@ -905,6 +905,25 @@ def dispatch_awaiting_reviews(
                 run_id: str = run_id,
                 kind: str = kind,
             ) -> dict[str, Any]:
+                # A worker starts after the pass that read the pointer, so the
+                # run may have stopped being live in between — another run's
+                # promotion can settle or remove it. Promotion is handed the
+                # pointer it read, so without this read the sweep would act on
+                # a run whose record has gone. It is the same judgement the
+                # pass makes when the pointer cannot be read at all, made at
+                # the moment the promotion would write.
+                if kind == "review-self" and not runs.pointer_path(run_id).exists():
+                    return {
+                        "run_id": run_id,
+                        "kind": kind,
+                        "vanished": {
+                            "run_id": run_id,
+                            "error": (
+                                "the run's pointer is gone since this sweep read "
+                                "it, so there is no live run to promote"
+                            ),
+                        },
+                    }
                 return {**_run_job(run_id, job), "kind": kind}
 
             if not promotions.submit(run_id, _job):
