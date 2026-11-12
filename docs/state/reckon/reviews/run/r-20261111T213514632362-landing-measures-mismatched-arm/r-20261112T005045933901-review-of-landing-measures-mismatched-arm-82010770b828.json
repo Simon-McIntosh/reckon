@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T01:08:02.010Z",
+  "dispatched_at": "2026-11-12T00:56:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/landing_measure.py",
+      "line": 940,
+      "severity": "non-blocking",
+      "text": "reckon/crew/landing_measure.py:940 `armed_observations` re-orchestrates the two-arm suite path already owned by `measure_run` (landing_measure.py:715): it repeats the config/partition resolution, `_carry_missing_tests`, the two `_arm` calls and the unreadable loop rather than factoring the shared suite-arm measurement out of the owner. It extends the owner by composing `armed_argv`/`_arm`/`_partition_runner` rather than replacing it, but a later fix to the arm-orchestration (timeout sizing, partition wiring, missing-test carry) must now be made in two places."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 1017,
+      "severity": "non-blocking",
+      "text": "reckon/crew/promotion_records.py:1017 `_measure_missing_arms` overlaps the landing-side measurement already owned by `queue_landing._measure_delivery` (queue_landing.py:1040), which measures a delivered run's suite arms at a base and a head checkout. It is not a plain duplicate: it measures at the run's dispatch base against the run's own worktree head rather than current primary against a merge candidate, and it yields the manifest observation shape `_evaluate_suite_delta` consumes. The overlap is worth recording so a future change to how the landing measures a run's arms does not silently diverge between the two paths."
+    },
+    {
+      "file": "reckon/crew/promotion_records.py",
+      "line": 1017,
+      "severity": "non-blocking",
+      "text": "reckon/crew/promotion_records.py:1017 the node's done-when also requires 'ruff check and ruff format --check add no findings on staged paths', but the manifest records no ruff result. I verified both clean here (ruff check: All checks passed; ruff format --check: 3 files already formatted), so the omission is a recording gap in the manifest, not a defect in the change."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the run's goal is to have a landing measure a missing, mismatched or wrong-revision armed arm itself on a compute partition instead of refusing on it; reckon/crew/promotion_records.py:1017 `_measure_missing_arms` now takes that reading via landing_measure.armed_observations and lands the run on it.\nVERDICT done_when: the done-when names tests/test_a_landing_measures_a_mismatched_arm.py covering a superseded-head after arm, a mismatched baseline command, a missing after arm, an unmeasured matching pair and an added-failure refusal, plus both suite arms at base and head; the manifest records all of these and the logs carry the arms (baseline 6 failed/49 passed/2 errors EXIT=1; after 57 passed EXIT=0).\nVERDICT write_paths: the run declared promotion_records.py, landing_measure.py, queue_landing.py, the new test file and the evidence fragment; the diff touches exactly four of those and nothing outside them.\nVERDICT manifest: read; it states status complete, names both arm logs, the negative control log, the arm commands and results, and its commit list 40a055fe78 and 82010770b8.\nVERDICT diff: read commit by commit against dc998c198357ad7ea094138fcc4b75c4ba148232; 40a055fe78 adds arm_observation/armed_observations to landing_measure.py and _measured_arm_tree/_measure_missing_arms/_record_measured_arms plus the measured-arms branch in _evaluate_suite_delta, and 82010770b8 adds only the evidence fragment; 537 insertions, no deletions.\nCALL_SITES: reckon/crew/promotion.py:714 (calls _evaluate_suite_delta)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_records.py:1157 calls _measure_missing_arms and adopts the measured pair when the recorded arms are missing, mismatched or at another revision, which is exactly what the goal asks.\nSCORE evidence: 17\nJUSTIFICATION evidence: /home/ITER/mcintos/.config/reckon/crew/runs/r-20261111T213514632362-landing-measures-mismatched-arm/logs/baseline-arm.log ends '6 failed, 49 passed, 2 errors in 2.01s' and after-arm.log ends '57 passed in 10.74s', both with bare EXIT lines, and negative-control-mismatched-arm.log shows 4 failed/2 passed EXIT=1; the done-when's ruff line is unrecorded in the manifest though I verified it clean.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the four changed paths in the diff are all inside the five declared fenced paths and queue_landing.py, though declared, was not modified.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_landing_measures_a_mismatched_arm.py:216-217 assert delta['measured_by'] == 'run' and measured['calls'] == 0, so a regression that measures an already-matching pair reddens them, and the negative-control test at line 238 reinstates the refusal and asserts 'after_suite.revision_matches_head' in missing_fields; the partition-wiring branch and _measured_arm_tree's None path are not exercised.\nSCORE fit: 18\nJUSTIFICATION fit: the new functions follow landing_measure.py's existing private-helper idiom and promotion_records.py's deferred-import style, and no added name carries a plan, stage, issue or version identifier.\nSCORE reuse: 11\nJUSTIFICATION reuse: reckon/crew/landing_measure.py:940 composes the owner's helpers (armed_argv, _arm, _partition_runner, _carry_missing_tests) but re-orchestrates measure_run's two-arm path at landing_measure.py:715, and promotion_records.py:1017 overlaps queue_landing._measure_delivery's landing-side arm measurement, so the capability is extended but partly forked.\nFINDING reckon/crew/landing_measure.py:940 non-blocking: armed_observations repeats measure_run's suite-arm orchestration (partition setup, _carry_missing_tests, two _arm calls, unreadable loop) instead of factoring it out of the owner, so an arm-orchestration fix must be made twice.\nFINDING reckon/crew/promotion_records.py:1017 non-blocking: _measure_missing_arms overlaps queue_landing._measure_delivery, which already measures a delivered run's arms at a base and a head checkout; it differs in base revision and output shape, so it neither wraps nor replaces the owner.\nFINDING reckon/crew/promotion_records.py:1017 non-blocking: the manifest records no ruff result although the done-when requires ruff check and ruff format --check clean on staged paths; verified clean here, so it is a recording gap rather than a code defect.\n",
+  "review_run_id": "r-20261112T005045933901-review-of-landing-measures-mismatched-arm-82010770b828",
+  "reviewed_base_sha": "dc998c198357ad7ea094138fcc4b75c4ba148232",
+  "reviewed_head_sha": "82010770b828a9dd245eb17aa32932d75765f67d",
+  "reviewed_run_id": "r-20261111T213514632362-landing-measures-mismatched-arm",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 11,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T01:55:58.094217+00:00",
+  "total": 101
+}
