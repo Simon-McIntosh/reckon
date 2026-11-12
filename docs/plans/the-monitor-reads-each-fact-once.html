@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="221">
+<meta name="plan-version" content="222">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -998,6 +998,12 @@ staged paths.</p>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261112T110444695714-claim-refused-review-retried-when-claim-clears" data-who="reckon-build" data-when="2026-11-12T12:40:52.453Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/the-monitor-reads-each-fact-once/claim-refused-review-retried-when-claim-clears.html — a review dispatch refused on a claim now records the claiming run's id and claimed path, so the reflex holds without re-recording while that claim binds and composes the review on the first sweep after it is released; measure: one three-pass test on a temporary crew home, 1 passed at the fix and the mutated build fails the third pass (1 failed, EXIT=1).</p></div>
 </div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261112T221618028556-review-of-a-promoted-run-is-not-landed-until-merged-5155b0905840" data-who="reckon-build" data-when="2026-11-12T22:37:55.487Z">
+    <div class="r-comment-body"><p>Reviewed 0130129d36..5155b0905840 by reading the plan section, the run manifest, both commits and the three gate logs; the change correctly stops a promoted run with an unfinished pending landing from reading landed (scores goal 16, evidence 17, scope 19, durability 16, fit 19, reuse 20).</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261112T205554486989-a-promoted-run-is-not-landed-until-merged" data-who="reckon-build" data-when="2026-11-12T21:59:51.607Z">
+    <div class="r-comment-body"><p>The follower&#x27;s landed word came from _recorded_pointer_word answering promoted on the ledger row&#x27;s existence; classify_pointer now reads the run&#x27;s pending-landing record and, while it exists, publishes state complete with detail naming awaiting-merge-repair/awaiting-merge, so a promoted run whose head is not merged no longer reads landed (53 passed head arm, 51 passed base arm).</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-close-s4" data-who="reckon-build" data-when="2026-10-23T13:20:00Z">
     <div class="r-comment-body"><p>§4 landed: merge <code>57e274889</code>; one population failure was added and then repaired in <code>99e614314</code>, and it passes at main. A follower read 0.10 MB of pointers in 15 s, against the 1 MB bound (34.4 MB before). <a href="/reckon/evidence/archive/the-monitor-reads-each-fact-once-landed.html#s4">evidence</a></p></div>
 </div>
@@ -1078,9 +1084,6 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261027T042852990093-obligations-read-the-station" data-who="reckon-build" data-when="2026-10-27T13:28:42Z">
     <div class="r-comment-body"><p>The station computes each live session's obligations once per change into its node-local store and exports one change-only snapshot per project at most every 10 s, with the carried station heartbeat republished once it has moved and the file is 90 s old so a quiet station never reads as stopped; the prompt hook and the crew obligations view both answer from it, in that order ahead of the derivation, and a station heartbeat past the 120 s window is reported stale with its age.</p></div>
-</div>
-<div class="r-comment" data-section="s38" data-id="c-run-r-20261112T221618028556-review-of-a-promoted-run-is-not-landed-until-merged-5155b0905840" data-who="reckon-build" data-when="2026-11-12T22:37:55.487Z">
-    <div class="r-comment-body"><p>Reviewed 0130129d36..5155b0905840 by reading the plan section, the run manifest, both commits and the three gate logs; the change correctly stops a promoted run with an unfinished pending landing from reading landed (scores goal 16, evidence 17, scope 19, durability 16, fit 19, reuse 20).</p></div>
 </div>
 </section>
 </main>
