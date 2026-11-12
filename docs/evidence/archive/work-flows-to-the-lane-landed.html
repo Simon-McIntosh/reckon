@@ -54,6 +54,21 @@
     <p>§11 landed at <code>c433d5f434</code> (reviewed head <code>946e6d8f</code>, run <code>r-20261111T185654778148-held-request-names-its-hold</code>). A request held on its section's readiness now names its blocker by kind and id: an open decision's key or a closed gate's id. The name appears in the dispatch result, the queued pointer's recorded hold and the admission verdict. A hold on a declared section wait keeps its own verdict and names the wait's ref. The first review's two blocking findings were repaired: an evidence fragment written one directory too deep, and suite arms recorded as prose. The landing accepted the transient fragment path, and the coordinator added the missing <code>negative_control_log</code> pointer to the manifest, keeping the delivered copy beside it. The control log shows the declared mutation failing both decision and gate cases. The re-review's two non-blocking findings were deferred at landing: one classification copied three times in <code>queue_admission.py</code>, and the admission-pass verdict line left unasserted.</p>
   </section>
 
+  <section id="s8-re-review-need-in-shadow" data-evidence-origin="append">
+    <h2>§8 — Jev&#x27;s re-review call is recorded beside its outcome</h2>
+    <p>§8 landed at <code>ff797f0c45</code>. Each second or later code review now records the existing <code>review_need.judge</code> verdict and its inputs on the review run's ledger row, and records the review's outcome (blocking finding or not) beside it once stored. An unresolvable prior head or a failed diff is recorded as unavailable, so it never counts as a confident skip. A registered crew view reports what each threshold would have skipped, and the tests exercise both production call sites. Reviewed clean at <code>35cd5151</code> after a repair round.</p>
+  </section>
+
+  <section id="s17-landing-measures-mismatched-arm" data-evidence-origin="append">
+    <h2>§17 — a landing measures a mismatched arm instead of refusing</h2>
+    <p>§17 landed at <code>05c8f2d152</code>. A landing whose recorded baseline or after arm is missing, recorded at another revision, or ran another command now runs the armed command itself at the revision it needs, on a compute partition, and records the arm as measured by the landing. Its own landing met the defect it fixes: its after arm was one evidence-only commit behind its head, so the coordinator ran the armed command at head <code>82010770</code> on <code>all_debug</code> (job 1311265, 57 passed) and recorded that arm, keeping the delivered manifest beside it.</p>
+  </section>
+
+  <section id="s19-identity-judged-on-its-host" data-evidence-origin="append">
+    <h2>§19 — an execution identity is judged on its own host</h2>
+    <p>§19 landed at <code>3fe4dd04ec</code>. An execution identity now records the host that published it. The sweep and the claim reclaim judge its liveness only on that host, and keep another host's identity until an age bound. Reviewed clean at <code>2254607a</code>.</p>
+  </section>
+
 </main>
 </body>
 </html>
