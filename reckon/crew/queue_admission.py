@@ -5593,7 +5593,10 @@ def admit_once(
                     lane == str(config.get("local_backend") or "") and backend != lane
                 )
 
+            excluded_by_lane = [pointer for pointer in queued if not included(pointer)]
             queued = [pointer for pointer in queued if included(pointer)]
+        else:
+            excluded_by_lane = []
         if local_gated:
             queued = [
                 pointer
@@ -5607,6 +5610,40 @@ def admit_once(
                     ).get("local_backend")
                     or ""
                 )
+            ]
+        # A request this pass's lane filter leaves out is otherwise invisible:
+        # no row, no hold and no attempt, so a coordinator reading the request
+        # cannot tell it apart from one nothing has looked at. The attempt is
+        # recorded here, naming the lane the request waits on, so a queued
+        # request on any lane carries the reason no pass has launched it.
+        for pointer in excluded_by_lane:
+            other = str(pointer.get("backend") or "")
+            record = {
+                "verdict": "held-on-other-lane",
+                "reason": (
+                    f"the request is queued on lane {other or 'the default lane'!r} "
+                    f"and this drainer serves {lane!r}, so no pass it runs will "
+                    "launch it; a drainer for that lane is what admits it"
+                ),
+                "recorded_at": moment.isoformat(),
+            }
+            _record_pass_hold(pointer, record, live=live, moment=moment)
+            result["verdicts"].append(
+                _verdict_row(
+                    pointer,
+                    allowance=None,
+                    allowance_source="this drainer serves another lane",
+                    verdict="held-on-other-lane",
+                    detail=record["reason"],
+                )
+            )
+            result["held"].append(str(pointer.get("run_id") or ""))
+            result.setdefault("hold_detail", {})[str(pointer.get("run_id") or "")] = (
+                record["reason"]
+            )
+            result["excluded_by_lane"] = [
+                *result.get("excluded_by_lane", ()),
+                str(pointer.get("run_id") or ""),
             ]
         # A queued pointer whose arrival time cannot be read has no place in the
         # ordering, and the ordering refuses such a pointer outright. That
