@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A stalled fresh dispatch starts no second supervisor | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A stalled fresh dispatch starts no second supervisor</h1>
+      <p class="lead">A fresh dispatch takes its reservation, then can stall on storage before it reaches its supervisor start. Past <code>UNREACHED_LAUNCH_BOUND_SECONDS</code> that reservation stops holding the run, so another launch takes the next attempt. The relaunch path already re-reads its reservation before spawning; the fresh-dispatch path did not, and could start a second supervisor into a worktree the newer attempt now owns.</p>
+    </header>
+
+    <section id="a-stalled-fresh-dispatch-starts-no-second-supervisor-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/dispatch.py</code>: immediately before <code>_start_supervisor</code>, the fresh-dispatch path calls <code>_refuse_superseded_launch(directory, reservation, run_id)</code> &mdash; the same unlocked re-read the relaunch path uses, no new lock and no second fence.</li>
+        <li><code>reckon/crew/dispatch.py</code>: the refusal is raised as <code>_SupersededLaunchError</code>, caught by its own clause ahead of the generic <code>except Exception</code> unwind. That clause writes only the attempt's exit receipt and re-raises, so the superseded launch never runs the rollback that would unlink the pointer, remove the run directory or remove the worktree &mdash; all of which belong to the newer attempt of the same run id.</li>
+        <li><code>reckon/crew/dispatch_launch.py</code>: the docstring of the release rule now names <code>_refuse_superseded_launch</code>, the fence that exists, rather than a <code>_launch_still_newest</code> that does not.</li>
+        <li><code>tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py</code> (new): two cases against a temporary crew home and git repository.</li>
+      </ul>
+    </section>
+
+    <section id="a-stalled-fresh-dispatch-starts-no-second-supervisor-the-gate">
+      <h2>The gate</h2>
+      <p>The new file's two cases pass. The first ages the dispatch's own reservation past <code>UNREACHED_LAUNCH_BOUND_SECONDS</code>, reserves attempt 2 for the run and publishes that attempt's pointer from the last step before the fence. It asserts the dispatch refuses naming attempt 2, records no supervisor start, writes <code>attempt-1-exit.json</code>, and leaves the newer attempt's reservation, pointer, run directory and worktree in place. The second asserts an un-superseded fresh dispatch still starts its supervisor and writes no exit receipt.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Head, both cases</td><td>2 passed</td><td>suite log</td></tr>
+          <tr><td>Head with the fence call removed (declared negative control)</td><td>1 failed: the stalled dispatch recorded a supervisor start instead of refusing; <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+</body>
+</html>

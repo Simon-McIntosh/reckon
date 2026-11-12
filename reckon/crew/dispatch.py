@@ -1628,6 +1628,15 @@ def _prompt_file_text(plan: _backends.LaunchPlan) -> str:
     return plan.stdin_text or plan.prompt
 
 
+class _SupersededLaunchError(CrewError):
+    """A dispatch that another launch of the same run has taken the attempt from.
+
+    Raised only at the pre-spawn fence, so the caller can tell this refusal from
+    every other one that unwinds a dispatch: the pointer, the run directory and
+    the worktree belong to the newer attempt and must be left standing.
+    """
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -3663,6 +3672,14 @@ def dispatch(
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
                     refuse_a_released_launch(run_id)
+                    # Another launch may have taken the run while this one
+                    # stalled. Re-read the reservation here, unlocked, for the
+                    # same reason the relaunch path does: two supervisors in one
+                    # worktree is the failure this line prevents.
+                    try:
+                        _refuse_superseded_launch(directory, reservation, run_id)
+                    except CrewError as superseded:
+                        raise _SupersededLaunchError(str(superseded)) from superseded
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                     if reservation is not None:
                         # The supervisor only becomes the hold once it exists:
@@ -3758,6 +3775,14 @@ def dispatch(
                 worktree=Path(str(worktree["path"])),
                 fenced=bool(record["fenced"]),
             )
+    except _SupersededLaunchError as superseded:
+        # The pointer, the run directory and the worktree now belong to the
+        # newer attempt of this run id, so this launch must not run the undo
+        # below: it would unlink that attempt's pointer and remove its tree.
+        # Its own attempt's exit receipt is the only record it owes, and it
+        # frees the hold this launch took.
+        _record_unreached_launch(directory, reservation, superseded)
+        raise
     except Exception as exc:
         # Undoing this run is the rollback, and a step of a rollback that fails
         # must not become the error the caller reads: the dispatch stopped for
@@ -4111,7 +4136,9 @@ from .dispatch_launch import (  # noqa: E402
     _record_launch_abandoned_before_spawn as _record_launch_abandoned_before_spawn,
     _record_launch_failure as _record_launch_failure,
     _record_stop_before_spawn as _record_stop_before_spawn,
+    _record_unreached_launch as _record_unreached_launch,
     _refusal_names_a_bind_source as _refusal_names_a_bind_source,
+    _refuse_superseded_launch as _refuse_superseded_launch,
     _removable_scratch_target as _removable_scratch_target,
     _run_supervisor as _run_supervisor,
     _runs_inside_fleet_allocation as _runs_inside_fleet_allocation,
