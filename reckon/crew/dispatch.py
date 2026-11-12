@@ -1637,6 +1637,19 @@ class _SupersededLaunchError(CrewError):
     """
 
 
+def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
+    """Stop a dispatch whose attempt another launch has taken from it.
+
+    The shared supervisor spec belongs to whichever attempt is newest, so this
+    runs before the spec is written as well as before the supervisor starts: a
+    stale launch must not hand the newer attempt's supervisor its spec.
+    """
+    try:
+        _refuse_superseded_launch(run_directory, reservation, run_id)
+    except CrewError as superseded:
+        raise _SupersededLaunchError(str(superseded)) from superseded
+
+
 def dispatch(
     *,
     node: TaskNode,
@@ -3651,6 +3664,11 @@ def dispatch(
                         attempt_started_at=str(record["attempt_started_at"]),
                     )
                     spec_path = directory / SUPERVISOR_SPEC_NAME
+                    # Another launch may have taken the run while this one
+                    # stalled. The spec below is the run's shared one, so this
+                    # re-read comes first: a superseded launch must not write
+                    # it, still less start the supervisor that would read it.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     _write_json(
                         spec_path,
                         _supervisor_spec(
@@ -3672,14 +3690,10 @@ def dispatch(
                     _require_fleet_gate_open()
                     _refuse_a_discarded_launch(run_id)
                     refuse_a_released_launch(run_id)
-                    # Another launch may have taken the run while this one
-                    # stalled. Re-read the reservation here, unlocked, for the
-                    # same reason the relaunch path does: two supervisors in one
-                    # worktree is the failure this line prevents.
-                    try:
-                        _refuse_superseded_launch(directory, reservation, run_id)
-                    except CrewError as superseded:
-                        raise _SupersededLaunchError(str(superseded)) from superseded
+                    # Re-read again immediately before the spawn, unlocked, for
+                    # the same reason the relaunch path does: two supervisors in
+                    # one worktree is the failure this line prevents.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     spawned_pid = _start_supervisor(spec_path, directory, run_id)
                     if reservation is not None:
                         # The supervisor only becomes the hold once it exists:

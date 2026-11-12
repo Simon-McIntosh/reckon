@@ -225,18 +225,32 @@ def test_a_stalled_fresh_dispatch_starts_no_second_supervisor(
 
     pointer_before: list[dict] = []
     worktree: list[str] = []
+    newer_spec: list[bytes] = []
 
     def stall_once() -> None:
         # A newer attempt is reserved for the run while this one is stalled,
-        # and the newer attempt publishes its own pointer.
+        # and the newer attempt publishes its own pointer and supervisor spec.
         pointer_before.append(_pointer())
         worktree.append(str(pointer_before[-1]["worktree"]))
         _reserve_newer_attempt(directory)
         newer_pointer = {**pointer_before[-1], "attempt": 2, "phase": "starting"}
         runs_module._write_json(runs_module.pointer_path(RUN_ID), newer_pointer)
         pointer_before.append(newer_pointer)
+        spec = directory / "supervisor.json"
+        runs_module._write_json(
+            spec, {"run_id": RUN_ID, "attempt": 2, "written_by": "the newer attempt"}
+        )
+        newer_spec.append(spec.read_bytes())
 
-    monkeypatch.setattr(dispatch_module, "_require_fleet_gate_open", stall_once)
+    # The stall lands at the step before the supervisor spec is written, so the
+    # abandonment is decided before the shared spec can be replaced.
+    original_prepare = dispatch_module._prepare_attempt_records
+
+    def prepare_then_stall(*args: object, **kwargs: object) -> None:
+        original_prepare(*args, **kwargs)
+        stall_once()
+
+    monkeypatch.setattr(dispatch_module, "_prepare_attempt_records", prepare_then_stall)
 
     refusal: CrewError | None = None
     try:
@@ -263,6 +277,9 @@ def test_a_stalled_fresh_dispatch_starts_no_second_supervisor(
     assert _pointer()["attempt"] == 2, "the abandoning launch touched the pointer"
     assert directory.is_dir(), "the abandoning launch removed the run directory"
     assert Path(worktree[0]).is_dir(), "the abandoning launch removed the worktree"
+    assert (directory / "supervisor.json").read_bytes() == newer_spec[0], (
+        "the stalled launch overwrote the newer attempt's supervisor spec"
+    )
 
 
 def test_a_fresh_dispatch_that_is_still_newest_starts_its_supervisor(
