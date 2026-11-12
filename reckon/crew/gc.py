@@ -9,6 +9,7 @@ import socket
 import sys
 import time
 from collections.abc import Callable, Mapping, Sequence
+from typing import TextIO
 
 from reckon import review_tiers
 from reckon.crew.routing import (
@@ -116,7 +117,9 @@ WITHHELD_REASONS = {
 ARCHIVE_REF_PREFIX = "refs/reckon/archive/"
 
 
-def _sweep_worktree_trash(repo: Path, *, apply: bool) -> list[dict[str, Any]]:
+def _sweep_worktree_trash(
+    repo: Path, *, apply: bool, announce: TextIO | None = None
+) -> list[dict[str, Any]]:
     """Remove leftover worktree trash a release's deletion step did not finish.
 
     Trash is written only after a tree has been moved off its registered path
@@ -139,7 +142,9 @@ def _sweep_worktree_trash(repo: Path, *, apply: bool) -> list[dict[str, Any]]:
                     row["error"] = str(exc)
                 else:
                     row["removed"] = True
-                    print(f"removed worktree trash {entry}")
+                    print(
+                        f"removed worktree trash {entry}", file=announce or sys.stdout
+                    )
             rows.append(row)
     return rows
 
@@ -1835,9 +1840,11 @@ def retention_sweep(
 ) -> dict[str, Any]:
     """Retire finished runs' directories across every mounted project.
 
-    This sweeps run directories, scratch and disposable caches: it starts no
-    git process and inspects no worktree, because gc's worktree checks are where
-    a pass over the whole home spent its time. It examines at most ``limit``
+    This sweeps run directories, worktree trash, scratch and disposable
+    caches: it starts no git process and inspects no worktree, because gc's
+    worktree checks are where a pass over the whole home spent its time. Trash
+    is only listed and removed — a tree reaches it after being moved off its
+    registered path and deregistered — so the sweep needs no git. It examines at most ``limit``
     directories, so one pass stays short on shared storage; the rest wait for
     the next hour. A removal is written to one log under the crew home, and a
     pass that removed nothing writes nothing.
@@ -1932,6 +1939,20 @@ def retention_sweep(
 
     removed = [row for row in offered if row["removed"]]
     started = time.perf_counter()
+    # A release moves a tree aside and deregisters it before the copy's
+    # deletion, so sweeping the trash root can never strand a registered tree.
+    # The hourly timer is the one pass that runs whatever this host is doing,
+    # so a copy a promotion left behind is reclaimed here even when no session
+    # runs `crew gc`; each directory removed is printed by name.
+    trash_rows: list[dict[str, Any]] = []
+    for candidate in sorted({str(Path(root)) for root in roots.values()}):
+        trash_rows.extend(
+            _sweep_worktree_trash(Path(candidate), apply=apply, announce=sys.stderr)
+        )
+    trash_removed = [str(row["path"]) for row in trash_rows if row.get("removed")]
+    _emit_phase("trash", started, phase_seconds)
+
+    started = time.perf_counter()
     # The pass settles this host's scratch copies too. A run's scratch leaves
     # with the run on every host that holds one, and the hourly timer is the one
     # caller that runs whether or not this host launches a worker. It reads the crew
@@ -1959,7 +1980,13 @@ def retention_sweep(
 
     started = time.perf_counter()
     written = ""
-    if removed or settled_removed or caches_removed or store_retention["retired"]:
+    if (
+        removed
+        or settled_removed
+        or trash_removed
+        or caches_removed
+        or store_retention["retired"]
+    ):
         from reckon.crew.watch_unit import _WatchLogStream
 
         target = log or retention_log_path()
@@ -1967,6 +1994,8 @@ def retention_sweep(
         try:
             for row in removed:
                 stream.write(f"removed {row['path']} ({row['bytes']} bytes)\n")
+            for path in trash_removed:
+                stream.write(f"removed worktree trash {path}\n")
             for path in settled_removed:
                 stream.write(f"removed scratch {path}\n")
             for row in caches_removed:
@@ -1991,6 +2020,8 @@ def retention_sweep(
         "removed_count": len(removed),
         "scratch": settled,
         "scratch_removed": settled_removed,
+        "worktree_trash": trash_rows,
+        "worktree_trash_removed": len(trash_removed),
         "ledger_indexes": indexes,
         "picker_views": picker_views,
         "cache_removed_count": len(caches_removed),
