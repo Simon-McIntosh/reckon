@@ -53,28 +53,40 @@
       </tr>
       <tr>
         <td>head</td>
-        <td><code>fb7b4d5f94</code></td>
+        <td><code>8ebf21b48a</code></td>
         <td><code>pytest tests/test_a_shared_root_claim_never_holds_a_request.py tests/test_a_source_file_is_shared_by_default.py tests/test_staged_write_inventory.py</code></td>
-        <td>12 failed, 60 passed &mdash; the same 12 backend failures, no added failure, and every test in the node's file passes</td>
+        <td>72 passed &mdash; every claim test runs for real and none fails</td>
       </tr>
       <tr>
         <td>negative control</td>
-        <td><code>fb7b4d5f94</code> with <code>queue_edit.py</code> reverted to <code>c0467bb557</code></td>
-        <td><code>pytest tests/test_a_shared_root_claim_never_holds_a_request.py::test_the_queue_edit_admits_the_reproduced_pair</code></td>
-        <td>1 failed &mdash; the queue edit refuses the pair under the old equality rule, so the assertion measures the change rather than passing on its own</td>
+        <td><code>1ca708f880</code> with <code>tests/test_a_source_file_is_shared_by_default.py</code> reverted to <code>f0a704370a</code></td>
+        <td><code>python arms/probe_old_assertion.py</code> evaluating the superseded queue-edit assertion</td>
+        <td>1 failed &mdash; the code answers <code>None</code> where the superseded assertion expects a refusal, so the assertion measures the change rather than passing on its own</td>
       </tr>
     </tbody>
   </table>
 
   <p>The arms run on <code>all_debug</code>, one at a time, four workers. The
-  twelve failures at both revisions are <code>codex inbox hook trust could not
-  be established by hooks/list</code> raised by the turnstile every dispatch-based
-  test in the sibling file passes through; they are a property of this
-  workstation's backend, identical at base and head, and the delta is what the
-  arm is judged on.</p>
+  base tree predates the harness hook-trust handshake, so its twelve
+  dispatch-based tests stop at <code>codex inbox hook trust could not be
+  established by hooks/list</code> before reaching a claim comparison; that is a
+  property of the base tree and its backend launch, not of the sharing rule. The
+  head tree merges <code>origin/main</code>, which answers that handshake, so the
+  same tests execute their assertions and the whole arm passes. The delta between
+  the arms is therefore twelve fewer failures and nineteen more passes, with the
+  node's own claim tests among them.</p>
 
   <p><strong>The queue-edit comparison</strong> carried the old equality rule
   until it was folded into this node: an edit that named a file under a held
   directory claim was refused while admission would have launched it. It now
   asks the same predicate, so all four claim sites agree.</p>
+
+  <p><strong>The merge with <code>origin/main</code></strong> joined two rules in
+  one predicate. A project that declares no <code>shared_roots</code> key now
+  shares its source files by default, so a directory claim there shares on the
+  same terms as a declared root; the default exclusive classes
+  (<code>docs/plans/*.html</code>, the evidence archive, generated state, figure
+  topics, the dependency manifests and binary files) join the declared
+  <code>exclusive_patterns</code> when deciding whether a broad region shares, so
+  a claim on <code>docs</code> still fences the plans and figures beneath it.</p>
 </section>
