@@ -38,13 +38,18 @@ from reckon.env_duration import read_duration_override
 @click.option(
     "--once", is_flag=True, help="Run one ingest and classification tick, then exit."
 )
-def crew_station(interval: float, once: bool) -> None:
+@click.option(
+    "--census-sweep",
+    is_flag=True,
+    help="Stop proven ownerless reckon processes on the census beat.",
+)
+def crew_station(interval: float, once: bool, census_sweep: bool) -> None:
     """Run the single node-local station for every mounted project."""
     from reckon.crew.station import StationHeldError, run_station
     from reckon.crew.station_store import StationStoreError
 
     try:
-        run_station(interval=interval, once=once)
+        run_station(interval=interval, once=once, census_sweep=census_sweep)
     except (StationHeldError, StationStoreError) as exc:
         raise click.ClickException(str(exc)) from exc
 

@@ -17,6 +17,7 @@ from typing import Any
 
 from reckon import checkout_trust, flight
 from reckon.crew import (
+    census,
     dispatch_claims,
     follower_reload,
     obligation_snapshot,
@@ -144,6 +145,75 @@ class StationBeat:
         if self._store is not None:
             self._store.close()
             self._store = None
+
+
+# A census reads local processes and ownership records. One pass per minute
+# bounds that cost independently of the station's faster liveness heartbeat.
+CENSUS_BEAT_SECONDS = 60.0
+
+
+class CensusBeat:
+    """Apply the ownership census off the tick and heartbeat paths."""
+
+    def __init__(
+        self, *, home: Path, beat_seconds: float = CENSUS_BEAT_SECONDS
+    ) -> None:
+        self.home = home
+        self.beat_seconds = beat_seconds
+        self._next_due = 0.0
+        self._lock = threading.Lock()
+        self._stop = threading.Event()
+        self._thread: threading.Thread | None = None
+
+    def beat_once(self) -> bool:
+        """Stop proven orphans at most once per interval, printing each identity."""
+        with self._lock:
+            now = time.monotonic()
+            if now < self._next_due:
+                return False
+            self._next_due = now + self.beat_seconds
+            report = census.census(home=self.home)
+            owners = {row["pid"]: row["owner"] for row in report["orphaned"]}
+
+            def emit(result: dict) -> None:
+                print(
+                    "station-census: "
+                    + json.dumps({**result, "owner": owners[result["pid"]]}),
+                    file=sys.stderr,
+                    flush=True,
+                )
+
+            census.apply_census(report, emit=emit, before_signal=emit)
+            return True
+
+    def _run(self) -> None:
+        while not self._stop.is_set():
+            try:
+                self.beat_once()
+            except Exception:  # noqa: BLE001 - a failed census costs one beat
+                print(
+                    "station-census-failure: the ownership census could not complete",
+                    file=sys.stderr,
+                    flush=True,
+                )
+                traceback.print_exc(file=sys.stderr)
+            self._stop.wait(self.beat_seconds)
+
+    def start(self) -> None:
+        """Sweep immediately, then keep sweeping until the station stops."""
+        if self._thread is not None:
+            return
+        self._thread = threading.Thread(
+            target=self._run, name="station-census", daemon=True
+        )
+        self._thread.start()
+
+    def stop(self) -> None:
+        """Stop requesting census passes and wait for this pass to finish."""
+        self._stop.set()
+        if self._thread is not None:
+            self._thread.join(timeout=max(1.0, self.beat_seconds * 2))
+            self._thread = None
 
 
 class LeaseBeat:
@@ -729,8 +799,14 @@ def run_station(
     lease: HostLease | None = None,
     beat_seconds: float | None = None,
     renew_seconds: float | None = None,
+    census_sweep: bool = False,
 ) -> None:
-    """Run the node's single station until stopped or one requested tick ends."""
+    """Run the node's single station until stopped or one requested tick ends.
+
+    ``census_sweep`` opts this station into stopping proven orphans. It is off
+    unless a caller asks for it: signalling a process is a destructive act, so
+    no station run takes it as a side effect of starting.
+    """
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
 
     _adopt_launched_workers_from_reexec()
@@ -775,6 +851,7 @@ def run_station(
         )
         beat: StationBeat | None = None
         renewal: LeaseBeat | None = None
+        census_beat: CensusBeat | None = None
         station: Station | None = None
         try:
             station = Station(store) if station_instance is None else station_instance
@@ -794,6 +871,9 @@ def run_station(
             # The reflex's arm starts beside the beat, so a station whose first
             # tick is slow still reviews a run delivered during it.
             station.reflex.start()
+            if census_sweep:
+                census_beat = CensusBeat(home=station.home)
+                census_beat.start()
             while not stopping:
                 if renewal.lost():
                     break
@@ -819,6 +899,8 @@ def run_station(
             if renewal.lost():
                 raise StationHeldError(f"station lost its lease at {lease.path}")
         finally:
+            if census_beat is not None:
+                census_beat.stop()
             if station is not None:
                 station.reflex.stop()
             if renewal is not None:
