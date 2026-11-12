@@ -24,7 +24,7 @@
   <title>A Gate Halts Only On Substance | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="28">
+<meta name="plan-version" content="29">
 <meta name="plan-modified" content="2026-11-12">
 </head>
 <body>
@@ -115,6 +115,9 @@
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T130138944743-ab2-clive-anchored-a-gate-halts-s4" data-who="reckon-build" data-when="2026-11-11T15:14:44Z">
     <div class="r-comment-body"><p>Verified the resume budget door is already implemented at base: `crew_resume` takes `--time-budget`/`--over-fence`, refuses an allowance above the resolved fence unless a reason is given, records the new allowance with a `budget_changes` entry, and re-reads the pointer so the resumed attempt composes its fence from the new figure; measured 3/3 cases pass (45m on a 25m run composes deadline 2031-01-01T01:45:00Z and stores 45m), the declared mutation leaves the resumed deadline on the stored budget, and the two suite arms are 51 passed each at their own revision.</p></div>
+</div>
+<div class="r-comment" data-section="s4" data-id="c-run-r-20261112T072500411417-review-of-a-resume-can-change-the-run-s-budget-ddcb5079d9b0" data-who="reckon-build" data-when="2026-11-12T07:40:08.874Z">
+    <div class="r-comment-body"><p>independent review of r-20261112T060433796107-a-resume-can-change-the-run-s-budget at base c4eff7707068362553dc49173df280fd5cbdf254 and head ddcb5079d9b0a408338ab3c013901d22c40dc354 stored as a parsed record scoring all six dimensions (goal_fidelity 17, evidence 17, scope_discipline 20, durability 16, fit 18, reuse 20; total 108), added_failure_count 0 with added_failure_ids [], two non-blocking findings (manifest outside_scope breakdown undercounts tests/test_crew.py by one; importer-arm.log&#x27;s command header is not a re-runnable literal command), no blocking findings.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261107T191342033961-review-of-picker-budget-floor-from-brief-1d6855ed0ee7" data-who="reckon-build" data-when="2026-11-07T19:31:46.536Z">
     <div class="r-comment-body"><p>reviewed picker-budget-floor-from-brief at base 5a444bc33b → head 1d6855ed0e; the landed diff does what the goal states (lane_context.py:190 node_budget floors the picker size at the resolved fence and both size readers call it), the gate asserts it (2 failed/180 passed at base vs 2 failed/185 passed at head, same two pre-existing ids, added_failure_count 0), the negative control reddens exactly the two fence cases; three non-blocking findings recorded (weak same-value assertion at test:76, partition-name duplication at lane_context.py:76/175, broad `partition|gpu` prose match at :174), no blocking findings.</p></div>
