@@ -270,3 +270,13 @@ def test_dispatch_leaves_a_budget_inside_the_fence_alone(
     assert document["validation"]["ok"] is True, document["validation"]
     assert _bounded_findings(document) == []
     assert document["node"]["over_fence_reason"] == ""
+
+
+def test_a_blank_reason_admits_nothing(plan_repo: Path, crew_home: Path) -> None:
+    """Whitespace is not a reason: the check reads the stripped text."""
+    result = _dispatch(plan_repo, time_budget=OVER_BUDGET, over_fence="   ")
+
+    assert result.exit_code != 0, result.output
+    document = _document(result)
+    assert document["error"] == "contract-validation"
+    assert "--over-fence" in " ".join(_bounded_findings(document))
