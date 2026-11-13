@@ -18,6 +18,7 @@ from __future__ import annotations
 import json
 import socket
 import threading
+import time
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -171,6 +172,15 @@ def test_a_later_projects_transition_does_not_wait_for_an_earlier_derivation(
     )
     _append_stream_line(second_pointer)
     _append_stream_line(first_pointer)
+    # The inventory tick's own derivation must be finished before the case arms
+    # the block, or that derivation is the one held and the store is read while
+    # the next tick is still committing its transitions.
+    duties = getattr(node, "duties", None)
+    if duties is not None:
+        deadline = time.monotonic() + 10
+        while duties.in_flight() and time.monotonic() < deadline:
+            time.sleep(0.005)
+        assert not duties.in_flight(), "the inventory tick's derivation never finished"
     armed = True
 
     failure: list[BaseException] = []
