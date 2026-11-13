@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="163">
+<meta name="plan-version" content="164">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -560,6 +560,9 @@
 <div class="r-comment" data-section="s34" data-id="c-close-s34" data-who="reckon-build" data-when="2026-11-13T07:05:00Z">
     <div class="r-comment-body"><p>§34 landed at <code>b31dd85d52</code>: a run cleans up its own residue when it ends. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s34-run-leaves-nothing-behind">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261113T080445787562-review-of-hot-path-reads-only-live-runs-d9b2e925b830" data-who="reckon-build" data-when="2026-11-13T08:20:51Z">
+    <div class="r-comment-body"><p>Independent review attached at granted review-record paths; one blocking finding requires repair before source promotion.</p></div>
+</div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684" data-who="reckon-build" data-when="2026-11-13T05:03:41Z">
     <div class="r-comment-body"><p>Independent review of the recorded base/head pair found no blocking defects; all six dimensions scored 20 and gate logs show zero added failures.</p></div>
 </div>
@@ -671,8 +674,8 @@
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s35" data-id="c-run-r-20261113T080445787562-review-of-hot-path-reads-only-live-runs-d9b2e925b830" data-who="reckon-build" data-when="2026-11-13T08:20:51Z">
-    <div class="r-comment-body"><p>Independent review attached at granted review-record paths; one blocking finding requires repair before source promotion.</p></div>
+<div class="r-comment" data-section="s22" data-id="c-s22-rescope" data-who="reckon-build" data-when="2026-11-13T08:55:00Z">
+    <div class="r-comment-body"><p>The first attempt, <code>r-20261113T004159988510-node-needs-no-write-paths</code>, was discarded on 13 November. Its head, <code>6d78a3a75a</code>, eight commits in a worktree kept because it is the only copy, made a node with no write paths fenced, claimed and armed from its diff, but added 322 importer failures, 100 of them in <code>tests/test_crew.py</code>, because it changed how every dispatch with declared paths behaves. Since then §33 has landed, retiring claims on every path git can merge. That removes most of what made declared write paths a cost. Re-scope this section against the post-§33 code before dispatching it again: keep the diff-derived arming and fencing for a node that declares no paths, and leave a node that declares paths exactly as it is now.</p></div>
 </div>
 </section>
 </main>
