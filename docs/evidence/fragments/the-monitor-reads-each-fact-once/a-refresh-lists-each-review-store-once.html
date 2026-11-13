@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-monitor-reads-each-fact-once">
+  <meta name="plan-evidence-for" content="reckon:the-monitor-reads-each-fact-once">
+  <meta name="plan-verifies" content="reckon:the-monitor-reads-each-fact-once#s43">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A station refresh lists each review store once</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+
+<article class="r-note" id="a-refresh-lists-each-review-store-once-landing" data-node="a-refresh-lists-each-review-store-once" data-reckon="landed" data-when="2026-11-13">
+  <h2>One enumeration per store, however many duties a refresh derives</h2>
+
+  <p id="a-refresh-lists-each-review-store-once-what"><strong>What landed.</strong> <code>reckon/crew/station_obligations.refresh</code> now installs <code>review_records.review_store_tick</code> around its whole derivation — the fleet state, every session's payload, and the absent-session rewrites. The store already offered the per-tick enumeration: inside that region <code>_store_paths</code> filters a single <code>os.scandir</code> of each directory, and the store's index is built once per directory per tick. The station's refresh was the one reader that never opened the region, so every review lookup fell back to <code>directory.glob</code>.</p>
+
+  <p id="a-refresh-lists-each-review-store-once-cost"><strong>What a duty cost.</strong> Each review duty reads the store several times over: the store index, the run's own <code>{run}*.at-*.json</code> entries, and the same entries again as the identities its read is keyed on. Unwrapped, each of those is a fresh enumeration of the project's store directory, so the cost of a refresh grows with the number of duties a project holds rather than with the number of files that changed. A refresh over 24 duties enumerated the one directory 194 times.</p>
+
+  <p id="a-refresh-lists-each-review-store-once-gate"><strong>Gate.</strong> <code>tests/test_a_refresh_lists_each_review_store_once.py</code> builds a temporary crew home holding 24 live runs whose reviews are all stored, drives one <code>refresh</code> over them, and counts every enumeration of the store directory through a recording stand-in for both the directory's <code>glob</code> and <code>os.scandir</code> (a <code>glob</code> reaches the filesystem through <code>scandir</code>, so the stand-in counts the listing once rather than once per layer). The case asserts the refresh derived at least 20 duties — so the counter is shown seeing a refresh that does the work — and that the store was listed once. At the base revision the same case counts 194 listings for the same 24 duties.</p>
+
+  <p id="a-refresh-lists-each-review-store-once-arms"><strong>Matched arms.</strong> Four arms ran on the <code>all_debug</code> partition, each in a scratch tree of its own revision and each log naming its revision, tree, imported module and literal command and ending in its own <code>EXIT=</code> line. The base arm (<code>6f14466d52</code>) runs the fence command: <strong>49 passed, 2 errors</strong>. The head arm (<code>50befec096</code>) runs the same command: <strong>50 passed, 2 errors</strong>, the extra pass being this node's case; the two errors are the same pair in both arms, so the change adds no failure. Both are the <code>staged_write_inventory</code> fixture, which reads the repository's own HEAD and cannot resolve in a scratch tree that carries no git metadata. The base tree with this node's case copied in fails on the count at <strong>194 listings</strong>, which is the plan's control. The declared negative control — the head tree with <code>review_store_tick</code> removed from the refresh — fails the same assertion at <strong>194 listings</strong>, and its log is the one this node's manifest names.</p>
+</article>
+
+</body>
+</html>
