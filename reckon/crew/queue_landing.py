@@ -21,6 +21,7 @@ from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError, is_collectible_test_path
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
+from reckon.crew.resume import hold_reason as delivery_hold_reason
 
 _run_srun = subprocess.run
 
@@ -1911,6 +1912,14 @@ def _land_deliveries() -> dict[str, Any]:
         run_id = str(pointer.get("run_id") or "")
         project = str(pointer.get("project") or "")
         if not run_id or not project:
+            continue
+        # A coordinator's hold defers this run however clean its evidence
+        # reads. It is skipped rather than refused: a refusal is a judgement
+        # the pass makes and can retract, while a hold is the coordinator's
+        # decision and ends only when the coordinator releases it.
+        hold_reason = delivery_hold_reason(pointer)
+        if hold_reason:
+            skipped.append({"run_id": run_id, "status": "held", "reason": hold_reason})
             continue
         classified = recovery.classify_pointer(pointer)
         if classified.get("manifest_status") != "complete":
