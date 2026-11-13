@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import contextvars
+
 from . import holds as _holds
 from . import release as _release
 from . import service as _service
@@ -233,17 +235,58 @@ def plan_read_scopes() -> Iterator[None]:
 
     The scope must not span a write to the tree it observed, so a caller that
     writes closes the scopes first.
+
+    Each plan's document text is read once inside the same boundary, so a pass
+    that resolves many wait edges over a few plans reads each of those plans
+    once rather than once per edge. Like the state, it is dropped at the scope's
+    exit, so the next reader sees the tree as it is then.
     """
 
     from reckon.metadata_index import discovery_file_scope
     from reckon.resources import resource_scan_scope
 
     tokens = _PASS_PLAN_STATES.set({})
+    document_tokens = _PLAN_DOCUMENT_CACHE.set({})
     try:
         with discovery_file_scope(), resource_scan_scope():
             yield
     finally:
+        _PLAN_DOCUMENT_CACHE.reset(document_tokens)
         _PASS_PLAN_STATES.reset(tokens)
+
+
+#: One read scope's plan documents, keyed by kind and file. A batch resolves
+#: many wait edges over the same few plans, and every edge that names one reads
+#: its own copy of the file and re-parses its headings. The scope keeps the
+#: first read of each document, so the work is paid once per plan rather than
+#: once per entry and per edge.
+_PLAN_DOCUMENT_CACHE: contextvars.ContextVar[dict[tuple[str, str], Any] | None] = (
+    contextvars.ContextVar("plan_document_cache", default=None)
+)
+
+
+def plan_document_path(repo_root: str | Path, plan: str) -> Path:
+    """The file one plan slug names in a checkout's docs tree."""
+    return Path(str(repo_root)) / "docs" / "plans" / f"{plan}.html"
+
+
+def plan_document_text(repo_root: str | Path, plan: str) -> str:
+    """One plan document's text, read once for the length of one read scope.
+
+    Outside a scope this is the plain file read it always was, so a caller that
+    wants the current bytes still gets them. Inside :func:`plan_read_scopes`
+    the first read of a document answers every later caller, so a batch naming
+    one plan from many entries and wait edges reads that plan once.
+    """
+    if not plan:
+        return ""
+    cache = _PLAN_DOCUMENT_CACHE.get()
+    if cache is None:
+        return _release._plan_html(repo_root, plan)
+    key = ("text", str(plan_document_path(repo_root, plan)))
+    if key not in cache:
+        cache[key] = _release._plan_html(repo_root, plan)
+    return str(cache[key])
 
 
 def _plan_state_and_text(
@@ -765,7 +808,6 @@ def _dispatch_nonrun_wait_state(
     cache: dict[str, Any] | None = None,
 ) -> str:
     """Read authored declarations without a portfolio scope-claim scan."""
-    from reckon import _plan_html as plan_html_reader
     from reckon._schema import parse_plan_ref
     from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
 
@@ -779,10 +821,10 @@ def _dispatch_nonrun_wait_state(
     )
     if target_docs is None:
         return PENDING
-    html = _release._plan_html(target_docs.parent, parsed.slug)
-    if not html:
+    text = plan_document_text(target_docs.parent, parsed.slug)
+    if not text:
         return PENDING
-    state = plan_html_reader.read_state(html)
+    state = _plan_state_and_text(target_docs, parsed.slug, target_project)[0]
     if gate_ref:
         gate = next(
             (
@@ -804,9 +846,9 @@ def _dispatch_nonrun_wait_state(
                 current_docs=docs_dir,
             )
             if source_docs is not None:
-                source_state = plan_html_reader.read_state(
-                    _release._plan_html(source_docs.parent, source.slug)
-                )
+                source_state = _plan_state_and_text(
+                    source_docs, source.slug, source.project or target_project
+                )[0]
                 if _wait_refs._section_status(source_state, source.stage) == "done":
                     if _section_run_unlanded(
                         source.project or target_project,
@@ -873,7 +915,7 @@ def dispatch_waits(
         # authors a hold that can apply; otherwise the roadmap is left unread.
         from reckon import _plan_html as plan_html_reader
 
-        state = plan_html_reader.read_state(_release._plan_html(repo_root, node.plan))
+        state = plan_html_reader.read_state(plan_document_text(repo_root, node.plan))
         own_verdict = bool(state.get("gates") or state.get("decisions"))
     if not refs and not own_verdict:
         return [], {}, []
