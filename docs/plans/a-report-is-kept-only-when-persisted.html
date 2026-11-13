@@ -25,8 +25,8 @@
   <title>A report is kept only when persisted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="8">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="9">
+<meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -51,85 +51,89 @@
 <section data-reckon="section" data-id="s2" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
 <p><strong>Deliverable.</strong> A project's flight configuration names its persist root, a directory outside the crew home. Reckon carries no default path and no project name, so persisting without that setting is refused, and the refusal names the setting. Persisting an item does three things:</p>
 <ul>
-  <li>copies a figure, and optionally data files the caller names, from the reports store or a run directory into the persist root;</li>
-  <li>checks that each copy has the source's byte count and content hash;</li>
-  <li>appends one record to a per-project persisted-items store under the project's docs state.</li>
+<li>copies a figure, and optionally data files the caller names, from the reports store or a run directory into the persist root;</li>
+<li>checks that each copy has the source's byte count and content hash;</li>
+<li>appends one record to the project's persisted-items resource. This is a typed per-project state record, read and written through <code>reckon/project_state.py</code> (<code>resource_path</code>, <code>_validate_resource</code>, <code>read_resource</code> and <code>write_resource</code>) and its atomic write, and resolved against the project's mounted docs directory. An unmounted project is refused rather than given a path, so no new path rule is added.</li>
 </ul>
 <p>Each record holds: the source path, the persisted path, its kind (<code>figure</code> or <code>data</code>), the figure a data file belongs to, the plan and section when the source can be attributed to one, who persisted it, when, the byte count and the hash. A read returns the records for a project, filterable by plan and kind. A second persist of the same source with the same hash returns the existing record, and writes nothing.</p>
 <p><strong>Done when</strong> a new <code>tests/test_a_persisted_item_has_a_record.py</code> shows, on a synthetic crew home and a temporary persist root:</p>
 <ul>
-  <li>Persisting a figure writes the copy and one record, and the copy's hash equals the source's.</li>
-  <li>Persisting it with two named data files writes three copies and three records, and both data records name the figure.</li>
-  <li>A project with no persist root configured is refused, with the setting's name in the message and nothing written.</li>
-  <li>A repeat persist of an unchanged source writes no second record.</li>
-  <li>A copy whose bytes are altered before the check is refused, and leaves no record.</li>
+<li>Persisting a figure writes the copy and one record, and the copy's hash equals the source's.</li>
+<li>Persisting it with two named data files writes three copies and three records, and both data records name the figure.</li>
+<li>A project with no persist root configured is refused, with the setting's name in the message and nothing written.</li>
+<li>A repeat persist of an unchanged source writes no second record.</li>
+<li>A copy whose bytes are altered before the check is refused, and leaves no record.</li>
+<li>A project that is not mounted is refused, and nothing is written.</li>
 </ul>
-<p>The test asserts that the real crew home and docs state are untouched afterwards. Negative control: skipping the hash check makes the altered-copy case pass a corrupt copy and fail the test. Ruff adds no findings on the staged paths. Write paths: one new module under <code>reckon/crew/</code>, the flight schema, and the new test.</p>
+<p>The test asserts that the real crew home and docs state are untouched afterwards. Negative control: skipping the hash check makes the altered-copy case pass a corrupt copy and fail the test. Ruff adds no findings on the staged paths. Write paths: one new module under <code>reckon/crew/</code>, <code>reckon/project_state.py</code> (registering the resource type), the flight schema, and the new test.</p>
 
     <h2 id="s3">§3 — Persisting is one action from the CLI, MCP and HTTP</h2>
 <section data-reckon="section" data-id="s3" data-effort-hours="3.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
 <p><strong>Deliverable.</strong> The §2 operation is reachable from three surfaces:</p>
 <ul>
-  <li>a <code>reckon crew persist</code> verb taking a figure path and zero or more <code>--data</code> paths, figure-only by default;</li>
-  <li>the MCP <code>crew</code> tool, as an action, plus a view that lists persisted items;</li>
-  <li>a served HTTP endpoint the SPA can call.</li>
+<li>a <code>reckon crew persist</code> verb taking a figure path and zero or more <code>--data</code> paths, figure-only by default;</li>
+<li>a sub-path of the existing <code>/crew</code> HTTP route that the SPA can call. It is not a new top-level route;</li>
+<li>the MCP <code>crew</code> tool, read-only: persisted items are a field of the existing <code>records</code> view, not a new view. The MCP persist action is deferred, because <code>CrewArgs</code> carries no action field and actions live on separate tools.</li>
 </ul>
-<p>All three call one Python function and return the same record shape. The SPA computes nothing about an item's retention: the server's listing of a plan's report items carries, for each item, its retention class (<code>persisted</code>, <code>cited</code> or <code>working</code>) and, for working items, the date it expires under §4.</p>
-<p><strong>Done when</strong> a new <code>tests/test_persist_surfaces_agree.py</code> persists the same synthetic figure through the CLI, the MCP action and the HTTP endpoint, each against its own temporary store, and shows the three returned records are equal apart from timestamps. The served listing for a plan returns the persisted item as <code>persisted</code>, a report path cited in a plan document as <code>cited</code>, and an unreferenced report as <code>working</code> with an expiry date.</p>
-<p>Tests covering CLI help, the verb registry and the MCP tool schema gain the new verb and action and keep their base results otherwise. Negative control: routing the HTTP endpoint through a second implementation that omits the data records makes the agreement case fail. Ruff adds no findings on the staged paths. Write paths: the CLI module that registers crew verbs, the MCP crew tool, the served plan endpoints, and the new test.</p>
+<p>Both write surfaces call one Python function and return the same record shape. The SPA computes nothing about an item's retention: the server's listing of a plan's report items carries, for each item, its retention class (<code>persisted</code>, <code>cited</code> or <code>working</code>) and, for working items, the date it expires under §4. Both come from the one classifier §4 creates in <code>reckon/crew/report_retention.py</code>; the listing does not re-derive them.</p>
+<p><strong>Surface budget.</strong> The plan adds one CLI verb, one sub-route, a field on one existing view, two flight settings (the persist root and the staging root) and one refusal family (persisting with no persist root configured). Nothing is retired, because no existing surface persists anything a reader can later find.</p>
+<p><strong>Done when</strong> a new <code>tests/test_persist_surfaces_agree.py</code> persists the same synthetic figure through the CLI and the HTTP sub-route, each against its own temporary store, and shows the two returned records are equal apart from timestamps. It also shows the existing <code>records</code> view lists the persisted item. The served listing for a plan returns the persisted item as <code>persisted</code>, a report path cited in a plan document as <code>cited</code>, and an unreferenced report as <code>working</code> with an expiry date.</p>
+<p>Tests covering CLI help, the verb registry and the MCP tool schema gain the new verb and the records field, and keep their base results otherwise. Negative control: routing the HTTP endpoint through a second implementation that omits the data records makes the agreement case fail. Ruff adds no findings on the staged paths. Write paths: the CLI module that registers crew verbs, the <code>records</code> view in the MCP crew tool, the served <code>/crew</code> route, and the new test.</p>
 
     <h2 id="s4">§4 — An unpersisted report expires at its plan's close or after 30 days</h2>
 <section data-reckon="section" data-id="s4" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> The hourly retention sweep (<a href="/reckon/crew-state-stays-bounded#s7">crew-state-stays-bounded §7</a>) reaches the reports store.</p>
+<p><strong>Deliverable.</strong> The existing pass that removes report trees, <code>_run_report_trees</code> in <code>reckon/crew/routing.py</code> (run from <code>garbage_collect</code> by the hourly retention sweep, <a href="/reckon/crew-state-stays-bounded#s7">crew-state-stays-bounded §7</a>), is extended with the rules below. No second pass is added. Its item rule replaces the run-tree rule for the reports store, so the 30-day run-tree rule can never remove a cited or persisted item first. <code>_plan_review_raw_reports</code> keeps its own rule for raw plan-review text.</p>
+<p><strong>One classifier.</strong> A new module, <code>reckon/crew/report_retention.py</code>, owns the judgement. Its one <code>classify</code> function returns an item's class (<code>persisted</code>, <code>cited</code> or <code>working</code>), its expiry and the reason. The pass calls it, and so does §3's listing, so the listing never shows an item as retained while the pass removes it. The citation scan reuses the existing document walk: <code>iter_resources</code> (<code>reckon/resources.py</code>) for the plan, research and evidence documents, <code>_LINK_ATTR_RE</code> for <code>href</code> and <code>src</code> targets, and <code>audit_links</code> / <code>_link_record</code> (<code>reckon/doccheck.py</code>) for extraction. No third document walk is written.</p>
 <p><strong>Expiry rule.</strong> A report item that is neither persisted nor cited expires at whichever comes first:</p>
 <ul>
-  <li>the moment its plan reaches a terminal status, when the item can be attributed to a plan. An item is attributed to a plan when its folder name equals the slug of a plan in its project, or when a ledger run of its project names that plan and has a report path inside the item. An item matching neither rule is unattributable and takes only the 30-day ceiling;</li>
-  <li>30 days after the item's newest file was last written.</li>
+<li>the moment its plan reaches a terminal status, when the item can be attributed to a plan. An item is attributed to a plan when its folder name equals the slug of a plan in its project, or when a ledger run of its project names that plan and has a report path inside the item. An item matching neither rule is unattributable and takes only the 30-day ceiling;</li>
+<li>30 days after the item's newest file was last written.</li>
 </ul>
 <p><strong>What counts as an item.</strong> An item is a child folder of a project's reports directory, or a file directly inside one.</p>
 <p><strong>What is kept.</strong> An item is kept for as long as any of these holds:</p>
 <ul>
-  <li>a §2 record persists something inside it;</li>
-  <li>its path, or the path of any file or folder inside it, appears in a plan, research or evidence document of its project. A plan usually cites a figure inside a run folder, not the folder itself, and either form keeps the whole item;</li>
-  <li>a live run pointer names it.</li>
+<li>a §2 record persists something inside it;</li>
+<li>its path, or the path of any file or folder inside it, appears in a plan, research or evidence document of its project. A plan usually cites a figure inside a run folder, not the folder itself, and either form keeps the whole item;</li>
+<li>a live run pointer names it.</li>
 </ul>
 <p><strong>What is never removed.</strong> The four folders reckon writes into are swept only by their own existing rules, never as one item: <code>briefs</code>, <code>plan-review</code>, <code>code-review</code> and <code>portfolio-review</code>.</p>
-<p><strong>Moved folders.</strong> An item that is a symlink to a folder moved off home is expired by removing the folder it points to, after checking that the target lies under that project's staging root. The staging root is a second per-project flight setting beside the persist root, and names where moved working reports wait to expire. The symlink is removed last. The sweep never removes anything under the persist root, which holds only what §2 kept deliberately. A symlink pointing anywhere else, the persist root included, is reported and left alone, as is any symlink in a project with no staging root set.</p>
+<p><strong>Moved folders.</strong> An item that is a symlink to a folder moved off home is expired by removing the folder it points to, after checking that the target lies under that project's staging root. The staging root is a second per-project flight setting beside the persist root, and names where moved working reports wait to expire. The symlink is removed last. The pass stops calling <code>shutil.rmtree</code> on a symlinked item, which today raises and leaves both the link and its target. The sweep never removes anything under the persist root, which holds only what §2 kept deliberately. A symlink pointing anywhere else, the persist root included, is reported and left alone, as is any symlink in a project with no staging root set.</p>
 <p><strong>Output.</strong> A dry run prints every candidate with its reason, its age and the rule that applies. <code>--apply</code> prints every removal.</p>
 <p><strong>Done when</strong> a new <code>tests/test_an_unpersisted_report_expires.py</code> shows, on a synthetic crew home with a mounted synthetic project:</p>
 <ul>
-  <li>An unreferenced item 31 days old is removed. A 29-day-old item attributed by folder name is kept until its plan closes, and is removed once it does. The same holds for a 29-day-old item attributed only through a ledger run's report path. A 29-day-old item that matches neither rule is kept whatever any plan's status. A 31-day-old item attributed to a plan that is still open is removed, because the 30-day ceiling applies whichever way the item is attributed.</li>
-  <li>Each of these is kept at 90 days: a persisted item; an item whose own path is cited in a plan document; an item cited only through a file inside it; one item cited only from a research document, and another only from an evidence fragment; and an item named by a live pointer.</li>
-  <li>None of the four reckon-written folders is removed at any age.</li>
-  <li>An expired symlinked item has its target and its symlink removed. A symlink whose target lies outside the permitted roots is kept and reported.</li>
-  <li>The dry run's candidate list equals the set <code>--apply</code> removes.</li>
+<li>An unreferenced item 31 days old is removed. A 29-day-old item attributed by folder name is kept until its plan closes, and is removed once it does. The same holds for a 29-day-old item attributed only through a ledger run's report path. A 29-day-old item that matches neither rule is kept whatever any plan's status. A 31-day-old item attributed to a plan that is still open is removed, because the 30-day ceiling applies whichever way the item is attributed.</li>
+<li>Each of these is kept at 90 days: a persisted item; an item whose own path is cited in a plan document; an item cited only through a file inside it; one item cited only from a research document, and another only from an evidence fragment; and an item named by a live pointer.</li>
+<li>None of the four reckon-written folders is removed at any age.</li>
+<li>An expired symlinked item has its target and its symlink removed. A symlink whose target lies outside the permitted roots is kept and reported.</li>
+<li>The dry run's candidate list equals the set <code>--apply</code> removes.</li>
+<li>A 40-day-old run-keyed tree that holds a figure a plan cites is kept, where at the base revision <code>_run_report_trees</code> removes it.</li>
 </ul>
 <p>Three negative controls:</p>
 <ul>
-  <li>dropping the citation check removes the cited item and fails the test;</li>
-  <li>matching citations against the item's own path only removes the item cited through a file inside it and fails the test;</li>
-  <li>dropping the target-root check removes the outside target and fails the test.</li>
+<li>dropping the citation check removes the cited item and fails the test;</li>
+<li>matching citations against the item's own path only removes the item cited through a file inside it and fails the test;</li>
+<li>dropping the target-root check removes the outside target and fails the test.</li>
 </ul>
 <p>The test files that import <code>reckon.crew.gc</code> add no failure against the base revision, and the test asserts the real crew home is untouched.</p>
-<p>Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/gc.py</code>; <code>reckon/crew/routing.py</code>, where the pass that removes report trees runs; the flight schema, for the staging-root field; and the new test.</p>
+<p>Ruff adds no findings on the staged paths. Write paths: <code>reckon/crew/report_retention.py</code> (new); <code>reckon/crew/routing.py</code>, where <code>_run_report_trees</code> runs; <code>reckon/crew/gc.py</code>; the flight schema, for the staging-root field; and the new test.</p>
 <p><strong>After the node lands, the coordinator measures the real store.</strong> The node cannot do this step, because its write scope is the reckon repository and the settings live in other repositories.</p>
 <ul>
-  <li>Set the staging root in each moved project's own flight configuration: <code>/work/projects/imas_gpu/crew-reports/imas-efit</code> for imas-efit and <code>/work/projects/imas_gpu/crew-reports/nova</code> for nova. Each is committed in its own repository.</li>
-  <li>Run one dry run over the real reports store on the fleet node, under a 30-minute timeout. Record whether it finished and, per project, the count and bytes it would expire.</li>
-  <li>The dry run must report none of the moved imas-efit or nova folders as outside the permitted roots. Each moved folder is either a candidate, or kept with a citation, persist or live-pointer reason.</li>
+<li>Set the staging root in each moved project's own flight configuration: <code>/work/projects/imas_gpu/crew-reports/imas-efit</code> for imas-efit and <code>/work/projects/imas_gpu/crew-reports/nova</code> for nova. Each is committed in its own repository.</li>
+<li>Run one dry run over the real reports store on the fleet node, under a 30-minute timeout. Record whether it finished and, per project, the count and bytes it would expire.</li>
+<li>The dry run must report none of the moved imas-efit or nova folders as outside the permitted roots. Each moved folder is either a candidate, or kept with a citation, persist or live-pointer reason.</li>
 </ul>
 <p>The record is committed as <code>docs/evidence/fragments/a-report-is-kept-only-when-persisted/an-unpersisted-report-expires.html</code>. The section is declared done only once that record shows the dry run finished inside its timeout.</p>
 
     <h2 id="s5">§5 — The SPA shows retained figures and offers the persist action</h2>
 <section data-reckon="section" data-id="s5" data-effort-hours="4.0" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
-<p><strong>Deliverable.</strong> Where the SPA lists a plan's figures and report items, a filter chooses one of <em>retained</em> (persisted or cited), <em>working</em> or <em>all</em>, and defaults to retained. Each working item shows its expiry date and a persist control. The control offers figure only, or figure with the data files the reader ticks from that item's folder, and calls the §3 endpoint. The item then reads as persisted without a page reload. Every class, date and count the surface shows comes from the §3 listing, and the surface computes none of them.</p>
-<p><strong>Done when</strong> a browser test against the served SPA on a synthetic project with one persisted, one cited and two working figures shows:</p>
+<p><strong>Deliverable.</strong> The SPA gains a listing of a plan's report items under <code>reports/&lt;project&gt;/</code>, fed only by the §3 listing. This is a second root beside the committed <code>docs/figures</code> inventory that <code>figure_rows</code> already serves. Committed figures never expire, are always shown as retained, and are not changed by this section. In that report-item listing, a filter chooses one of <em>retained</em> (persisted or cited), <em>working</em> or <em>all</em>, and defaults to retained. Each working item shows its expiry date and a persist control. The control offers figure only, or figure with the data files the reader ticks from that item's folder, and calls the §3 endpoint. The item then reads as persisted without a page reload. Every class, date and count the surface shows comes from the §3 listing, and the surface computes none of them.</p>
+<p><strong>Done when</strong> a browser test against the served SPA on a synthetic project whose reports store holds one persisted, one cited and two working figures shows:</p>
 <ul>
-  <li>The default view lists exactly the two retained figures, and <em>all</em> lists four.</li>
-  <li>Persisting one working figure through the control moves it into the retained view, and leaves one §2 record in the temporary store.</li>
-  <li>Choosing figure-with-data and ticking one file leaves two records.</li>
+<li>The default view lists exactly the two retained figures, and <em>all</em> lists four.</li>
+<li>Persisting one working figure through the control moves it into the retained view, and leaves one §2 record in the temporary store.</li>
+<li>Choosing figure-with-data and ticking one file leaves two records.</li>
 </ul>
-<p>Every figure added or changed for the surface is rendered and inspected, as the figure review rule requires. Negative control: a listing payload whose classes are swapped makes the default view show the working figures and fail the test. The parity check that compares surfaces gains the retention class. Write paths: the JSX component that renders a plan's figures, its CSS in <code>docs/_shared/</code>, and the new browser test.</p>
+<p>Every figure added or changed for the surface is rendered and inspected, as the figure review rule requires. Negative control: a listing payload whose classes are swapped makes the default view show the working figures and fail the test. The parity check that compares surfaces gains the retention class. Write paths: a JSX component for the report-item listing on the plan's Figures surface, its CSS in <code>docs/_shared/</code>, and the new browser test.</p>
 
     <h2 id="s6">§6 — The existing backlog leaves home and is expired by §4</h2>
 <section data-reckon="section" data-id="s6" data-effort-hours="0.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="standard" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
