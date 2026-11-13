@@ -731,22 +731,35 @@ def _queue_router_held_review(
     }
 
 
-def _composed_review_run_id(
+def _composed_review_directory(
     project: str, plan_slug: str, node: Mapping[str, Any]
-) -> str:
-    """The review run id a queued pointer's write paths name, or ``""``.
+) -> Path | None:
+    """The composed report directory a plan review's write paths name.
 
-    The composed report directory is the one the review's write paths sit under,
-    so its name is the review run id the delivered record and its store are
-    keyed by. A pointer whose paths name no such directory yields no id rather
-    than a guessed one.
+    The composer grants the review the directory it writes its brief, snapshot,
+    sidecar and report into, and that directory sits directly under the plan's
+    report root. A pointer whose paths name no such directory yields ``None``
+    rather than a guessed path.
     """
     root = plan_review._plan_review_report_root(project, plan_slug)
     for candidate in node.get("write_paths") or ():
         directory = Path(str(candidate))
         if directory.parent == root and directory.name:
-            return directory.name
-    return ""
+            return directory
+    return None
+
+
+def _composed_review_run_id(
+    project: str, plan_slug: str, node: Mapping[str, Any]
+) -> str:
+    """The review run id a queued pointer's write paths name, or ``""``.
+
+    The composed report directory's name is the review run id the delivered
+    record and its store are keyed by. A pointer whose paths name no such
+    directory yields no id rather than a guessed one.
+    """
+    directory = _composed_review_directory(project, plan_slug, node)
+    return "" if directory is None else directory.name
 
 
 def join_admitted_plan_review(pointer: Mapping[str, Any], launched_run_id: str) -> str:
@@ -2352,6 +2365,107 @@ def _delivered_plan_review(project: str, plan_slug: str, run_id: str) -> bool:
     return run_id in plan_review._stored_review_run_ids(project, plan_slug)
 
 
+def _plan_review_worker_finished(pointer: Mapping[str, Any]) -> bool:
+    """Whether a live review pointer's worker has ended.
+
+    A run whose phase is terminal has ended, and a run whose manifest carries a
+    terminal status has delivered even when its pointer still holds an earlier
+    phase: a reviewer writes its manifest before its last turn, and a promotion
+    requested from a delivered run can leave the pointer behind. Neither says
+    anything about the review's record — that is the store's answer — so a
+    finished review with its record not yet stored reads here as delivered work
+    rather than as a review still to come.
+    """
+    from reckon.crew.node import _TERMINAL_RUN_PHASES
+
+    if str(pointer.get("phase") or "") in _TERMINAL_RUN_PHASES:
+        return True
+    return runs._round_has_delivered(pointer)
+
+
+def _plan_review_reads_current(
+    pointer: Mapping[str, Any], project: str, plan_slug: str
+) -> bool:
+    """Whether a working review still reads what a fresh compose would cover.
+
+    The composed sidecar is the review's own account of what it composed for:
+    the plan version and the per-unit digests it read. A review stands when it
+    reads the plan's current version, or when every unit whose content changed
+    since it composed is inside the scope it traces — a whole-plan review,
+    which records no scope, reads every unit. Anything the reader cannot
+    resolve answers that the review still stands, because composing a second
+    review beside one nobody can account for is the wait this check exists to
+    avoid, and a plan or sidecar that cannot be read is exactly that.
+    """
+    node = pointer.get("node") or {}
+    directory = _composed_review_directory(project, plan_slug, node)
+    if directory is None:
+        return True
+    try:
+        sidecar = json.loads(
+            (directory / plan_review._REVIEW_SIDECAR_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return True
+    if not isinstance(sidecar, Mapping):
+        return True
+    path = _plan_review_plan_path(pointer, project, plan_slug)
+    if path is None:
+        return True
+    try:
+        document = path.read_text(encoding="utf-8")
+    except OSError:
+        return True
+    from reckon import _plan_html
+
+    current = int((_plan_html.read_state(document) or {}).get("version") or 0)
+    if current and int(sidecar.get("plan_version") or 0) == current:
+        return True
+    digests = sidecar.get("section_digests")
+    if not isinstance(digests, Mapping):
+        return True
+    changed = {
+        unit
+        for unit, digest in plan_review._section_digests(document).items()
+        if digests.get(unit) != digest
+    }
+    if not changed:
+        return True
+    traced = sidecar.get(plan_review.TRACED_UNITS_KEY)
+    if not traced:
+        return True
+    return changed <= set(plan_review._normalise_sections(traced))
+
+
+def _plan_review_plan_path(
+    pointer: Mapping[str, Any], project: str, plan_slug: str
+) -> Path | None:
+    """The plan file a review of ``plan_slug`` reads, or ``None``.
+
+    The pointer's own recorded path answers first, because it is the file the
+    compose read, and the repository the run names answers next, because every
+    dispatched pointer carries it and its ``docs/plans`` tree is the mount's
+    own layout. The project's mount registry is read last, once the two cheap
+    answers failed, so the common read never parses it.
+    """
+    recorded = str(pointer.get("plan_path") or "").strip()
+    if recorded and Path(recorded).is_file():
+        return Path(recorded)
+    repo = str(pointer.get("repo") or "").strip()
+    if repo:
+        candidate = Path(repo) / "docs" / "plans" / f"{plan_slug}.html"
+        if candidate.is_file():
+            return candidate
+    from reckon import flight
+
+    docs = flight.mounted_project_docs().get(project)
+    if docs is not None:
+        candidate = Path(docs) / "plans" / f"{plan_slug}.html"
+        if candidate.is_file():
+            return candidate
+    return None
+
+
 def _standing_plan_review(
     project: str,
     plan_slug: str,
@@ -2370,10 +2484,18 @@ def _standing_plan_review(
     again, so the review a view names comes from the same reading as the row
     that names it.
 
-    Only a review still composing or working stands. Once its record is stored
-    and readable the review has delivered, and what remains is its promotion,
-    which is owed and listed as it is today; it does not hold the next round's
-    compose. A review whose record is missing or unreadable is still working,
+    Only a review still working stands. Once its record is stored and readable
+    the review has delivered, and what remains is its promotion, which is
+    owed and listed as it is today; it does not hold the next round's compose.
+    A review whose worker has ended stands for nothing either, whatever its
+    record says: a review is stored only by its promotion, so a reviewer that
+    delivered and is waiting to be promoted would otherwise hold the gate for
+    the whole of its promotion, and for good if that promotion is never
+    started. A review still working stands only while it reads the plan's
+    current version, or already reads every unit changed past the version it
+    composed for; a newer plan version it does not cover is composed as a new
+    review rather than answered with the older one. A review whose record is
+    missing or unreadable, and one whose scope cannot be read, is still working,
     and keeps the gate.
 
     A pointer whose ``node`` is not a mapping is skipped rather than read: this
@@ -2391,6 +2513,10 @@ def _standing_plan_review(
             continue
         run_id = str(pointer.get("run_id") or "")
         if _delivered_plan_review(project, plan_slug, run_id):
+            continue
+        if _plan_review_worker_finished(pointer):
+            continue
+        if not _plan_review_reads_current(pointer, project, plan_slug):
             continue
         return run_id
     return ""
