@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="140">
+<meta name="plan-version" content="141">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -500,6 +500,9 @@
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261113T015221321497-review-of-coordinator-holds-a-delivered-run-f9eab85d420b" data-who="reckon-build" data-when="2026-11-13T02:06:38.226Z">
     <div class="r-comment-body"><p>Reviewed run r-20261113T011510453024-coordinator-holds-a-delivered-run at f9eab85d420b against base 55d49260706d; parsed review record stored with scores goal_fidelity 14, evidence 13, scope_discipline 16, durability 13, fit 15, reuse 18, and three findings, one blocking: the "being promoted" resume refusal is reachable only after the live pointer is already gone, so a resume during a promotion is not refused.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261113T050655058606-review-of-coordinator-holds-a-delivered-run-6ccf02af4ebc" data-who="reckon-build" data-when="2026-11-13T05:25:32.491Z">
+    <div class="r-comment-body"><p>Reviewed the three commits the run gained after f9eab85d420b (fix a promotion in flight refuses the resume, its evidence fragment, and a style wrap): the promotion-lease-before-pointer repair is sound and proven red by its own control, but the revision-scoped hold added in the same commit fails to defer a delivery whose manifest spells its commit abbreviated; scores goal_fidelity 13, evidence 17, scope_discipline 20, durability 12, fit 15, reuse 12.</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666" data-who="reckon-build" data-when="2026-11-13T03:32:22Z">
     <div class="r-comment-body"><p>Independent review of base 6d4266db9bf865d1c9f735940c7b798b58834c5f to head d513212c96665c026454b1e469b81849daa0ba36 stored parsed; scores 16/18/20/15/18/20, zero added failures, one blocking restart-recovery finding and one non-blocking propagation-assertion caveat.</p></div>
