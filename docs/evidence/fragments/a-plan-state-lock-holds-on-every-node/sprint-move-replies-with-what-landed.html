@@ -76,12 +76,25 @@
 
 <p id="sprint-move-replies-with-what-landed-negative">
   The negative control runs the same test file against the base revision
-  <code>e5236d4</code> extracted under <code>~/.cache</code>: all five cases fail
+  <code>e5236d4</code> extracted under <code>~/.cache</code>: all six cases fail
   there, and the two commit-mark cases fail with
   <code>AssertionError: reply says not applied while the item is in S5</code>
   — the paired defect exactly as reported, with both writes landed and the reply
   saying otherwise. Log: <code>negative-control-base.log</code> in the run
   directory.
+</p>
+
+<p id="sprint-move-replies-with-what-landed-reuse">
+  The shared journal parse and restore is checked by reverting the source change
+  while keeping this node's test file: at the previous revision the three
+  refusal cases fail on <code>assert None == {'S3': 1, 'S5': 1}</code> — a
+  refusal carried no versions. Log:
+  <code>negative-control-prior-commit.log</code>. The importer population is
+  every <code>tests/test_*.py</code> that imports <code>reckon.project_state</code>
+  (28 files at head, 27 at base): one failure,
+  <code>test_mcp_views.py::test_raw_and_schema_are_explicit_layers</code>, at
+  both revisions, so the change adds none. Logs:
+  <code>population-base.log</code>, <code>population-head.log</code>.
 </p>
 
 </article>
