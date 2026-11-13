@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A killed promotion writes nothing after it dies</title>
+<meta name="docs-project" content="reckon">
+</head>
+<body>
+<main class="plan-doc">
+
+<h2 id="a-killed-promotion-writes-nothing-after-it-dies-summary">What a kill actually damages</h2>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-why">Two <code>crew complete</code> promotions killed by <code>timeout</code> still ended in promote and release commits, which read as a writer outliving its parent. The measurement taken here says the writes were not the survivor. A promotion killed with SIGTERM dies at once under the default disposition, its process group is empty within a second, and nothing it wrote after it exited changed again: HEAD, the index, the worktree, the ledger row, the plan file and the crew home were all byte-identical two seconds after its death.</p>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-defect">What survives a kill is the promotion's own claim. The run-time lease is renewed every five seconds and read as fresh for thirty, so a promotion killed while it held one leaves a lease naming a pid that no longer exists, and the retry a coordinator runs a minute later is refused as &ldquo;already being promoted by host &hellip; pid N&rdquo;. That is a killed promotion blocking its own recovery, and it was measured at all three stage boundaries.</p>
+
+<h2 id="a-killed-promotion-writes-nothing-after-it-dies-change">The change</h2>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-handler">The promotion now records SIGTERM and stops at its next stage boundary rather than dying inside whatever it was doing. The handler only sets a flag: raising from it could interrupt a git child mid-write and leave a process the promotion started writing after the promotion itself had exited, which is exactly the shape the incident was thought to have. Stopping at a boundary lets the stage in progress finish, so every child has been reaped before the promotion exits, and the claim is released on the way out.</p>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-boundaries">The boundaries are the three the section names, each placed before the stage that follows it: before the promotion landing, before the release, and before the release&rsquo;s own ledger record. A stop at the first leaves the ledger row and plan comment written but uncommitted with the pointer live, so the retry lands it. A stop at the second leaves the landing on HEAD, a clean tree and the pointer still live, so the retry finishes the release. A stop at the third leaves the run promoted with only the release&rsquo;s record outstanding, which the landing pass completes.</p>
+
+<h2 id="a-killed-promotion-writes-nothing-after-it-dies-measure">Measure</h2>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-measure-base">The test is <code>tests/test_a_killed_promotion_writes_nothing_after_it_dies.py</code>, nine cases over a temporary repository and a temporary crew home. At the base revision <code>ec87744c0977</code> it reports <strong>6 failed, 3 passed</strong>, exit 1. The three that pass are the boundary-state cases, which assert a state that is the same either side of the change and so show the three kills land where they claim. The six that fail are the lease release at each boundary and every resumption, each refused by the claim the dead promotion left.</p>
+
+<p id="a-killed-promotion-writes-nothing-after-it-dies-measure-head">At the head the same file reports <strong>9 passed</strong>, exit 0. The point that had to be measured before any product code changed is the first: the base already wrote nothing after it died, in all three cases, so the section&rsquo;s doubt about a child the signal does not reach is answered no and no process-reaping code was added.</p>
+
+</main>
+</body>
+</html>
