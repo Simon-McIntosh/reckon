@@ -172,12 +172,14 @@ def _pointers() -> list[dict]:
 
 
 def _sweep(*, config: dict | None = None, pointers: list[dict] | None = None) -> dict:
+    width, wait_seconds = resumption._promotion_settings(config)
     return resumption.sweep(
         PROJECT,
         session=SESSION,
         pointers=_pointers() if pointers is None else pointers,
         config=config,
         launcher=lambda *args, **kwargs: 0,
+        promotions=resumption.PromotionWorkers(width=width, wait_seconds=wait_seconds),
     )
 
 

@@ -282,6 +282,7 @@ def test_complete_command_refuses_a_gate_command_that_cannot_run(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

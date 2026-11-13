@@ -3474,6 +3474,12 @@ def _refuse_a_flag_as_a_reason(
     ),
 )
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
+@click.option(
+    "--wait",
+    is_flag=True,
+    default=False,
+    help="Carry out promotion in this call and return its completed outcome.",
+)
 def crew_complete(
     run_id,
     gate,
@@ -3505,6 +3511,7 @@ def crew_complete(
     pretty,
     project=None,
     candidate="",
+    wait=True,
 ):
     """Request promotion and return the run's durable promotion-requested receipt.
 
@@ -3512,11 +3519,13 @@ def crew_complete(
     and retains the outcome on the run. With --land it also merges, verifies,
     pushes and releases the worktree. A refusal or failure becomes an obligation
     for the run's session. Repeating a pending request creates no second job.
-    --dry-run reports the current guards without recording a request.
+    --wait carries out promotion in this call and returns its outcome.
+    --dry-run reports the current guards without recording a request. Internal
+    callback callers retain synchronous execution unless they request otherwise.
     """
     from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
 
-    if not dry_run and COMMAND_REPLY.get() is None:
+    if not wait and not dry_run and COMMAND_REPLY.get() is None:
         parameters = dict(locals())
         for name in ("COMMAND_REPLY", "request_promotion"):
             parameters.pop(name, None)

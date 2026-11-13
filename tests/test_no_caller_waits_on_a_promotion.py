@@ -453,3 +453,33 @@ def test_a_pending_landing_is_not_finished_beside_its_requested_promotion(
             "status": "promotion-requested",
         }
     ]
+
+
+def test_wait_returns_the_synchronous_outcome(repository, monkeypatch):
+    run_id = "r-explicit-wait"
+    repository.plant(run_id)
+    called = []
+
+    def perform(run_id, **kwargs):
+        called.append(run_id)
+        return {"ok": True, "run_id": run_id, "record": {"commits": [repository.sha]}}
+
+    monkeypatch.setattr(crew, "complete", perform)
+    result = CliRunner().invoke(
+        main,
+        [
+            "crew",
+            "complete",
+            "--wait",
+            "--run",
+            run_id,
+            "--gate",
+            "not-run",
+            "--outcome",
+            "delivery",
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    assert called == [run_id]
+    assert json.loads(result.output)["record"]["commits"] == [repository.sha]
+    assert not requests._request_path(run_id).exists()

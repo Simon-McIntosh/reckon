@@ -305,6 +305,7 @@ def test_a_shortfall_promotion_completes_and_reports_on_the_record(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

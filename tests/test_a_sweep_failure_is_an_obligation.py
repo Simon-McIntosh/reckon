@@ -42,7 +42,12 @@ def test_failed_run_is_published_until_a_successful_sweep(
     def sweep(project, **kwargs):
         if pass_error:
             return {"reviews": {"error": "review pass could not finish"}}
-        result = resumption.sweep(project, pointers=review_runs, **kwargs)
+        result = resumption.sweep(
+            project,
+            pointers=review_runs,
+            promotions=resumption.PromotionWorkers(width=1, wait_seconds=60),
+            **kwargs,
+        )
         reports.append(result)
         return result
 

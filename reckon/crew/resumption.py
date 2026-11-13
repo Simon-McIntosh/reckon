@@ -2399,6 +2399,7 @@ def sweep(
     now: datetime | None = None,
     condition_test: Callable[[Mapping[str, Any], Mapping[str, Any]], Any] | None = None,
     writer: Any = None,
+    promotions: Any = None,
 ) -> dict[str, Any]:
     """Resume runs whose provider hold or declared external wait has ended.
 
@@ -2423,6 +2424,11 @@ def sweep(
     resumed for, so a second pass over the same fleet reports nothing to do.
     That is what makes it safe for something already running to call on a
     cadence.
+
+    ``promotions`` supplies an explicit hand-off sink for internal callers.
+    Without one, requests are persisted for the fleet service. A caller
+    supplying ``PromotionWorkers`` receives the bounded synchronous worker
+    report instead.
 
     ``writer`` names who is sweeping — a follower on its cadence, a hand-run
     sweep from the command line or the MCP surface, or anything else — so the
@@ -2682,7 +2688,9 @@ def sweep(
                 launcher=launch,
                 session=session,
                 pointers=live,
-                promotions=PromotionRequests(),
+                promotions=promotions
+                if promotions is not None
+                else PromotionRequests(),
             )
         except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
             # A review pass that cannot run must not take the resume pass's
