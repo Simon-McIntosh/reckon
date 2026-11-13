@@ -25,7 +25,7 @@
   <title>A Seat Held Elsewhere Is Not Restarted | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="113">
+<meta name="plan-version" content="114">
 <meta name="plan-modified" content="2026-11-13">
 <meta name="plan-section-depends-on" content="{&quot;s23&quot;:[&quot;a-seat-held-elsewhere-is-not-restarted#s22&quot;,&quot;a-seat-held-elsewhere-is-not-restarted#s24&quot;],&quot;s24&quot;:[&quot;the-monitor-shows-the-work-it-watches#s104&quot;],&quot;s25&quot;:[&quot;a-seat-held-elsewhere-is-not-restarted#s22&quot;]}">
 </head>
@@ -418,7 +418,10 @@
     <div class="r-comment-body"><p>Reviewed §22 at base 5fd5b0dda1 and head 4eb8939aa0: goal met and durability guarded by four real-process cases with a red negative control, but the done_when's importing-files arm measured 2 of the 7 test files that call ensure_watcher_service (blocking), the seat stop signals by raw os.kill rather than the crew's signal_worker home (non-blocking, reuse 5), and the node's gate file sits outside the dispatch's declared write paths and needs ratifying (non-blocking).</p></div>
 </div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261113T022530773885-ready-a-seat-held-elsewhere-is-not-s22" data-who="reckon-build" data-when="2026-11-13T13:18:35Z">
-    <div class="r-comment-body"><p>§22 landed — `watch --ensure` resolves the watch lock&#x27;s holder from `/proc/locks` by device and inode, reports a stale producer as `seat-held-by-stuck-producer` and stops it (through the crew&#x27;s one signaller, SIGTERM then SIGKILL after the claim&#x27;s contention window) before arming so the new producer takes the seat, reports any other holder under `seat-held-by-non-producer` and stops nothing, and leaves a live producer with a fresh lease untouched. Repair round: the stop routes through `process_signal.signal_worker` and the command line through `fleet_supervisor.process_cmdline`; the five importing test files the review named are now measured at base and head rather than asserted, and both staged-write-inventory arms pass at their revisions.</p></div>
+    <div class="r-comment-body"><p>§22 landed — `watch --ensure` resolves the watch lock's holder from `/proc/locks` by device and inode, reports a stale producer as `seat-held-by-stuck-producer` and stops it (through the crew's one signaller, SIGTERM then SIGKILL after the claim's contention window) before arming so the new producer takes the seat, reports any other holder under `seat-held-by-non-producer` and stops nothing, and leaves a live producer with a fresh lease untouched. Repair round: the stop routes through `process_signal.signal_worker` and the command line through `fleet_supervisor.process_cmdline`; the five importing test files the review named are now measured at base and head rather than asserted, and both staged-write-inventory arms pass at their revisions.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261113T140500131490-review-of-ready-a-seat-held-elsewhere-is-not-s22-6a03731ce963" data-who="reckon-build" data-when="2026-11-13T17:10:01.333Z">
+    <div class="r-comment-body"><p>review of r-20261113T022530773885-ready-a-seat-held-elsewhere-is-not-s22 at 6a03731ce963 stored: 6 dimensions scored 18/15/15/18/18/13, 0 added failures, six non-blocking findings, none blocking</p></div>
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261013T091541156783-review-of-sheinr-hook-no-producer-repro-81b1d6e7550e" data-who="reckon-build" data-when="2026-10-13T09:28:08.060Z">
     <div class="r-comment-body"><p>Reviewed run r-20261013T085219616755-sheinr-hook-no-producer-repro (head 81b1d6e7550e8d03db26269b6d352b4eb682633c); the three highest-ranked findings (its three reproduction arms, all cited to repro.py) each re-ran reproduced, and the report's summary line (publication counts 1, 2, 1; remote row live=False) agrees with its three-arm table. Record stored under the claims rubric with claim_verdicts CLAIM 1-3 reproduced and CLAIM_SUMMARY agrees; no suite-delta fields.</p></div>
