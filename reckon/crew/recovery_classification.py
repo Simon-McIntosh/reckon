@@ -885,8 +885,10 @@ def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | 
     The answer is cached by the pair it was taken against. A sweep draws every
     live row and each row that is promoted asks the same two questions, so the
     cache is what keeps the branch read and the ancestry walk off the per-row
-    path: a tick costs one ``rev-parse`` per checkout and one ``merge-base`` per
-    distinct delivered head.
+    path: a tick costs one ``rev-parse`` per checkout and one ancestry walk per
+    distinct delivered head. The walk itself is the review store's own probe, so
+    the repository has one answer to "is this commit reachable from that one"
+    rather than a copy per caller.
     """
     primary = _primary_branch_revision(checkout, moment)
     if not primary or not head:
@@ -895,15 +897,14 @@ def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | 
     cached = _ANCESTRY_MEMO.get(key)
     if cached is not None:
         return cached
-    answer = subprocess.run(
-        ["git", "-C", str(checkout), "merge-base", "--is-ancestor", head, primary],
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-    if answer.returncode not in (0, 1):
+    from reckon.crew import plan_review
+
+    try:
+        on_branch = plan_review._commit_is_ancestor(checkout, head, primary)
+    except (OSError, ValueError):
+        on_branch = None
+    if on_branch is None:
         return None
-    on_branch = answer.returncode == 0
     if len(_ANCESTRY_MEMO) >= _ANCESTRY_MEMO_LIMIT:
         _ANCESTRY_MEMO.clear()
     _ANCESTRY_MEMO[key] = on_branch
@@ -915,9 +916,12 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str]:
 
     The head comes from the run's own ledger row rather than from its worktree,
     because the row is what promotion wrote: the promoted revision when it
-    recorded one, and otherwise the last commit it promoted. A row that cannot
-    be read leaves the head unknown, which names no merge and changes no
-    reading.
+    recorded one, and otherwise the last commit it promoted. The row is found
+    through the ledger's own ownership resolution, which is the same one
+    promotion writes it under, so a run implementing one project's plan in
+    another repository's checkout is still found. A row that cannot be read
+    leaves the head unknown, which reads as an unverified landing rather than a
+    settled one.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
@@ -927,7 +931,8 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str]:
 
     checkout = claim_repository(record)
     try:
-        path = ledger.run_path(project, run_id, str(record.get("repo") or ""))
+        root = ledger._run_ledger_root(project, str(record.get("repo") or ""))
+        path = ledger.run_path(project, run_id, root)
         row = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, ledger.LedgerError):
         return checkout, ""
@@ -951,8 +956,10 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
     record alone is not enough: a promotion that ended before writing one leaves
     a ledger row and a head no branch carries, and a run reads landed only when
     its head is an ancestor of the primary branch. So the head's ancestry is
-    asked whatever the record says, and an unanswerable ancestry leaves the
-    ledger's own word standing rather than inventing a merge to wait for.
+    asked whatever the record says, and it fails closed: when the branch, the
+    head or the walk cannot be read, the landing is unverified rather than
+    landed, because a reader who believes a landed row stops attending to the
+    run.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id:
@@ -992,13 +999,14 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
             "on the primary branch"
         )
     if status:
-        # The ancestry could not be asked, so the record is the best evidence
-        # there is and is reported as what it is.
         return (
-            "the run is promoted and awaits its merge: its pending landing "
-            f"reads {status}"
+            "the run is promoted and awaits its merge: its landing is unverified "
+            f"and its pending landing reads {status}"
         )
-    return ""
+    return (
+        "the run is promoted and awaits its merge: its landing is unverified, "
+        "the head's ancestry could not be read"
+    )
 
 
 def classify_pointer(

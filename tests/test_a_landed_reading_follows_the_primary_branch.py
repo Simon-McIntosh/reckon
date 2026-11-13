@@ -192,3 +192,23 @@ def test_a_record_left_behind_a_finished_merge_does_not_hold_the_run(
     )
 
     assert row["state"] == "promoted"
+
+
+def test_a_promoted_run_whose_head_cannot_be_read_does_not_read_landed(
+    home: Path, tmp_path: Path
+) -> None:
+    """An unreadable head is an unverified landing, never a landed one."""
+    run_id = "r-head-unreadable"
+    repo, head = _repository(tmp_path)
+    _promoted_run(tmp_path, run_id, repo, head)
+    # A ledger row promotion wrote with no revision it can name.
+    ledger.run_path(PROJECT, run_id, str(repo)).write_text(
+        json.dumps({"run_id": run_id, "project": PROJECT, "commits": []}),
+        encoding="utf-8",
+    )
+
+    row = _snapshot(run_id)
+
+    assert row["state"] != "promoted"
+    assert row["state"] == "complete"
+    assert "landing is unverified" in row["detail"]
