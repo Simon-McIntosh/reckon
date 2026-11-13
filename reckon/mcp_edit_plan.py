@@ -58,6 +58,7 @@ from reckon.project_state import (
     ProjectStateError,
     accepted_op_verbs,
     apply_resource_ops,
+    read_resource,
     resource_path,
 )
 from reckon.resources import (
@@ -1693,6 +1694,24 @@ def _edit_plan(
                 new_version=new_version,
                 created=create,
             )
+            move_ops = [
+                op
+                for op in (ops or [])
+                if isinstance(op, dict) and op.get("op") == "move"
+            ]
+            if move_ops:
+                # The reply names what settled, with both versions read back
+                # from disk rather than assumed from the write that returned.
+                identifiers = {str(slug)}
+                identifiers.update(str(op.get("to") or "") for op in move_ops)
+                result["applied"] = True
+                result["sprint_versions"] = {
+                    sprint_id: read_resource(
+                        docs_dir, project, canonical_doc_type, sprint_id
+                    )[1]
+                    for sprint_id in sorted(identifiers)
+                    if sprint_id
+                }
             result["doc_type"] = canonical_doc_type
             result["path"] = str(
                 resource_path(docs_dir, project, canonical_doc_type, slug)
@@ -1728,6 +1747,7 @@ def _edit_plan(
         except ProjectStateError as exc:
             return {
                 "ok": False,
+                "applied": False,
                 "error": "project_state_error",
                 "project": project,
                 "slug": slug,

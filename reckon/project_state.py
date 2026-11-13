@@ -2092,6 +2092,36 @@ def _mark_move_journal_committed(path: Path) -> None:
     )
 
 
+def _retire_move_journal(path: Path) -> list[str]:
+    """Retire a journal once both sprint writes have landed.
+
+    Retiring the journal is bookkeeping, not part of the move: its failure
+    cannot undo writes already on disk, so it is reported as a warning rather
+    than raised. Raising here would tell the caller nothing was applied.
+    """
+    warnings: list[str] = []
+    try:
+        _mark_move_journal_committed(path)
+    except FileNotFoundError:
+        # Another pass retired the journal first. The sprint writes stand
+        # either way, and the verdict is read from the resources below.
+        pass
+    except OSError as exc:
+        warnings.append(f"journal_commit_mark_failed={type(exc).__name__}")
+    try:
+        _durable_unlink(path)
+    except OSError as exc:
+        warnings.append(f"journal_unlink_failed={type(exc).__name__}")
+    return warnings
+
+
+def _sprint_holds_item(sprint: dict[str, Any], slug: str) -> bool:
+    return any(
+        (row if isinstance(row, str) else row.get("slug")) == slug
+        for row in sprint.get("items", [])
+    )
+
+
 def _pending_transaction_journals(docs_dir: Path) -> list[Path]:
     """List prepared transaction journals without taking a lock.
 
@@ -2192,8 +2222,15 @@ def move_sprint_item(
     expected_to_version: int,
     *,
     after_first_write: Callable[[], None] | None = None,
-) -> dict[str, int]:
-    """Move one item with two-version validation and compensating recovery."""
+) -> dict[str, Any]:
+    """Move one item with two-version validation and compensating recovery.
+
+    The move settles in one of two states: both sprint writes applied, or
+    neither. A failure before both writes land restores both sprints from the
+    journal's before-bytes; a failure after they land is bookkeeping only, so
+    the applied verdict and both versions are read back from disk and
+    returned rather than raised.
+    """
     source_path = resource_path(docs_dir, project, "sprint", from_sprint)
     target_path = resource_path(docs_dir, project, "sprint", to_sprint)
     journal = _move_journal_path(docs_dir, project, from_sprint, to_sprint, slug)
@@ -2241,18 +2278,18 @@ def move_sprint_item(
             source_bytes,
             target_bytes,
         )
-        new_from = _write_resource_unlocked(
-            docs_dir,
-            project,
-            "sprint",
-            from_sprint,
-            {**source, "items": source_items},
-            source_version,
-        )
         try:
+            _write_resource_unlocked(
+                docs_dir,
+                project,
+                "sprint",
+                from_sprint,
+                {**source, "items": source_items},
+                source_version,
+            )
             if after_first_write:
                 after_first_write()
-            new_to = _write_resource_unlocked(
+            _write_resource_unlocked(
                 docs_dir,
                 project,
                 "sprint",
@@ -2275,9 +2312,27 @@ def move_sprint_item(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"from_version": new_from, "to_version": new_to}
+        source_after, from_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", from_sprint
+        )
+        target_after, to_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", to_sprint
+        )
+        applied = _sprint_holds_item(target_after, slug) and not _sprint_holds_item(
+            source_after, slug
+        )
+        warnings = _retire_move_journal(journal)
+        if not applied:
+            raise ProjectStateError(
+                f"sprint move did not settle: {slug!r} is not in exactly "
+                f"{to_sprint!r} after both writes"
+            )
+        return {
+            "applied": True,
+            "from_version": from_version,
+            "to_version": to_version,
+            "warnings": warnings,
+        }
 
 
 def push_sprint(
@@ -2326,9 +2381,10 @@ def push_sprint(
             {**target, "status": "active"},
             target_version,
         )
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"new_version": new_version}
+        return {
+            "new_version": new_version,
+            "warnings": _retire_move_journal(journal),
+        }
 
 
 def _sprint_item_payload(row: Any) -> dict[str, Any]:
@@ -2482,9 +2538,11 @@ def _close_sprint_with_carry_forward(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-    return new_closing, [f"carried {len(incomplete)} item(s) to sprint {advancing_id}"]
+        carried_warnings = _retire_move_journal(journal)
+    return new_closing, [
+        f"carried {len(incomplete)} item(s) to sprint {advancing_id}",
+        *carried_warnings,
+    ]
 
 
 #: Ops this dispatcher answers that the shared handler table in
@@ -2606,7 +2664,9 @@ def apply_resource_ops(
                 int(op.get("to_version", -1)),
             )
             return result["from_version"], [
-                f"destination_version={result['to_version']}"
+                f"source_version={result['from_version']}",
+                f"destination_version={result['to_version']}",
+                *result.get("warnings", []),
             ]
         elif verb == "push" and resource_type == "sprint":
             if len(ops) != 1:

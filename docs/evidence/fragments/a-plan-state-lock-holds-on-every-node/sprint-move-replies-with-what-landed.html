@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sprint move replies with what landed</title>
+<style>
+  body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; line-height: 1.5; max-width: 60rem; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+  th, td { text-align: left; padding: .4rem .6rem; border-bottom: 1px solid #d8d8d8; vertical-align: top; }
+  code { font-size: .92em; }
+  pre { background: #f5f5f4; padding: .8rem; overflow-x: auto; }
+</style>
+</head>
+<body>
+<article class="evidence-fragment" data-reckon="evidence-fragment"
+         data-node="sprint-move-replies-with-what-landed"
+         data-plan="a-plan-state-lock-holds-on-every-node">
+
+<h1 id="sprint-move-replies-with-what-landed-title">A sprint move settles all-or-nothing and replies with what landed</h1>
+
+<p id="sprint-move-replies-with-what-landed-summary">
+  The move wrote both sprint resources, then marked its journal committed and
+  raised when that mark failed. The caller answered <code>ok: false</code> although
+  both writes were on disk. The move now treats journal bookkeeping as
+  bookkeeping: a failure there cannot undo landed writes, so the verdict and both
+  versions are read back from the two sprint resources and returned, and the
+  journal is retired best-effort with a warning when it cannot be.
+</p>
+
+<h2 id="sprint-move-replies-with-what-landed-change">What changed</h2>
+
+<table id="sprint-move-replies-with-what-landed-changes">
+  <thead>
+    <tr><th>Path</th><th>Change</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>reckon/project_state.py</code></td>
+      <td><code>move_sprint_item</code> re-reads both sprints after the second write
+          and decides <code>applied</code> from them; <code>_retire_move_journal</code>
+          retires the journal without raising; <code>push_sprint</code> and the
+          close carry-forward use the same retirement.</td>
+    </tr>
+    <tr>
+      <td><code>reckon/mcp_edit_plan.py</code></td>
+      <td>A move reply carries <code>applied</code> and <code>sprint_versions</code>
+          read fresh from disk; a refused resource edit carries
+          <code>applied: false</code>.</td>
+    </tr>
+    <tr>
+      <td><code>tests/test_a_sprint_move_replies_with_what_landed.py</code></td>
+      <td>One fault per step of a move through the edit-plan path, each asserting
+          the item is in exactly one sprint and the reply matches a fresh read.</td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="sprint-move-replies-with-what-landed-measure">Measure</h2>
+
+<table id="sprint-move-replies-with-what-landed-steps">
+  <thead>
+    <tr><th>Injected step</th><th>Item lands in</th><th>Reply (head)</th><th>Reply (base revision)</th></tr>
+  </thead>
+  <tbody>
+    <tr><td>after the journal is written</td><td>source only</td><td><code>ok: false</code>, <code>applied: false</code></td><td>fails the verdict assertion</td></tr>
+    <tr><td>after the first sprint write</td><td>source only</td><td><code>ok: false</code>, <code>applied: false</code></td><td>fails the verdict assertion</td></tr>
+    <tr><td>after the second sprint write (commit mark raises)</td><td>destination only</td><td><code>ok: true</code>, <code>applied: true</code>, warning recorded</td><td><code>ok: false</code> while the item is in the destination</td></tr>
+    <tr><td>commit mark with the journal already gone</td><td>destination only</td><td><code>ok: true</code>, <code>applied: true</code></td><td><code>ok: false</code> while the item is in the destination</td></tr>
+  </tbody>
+</table>
+
+<p id="sprint-move-replies-with-what-landed-negative">
+  The negative control runs the same test file against the base revision
+  <code>e5236d4</code> extracted under <code>~/.cache</code>: all five cases fail
+  there, and the two commit-mark cases fail with
+  <code>AssertionError: reply says not applied while the item is in S5</code>
+  — the paired defect exactly as reported, with both writes landed and the reply
+  saying otherwise. Log: <code>negative-control-base.log</code> in the run
+  directory.
+</p>
+
+</article>
+</body>
+</html>

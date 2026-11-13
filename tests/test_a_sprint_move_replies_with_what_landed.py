@@ -1,0 +1,172 @@
+"""A sprint move settles all-or-nothing, and its reply matches the disk.
+
+Faults are injected at each step of a move run through the edit-plan write
+path. The item is meant to end in exactly one sprint, and the reply's
+applied-or-not verdict and versions are compared against a fresh read of both
+sprint resources.
+"""
+
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from reckon import _plan_html, project_state
+from reckon import mcp as mcp_module
+from reckon.project_state import create_project_state, read_resource, write_resource
+
+SOURCE = "S3"
+TARGET = "S5"
+SLUG = "alpha"
+
+
+def _write_plan(docs: Path, slug: str) -> None:
+    path = docs / "plans" / f"{slug}.html"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    bare = (
+        "<!doctype html><html><head>"
+        '<meta name="docs-project" content="sample">'
+        f"<title>{slug}</title></head><body><main></main></body></html>"
+    )
+    path.write_text(
+        _plan_html.write_state(
+            bare,
+            {
+                "type": "plan",
+                "slug": slug,
+                "title": slug.title(),
+                "status": "active",
+                "impl": 0.0,
+            },
+        ),
+        encoding="utf-8",
+    )
+
+
+@pytest.fixture()
+def sprint_pair(tmp_path: Path) -> Path:
+    docs = tmp_path / "docs"
+    docs.mkdir()
+    _write_plan(docs, SLUG)
+    create_project_state(docs, "sample")
+    write_resource(docs, "sample", "sprint", SOURCE, {"items": [SLUG]}, 0, create=True)
+    write_resource(docs, "sample", "sprint", TARGET, {"items": []}, 0, create=True)
+    return docs
+
+
+def _slugs(sprint: dict) -> set[str]:
+    return {
+        str(row if isinstance(row, str) else row.get("slug")) for row in sprint["items"]
+    }
+
+
+def _move(docs: Path) -> dict:
+    _, from_version = read_resource(docs, "sample", "sprint", SOURCE)
+    _, to_version = read_resource(docs, "sample", "sprint", TARGET)
+    return mcp_module._edit_plan(
+        "sample",
+        SOURCE,
+        [
+            {
+                "op": "move",
+                "target": "sprint_item",
+                "slug": SLUG,
+                "to": TARGET,
+                "to_version": to_version,
+            }
+        ],
+        from_version,
+        checkout_path=str(docs.parent),
+        doc_type="sprint",
+    )
+
+
+def _fault_on_write_call(monkeypatch: pytest.MonkeyPatch, ordinal: int) -> None:
+    original = project_state._write_resource_unlocked
+    calls = {"count": 0}
+
+    def wrapper(*args, **kwargs):
+        calls["count"] += 1
+        if calls["count"] == ordinal:
+            raise project_state.ProjectStateError("injected sprint write failure")
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(project_state, "_write_resource_unlocked", wrapper)
+
+
+def _fault_marking_committed(
+    monkeypatch: pytest.MonkeyPatch, *, journal_gone: bool
+) -> None:
+    def wrapper(path: Path) -> None:
+        if journal_gone:
+            path.unlink()
+            raise FileNotFoundError(path)
+        raise OSError("injected commit-mark failure")
+
+    monkeypatch.setattr(project_state, "_mark_move_journal_committed", wrapper)
+
+
+def _assert_reply_matches_disk(reply: dict, docs: Path, *, applied: bool) -> None:
+    source, from_version = read_resource(docs, "sample", "sprint", SOURCE)
+    target, to_version = read_resource(docs, "sample", "sprint", TARGET)
+    assert (SLUG in _slugs(source)) != (SLUG in _slugs(target)), (
+        "the item must be in exactly one sprint"
+    )
+    assert (SLUG in _slugs(target)) is applied
+    if applied:
+        assert reply["ok"] is True, (
+            f"reply says not applied while the item is in {TARGET}: {reply}"
+        )
+        assert reply.get("applied") is True, reply
+        assert reply["sprint_versions"] == {
+            SOURCE: from_version,
+            TARGET: to_version,
+        }
+    else:
+        assert reply["ok"] is False, f"reply claims a move that did not land: {reply}"
+        assert reply.get("applied") is False, reply
+
+
+def test_fault_after_journal_written_reports_not_applied(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fault_on_write_call(monkeypatch, 1)
+    reply = _move(sprint_pair)
+    _assert_reply_matches_disk(reply, sprint_pair, applied=False)
+
+
+def test_fault_after_first_sprint_write_reports_not_applied(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fault_on_write_call(monkeypatch, 2)
+    reply = _move(sprint_pair)
+    _assert_reply_matches_disk(reply, sprint_pair, applied=False)
+
+
+def test_fault_after_second_sprint_write_reports_applied(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fault_marking_committed(monkeypatch, journal_gone=False)
+    reply = _move(sprint_pair)
+    _assert_reply_matches_disk(reply, sprint_pair, applied=True)
+    assert any("journal_commit_mark_failed" in row for row in reply["warnings"])
+
+
+def test_commit_mark_with_journal_already_gone_reports_applied(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fault_marking_committed(monkeypatch, journal_gone=True)
+    reply = _move(sprint_pair)
+    _assert_reply_matches_disk(reply, sprint_pair, applied=True)
+
+
+def test_a_settled_move_leaves_no_journal_between_the_sprints(
+    sprint_pair: Path,
+) -> None:
+    reply = _move(sprint_pair)
+    _assert_reply_matches_disk(reply, sprint_pair, applied=True)
+    journals = list(
+        (sprint_pair / ".reckon" / "transactions").glob("sprint-move-*.json")
+    )
+    assert journals == []
