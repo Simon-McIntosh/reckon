@@ -49,6 +49,26 @@
   </table>
   <p>The initial 82 added importer failures exposed reader compatibility contracts
     and have been repaired at source. The complete sequential baseline/head comparison still adds 2 failing ids: tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row, tests/test_one_station_per_node_runs_the_tick.py::test_one_station_keeps_every_session_transition_once_across_restart. Both arms use two pytest workers with whole-file scheduling on all_debug. The baseline remains red; complete failure ids and removed failures are preserved in <code>repair-head-stable-delta.json</code>. Earlier four-worker comparisons and isolated launch probes are retained as stability evidence.</p>
+  <table id="hot-path-reads-only-live-runs-repeated-readers">
+    <caption>Five independent pytest processes per reader and revision, sequentially on all_debug</caption>
+    <thead><tr><th>Reader contract</th><th>Base failures / runs</th><th>Head failures / runs</th><th>Observation</th></tr></thead>
+    <tbody>
+      <tr><td>Promoted pace row replay</td><td>2 / 5</td><td>5 / 5</td><td>The same unreadable-clock refusal occurs at the base</td></tr>
+      <tr><td>Station transitions across restart</td><td>0 / 5</td><td>0 / 5</td><td>All existing replay and consumed-offset assertions pass</td></tr>
+    </tbody>
+  </table>
+  <p>The repeated arms use base
+    <code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code> and head
+    <code>2576bf2aa2c27d43ca17c5792e2656911a85f7a5</code>.
+    Pace replay fails at the base with
+    <q>the 'alpha' lane's five-hour clock reports state 'unknown'</q>.
+    This is recorded as pre-existing, with its higher observed failure count at
+    head retained. The committed row continues through the full
+    <code>ledger.runs</code> reader. Station restart passes all ten runs; its
+    assertions and reader remain intact. Neither existing test file was edited.
+    The four <code>repeated-{base,head}-{pace,restart}.log</code> receipts and
+    <code>repeated-readers.json</code> preserve every result. A fresh complete
+    importer comparison follows these repetitions.</p>
   <p>Three existing test files now prove their decode counters with an explicit
     history read, permit promotion to decode zero historical rows, or observe the
     indexed named-row lookup in their positive control. Their per-key decode
