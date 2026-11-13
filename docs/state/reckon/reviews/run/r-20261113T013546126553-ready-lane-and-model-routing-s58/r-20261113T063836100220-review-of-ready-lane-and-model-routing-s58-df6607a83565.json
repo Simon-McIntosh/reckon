@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/admission/selection.py:501",
+    "reckon/crew/admission/selection.py:517",
+    "reckon/crew/queue_admission.py:127",
+    "reckon/crew/dispatching/preparation.py:289"
+  ],
+  "completed_at": "2026-11-13T09:46:56.177Z",
+  "dispatched_at": "2026-11-13T09:24:05Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_picker.py",
+      "id": "f4b35f6b067",
+      "line": 1443,
+      "severity": "non-blocking",
+      "text": "launch_route_decision subtracts a parsed pick time from now without checking that parse_utc parsed it: parse_utc returns None for a malformed stamp, so a stored route carrying an unreadable picked_at raises TypeError instead of the repick the function's own docstring prescribes for an unstamped route, and that raise lands inside the admission pass that calls _launch_queued. Measured by running the landed function with {'action': 'route', 'backend': 'clive', 'picked_at': 'garbage'}: 'TypeError: unsupported operand type(s) for -: datetime.datetime and NoneType'. Guard the parse and return decision=repick with reason 'the stored route records an unreadable pick time'."
+    },
+    {
+      "file": "docs/evidence/fragments/lane-and-model-routing/ready-lane-and-model-routing-s58.html",
+      "id": "f2a1861de96",
+      "line": 48,
+      "severity": "non-blocking",
+      "text": "The fragment states that the base revision's arm of the suite named for this change is 51 passed and the head arm 55, but both arms ran only tests/test_staged_write_inventory.py, which imports neither reckon.crew.queue_admission nor reckon.crew.dispatch_picker, while the done_when's population is the 130 test files under tests/ that import them. The manifest's baseline_suite and after_suite repeat the narrower run, so the recorded evidence answers a narrower question than the measure states; the stored record's evidence score is lowered for it. A delta probe of the two most at-risk launcher files (tests/test_a_queued_run_is_admitted.py, tests/test_a_claim_refused_launch_returns_to_the_queue.py) gave 2 failed / 26 passed with identical ids at 68ebb1ff and at df6607a83, so no regression was observable \u2014 but that is a two-file sample, not the declared population."
+    },
+    {
+      "file": "tests/test_a_stale_route_is_picked_again_at_launch.py",
+      "id": "f956bad84be",
+      "line": 189,
+      "severity": "non-blocking",
+      "text": "assert result['backend'] == 'codex' compares a value the test scripted into its own StubPicker answer and which the test's own _fake_launcher echoes back as the launch's backend, and line 236's assert handoff['backend'] == 'clive' compares against the backend of the stored route the test itself wrote, so both hold whatever the production decision does. The load-bearing assertions in the same tests are the picker call counts and the handoff route/picker_selection checks (lines 185, 188, 214-217), which do redden on the negative control."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "Four production call sites examined: the admission pass at reckon/crew/admission/selection.py:501 and :517, the facade reckon/crew/queue_admission.py:127 the test drives, and reckon/crew/dispatching/preparation.py:289, which receives the stamped selection from dispatch_picker_selection.",
+    "diff": "Read commit by commit: 9c66f94d95 adds the decision, the pick stamp, the flight key and the four-case test (7 files), and df6607a835 adds only the landing fragment (1 file); no path outside the widened grant.",
+    "done_when": "The done_when names four cases in tests/test_a_stale_route_is_picked_again_at_launch.py plus a negative control and no added failure over the test files importing the two modules; the gate runs the four cases and the control, but both suite arms ran tests/test_staged_write_inventory.py rather than that population.",
+    "goal": "The node's goal is that a route Jev chose is picked again when its request launches; reckon/crew/admission/launching.py:302 and dispatch_picker.py:1389 implement exactly that with three outcomes (keep, replay, repick).",
+    "manifest": "Read as delivered: status complete, both arm logs named, the negative control described, and rubric lines for evidence, scope, naming, tests, landing and negative control.",
+    "write_paths": "The dispatch's original fence was queue_admission.py, dispatch_picker.py and the evidence paths; resume-1-advice.txt widened it to launching.py, flight.py, _flight_schema.py, schema/flight.yaml, flight.schema.json and the test, and every path in the diff lies inside the widened set."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_a_stale_route_is_picked_again_at_launch and test_a_second_pick_that_holds_keeps_the_request_queued red when the decision always replays, and the replay case reddens on a forced re-pick because its StubPicker has no scripted answer.",
+    "evidence": "gate-worktree.log records 4 passed EXIT=0 and negative-control.log 2 failed EXIT=1, but the done_when's population (the tests importing queue_admission and dispatch_picker) was 130 files and both arms ran only tests/test_staged_write_inventory.py, which imports neither module.",
+    "fit": "reckon/crew/dispatch_picker.py:1389-1460 follows the module's own idiom (parse_utc, queue_* config readers) and names its mechanism (launch_route_decision, record_route_repick, ROUTE_PICKED_AT_KEY, queue_repick_after_seconds) with no plan label.",
+    "goal_fidelity": "reckon/crew/admission/launching.py:302 calls dispatch_picker.launch_route_decision and :379 records the route the re-pick replaced, so a router-chosen route older than queue.repick_after_seconds is picked again while a named route is kept.",
+    "reuse": "The change removes the inline replay condition that stood in reckon/crew/admission/launching.py:295-301 and hands it to the picker's own module; a search of reckon/crew for route-age or repick ownership found only continue_hold_on_its_offered_local_lane (dispatch_plan.py:264), which transforms a hold's lane and owns no freshness rule.",
+    "scope_discipline": "Every path in the two commits is inside the coordinator's widened grant recorded in resume-1-advice.txt, and the granted reckon/crew/queue_admission.py was left untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a route Jev chose is picked again when its request launches; reckon/crew/admission/launching.py:302 now asks dispatch_picker.launch_route_decision and :379 records the route a re-pick replaced.\nVERDICT done_when: the done_when's four cases and negative control are in tests/test_a_stale_route_is_picked_again_at_launch.py and run green (gate-worktree.log 4 passed, negative-control.log 2 failed EXIT=1), but the no-added-failure clause names the test files importing the two modules and both arms ran tests/test_staged_write_inventory.py instead.\nVERDICT write_paths: the original fence was queue_admission.py and dispatch_picker.py plus the evidence paths, resume-1-advice.txt widened it to launching.py, flight.py, the two schema artifacts and the test, and all eight changed paths are inside it.\nVERDICT manifest: read; it records status complete, both arm logs, the negative control with its mutation, and a rubric line per dimension.\nVERDICT diff: read commit by commit against 68ebb1ff: 9c66f94d95 adds the launch decision, the pick stamp, the flight key and the test, df6607a835 adds only the landing fragment, and nothing outside the widened grant is touched.\nCALL_SITES: reckon/crew/admission/selection.py:501, reckon/crew/admission/selection.py:517, reckon/crew/queue_admission.py:127, reckon/crew/dispatching/preparation.py:289\nSCORE goal_fidelity: 18\nSCORE evidence: 10\nSCORE scope_discipline: 19\nSCORE durability: 17\nSCORE fit: 18\nSCORE reuse: 19\nFINDING reckon/crew/dispatch_picker.py:1443 non-blocking: an unparsable picked_at makes launch_route_decision raise TypeError rather than repicking.\nFINDING docs/evidence/fragments/lane-and-model-routing/ready-lane-and-model-routing-s58.html:48 non-blocking: the arms ran a file importing neither changed module, in place of the done_when's 130-file population.\nFINDING tests/test_a_stale_route_is_picked_again_at_launch.py:189 non-blocking: two backend assertions compare values the test supplied and its own fake echoes back, so they hold regardless of the code under test.\n",
+  "review_run_id": "r-20261113T063836100220-review-of-ready-lane-and-model-routing-s58-df6607a83565",
+  "reviewed_base_sha": "68ebb1ff1fce0febf3f6bb1b57bec608136cd92b",
+  "reviewed_head_sha": "df6607a835657105acb53eda7cd9aaa4ab0f923a",
+  "reviewed_run_id": "r-20261113T013546126553-ready-lane-and-model-routing-s58",
+  "scores": {
+    "durability": 17,
+    "evidence": 10,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:34:55.752746+00:00",
+  "total": 101
+}
