@@ -352,7 +352,7 @@ def _build_plan_review_record(
         uncovered=uncovered,
         changes=changes,
         digests=plan_review._section_digests(document),
-        state=plan_html.read_state(document),
+        state=plan_html.read_state_file(path),
     )
 
 
