@@ -2555,8 +2555,14 @@ def _unloaded_sections(
     project: str,
     pointers: Iterable[Mapping[str, Any]],
     plans: list[tuple[str, dict[str, Any]]] | None,
+    *,
+    ledger_rows: Iterable[Mapping[str, Any]] | None = None,
 ) -> dict[str, list[str]]:
-    """Name declared work with neither a request nor a reachable promotion."""
+    """Name declared work with neither a request nor a reachable promotion.
+
+    A caller resolving multiple sections supplies its ledger snapshot so every
+    verdict uses the same history without reopening the per-run documents.
+    """
     from reckon import _plan_html, ledger
     from reckon._schema import is_implementable_section
     from reckon.crew.dispatch_sections import project_mount_repository
@@ -2586,8 +2592,10 @@ def _unloaded_sections(
 
     checkout = project_mount_repository(project) if pending else None
     if checkout is not None:
-        landed, _version = ledger.load(project, use_index=False)
-        for record in landed["runs"]:
+        if ledger_rows is None:
+            landed, _version = ledger.load(project, use_index=False)
+            ledger_rows = landed["runs"]
+        for record in ledger_rows:
             key = identity(record)
             if key not in pending:
                 continue
