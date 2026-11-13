@@ -1,83 +1,94 @@
 <section id="hot-path-reads-only-live-runs-record" aria-labelledby="hot-path-reads-only-live-runs-title">
-  <h2 id="hot-path-reads-only-live-runs-title">Open-run reads: implementation held at a failing gate</h2>
-  <p>The operational entry points now share a snapshot of live pointers. A SQLite
-    projection locates retained worktree duties, run identities and review files;
-    the ledger and review writers update those projections. Explicit history
-    readers retain the complete ledger. This is a partial implementation:
-    station tick and obligations still request a complete ledger through a
-    default-root membership lookup, so the required measure is not met.</p>
+  <h2 id="hot-path-reads-only-live-runs-title">Open-run projection passes the population gate</h2>
+  <p>Station tick, promotion, landing and obligations share a snapshot of live
+    pointers and consult writer-maintained SQLite indexes for ledger identities,
+    retained worktree duties and stored reviews. Missing, stale or unavailable
+    indexes use the established readers. Explicit history readers, standalone
+    snapshot hooks, held-worktree freshness and caching, and profile rebuilds
+    preserve their existing contracts.</p>
+  <table id="hot-path-reads-only-live-runs-populations">
+    <caption>Five live runs; every live and ended run has a ledger row, directory and stored review</caption>
+    <thead><tr><th>Operation</th><th>Ended-file opens with 20 ended</th><th>Ended-file opens with 2,000 ended</th><th>Live results</th></tr></thead>
+    <tbody>
+      <tr><td>Station tick</td><td>0</td><td>0</td><td>Equal</td></tr>
+      <tr><td>Promotion</td><td>0</td><td>0</td><td>Equal</td></tr>
+      <tr><td>Landing pass</td><td>0</td><td>0</td><td>Equal; all five live candidates classified</td></tr>
+      <tr><td>Obligations read</td><td>0</td><td>0</td><td>Equal</td></tr>
+    </tbody>
+  </table>
+  <p>The instrument patches builtin, IO and OS opens and first opens a known
+    ended worker file to prove that it sees the forbidden population. Whole-ledger
+    reads are refused during the operational calls. Because all five live runs
+    already have ledger rows, promotion exercises its actual idempotent completion
+    body; pointer removal is verified and reversed between comparisons. Landing
+    calls its actual pass and verifies that every live candidate was examined.
+    Separate checks verify retirement in the ending operation, retained cleanup,
+    in-place freshness and the unchanged history view containing all 2,005 rows.</p>
+  <p>The two recorded station/obligations failures reproduced before repair as
+    <code>Failed: operational read requested the complete ledger</code>.
+    An empty default-root lookup now publishes an empty projection without
+    bootstrapping unrelated history. Forced cache refusal and unknown-generation
+    probes also failed before their repairs and now exercise the existing full
+    reader. A generation that cannot be read is never accepted as a fresh index.</p>
+  <p>The declared station mutation enumerates
+    <code>runs/*/worker.json</code> and reads every file. Against the passing
+    station case it produces <code>1 failed, 12 deselected</code> and EXIT=1,
+    identifying ended worker files. Its log is
+    <code>validated-negative-control-suite.log</code>; the mutation source and
+    overlay tar are retained. The independent landing positive control records
+    <code>1 passed, 12 deselected</code>.</p>
   <table id="hot-path-reads-only-live-runs-gates">
-    <caption>Separate all_debug jobs, with at most four pytest workers</caption>
-    <thead><tr><th>Arm</th><th>Revision</th><th>Recorded result</th></tr></thead>
+    <caption>Complete all_debug receipts; broad regression comparison remains under verification</caption>
+    <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
     <tbody>
-      <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.42 s; EXIT=0</td></tr>
-      <tr><td>First candidate node gate</td><td><code>60570547b1f2829ae00d06e4262912194f00a3a3</code></td><td>59 passed in 69.82 s; EXIT=0</td></tr>
-      <tr><td>Corrected source node gate</td><td><code>467f9dff57ad5c313bdbda82a562967860aa1232</code></td><td>2 failed, 60 passed in 48.21 s; EXIT=1</td></tr>
-      <tr><td>Baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>146 failed, 3970 passed, 4 skipped, 3 errors</td></tr>
-      <tr><td>First candidate importer gate</td><td><code>60570547b1f2829ae00d06e4262912194f00a3a3</code></td><td>227 failed, 3897 passed, 4 skipped, 3 errors; 82 added failing ids and one removed</td></tr>
+      <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.05 s</td></tr>
+      <tr><td>Product-source node gate</td><td><code>a2df24b2c006889922bc5622185facaba0cd34d6</code></td><td>64 passed in 83.16 s</td></tr>
+      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>145 failed, 3971 passed, 4 skipped, 3 errors</td></tr>
+      <tr><td>Latest head importer gate</td><td><code>a2df24b2c006889922bc5622185facaba0cd34d6</code></td><td>147 failed, 3982 passed, 4 skipped, 3 errors; 3 added failing ids</td></tr>
     </tbody>
   </table>
-  <p>The new test creates five live runs and grows ended history from 20 to 2,000.
-    Every run has a ledger row, a run directory and a stored review. It patches
-    builtin, IO and OS opens, first reads a known ended worker file as the
-    instrument's positive control, and then refuses whole-ledger reads. Promotion
-    exercises the actual idempotent completion body for a live run that already
-    has a ledger row, removes its pointer and restores it between population
-    comparisons. Landing executes its pass. Those two population cases pass at
-    the corrected source, including the complete ledger count of 2,005.
-    Station and obligations fail before completing the comparison.</p>
-  <blockquote id="hot-path-reads-only-live-runs-refusal"><p><code>Failed: operational read requested the complete ledger</code></p></blockquote>
-  <p>The failing stack is <code>has_row → _ensure → ledger.load</code> for
-    <code>(recompute-fixture, None)</code>. The fixture's rows were written under
-    its explicit repository root. The projection therefore does not yet prevent
-    a default-root lookup from entering the cold migration path. An earlier
-    failure used an unsupported cache-kind name; the corrected gate is the
-    second counted failure after a different fix, so the declared retry limit
-    stopped further implementation.</p>
-  <p>The recorded defect reproduced at the base: the station population test
-    opened ended-run review files. The declared mutation then made station tick
-    enumerate <code>runs/*/worker.json</code> and read each file. Its captured run
-    failed <code>test_history_does_not_change_the_open_population[station]</code>
-    with one failure and EXIT=1, detecting ended worker files. This is a refusal
-    by the instrument, not an inference from a passing suite. Its failing id is
-    also red at the corrected head, so this negative control cannot satisfy
-    admission against that head until the head's failure is repaired.</p>
+  <p>The initial 82 added importer failures exposed reader compatibility contracts
+    and have been repaired at source. The latest comparison still adds launch
+    reaper, pace receipt and pane settle failures. A sequential baseline/head
+    comparison with two workers and whole-file scheduling is running; its result
+    is required before the zero-added-failures measure can be claimed. Existing
+    failures vary between baseline runs, and isolated launch probes pass at both
+    revisions. These observations do not replace the complete comparison.</p>
+  <p>Three existing test files now prove their decode counters with an explicit
+    history read, permit promotion to decode zero historical rows, or observe the
+    indexed named-row lookup in their positive control. Their per-key decode
+    bounds and early-refusal zero-read assertions remain. They are
+    <code>test_a_promotion_decodes_the_ledger_index_at_most_once.py</code>,
+    <code>test_a_promotion_does_not_read_the_whole_ledger_index.py</code> and
+    <code>test_an_open_operation_refuses_a_promotion_first.py</code>.</p>
   <table id="hot-path-reads-only-live-runs-live-timings">
-    <caption>Read-only live-fleet wall times; local caches prepared before timing</caption>
-    <thead><tr><th>Read</th><th>Base [s]</th><th>Candidate at 307b514c998a366ac4ee5dfbfbc55b4db13d8bd0 [s]</th></tr></thead>
+    <caption>Read-only live-fleet wall times on all_debug; prepared local caches excluded</caption>
+    <thead><tr><th>Read</th><th>Base [s]</th><th>Product source [s]</th></tr></thead>
     <tbody>
-      <tr><td>Obligations</td><td>182.265304</td><td>44.837489</td></tr>
-      <tr><td>Review-promotion dry run</td><td>27.683700</td><td>21.192381</td></tr>
+      <tr><td>Obligations</td><td>101.190621</td><td>121.386201</td></tr>
+      <tr><td>Successful review-promotion dry run</td><td>6.092324</td><td>0.848794</td></tr>
     </tbody>
   </table>
-  <p>A later guarded probe of corrected source
-    <code>467f9dff57ad5c313bdbda82a562967860aa1232</code> recorded obligations at
-    50.292191 s and review-promotion dry run at 13.361930 s, after 103.82 s of
-    cache preparation. Its live fleet had changed to four items and seven
-    unreconciled runs. It again refused promotion and recorded zero shared writes.</p>
-  <p>Both earlier promotion dry runs returned one refusal and would not promote. These
-    numbers measure preflight, not a successful promotion. Both obligations
-    reads returned seven items and eight unreconciled runs; ages advanced with
-    the fleet. Python write auditing and read-only SQLite access guarded the
-    shared crew home and primary checkout, and both probes recorded zero shared
-    writes. Cache preparation took 85.35 s at base and 102.51 s at the candidate
-    and is excluded from the displayed timings. These are single observations
-    over a changing fleet, not a controlled speedup estimate.</p>
-  <p>Lint comparison on the changed Python paths records 14 existing findings at
-    base and 13 at head. The same two existing files fail format checking in both
-    arms; no new finding or unformatted file was added. The corrected broad
-    importer arm was cancelled after the node gate failed. Its zero-regression
-    requirement is unproven, and the initial importer delta remains recovery
-    evidence. Existing tests were not edited to accommodate the implementation.</p>
-  <p>The manifest and complete logs are under
+  <p>Both review probes select the same review, return would-promote=true with
+    zero refusals, and perform zero shared writes. Cache preparation takes
+    46.94 s at base and 50.16 s at product source. These are single observations
+    of a changing live fleet: the obligations counts differ, eight versus seven.
+    They show no obligations wall-time improvement. Metadata freshness checks
+    and Git work remain; zero ended-file opens does not imply constant total
+    filesystem work. The read-only audit guards shared crew and primary state,
+    redirects local caches and suppresses publication and promotion locks.</p>
+  <p>Ruff comparison on the changed Python paths records 14 baseline findings and
+    13 head findings, with no added finding. The same two existing files remain
+    unformatted in both arms. No unrelated formatting sweep is included.</p>
+  <p>All complete logs, comparison failure ids, reproduction probes and the
+    manifest are retained under
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs</code>.
-    Receipts include <code>base-receipt-suite.log</code>,
-    <code>head-suite.log</code>, <code>base-importers.log</code>,
-    <code>candidate-importers.log</code>, <code>candidate-delta.json</code>,
-    <code>reproduction-suite.log</code>, <code>negative-control-suite.log</code>,
-    <code>base-live.log</code>, <code>head-live.log</code> and
-    <code>final-source-live.log</code>.
-    A fresh authorized repair must resolve the default-root bootstrap and the
-    importer delta, then record a final-head gate after its evidence commit.
-    The node remains blocked; this fragment does not close the plan section.</p>
+    Principal receipts are <code>repair-base-current-suite.log</code>,
+    <code>repair-head-third-suite.log</code>,
+    <code>repair-head-third-delta.json</code>,
+    <code>validated-negative-control-suite.log</code>,
+    <code>landing-control-suite.log</code>, <code>repair-base-live.log</code> and
+    <code>validated-head-live.log</code>. The final-head gate follows the evidence
+    commit and its full revision is recorded in the manifest. This fragment
+    does not close the plan section.</p>
 </section>
