@@ -1852,7 +1852,11 @@ def record_for_review_run(
     directory = _review.review_store_root(base_dir) / project
     if not directory.is_dir():
         return None
-    entries = _review_run_index(directory).get(name)
+    if open_run_index.pointers() is None:
+        entries = _review_run_index(directory).get(name)
+    else:
+        with open_run_index.read_scope(record={"run_id": name, "project": project}):
+            entries = _review_run_index(directory).get(name)
     if not entries:
         return None
     for entry in sorted(entries, key=lambda item: item["mtime_ns"], reverse=True):

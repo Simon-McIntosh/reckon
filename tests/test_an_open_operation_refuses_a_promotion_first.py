@@ -239,8 +239,12 @@ def _snapshot(root: Path) -> dict[str, bytes]:
 def _invoke(root: Path) -> tuple[object, _ReadCounter]:
     counter = _ReadCounter()
     original_load = ledger.load
+    original_open = ledger.load_open
     with (
         mock.patch.object(ledger, "load", counter.count_ledger_load(original_load)),
+        mock.patch.object(
+            ledger, "load_open", counter.count_ledger_load(original_open)
+        ),
         mock.patch.object(run_store.RunStore, "__init__", counter.count_run_store()),
     ):
         result = CliRunner().invoke(
