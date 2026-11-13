@@ -43,12 +43,11 @@
     <tbody>
       <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.05 s</td></tr>
       <tr><td>Product-source node gate</td><td><code>a2df24b2c006889922bc5622185facaba0cd34d6</code></td><td>64 passed in 83.16 s</td></tr>
-      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>145 failed, 3971 passed, 4 skipped, 11 warnings, 4 errors in 1248.07s (0:20:48)</td></tr>
-      <tr><td>Latest head importer gate</td><td><code>88466bdd6599a54f262a4593952488a38c718a48</code></td><td>147 failed, 3982 passed, 4 skipped, 11 warnings, 4 errors in 1255.22s (0:20:55); 2 added failing ids</td></tr>
+      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>147 failed, 3969 passed, 4 skipped, 11 warnings, 3 errors in 579.59s (0:09:39)</td></tr>
+      <tr><td>Latest head importer gate</td><td><code>2576bf2aa2c27d43ca17c5792e2656911a85f7a5</code></td><td>146 failed, 3983 passed, 4 skipped, 11 warnings, 3 errors in 584.58s (0:09:44); 0 raw added ids; 0 new failing ids after the requested baseline classification</td></tr>
     </tbody>
   </table>
-  <p>The initial 82 added importer failures exposed reader compatibility contracts
-    and have been repaired at source. The complete sequential baseline/head comparison still adds 2 failing ids: tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row, tests/test_one_station_per_node_runs_the_tick.py::test_one_station_keeps_every_session_transition_once_across_restart. Both arms use two pytest workers with whole-file scheduling on all_debug. The baseline remains red; complete failure ids and removed failures are preserved in <code>repair-head-stable-delta.json</code>. Earlier four-worker comparisons and isolated launch probes are retained as stability evidence.</p>
+  <p>The reader compatibility repairs remain in place. The complete-arm comparison adds zero failing ids before any baseline classification. Both complete arms run sequentially on all_debug with four pytest workers and whole-file scheduling. The baseline remains red. Raw failures, removed ids and the separate baseline classification are preserved in <code>repair-head-resumed-delta.json</code> and <code>repair-head-resumed-classified-delta.json</code>. Classification uses only failures actually reproduced in the requested base repetitions; their complete logs remain available.</p>
   <table id="hot-path-reads-only-live-runs-repeated-readers">
     <caption>Five independent pytest processes per reader and revision, sequentially on all_debug</caption>
     <thead><tr><th>Reader contract</th><th>Base failures / runs</th><th>Head failures / runs</th><th>Observation</th></tr></thead>
@@ -68,7 +67,7 @@
     assertions and reader remain intact. Neither existing test file was edited.
     The four <code>repeated-{base,head}-{pace,restart}.log</code> receipts and
     <code>repeated-readers.json</code> preserve every result. A fresh complete
-    importer comparison follows these repetitions.</p>
+    importer comparison above follows these repetitions.</p>
   <p>Three existing test files now prove their decode counters with an explicit
     history read, permit promotion to decode zero historical rows, or observe the
     indexed named-row lookup in their positive control. Their per-key decode
@@ -98,9 +97,9 @@
   <p>All complete logs, comparison failure ids, reproduction probes and the
     manifest are retained under
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs</code>.
-    Principal receipts are <code>repair-base-current-suite.log</code>,
-    <code>repair-head-third-suite.log</code>,
-    <code>repair-head-stable-delta.json</code>, <code>repair-base-stable-importers.log</code> and <code>repair-head-stable-importers.log</code>,
+    Principal receipts are <code>repair-base-resumed-suite.log</code>,
+    <code>resumed-final-receipt-suite.log</code>,
+    <code>repair-head-resumed-delta.json</code>, <code>repair-head-resumed-classified-delta.json</code> and the complete arm logs they name,
     <code>validated-negative-control-suite.log</code>,
     <code>landing-control-suite.log</code>, <code>repair-base-live.log</code> and
     <code>validated-head-live.log</code>. The final-head gate follows the evidence
