@@ -1518,16 +1518,41 @@ def _review_missing_measures(
     arithmetic a reviewer read. A claims record is complete on its own terms:
     it carries the verdicts for the findings the review re-ran and the summary
     check, and is not measured against the six dimensions a read-only run never
-    scored. The rubric key chooses the measure, so neither record is read as
-    absent of the other's. An empty list is a complete record; the names are
-    what a refusal reports, so a review the fleet cannot promote says which
-    measure it is missing rather than that it cannot be read.
+    scored. A figure record is complete when it carries a verdict for every
+    item of its own rubric, because a figure review judges the rendered
+    artifact and records verdicts rather than scores. The rubric key chooses
+    the measure, so no record is read as absent of another's. An empty list is
+    a complete record; the names are what a refusal reports, so a review the
+    fleet cannot promote says which measure it is missing rather than that it
+    cannot be read.
     """
     if not review or review.get("status") != "parsed":
         return ["status"]
-    if review.get("rubric") == review_module.CLAIMS_RUBRIC:
+    rubric = review_module._review_record_rubric(review)
+    if rubric == review_module.CLAIMS_RUBRIC:
         return _claims_missing_measures(review)
+    if rubric == review_module.FIGURE_REVIEW_RUBRIC:
+        return _figure_missing_measures(review)
     return _landed_missing_measures(review)
+
+
+def _figure_missing_measures(review: Mapping[str, Any]) -> list[str]:
+    """The figure rubric items a record carries no verdict for.
+
+    A verdict line that states nothing is not a verdict, so an item whose value
+    is blank is reported missing rather than taken as checked. A
+    ``rubric_items`` value that is not a mapping cannot name the items it
+    carries, so every item is reported missing rather than iterated over
+    something that does not answer.
+    """
+    items = review.get("rubric_items")
+    if not isinstance(items, Mapping):
+        return list(review_module.FIGURE_REVIEW_ITEMS)
+    return [
+        item
+        for item in review_module.FIGURE_REVIEW_ITEMS
+        if not str(items.get(item) or "").strip()
+    ]
 
 
 def _landed_missing_measures(review: Mapping[str, Any]) -> list[str]:

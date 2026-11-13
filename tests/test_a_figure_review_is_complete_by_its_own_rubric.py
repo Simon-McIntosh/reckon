@@ -25,6 +25,7 @@ from reckon import _plan_html, crew
 from reckon.crew import review as review_module
 from reckon.crew.node import CrewError
 from reckon.crew.recovery_review_delivery import review_delivery_refusal
+from reckon.crew.recovery_review_subject import _review_is_complete
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -120,6 +121,8 @@ def _figure_round(*, missing_item: str | None = None, empty_item: str | None = N
         "rubric": review_module.FIGURE_REVIEW_RUBRIC,
         "rubric_items": verdicts,
         "findings": [],
+        "added_failure_count": 0,
+        "added_failure_ids": [],
         "timestamp": "2026-10-21T13:20:00Z",
     }
 
@@ -138,6 +141,8 @@ def _text_round(*, missing_dimension: str | None = None):
         "reviewed_head_sha": DISPATCHED_HEAD,
         "scores": scores,
         "findings": [],
+        "added_failure_count": 0,
+        "added_failure_ids": [],
         "timestamp": "2026-10-21T13:20:00Z",
     }
 
@@ -202,7 +207,13 @@ def test_a_figure_record_carrying_every_figure_measure_delivers_and_promotes(
     repository: Path, tmp_path: Path
 ) -> None:
     """The record the incident could not promote: all six measures, no scores."""
-    pointer = _stage(repository, tmp_path, _figure_round(), run_id=FIGURE_REVIEW_RUN_ID)
+    body = _figure_round()
+    # The record the delivery check judges complete is the record
+    # ``crew check --review`` accepts, and the fleet's own completeness reader
+    # gives the same answer: one rule, not two.
+    assert review_module.review_record_refusals(body) == []
+    assert _review_is_complete(body) is True
+    pointer = _stage(repository, tmp_path, body, run_id=FIGURE_REVIEW_RUN_ID)
 
     assert review_delivery_refusal(pointer, PROJECT) is None
 
