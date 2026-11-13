@@ -36,7 +36,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon.crew import obligation_snapshot, station_store
+from reckon.crew import obligation_snapshot, review_records, station_store
 
 # How long a stored row may stand before the derivation runs again with no
 # change: duties age on the clock and a floor beat is what lets a row's ages
@@ -246,49 +246,55 @@ def refresh(
         for row in registrations
         if not row.get("live") and row.get("session")
     }
-    state = obligation_snapshot.fleet_state(project, now=instant)
-    producer = _station_producer(store)
-    written: list[str] = []
-    for session in sessions:
-        payload = _with_sweep_failures(
-            obligation_snapshot.payload_for(state, session),
-            sweep_failures.get(session, ()),
-        )
-        identity = payload_identity(payload)
-        stored = store.read_obligation(session)
-        document = stored_document(stored) or {}
-        if (
-            stored is not None
-            and str(document.get("project") or "") == project
-            and stored_identity(stored) == identity
-        ):
-            continue
-        published = obligation_snapshot.document_for(
-            payload,
-            computed_at=instant,
-            stream_offset=0,
-            producer=producer,
-            findings=state.findings,
-        )
-        store.write_obligation(
-            session,
-            {"identity": identity, "document": published},
-            changed_at=instant,
-        )
-        written.append(session)
-    dropped = _drop_absent(store, project, sessions)
-    for session in dropped:
-        try:
-            _rewrite_without_follower(
-                project,
-                session,
-                state=state,
-                now=instant,
-                producer=producer,
-                reason=ended.get(session, ""),
+    # Every duty a session owes reads the review store for its run, and those
+    # reads are many per duty: the store's index, the run's own entries, and
+    # the entries its review's inputs are keyed on. Installing the per-tick
+    # store here makes them share one enumeration of each store directory, so
+    # a refresh lists a store once however many duties are derived from it.
+    with review_records.review_store_tick():
+        state = obligation_snapshot.fleet_state(project, now=instant)
+        producer = _station_producer(store)
+        written: list[str] = []
+        for session in sessions:
+            payload = _with_sweep_failures(
+                obligation_snapshot.payload_for(state, session),
+                sweep_failures.get(session, ()),
             )
-        except Exception:  # noqa: BLE001 - one session's rewrite costs one session
-            _report_failure(project, "absent-snapshot")
+            identity = payload_identity(payload)
+            stored = store.read_obligation(session)
+            document = stored_document(stored) or {}
+            if (
+                stored is not None
+                and str(document.get("project") or "") == project
+                and stored_identity(stored) == identity
+            ):
+                continue
+            published = obligation_snapshot.document_for(
+                payload,
+                computed_at=instant,
+                stream_offset=0,
+                producer=producer,
+                findings=state.findings,
+            )
+            store.write_obligation(
+                session,
+                {"identity": identity, "document": published},
+                changed_at=instant,
+            )
+            written.append(session)
+        dropped = _drop_absent(store, project, sessions)
+        for session in dropped:
+            try:
+                _rewrite_without_follower(
+                    project,
+                    session,
+                    state=state,
+                    now=instant,
+                    producer=producer,
+                    reason=ended.get(session, ""),
+                )
+            except Exception:  # noqa: BLE001 - one session's rewrite costs one session
+                _report_failure(project, "absent-snapshot")
     _REFRESHES[key] = _Memory(at=instant, identity=sweep_record)
     return written
 
