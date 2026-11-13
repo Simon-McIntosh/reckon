@@ -1,0 +1,67 @@
+{
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/station_obligations.py:249 station_obligations.refresh",
+    "reckon/crew/obligation_snapshot.py:1687 the sweep's fleet_state call",
+    "reckon/crew/recovery_liveness.py:1380 _env_scan_run_pid's from_beat_map read"
+  ],
+  "completed_at": "2026-11-13T07:15:10.823Z",
+  "dispatched_at": "2026-11-13T07:04:56Z",
+  "findings": [
+    {
+      "file": "tests/test_a_station_refresh_walks_the_process_table_once.py",
+      "line": 332,
+      "severity": "non-blocking",
+      "text": "the run's stored negative-control.log records 90 walks and an assertion message this line no longer emits, so the cited artefact was produced by an earlier revision of the fixture; the manifest note and the fragment's figure of 30 are substantiated only by re-running the committed test, which this review did (30 walks, EXIT=1)."
+    },
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": 296,
+      "severity": "non-blocking",
+      "text": "the region is held in a module-global list while both sibling regions are context-local, so the station's sweep thread and tick thread (reckon/crew/station.py:67) share one pinned table and one refresh can answer from the other's snapshot and lose its own pin mid-pass; the effect is cost and a slightly older snapshot, never a wrong liveness answer."
+    },
+    {
+      "file": "reckon/crew/process_signal.py",
+      "line": 322,
+      "severity": "non-blocking",
+      "text": "the walk is taken eagerly when the region opens, so a refresh of a project whose pointers never reach the environment scan now pays one full /proc listing where the base paid none; a walk taken on the first read inside the region would keep the at-most-one guarantee without adding a walk to the empty case."
+    }
+  ],
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit; 92b8064db3 adds the pinned region in reckon/crew/process_signal.py:296-327 and opens it in fleet_state, 7d0b2be51a adds the evidence fragment, and both are inside the declared scope.",
+    "done_when": "the section's done-when asks one refresh over 30 live pointers with a fake counting table, every pointer reaching the environment scan, the beat clock stepping past BEAT_SECONDS, at most one walk and each pointer's liveness equal to the per-pointer answers; tests/test_a_station_refresh_walks_the_process_table_once.py:319-338 asserts exactly that count and 245-289 the equality.",
+    "goal": "the node's goal is that a station refresh walks the process table once, and reckon/crew/obligation_snapshot.py:1370-1374 opens process_table_walk_once() around the whole _derive_fleet_state() call so every liveness read inside the derivation answers from one /proc walk.",
+    "manifest": "read; it declares status complete, both suite arms, the importing-test delta, the ruff result and the negative control, and its commits 92b8064db3 and 7d0b2be51a match the diff I read.",
+    "write_paths": "the manifest declares reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, reckon/crew/obligation_snapshot.py, tests/test_a_station_refresh_walks_the_process_table_once.py and the evidence fragment; git diff 8b5c440f1d..7d0b2be51a touches exactly those five paths and nothing else."
+  },
+  "justifications": {
+    "durability": "reinstating the regression by removing the region makes tests/test_a_station_refresh_walks_the_process_table_once.py:332 redden at 30 walks, which this review reproduced at the base revision.",
+    "evidence": "the gate at tests/test_a_station_refresh_walks_the_process_table_once.py:332 measures the done-when's count and both arms ran on all_debug (slurm 1313211 and 1313219), but the cited negative-control.log records 90 walks from an earlier fixture and so does not substantiate the stated 30.",
+    "fit": "the lazy _process_signal_module helper and the region contextmanager match reckon/crew/obligation_snapshot.py:1301 and the sibling regions, though reckon/crew/process_signal.py:296 holds the region in a module-global rather than the ContextVar both siblings use.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1350-1374 wraps the entire derivation in processes_module.process_table_walk_once(), and the head arm measures 1 walk for 30 pointers against 30 at the base.",
+    "reuse": "the search over reckon/ for a generic region owner found reckon/ledger.py:1806 index_reuse and reckon/crew/recovery_review_dispatch.py:906 review_heads_resolve_once, neither of which owns the process table's cache, and the addition keeps that cache in its own owning module.",
+    "scope_discipline": "every path in git diff 8b5c440f1d..7d0b2be51a is one of the five declared write paths, with no change to plan state or to any figure directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a station refresh walks the process table once, and reckon/crew/obligation_snapshot.py:1370-1374 opens process_table_walk_once() around the whole _derive_fleet_state() call so every liveness read inside the derivation answers from one /proc walk.\nVERDICT done_when: the section's done-when asks one refresh over 30 live pointers with a fake counting table, every pointer reaching the environment scan, the beat clock stepping past BEAT_SECONDS, at most one walk and each pointer's liveness equal to the per-pointer answers; tests/test_a_station_refresh_walks_the_process_table_once.py:319-338 asserts exactly that count and 245-289 the equality.\nVERDICT write_paths: the manifest declares reckon/crew/process_signal.py, reckon/crew/recovery_liveness.py, reckon/crew/obligation_snapshot.py, tests/test_a_station_refresh_walks_the_process_table_once.py and the evidence fragment; git diff 8b5c440f1d..7d0b2be51a touches exactly those five paths and nothing else.\nVERDICT manifest: read; it declares status complete, both suite arms, the importing-test delta, the ruff result and the negative control, and its commits 92b8064db3 and 7d0b2be51a match the diff I read.\nVERDICT diff: read commit by commit; 92b8064db3 adds the pinned region in reckon/crew/process_signal.py:296-327 and opens it in fleet_state, 7d0b2be51a adds the evidence fragment, and both are inside the declared scope.\nCALL_SITES: reckon/crew/station_obligations.py:249 station_obligations.refresh, reckon/crew/obligation_snapshot.py:1687 the sweep's fleet_state call, reckon/crew/recovery_liveness.py:1380 _env_scan_run_pid's from_beat_map read\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1350-1374 wraps the entire derivation in processes_module.process_table_walk_once(), and the head arm measures 1 walk for 30 pointers against 30 at the base.\nSCORE evidence: 15\nJUSTIFICATION evidence: the gate at tests/test_a_station_refresh_walks_the_process_table_once.py:332 measures the done-when's count and both arms ran on all_debug (slurm 1313211 and 1313219), but the cited negative-control.log records 90 walks from an earlier fixture and so does not substantiate the stated 30.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in git diff 8b5c440f1d..7d0b2be51a is one of the five declared write paths, with no change to plan state or to any figure directory.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the regression by removing the region makes tests/test_a_station_refresh_walks_the_process_table_once.py:332 redden at 30 walks, which this review reproduced at the base revision.\nSCORE fit: 16\nJUSTIFICATION fit: the lazy _process_signal_module helper and the region contextmanager match reckon/crew/obligation_snapshot.py:1301 and the sibling regions, though reckon/crew/process_signal.py:296 holds the region in a module-global rather than the ContextVar both siblings use.\nSCORE reuse: 17\nJUSTIFICATION reuse: the search over reckon/ for a generic region owner found reckon/ledger.py:1806 index_reuse and reckon/crew/recovery_review_dispatch.py:906 review_heads_resolve_once, neither of which owns the process table's cache, and the addition keeps that cache in its own owning module.\nFINDING tests/test_a_station_refresh_walks_the_process_table_once.py:332 non-blocking: the run's stored negative-control.log records 90 walks and an assertion message this line no longer emits, so the cited artefact was produced by an earlier revision of the fixture; the manifest note and the fragment's figure of 30 are substantiated only by re-running the committed test, which this review did (30 walks, EXIT=1).\nFINDING reckon/crew/process_signal.py:296 non-blocking: the region is held in a module-global list while both sibling regions are context-local, so the station's sweep thread and tick thread (reckon/crew/station.py:67) share one pinned table and one refresh can answer from the other's snapshot and lose its own pin mid-pass; the effect is cost and a slightly older snapshot, never a wrong liveness answer.\nFINDING reckon/crew/process_signal.py:322 non-blocking: the walk is taken eagerly when the region opens, so a refresh of a project whose pointers never reach the environment scan now pays one full /proc listing where the base paid none; a walk taken on the first read inside the region would keep the at-most-one guarantee without adding a walk to the empty case.\n",
+  "review_run_id": "r-20261113T070100953619-review-of-a-station-refresh-walks-the-process-table-once-7d0b2be51a9e",
+  "reviewed_base_sha": "8b5c440f1d04c8871f56314700a16d84184ff59c",
+  "reviewed_head_sha": "7d0b2be51a9e6b98c2c8bf0712b740fbed2517a9",
+  "reviewed_run_id": "r-20261113T060759243111-a-station-refresh-walks-the-process-table-once",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 16,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:34:53.824467+00:00",
+  "total": 106
+}
