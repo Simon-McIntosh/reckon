@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="651">
+<meta name="plan-version" content="652">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1679,6 +1679,9 @@
 </div>
 <div class="r-comment" data-section="s74" data-id="c-run-r-20261112T205856616623-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-ba2a186e9d1e" data-who="reckon-build" data-when="2026-11-12T21:34:47.228Z">
     <div class="r-comment-body"><p>Independent review of c203e0e247..ba2a186e9d (the repair commit only): the repair does wire the hourly retention pass to the trash root, verified against gc.py:1652 RETENTION_INTERVAL='1h' and gc.py:2036 ExecStart '-m reckon.crew.gc --apply', with its head-pass/revert-fail control genuine; but it introduces one blocking defect — gc.py:1953 emits a seventh 'retention phase' line while RETENTION_PHASES (gc.py:1674) still names six, so tests/test_a_retention_pass_is_bounded.py:238 turns red at a revision whose suite arms never ran that file.</p></div>
+</div>
+<div class="r-comment" data-section="s74" data-id="c-run-r-20261112T232657175912-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-00e7d47e063c" data-who="reckon-build" data-when="2026-11-12T23:37:33.634Z">
+    <div class="r-comment-body"><p>The review of run r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion over ba2a186e9d..00e7d47e06 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 13, fit 17, reuse 16 (total 98) with no blocking finding: the commit repairs the blocking phase-count break and removes the git dependency from the hourly pass, leaving three non-blocking findings (unbounded trash removal under a pass its own docstring bounds, no repository test driving the retention trash wiring or the new root derivation, and head logs naming an uncommitted repair rather than the commit).</p></div>
 </div>
 <div class="r-comment" data-section="s75" data-id="c-run-r-20261112T195500222423-review-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597" data-who="reckon-build" data-when="2026-11-12T20:10:13.135Z">
     <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once at head 4c28ca09b597 scores goal_fidelity 18, evidence 12, scope_discipline 19, durability 13, fit 17, reuse 5, with one blocking finding — the fleet half of the parity assertion in the landed test compares two empty (None, 0) readings and cannot fail — and three non-blocking findings on forked test helpers, the unrecorded all_debug partition, and an unlogged second mutant; the record is stored at review-records/ under the reviewed run's directory</p></div>
