@@ -507,7 +507,7 @@ same session is a defect, not redundancy. To watch more than your own runs, name
 them on the one follower with `--observe-session`. Never arm a second follower.
 
 **Read the counts on the rows, and take names from the obligations list.** A
-follower row carries the fleet's four counters — `w` working, `h` halted, `d`
+follower row carries the fleet's four counters — `w` working, `n` needs you, `d`
 delivered, `q` queued — so the pane tells you how much is outstanding at a
 glance. It does not name the runs: a line composed for the pane was measured as
 noise, printed again on a cadence while nothing had changed. To learn which runs

@@ -389,6 +389,164 @@ class SweepBeat:
 # of its own to reach the dispatch.
 REFLEX_BEAT_SECONDS = 30.0
 
+# How long a stopping station waits for a derivation it started to land. A
+# derivation can run far longer than a shutdown should, so the wait is bounded
+# and the duties it had not yet published are the next station's to derive.
+DUTY_DRAIN_SECONDS = 10.0
+
+
+class _CommitBarrier:
+    """Hold derivations out of the store while a tick writes transitions."""
+
+    def __init__(self, duties: DutyBeat) -> None:
+        self._duties = duties
+
+    def __enter__(self) -> None:
+        self._duties._begin_commit()
+
+    def __exit__(self, *_exc: object) -> None:
+        self._duties._end_commit()
+
+
+class DutyBeat:
+    """Derive each project's review duties on a worker of its own.
+
+    A derivation reads the review store once per run and may outlast a tick by
+    most of an hour. A run's phase transition is what wakes the session that
+    owns it, so deriving duties on the tick path held every later project's
+    transition behind it, and a run that finished during a long derivation woke
+    no one until the following tick.
+
+    One worker owns the derivation, so a project has at most one in flight: a
+    tick that finds one running starts no second pass and leaves the duties the
+    last finished derivation published in place. A change the tick saw while a
+    derivation ran is carried into the next one, so a project is never left
+    publishing duties read before its own transition.
+
+    A worker holds at its first step while a tick is committing transitions.
+    Committing a project's transitions only *after* an earlier project's
+    derivation had finished is what held a later project's wake back, so the
+    ordering is a property of this class rather than of the order a tick
+    happens to call it in: no derivation reaches the review store until every
+    project's transitions for that tick are written. The wait is one-sided —
+    the tick never waits for a derivation — so a slow derivation cannot delay
+    the pass that gates it.
+    """
+
+    def __init__(
+        self,
+        root: str | Path,
+        *,
+        guard: station_store.StoreWriteGuard | None = None,
+    ) -> None:
+        self.root = Path(root)
+        self.guard = guard
+        self._lock = threading.Lock()
+        self._in_flight: set[str] = set()
+        self._changed: set[str] = set()
+        self._workers: dict[str, threading.Thread] = {}
+        self._commit = threading.Condition()
+        self._committing = 0
+
+    def committing(self) -> _CommitBarrier:
+        """Hold every derivation at its first step until the block ends."""
+        return _CommitBarrier(self)
+
+    def _begin_commit(self) -> None:
+        with self._commit:
+            self._committing += 1
+
+    def _end_commit(self) -> None:
+        with self._commit:
+            self._committing -= 1
+            if not self._committing:
+                self._commit.notify_all()
+
+    def _await_committed(self) -> None:
+        with self._commit:
+            self._commit.wait_for(lambda: not self._committing)
+
+    def request(
+        self,
+        project: str,
+        *,
+        home: str | Path,
+        changed: bool,
+        moment: datetime | None,
+    ) -> bool:
+        """Start this project's derivation unless one is already in flight."""
+        with self._lock:
+            if project in self._in_flight:
+                if changed:
+                    self._changed.add(project)
+                return False
+            self._in_flight.add(project)
+            changed = changed or project in self._changed
+            self._changed.discard(project)
+            worker = threading.Thread(
+                target=self._run,
+                kwargs={
+                    "project": project,
+                    "home": home,
+                    "changed": changed,
+                    "moment": moment,
+                },
+                name=f"station-duties-{project}",
+                daemon=True,
+            )
+            self._workers[project] = worker
+        worker.start()
+        return True
+
+    def in_flight(self) -> set[str]:
+        """The projects whose derivation is running right now."""
+        with self._lock:
+            return set(self._in_flight)
+
+    def drain(self, timeout: float | None = None) -> None:
+        """Wait for the derivations this station started to finish."""
+        with self._lock:
+            workers = list(self._workers.values())
+        for worker in workers:
+            worker.join(timeout)
+        with self._lock:
+            self._workers.clear()
+
+    def _run(
+        self,
+        project: str,
+        *,
+        home: str | Path,
+        changed: bool,
+        moment: datetime | None,
+    ) -> None:
+        # No derivation reads the store while a tick is writing transitions: a
+        # derivation entered mid-pass would publish duties read before the
+        # transitions of the projects the pass had not reached yet.
+        self._await_committed()
+        # The worker owns its connection: a store handle is bound to the thread
+        # that opened it, and the tick keeps its own to the same database.
+        store = station_store.StationStore(self.root, guard=self.guard)
+        try:
+            station_obligations.publish(
+                store,
+                project=project,
+                home=home,
+                changed=changed,
+                now=moment,
+            )
+        except Exception:  # noqa: BLE001 - one project's duties cost one pass
+            print(
+                f"station-duty-failure: {project}: the derivation could not complete",
+                file=sys.stderr,
+                flush=True,
+            )
+            traceback.print_exc(file=sys.stderr)
+        finally:
+            store.close()
+            with self._lock:
+                self._in_flight.discard(project)
+
 
 def _pointer_file_stamp(path: str) -> tuple[int, int]:
     """The identity a manifest or pointer file presents between two reads."""
@@ -624,6 +782,7 @@ class Station:
         projects: Callable[[], Mapping[str, Path]] = flight.mounted_project_docs,
         stall_seconds: int = 900,
         sweeps: SweepBeat | None = None,
+        duties: DutyBeat | None = None,
         reflex_beat_seconds: float = REFLEX_BEAT_SECONDS,
         clock: Callable[[], datetime] | None = None,
     ) -> None:
@@ -632,6 +791,11 @@ class Station:
         self.projects = projects
         self.stall_seconds = stall_seconds
         self.clock = clock or (lambda: datetime.now(tz=UTC))
+        # Each project's duties are derived on a worker of its own, so a long
+        # derivation never holds the next tick's phase transitions back.
+        self.duties = (
+            DutyBeat(store.root, guard=store.guard) if duties is None else duties
+        )
         # The review reflex and settle detection run here, once for every
         # session on the node, rather than in each follower.
         self.sweeps = SweepBeat() if sweeps is None else sweeps
@@ -711,66 +875,68 @@ class Station:
         # earlier project's derivation had finished held the later projects'
         # wakes behind work that has nothing to do with them.
         derivations: list[tuple[str, list[Mapping[str, Any]], bool]] = []
-        for project in sorted(project_names - {""}):
-            current = {
-                run_id: verdict
-                for run_id, verdict in verdicts.items()
-                if str(pointers.get(run_id, {}).get("project") or "") == project
-            }
-            known = self.store.recorded_fleet(project)
-            # A run first seen by this station is inventory. The producer's
-            # fold represents an unknown run as a dispatched arrival, then
-            # its actual verdict as a second row; the station records that
-            # verdict as its baseline before asking the same fold for changes.
-            for run_id, verdict in current.items():
-                if run_id not in known:
-                    known[run_id] = dict(verdict)
-            folded, next_known = recovery.fleet_transitions(
-                known,
-                current,
-                ledger_run_ids=recovery_watch._ledger_run_id_reader(project),
-                handovers=recovery_watch.handover_run_ids(project),
-            )
-            project_pointers = [
-                pointer
-                for pointer in pointers.values()
-                if str(pointer.get("project") or "") == project
-            ]
-            events: list[dict[str, Any]] = []
-            for snapshot, previous, state, counts in folded:
-                event = recovery._watch_transition(
-                    project,
-                    kind="transition",
-                    snapshot=snapshot,
-                    previous=previous,
-                    current=state,
-                    counts=counts,
-                    spend_runs=project_pointers,
-                    rate_statuses={},
+        with self.duties.committing():
+            for project in sorted(project_names - {""}):
+                current = {
+                    run_id: verdict
+                    for run_id, verdict in verdicts.items()
+                    if str(pointers.get(run_id, {}).get("project") or "") == project
+                }
+                known = self.store.recorded_fleet(project)
+                # A run first seen by this station is inventory. The producer's
+                # fold represents an unknown run as a dispatched arrival, then
+                # its actual verdict as a second row; the station records that
+                # verdict as its baseline before asking the same fold for changes.
+                for run_id, verdict in current.items():
+                    if run_id not in known:
+                        known[run_id] = dict(verdict)
+                folded, next_known = recovery.fleet_transitions(
+                    known,
+                    current,
+                    ledger_run_ids=recovery_watch._ledger_run_id_reader(project),
+                    handovers=recovery_watch.handover_run_ids(project),
                 )
-                event["audience"] = str(event.get("session") or "*")
-                event["duty"] = ticker.transition_class(previous, state)
-                events.append(event)
-            self.store.record_tick(project, events, next_known, at=moment)
-            published.extend(events)
-            # The reading a pane's settle is judged by, written on every tick
-            # rather than on change: a pane settles on emptiness, and a quiet
-            # fleet is exactly the case that publishes no transition.
-            project_live, unowned, live_sessions = (
-                station_subscriber.live_work_populations(project_pointers)
-            )
-            station_subscriber.record_live_work(
-                self.store,
-                project,
-                at=moment,
-                project_live=project_live,
-                unowned=unowned,
-                sessions=live_sessions,
-            )
-            derivations.append((project, project_pointers, bool(events)))
+                project_pointers = [
+                    pointer
+                    for pointer in pointers.values()
+                    if str(pointer.get("project") or "") == project
+                ]
+                events: list[dict[str, Any]] = []
+                for snapshot, previous, state, counts in folded:
+                    event = recovery._watch_transition(
+                        project,
+                        kind="transition",
+                        snapshot=snapshot,
+                        previous=previous,
+                        current=state,
+                        counts=counts,
+                        spend_runs=project_pointers,
+                        rate_statuses={},
+                    )
+                    event["audience"] = str(event.get("session") or "*")
+                    event["duty"] = ticker.transition_class(previous, state)
+                    events.append(event)
+                self.store.record_tick(project, events, next_known, at=moment)
+                published.extend(events)
+                # The reading a pane's settle is judged by, written on every tick
+                # rather than on change: a pane settles on emptiness, and a quiet
+                # fleet is exactly the case that publishes no transition.
+                project_live, unowned, live_sessions = (
+                    station_subscriber.live_work_populations(project_pointers)
+                )
+                station_subscriber.record_live_work(
+                    self.store,
+                    project,
+                    at=moment,
+                    project_live=project_live,
+                    unowned=unowned,
+                    sessions=live_sessions,
+                )
+                derivations.append((project, project_pointers, bool(events)))
         # Each session's duties are derived from the same fleet reading this
-        # tick committed, so a change the station published is a change the
-        # coordinator's obligations reflect on the same pass.
+        # tick committed, and derived on the station's own worker: a derivation
+        # can run for tens of minutes, and a run that finishes during one still
+        # wakes its session on this tick rather than the next.
         for project, project_pointers, changed in derivations:
             station_obligations.publish(
                 self.store,
@@ -778,6 +944,7 @@ class Station:
                 home=self.home,
                 changed=changed,
                 now=moment,
+                submit=self.duties.request,
             )
             # The sweep's two passes run for every session this host owns, on
             # a change and on the beat, so a hold or a declared
@@ -913,6 +1080,9 @@ def run_station(
             if census_beat is not None:
                 census_beat.stop()
             if station is not None:
+                # A derivation in flight writes the duties a reader sees next,
+                # so a stopping station gives it a bounded moment to land.
+                station.duties.drain(timeout=DUTY_DRAIN_SECONDS)
                 station.reflex.stop()
             if renewal is not None:
                 renewal.stop()

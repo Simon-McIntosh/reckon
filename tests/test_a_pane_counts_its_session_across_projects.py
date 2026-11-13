@@ -133,8 +133,8 @@ def test_a_scoped_pane_sums_the_session_across_every_project(home) -> None:
     # A row from either project renders the session's total across both, not
     # whichever project the row came from: 7 + 1 working, 2 blocked, 3
     # unpromoted.
-    assert " 8w  2h  3d" in _render(b_row, SESSION), _render(b_row, SESSION)
-    assert " 8w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
+    assert " 8w  2n  3d" in _render(b_row, SESSION), _render(b_row, SESSION)
+    assert " 8w  2n  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
 
     # C's newest transition carries no entry for this session: its older entry
     # of 5 must not be read, so the total stays 8 rather than 13. C's producer is
@@ -160,27 +160,27 @@ def test_a_scoped_pane_sums_the_session_across_every_project(home) -> None:
     # A follower with no session is one project's pane. B's own count is 1, and
     # the unscoped render keeps it rather than summing across projects.
     unscoped = _render(b_row)
-    assert " 1w  0h  0d" in unscoped, unscoped
+    assert " 1w  0n  0d" in unscoped, unscoped
     assert " 8w" not in unscoped, unscoped
 
     # B's watcher stops. Its last transition stays in the events file, but a
     # project with no live producer contributes nothing, so an A row renders
     # A's own figure alone rather than B's stale one.
     _withdraw("B", SESSION)
-    assert " 7w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
+    assert " 7w  2n  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
 
     # A quiet but live producer still counts: an aged publication with a live
     # pid is a producer that has not spoken, not one that has gone.
     _publish("B", SESSION, age_seconds=600)
-    assert " 8w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
+    assert " 8w  2n  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
 
     # So does a producer running source other than this checkout.
     _publish("B", SESSION, code_stamp="other-code")
-    assert " 8w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
+    assert " 8w  2n  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
 
     # A B transition takes this session's B count to zero: the next A row drops
     # to 7, so the total follows the session's live work rather than holding the
     # largest figure ever seen.
     _publish("B", SESSION)
     _append("B", _row("B", SESSION, _entry(0)))
-    assert " 7w  2h  3d" in _render(a_row, SESSION), _render(a_row, SESSION)
+    assert " 7w  2n  3d" in _render(a_row, SESSION), _render(a_row, SESSION)

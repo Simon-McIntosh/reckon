@@ -1,0 +1,66 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T14:09:04.736Z",
+  "dispatched_at": "2026-11-13T13:54:04Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T14:13:02.192313+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T14:13:07.824954+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T14:13:16.430213+00:00"
+    }
+  },
+  "findings": [
+    {
+      "id": "fba09636349",
+      "severity": "non-blocking",
+      "text": "reckon/crew/admission/reviews.py:355 reads the record's state through plan_html.read_state_file(path), a stat-keyed memoised read taken independently of the document read at line 343 that supplies review_coverage and _section_digests, so a plan write landing between the two reads pairs one revision's parsed state with another revision's digests and coverage in the same per-pass record; the repository's read_state_and_text_file(path) exists for exactly this pairing ('a write landing between them pairs one file's state with another file's text') and returns both halves under one memo key."
+    },
+    {
+      "id": "f9056b24707",
+      "severity": "non-blocking",
+      "text": "logs/timing-arm.log (header line 1) declares '# revision: 45aec99caa9ab7495740587d99ff536252a9578c' for every arm including the two labelled 'after', so no line in the log shows which code an arm ran, and the plan_records_built 5-versus-4 marker it reports is the per-pass cache that landed before this node's base revision (793d216880), not the state read this node changed; the arm therefore does not discriminate this change."
+    },
+    {
+      "id": "f11dd6782f1",
+      "severity": "non-blocking",
+      "text": "manifest.md:12 and manifest.md:22 record the live arm as '13.5s -> 10.0s', but the after arms in logs/timing-arm.log read 12.572 s, 12.925 s and 10.638 s (best 10.638 s, which the landing fragment at 3ac5632bad states as 10.6 s); a coordinator reconciling the manifest against the log finds a figure no log line supports."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/admission/selection.py:446 in admit_once and reckon/crew/admission/reviews.py:696 reach _plan_review_owed, which calls _plan_review_record at reviews.py:473/:480 and so the changed line.",
+    "diff": "read commit by commit: 9aeeeb1b21 is one line in reckon/crew/admission/reviews.py (read_state(document) -> read_state_file(path)), 3ac5632bad is a 43-line evidence fragment; nothing else changed in 45aec99c..3ac5632bad.",
+    "done_when": "the done_when names tests/test_a_pass_computes_coverage_once.py and quantifies five cases, a <5 s live figure, four negative controls, importer arms and ruff; the gate asserts cases 1-4 and the controls (5 passed), the live figure is unmet and recorded.",
+    "goal": "the node goal is that a pass computes review coverage once per plan and times wait resolution apart; reckon/crew/admission/reviews.py:355 plus the section already landed in base (793d216880) deliver it, and the state read the goal's done-when names is now taken once per plan.",
+    "manifest": "read; it records 5 passed at head against 1 failed / 4 passed at base, four control logs each failing its own case, importer arms 19 passed / 1 shared failure on both, and ruff clean.",
+    "write_paths": "the declared write paths are reckon/crew/queue_admission.py, the evidence fragment and its figures dir; the diff changes the fragment (inside) and reckon/crew/admission/reviews.py (outside)."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a pass computes review coverage once per plan and times wait resolution apart; reckon/crew/admission/reviews.py:355 is the read the goal's done-when still counted at zero.\nVERDICT done_when: the done_when names tests/test_a_pass_computes_coverage_once.py; the manifest records 5 passed at 3ac5632bad against 1 failed / 4 passed at 45aec99c, with the base failure being the exact state-read assertion.\nVERDICT write_paths: the declared paths are reckon/crew/queue_admission.py, the evidence fragment and its figures dir; the fragment is inside, reckon/crew/admission/reviews.py is outside and disclosed under outside_scope.\nVERDICT manifest: read; it states the gate result, names the logs, records four mutants each failing their own case, and reports the live timing figure as unmet with a named cause.\nVERDICT diff: read commit by commit against 45aec99c; 9aeeeb1b21 changes one line in reckon/crew/admission/reviews.py, 3ac5632bad adds a 43-line evidence fragment, nothing else.\nCALL_SITES: reckon/crew/admission/selection.py:446, reckon/crew/admission/reviews.py:696, reckon/crew/admission/service.py:249 is the service loop that drives admit_once\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/admission/reviews.py:355 takes the state read the section's done-when counts, closing the last red case of a section whose caching and wait stage had already landed at 793d216880.\nSCORE evidence: 13\nJUSTIFICATION evidence: tests/test_a_pass_computes_coverage_once.py:210 is red at 45aec99c with state == 0 and green at 3ac5632bad, but the done-when's under-five-second arm is unmet (logs/timing-arm.log reads 10.638 s best) and that arm does not discriminate this one-line change.\nSCORE scope_discipline: 10\nJUSTIFICATION scope_discipline: the declared source path reckon/crew/queue_admission.py is untouched while reckon/crew/admission/reviews.py:355 is edited outside it, disclosed in the manifest's outside_scope and explained by the facade split.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_pass_computes_coverage_once.py:210 compares a patched call counter against the literal 1, so reverting line 15 of the diff to read_state(document) makes it 0 and reddens exactly that case, as logs/suite-base.log shows.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/admission/reviews.py:119 already pairs plan_html.read_state_file(path) with _section_digests in this module, and the new call matches that idiom and the late-import style.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change adds no definition and calls the existing owner plan_html.read_state_file (reckon/_plan_html.py:1738); the paired owner read_state_and_text_file (reckon/_plan_html.py:1749) would also close the state/text race the change leaves open.\nFINDING reckon/crew/admission/reviews.py:355 non-blocking: state is read through a second stat-keyed lookup while digests and coverage come from the document read at line 343, so a write landing between them pairs one revision's state with another's digests; read_state_and_text_file pairs both under one memo key.\nFINDING logs/timing-arm.log:1 non-blocking: every arm's header declares revision 45aec99caa including the two 'after' arms, and plan_records_built 5 versus 4 is the per-pass cache landed at 793d216880, so the arm does not show which code ran or that this change moved the figure.\nFINDING manifest.md:12 non-blocking: the live arm is recorded as 10.0 s where the after arms in logs/timing-arm.log read 12.572 s, 12.925 s and 10.638 s, a figure no log line supports.",
+  "review_run_id": "r-20261113T130801824710-review-of-ready-work-is-never-stuck-behind-t-s4-3ac5632badca",
+  "reviewed_base_sha": "45aec99caa9ab7495740587d99ff536252a9578c",
+  "reviewed_head_sha": "3ac5632badcac341275b324e3719cc6569dd486c",
+  "reviewed_run_id": "r-20261113T025309603538-ready-work-is-never-stuck-behind-t-s4",
+  "scores": {
+    "durability": 19,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 18,
+    "scope_discipline": 10
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:09:13.895339+00:00",
+  "total": 95
+}

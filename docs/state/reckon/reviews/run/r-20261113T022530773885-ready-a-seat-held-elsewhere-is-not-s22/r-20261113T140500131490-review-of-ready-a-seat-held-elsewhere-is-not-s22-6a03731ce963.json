@@ -1,0 +1,121 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3736",
+    "reckon/crew/runs.py:5113"
+  ],
+  "completed_at": "2026-11-13T17:10:01.333Z",
+  "dispatched_at": "2026-11-13T16:57:15Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:49:45.678164+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:49:49.794168+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:49:54.178261+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:49:58.554711+00:00"
+    },
+    "4": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:50:04.074362+00:00"
+    },
+    "5": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:50:12.336798+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "id": "fbcb2ff559a",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the repair arm still omits tests/test_crew_watch_ensure.py and tests/test_watcher_arming_fallback.py although both import reckon.crew.runs and call ensure_watcher_service, so the done-when's importing-file measure covers 5 of the 7 callers of the changed function. This review ran both at the reviewed head (11 passed, EXIT=0), so nothing is red, but the node's own recorded evidence does not cover them."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "id": "fca490149f1",
+      "line": 875,
+      "severity": "non-blocking",
+      "text": "there is no lock-table reader at this revision, but reckon/crew/fleet_supervisor.py:lock_holders_in now owns the same /proc/locks FLOCK parse for a (device major, minor, inode) and landed on main in a parallel commit after this head, so the two readers should be consolidated onto that owner when the revisions meet."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "id": "f64ff57a9f8",
+      "line": 926,
+      "severity": "non-blocking",
+      "text": "_seat_is_held opens the watch lock and probes it with fcntl.flock, repeating the seat-held probe _register_watch_unit already performs in this module. The probe is small, and the lock paths are still correct, but the seat question is left without a single owner through which both callers read the kernel answer."
+    },
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "id": "f1c6b64b9ae",
+      "line": 301,
+      "severity": "non-blocking",
+      "text": "sent[0] == (999999, 15) compares the pid and signal the test itself handed in against what the monkeypatched signaller recorded, so the assertion cannot fail for a wrong pid or a wrong signal, and because the signaller is faked it can fail only when the code stops routing through the crew signaller, not when the signal that signaller raises is wrong. Durable because the seat cases prove pid selection against real processes, but it is a routing check."
+    },
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "id": "fd6cb170d53",
+      "line": 302,
+      "severity": "non-blocking",
+      "text": "sent_signals == [\"SIGTERM\"] holds the pid 999999 absent from the host's process table, but kernel pid_max is 4194304 here, so on a busy host a live 999999 makes the stop loop escalate to a faked SIGKILL and turns the case red for a reason unrelated to the routing it guards."
+    },
+    {
+      "file": "tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py",
+      "id": "f4399ff5a22",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the node's gate file lies outside every declared write path: the dispatch names watch_unit.py and runs.py, the repair round adds the evidence fragment, the figures directory and tests/test_watch_seat_across_hosts.py, and none names this file, so promotion needs it ratified as an accepted path."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew_follow_commands.py:3736 is the one runtime caller; reckon/crew/runs.py:5113 re-exports the function, and no other production module calls it.",
+    "diff": "read commit by commit against 5fd5b0dda1: 446634e4c6 adds the reclaim path, 60820e837e bounds the stub wait, 4eb8939aa0 and 6a03731ce9 record evidence, and 87d8ab3261 routes the stop through signal_worker and process_cmdline.",
+    "done_when": "the done_when names tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py plus a base arm over the files importing watch_unit and runs; the four seat cases and two negative controls ran, but the arm covers 5 of the 7 test files that call ensure_watcher_service and 5 of 15 files matching watch_unit, so the importing-file measure is short of its literal set.",
+    "goal": "the goal is that a seat held by a process that produces nothing is reclaimed; reckon/crew/watch_unit.py:995-1045 classifies the held seat from the kernel lock table, stops the stale producer and reports a non-producer without signalling it.",
+    "manifest": "read; status complete, five commits 446634e4c6..6a03731ce9, a literal tests command, six log paths present with revision headers and trailing EXIT lines, baseline_suite and after_suite both 51 passed EXIT=0.",
+    "write_paths": "the repair round declared watch_unit.py, runs.py, the evidence fragment, the figures directory and tests/test_watch_seat_across_hosts.py; the diff stays inside those except the new gate file, which no declared path names and the done_when requires."
+  },
+  "justifications": {
+    "durability": "tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:171 compares the kernel lock table to the pid the arming started, and logs/negative_control.log shows that case red when the stop is removed (1 failed, EXIT=1).",
+    "evidence": "logs/after_suite.log and logs/baseline_suite.log are complete with revision headers, summaries and EXIT=0, both controls are red, but the arm omits test_crew_watch_ensure.py and test_watcher_arming_fallback.py, which this review measured green at the head (11 passed, EXIT=0).",
+    "fit": "reckon/crew/watch_unit.py:842-1045 follows the module's frozen-dataclass plus module-function shape and states mechanisms in comments, and no name carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:995-1045 resolves holders from /proc/locks by device and inode and stops the stale producer before the unit starts, which is the stated deliverable.",
+    "reuse": "reckon/crew/watch_unit.py:960 now delivers through process_signal.signal_worker and :863 reads fleet_supervisor.process_cmdline, but :926 still re-probes the lock _register_watch_unit:731 also probes and :875 re-implement a /proc/locks parse with no owner at this revision.",
+    "scope_discipline": "every changed path is inside the repair round's declared scope except tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1, which the done_when requires and no declared path names."
+  },
+  "node": "review-of-ready-a-seat-held-elsewhere-is-not-s22-6a03731ce963",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a seat held by a process that produces nothing is reclaimed; reckon/crew/watch_unit.py:995-1045 classifies the held seat from the kernel lock table, stops the stale producer and reports a non-producer without signalling it.\nVERDICT done_when: the done_when names tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py plus a base arm over the files importing watch_unit and runs; the four seat cases and two negative controls ran, but the arm covers 5 of the 7 test files that call ensure_watcher_service, so the importing-file measure is short of its literal set.\nVERDICT write_paths: the repair round declared watch_unit.py, runs.py, the evidence fragment, the figures directory and tests/test_watch_seat_across_hosts.py; the diff stays inside those except tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1, which no declared path names and the done_when requires.\nVERDICT manifest: read; status complete, five commits 446634e4c6, 60820e837e, 4eb8939aa0, 87d8ab3261, 6a03731ce9, a literal tests command, six log paths present with revision headers and trailing EXIT lines, baseline_suite and after_suite both 51 passed EXIT=0 with empty failure_ids.\nVERDICT diff: read commit by commit against 5fd5b0dda1: 446634e4c6 adds the reclaim path to reckon/crew/watch_unit.py, 60820e837e bounds the stub holder's wait, 4eb8939aa0 and 6a03731ce9 record evidence in the fragment, and 87d8ab3261 routes the stop through process_signal.signal_worker and the command line through fleet_supervisor.process_cmdline; +599 lines across four files.\nCALL_SITES: reckon/crew_follow_commands.py:3736, reckon/crew/runs.py:5113\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:995-1045 resolves holders from /proc/locks by device and inode and stops the stale producer before the unit starts, which is the stated deliverable.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/after_suite.log and logs/baseline_suite.log are complete with revision headers, summaries and EXIT=0, both controls are red, but the arm omits test_crew_watch_ensure.py and test_watcher_arming_fallback.py, which this review measured green at the head (11 passed, EXIT=0).\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: every changed path is inside the repair round's declared scope except tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1, which the done_when requires and no declared path names.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:171 compares the kernel lock table to the pid the arming started, and logs/negative_control.log shows that case red when the stop is removed (1 failed, EXIT=1).\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/watch_unit.py:842-1045 follows the module's frozen-dataclass plus module-function shape and states mechanisms in comments, and no name carries a plan, ticket or version label.\nSCORE reuse: 13\nJUSTIFICATION reuse: reckon/crew/watch_unit.py:960 now delivers through process_signal.signal_worker and :863 reads fleet_supervisor.process_cmdline, but :926 still re-probes the lock _register_watch_unit:731 also probes and :875 re-implements a /proc/locks parse with no owner at this revision.\nFINDING tests/test_watch_seat_across_hosts.py:1 non-blocking: the repair arm still omits tests/test_crew_watch_ensure.py and tests/test_watcher_arming_fallback.py although both import reckon.crew.runs and call ensure_watcher_service, so the done-when's importing-file measure covers 5 of the 7 callers of the changed function; this review ran both at the reviewed head (11 passed, EXIT=0), so nothing is red, but the node's own recorded evidence does not cover them.\nFINDING reckon/crew/watch_unit.py:875 non-blocking: there is no lock-table reader at this revision, but reckon/crew/fleet_supervisor.py:lock_holders_in now owns the same /proc/locks FLOCK parse for a (device major, minor, inode) and landed on main in a parallel commit after this head, so the two readers should be consolidated onto that owner when the revisions meet.\nFINDING reckon/crew/watch_unit.py:926 non-blocking: _seat_is_held opens the watch lock and probes it with fcntl.flock, repeating the seat-held probe _register_watch_unit already performs in this module, so the seat question is left without a single owner; the lock paths are correct and the duplication is small.\nFINDING tests/test_watch_seat_across_hosts.py:301 non-blocking: sent[0] == (999999, 15) compares the pid and signal the test itself handed in against what the monkeypatched signaller recorded, so it cannot fail for a wrong pid or a wrong signal, and because the signaller is faked it can only detect the code ceasing to route through the crew signaller; the seat cases cover pid selection against real processes.\nFINDING tests/test_watch_seat_across_hosts.py:302 non-blocking: sent_signals == [\"SIGTERM\"] holds the pid 999999 absent from the host's process table, but kernel pid_max is 4194304 here, so on a busy host a live 999999 makes the stop loop escalate to a faked SIGKILL and turns the case red for a reason unrelated to the routing it guards.\nFINDING tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1 non-blocking: the node's gate file lies outside every declared write path, so promotion needs it ratified as an accepted path.\n",
+  "review_run_id": "r-20261113T140500131490-review-of-ready-a-seat-held-elsewhere-is-not-s22-6a03731ce963",
+  "reviewed_base_sha": "5fd5b0dda12af1db08d3352b1c2227f227b6ba53",
+  "reviewed_head_sha": "6a03731ce963c6c065891edfbc57259b2d9837fc",
+  "reviewed_run_id": "r-20261113T022530773885-ready-a-seat-held-elsewhere-is-not-s22",
+  "scores": {
+    "durability": 18,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 13,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:20:00+00:00",
+  "total": 97
+}

@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T17:39:33.051Z",
+  "dispatched_at": "2026-11-13T17:33:49Z",
+  "findings": [
+    {
+      "file": "reckon/crew/admission/verdicts.py",
+      "line": 169,
+      "severity": "non-blocking",
+      "text": "the _record_stalls docstring still says ``held`` names the requests this pass wrote a hold for, but selection.py:714 now unions TERMINAL_VERDICTS into that set, so a reader who reasons about the parameter from its docstring will believe a refused request reaching this function is impossible when the caller actually passes it."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s38.html",
+      "line": 9,
+      "severity": "non-blocking",
+      "text": "the negative-control paragraph cites the launch-decision case and logs/negative-control-attempt-read-at-pass-start.log reddens test_an_exit_record_written_at_the_launch_decision_stops_the_launch, a case 904dccd8d4 deleted, so the fragment points a reader at a test id that does not exist at the head it describes; the guard is still held by test_a_request_whose_attempt_already_resulted_is_not_launched but the fragment does not name it there."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s38.html",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the fragment says every arm log opens with the revision, the tree, the working directory, the module under test and the command, but logs/head-importers.log carries # revision, # tree, # module under test and # command with no working-directory line, so the claim is true of the base arm only."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 433d71f076: 191e27d87b is the product fix (three admission modules, +3/-3 lines), fb22b77a74 adds the \u00a738 evidence fragment, 904dccd8d4 deletes the duplicate exit-record case (-48 lines), and 858617ce06 updates the fragment to say one case joins the file; net five files, +98/-3.",
+    "done_when": "the done-when asks for two cases in tests/test_a_launch_rereads_the_run_it_starts.py; the file lands one (test_a_refused_request_records_one_verdict_that_does_not_become_a_stall at :348) and the launch-decision case it asks for is held by the pre-existing test_a_request_whose_attempt_already_resulted_is_not_launched, which writes attempt-1-exit.json inside the same _after_the_pass_reads_the_queue hook; the gate asserts the stall measure (rows one per pass, stall rows 0 then 0) and the recorded arms are baseline 54 passed EXIT=0 and after 55 passed EXIT=0.",
+    "goal": "the node's goal is that a request refused before launch carries exactly one verdict row per pass and that _record_stalls treats refused-before-launch as terminal; reckon/crew/admission/shared.py:241 adds TERMINAL_VERDICTS, reckon/crew/admission/selection.py:714 unions it into the pass's held set, and reckon/crew/admission/verdicts.py:179-183 skips a terminal last verdict, which is that deliverable.",
+    "manifest": "read; it states status complete, the gate command and its two arms (54 passed at 433d71f076, 55 passed at 858617ce06), the importer arms (133 failed at head, 135 at base, head-minus-base empty), negative_control_log as a bare path with a note, and every figure it quotes reconciles with the log it cites.",
+    "write_paths": "the diff touches reckon/crew/admission/selection.py, shared.py, verdicts.py, tests/test_a_launch_rereads_the_run_it_starts.py and the \u00a738 evidence fragment; the dispatch prompt grants the tests file and fragment, and resume-1-advice.txt plus the repair round's write-scope block grant the three admission modules, so every path in the diff is inside a grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_launch_rereads_the_run_it_starts.py:371-383 fails at the base revision with ['refused-before-launch', 'stalled'] and 'stall rows recorded 1 then 2' (logs/head-reproduction.log), so it reddens on exactly the regression it guards and its zero is a measured zero, not an instrument that cannot see rows.",
+    "evidence": "the gate at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T074832120170-ready-work-is-never-stuck-behind-t-s38/logs/after-suite.log:1 records 55 passed EXIT=0 at 858617ce06 against logs/baseline-suite.log:1 54 passed EXIT=0 at 433d71f076, the importer arms carry no head-only failure id, and the base arm log now opens with its revision after the repair.",
+    "fit": "reckon/crew/admission/shared.py:236-241 declares the new frozenset with a comment in the same shape as HOLD_VERDICTS at :225-234, and the guard reuses the existing _last_verdict_of/_record_stalls idiom rather than adding a parallel one.",
+    "goal_fidelity": "reckon/crew/admission/selection.py:714 and reckon/crew/admission/verdicts.py:179-183 together give a refused request exactly one row per pass and stop the next pass appending another stall, which is \u00a738's deliverable; the second done-when case is verified rather than re-added, a reasoned departure from the plan's 'gains two cases'.",
+    "reuse": "the search over reckon/ for verdict-set vocabulary (HOLD_VERDICTS, _RETRY_HOLD_VERDICTS, _NON_BINDING_HOLD_VERDICTS, NOT_ADMISSIBLE_PHASES) finds no terminal-verdict owner, so shared.py:241 is the first and extends the verdict-constant vocabulary; 904dccd8d4 removed the one added definition that duplicated a guard the same file already owned at line 297.",
+    "scope_discipline": "every path in the diff is inside the grants named in the dispatch prompt and resume-1-advice.txt, and the declared figures directory was left unused rather than written outside scope."
+  },
+  "node": "review-of-ready-work-is-never-stuck-behind-t-s38-858617ce0660",
+  "project": "reckon",
+  "review_run_id": "r-20261113T171457416329-review-of-ready-work-is-never-stuck-behind-t-s38-858617ce0660",
+  "reviewed_base_sha": "433d71f07619e9f726e7a9a949a18cc4a68ad8a7",
+  "reviewed_head_sha": "858617ce06605a57e165442a98440dda383379ce",
+  "reviewed_run_id": "r-20261113T074832120170-ready-work-is-never-stuck-behind-t-s38",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:37:44+00:00",
+  "total": 113
+}

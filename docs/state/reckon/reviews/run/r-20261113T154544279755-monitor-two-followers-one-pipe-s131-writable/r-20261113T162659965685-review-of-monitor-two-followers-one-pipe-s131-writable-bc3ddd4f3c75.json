@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_basis": "the reviewed run was dispatched suite-unarmed (its brief carries 'FENCE \u2014 SUITE (unarmed for this node)'), its manifest declares no baseline_suite or after_suite block, and its run directory holds no pytest log: the only logs are the four reproduction arms under repro/. The zero is therefore 'no suite arm was declared', not 'a suite ran green'.",
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "d325cb9fe1b4ca7dce30632200db99daca7593a6",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1896 _tick calls _check_consumer",
+    "reckon/crew_follow_commands.py:2161 _subscriber_pass calls _tick",
+    "reckon/crew_follow_commands.py:2240 _follow_watch_lines wait loop calls _tick",
+    "reckon/crew_follow_commands.py:2501 _follow_watch_lines second loop calls _tick",
+    "reckon/crew_follow_commands.py:2164 loop guard reads consumer_gone"
+  ],
+  "completed_at": "2026-11-13T16:51:28.444Z",
+  "dimension_dispositions": {
+    "durability": {
+      "kind": "folded",
+      "node": "repair-of-monitor-two-followers-one-pipe-s131-writable-bc3ddd4f3c75",
+      "recorded_at": "2026-11-13T17:20:52.446227+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-13T16:38:06Z",
+  "findings": [
+    {
+      "file": "repro/repro.sh",
+      "line": "44",
+      "severity": "non-blocking",
+      "text": "non-blocking: 'survivors=$(pgrep -f \"bin/python3 -c import sys; from reckon.cli import main\" ...)' resolves the cleanup kill set by an unscoped pattern over every process of the user, and lines 46 and 49 then signal that set, so on a shared node it can terminate a peer session's live follower; the list is echoed at :45 before signalling, but the resolution should be scoped to the probe project as pids_of at :31 already is, or to the pids the arm itself recorded."
+    }
+  ],
+  "head_log_revision": "bc3ddd4f3c75d37bc880f3ba90d6191a1df02e45",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production path that can reach the documented mechanism: _check_consumer() is called by _tick at reckon/crew_follow_commands.py:1896, and _tick is called from _subscriber_pass at :2161 and from _follow_watch_lines at :2240 and :2501, with the loop guard at :2164; the landed fragment itself is documentation and is reached by no runtime path.",
+    "diff": "read the single commit bc3ddd4f3c against base d325cb9fe1; it adds only the 71-line evidence fragment with no product code, no test and no plan edit, and reckon/crew_follow_commands.py has the same blob sha (9556492a9d8) at both revisions, so the cited line numbers cannot have been read from a different revision.",
+    "done_when": "the done_when names the first process to exit, its exit status, the responsible line, a reproduction ending the stream at the base revision on all_debug, a one-project positive control and a mutation arm; repro/gate-all-debug.log carries all four arms at d325cb9fe1 with EXIT=0, the stamped arm printing 'first-to-exit: s-a rc=0' ahead of 'grep rc=1 rows=0', the one arm reading 'STILL UP after 15s', and the mutant arm keeping both followers up and stopping them by printed pid.",
+    "goal": "the node's goal is to name the process whose exit ends a two-follower pipe stream, with its line; two-followers-one-pipe.html names the follower and cites reckon/crew_follow_commands.py:1718-1719 (blob d325cb9fe1) for the owner-liveness test and :2164 for the loop guard, and I read both lines in that blob and they are exactly the lines described.",
+    "manifest": "read; status complete, commits bc3ddd4f3c, changed_paths the one fragment, tests the literal sbatch all_debug gate command, test_logs naming the four arm logs, measurement_module and measurement_cwd recorded, and a negative_control_note naming the mutant arm; baseline_suite and after_suite are absent because the node was dispatched suite-unarmed.",
+    "write_paths": "the fence declared two-followers-one-pipe.html, monitor-two-followers-one-pipe-s131-writable.html and a figures directory; git diff --stat d325cb9fe1..bc3ddd4f3c touches only the first, and every element id in that file begins with the node id, so composition by anchor still resolves the fragment the coordinator listed first."
+  },
+  "justifications": {
+    "durability": "no test guards the fragment and the run's suite was dispatched unarmed, so the only repeatable check is repro/gate.sh in the fragment's run directory, which nothing re-runs: a later edit to _check_consumer at reckon/crew_follow_commands.py:1690 would leave the fragment's claims standing with no failing test.",
+    "evidence": "repro/gate-all-debug.log records four arms at d325cb9fe1 ending in EXIT=0, the two arm's both exit records reading '\"reason\": \"ended\"'; the exit ordering itself rests on the stamped arm's synthetic owner stub rather than the real short-lived arming shell, which is the one construction in the chain.",
+    "fit": "the fragment is an '<article class=\"r-evidence\">' carrying an '<h2 id=\"...-title\">', matching docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html:1-2, and every element id in it begins with the node id monitor-two-followers-one-pipe-s131-writable.",
+    "goal_fidelity": "two-followers-one-pipe.html names the follower as the process that ends the stream and pins the cause to reckon/crew_follow_commands.py:1718-1719, which reads in blob d325cb9fe1 as 'if owner_pid <= 1 or runs.process_alive(owner_pid) is not True:', with the loop guard at :2164.",
+    "reuse": "the change adds no function, class or module; it cites follower_owner() at reckon/crew/follower_registration.py:615 and _check_consumer() at reckon/crew_follow_commands.py:1690 as the existing owners of the mechanism rather than restating their behaviour in new code.",
+    "scope_discipline": "git diff --stat d325cb9fe1..bc3ddd4f3c lists exactly one file, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html, at 71 insertions and no deletions, inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to name the process whose exit ends a two-follower pipe stream, with its line; docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html names the follower and cites `_check_consumer()` at reckon/crew_follow_commands.py:1718-1719 (blob d325cb9fe1) for the owner-liveness test and :2164 for the loop guard, and I read both lines in that blob and they are exactly the lines the fragment describes.\nVERDICT done_when: the done_when names the first process to exit, its exit status, the responsible line, a reproduction ending the stream at the base revision on all_debug, a one-project positive control and a mutation arm; repro/gate-all-debug.log carries all four arms at d325cb9fe1 with EXIT=0, the stamped arm printing 'first-to-exit: s-a rc=0' ahead of 'grep rc=1 rows=0', the one arm reading 'STILL UP after 15s', and the mutant arm keeping both followers up after disabling the owner check.\nVERDICT write_paths: the fence declared two-followers-one-pipe.html, monitor-two-followers-one-pipe-s131-writable.html and a figures directory; git diff --stat d325cb9fe1..bc3ddd4f3c touches only the first, 71 insertions and nothing else, and every element id in that file begins with the node id so composition by anchor still resolves it.\nVERDICT manifest: read; status complete, commits bc3ddd4f3c, changed_paths the one fragment, tests the literal sbatch all_debug gate command, test_logs naming the four arm logs, measurement_module and measurement_cwd recorded, and a negative_control_note naming the mutant arm; baseline_suite and after_suite are absent because the node was dispatched suite-unarmed.\nVERDICT diff: read the single commit bc3ddd4f3c against base d325cb9fe1; it adds only the 71-line evidence fragment, with no product code, no test and no plan edit, and reckon/crew_follow_commands.py carries the same blob sha 9556492a9d8 at both revisions so the cited line numbers cannot have been read from a different revision.\nCALL_SITES: reckon/crew_follow_commands.py:1896 _tick calls _check_consumer, reckon/crew_follow_commands.py:2161 _subscriber_pass calls _tick, reckon/crew_follow_commands.py:2240 _follow_watch_lines wait loop calls _tick, reckon/crew_follow_commands.py:2501 _follow_watch_lines second loop calls _tick, reckon/crew_follow_commands.py:2164 loop guard reads consumer_gone\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: two-followers-one-pipe.html names the follower as the process that ends the stream and pins the cause to reckon/crew_follow_commands.py:1718-1719, which reads in blob d325cb9fe1 as 'if owner_pid <= 1 or runs.process_alive(owner_pid) is not True:', with the loop guard at :2164.\nSCORE evidence: 18\nJUSTIFICATION evidence: repro/gate-all-debug.log records four arms at d325cb9fe1 ending in EXIT=0, the two arm's both exit records reading '\"reason\": \"ended\"'; the exit ordering itself rests on the stamped arm's synthetic owner stub rather than the real short-lived arming shell, which is the one construction in the chain.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat d325cb9fe1..bc3ddd4f3c lists exactly one file, docs/evidence/fragments/the-monitor-shows-the-work-it-watches/two-followers-one-pipe.html, at 71 insertions and no deletions, inside the declared fence.\nSCORE durability: 8\nJUSTIFICATION durability: no test guards the fragment and the run's suite was dispatched unarmed, so the only repeatable check is repro/gate.sh in the fragment's run directory, which nothing re-runs, and a later edit to _check_consumer at reckon/crew_follow_commands.py:1690 would leave the fragment's claims standing with no failing test.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment is an '<article class=\"r-evidence\">' carrying an '<h2 id=\"...-title\">', matching docs/evidence/fragments/the-monitor-shows-the-work-it-watches/a-follower-runs-current-code.html:1-2, and every element id in it begins with the node id monitor-two-followers-one-pipe-s131-writable.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change adds no function, class or module, and cites follower_owner() at reckon/crew/follower_registration.py:615 and _check_consumer() at reckon/crew_follow_commands.py:1690 as the existing owners of the mechanism rather than restating their behaviour in new code.\nFINDING repro/repro.sh:44 non-blocking: 'survivors=$(pgrep -f \"bin/python3 -c import sys; from reckon.cli import main\" ...)' resolves the cleanup kill set by an unscoped pattern over every process of the user, and lines 46 and 49 then signal that set, so on a shared node it can terminate a peer session's live follower; the list is echoed at :45 before signalling, but the resolution should be scoped to the probe project as pids_of at :31 already is.",
+  "review_run_id": "r-20261113T162659965685-review-of-monitor-two-followers-one-pipe-s131-writable-bc3ddd4f3c75",
+  "reviewed_base_sha": "d325cb9fe1b4ca7dce30632200db99daca7593a6",
+  "reviewed_head_sha": "bc3ddd4f3c75d37bc880f3ba90d6191a1df02e45",
+  "reviewed_run_id": "r-20261113T154544279755-monitor-two-followers-one-pipe-s131-writable",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T162659965685-review-of-monitor-two-followers-one-pipe-s131-writable-bc3ddd4f3c75"
+  },
+  "reviewer_run_id": "r-20261113T162659965685-review-of-monitor-two-followers-one-pipe-s131-writable-bc3ddd4f3c75",
+  "scores": {
+    "durability": 8,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:56:22.750267+00:00",
+  "total": 104
+}

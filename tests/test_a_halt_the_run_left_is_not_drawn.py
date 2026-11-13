@@ -138,7 +138,7 @@ def test_a_return_after_the_window_draws_both_halves_as_before() -> None:
     kinds = [(r["from_state"], r["to_state"]) for r, _ in released]
     assert kinds == [START, STOP, RETURN, BLOCK], released
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[1][1], released[1][1]
+    assert "needs you" in released[1][1], released[1][1]
     # The launch and the return each open an attempt, so both are drawn once,
     # beside the halt the run left behind.
     assert kinds.count(START) == 1 and kinds.count(RETURN) == 1, released
@@ -163,7 +163,7 @@ def test_a_move_to_another_live_word_draws_the_halt_at_once() -> None:
         STOP,
     ], released
     assert all(text for text in _texts(released)), released
-    assert "halted" in released[1][1], released[1][1]
+    assert "needs you" in released[1][1], released[1][1]
     # A move to another live word asks nothing unless it also declares a wait, so
     # the stream withholds it and crew view still draws it.
     assert _view(_row(*WAIT)).strip(), _view(_row(*WAIT))

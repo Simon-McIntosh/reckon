@@ -251,3 +251,52 @@ def test_a_linger_failure_falls_back_rather_than_raising(
     # The unit is never started: a service that will stop at logout must not hold
     # the seat the process fallback is about to take.
     assert manager.starts == []
+
+
+def test_the_stop_of_a_stale_seat_holder_goes_through_the_crews_one_signaller(
+    home, monkeypatch
+) -> None:
+    """A holder named from the lock table is signalled through signal_worker.
+
+    The pid comes from a scan, so it is exactly the target whose process group
+    the crew's signaller refuses to assume. A raw ``os.kill`` here would be a
+    second signalling path, invisible to the attribution scan that points at
+    one home for it.
+    """
+    from reckon.crew import process_signal, watch_unit
+
+    sent: list[tuple[int, int]] = []
+
+    def fake_signal(pid, sig=15, *, reason="", run_dir=None, project=None, **_):
+        sent.append((int(pid), int(sig)))
+        # The holder is reported delivered to; whether it is gone is the process
+        # table's answer, so the escalation is judged by the real probe.
+        return True
+
+    monkeypatch.setattr(process_signal, "signal_worker", fake_signal)
+    monkeypatch.setenv(runs.PRODUCER_LEASE_ENV, "1")
+    project = "seat-route"
+    _write_seat(
+        project,
+        {
+            "project": project,
+            "pid": 999999,
+            "host": socket.gethostname(),
+            "started_at": runs._utc_now(),
+            "stream_path": str(runs.watch_stream_path(project)),
+        },
+    )
+    runs.update_watch_registration(
+        project,
+        pid=999999,
+        host=socket.gethostname(),
+        lease_renewed_at=time.time() - 60.0,
+    )
+    holder = watch_unit.SeatLockHolder(pid=999999, command="stub-producer")
+
+    sent_signals = watch_unit._stop_seat_holder(holder, project=project)
+
+    # SIGTERM goes out through the signaller rather than a raw os.kill, and a
+    # holder that is already gone ends the stop with no escalation.
+    assert sent and sent[0] == (999999, 15)
+    assert sent_signals == ["SIGTERM"]

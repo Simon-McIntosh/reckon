@@ -263,6 +263,15 @@ def _arrange_dispatch_follower(
     watch_override: bool,
 ) -> tuple[dict[str, Any], str, bool]:
     """Ensure the producer and ask the calling session's host to attach."""
+    # A dispatch held or queued earlier in this process leaves its hand-off
+    # unread, because it composes no launch record. Clearing it here keeps the
+    # hand-off a fact about the dispatch that reaches the record.
+    from reckon.crew.dispatch_watch import (
+        hand_off_mismatched_session,
+        take_session_hand_off,
+    )
+
+    take_session_hand_off()
     dispatch_watch = watch_state(project, session=session)
     session_delivery = "monitor"
     if watch_required and not watch_override and watch_arming_suppressed():
@@ -282,6 +291,15 @@ def _arrange_dispatch_follower(
             project, session, (dispatch_watch.get("follower") or {}).get("pid")
         ):
             session_delivery = "host"
+        else:
+            # A --session name that is not this process's Claude session cannot
+            # be asked of the run's own host: this process reaches its own
+            # host FIFO alone. Hand the run to that host instead of skipping
+            # delivery, so the caller's pane shows a run it dispatched under
+            # another name.
+            handoff = hand_off_mismatched_session(project, session)
+            if handoff is not None and handoff["handed_to_host"]:
+                session_delivery = "host"
     return dispatch_watch, session_delivery, watch_override
 
 

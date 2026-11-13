@@ -68,7 +68,7 @@ RUN_ID = "r-resume-halted"
 
 # The words the pane draws halted. Taken from the pane's own vocabulary so the
 # case states its claim in the reader's terms rather than in a second list.
-HALTED_STATES = PANE_STATES["halted"]
+HALTED_STATES = PANE_STATES["needs you"]
 
 # What a resume leaves when it advances a run: the delivered verdict's status
 # word replaced with a non-terminal one, the delivered text kept beside it.

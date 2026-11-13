@@ -1,0 +1,78 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3736",
+    "reckon/crew/runs.py:4962"
+  ],
+  "completed_at": "2026-11-13T11:18:34.390Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-ready-a-seat-held-elsewhere-is-not-s22-4eb8939aa022",
+      "recorded_at": "2026-11-13T15:44:29.280177+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-13T11:09:43Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "repair-of-ready-a-seat-held-elsewhere-is-not-s22-4eb8939aa022",
+      "recorded_at": "2026-11-13T15:44:02.324895+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_watch_seat_across_hosts.py",
+      "line": 1,
+      "severity": "blocking",
+      "text": "this file calls ensure_watcher_service and was not run in either arm, and neither were test_a_cycling_unit_fails_ensure.py, test_ensure_reports_a_cycling_unit.py, test_one_systemd_unit_resolver_and_installer.py or test_unmanaged_producer_keeps_a_log.py, so the done_when's requirement that the files importing watch_unit and runs add no failure against the base revision is asserted rather than measured."
+    },
+    {
+      "file": "reckon/crew/watch_unit.py",
+      "line": 958,
+      "severity": "non-blocking",
+      "text": "_stop_seat_holder calls os.kill directly for SIGTERM and SIGKILL, where reckon/crew/process_signal.py:906 signal_worker is documented as the crew's only os.kill home, leaving a second signalling path beside the one the attribution scan points at."
+    },
+    {
+      "file": "tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the node's gate file is outside the dispatch's declared write paths and inside only the plan section's own write-path line, so promotion needs it ratified as an accepted path."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 5fd5b0dda1; +533 lines across reckon/crew/watch_unit.py:843-1037, a 250-line new test and a 35-line evidence fragment, with no change to reckon/crew/runs.py.",
+    "done_when": "the measure names tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py with four cases plus a base arm over the importing test files; the manifest records 15 passed head, 11 passed base and a red control, but the importing arm covers 2 of the 7 test files that call ensure_watcher_service.",
+    "goal": "the source node's goal is that a seat held by a process that produces nothing is reclaimed; reckon/crew/watch_unit.py:987 _reclaim_stale_seat resolves the lock's holders and stops a stale producer before the unit starts, which is that deliverable.",
+    "manifest": "read; status complete, three commits, literal gate command with three log paths all present and complete, baseline_suite and after_suite exit 0 with empty failure_ids, negative_control_log a bare path whose log is red.",
+    "write_paths": "the manifest declares reckon/crew/watch_unit.py, reckon/crew/runs.py, the evidence fragment and a figures directory; the diff touches watch_unit.py and the fragment, includes the new test (outside the dispatch's declared paths, named by the plan section's own line and recorded under outside_scope), and leaves runs.py unchanged."
+  },
+  "justifications": {
+    "durability": "tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:171 asserts the kernel's lock table resolves to the pid the arming started, which fails whenever the stale holder is not stopped, and the recorded control shows that case red (1 failed, EXIT=1).",
+    "evidence": "logs/after_suite.log and logs/baseline_suite.log are complete with revision headers, summaries and EXIT=0 and the control is red, but only 2 of the 7 test files calling ensure_watcher_service ran, so the done_when's importing-files arm is not measured.",
+    "fit": "reckon/crew/watch_unit.py:843-1037 follows the module's dataclass-plus-module-function shape, comments state the mechanism, and no name carries a plan, ticket or version label.",
+    "goal_fidelity": "reckon/crew/watch_unit.py:987-1037 classifies a held seat as seat-held-by-stuck-producer and stops the producer pid taken from the kernel's own lock table, then starts the unit, which is exactly the goal.",
+    "reuse": "reckon/crew/process_signal.py:906 signal_worker is documented as the crew's only os.kill home, and watch_unit.py:958 _stop_seat_holder delivers SIGTERM and SIGKILL with raw os.kill rather than calling it, while _command_line at :863 repeats the cmdline read fleet_supervisor.py:881 already owns.",
+    "scope_discipline": "every changed path is inside the plan section's write-path line, but tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1 lies outside the dispatch's declared write paths and no figures were produced for the declared figures directory."
+  },
+  "node": "review-of-ready-a-seat-held-elsewhere-is-not-s22-4eb8939aa022",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that a seat held by a process that produces nothing is reclaimed; reckon/crew/watch_unit.py:987 _reclaim_stale_seat resolves the lock's holders and stops a stale producer before the unit starts, which is that deliverable.\nVERDICT done_when: the measure names tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py with four cases plus a base arm over the importing test files; the manifest records 15 passed head (logs/after_suite.log), 11 passed base (logs/baseline_suite.log) and a red control (logs/negative_control.log, 1 failed EXIT=1), but the importing arm covers 2 of the 7 test files that call ensure_watcher_service, so the done_when's breadth is unmeasured.\nVERDICT write_paths: the manifest declares reckon/crew/watch_unit.py, reckon/crew/runs.py, the evidence fragment and a figures directory; the diff touches watch_unit.py and the fragment, includes tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py (outside the dispatch's declared paths, though named by the plan section's own write-path line and recorded under outside_scope), and leaves runs.py unchanged.\nVERDICT manifest: read; status complete, commits 446634e4c6/60820e837e/4eb8939aa0, tests: line carrying the literal pytest command, three log paths all present on disk with revision and EXIT lines, baseline_suite and after_suite both exit 0 with empty failure_ids, negative_control_log a bare path whose log is red.\nVERDICT diff: read commit by commit against 5fd5b0dda1 -- 446634e4c6 fix(watch): reclaim a seat held by a producer that produces nothing, 60820e837e test(watch): bound the stub holder's wait, 4eb8939aa0 docs(evidence): record the landing -- +533 lines across reckon/crew/watch_unit.py:843-1037, the new 250-line test and a 35-line evidence fragment, with no change to reckon/crew/runs.py.\nCALL_SITES: reckon/crew_follow_commands.py:3736, reckon/crew/runs.py:4962\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/watch_unit.py:987-1037 classifies a held seat as seat-held-by-stuck-producer and stops the producer pid taken from the kernel's own lock table, then starts the unit, which is exactly the goal.\nSCORE evidence: 11\nJUSTIFICATION evidence: logs/after_suite.log and logs/baseline_suite.log are complete with revision headers, summaries and EXIT=0 and the control is red, but only 2 of the 7 test files calling ensure_watcher_service ran, so the done_when's importing-files arm is not measured.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: every changed path is inside the plan section's write-path line, but tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1 lies outside the dispatch's declared write paths and no figures were produced for the declared figures directory.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:171 asserts the kernel's lock table resolves to the pid the arming started, which fails whenever the stale holder is not stopped, and the recorded control shows that case red (1 failed, EXIT=1).\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/watch_unit.py:843-1037 follows the module's dataclass-plus-module-function shape, comments state the mechanism, and no name carries a plan, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/process_signal.py:906 signal_worker is documented as the crew's only os.kill home, and watch_unit.py:958 _stop_seat_holder delivers SIGTERM and SIGKILL with raw os.kill rather than calling it, while _command_line at :863 repeats the cmdline read fleet_supervisor.py:881 already owns.\nFINDING tests/test_watch_seat_across_hosts.py:1 blocking: this file calls ensure_watcher_service and was not run in either arm, and neither were test_a_cycling_unit_fails_ensure.py, test_ensure_reports_a_cycling_unit.py, test_one_systemd_unit_resolver_and_installer.py or test_unmanaged_producer_keeps_a_log.py, so the done_when's requirement that the files importing watch_unit and runs add no failure against the base revision is asserted rather than measured.\nFINDING reckon/crew/watch_unit.py:958 non-blocking: _stop_seat_holder calls os.kill directly for SIGTERM and SIGKILL, where reckon/crew/process_signal.py:906 signal_worker is documented as the only function in the crew that calls os.kill, so a new unattributable signalling path exists beside the one the attribution scan points at.\nFINDING tests/test_a_seat_held_by_a_non_producer_is_reclaimed.py:1 non-blocking: the node's gate file is outside the dispatch's declared write paths and inside only the plan section's own write-path line, so promotion needs it ratified as an accepted path.\n",
+  "review_run_id": "r-20261113T104333449420-review-of-ready-a-seat-held-elsewhere-is-not-s22-4eb8939aa022",
+  "reviewed_base_sha": "5fd5b0dda12af1db08d3352b1c2227f227b6ba53",
+  "reviewed_head_sha": "4eb8939aa022e7c50173900195309f4ebc770e63",
+  "reviewed_run_id": "r-20261113T022530773885-ready-a-seat-held-elsewhere-is-not-s22",
+  "scores": {
+    "durability": 18,
+    "evidence": 11,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:30:00+00:00",
+  "total": 84
+}

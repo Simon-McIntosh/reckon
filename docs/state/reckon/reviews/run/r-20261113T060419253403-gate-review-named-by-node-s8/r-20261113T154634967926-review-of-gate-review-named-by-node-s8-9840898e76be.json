@@ -1,0 +1,101 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/promotion.py:537 (_resolve_promotion_outcome called from the promotion path)",
+    "reckon/crew/promotion.py:2738 (re-export)"
+  ],
+  "completed_at": "2026-11-13T16:02:51.929Z",
+  "dispatched_at": "2026-11-13T15:51:10Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:29:12.005737+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:30:07.458980+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:30:18.963270+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:30:30.572188+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-gate-halts-only-on-substance/gate-review-named-by-node-s8.html",
+      "id": "f58f5225baa",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Measured paragraph states the fixture is refused at the base revision, but no gate log captures the new test against base \u2014 logs/arms.log runs only tests/test_staged_write_inventory.py there \u2014 so the base-red evidence is the negative control and an unlogged run rather than the base arm the done_when names."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "fcba04a9d3e",
+      "line": "1754",
+      "severity": "non-blocking",
+      "text": "non-blocking: the shortened-name path re-implements the record-freshness rule owned by recovery_review_delivery.py:484-500 with its own wording, so one rule now has two copies that can drift and two different remedy strings for the same condition."
+    },
+    {
+      "file": "reckon/crew/promotion_checks.py",
+      "id": "f27aeff1eb2",
+      "line": "1754",
+      "severity": "non-blocking",
+      "text": "non-blocking: no assertion exercises the freshness refusal the helper adds \u2014 and no case covers a name that reaches exactly one run other than this one \u2014 so a regression in either branch would keep the suite green."
+    },
+    {
+      "file": "reckon/crew/recovery_review_subject.py",
+      "id": "f8ec2ef1f36",
+      "line": "1469",
+      "severity": "non-blocking",
+      "text": "non-blocking: the promotion's ledger row still records review: null for a shortened name because _stored_review matches records by the exact review_run_id; the landed change makes that promotion reachable in production, and the worker discloses the gap under outside_scope with the files a repair needs."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against base a0ad40b9a0b618f43acfdc9cef780c2e116e5775; 5c2ce1a4e2 adds the resolver and its helper, 9840898e76 adds the evidence fragment; 403 insertions across three files, no unrelated edit.",
+    "done_when": "the manifest names the refusal line (reckon/crew/promotion_checks.py:1843, confirmed in the committed blob at 9840898e76), and the gate it ran is the new test file plus tests/test_staged_write_inventory.py, recorded 55 passed EXIT=0 at head and 51 passed EXIT=0 at base in logs/arms.log; the base refusal of the new case is not in a gate log and rests on the negative control (logs/negative-control.log, 2 failed EXIT=1) and an unlogged run of the new test at unmodified source.",
+    "goal": "the node's goal is to promote a review whose record names its reviewed run by node without --outcome; reckon/crew/promotion_checks.py:1699 `_resolve_named_review_run` resolves a shortened `review_run_id` to the one run it reaches, and promotion_checks.py:1833-1848 consumes it where the delivery verdict used to raise.",
+    "manifest": "read; it states status complete, names commit pair 5c2ce1a4e2 and 9840898e76, the refusal line, both arms and the negative control, and discloses the ledger gap under outside_scope.",
+    "write_paths": "the manifest declares promotion_checks.py, the new test, the evidence fragment and the figures directory; the diff touches only the first three, all inside the run's declared FENCE \u2014 SCOPE at prompt.txt:81-84."
+  },
+  "justifications": {
+    "durability": "re-running tests/test_a_review_named_by_node_promotes.py at head gives 4 passed, and the negative control shows the promoting and ambiguity cases redden when promotion_checks.py:1833-1840 drops the resolver call, but no assertion covers the freshness refusal at promotion_checks.py:1754.",
+    "evidence": "logs/arms.log carries the base arm (51 passed EXIT=0) and the head arm (55 passed EXIT=0) with their revisions and commands, but the base refusal of the new case is evidenced by logs/negative-control.log rather than by a base-revision log of the test the done_when names.",
+    "fit": "the helper follows the module's existing shape of reading a run's record through recovery_review_delivery and raising a condition/detail/remedy dict, and the added names (_resolve_named_review_run, _known_run_ids, _NAMED_REVIEW_CONDITION) name the mechanism with no plan or ticket label.",
+    "goal_fidelity": "promotion_checks.py:1699 delivers the shortened name only when it reaches exactly this run and keeps the no-run and multi-run refusals, and the exact-id path at promotion_checks.py:1846 is unchanged.",
+    "reuse": "no owner resolves a shortened run id, but promotion_checks.py:1754 re-implements the mtime-versus-dispatch-instant refusal already written at reckon/crew/recovery_review_delivery.py:484-500, and _known_run_ids at promotion_checks.py:1676 adds a third enumeration beside reckon/crew/routing.py:1881 _live_run_ids and routing.py:977 _ledgered_run_ids.",
+    "scope_discipline": "every path in the diff (reckon/crew/promotion_checks.py, tests/test_a_review_named_by_node_promotes.py, docs/evidence/fragments/a-gate-halts-only-on-substance/gate-review-named-by-node-s8.html) is inside the declared FENCE \u2014 SCOPE."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to promote a review whose record names its reviewed run by node without --outcome; reckon/crew/promotion_checks.py:1699 `_resolve_named_review_run` resolves a shortened `review_run_id` to the one run it reaches, and promotion_checks.py:1833-1848 consumes it where the delivery verdict used to raise.\nVERDICT done_when: the manifest names the refusal line (reckon/crew/promotion_checks.py:1843, confirmed in the committed blob at 9840898e76), and the gate it ran is the new test file plus tests/test_staged_write_inventory.py, recorded 55 passed EXIT=0 at head and 51 passed EXIT=0 at base in logs/arms.log; the base refusal of the new case is not in a gate log and rests on the negative control (logs/negative-control.log, 2 failed EXIT=1) and an unlogged run of the new test at unmodified source.\nVERDICT write_paths: the manifest declares promotion_checks.py, the new test, the evidence fragment and the figures directory; the diff touches only the first three, all inside the run's declared FENCE \u2014 SCOPE at prompt.txt:81-84.\nVERDICT manifest: read; it states status complete, names commit pair 5c2ce1a4e2 and 9840898e76, the refusal line, both arms and the negative control, and discloses the ledger gap under outside_scope.\nVERDICT diff: read commit by commit against base a0ad40b9a0b618f43acfdc9cef780c2e116e5775; 5c2ce1a4e2 adds the resolver and its helper, 9840898e76 adds the evidence fragment; 403 insertions across three files, no unrelated edit.\nCALL_SITES: reckon/crew/promotion.py:537 (_resolve_promotion_outcome called from the promotion path), reckon/crew/promotion.py:2738 (re-export)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: promotion_checks.py:1699 delivers the shortened name only when it reaches exactly this run and keeps the no-run and multi-run refusals, and the exact-id path at promotion_checks.py:1846 is unchanged.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/arms.log carries the base arm (51 passed EXIT=0) and the head arm (55 passed EXIT=0) with their revisions and commands, but the base refusal of the new case is evidenced by logs/negative-control.log rather than by a base-revision log of the test the done_when names.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in the diff (reckon/crew/promotion_checks.py, tests/test_a_review_named_by_node_promotes.py, docs/evidence/fragments/a-gate-halts-only-on-substance/gate-review-named-by-node-s8.html) is inside the declared FENCE \u2014 SCOPE.\nSCORE durability: 16\nJUSTIFICATION durability: re-running tests/test_a_review_named_by_node_promotes.py at head gives 4 passed, and the negative control shows the promoting and ambiguity cases redden when promotion_checks.py:1833-1840 drops the resolver call, but no assertion covers the freshness refusal at promotion_checks.py:1754.\nSCORE fit: 18\nJUSTIFICATION fit: the helper follows the module's existing shape of reading a run's record through recovery_review_delivery and raising a condition/detail/remedy dict, and the added names (_resolve_named_review_run, _known_run_ids, _NAMED_REVIEW_CONDITION) name the mechanism with no plan or ticket label.\nSCORE reuse: 12\nJUSTIFICATION reuse: no owner resolves a shortened run id, but promotion_checks.py:1754 re-implements the mtime-versus-dispatch-instant refusal already written at reckon/crew/recovery_review_delivery.py:484-500, and _known_run_ids at promotion_checks.py:1676 adds a third enumeration beside reckon/crew/routing.py:1881 _live_run_ids and routing.py:977 _ledgered_run_ids.\nFINDING docs/evidence/fragments/a-gate-halts-only-on-substance/gate-review-named-by-node-s8.html:19 non-blocking: the Measured paragraph states the fixture is refused at the base revision, but no gate log captures the new test against base \u2014 logs/arms.log runs only tests/test_staged_write_inventory.py there \u2014 so the base-red evidence is the negative control and an unlogged run rather than the base arm the done_when names.\nFINDING reckon/crew/promotion_checks.py:1754 non-blocking: the shortened-name path re-implements the record-freshness rule owned by recovery_review_delivery.py:484-500 with its own wording, so one rule now has two copies that can drift and two different remedy strings for the same condition.\nFINDING reckon/crew/promotion_checks.py:1754 non-blocking: no assertion exercises the freshness refusal the helper adds \u2014 and no case covers a name that reaches exactly one run other than this one \u2014 so a regression in either branch would keep the suite green.\nFINDING reckon/crew/recovery_review_subject.py:1469 non-blocking: the promotion's ledger row still records review: null for a shortened name because _stored_review matches records by the exact review_run_id; the landed change makes that promotion reachable in production, and the worker discloses the gap under outside_scope with the files a repair needs.",
+  "review_run_id": "r-20261113T154634967926-review-of-gate-review-named-by-node-s8-9840898e76be",
+  "reviewed_base_sha": "a0ad40b9a0b618f43acfdc9cef780c2e116e5775",
+  "reviewed_head_sha": "9840898e76be74adf5f139b8e5c6ef59b0d83672",
+  "reviewed_run_id": "r-20261113T060419253403-gate-review-named-by-node-s8",
+  "rubric": "code-review",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:05:00Z",
+  "total": 97
+}

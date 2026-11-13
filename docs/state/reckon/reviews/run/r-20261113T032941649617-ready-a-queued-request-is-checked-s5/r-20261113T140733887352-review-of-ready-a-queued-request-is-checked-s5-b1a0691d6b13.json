@@ -1,0 +1,77 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/serve.py:2705",
+    "reckon/mcp.py:1339",
+    "reckon/doccheck.py:1905"
+  ],
+  "completed_at": "2026-11-13T14:36:11.687Z",
+  "dispatched_at": "2026-11-13T14:18:59Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:08:29.409663+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:08:32.660798+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html",
+      "id": "fc808a2927c",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: this is the third evidence fragment for the same section, since a-second-launch-of-a-run-never-releases-the-tree.html (commit 295536190e, a re-verification at base 364e9342) and a-second-launch-of-a-run-never-releases-the-tree-its-first.html (commit 06c67c9893) already sit under the same plan's fragment directory at this node's base, so composing the landed record will carry three overlapping accounts of one verification."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html",
+      "id": "fdfdfe8d183",
+      "line": "56",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states that ruff reports 8 pre-existing findings and a pre-existing format diff at base, but the run's logs directory holds no ruff log and the manifest names no ruff command, so the done_when's 'ruff check and ruff format --check add no findings on the staged paths' clause is claimed in prose rather than recorded."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 3 production call site(s)",
+    "diff": "read commit by commit against base 078f7c800cf487e36209d42418e0e77863abb17d: af1f6e03e7 adds the 58-line fragment, and b1a0691d6b adds two lines recording the routing-importer population arm; no product source, no test and no plan state changes, and both commits sit inside the declared fence.",
+    "done_when": "the done_when names the four-case test tests/test_a_second_launch_keeps_a_live_worktree.py, a negative control that makes the working case trash the tree, and a no-added-failure importer arm; the manifest records base-gate.log and head-gate.log at '4 passed' with EXIT=0, negative-control.log at '2 failed, 2 passed' EXIT=1 naming test_a_working_pointer_s_second_launch_keeps_the_tree and test_a_starting_pointer_s_second_launch_keeps_the_tree, and population-base.log at '19 failed, 823 passed, 8 errors' EXIT=1 on the source-equal base revision 078f7c80; the done_when's ruff clause is asserted in the fragment at line 56 but no ruff command or log is recorded.",
+    "goal": "the node goal is to deliver the section so a second launch of a queued request never releases the tree its first launch holds; the landed diff is one docs fragment (docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html), and the behaviour it claims is already carried at base by _launch_pointer_worktrees and _own_pointer_yields_its_tree in reckon/crew/routing.py:1153-1197, so this node documents and re-verifies the property rather than adding it.",
+    "manifest": "read; it reads status complete with commits af1f6e03e7 and b1a0691d6b, names both suite arms with their log paths, revisions and zero failures, records negative_control_log as the bare path logs/negative-control.log, and 'reckon crew check --manifest --run r-20261113T032941649617-ready-a-queued-request-is-checked-s5' returns ok true with no findings.",
+    "write_paths": "the source node was fenced to reckon/crew/routing.py, docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html and a figures directory under docs/figures; git diff --stat 078f7c80..b1a0691d6b changes exactly one file, the fragment, with 60 insertions, reckon/crew/routing.py is byte-identical to the base, and no figures directory was created."
+  },
+  "justifications": {
+    "durability": "the node adds no assertion of its own, but the test it verifies, tests/test_a_second_launch_keeps_a_live_worktree.py:96 _assert_refused, compares the inode against the value captured before the call and the trash listing against the empty state, and logs/negative-control.log shows those assertions reddening under the declared mutation of _own_pointer_yields_its_tree.",
+    "evidence": "logs/base-gate.log and logs/head-gate.log each end '4 passed' EXIT=0, logs/negative-control.log ends '2 failed, 2 passed' EXIT=1 with 'Failed: DID NOT RAISE CrewError' and logs/population-base.log ends '19 failed, 823 passed, 8 errors' EXIT=1 at revision 078f7c80, all cited by the fragment docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html:37-41, while the ruff assertion at line 56 has no recorded command behind it.",
+    "fit": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html follows the sibling fragments' plan-doc and eyebrow structure and prefixes every element id with the node id, as its four sections at lines 22, 32, 48 and 54 show, and introduces no plan or version label.",
+    "goal_fidelity": "the property holds at reckon/crew/routing.py:1171 feeding the two deciding readers at :2344 and :2532, but the landed fragment docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html adds no behaviour, so the delivery credit belongs to the guard commit b1cfbd7d30 rather than to this node.",
+    "reuse": "the diff adds no definition at all, and the fragment records that the existing guard and its four-case test are reused rather than reimplemented, which the byte-identical reckon/crew/routing.py at base confirms; a search over reckon/crew for a second launch-claim view found only route-through of _launch_pointer_worktrees at reckon/crew/routing.py:1197.",
+    "scope_discipline": "git diff --stat 078f7c80..b1a0691d6b lists only docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html, inside the declared fence, and leaves reckon/crew/routing.py untouched, though the fragment is a third evidence document on a section already documented at this base."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver the section so a second launch of a queued request never releases the tree its first launch holds; the landed diff is one docs fragment (docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html), and the behaviour it claims is already carried at base by _launch_pointer_worktrees and _own_pointer_yields_its_tree in reckon/crew/routing.py:1153-1197, so this node documents and re-verifies the property rather than adding it.\nVERDICT done_when: the done_when names the four-case test tests/test_a_second_launch_keeps_a_live_worktree.py, a negative control that makes the working case trash the tree, and a no-added-failure importer arm; the manifest records base-gate.log and head-gate.log at '4 passed' with EXIT=0, negative-control.log at '2 failed, 2 passed' EXIT=1 naming test_a_working_pointer_s_second_launch_keeps_the_tree and test_a_starting_pointer_s_second_launch_keeps_the_tree, and population-base.log at '19 failed, 823 passed, 8 errors' EXIT=1 on the source-equal base revision 078f7c80; the done_when's ruff clause is asserted in the fragment at line 56 but no ruff command or log is recorded.\nVERDICT write_paths: the source node was fenced to reckon/crew/routing.py, docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html and a figures directory under docs/figures; git diff --stat 078f7c80..b1a0691d6b changes exactly one file, the fragment, with 60 insertions, reckon/crew/routing.py is byte-identical to the base, and no figures directory was created.\nVERDICT manifest: read; it reads status complete with commits af1f6e03e7 and b1a0691d6b, names both suite arms with their log paths, revisions and zero failures, records negative_control_log as the bare path logs/negative-control.log, and 'reckon crew check --manifest --run r-20261113T032941649617-ready-a-queued-request-is-checked-s5' returns ok true with no findings.\nVERDICT diff: read commit by commit against base 078f7c800cf487e36209d42418e0e77863abb17d: af1f6e03e7 adds the 58-line fragment, and b1a0691d6b adds two lines recording the routing-importer population arm; no product source, no test and no plan state changes, and both commits sit inside the declared fence.\nCALL_SITES: reckon/serve.py:2705, reckon/mcp.py:1339, reckon/doccheck.py:1905\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: the property holds at reckon/crew/routing.py:1171 feeding the two deciding readers at :2344 and :2532, but the landed fragment docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html adds no behaviour, so the delivery credit belongs to the guard commit b1cfbd7d30 rather than to this node.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/base-gate.log and logs/head-gate.log each end '4 passed' EXIT=0, logs/negative-control.log ends '2 failed, 2 passed' EXIT=1 with 'Failed: DID NOT RAISE CrewError' and logs/population-base.log ends '19 failed, 823 passed, 8 errors' EXIT=1 at revision 078f7c80, all cited by the fragment docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html:37-41, while the ruff assertion at line 56 has no recorded command behind it.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: git diff --stat 078f7c80..b1a0691d6b lists only docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html, inside the declared fence, and leaves reckon/crew/routing.py untouched, though the fragment is a third evidence document on a section already documented at this base.\nSCORE durability: 18\nJUSTIFICATION durability: the node adds no assertion of its own, but the test it verifies, tests/test_a_second_launch_keeps_a_live_worktree.py:96 _assert_refused, compares the inode against the value captured before the call and the trash listing against the empty state, and logs/negative-control.log shows those assertions reddening under the declared mutation of _own_pointer_yields_its_tree.\nSCORE fit: 19\nJUSTIFICATION fit: docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html follows the sibling fragments' plan-doc and eyebrow structure and prefixes every element id with the node id, as its four sections at lines 22, 32, 48 and 54 show, and introduces no plan or version label.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition at all, and the fragment records that the existing guard and its four-case test are reused rather than reimplemented, which the byte-identical reckon/crew/routing.py at base confirms; a search over reckon/crew for a second launch-claim view found only route-through of _launch_pointer_worktrees at reckon/crew/routing.py:1197.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html:19 non-blocking: this is the third evidence fragment for the same section, since a-second-launch-of-a-run-never-releases-the-tree.html (commit 295536190e, a re-verification at base 364e9342) and a-second-launch-of-a-run-never-releases-the-tree-its-first.html (commit 06c67c9893) already sit under the same plan's fragment directory at this node's base, so composing the landed record will carry three overlapping accounts of one verification.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s5.html:56 non-blocking: the fragment states that ruff reports 8 pre-existing findings and a pre-existing format diff at base, but the run's logs directory holds no ruff log and the manifest names no ruff command, so the done_when's 'ruff check and ruff format --check add no findings on the staged paths' clause is claimed in prose rather than recorded.",
+  "review_run_id": "r-20261113T140733887352-review-of-ready-a-queued-request-is-checked-s5-b1a0691d6b13",
+  "reviewed_base_sha": "078f7c800cf487e36209d42418e0e77863abb17d",
+  "reviewed_head_sha": "b1a0691d6b13894b17d7e8e12487a64a6212d8b5",
+  "reviewed_run_id": "r-20261113T032941649617-ready-a-queued-request-is-checked-s5",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:34:26.268735+00:00",
+  "total": 108
+}

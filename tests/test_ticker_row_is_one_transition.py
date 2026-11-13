@@ -158,7 +158,7 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
             "stage": row.index("review"),
             "job": row.index("n"),
             "model": row.index(model_text),
-            "counters": row.index(" 1w  0h"),
+            "counters": row.index(" 1w  0n"),
         }
         measured["arrow"] = row.index(ticker_module.ARROW)
         for name, start in measured.items():
@@ -213,8 +213,8 @@ def test_reported_state_chains_when_the_producer_skips_an_observation() -> None:
         )
     )
 
-    assert "new → halted" in abandoned
-    assert "halted → working" in working
+    assert "new → needs you" in abandoned
+    assert "needs you → working" in working
     assert "working → working" not in working
 
 
@@ -403,7 +403,7 @@ def test_every_pane_word_is_a_hued_table_key() -> None:
         "queued",
         "working",
         "waiting",
-        "halted",
+        "needs you",
         "delivered",
         "landed",
         "dropped",

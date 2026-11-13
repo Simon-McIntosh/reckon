@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arms: baseline_suite at 433d71f07619 (baseline-arm.log) records 3 passed with EXIT=0 and no failure ids; after_suite at 28383324bd (after-node.log) records 3 passed with EXIT=0 at the same three test ids, so the added set is empty. The two arms run the same three ids because the node changes no production behaviour, so the delta is zero by construction rather than by repair.",
+  "call_sites": [
+    "reckon/crew/recovery_review_dispatch.py:3516",
+    "reckon/crew/dispatching/preparation.py:425",
+    "reckon/crew/admission/selection.py:509",
+    "reckon/crew/admission/holds.py:147",
+    "reckon/crew/queue_admission.py:82"
+  ],
+  "completed_at": "2026-11-13T12:45:15.271Z",
+  "dispatched_at": "2026-11-13T12:30:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:04:47.727020+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:04:51.237018+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:04:54.780076+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-held-lane-never-holds-a-review/ready-a-held-lane-never-holds-a-re-s2.html",
+      "line": 37,
+      "severity": "non-blocking",
+      "text": "the head-arm row cites revision `2c242297d9`, while the log that measure rests on (`after-node.log`, named in the manifest's `test_logs`) carries `28383324bd` at its header and was written after the fragment commit, so a reader cannot check the cited pair by opening the path it cites."
+    },
+    {
+      "file": "tests/test_a_held_lane_never_holds_a_review.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "the file is outside the dispatch's FENCE \u2014 SCOPE list even though the done-when names it as a write path, so promotion must ratify the path rather than read it as an unprompted edit."
+    },
+    {
+      "file": "docs/evidence/fragments/a-held-lane-never-holds-a-review/ready-a-held-lane-never-holds-a-re-s2.html",
+      "line": 47,
+      "severity": "non-blocking",
+      "text": "the population's base arm was not run, so the done-when's \"add no failure against the base revision\" is answered by inference from file identity over the 152 unchanged paths rather than by the base measurement the clause asks for."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"Find where a review's followed lane should yield to a hold\"; the landed change adds no source repair because `reckon/crew/admission/holds.py:147` (`_local_fallback`) already rebinds a `named_route` whose `set_by` is `review-follows-run` at base `433d71f07619`, so the node's deliverable is the location and the closed evidence gap, both stated in `docs/evidence/fragments/a-held-lane-never-holds-a-review/ready-a-held-lane-never-holds-a-re-s2.html`.\nVERDICT done_when: the done_when asks for three stubbed cases in `tests/test_a_held_lane_never_holds_a_review.py`; all three exist and pass at head, and `baseline-arm.log` (revision 433d71f07619) and `after-node.log` (revision 28383324bd) each end `3 passed` / `EXIT=0`, but the population clause (\"add no failure against the base revision\") has no base arm, only a head arm plus the file-identity argument recorded at fragment line 47.\nVERDICT write_paths: the dispatch's FENCE \u2014 SCOPE list names `reckon/crew/queue_admission.py`, `reckon/crew/recovery_review_subject.py`, `reckon/crew/recovery_review_dispatch.py`, `reckon/crew/dispatch.py`, the fragment and the figures directory, and omits the test file that the done-when's own \"Write paths:\" sentence names as \"the new test\"; `git diff --name-status 433d71f07619 28383324bd` lists exactly the test file (M) and the fragment (A), and the manifest's `scope_note` records the omission.\nVERDICT manifest: read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T074937936518-ready-a-held-lane-never-holds-a-re-s2/manifest.md; status `complete`, `baseline_suite` and `after_suite` both readable with revisions, literal commands, log paths and `failure_count: 0`, and `tests:` matches the head log's `# command:` header exactly.\nVERDICT diff: read `2c242297d9` and `28383324bd` against base `433d71f07619` commit by commit; the first rewrites only the third case of `tests/test_a_held_lane_never_holds_a_review.py:116-166` (40 insertions, 11 deletions) from an argument capture to a read of the queued pointer's written `named_route`, and the second adds the 64-line evidence fragment; no production file changed.\nCALL_SITES: reckon/crew/recovery_review_dispatch.py:3516, reckon/crew/dispatching/preparation.py:425, reckon/crew/admission/selection.py:509, reckon/crew/admission/holds.py:147, reckon/crew/queue_admission.py:82\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: the fragment pins the answer at `reckon/crew/admission/holds.py:147` and the test at `tests/test_a_held_lane_never_holds_a_review.py:161` now reads the field admission acts on, though \"write the repair\" in plan \u00a72 was unnecessary because `reckon/crew/admission/holds.py:148` already carried it at base.\nSCORE evidence: 14\nJUSTIFICATION evidence: `after-node.log` and `baseline-arm.log` exist with the claimed revisions and `EXIT=0` lines and I reproduced `3 passed` at head in 22.80s, but the done-when's population clause has no base arm \u2014 the file-identity substitution at fragment line 47 is sound yet is not the measurement the clause asks for, and the ruff clause is satisfied (I ran it clean at head) but recorded nowhere.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: `git diff --name-status 433d71f07619 28383324bd` lists only `tests/test_a_held_lane_never_holds_a_review.py` and the fragment, both implied by the goal, though the test file sits outside the dispatch's FENCE \u2014 SCOPE list at `tests/test_a_held_lane_never_holds_a_review.py:1`.\nSCORE durability: 18\nJUSTIFICATION durability: the assertion at `tests/test_a_held_lane_never_holds_a_review.py:161` reddens if `reckon/crew/recovery_review_dispatch.py:3516` stops passing `lane_origin`, because `reckon/crew/dispatching/preparation.py:427` would then write `set_by: dispatch` and the equality fails; it is not a value echo, since `set_by` comes from the production constant rather than from an input the test handed in, but the declared negative control (`negative_control.log`, `1 failed` / `EXIT=1`) exercises the first case rather than this one.\nSCORE fit: 18\nJUSTIFICATION fit: `tests/test_a_held_lane_never_holds_a_review.py:145` stubs `_budget_verdict` through the facade patch path the repository already uses at `tests/test_picker_in_dispatch.py:441`, and `:115` marks the test `arms_watch_producer` as `tests/conftest.py:195` requires for a test that arms the producer.\nSCORE reuse: 19\nJUSTIFICATION reuse: the change adds no production definition; the only added helper is the local `budget` stub at `tests/test_a_held_lane_never_holds_a_review.py:135`, which follows the inline-stub idiom at `tests/test_a_capacity_refusal_resumes_on_another_lane_model.py:323` and extends no owner because none exists \u2014 a search over `tests/` for `_budget_verdict` finds sixteen such inline stubs and no shared helper to extend.\nFINDING docs/evidence/fragments/a-held-lane-never-holds-a-review/ready-a-held-lane-never-holds-a-re-s2.html:37 non-blocking: the head-arm row cites revision `2c242297d9`, while the log that measure rests on (`after-node.log`, named in the manifest's `test_logs`) carries `28383324bd` at its header and was written after the fragment commit, so a reader cannot check the cited pair by opening the path it cites.\nFINDING tests/test_a_held_lane_never_holds_a_review.py:1 non-blocking: the file is outside the dispatch's FENCE \u2014 SCOPE list even though the done-when names it as a write path, so promotion must ratify the path rather than read it as an unprompted edit.\nFINDING docs/evidence/fragments/a-held-lane-never-holds-a-review/ready-a-held-lane-never-holds-a-re-s2.html:47 non-blocking: the population's base arm was not run, so the done-when's \"add no failure against the base revision\" is answered by inference from file identity over the 152 unchanged paths rather than by the base measurement the clause asks for.",
+  "review_run_id": "r-20261113T115453089387-review-of-ready-a-held-lane-never-holds-a-re-s2-28383324bd16",
+  "reviewed_base_sha": "433d71f07619e9f726e7a9a949a18cc4a68ad8a7",
+  "reviewed_head_sha": "28383324bd162afd1bdeccd47a5b0bf529f1b9e4",
+  "reviewed_run_id": "r-20261113T074937936518-ready-a-held-lane-never-holds-a-re-s2",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:02:23.160357+00:00",
+  "total": 102
+}

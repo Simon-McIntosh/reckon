@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A plan-state lock excludes across nodes — the probe and its negative control</title>
+<meta name="plan-slug" content="a-plan-state-lock-holds-on-every-node">
+</head>
+<body>
+<main>
+<p id="plan-state-lock-excludes-across-nodes-summary">A plan-state resource lock now takes a POSIX record lock beside its flock, so the holder excludes a reader on another node, which GPFS granted per node before.</p>
+
+<h3>Two-node probe</h3>
+<table id="plan-state-lock-excludes-across-nodes-probe">
+<thead><tr><th>Arm</th><th>Holder host</th><th>Prober host</th><th>Lock file</th><th>Second node</th></tr></thead>
+<tbody>
+<tr><td>head (this change)</td><td>98dci4-clu-3141</td><td>98dci4-clu-3142</td><td>present</td><td><strong>refused</strong></td></tr>
+<tr><td>base 945e52f92b</td><td>98dci4-clu-3141</td><td>98dci4-clu-3142</td><td>present</td><td><strong>acquired</strong></td></tr>
+</tbody>
+</table>
+<p id="plan-state-lock-excludes-across-nodes-probe-note">Both invocations went through <code>project_state._resource_lock</code> on the same temporary docs tree under <code>~/.cache/reckon-lock-probe/&lt;run&gt;</code> on shared GPFS; the hostnames differ, so the second node is a different node.</p>
+
+<h3>Guards the suite holds</h3>
+<ul id="plan-state-lock-excludes-across-nodes-guards">
+<li id="plan-state-lock-excludes-across-nodes-guard-threads">Two threads of one process do not overlap on one resource lock, and while the holder is inside, a separate process asking for the POSIX record lock is refused.</li>
+<li id="plan-state-lock-excludes-across-nodes-guard-recovery">A recovery started while a move holds both sprint locks waits for the move, finds no journal, restores nothing; the item ends in exactly the target sprint.</li>
+</ul>
+<p id="plan-state-lock-excludes-across-nodes-negative">Run against the base lock (its flock only), both cases fail: the second process takes the lock and the cross-node refusal is false.</p>
+</main>
+</body>
+</html>

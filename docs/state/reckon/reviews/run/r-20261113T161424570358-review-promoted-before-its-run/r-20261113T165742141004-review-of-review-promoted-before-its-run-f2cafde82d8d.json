@@ -1,0 +1,44 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T17:10:14.737Z",
+  "dispatched_at": "2026-11-13T16:59:10Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 477,
+      "severity": "non-blocking",
+      "text": "The except branch calls _defer_to_a_queued_review(request, str(exc)), which is what runs, but passing str() discards the .refusals list _PromotionRefusalError carries, so refusal_awaits_a_review's part-wise branch (promotion_checks.py:1519) is dead on every call path. A run refused for a failing suite AND a missing review matches on the concatenated text and is requeued instead of refused; probed at the reviewed head: object form returns False, string form True, which is the form _run hands it. The docstring two lines above claims this case is separated."
+    },
+    {
+      "file": "tests/test_review_promoted_before_its_run.py",
+      "line": 129,
+      "severity": "non-blocking",
+      "text": "No case queues a run whose refusal carries several reasons, so the part-wise discrimination the module claims is never exercised; a regression that turned every aggregate containing the review text into a deferral would stay green."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "The node declares docs/figures/work-flows-to-the-lane/review-promoted-before-its-run and shipped no figure; the four-way ordering (review queued, run queued, refusal, requeue) it describes in prose is a diagram the graphics mandate expects."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read the source node's goal from its dispatch prompt (line 38): a run's review is promoted before the run, and a run waiting on its queued review is not refused; reckon/crew/promotion_requests.py:258 (_pending_requests) and :287 (_defer_to_a_queued_review) implement both halves.\nVERDICT done_when: read the source node's FENCE EVIDENCE measure; tests/test_review_promoted_before_its_run.py:99 and :129 assert the two named cases and negative-control.log shows the plain-name-order mutation failing 2 ids at the reviewed head; I re-ran the file at the head in a scratch tree and read 3 passed.\nVERDICT write_paths: read the declared scope (promotion_requests.py, promotion_checks.py, tests/test_review_promoted_before_its_run.py, the evidence fragment, a figures directory); every path in the diff is inside it and the figures directory carries nothing.\nVERDICT manifest: read; it records commits bcdf396599 and f2cafde82d, the all_debug gate (54 passed head, 51 passed base 5057bfacc4), the declared mutation (2 failed, EXIT=1) and a 22-passed service regression, each with a log path.\nVERDICT diff: read commit by commit from 5057bfacc429 to f2cafde82d8; one fix commit adding the ordering and deferral to reckon/crew/promotion scratch, one docs commit adding the evidence fragment, no unrelated edits.\nCALL_SITES: reckon/crew/admission/service.py:253, reckon/crew/admission/service.py:283\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:258 orders a review ahead of the run it reviews and :287 requeues a run refused only for a queued review, both halves of the goal.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-head.log:1 names revision bcdf396599 and ends EXIT=0 with 54 passed, gate-base.log:1 names 5057bfacc4 with 51 passed, and negative-control.log:44-47 names the two failing ids and EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 5057bfacc4..f2cafde82d touches exactly the four declared files and nothing else.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_review_promoted_before_its_run.py:105 and :122 fail under the recorded mutation, but :129 covers only a single-reason refusal, so the part-wise branch at reckon/crew/promotion_checks.py:1519 has no test and its dead call path stays green.\nSCORE fit: 20\nJUSTIFICATION fit: the module keeps its existing private-helper idiom and reuses its own REQUESTED/PENDING vocabulary at reckon/crew/promotion_requests.py:317.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/promotion_requests.py:250 delegates to recovery_review_delivery._resolved_reviewed_run_id and recovery_vocabulary.REVIEW_NODE_PREFIX, the same owner six other modules already call.\nFINDING reckon/crew/promotion_requests.py:477 non-blocking: the except branch passes str(exc), discarding _PromotionRefusalError.refusals, so a run refused for a failing suite beside a missing review is requeued rather than refused and the part-wise branch at promotion_checks.py:1519 is dead.\nFINDING tests/test_review_promoted_before_its_run.py:129 non-blocking: no case queues a run whose refusal carries several reasons, so the part-wise discrimination is unexercised.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html:1 non-blocking: the declared figures directory is empty, so the four-way ordering is described in prose with no diagram.",
+  "review_run_id": "r-20261113T165742141004-review-of-review-promoted-before-its-run-f2cafde82d8d",
+  "reviewed_base_sha": "5057bfacc429b531915824e27d2f05bcdf6c66cf",
+  "reviewed_head_sha": "f2cafde82d8de10112f47469abfaab0eb3fa77b0",
+  "reviewed_run_id": "r-20261113T161424570358-review-promoted-before-its-run",
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:16:01.889977+00:00",
+  "total": 109
+}

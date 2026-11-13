@@ -1,0 +1,103 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/_store.py:read_plan",
+    "reckon/_store.py:_state_from_text",
+    "reckon/mcp_edit_plan.py:154",
+    "reckon/mcp_discovery.py:127",
+    "reckon/tags.py:221",
+    "reckon/flight.py:2959"
+  ],
+  "completed_at": "2026-11-13T16:03:09.387Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "repair-of-read-costs-no-second-parse-s23-2fc648a861da",
+      "recorded_at": "2026-11-13T17:38:01.971261+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-13T15:55:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:42:30.784037+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:42:44.879476+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:43:17.662616+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:44:05.902489+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/_store.py",
+      "line": 720,
+      "severity": "non-blocking",
+      "text": "_claim reads data-reckon off any tag rather than only section, so a non-section element carrying a wanted id is counted where the soup walk it replaces returns 0 \u2014 measured 2 against 0 for a div carrying data-reckon=decisions \u2014 so the read emits a warning count the base revision did not, and the docstring above says section."
+    },
+    {
+      "file": "reckon/_store.py",
+      "line": 679,
+      "severity": "non-blocking",
+      "text": "second implementation of the count reckon/_plan_html.py:2287 owns; the write-refusal path still counts through the soup and the read warning now counts through the raw pass, so only the new test holds the two together; the raw counter belongs beside the owner with the soup function delegating."
+    },
+    {
+      "file": "docs/evidence/fragments/a-read-costs-what-changed/read-costs-no-second-parse-s23.html",
+      "line": 26,
+      "severity": "non-blocking",
+      "text": "the 232-plan, 1392-check, 0-mismatch parity figure is stated with no log of that probe anywhere under the run's logs/, so the claim that would have caught the divergence above cannot be checked."
+    },
+    {
+      "file": "manifest.md",
+      "line": 17,
+      "severity": "non-blocking",
+      "text": "after_suite declares failure_count 12 while failure_ids carries 11, dropping test_the_refusal_reads_the_stores_own_settable_table which the head log reports as FAILED; a reader diffing the lists would infer a fix that did not happen."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 21cc2188; two commits, source plus test then the evidence fragment",
+    "done_when": "every clause of the done_when is present in the landed test and its result is in the two suite logs",
+    "goal": "goal met: 0 document trees at head against 5 under the restored soup count",
+    "manifest": "read; reports complete with a 12-vs-12 suite pair, but its after_suite failure_ids list carries 11 of the log's 12 ids",
+    "write_paths": "the diff touches three files, all inside the declared write paths"
+  },
+  "justifications": {
+    "durability": "the tree-count assertion fails at 5 trees when the soup count is restored, and the parity assertion compares against the independent soup walk; the tag-agnostic claim is the one shape not pinned.",
+    "evidence": "both suite logs carry revision, command, module path and EXIT=1 with 12 identical failing ids; sacct resolves job 1314221 on all_debug; logs/negative-control-head.log is red with two named failures.",
+    "fit": "the class sits in the HTML-state helper block of reckon/_store.py and follows the local _plan_html import its neighbour uses.",
+    "goal_fidelity": "reckon/_store.py:744-760 answers the diagnostic from one raw pass and the measured document-tree count at head is 0 against 5 under the restored soup count.",
+    "reuse": "reckon/_plan_html.py:2287 already owns authored-child counting and the new counter is a second implementation kept beside it rather than extending the owner.",
+    "scope_discipline": "git diff --stat over 21cc2188..2fc648a861 lists only reckon/_store.py, the new test file and the node's own evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal (goals.txt of the dispatch) is to construct no second BeautifulSoup tree for a read the persisted parse answers; reckon/_store.py:679-763 replaces the per-section soup count in _unparsed_section_warnings with one HTMLParser pass, and the landed read builds 0 document trees at head against 5 with the soup count restored.\nVERDICT done_when: the done_when names tests/test_a_persisted_read_parses_no_html_again.py with a zero-tree assertion, a positive control, a literal warning, a negative control and two suite arms on all_debug; each clause is present in the landed test and its result is in logs/base_store_importers.log and logs/after_store_importers.log.\nVERDICT write_paths: the node's declared paths are reckon/_store.py, tests/test_a_persisted_read_parses_no_html_again.py, the evidence fragment and a figures directory; the diff touches exactly the first three and no figure was written.\nVERDICT manifest: the manifest reports status complete, commits 020e83dd8c and 2fc648a861, and a 12-failure base arm against a 12-failure head arm under logs/; its after_suite failure_ids list carries 11 of the 12 ids its own log reports.\nVERDICT diff: read commit by commit against 21cc2188 \u2014 020e83dd8c adds _AuthoredChildCounter and _authored_child_counts and rewires _unparsed_section_warnings to them, plus the 266-line test file; 2fc648a861 adds only the 31-line evidence fragment.\nCALL_SITES: reckon/_store.py:read_plan (line 1775) -> _state_with_diagnostics (line 730) -> _unparsed_section_warnings (line 681); reckon/_store.py:_state_from_text:727; reckon/mcp_edit_plan.py:154, reckon/mcp_discovery.py:127, reckon/tags.py:221, reckon/flight.py:2959\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/_store.py:744-760 answers the diagnostic from one raw pass and the measured document-tree count at head is 0 (logs/after_store_importers.log) against 5 under the restored soup count, so the stated goal is met.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base_store_importers.log and logs/after_store_importers.log both carry their revision, command, module path and EXIT=1 with 12 identical failing ids, sacct resolves job 1314221 on all_debug, and logs/negative-control-head.log is red with two named failures.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat over 21cc2188..2fc648a861 lists only reckon/_store.py, tests/test_a_persisted_read_parses_no_html_again.py and the node's own evidence fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_persisted_read_parses_no_html_again.py:206-217 fails at 5 document trees when the soup count is restored, which logs/negative-control-head.log shows, and line 176-190 compares the raw count against the independent soup walk rather than itself; the tag-agnostic claim at reckon/_store.py:720 is the one shape not pinned.\nSCORE fit: 17\nJUSTIFICATION fit: the class and helper sit in the HTML-state helper block of reckon/_store.py:679 and follow the local _plan_html import the neighbouring _unparsed_section_warnings already uses, though attrs is left untyped where reckon/_plan_html.py:253 types it.\nSCORE reuse: 5\nJUSTIFICATION reuse: the repository already owns authored-child counting at reckon/_plan_html.py:2287, and reckon/_store.py:679-763 adds a second implementation of it in another module without extending the owner, keeping both live so only a test holds them together.\nFINDING reckon/_store.py:720 non-blocking: _claim reads data-reckon off any tag rather than only section, so a non-section element carrying a wanted id is counted where the soup walk it replaces returns 0 \u2014 measured 2 against 0 for a div carrying data-reckon=\"decisions\" \u2014 so the read now emits a warning count the base revision did not, and the docstring above it says section.\nFINDING reckon/_store.py:679 non-blocking: this is a second implementation of the count reckon/_plan_html.py:2287 owns; the write-refusal path still counts through the soup while the read warning counts through the raw pass, so the same document can be described two ways and only tests/test_a_persisted_read_parses_no_html_again.py holds them together \u2014 the raw counter belongs beside the owner with the soup function delegating.\nFINDING docs/evidence/fragments/a-read-costs-what-changed/read-costs-no-second-parse-s23.html:26 non-blocking: the 232-plan, 1,392-check, 0-mismatch parity figure is stated with no log recording that probe anywhere under the run's logs/, so the claim that would have caught the divergence above cannot be checked by a reader.\nFINDING manifest.md:17 non-blocking: the after_suite block declares failure_count 12 while its failure_ids list carries 11, dropping tests/test_a_refused_set_names_the_paths_that_work.py::test_the_refusal_reads_the_stores_own_settable_table, which logs/after_store_importers.log reports as FAILED \u2014 a reader diffing the two lists would infer a fix that did not happen.\n",
+  "review_run_id": "r-20261113T154700493716-review-of-read-costs-no-second-parse-s23-2fc648a861da",
+  "reviewed_base_sha": "21cc21884801a157f0b144b64fa9a91a74c858cc",
+  "reviewed_head_sha": "2fc648a861da68c2bd7f513cfa68c2de51dc8463",
+  "reviewed_run_id": "r-20261113T140837544146-read-costs-no-second-parse-s23",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 5,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T18:43:12.907737+00:00",
+  "total": 96
+}

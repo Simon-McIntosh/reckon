@@ -17,7 +17,6 @@ missing or malformed resources are errors.  There are no dual writes.
 from __future__ import annotations
 
 import base64
-import fcntl
 import hashlib
 import html
 import json
@@ -46,11 +45,13 @@ from reckon._schema import (
 from reckon._store import (
     _OP_DISPATCH,
     _fsync_directory,
+    sprint_item_slug,
     write_atomically,
     write_json_atomically,
 )
 from reckon._timestamps import parse_utc
 from reckon.lifecycle import COMPLETED_STATUSES, TERMINAL_STATUSES
+from reckon.node_exclusive_lock import exclusive_lock
 from reckon.sprint_liveness import sprint_liveness
 
 MARKER_RELATIVE = Path(".reckon/project-state-migration.json")
@@ -299,20 +300,27 @@ def resource_path(
 
 
 @contextmanager
-def _resource_lock(docs_dir: Path, project: str, resource_type: str, resource_id: str):
-    """Serialise one resource's version check and atomic replacement."""
+def _resource_lock(
+    docs_dir: Path,
+    project: str,
+    resource_type: str,
+    resource_id: str,
+    *,
+    blocking: bool = True,
+):
+    """Serialise one resource's version check and atomic replacement.
+
+    The lock is POSIX record based, so it excludes a holder on another node.
+    ``blocking=False`` reports a held lock as
+    :class:`~reckon.node_exclusive_lock.LockHeld`.
+    """
     _safe_segment(project, "lock project")
     _safe_segment(resource_type, "lock resource type")
     _safe_segment(resource_id, "lock resource id")
     lock_name = f"{project}-{resource_type}-{resource_id}.lock"
     lock_path = docs_dir / ".reckon" / "locks" / lock_name
-    lock_path.parent.mkdir(parents=True, exist_ok=True)
-    with lock_path.open("a+b") as handle:
-        fcntl.flock(handle.fileno(), fcntl.LOCK_EX)
-        try:
-            yield
-        finally:
-            fcntl.flock(handle.fileno(), fcntl.LOCK_UN)
+    with exclusive_lock(lock_path, blocking=blocking):
+        yield
 
 
 @contextmanager
@@ -2092,6 +2100,93 @@ def _mark_move_journal_committed(path: Path) -> None:
     )
 
 
+def _retire_move_journal(path: Path) -> list[str]:
+    """Retire a journal once both sprint writes have landed.
+
+    Retiring the journal is bookkeeping, not part of the move: its failure
+    cannot undo writes already on disk, so it is reported as a warning rather
+    than raised. Raising here would tell the caller nothing was applied.
+    """
+    warnings: list[str] = []
+    try:
+        _mark_move_journal_committed(path)
+    except FileNotFoundError:
+        # Another pass retired the journal first. The sprint writes stand
+        # either way, and the verdict is read from the resources below.
+        pass
+    except OSError as exc:
+        warnings.append(f"journal_commit_mark_failed={type(exc).__name__}")
+    try:
+        _durable_unlink(path)
+    except OSError as exc:
+        warnings.append(f"journal_unlink_failed={type(exc).__name__}")
+    return warnings
+
+
+def _sprint_holds_item(sprint: dict[str, Any], slug: str) -> bool:
+    return any(sprint_item_slug(row) == slug for row in sprint.get("items", []))
+
+
+def _journal_before_bytes(payload: dict, journal: Path) -> tuple[bytes, bytes]:
+    """Decode the before-bytes a prepared journal restores."""
+    try:
+        source_bytes = base64.b64decode(payload["source_before"], validate=True)
+        target_bytes = base64.b64decode(payload["target_before"], validate=True)
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    return source_bytes, target_bytes
+
+
+def _restore_journal_sprints(
+    docs_dir: Path,
+    project: str,
+    source_id: str,
+    target_id: str,
+    source_bytes: bytes,
+    target_bytes: bytes,
+) -> None:
+    for resource_id, content in (
+        (source_id, source_bytes),
+        (target_id, target_bytes),
+    ):
+        path = resource_path(docs_dir, project, "sprint", resource_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(
+            path,
+            lambda handle, data=content: handle.write(data),
+            mode=0o600,
+            fsync=True,
+            fsync_directory=True,
+            binary=True,
+        )
+
+
+def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
+    """Write both sprints back from a journal's before-bytes.
+
+    Returns False when the journal is already gone, so there is nothing left to
+    restore from.
+    """
+    try:
+        payload = json.loads(journal.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return False
+    except json.JSONDecodeError as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    try:
+        source_id = _safe_segment(str(payload["source_id"]), "journal source id")
+        target_id = _safe_segment(str(payload["target_id"]), "journal target id")
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+    _restore_journal_sprints(
+        docs_dir, project, source_id, target_id, source_bytes, target_bytes
+    )
+    return True
+
+
 def _pending_transaction_journals(docs_dir: Path) -> list[Path]:
     """List prepared transaction journals without taking a lock.
 
@@ -2151,32 +2246,10 @@ def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Pat
                     continue
                 if status != "prepared":
                     raise ProjectStateError(f"malformed transaction journal: {journal}")
-                try:
-                    source_bytes = base64.b64decode(
-                        payload["source_before"], validate=True
-                    )
-                    target_bytes = base64.b64decode(
-                        payload["target_before"], validate=True
-                    )
-                except (KeyError, ValueError) as exc:
-                    raise ProjectStateError(
-                        f"malformed transaction journal: {journal}"
-                    ) from exc
-                source_path = resource_path(docs_dir, project, "sprint", source_id)
-                target_path = resource_path(docs_dir, project, "sprint", target_id)
-                for path, content in (
-                    (source_path, source_bytes),
-                    (target_path, target_bytes),
-                ):
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    write_atomically(
-                        path,
-                        lambda handle, data=content: handle.write(data),
-                        mode=0o600,
-                        fsync=True,
-                        fsync_directory=True,
-                        binary=True,
-                    )
+                source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+                _restore_journal_sprints(
+                    docs_dir, project, source_id, target_id, source_bytes, target_bytes
+                )
                 _durable_unlink(journal)
                 recovered.append(journal)
     return recovered
@@ -2192,8 +2265,15 @@ def move_sprint_item(
     expected_to_version: int,
     *,
     after_first_write: Callable[[], None] | None = None,
-) -> dict[str, int]:
-    """Move one item with two-version validation and compensating recovery."""
+) -> dict[str, Any]:
+    """Move one item with two-version validation and compensating recovery.
+
+    The move settles in one of two states: both sprint writes applied, or
+    neither. A failure before both writes land restores both sprints from the
+    journal's before-bytes; a failure after they land is bookkeeping only, so
+    the applied verdict and both versions are read back from disk and
+    returned rather than raised.
+    """
     source_path = resource_path(docs_dir, project, "sprint", from_sprint)
     target_path = resource_path(docs_dir, project, "sprint", to_sprint)
     journal = _move_journal_path(docs_dir, project, from_sprint, to_sprint, slug)
@@ -2241,18 +2321,18 @@ def move_sprint_item(
             source_bytes,
             target_bytes,
         )
-        new_from = _write_resource_unlocked(
-            docs_dir,
-            project,
-            "sprint",
-            from_sprint,
-            {**source, "items": source_items},
-            source_version,
-        )
         try:
+            _write_resource_unlocked(
+                docs_dir,
+                project,
+                "sprint",
+                from_sprint,
+                {**source, "items": source_items},
+                source_version,
+            )
             if after_first_write:
                 after_first_write()
-            new_to = _write_resource_unlocked(
+            _write_resource_unlocked(
                 docs_dir,
                 project,
                 "sprint",
@@ -2275,9 +2355,33 @@ def move_sprint_item(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"from_version": new_from, "to_version": new_to}
+        source_after, from_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", from_sprint
+        )
+        target_after, to_version = _read_resource_unchecked(
+            docs_dir, project, "sprint", to_sprint
+        )
+        applied = _sprint_holds_item(target_after, slug) and not _sprint_holds_item(
+            source_after, slug
+        )
+        if not applied:
+            # A read-back that disagrees with both writes means something
+            # reverted a sprint under the move. Restore both sides from the
+            # journal so the pair agrees with its before-bytes again, and only
+            # then retire the journal and report the refusal.
+            _restore_move_journal(docs_dir, project, journal)
+            _retire_move_journal(journal)
+            raise ProjectStateError(
+                f"sprint move did not settle: {slug!r} is not in exactly "
+                f"{to_sprint!r} after both writes"
+            )
+        warnings = _retire_move_journal(journal)
+        return {
+            "applied": True,
+            "from_version": from_version,
+            "to_version": to_version,
+            "warnings": warnings,
+        }
 
 
 def push_sprint(
@@ -2326,9 +2430,10 @@ def push_sprint(
             {**target, "status": "active"},
             target_version,
         )
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-        return {"new_version": new_version}
+        return {
+            "new_version": new_version,
+            "warnings": _retire_move_journal(journal),
+        }
 
 
 def _sprint_item_payload(row: Any) -> dict[str, Any]:
@@ -2482,9 +2587,11 @@ def _close_sprint_with_carry_forward(
                 )
             _durable_unlink(journal)
             raise
-        _mark_move_journal_committed(journal)
-        _durable_unlink(journal)
-    return new_closing, [f"carried {len(incomplete)} item(s) to sprint {advancing_id}"]
+        carried_warnings = _retire_move_journal(journal)
+    return new_closing, [
+        f"carried {len(incomplete)} item(s) to sprint {advancing_id}",
+        *carried_warnings,
+    ]
 
 
 #: Ops this dispatcher answers that the shared handler table in
@@ -2606,7 +2713,9 @@ def apply_resource_ops(
                 int(op.get("to_version", -1)),
             )
             return result["from_version"], [
-                f"destination_version={result['to_version']}"
+                f"source_version={result['from_version']}",
+                f"destination_version={result['to_version']}",
+                *result.get("warnings", []),
             ]
         elif verb == "push" and resource_type == "sprint":
             if len(ops) != 1:

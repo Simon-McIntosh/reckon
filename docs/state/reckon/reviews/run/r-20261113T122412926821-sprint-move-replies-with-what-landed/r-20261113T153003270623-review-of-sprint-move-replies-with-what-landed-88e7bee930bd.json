@@ -1,0 +1,84 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/mcp_edit_plan.py:2326 (_edit_plan_tool calls _edit_plan, reached from the edit_plan tool)",
+    "reckon/mcp_edit_plan.py:1737 (_edit_plan calls apply_resource_ops in a try whose refusals now go through _refused_resource_edit)",
+    "reckon/project_state.py:2699 (apply_resource_ops calls move_sprint_item)",
+    "reckon/project_state.py:2365 (move_sprint_item calls _restore_move_journal on a disagreeing read-back)",
+    "reckon/project_state.py:2242 (recover_project_state_transactions calls the shared _journal_before_bytes and _restore_journal_sprints)"
+  ],
+  "completed_at": "2026-11-13T15:38:23.447Z",
+  "dispatched_at": "2026-11-13T15:31:45Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "folded",
+      "node": "move-reply-keeps-its-verdict-on-a-failed-read",
+      "recorded_at": "2026-11-13T15:41:33.932176+00:00"
+    },
+    "1": {
+      "kind": "folded",
+      "node": "move-reply-keeps-its-verdict-on-a-failed-read",
+      "recorded_at": "2026-11-13T15:41:47.194210+00:00"
+    },
+    "2": {
+      "kind": "folded",
+      "node": "move-reply-keeps-its-verdict-on-a-failed-read",
+      "recorded_at": "2026-11-13T15:41:58.439156+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "1756",
+      "severity": "non-blocking",
+      "text": "the success path gates both applied and sprint_versions on 'if sprint_versions:', so a post-write read that raises inside _move_sprint_versions (:925 swallows it) leaves a reply with ok:true and no applied verdict at all -- exactly the reply-that-does-not-say-what-landed the section exists to remove; the code it replaced built the same dict by direct read_resource calls, so a read failure raised instead of vanishing into a truthiness test."
+    },
+    {
+      "file": "reckon/mcp_edit_plan.py",
+      "line": "925",
+      "severity": "non-blocking",
+      "text": "the change adds one ruff finding the tree did not have: S112 try-except-continue on _move_sprint_versions' per-sprint read. Ruff on mcp_edit_plan.py reports 7 findings at ba742341e8 and 8 at 88e7bee930, so the manifest's 'ruff delta added no findings' and the done_when's clean-changed-paths requirement both fail on a one-line fix."
+    },
+    {
+      "file": "reckon/project_state.py",
+      "line": "2167",
+      "severity": "non-blocking",
+      "text": "the except json.JSONDecodeError branch is redundant: the (KeyError, ValueError) clause immediately beneath it raises the identical ProjectStateError and already covers JSONDecodeError, since JSONDecodeError subclasses ValueError, so the new clause only reads as if it handled something the next one does not."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read commit by commit against ba742341e8: 0947cd5cb4 extracts _journal_before_bytes and _restore_journal_sprints from the two duplicated restore copies and routes refusals through _refused_resource_edit/_move_sprint_versions, adding four lines to the test; 88e7bee930 is docs-only, 14 lines into the landing fragment and no source.",
+    "done_when": "The source done_when requires a fault at each of four move steps with the reply's verdict and versions compared against a fresh read, plus an importer population at both arms; tests/test_a_sprint_move_replies_with_what_landed.py:141-219 does exactly that and suite-after.log (57 passed, EXIT=0 at 0947cd5cb4) and population-base.log/population-head.log record the arms, but the done_when's 'ruff check and ruff format --check clean on the changed paths' is not met: the change adds one S112 at reckon/mcp_edit_plan.py:925 (base 7 findings, head 8 on that file).",
+    "goal": "The source node's goal is 'make a two-sprint move end all-or-nothing with a reply matching disk'; the gained commits at reckon/project_state.py:2362-2371 restore both sprints before the refusal and reckon/mcp_edit_plan.py:875-925 make every refusal carry the versions the tree holds.",
+    "manifest": "Read manifest.md at the reviewed run directory: status complete, commits 26ee25c9bf through 88e7bee930, baseline_suite (e5236d42cc50, exit 1, 6 failure ids) and after_suite (0947cd5cb4, exit 0, 0 failure ids) both naming logs that end in bare EXIT= lines and both completed, six rubric lines, and a landing line; its rubric.scope_discipline claim that 'ruff delta added no findings' does not hold at reckon/mcp_edit_plan.py:925.",
+    "write_paths": "The source dispatch declares reckon/project_state.py, reckon/mcp_edit_plan.py and tests/test_a_sprint_move_replies_with_what_landed.py; the landed diff adds only the docs evidence fragment on top, and every one of the four paths is inside the manifest's changed_paths and the run's landing scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sprint_move_replies_with_what_landed.py:160 compares the refusal's sprint_versions against a fresh read_resource rather than the versions the test passed in, and negative-control-prior-commit.log records it failing at ba742341e8 as 'assert None == {'S3': 1, 'S5': 1}', so reinstating the versionless refusal reddens it; the move branch of the TypeError/ValueError refusal at reckon/mcp_edit_plan.py:1809 has no such case, and _move_sprint_versions' silencing of a read failure at :925 is untested.",
+    "evidence": "suite-after.log ends EXIT=0 with 57 passed at 0947cd5cb4 and population-head.log records 1 failed / 302 passed over 28 files against population-base.log's 1 failed / 296 passed over 27, the single failure being tests/test_mcp_views.py::test_raw_and_schema_are_explicit_layers at both arms; negative-control-prior-commit.log shows the new refusal assertion reddening at ba742341e8, but the manifest's claim that the changed paths are ruff-clean is contradicted by one added finding at reckon/mcp_edit_plan.py:925.",
+    "fit": "reckon/mcp_edit_plan.py:900 follows the adjacent helper and docstring idiom and its broad except carries the same noqa-with-reason shape as :2273, but reckon/project_state.py:2167 adds an except json.JSONDecodeError whose body is identical to the (KeyError, ValueError) clause beneath it, which already covers it since JSONDecodeError subclasses ValueError.",
+    "goal_fidelity": "reckon/project_state.py:2365 restores both sprints from the journal before refusing, and reckon/mcp_edit_plan.py:894 puts the same fresh-read sprint_versions on a refusal that a settled move already carried, so both outcomes of a move now answer with what the disk holds.",
+    "reuse": "The duplication a prior review named at reckon/project_state.py:2123 is folded into two shared primitives, _journal_before_bytes and _restore_journal_sprints, now called from both _restore_move_journal (:2177) and recover_project_state_transactions (:2242), and _move_sprint_versions at reckon/mcp_edit_plan.py:900 replaces an inline comprehension rather than forking an owner; a search over reckon/ and tests/ for an existing sprint-versions or refusal-reply helper found none.",
+    "scope_discipline": "Every path in the diff against ba742341e8 -- reckon/project_state.py, reckon/mcp_edit_plan.py, tests/test_a_sprint_move_replies_with_what_landed.py and the landing fragment -- is inside the source dispatch's declared write paths, though _refused_resource_edit at reckon/mcp_edit_plan.py:875 also puts applied:false onto the refusal of a non-move resource edit."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is 'make a two-sprint move end all-or-nothing with a reply matching disk'; the gained commits at reckon/project_state.py:2362-2371 restore both sprints before the refusal and reckon/mcp_edit_plan.py:875-925 make every refusal carry the versions the tree holds.\nVERDICT done_when: the done_when requires a fault at each of four move steps with the reply's verdict and versions compared against a fresh read plus an importer population at both arms; tests/test_a_sprint_move_replies_with_what_landed.py:141-219 does that and suite-after.log (57 passed, EXIT=0 at 0947cd5cb4) with population-base.log/population-head.log record the arms, but its 'ruff check and ruff format --check clean on the changed paths' is not met -- the change adds one S112 at reckon/mcp_edit_plan.py:925 (7 findings at base, 8 at head on that file).\nVERDICT write_paths: the source dispatch declares reckon/project_state.py, reckon/mcp_edit_plan.py and tests/test_a_sprint_move_replies_with_what_landed.py; the landed diff adds only the docs evidence fragment on top and all four paths are inside it.\nVERDICT manifest: read; status complete, baseline_suite (e5236d42cc50, exit 1, 6 ids) and after_suite (0947cd5cb4, exit 0, 0 ids) both name logs ending in bare EXIT= lines and both completed, six rubric lines present, but rubric.scope_discipline's 'ruff delta added no findings' does not hold at reckon/mcp_edit_plan.py:925.\nVERDICT diff: read commit by commit against ba742341e8; 0947cd5cb4 extracts _journal_before_bytes and _restore_journal_sprints from two duplicated restore copies and routes refusals through _refused_resource_edit/_move_sprint_versions with four added test lines, and 88e7bee930 is docs-only, 14 lines into the landing fragment.\nCALL_SITES: reckon/mcp_edit_plan.py:2326 (_edit_plan_tool calls _edit_plan, reached from the edit_plan tool), reckon/mcp_edit_plan.py:1737 (_edit_plan calls apply_resource_ops whose refusals now go through _refused_resource_edit), reckon/project_state.py:2699 (apply_resource_ops calls move_sprint_item), reckon/project_state.py:2365 (move_sprint_item calls _restore_move_journal on a disagreeing read-back), reckon/project_state.py:2242 (recover_project_state_transactions calls the shared _journal_before_bytes and _restore_journal_sprints)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:2365 restores both sprints from the journal before refusing and reckon/mcp_edit_plan.py:894 puts the same fresh-read sprint_versions on a refusal that a settled move already carried.\nSCORE evidence: 16\nJUSTIFICATION evidence: suite-after.log ends EXIT=0 with 57 passed at 0947cd5cb4 and population-head.log records 1 failed / 302 passed over 28 files against population-base.log's 1 failed / 296 passed over 27 with the same single pre-existing id, and negative-control-prior-commit.log shows the new refusal assertion reddening at ba742341e8, but the manifest's ruff-clean claim is contradicted by one added finding at reckon/mcp_edit_plan.py:925.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in the diff is inside the declared write paths, though _refused_resource_edit at reckon/mcp_edit_plan.py:875 also puts applied:false onto the refusal of a non-move resource edit.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_sprint_move_replies_with_what_landed.py:160 compares the refusal's versions against a fresh read_resource and negative-control-prior-commit.log records it failing at ba742341e8 as 'assert None == {'S3': 1, 'S5': 1}', but the move branch of the TypeError/ValueError refusal at reckon/mcp_edit_plan.py:1809 has no case and the read-failure silence at :925 is untested.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/mcp_edit_plan.py:900 follows the adjacent helper idiom and carries the same noqa-with-reason shape as :2273, but reckon/project_state.py:2167 adds an except json.JSONDecodeError whose body duplicates the (KeyError, ValueError) clause beneath it.\nSCORE reuse: 19\nJUSTIFICATION reuse: the duplication a prior review named is folded into _journal_before_bytes and _restore_journal_sprints, called from both reckon/project_state.py:2177 and :2242, and _move_sprint_versions at reckon/mcp_edit_plan.py:900 replaces an inline comprehension rather than forking an owner no search found.\nFINDING reckon/mcp_edit_plan.py:1756 non-blocking: the success path gates applied and sprint_versions on 'if sprint_versions:', so a post-write read that raises inside _move_sprint_versions (:925 swallows it) leaves ok:true with no applied verdict, the reply-that-does-not-say-what-landed the section exists to remove.\nFINDING reckon/mcp_edit_plan.py:925 non-blocking: the change adds one ruff finding the tree did not have, S112 try-except-continue, so 7 findings at ba742341e8 become 8 at 88e7bee930 and the manifest's 'ruff delta added no findings' fails on a one-line fix.\nFINDING reckon/project_state.py:2167 non-blocking: the except json.JSONDecodeError branch is redundant, since the (KeyError, ValueError) clause beneath it raises the identical ProjectStateError and JSONDecodeError subclasses ValueError.\n",
+  "review_run_id": "r-20261113T153003270623-review-of-sprint-move-replies-with-what-landed-88e7bee930bd",
+  "reviewed_base_sha": "ba742341e88106ea5e3a391ca3bdf8e828fb7748",
+  "reviewed_head_sha": "88e7bee930bd0a8944912d44d339876e15cc2a9d",
+  "reviewed_run_id": "r-20261113T122412926821-sprint-move-replies-with-what-landed",
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:23:20.316158+00:00",
+  "total": 104
+}

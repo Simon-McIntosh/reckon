@@ -665,6 +665,18 @@ def _launch_dispatch(
             },
         }
 
+        # The follower was arranged before this record was composed, and a
+        # --session naming another session than the caller's handed the run to
+        # the caller's waiting host there. The hand-off is read and cleared at
+        # this point so the payload names both sessions and whether a host took
+        # the run. A matched dispatch carries no field rather than a null, which
+        # would read as a hand-off that found no host.
+        from reckon.crew.dispatch_watch import take_session_hand_off
+
+        session_hand_off = take_session_hand_off()
+        if session_hand_off is not None:
+            record["host_handoff"] = session_hand_off
+
         # The advisory the dispatch computed rides the record when it exists,
         # beside the lane declaration and reading it was derived from. An
         # absent advisory is left off entirely rather than written as a null:

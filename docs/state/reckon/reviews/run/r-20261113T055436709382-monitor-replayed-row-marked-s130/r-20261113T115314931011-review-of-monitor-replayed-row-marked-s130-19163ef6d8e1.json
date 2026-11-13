@@ -1,0 +1,82 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own gate logs on disk: logs/base_suite.log at 4d5c4389b7 records 12 failed, 600 passed, EXIT=1, and logs/after_suite.log at 17b9c0bb1d records 10 failed, 602 passed, EXIT=1. Set difference after minus base is empty; the only two ids that differ are this node's own tests/test_a_row_replayed_on_attach_reads_as_replay.py cases, which the base arm fails and the tip passes.",
+  "call_sites": [
+    "reckon/crew_follow_commands.py:3613 (crew_follow renders the drawn row and applies REPLAY_PREFIX)",
+    "reckon/crew/station_subscriber.py (subscriber.wake yields the backlog the first poll marks)",
+    "reckon/crew/ticker.py:2244 (the row path feed that receives a marked row and returns it after its settle window)",
+    "reckon/crew/follower_reload.py:212 (the replacement image imports _dim_history_line and _echo_follow_line)",
+    "reckon/cli.py:297 (re-exports the follow helpers onto the cli module)"
+  ],
+  "completed_at": "2026-11-13T12:40:15.868Z",
+  "dispatched_at": "2026-11-13T12:22:39Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:13:55.506231+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:14:09.889039+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "id": "f7baf8a3440",
+      "line": "2199",
+      "severity": "non-blocking",
+      "text": "non-blocking: the station subscriber's first-poll backlog mark (backlog = [True], _first_pass_then_mark at 2199-2213) has no test. Case 1 of tests/test_a_row_replayed_on_attach_reads_as_replay.py runs with _station_subscriber_for returning None (verified: the probe recorded sub_none=True), so the row mark that actually fires is the one in _fleet_replay:1353. A node whose station store exists takes the backlog path at 2205-2213 exclusively, and nothing reddens if that mark is dropped."
+    },
+    {
+      "file": "reckon/crew_follow_commands.py",
+      "id": "f6a9e3e2a80",
+      "line": "3465",
+      "severity": "non-blocking",
+      "text": "non-blocking: replay_row pops the flag at crew_follow:3465 before the json_output branch (3579-3584) emits the event, so a --json consumer receives a replayed row with no marker at all and cannot tell it from a transition. The plan's deliverable asks only for the drawn pipe line, so this does not hold the node, but the flag is destroyed for the one consumer that carries structured data."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read commit by commit against 4d5c4389b7: 17b9c0bb1d changes one source file (53 lines: the REPLAY_PREFIX constant, three mark sites and the render site) and adds the 302-line test, and 19163ef6d8 adds the 84-line evidence fragment; nothing else is touched.",
+    "done_when": "the done_when names a three-case test and the three cases exist at tests/test_a_row_replayed_on_attach_reads_as_replay.py:218,242,254; case 1 asserts every pre-attach row starts with \"[replay] \" and the post-attach transition does not, case 2 asserts crew follow --help carries the literal, case 3 asserts the pipe-resume snapshot is unprefixed, and I re-ran the file at the reviewed head in an extracted tree: 3 passed, EXIT=0.",
+    "goal": "the node goal is to prefix every row a follower replays on attach to a pipe with the literal [replay]; reckon/crew_follow_commands.py:1422 defines REPLAY_PREFIX = \"[replay] \", 1353 marks the fleet replay's baseline and pre-boundary rows, 2474 marks the gap rows, 2199-2213 marks the station subscriber's first-poll backlog, and 3613 applies the prefix at the render point only when the output is not a terminal.",
+    "manifest": "read; it reports status complete, two commits, the three gate arms (3 passed EXIT=0 head, 2 failed EXIT=1 base, 1 failed EXIT=1 negative) and the 12-then-10 failure population; I re-read all five logs under the run directory and every count and EXIT= line matches what the manifest states.",
+    "write_paths": "the fence at the source run's prompt.txt:80-84 declares reckon/crew_follow_commands.py, reckon/crew/follow_checkpoint.py, the evidence fragment and a figures directory; the diff touches reckon/crew_follow_commands.py, the new tests/test_a_row_replayed_on_attach_reads_as_replay.py named by the done_when's own 'Write paths: ... and the new test', and the evidence fragment path 83; follow_checkpoint.py and the figures directory 84 are declared and untouched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_row_replayed_on_attach_reads_as_replay.py:218 reddens on the reinstated regression (logs/node_negative.log shows exactly that case failing), but two of the four mark sites, the gap rows at reckon/crew_follow_commands.py:2474 and the subscriber backlog at 2199-2213, have no assertion at all.",
+    "evidence": "logs/node_head.log at 17b9c0bb1d records 3 passed EXIT=0, logs/node_base.log at 4d5c4389b7 records the two done_when cases failing EXIT=1, and the population pair (logs/base_suite.log 12 failed EXIT=1, logs/after_suite.log 10 failed EXIT=1) shows no added failure.",
+    "fit": "the mark rides on the event dict exactly as reannounced already does at reckon/crew_follow_commands.py:3457, is stripped at the same point, and the module constant REPLAY_PREFIX sits beside the other row-shape constants.",
+    "goal_fidelity": "reckon/crew_follow_commands.py:1353, 2474 and 2199-2213 mark the three delivery paths that hand a pipe what was already on disk, and 3613 applies the prefix, so a replayed row is told apart from news; the read loop opens at runs.watch_stream_cursor's line_boundary so it delivers only post-attach lines and needs no mark.",
+    "reuse": "a search of reckon/ for an existing replay marker found only the terminal-only _dim_history_line (reckon/crew_follow_commands.py:2636) which paints ANSI dim and cannot be grepped out of a pipe, so REPLAY_PREFIX extends the existing pipe-versus-terminal distinction in _follow_replay_visible:2699 rather than duplicating an owner.",
+    "scope_discipline": "every path the diff touches is inside the fence at prompt.txt:80-84 or the test the done_when itself names, and the only declared path left unused is the figures directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to prefix every row a follower replays on attach to a pipe with the literal [replay]; reckon/crew_follow_commands.py:1422 defines REPLAY_PREFIX = \"[replay] \", 1353 marks the fleet replay's baseline and pre-boundary rows, 2474 marks the gap rows, 2199-2213 marks the station subscriber's first-poll backlog, and 3613 applies the prefix at the render point only when the output is not a terminal.\nVERDICT done_when: the done_when names a three-case test and the three cases exist at tests/test_a_row_replayed_on_attach_reads_as_replay.py:218,242,254; case 1 asserts every pre-attach row starts with \"[replay] \" and the post-attach transition does not, case 2 asserts crew follow --help carries the literal, case 3 asserts the pipe-resume snapshot is unprefixed, and I re-ran the file at the reviewed head in an extracted tree: 3 passed, EXIT=0.\nVERDICT write_paths: the fence at the source run's prompt.txt:80-84 declares reckon/crew_follow_commands.py, reckon/crew/follow_checkpoint.py, the evidence fragment and a figures directory; the diff touches the first module, the new tests/test_a_row_replayed_on_attach_reads_as_replay.py named by the done_when's own 'Write paths: ... and the new test', and the fragment path, with follow_checkpoint.py and the figures directory declared and untouched.\nVERDICT manifest: read; it reports status complete, two commits, the three gate arms (3 passed EXIT=0 head, 2 failed EXIT=1 base, 1 failed EXIT=1 negative) and the 12-then-10 failure population; I re-read all five logs under the run directory and every count and EXIT= line matches what the manifest states.\nVERDICT diff: read commit by commit against 4d5c4389b7: 17b9c0bb1d changes one source file (53 lines: the REPLAY_PREFIX constant, three mark sites and the render site) and adds the 302-line test, and 19163ef6d8 adds the 84-line evidence fragment; nothing else is touched.\nCALL_SITES: reckon/crew_follow_commands.py:3613 (crew_follow renders the drawn row and applies REPLAY_PREFIX), reckon/crew/station_subscriber.py (subscriber.wake yields the backlog the first poll marks), reckon/crew/ticker.py:2244 (the row path feed that receives a marked row and returns it after its settle window), reckon/crew/follower_reload.py:212 (the replacement image imports _dim_history_line and _echo_follow_line), reckon/cli.py:297 (re-exports the follow helpers onto the cli module)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew_follow_commands.py:1353, 2474 and 2199-2213 mark the three delivery paths that hand a pipe what was already on disk, and 3613 applies the prefix, so a replayed row is told apart from news; the read loop opens at runs.watch_stream_cursor's line_boundary so it delivers only post-attach lines and needs no mark.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/node_head.log at 17b9c0bb1d records 3 passed EXIT=0, logs/node_base.log at 4d5c4389b7 records the two done_when cases failing EXIT=1, and the population pair (logs/base_suite.log 12 failed EXIT=1, logs/after_suite.log 10 failed EXIT=1) shows no added failure.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path the diff touches is inside the fence at prompt.txt:80-84 or the test the done_when itself names, and the only declared path left unused is the figures directory.\nSCORE durability: 14\nJUSTIFICATION durability: tests/test_a_row_replayed_on_attach_reads_as_replay.py:218 reddens on the reinstated regression (logs/node_negative.log shows exactly that case failing), but two of the four mark sites, the gap rows at reckon/crew_follow_commands.py:2474 and the subscriber backlog at 2199-2213, have no assertion at all.\nSCORE fit: 17\nJUSTIFICATION fit: the mark rides on the event dict exactly as reannounced already does at reckon/crew_follow_commands.py:3457, is stripped at the same point, and the module constant REPLAY_PREFIX sits beside the other row-shape constants.\nSCORE reuse: 19\nJUSTIFICATION reuse: a search of reckon/ for an existing replay marker found only the terminal-only _dim_history_line (reckon/crew_follow_commands.py:2636) which paints ANSI dim and cannot be grepped out of a pipe, so REPLAY_PREFIX extends the existing pipe-versus-terminal distinction in _follow_replay_visible:2699 rather than duplicating an owner.\nFINDING reckon/crew_follow_commands.py:2199 non-blocking: the station subscriber's first-poll backlog mark (backlog = [True], _first_pass_then_mark at 2199-2213) has no test.\nFINDING reckon/crew_follow_commands.py:3465 non-blocking: replay_row pops the flag before the json_output branch emits the event, so a --json consumer receives a replayed row with no marker.\n",
+  "review_node": "review-of-monitor-replayed-row-marked-s130-19163ef6d8e1",
+  "review_run_id": "r-20261113T115314931011-review-of-monitor-replayed-row-marked-s130-19163ef6d8e1",
+  "reviewed_base_sha": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "reviewed_head_sha": "19163ef6d8e1eef0beb2dd436b6ed2b0748dee16",
+  "reviewed_run_id": "r-20261113T055436709382-monitor-replayed-row-marked-s130",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T115314931011-review-of-monitor-replayed-row-marked-s130-19163ef6d8e1"
+  },
+  "scores": {
+    "durability": 14,
+    "evidence": 18,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:40:31.214056+00:00",
+  "total": 105
+}

@@ -24,8 +24,8 @@
   <title>A Held Lane Never Holds A Review | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="6">
-<meta name="plan-modified" content="2026-11-07">
+<meta name="plan-version" content="8">
+<meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -53,6 +53,12 @@
 </div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261107T100007560977-a-queued-review-whose-lane-the-review-reflex-followed-from" data-who="reckon-build" data-when="2026-11-07T14:51:00.630Z">
     <div class="r-comment-body"><p>A review whose route the reflex set by following its run (`named_route.set_by = review-follows-run`, carried by a new `lane_origin` on `dispatch()` and supplied by the run branch of `_dispatch_text_review_for_run`) is now rebound by `_local_fallback` to the local backend with a `route_fallback` naming the held lane, with no `picker_selection` required, while every caller-named route still returns `None`; 3 passed at head, 15 passed / 0 failed across the head arm against 12 passed / 0 failed at base, and the reflex arm fails with EXIT=1 under the declared negative control.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261113T115453089387-review-of-ready-a-held-lane-never-holds-a-re-s2-28383324bd16" data-who="reckon-build" data-when="2026-11-13T12:45:15.271Z">
+    <div class="r-comment-body"><p>landing: reviewed ready-a-held-lane-never-holds-a-re-s2 at base 433d71f07619 head 28383324bd and scored goal_fidelity 17, evidence 14, scope_discipline 16, durability 18, fit 18, reuse 19 with three non-blocking findings; the parsed record is stored under the reviewed run's review-records/.</p></div>
+</div>
+<div class="r-comment" data-section="s2" data-id="c-run-r-20261113T074937936518-ready-a-held-lane-never-holds-a-re-s2" data-who="reckon-build" data-when="2026-11-13T10:56:39.790Z">
+    <div class="r-comment-body"><p>landing: verified the held-lane rebind of a reflex-followed review was already correct at base 433d71f07619 and turned the composition case from an argument capture into a read of the queued request&#x27;s written named_route (set_by=review-follows-run); node tests 3 passed at base and 3 passed at head, declared mutation (every named_route authoritative) fails the rebind case EXIT=1, importer population 153 files 136 failed/932 passed/3 errors at head with zero delta because the node changes no file in it but the one test, which passes at both arms.</p></div>
 </div>
 </section>
 </main>

@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="669">
+<meta name="plan-version" content="671">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1517,6 +1517,12 @@
 </div>
 <div class="r-comment" data-section="s57" data-id="c-close-s57" data-who="reckon-build" data-when="2026-10-24T07:40:00Z">
     <div class="r-comment-body"><p>§57 landed at merge <code>995066408</code>. The metadata index's private parse cache is gone, and <code>file_memo</code> owns the content digest with its stale-text guard. Both test arms pass in full. <a href="/reckon/evidence/archive/a-read-answers-inside-its-deadline-landed.html#s57">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261113T115344381729-review-of-ready-a-read-answers-inside-its-de-s58-bc012596eb33" data-who="reckon-build" data-when="2026-11-13T12:41:02.895Z">
+    <div class="r-comment-body"><p>review of run r-20261113T074648402049-ready-a-read-answers-inside-its-de-s58 at bc012596eb33660412777b0a8b7288cbfb7b282f, stored in the reviewed run's review-records directory</p></div>
+</div>
+<div class="r-comment" data-section="s58" data-id="c-run-r-20261113T074648402049-ready-a-read-answers-inside-its-de-s58" data-who="reckon-build" data-when="2026-11-13T11:25:21.367Z">
+    <div class="r-comment-body"><p>docs/evidence/fragments/a-read-answers-inside-its-deadline/a-stopped-claims-git-answer-is-reused-until-its-worktree-moves.html</p></div>
 </div>
 <div class="r-comment" data-section="s59" data-id="c-defer-s59" data-who="reckon-build" data-when="2026-10-24T05:10:00Z">
     <div class="r-comment-body"><p>Deferred for re-planning. Two content reviews found that the section does not yet name the path that walks a tree twice. On a warm cache, <code>discover_plans</code> walks each tree once through <code>_fresh_discovery</code> (<code>reckon/serve.py</code>, near line 1507) and <code>_external_project_signatures</code> (near line 1431). So a case written against that path passes at base, and its negative control never fires. The live profile's three walks in one call come from a path the section has not identified; the review points at the scan path, where <code>_external_project_signatures</code> runs twice. Also, whether a discovery region is open is held in private context variables in <code>reckon/metadata_index.py</code> (near line 102), so the deliverable needs that file. That file is also §57's, and is held by the-page-paints-from-an-index §15. The section is re-planned once that §15 lands: a census of <code>_walk_discovery_signature</code>'s callers in one warm live call, with each tree, names the repeated walk, and the done-when is written against it.</p></div>

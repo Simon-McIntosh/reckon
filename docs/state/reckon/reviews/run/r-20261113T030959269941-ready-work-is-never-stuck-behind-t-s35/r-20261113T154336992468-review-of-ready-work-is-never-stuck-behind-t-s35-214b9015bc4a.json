@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/queue_edit.py:624 (hold)",
+    "reckon/crew/queue_edit.py:648 (release)",
+    "reckon/crew/admission/selection.py:512 (_launch_reread_refusal)",
+    "reckon/crew_run_commands.py:3011 (_queue_hold_change)"
+  ],
+  "completed_at": "2026-11-13T17:23:16.179Z",
+  "dispatched_at": "2026-11-13T17:15:21Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T18:04:25.920576+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T18:04:33.145158+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html",
+      "id": "f872fb15594",
+      "line": 4,
+      "severity": "non-blocking",
+      "text": "the fragment asserts that ruff check and format check pass on the changed test, but none of the four durable logs it lists is a ruff receipt, so the done_when's clean-ruff clause rests on prose; I verified it independently at the reviewed head (check_exit=0, format_exit=0) but the stored evidence cannot be re-read."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html",
+      "id": "f79e30090f9",
+      "line": 8,
+      "severity": "non-blocking",
+      "text": "the head gate row names b14fde8ac692, not the landed head 214b9015bc4a, so the shipped gate receipt covers a tree that is not the landed one; the repair commit is fragment-only and I re-ran the focused file against 214b9015 in a scratch extraction (5 passed, EXIT=0), which supplies the coverage the receipt omits."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 4c4cf234 to 214b9015; three commits add 41 lines over two files - the parametrised release test across queued and awaiting-upstream, the held/unheld launch test adding the decided assertion and an unheld positive control, and the evidence fragment that replaces the superseded delivery-blocker text; no path under reckon/ changed.",
+    "done_when": "the done_when names a test showing the one-second hold under an occupied lock, a held-after-read request not launched, release restored under the same lock, two negative controls, a zero-added-failure importer population and clean ruff; the test now runs five cases, negative-admission-lock.log and negative-no-reread.log each record the named case failing with EXIT=1, the importer comparison covers 98 files with 0 added ids, and I re-ran the focused file at the reviewed head (5 passed, EXIT=0) and ruff (check_exit=0, format_exit=0).",
+    "goal": "the goal is that a queue hold no longer waits for the admission pass; the landed diff carries no production change because base 4c4cf234 already contains the fix (037d4ec2 is an ancestor of the base and reckon/crew/queue_edit.py at base carries no _admit_lock), so what landed is the proof at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:100-186 that hold and release return under a held admission lock and the pass refuses a request held before launch.",
+    "manifest": "read; it records status complete, commits 8d1c09bea3fa/b14fde8ac692/214b9015bc4a, baseline 54 passed EXIT=0 and head 56 passed EXIT=0 with their log paths, the 98-file importer comparison at 0 added failure ids, and both negative controls naming their failing test ids and EXIT=1.",
+    "write_paths": "the declared paths are reckon/crew/queue_edit.py, reckon/crew/queue_admission.py, the new test and the evidence fragment; the base..head diff touches only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html, both listed in the manifest's changed_paths and in the run's orientation_write_paths."
+  },
+  "justifications": {
+    "durability": "negative-admission-lock.log fails test_hold_applies_*, which would pass again if reckon/crew/queue_edit.py:624 retook the admission lock, and negative-no-reread.log fails the [held] case, which would pass if the re-read at reckon/crew/admission/selection.py:512 were removed; the unheld [unheld] arm at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:184-188 stops either failure from being an artifact of a pass that launches nothing.",
+    "evidence": "the final arms record 54 and 56 passed with EXIT=0 in resumed-final-baseline.log:1-7 and resumed-final-head.log:1-7, and the importer comparison over 98 files records added_failure_ids [] (resumed-importer-comparison.json), but the done_when's ruff clause is asserted in the fragment with no receipt.",
+    "fit": "the test follows the surrounding module's style and its own header (tests/test_a_queue_hold_does_not_wait_for_the_pass.py:1-24) explains the mechanism, and the fragment path follows the node-id convention of docs/evidence/fragments/, while the helpers carry no plan or ticket identifiers.",
+    "goal_fidelity": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:108-140 holds the admission lock in another thread and shows hold and release returning inside one second, which is the goal's behaviour, but the production fix it exercises predates the node at reckon/crew/queue_edit.py:624-690.",
+    "reuse": "the diff adds no production definition and no existing owner was forked; the only added helpers, _call_within and _PassHoldingTheAdmissionLock at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:50-98, have no counterpart elsewhere under tests/, which a search over tests/*.py for an admission-lock holder and a within-budget call found.",
+    "scope_discipline": "git diff --stat 4c4cf234..214b9015 lists only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and the evidence fragment, both inside the declared write paths, and no source path:1 under reckon/ is touched."
+  },
+  "node": "review-of-ready-work-is-never-stuck-behind-t-s35-214b9015bc4a",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a queue hold no longer waits for the admission pass; the landed diff carries no production change because base 4c4cf234 already contains the fix (037d4ec2 is an ancestor of the base and reckon/crew/queue_edit.py at base carries no _admit_lock), so what landed is the proof at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:100-186 that hold and release return under a held admission lock and the pass refuses a request held before launch.\nVERDICT done_when: the done_when names a test showing the one-second hold under an occupied lock, a held-after-read request not launched, release restored under the same lock, two negative controls, a zero-added-failure importer population and clean ruff; the test now runs five cases, negative-admission-lock.log and negative-no-reread.log each record the named case failing with EXIT=1, the importer comparison covers 98 files with 0 added ids, and I re-ran the focused file at the reviewed head (5 passed, EXIT=0) and ruff (check_exit=0, format_exit=0).\nVERDICT write_paths: the declared paths are reckon/crew/queue_edit.py, reckon/crew/queue_admission.py, the new test and the evidence fragment; the base..head diff touches only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html, both listed in the manifest's changed_paths and in the run's orientation_write_paths.\nVERDICT manifest: read; it records status complete, commits 8d1c09bea3fa/b14fde8ac692/214b9015bc4a, baseline 54 passed EXIT=0 and head 56 passed EXIT=0 with their log paths, the 98-file importer comparison at 0 added failure ids, and both negative controls naming their failing test ids and EXIT=1.\nVERDICT diff: read commit by commit from 4c4cf234 to 214b9015; three commits add 41 lines over two files - the parametrised release test across queued and awaiting-upstream, the held/unheld launch test adding the decided assertion and an unheld positive control, and the evidence fragment that replaces the superseded delivery-blocker text; no path under reckon/ changed.\nCALL_SITES: reckon/crew/queue_edit.py:624 (hold), reckon/crew/queue_edit.py:648 (release), reckon/crew/admission/selection.py:512 (_launch_reread_refusal), reckon/crew_run_commands.py:3011 (_queue_hold_change)\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: tests/test_a_queue_hold_does_not_wait_for_the_pass.py:108-140 holds the admission lock in another thread and shows hold and release returning inside one second, which is the goal's behaviour, but the production fix it exercises predates the node at reckon/crew/queue_edit.py:624-690.\nSCORE evidence: 18\nJUSTIFICATION evidence: the final arms record 54 and 56 passed with EXIT=0 in resumed-final-baseline.log:1-7 and resumed-final-head.log:1-7, and the importer comparison over 98 files records added_failure_ids [] (resumed-importer-comparison.json), but the done_when's ruff clause is asserted in the fragment with no receipt.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat 4c4cf234..214b9015 lists only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and the evidence fragment, both inside the declared write paths, and no source path:1 under reckon/ is touched.\nSCORE durability: 19\nJUSTIFICATION durability: negative-admission-lock.log fails test_hold_applies_*, which would pass again if reckon/crew/queue_edit.py:624 retook the admission lock, and negative-no-reread.log fails the [held] case, which would pass if the re-read at reckon/crew/admission/selection.py:512 were removed; the unheld [unheld] arm at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:184-188 stops either failure from being an artifact of a pass that launches nothing.\nSCORE fit: 18\nJUSTIFICATION fit: the test follows the surrounding module's style and its own header (tests/test_a_queue_hold_does_not_wait_for_the_pass.py:1-24) explains the mechanism, and the fragment path follows the node-id convention of docs/evidence/fragments/, while the helpers carry no plan or ticket identifiers.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no production definition and no existing owner was forked; the only added helpers, _call_within and _PassHoldingTheAdmissionLock at tests/test_a_queue_hold_does_not_wait_for_the_pass.py:50-98, have no counterpart elsewhere under tests/, which a search over tests/*.py for an admission-lock holder and a within-budget call found.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html:4 non-blocking: the fragment asserts that ruff check and format check pass on the changed test, but none of the four durable logs it lists is a ruff receipt, so the done_when's clean-ruff clause rests on prose; I verified it independently at the reviewed head (check_exit=0, format_exit=0) but the stored evidence cannot be re-read.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html:8 non-blocking: the head gate row names b14fde8ac692, not the landed head 214b9015bc4a, so the shipped gate receipt covers a tree that is not the landed one; the repair commit is fragment-only and I re-ran the focused file against 214b9015 in a scratch extraction (5 passed, EXIT=0), which supplies the coverage the receipt omits.\n",
+  "review_run_id": "r-20261113T154336992468-review-of-ready-work-is-never-stuck-behind-t-s35-214b9015bc4a",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "214b9015bc4aafa98afac70eda2ba30865f70c77",
+  "reviewed_run_id": "r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+  "reviewer_run_id": "r-20261113T154336992468-review-of-ready-work-is-never-stuck-behind-t-s35-214b9015bc4a",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:40:00+00:00",
+  "total": 111
+}
