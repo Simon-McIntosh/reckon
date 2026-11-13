@@ -1,77 +1,93 @@
 <section id="no-caller-waits-on-a-promotion-landing">
   <h2>Promotion requests are carried by the fleet service</h2>
-  <p>The CLI records a durable request and returns. The review sweep hands off
-  acceptance and review self-promotion after dispatching the reviews it owes;
-  the measured landing pass records a request without reporting the delivery
-  as landed. The admission service drains these requests at the configured
-  promotion width. The service calls the existing synchronous promotion and
-  landing paths, retaining their guards and their receipts.</p>
+  <p>The default <code>crew complete</code> records a durable request and returns.
+  The review sweep dispatches the reviews it owes before requesting acceptance
+  or review self-promotion. A landing pass records the same kind of request
+  without reporting the delivery as landed. The admission service drains these
+  requests at the configured promotion width, calling the existing synchronous
+  promotion and landing paths with their guards and receipts intact.</p>
 
-  <p>The request is authoritative until its terminal receipt is written in the
-  run directory as <code>promotion.json</code>. Renewable run and slot leases,
-  together with in-process claims, exclude duplicate service work and bound
-  concurrency. A fresh service adopts an unfinished request, and a terminal
-  receipt prevents replay when its request file has not yet been retired.
-  Refusals and exceptions remain indexed for the owning session's obligations,
-  including its published snapshot. The pending-landing sweep leaves a run
-  whose promotion is owned by the service alone.</p>
+  <p><code>crew complete --wait</code> retains the synchronous CLI outcome.
+  Internal callers of the promotion function retain their existing behavior.
+  A sweep can explicitly receive the existing bounded worker pool when its
+  caller consumes that pool's report; its production default persists requests.</p>
 
-  <p>Implementation commit:
-  <code>b4840067adb0d8717e49dedb48658ae3d0501796</code>.
-  The new test module covers the CLI, review sweep and landing pass with an
-  injected 30 s promotion; width-two concurrency; failure and refusal receipts;
-  session and snapshot duties; restart adoption; pending and terminal duplicate
-  requests; admission-service draining; and commit identities read from landing
-  and acceptance receipts.</p>
+  <p>The request remains authoritative until its terminal receipt is written
+  as <code>promotion.json</code> in the run directory. Renewable run and slot
+  leases, together with in-process claims, exclude duplicate service work and
+  bound concurrency. A fresh service adopts an unfinished request, and a
+  matching terminal receipt prevents replay during interrupted retirement.
+  Refusals and exceptions remain indexed for session obligations and their
+  published snapshot. The pending-landing sweep leaves a service-owned request
+  to the service.</p>
+
+  <p>Implementation commits:
+  <code>b4840067adb0d8717e49dedb48658ae3d0501796</code> and
+  <code>1ff2fb47fe2cbf8df85f15329d2f300c461043e0</code>.
+  The new test module contains thirteen cases covering delayed CLI, sweep and
+  landing requests; width-two concurrency; failure and refusal receipts;
+  session and snapshot obligations; restart adoption; duplicate requests;
+  admission-service draining; commit identities; and explicit synchronous CLI
+  completion.</p>
 
   <table id="no-caller-waits-on-a-promotion-measures">
-    <caption>Measurements stored in the run directory, with the revision,
-    command and imported module recorded in the gate logs.</caption>
+    <caption>Measurements retained in the assigned run directory. Gate logs
+    identify their revision, command, imported module and working directory.</caption>
     <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
     <tbody>
-      <tr><td>Unmodified synchronous CLI, injected 30 s work</td>
+      <tr><td>Reproduction before repair: synchronous CLI with injected delay</td>
         <td>30.002 s; CLI exit 0</td></tr>
-      <tr><td>Initial delayed-work exploratory gate on all_debug</td>
-        <td>8 passed in 63.11 s; EXIT=0</td></tr>
-      <tr><td>Focused additions on all_debug</td>
-        <td>8 passed in 6.30 s; EXIT=0</td></tr>
-      <tr><td>Declared negative control: execute promotion inside the request</td>
-        <td>The first case waited 30.004 s, failed its five-second assertion,
-        and recorded 1 failed in 31.15 s; EXIT=1</td></tr>
+      <tr><td>Declared mutation: execute promotion inside the request</td>
+        <td><q>crew complete waited 30.004 s on a 30 s promotion</q>;
+        the first case fails its five-second assertion.
+        Latest control: 1 failed in 31.47 s; EXIT=1.</td></tr>
       <tr><td>Armed baseline at
         <code>6d4266db9bf865d1c9f735940c7b798b58834c5f</code></td>
         <td>51 passed in 9.14 s; EXIT=0</td></tr>
       <tr><td>Importer baseline on all_debug</td>
-        <td>40 failed, 962 passed, 7 warnings in 146.61 s; EXIT=1</td></tr>
-      <tr><td>Importer head at the implementation commit, including the new tests</td>
-        <td>84 failed, 930 passed, 7 warnings in 265.40 s; EXIT=1.
-        Forty-four failure IDs were added and none removed.</td></tr>
+        <td>40 failed, 962 passed, 7 warnings in 146.61 s; EXIT=1.
+        The additional helper-owner file passes both cases at that base.</td></tr>
+      <tr><td>Initial candidate importer comparison</td>
+        <td>44 added failure IDs. This exposed CLI tests requiring the
+        synchronous outcome and sweep tests consuming the worker report.</td></tr>
+      <tr><td>Compatibility candidate importer comparison on all_debug</td>
+        <td>40 failed, 977 passed, 7 warnings in 224.56 s; EXIT=1.
+        Zero added and zero removed failure IDs against the recorded base.</td></tr>
     </tbody>
   </table>
 
-  <p><strong>Live host evidence and its limits.</strong> On
-  <code>98dci4-clu-2023</code>, a real CLI subprocess at the implementation
-  head returned <code>promotion-requested</code> in 3.871 s, before its
-  service's injected 30 s delay finished. The service subsequently recorded the
-  existing guard's refusal because the probe cited its dispatch base. That
-  proves the live request returned before the guarded work and that the refusal
-  was retained; it does not prove a successful live promotion. A second probe
-  with a delivery beyond its base returned the request in 5.982 s, exceeding
-  the bound, and its helper stopped before draining it. Both logs are retained;
-  live startup latency is not established as consistently below five seconds.</p>
+  <p>The CLI outcome tests now pass <code>--wait</code> without changing their
+  assertions. These cover ledger reads, scoped suite receipts, commit lists,
+  acceptance leases, unchanged runs, executable gates, promotion and scope
+  guards, and consequence gates; the shared landing-repository helper does the
+  same. Three sweep test files explicitly supply the existing worker pool to
+  retain their worker/report/failure ordering contract. The exact file-to-reason
+  mapping is in <code>test-migrations.json</code> and the manifest.</p>
 
-  <p><strong>Remaining acceptance work.</strong> The importer comparison does
-  not meet the no-added-failure measure. Its failure IDs and the pending request
-  to update affected importer tests are recorded in the manifest's
-  <code>outside_scope</code> field. No importer test was edited. The final armed
-  after arm is run after this evidence fragment is committed and is recorded at
-  that final head in the manifest; this fragment does not claim that a pending
-  measurement passed.</p>
+  <p><strong>Live host evidence.</strong> At
+  <code>1ff2fb47fe2cbf8df85f15329d2f300c461043e0</code>, a real CLI subprocess
+  on <code>98dci4-clu-2023</code> returned <code>promotion-requested</code>
+  before its injected 30 s promotion began. The service subsequently completed
+  the real promotion, recording
+  <code>fbd261a757262c6acafc97e2ef898c6e760b24f9</code> as promoted 33.641 s
+  after the CLI returned. The subprocess took 5.373 s including startup, so the
+  helper's extra five-second assertion failed after the successful receipt was
+  recorded. Earlier subprocess readings were 3.871 s and 5.982 s; the first
+  retained an existing guard refusal for citing its dispatch base. These logs
+  establish that the live caller returns before promotion finishes; they do
+  not establish consistently sub-five-second process startup on this host.</p>
+
+  <p>The final armed after arm and importer comparison run after this fragment
+  is committed. Their exact full revision, commands, summaries and failure-ID
+  comparison are recorded in the manifest; no pending result is claimed here.
+  The unchanged baseline failures are retained for the coordinator's comparison.
+  Verification of the combined merged tree belongs to the integration node.</p>
 
   <p>Durable record:
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/manifest.md</code>.
-  The same directory holds <code>negative-control.log</code>,
-  <code>baseline-suite.log</code>, <code>baseline-importers.log</code>,
-  <code>head-importers.log</code>, <code>importer-delta.json</code>,
-  <code>live-complete.log</code> and <code>live-complete-finished.log</code>.</p>
+  The same directory retains <code>baseline-suite.log</code>,
+  <code>baseline-importers.log</code>, <code>baseline-supplement.log</code>,
+  <code>compatibility-importers.log</code>, <code>compatibility-delta.json</code>,
+  <code>negative-control-final.log</code>, <code>live-final.log</code>,
+  the earlier attempt logs, and the final-head measurement logs.</p>
 </section>
