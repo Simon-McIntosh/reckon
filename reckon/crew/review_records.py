@@ -59,7 +59,13 @@ def review_store_tick() -> Iterator[None]:
 
 
 def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
+    # Inside a tick the first answer for a directory serves every later reader,
+    # the open-work selection as well as the full listing: selecting reads every
+    # live pointer and stats every file it names, so taking it per record makes
+    # one refresh quadratic in the store's size.
     stores = _TICK_REVIEW_STORES.get()
+    if stores is not None and directory in stores:
+        return stores[directory]
     selected = open_run_index.review_paths(directory)
     if selected is not None:
         files = {}
@@ -68,6 +74,8 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
                 files[path] = path.stat()
             except OSError:
                 continue
+        if stores is not None:
+            stores[directory] = files
         return files
     if stores is None:
         return None
@@ -1452,13 +1460,21 @@ def _update_store_entries(
     """
     held: dict[str, dict[str, Any]] = {entry["name"]: entry for entry in previous}
     kept: dict[str, dict[str, Any]] = {}
+    # One listing answers both the names and their stats, so the store is
+    # selected once per refresh whether or not a tick is sharing it.
+    listing = _tick_store(directory)
     try:
-        candidates = sorted(_store_paths(directory, "*.json"))
+        if listing is None:
+            candidates = sorted(directory.glob("*.json"))
+        else:
+            candidates = sorted(
+                path for path in listing if fnmatchcase(path.name, "*.json")
+            )
     except OSError:
         candidates = []
     for path in candidates:
         try:
-            info = _record_stat(path)
+            info = path.stat() if listing is None else listing[path]
         except OSError:
             continue
         if not stat.S_ISREG(info.st_mode):
