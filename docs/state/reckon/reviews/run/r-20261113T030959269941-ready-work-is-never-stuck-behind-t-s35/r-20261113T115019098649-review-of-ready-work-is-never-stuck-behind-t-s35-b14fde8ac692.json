@@ -1,0 +1,103 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "hold called through queue_edit while another thread holds the admission lock returns inside the one-second budget, reports no error, and the pointer reads held",
+      "fails_if": "queue_edit._change_hold takes queue_admission._admit_lock for its write; negative-admission-lock.log shows exactly that mutation reddening this case with the budget message.",
+      "path": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:132-137"
+    },
+    {
+      "assertions": "release under the same held lock returns inside the budget and the pointer reads the phase the fixture wrote",
+      "fails_if": "release re-awaits the admission lock, or _change_hold stops copying queue_hold.prior_phase into the pointer, in which case the awaiting-upstream arm reads held instead of awaiting-upstream.",
+      "path": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:138-143"
+    },
+    {
+      "assertions": "the request reached the pass's launch decisions at least once in both arms",
+      "fails_if": "admit_once stops calling _plan_review_owed for a queued request; this is the anti-vacuity guard that stops the held arm passing because the pass did nothing.",
+      "path": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:181"
+    },
+    {
+      "assertions": "unheld arm launches the request, reports it in result[launched], and the pointer reads running",
+      "fails_if": "the pass refuses or filters the request for an unrelated reason; it is the positive control that fixes the meaning of the held arm's empty launched list.",
+      "path": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:182-186"
+    },
+    {
+      "assertions": "held arm records no launch, leaves the pointer held, and emits one refused-before-launch verdict naming the hold",
+      "fails_if": "admission/selection.py:471 stops calling _launch_reread_refusal before _launch_queued; negative-no-reread.log shows that mutation launching the held request.",
+      "path": "tests/test_a_queue_hold_does_not_wait_for_the_pass.py:187-193"
+    }
+  ],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_edit.py:_change_hold:580",
+    "reckon/crew/queue_edit.py:hold:624",
+    "reckon/crew/admission/selection.py:admit_once:471",
+    "reckon/crew/admission/launching.py:_launch_queued:244",
+    "reckon/crew_run_commands.py:crew_hold:2912"
+  ],
+  "completed_at": "2026-11-13T12:18:21.633Z",
+  "dispatched_at": "2026-11-13T12:06:52Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "superseded: the run was resumed on this finding and rewrote its evidence fragment to record the completed measures; a fresh review of the new head is queued",
+      "recorded_at": "2026-11-13T15:43:36.628135+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; the fresh review of the resumed head supersedes it",
+      "recorded_at": "2026-11-13T15:43:52.977466+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html",
+      "line": "6",
+      "severity": "blocking",
+      "text": "blocking: the landed evidence fragment records the superseded first attempt, stating the broader importer comparison 'was stopped without a completion claim' and that 'Coordinator ratification of tests/test_a_queue_hold_does_not_wait_for_the_pass.py is required before promotion and the remaining gate', while the run's own resumed receipts record that comparison completed at both pinned revisions with 98 files and zero added failures and the manifest declares the node complete; the fragment also cites 5 passed and 51 passed where the final arms report 54 and 56, so a reader of the spliced plan is told the measure was not met and the node is blocked when both are false."
+    },
+    {
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html",
+      "line": "5",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment asserts 'Ruff check and format check pass on the changed test' and no ruff log exists anywhere under the run directory, so the named done_when clause is claimed rather than measured; re-running ruff check --no-cache and ruff format --check on tests/test_a_queue_hold_does_not_wait_for_the_pass.py at b14fde8ac6 passes both, so the claim is true and only its receipt is missing."
+    }
+  ],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-final-head.log",
+    "after_revision": "b14fde8ac69275dffce1f805a2637474bcc67fc0",
+    "after_summary": "56 passed in 9.56s; EXIT=0",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-final-baseline.log",
+    "baseline_revision": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+    "baseline_summary": "54 passed in 9.82s; EXIT=0",
+    "negative_control_logs": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/negative-admission-lock.log (1 failed, EXIT=1), negative-no-reread.log (1 failed, EXIT=1)",
+    "ruff_note": "no ruff log exists under the run directory; the leader re-ran ruff check --no-cache and ruff format --check on tests/test_a_queue_hold_does_not_wait_for_the_pass.py at b14fde8ac6 and both passed"
+  },
+  "independent_source_note": "No added assertion compares a value against the same variable the test handed in: the reviewed phases are read back through runs.read_pointer or from the admit_once result, and the launch and decision lists are filled by the monkeypatched launcher and hook rather than by the test's own inputs.",
+  "item_verdicts": {
+    "diff": "Read both commits against base 4c4cf234390f5326b995cee7ad6bda55fe01b5c0: 8d1c09be adds two parametrizations and an unheld positive control to the existing test file, and b14fde8ac6 adds a six-line evidence fragment recording the first attempt.",
+    "done_when": "The done_when names a test file plus two negative controls, an importer-population delta and a scoped ruff result; the manifest records tests/test_a_queue_hold_does_not_wait_for_the_pass.py at 5 passed, negative-admission-lock.log and negative-no-reread.log each EXIT=1 on the named case, and resumed-importer-comparison.json with 98 files and added_failure_ids []; the ruff clause has no log anywhere in the run directory, though the leader's own check of that file passes.",
+    "goal": "The node goal is that a queue hold does not wait for the same admission lock a pass holds; the landed diff adds no production code because reckon/crew/queue_edit.py:580-647 already writes one pointer through runs._pointer_lock and never takes the admission lock, so the delivered artefact is the verification of that property rather than a new capability.",
+    "manifest": "Read manifest.md at status complete with commits 8d1c09bea3fa5e88a86a1caf591e0d50769e669c and b14fde8ac69275dffce1f805a2637474bcc67fc0, a 98-file importer comparison at zero added failures, both pins gated on all_debug jobs 1313605 and 1313612, and an explicit statement that the committed fragment predates the resumed receipts.",
+    "write_paths": "The dispatch grants reckon/crew/queue_edit.py and reckon/crew/queue_admission.py plus the new test, and the orientation line adds the evidence fragment; both commits touch only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html, and no product source is modified."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a queue hold does not wait for the admission pass; reckon/crew/queue_edit.py:624-647 already writes one pointer under the pointer lock and takes no admission lock, and the diff adds no product code.\nVERDICT done_when: the done_when names a test file, two negative controls, an importer delta and scoped ruff; the manifest records 5 of 5 cases, both controls at EXIT=1 on their named case and 98 importer files with zero added failures, while the ruff clause has no log in the run directory.\nVERDICT write_paths: the grant is reckon/crew/queue_edit.py, reckon/crew/queue_admission.py, the new test and the evidence fragment; the two commits touch only tests/test_a_queue_hold_does_not_wait_for_the_pass.py and the fragment.\nVERDICT manifest: read at status complete with two commits, both all_debug gate arms, a 98-file importer comparison and an explicit note that the committed fragment predates the resumed receipts.\nVERDICT diff: read both commits against base 4c4cf234: 8d1c09be parameterised two existing cases and added an unheld positive control, b14fde8ac6 appended a six-line evidence fragment.\nCALL_SITES: reckon/crew/queue_edit.py:_change_hold:580, reckon/crew/queue_edit.py:hold:624, reckon/crew/admission/selection.py:admit_once:471, reckon/crew/admission/launching.py:_launch_queued:244, reckon/crew_run_commands.py:crew_hold:2912\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/queue_edit.py:624-647 satisfies the goal against the base revision and the delivery is its verification, so the node adds no new capability of its own.\nSCORE evidence: 15\nJUSTIFICATION evidence: resumed-final-baseline.log and resumed-final-head.log record 54 and 56 passed with EXIT=0 and negative-admission-lock.log records the red case, but the ruff clause named in the done_when has no log anywhere under the run directory.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole diff is tests/test_a_queue_hold_does_not_wait_for_the_pass.py and docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html, both inside the granted paths.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queue_hold_does_not_wait_for_the_pass.py:181 states the request reached the launch decisions and :182-186 launches it unheld, so the held arm's empty launched list cannot pass vacuously.\nSCORE fit: 18\nJUSTIFICATION fit: the added cases follow the module's own idiom around tests/test_a_queue_hold_does_not_wait_for_the_pass.py:52-105 and add no symbol carrying a plan label.\nSCORE reuse: 20\nJUSTIFICATION reuse: no production definition is added and the coverage extends the owner file, whose phase-restore case already lives at tests/test_queue_hold_release.py:109 without the admission lock held.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html:6 blocking: the fragment records the superseded first attempt, claiming the importer comparison was stopped and that ratification is required before promotion, while the resumed receipts record 98 files and zero added failures at both pins and the manifest declares the node complete.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s35.html:5 non-blocking: the fragment claims scoped ruff passes with no ruff log in the run directory; re-running ruff check and ruff format --check on the changed test passes both, so only the receipt is missing.\n",
+  "review_run_id": "r-20261113T115019098649-review-of-ready-work-is-never-stuck-behind-t-s35-b14fde8ac692",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "b14fde8ac69275dffce1f805a2637474bcc67fc0",
+  "reviewed_run_id": "r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:35:00.000000+00:00",
+  "total": 109
+}
