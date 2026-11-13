@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="68">
+<meta name="plan-version" content="69">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -177,6 +177,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261112T060747023508-a-batch-entry-s-context-fit-is-judged-at-queue-t" data-who="reckon-build" data-when="2026-11-12T07:14:23.432Z">
     <div class="r-comment-body"><p>§7 — a batch entry is measured against the window of the lane it resolves for before any pointer is written: node_context_fit_finding refuses an oversized entry in its batch row naming the estimate, the window and the dominant file, a path declared with --regenerate-path is not sized, and an entry inside the window queues; gate 54 passed, base arm 32 failed / 236 passed against head 32 failed / 236 passed with identical failure ids (added failures 0), and the declared mutation turns the gate red with the oversized entry reported queued.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261113T033755088312-ready-a-queued-request-is-checked-s7" data-who="reckon-build" data-when="2026-11-13T11:51:28.132Z">
+    <div class="r-comment-body"><p>ready-a-queued-request-is-checked-s7 — verified at base 4e19968951 that a batch entry&#x27;s context fit is already judged at queue time: node_context_fit_finding is called by _queue_batch before queue_one, so an oversized entry is refused in its batch row naming the estimate and window with no pointer written, a regenerate path is not charged, and an in-window entry queues; gate 3 passed, armed suite 51 passed on both arms, negative control (return None at the guard&#x27;s entry) red with the oversized entry queuing.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261107T175329716070-admission-refusal-named-in-obligation" data-who="reckon-build" data-when="2026-11-07T19:19:30.185Z">
     <div class="r-comment-body"><p>A queued request admission refused on its node contract now yields a `queued-contract-refused` duty whose reason carries the refusal's own property names and whose next_command is `reckon crew queue edit --run &lt;id&gt;` for an editable property or `reckon crew queue drop --run &lt;id&gt;` for a plan-owned one; the refused pointer read `run-queued` / "waiting for a lane slot" before, and `tests/test_a_refused_request_names_its_refusal.py` shows 3 passed EXIT=0 at the head against 2 failed 1 passed EXIT=1 at the base.</p></div>
