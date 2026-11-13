@@ -24,8 +24,8 @@
   <title>A Re-exec Never Orphans A Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="30">
-<meta name="plan-modified" content="2026-11-11">
+<meta name="plan-version" content="31">
+<meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -112,6 +112,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261111T074545391837-ab-codex-anchored-a-reexec-never-orphans-a-dis-s3" data-who="reckon-build" data-when="2026-11-11T08:10:16Z">
     <div class="r-comment-body"><p>Behavior already present at 1c50f8651d2f0f98f48f3fab45030df10a318a33; existing discard cases 2 passed, both mutations each fail their intended case, sequential scoped suite arms 51 passed each with zero added failures; no repository changes.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T032149110034-ready-a-reexec-never-orphans-a-dis-s3" data-who="reckon-build" data-when="2026-11-13T12:19:54.131Z">
+    <div class="r-comment-body"><p>§3 — the behaviour was already present at base and verified, not reimplemented: discard releases the node claim of the run it removed through _NodeDispatchClaim.release() and leaves a claim naming another run standing; the test gained the missing no-`.reclaimed-`-artifact assertion, all three mutations fired their intended case, and the broad 68-file arm added zero failures (547 passed/15 failed at head, the identical 15 at base).</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261106T184512012685-review-of-list-a-run-stuck-before-launch-as-a-launchfailure-duty-b846274ba7ae" data-who="reckon-build" data-when="2026-11-06T18:55:23.955Z">
     <div class="r-comment-body"><p>an independent review of run r-20261106T180357392086 scores all six dimensions (19/18/19/18/18/20, total 112) at base d98b74b531..head b846274ba7, finds no added failures between the reviewed run's own baseline and after arms, and records two non-blocking findings</p></div>
