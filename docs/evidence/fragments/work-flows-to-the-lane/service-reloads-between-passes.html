@@ -60,10 +60,20 @@
   test fails because its original PID is stopped and replaced during the pass; that
   test passes at the delivered source head. The overrun case also detects the missing
   bound in the restart log. The mutation is confined to a disposable extraction.</p>
+  <p id="service-reloads-between-passes-environment-control">Removing the worker
+  environment's service-path removal yields <strong>4 failed, 59 passed</strong>,
+  <code>EXIT=1</code>. Every child-environment case then reports the inherited or
+  overlaid boundary path. Those same four cases pass at the delivered head.</p>
+  <p id="service-reloads-between-passes-stability">The disputed setup case was run
+  five times at base and five times at source head, with one log per arm and a
+  separate temporary directory per repetition. All ten repetitions pass. The
+  earlier <code>FileExistsError</code> is not reproduced and is not classified as
+  pre-existing. The fresh importer comparison, expanded to include direct worker
+  launch importers, has identical failing IDs and no setup errors.</p>
   <p id="service-reloads-between-passes-provenance">Accepted measurements use isolated Git
   metadata naming their exact revisions and print the imported module path and
-  resolved working directory. Base, head and mutation arms run sequentially in separate
-  partition jobs. Exploratory arms using the worktree's live Git pointer are superseded.
+  resolved working directory. Base, head and mutation arms run sequentially on
+  <code>all_debug</code> allocations with at most four pytest workers. Exploratory arms using the worktree's live Git pointer are superseded.
   Test scratch is removed after each job; the cancelled exploratory job's scratch was
   explicitly removed on its owning node. Ruff adds no findings across the four
   changed Python files: the two worker-launch findings already exist at base.
