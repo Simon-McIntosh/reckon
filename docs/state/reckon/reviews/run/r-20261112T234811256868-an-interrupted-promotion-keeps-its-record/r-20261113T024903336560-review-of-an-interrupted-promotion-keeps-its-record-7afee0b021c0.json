@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1882",
+    "reckon/crew_run_commands.py:3607"
+  ],
+  "completed_at": "2026-11-13T03:48:21.522Z",
+  "dispatched_at": "2026-11-13T03:36:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "471",
+      "severity": "non-blocking",
+      "text": "non-blocking: the comment says the record survives because the pointer could not be written, but _retire_interrupted_landing catches only runs.CrewError and write_json_atomically lets OSError propagate, so a real pointer write failure aborts the pass instead of producing attempt-not-retired; the False return is reached on a pointer read or lock CrewError. The record still survives either way, so the behaviour the goal needs holds; only the stated mechanism is wrong."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against 4d9818a8c7; 3509867a32 adds the `if not retired` guard and the failed-retirement case, 7afee0b021 refreshes the evidence fragment and arm counts; 119 insertions, 38 deletions, no peer evidence overwritten.",
+    "done_when": "the done_when's case at tests/test_a_finished_pending_landing_retires_its_run.py:156 is unchanged and still makes clear_pending raise; the delta adds tests/test_a_finished_pending_landing_retires_its_run.py:205 for a failed retirement, and the manifest records 55/57 passed, 44/46 passed and a red negative control at EXIT=1.",
+    "goal": "the node's goal is to retire an interrupted promotion's land attempt before clearing its pending-landing record; the delta closes the remaining hole by clearing only after a successful retirement at reckon/crew/pending_landing.py:483.",
+    "manifest": "read; status complete, tests line names the literal pytest command, test_logs lists five logs each opening with revision and command and ending in a bare EXIT= line, and baseline_suite/after_suite both record completed true with zero failures.",
+    "write_paths": "the manifest declares reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py, the evidence fragment and a figure directory; every path in the delta's diff is inside them and no figure path was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_finished_pending_landing_retires_its_run.py:205-249 asserts the results row and the surviving record after the retirement returns False, and negative_control.log shows that assertion reddening when the guard is removed; the assertion compares the sweep's output to a literal, not to a value the test handed the code.",
+    "evidence": "base_suite.log and after_suite.log record 55 and 57 passed with EXIT=0 at f24adf8e and 7afee0b021, base_pending.log and head_pending.log record 44 and 46 passed, and negative_control.log records the declared mutation failing test_a_record_survives_when_the_attempt_cannot_be_retired at EXIT=1; sacct confirms job 1312896 ran on all_debug, not the fleet node.",
+    "fit": "reckon/crew/pending_landing.py:471-482 keeps the module's comment-then-branch idiom and extends the local status vocabulary (retried-unfinished, gave-up, dropped-unpromoted) with attempt-not-retired rather than introducing a new mechanism.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:469-482 now clears the pending-landing record only when _retire_interrupted_landing returned True, which is the record-keeping property the goal names and the fix for the prior review's finding at the old line 468.",
+    "reuse": "the delta extends finish_pending_landings and _retire_interrupted_landing, the owners of attempt settlement in reckon/crew/pending_landing.py; a search over reckon/crew for landing-status vocabulary found only pending_landing.py itself, so no owner was forked.",
+    "scope_discipline": "git diff 4d9818a8c7b59179da51ff0d40fdaf7df0d2cfdf 7afee0b021 touches only reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py and docs/evidence/fragments/the-monitor-reads-each-fact-once/an-interrupted-promotion-keeps-its-record.html, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the delta from 4d9818a8c7 to 7afee0b021 repairs the prior finding by clearing the pending-landing record only when the attempt retirement succeeded; reckon/crew/pending_landing.py:469-482 is the guard.\nVERDICT done_when: the done_when's case at tests/test_a_finished_pending_landing_retires_its_run.py:156 is unchanged and still makes clear_pending raise, and the delta adds a failed-retirement case at :205; the manifest records 55/57 passed, 44/46 passed and a red negative control at EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py and the evidence fragment; git diff --stat 4d9818a8c7..7afee0b021 touches exactly those three.\nVERDICT manifest: read; status complete, tests line carries the literal pytest command, five logs each open with revision and command and end EXIT=, and baseline_suite/after_suite both completed true with zero failures.\nVERDICT diff: two commits read; 3509867a32 adds the `if not retired` guard and the new case, 7afee0b021 refreshes the evidence fragment and arm counts; 119 insertions, 38 deletions, all inside the declared paths.\nCALL_SITES: reckon/crew/queue_landing.py:1882, reckon/crew_run_commands.py:3607\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:469-482 clears the record only after a successful retirement, which is the property the goal names and the fix for the prior review's finding.\nSCORE evidence: 18\nJUSTIFICATION evidence: base_suite.log and after_suite.log record 55 and 57 passed at EXIT=0, base_pending.log and head_pending.log record 44 and 46 passed, and negative_control.log records the declared mutation failing its case at EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff 4d9818a8c7..7afee0b021 touches only the three files the manifest declares as write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_finished_pending_landing_retires_its_run.py:205-249 fails if the `if not retired` guard is removed, as negative_control.log shows, though the untested OSError write path means the stated write-failure mechanism is not itself guarded.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/pending_landing.py:471-482 keeps the module's comment-then-branch idiom and extends its local status vocabulary rather than adding a mechanism.\nSCORE reuse: 20\nJUSTIFICATION reuse: the delta extends finish_pending_landings and _retire_interrupted_landing, the owners of attempt settlement; a search over reckon/crew found no other landing-status vocabulary to fork.\nFINDING reckon/crew/pending_landing.py:471 non-blocking: the comment attributes the false return to a failed pointer write, but _retire_interrupted_landing catches only runs.CrewError while write_json_atomically lets OSError propagate, so a write failure aborts the pass rather than reporting attempt-not-retired; the record survives either way, so only the stated mechanism is wrong.\n",
+  "review_run_id": "r-20261113T024903336560-review-of-an-interrupted-promotion-keeps-its-record-7afee0b021c0",
+  "reviewed_base_sha": "4d9818a8c7b59179da51ff0d40fdaf7df0d2cfdf",
+  "reviewed_head_sha": "7afee0b021c08d1a76bf221c15a0b2cb00da9b73",
+  "reviewed_run_id": "r-20261112T234811256868-an-interrupted-promotion-keeps-its-record",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T04:48:15.149220+00:00",
+  "total": 114
+}
