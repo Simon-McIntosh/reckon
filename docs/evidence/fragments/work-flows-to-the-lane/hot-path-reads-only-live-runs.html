@@ -38,22 +38,17 @@
     overlay tar are retained. The independent landing positive control records
     <code>1 passed, 12 deselected</code>.</p>
   <table id="hot-path-reads-only-live-runs-gates">
-    <caption>Complete all_debug receipts; broad regression comparison remains under verification</caption>
+    <caption>Complete all_debug receipts; sequential baseline/head importer comparison</caption>
     <thead><tr><th>Arm</th><th>Revision</th><th>Result</th></tr></thead>
     <tbody>
       <tr><td>Baseline node gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>51 passed in 7.05 s</td></tr>
       <tr><td>Product-source node gate</td><td><code>a2df24b2c006889922bc5622185facaba0cd34d6</code></td><td>64 passed in 83.16 s</td></tr>
-      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>145 failed, 3971 passed, 4 skipped, 3 errors</td></tr>
-      <tr><td>Latest head importer gate</td><td><code>a2df24b2c006889922bc5622185facaba0cd34d6</code></td><td>147 failed, 3982 passed, 4 skipped, 3 errors; 3 added failing ids</td></tr>
+      <tr><td>Latest baseline importer gate</td><td><code>f6b67f0a31c3540f6292a43ac37a41834da0ca6b</code></td><td>145 failed, 3971 passed, 4 skipped, 11 warnings, 4 errors in 1248.07s (0:20:48)</td></tr>
+      <tr><td>Latest head importer gate</td><td><code>88466bdd6599a54f262a4593952488a38c718a48</code></td><td>147 failed, 3982 passed, 4 skipped, 11 warnings, 4 errors in 1255.22s (0:20:55); 2 added failing ids</td></tr>
     </tbody>
   </table>
   <p>The initial 82 added importer failures exposed reader compatibility contracts
-    and have been repaired at source. The latest comparison still adds launch
-    reaper, pace receipt and pane settle failures. A sequential baseline/head
-    comparison with two workers and whole-file scheduling is running; its result
-    is required before the zero-added-failures measure can be claimed. Existing
-    failures vary between baseline runs, and isolated launch probes pass at both
-    revisions. These observations do not replace the complete comparison.</p>
+    and have been repaired at source. The complete sequential baseline/head comparison still adds 2 failing ids: tests/test_dispatch_records_the_pace_row.py::test_a_promoted_run_replays_its_allowance_from_the_committed_row, tests/test_one_station_per_node_runs_the_tick.py::test_one_station_keeps_every_session_transition_once_across_restart. Both arms use two pytest workers with whole-file scheduling on all_debug. The baseline remains red; complete failure ids and removed failures are preserved in <code>repair-head-stable-delta.json</code>. Earlier four-worker comparisons and isolated launch probes are retained as stability evidence.</p>
   <p>Three existing test files now prove their decode counters with an explicit
     history read, permit promotion to decode zero historical rows, or observe the
     indexed named-row lookup in their positive control. Their per-key decode
@@ -85,7 +80,7 @@
     <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T022704207140-hot-path-reads-only-live-runs</code>.
     Principal receipts are <code>repair-base-current-suite.log</code>,
     <code>repair-head-third-suite.log</code>,
-    <code>repair-head-third-delta.json</code>,
+    <code>repair-head-stable-delta.json</code>, <code>repair-base-stable-importers.log</code> and <code>repair-head-stable-importers.log</code>,
     <code>validated-negative-control-suite.log</code>,
     <code>landing-control-suite.log</code>, <code>repair-base-live.log</code> and
     <code>validated-head-live.log</code>. The final-head gate follows the evidence
