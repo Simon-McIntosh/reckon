@@ -38,3 +38,41 @@
   comparison loads the base predicate from its committed source and evaluates
   it beside the head predicate in one dry sweep.</p>
 </section>
+
+<section id="retention-retires-a-review-run-result-check">
+  <h2>A reviewer keeps its directory until its own readable result is stored</h2>
+  <p>The initial measurements above describe the source before the stored-result
+  check. Review identity exempts the run from a review of itself; it now also
+  owes a readable result produced by that reviewer. Retention searches the
+  shared staging index and committed run and plan records, matches the reviewer
+  identity in the content, and uses the shared subject, material and status
+  checks. Missing or unreadable results keep the directory with the explicit
+  <code>missing-review-result</code> reason. Committed locations are indexed
+  once per sweep, and selected bytes are read again before removal.</p>
+  <table id="retention-retires-a-review-run-result-measures">
+    <caption>Repair source head <code>c3bf3de61fed9e3dcef12c2b5b37f0cf5922c7e4</code>;
+    every arm ran sequentially on all_debug in job 1313739.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Original base</td><td>51 passed; EXIT=0.</td></tr>
+      <tr><td>Repair base</td><td>57 passed; EXIT=0.</td></tr>
+      <tr><td>Repaired head</td><td>65 passed; EXIT=0. Eight additional cases:
+      missing record, invalid JSON, invalid UTF-8, wrong reviewer, unusable
+      status, no review material, valid staging result and valid plan result.</td></tr>
+      <tr><td>Answering product change reversed with new checks retained</td>
+      <td>6 failed, 59 passed; EXIT=1. Every unusable-result case deletes the
+      reviewer instead of keeping it.</td></tr>
+      <tr><td>Importer delta</td><td>3 failed, 202 passed; EXIT=1, with the
+      same failure identities as the original base; zero added.</td></tr>
+      <tr><td>Paired live dry run</td><td>500 examined, 209 judged: 169 offered
+      versus zero under the original predicate; 28 reviewers withheld for their
+      own missing or unreadable result, 12 other runs withheld for an owed
+      review, and zero directories removed.</td></tr>
+      <tr><td>Scoped Ruff</td><td>Check and format check pass; EXIT=0.</td></tr>
+    </tbody>
+  </table>
+  <p>The two-file gate command is identical at the repair base and repaired
+  head. The separately recorded original-base arm omits the new test file,
+  which did not exist there. All commands, revisions, imported module paths,
+  reversal evidence and the live report are preserved in the run directory.</p>
+</section>
