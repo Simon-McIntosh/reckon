@@ -24,7 +24,7 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="69">
+<meta name="plan-version" content="70">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -176,6 +176,12 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261111T222113767813-a-lane-change-drops-the-anchored-instruction" data-who="reckon-build" data-when="2026-11-11T23:09:39.542Z">
     <div class="r-comment-body"><p>An anchored instruction carried in a lane change's prompt is now dropped by a launch that seeds no anchored server: with_anchored_edit_instruction strips the block on every launch step and launch_plan always calls it, so the prompt names the tools exactly when the launch seeds them; suite files read 84 passed at base f238d113f and 92 at head, and removing the strip fails six cases with EXIT=1.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261112T233127145467-review-of-interim-arm-report-6e212b90e479" data-who="reckon-build" data-when="2026-11-13T00:07:33.809Z">
+    <div class="r-comment-body"><p>independent review of r-20261112T225203868878-interim-arm-report at head 6e212b90e479d2093e791325f001905a18b6d3df against base 06e99ec0ed92641df95fbd2b0414bc94520c518c stored as parsed with all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 19, durability 7, fit 15, reuse 4; total 79), three non-blocking findings, and added_failure_count 0</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261112T225203868878-interim-arm-report" data-who="reckon-build" data-when="2026-11-12T23:28:41.652Z">
+    <div class="r-comment-body"><p>the evidence record at docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/interim-arm-report.html now carries the per-arm table with 90% intervals (one landed run per arm: omp-local 22.56M, clive-anchored 24.74M, codex-anchored 36.60M, codex 55.92M, clive 59.74M of cumulative input per landed node), the population with every run by id, the effort-hour mix, the draw&#x27;s seed 20261112, and the controls; it draws no verdict; the negative control is undefined as its population forces</p></div>
+</div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261110T203544773136-review-of-anchored-edit-tool-27ed13983a3d" data-who="reckon-build" data-when="2026-11-10T20:58:16.138Z">
     <div class="r-comment-body"><p>Reviewed run r-20261110T192355232896-anchored-edit-tool at head 27ed13983a3d19b3a69b18e35b56b33e9f52b354 from base cb5dcf17a3be6c8a022f5c9391ec843c67adb509; all six dimensions scored (goal_fidelity 19, evidence 17, scope_discipline 19, durability 18, fit 18, reuse 19; total 110), zero added failures against the reviewed arms, and three non-blocking findings recorded — a self-referential assertion at tests/test_anchored_edit.py:54, a negative-control log whose header revision predates the module checksum it measured, and a ruff claim in the evidence fragment with no recorded log which re-ran clean.</p></div>
 </div>
@@ -259,9 +265,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-11T06:45:00Z">
     <div class="r-comment-body"><p>§9 landed at <code>fcec1e7f5b06</code>: a node writing a data fixture under <code>tests/</code> can now be promoted. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s9-armed-suite-collectible-tests">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261112T233127145467-review-of-interim-arm-report-6e212b90e479" data-who="reckon-build" data-when="2026-11-13T00:07:33.809Z">
-    <div class="r-comment-body"><p>independent review of r-20261112T225203868878-interim-arm-report at head 6e212b90e479d2093e791325f001905a18b6d3df against base 06e99ec0ed92641df95fbd2b0414bc94520c518c stored as parsed with all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 19, durability 7, fit 15, reuse 4; total 79), three non-blocking findings, and added_failure_count 0</p></div>
 </div>
 </section>
 </main>
