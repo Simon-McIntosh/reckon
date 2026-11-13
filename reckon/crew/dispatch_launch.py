@@ -2618,7 +2618,17 @@ def reserve_launch_attempt(
     The key is computed from the run's own receipts on every pass, so a door
     that loses a reclaim reads the same number the winner took rather than a
     stale one of its own.
+
+    The claim is read again here, before the reservation is written: an
+    admission pass releases a launch span that overran its bound and records
+    the release, and a launch merely slowed by storage reaches this point after
+    that release. Writing the reservation then would put a second worker
+    beside the redispatch the release earned, so the release refuses this
+    launch before it takes anything.
     """
+    from reckon.crew.dispatch_refusals import refuse_a_released_launch
+
+    refuse_a_released_launch(run_id)
     held = held_launch_reservation(run_directory)
     if held is not None:
         raise _reservation_refusal(run_id, held)
