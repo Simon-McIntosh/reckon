@@ -1,23 +1,26 @@
 """A parked worker is woken within minutes of its wait probe turning terminal.
 
-The window this closes: a worker ended its turn with ``status: waiting`` and a
-declared wait probe, and its supervisor stayed alive beside it. When the awaited
-job ended OUT_OF_MEMORY the sweep that evaluates the probe offered the run to
-the resume loop, and every door refused it as an attempt in flight — the
-supervisor was alive, so the reservation read as held — until an operator ran
-``crew stop`` about forty minutes later.
+The shape this closes: a worker ended its turn with ``status: waiting`` and a
+declared wait probe, and its supervisor stayed alive beside it. The sweep that
+evaluates the probe offered the run to the resume loop, and every door refused
+it as an attempt in flight — the supervisor was alive, so the reservation read
+as held — so the probe turning terminal woke nothing for as long as that
+supervisor lived.
 
-Two facts free the wake. A run parked on a wait it declared holds no
-reservation: its worker has ended its turn, and the supervisor beside it is
-idle. And the sweep that evaluates the probe runs on the station's own cadence
+Three facts free the wake. A run parked on a wait it declared holds no
+reservation: its worker has ended its turn and the supervisor beside it is
+idle. A reservation that names a later attempt than the run's worker record is
+still held, because the worker record has not yet caught up with the resume
+that took it. And the sweep that evaluates the probe runs on the station's own
 threads, so a tick held in a slow stage cannot hold the wake.
 
-Every case works against a temporary crew home, and asserts afterwards that the
-operator's own crew home is untouched.
+Every case works against a temporary crew home and a temporary station store,
+and asserts afterwards that the operator's own crew home is untouched.
 """
 
 from __future__ import annotations
 
+import itertools
 import signal
 import socket
 import subprocess
@@ -30,19 +33,26 @@ from pathlib import Path
 import pytest
 
 from reckon.crew import dispatch_launch as dispatch_launch_module
-from reckon.crew import process_liveness
+from reckon.crew import process_liveness, station, station_obligations, station_store
 from reckon.crew import resumption as resumption_module
 from reckon.crew import runs as runs_module
+from reckon.crew.run_paths import crew_home
 
 RUN_ID = "r-parked-wait"
 PROJECT = "sample"
+SESSION = "session-1"
 NODE_ID = "terminal-wait-node"
 
 # The bound the plan states: a terminal probe wakes its worker within five
-# minutes. The timing case advances a simulated clock in the sweeper's own
-# passes, so the figure is measured in the run's clock rather than the test's.
+# minutes. The station's clock is injected, so the figure is measured on the
+# run's own clock rather than on this machine's wall clock.
 WAKE_BOUND_SECONDS = 300
-SWEEP_STEP_SECONDS = 30
+SWEEP_BEAT_SECONDS = 120.0
+# Virtual seconds each reflex arm advances the station's clock, and the real
+# interval between arms. The ratio sets how many virtual minutes pass per
+# second of this case's own running time.
+CLOCK_STEP_SECONDS = 10.0
+REFLEX_BEAT_SECONDS = 0.05
 
 
 @pytest.fixture(autouse=True)
@@ -90,8 +100,8 @@ def _pointer(directory: Path, worktree: Path, **extra: object) -> dict:
         "command": sys.executable,
         "attempt": 2,
         "attempt_kind": "resume",
-        "session": "session-1",
-        "session_id": "session-1",
+        "session": SESSION,
+        "session_id": SESSION,
         "launcher_host": socket.gethostname(),
         "worktree": str(worktree),
         "manifest_path": str(directory / "manifest.md"),
@@ -107,7 +117,7 @@ def _write_pointer(directory: Path, pointer: dict) -> None:
     runs_module._write_json(runs_module.pointer_path(RUN_ID), pointer)
 
 
-def _parked_manifest(directory: Path, worktree: Path, terminal: Path) -> None:
+def _parked_manifest(directory: Path, terminal: Path) -> None:
     """A manifest that declares a wait on a path not yet written."""
     (directory / "manifest.md").write_text(
         "\n".join(
@@ -150,14 +160,24 @@ def _stop(process: subprocess.Popen) -> None:
     process.wait(timeout=10)
 
 
-def _worker_record(directory: Path, worker_pid: int) -> None:
+def _dead_pid() -> tuple[int, float | None]:
+    """A pid this host has already reaped, with the start time it was recorded with."""
+    child = _live_child()
+    start_time = runs_module._process_start_time(child.pid)
+    _stop(child)
+    return child.pid, start_time
+
+
+def _worker_record(
+    directory: Path, attempt: int, pid: int, start: float | None
+) -> None:
     runs_module._write_json(
         directory / "worker.json",
         {
             "run_id": RUN_ID,
-            "attempt": 2,
-            "pid": worker_pid,
-            "pid_start_time": runs_module._process_start_time(worker_pid),
+            "attempt": attempt,
+            "pid": pid,
+            "pid_start_time": start,
         },
     )
 
@@ -172,10 +192,11 @@ def test_a_parked_worker_frees_the_reservation_its_idle_supervisor_holds(
     supervisor = _live_child()
     try:
         worktree = _worktree(tmp_path)
-        terminal = tmp_path / "job-ended"
+        dead_pid, dead_start = _dead_pid()
         _write_pointer(home, _pointer(home, worktree))
         _reservation(home, 2, supervisor_pid=supervisor.pid)
-        _parked_manifest(home, worktree, terminal)
+        _worker_record(home, 2, dead_pid, dead_start)
+        _parked_manifest(home, tmp_path / "job-ended")
 
         assert dispatch_launch_module.held_launch_reservation(home) is None, (
             "a parked worker's idle supervisor still held the reservation"
@@ -195,11 +216,10 @@ def test_a_running_worker_still_holds_the_reservation(
     worker = _live_child()
     try:
         worktree = _worktree(tmp_path)
-        terminal = tmp_path / "job-ended"
         _write_pointer(home, _pointer(home, worktree, pid=worker.pid))
         _reservation(home, 2, supervisor_pid=worker.pid)
-        _worker_record(home, worker.pid)
-        _parked_manifest(home, worktree, terminal)
+        _worker_record(home, 2, worker.pid, runs_module._process_start_time(worker.pid))
+        _parked_manifest(home, tmp_path / "job-ended")
 
         held = dispatch_launch_module.held_launch_reservation(home)
         assert held is not None, "a live worker's reservation was released"
@@ -208,75 +228,147 @@ def test_a_running_worker_still_holds_the_reservation(
         _stop(worker)
 
 
+def test_a_resume_whose_worker_has_not_landed_is_still_held(
+    home: Path, tmp_path: Path
+) -> None:
+    """The window between a resume being admitted and its worker record landing.
+
+    The worker record still describes the attempt that parked, so a reading
+    taken from the record alone would free the reservation the resume had just
+    taken and admit a second launch beside a worker that is running nowhere on
+    disk yet. The reservation names the attempt it took, which is what keeps it
+    held.
+    """
+    supervisor = _live_child()
+    try:
+        worktree = _worktree(tmp_path)
+        dead_pid, dead_start = _dead_pid()
+        _write_pointer(home, _pointer(home, worktree))
+        _worker_record(home, 2, dead_pid, dead_start)
+        _parked_manifest(home, tmp_path / "job-ended")
+        # The resume took attempt 3 and has not written its worker record yet.
+        _reservation(home, 3, supervisor_pid=supervisor.pid)
+
+        held = dispatch_launch_module.held_launch_reservation(home)
+        assert held is not None, (
+            "a resume that has not written its worker record read as parked"
+        )
+        with pytest.raises(dispatch_launch_module.CrewError):
+            dispatch_launch_module.reserve_launch_attempt(home, RUN_ID, kind="resume")
+    finally:
+        _stop(supervisor)
+
+
 # ── the wake does not wait for a station tick ───────────────────────────────
 
 
 def test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held(
-    home: Path, tmp_path: Path
+    home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """A tick held for half an hour does not delay the wake past five minutes.
 
-    The sweeper runs off the tick path, exactly as the station's own reflex and
-    the follower's cadence run it. The probe turns terminal on the third pass;
-    the wake must be offered within ``WAKE_BOUND_SECONDS`` of that pass on the
-    run's own clock.
+    The station runs through ``run_station``, its real entry point, with its
+    own sweep thread and reflex thread. The tick is held inside its
+    per-project refresh stage on an event this case never sets, and the
+    station's clock is injected so the hold can be half an hour of the run's
+    own time while this case runs for seconds. The wake is the resume the
+    sweep offers, recorded in place of the launch it would compose.
     """
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    monkeypatch.setenv("XDG_RUNTIME_DIR", str(runtime))
     worktree = _worktree(tmp_path)
     terminal = tmp_path / "job-ended"
     pointer = _pointer(home, worktree)
     _write_pointer(home, pointer)
-    _parked_manifest(home, worktree, terminal)
+    _parked_manifest(home, terminal)
+    dead_pid, dead_start = _dead_pid()
+    _worker_record(home, 2, dead_pid, dead_start)
 
     start = datetime(2026, 11, 13, 2, 40, tzinfo=UTC)
-    resumed_at: dict[str, float] = {}
+    steps = itertools.count()
+    clock_reads: list[datetime] = []
+
+    def clock() -> datetime:
+        moment = start + timedelta(seconds=CLOCK_STEP_SECONDS * next(steps))
+        clock_reads.append(moment)
+        return moment
+
+    def now_of_run_clock() -> datetime:
+        return start + timedelta(seconds=CLOCK_STEP_SECONDS * next(steps))
+
     sweep_failures: list[str] = []
-    last_skip: list[object] = []
-    stop = threading.Event()
-    held_tick = threading.Event()  # never set: the tick never returns
 
-    def _sweeper() -> None:
-        for index in range(1, 40):
-            moment = start + timedelta(seconds=SWEEP_STEP_SECONDS * index)
-            if index == 3:
-                terminal.write_text("OUT_OF_MEMORY\n", encoding="utf-8")
-            try:
-                report = resumption_module.sweep(
-                    PROJECT,
-                    pointers=[pointer],
-                    config=None,
-                    dry_run=True,
-                    now=moment,
-                    writer={"kind": "other", "key": "test"},
-                )
-            except Exception as exc:  # noqa: BLE001 - a failing sweep is retried next pass
-                sweep_failures.append(repr(exc))
-                continue
-            if report.get("resumed"):
-                resumed_at.setdefault("wave", (moment - start).total_seconds())
-                stop.set()
-                return
-            last_skip[:] = list(report.get("skipped") or ())[:1]
-            if stop.is_set():
-                return
+    def recorded_sweep(*args: object, **kwargs: object) -> dict:
+        """The station's own sweep, with any failure kept for the assertion."""
+        try:
+            return resumption_module.sweep(*args, **kwargs)
+        except Exception as exc:
+            sweep_failures.append(repr(exc))
+            raise
 
-    sweeper = threading.Thread(target=_sweeper, name="test-sweeper", daemon=True)
-    sweeper.start()
+    sweeps = station.SweepBeat(sweep=recorded_sweep, beat_seconds=SWEEP_BEAT_SECONDS)
+    node = station.Station(
+        station_store.StationStore(runtime),
+        home=crew_home(),
+        projects=dict,
+        sweeps=sweeps,
+        reflex_beat_seconds=REFLEX_BEAT_SECONDS,
+        clock=clock,
+    )
+
+    gate = threading.Event()
+    entered = threading.Event()
+
+    def held_publish(*args: object, **kwargs: object) -> None:
+        entered.set()
+        gate.wait(timeout=60)
+
+    monkeypatch.setattr(station_obligations, "publish", held_publish)
+
+    woken: list[dict] = []
+    resumed_clock: list[datetime] = []
+
+    def recording_resume(run_id, record, *, config, launcher=None, advice="") -> dict:
+        resumed_clock.append(now_of_run_clock())
+        woken.append({"run_id": run_id, "advice": advice})
+        return {"run_id": run_id, "resumed": True}
+
+    monkeypatch.setattr(resumption_module, "_resume", recording_resume)
+
+    def run_the_station() -> None:
+        station.run_station(station_instance=node, store=node.store, once=True)
+
+    ticker = threading.Thread(target=run_the_station, name="held-tick", daemon=True)
+    ticker.start()
     try:
+        assert entered.wait(timeout=20), "the tick never entered its refresh stage"
+        # The probe turns terminal while the tick is held. The clock the case
+        # reads here is the same one the station's own threads read.
+        turned_terminal = now_of_run_clock()
+        terminal.write_text("OUT_OF_MEMORY\n", encoding="utf-8")
         deadline = time.monotonic() + 30
-        while sweeper.is_alive() and time.monotonic() < deadline:
-            time.sleep(0.05)
+        while time.monotonic() < deadline and not woken:
+            time.sleep(0.01)
+        assert ticker.is_alive() and gate.is_set() is False, (
+            "the tick returned before the wake; the case proves nothing about a held tick"
+        )
+        assert woken, (
+            "the terminal probe woke nothing while the tick was held; "
+            f"the station clock reached {max(clock_reads[-5:], default=None)}"
+        )
+        woken_at = resumed_clock[0]
+        delay = (woken_at - turned_terminal).total_seconds()
+        assert 0 <= delay <= WAKE_BOUND_SECONDS, (
+            f"the wake came {delay:.0f}s of the run's own clock after the probe "
+            f"turned terminal, past the {WAKE_BOUND_SECONDS}s bound"
+        )
     finally:
-        stop.set()
-        sweeper.join(timeout=5)
+        gate.set()
+        node.reflex.stop()
+        ticker.join(timeout=30)
+        deadline = time.monotonic() + 20
+        while time.monotonic() < deadline and sweeps._in_flight:
+            time.sleep(0.01)
 
-    assert held_tick.is_set() is False, (
-        "the held tick returned; the case proves nothing"
-    )
-    assert "wave" in resumed_at, (
-        f"the terminal probe woke nothing; failures={sweep_failures[:3]!r} "
-        f"last_skip={last_skip[:1]!r}"
-    )
-    turned_terminal_at = SWEEP_STEP_SECONDS * 3
-    assert resumed_at["wave"] - turned_terminal_at <= WAKE_BOUND_SECONDS, (
-        f"the wake came {resumed_at['wave']}s in, past the {WAKE_BOUND_SECONDS}s bound"
-    )
+    assert not sweep_failures, f"a station sweep raised: {sweep_failures[:3]!r}"

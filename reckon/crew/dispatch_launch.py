@@ -2517,10 +2517,10 @@ def reservation_in_flight(
             return False
         # An idle supervisor holds nothing. A run whose worker has parked on a
         # declared wait has ended its turn, and the supervisor beside it is
-        # waiting on a worker that is doing no work; refusing a resume there
-        # kept a parked run unwoken for as long as its supervisor lived, which
-        # is what left one run forty minutes past the end of its job. A worker
-        # that is still running is not parked, and its reservation still holds.
+        # waiting on a worker that is doing no work, so a reservation held on
+        # that supervisor's liveness refuses a resume for as long as the park
+        # stands. A worker that is still running is not parked, and its
+        # reservation still holds.
         return not _run_is_parked_on_a_declared_wait(run_directory)
     if record_process_alive(payload, process_alive) is not True:
         return False

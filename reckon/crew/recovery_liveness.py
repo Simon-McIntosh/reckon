@@ -1140,6 +1140,14 @@ def parked_on_declared_wait(
     it, so the run waits on a repair rather than on its condition, and treating
     it as parked would admit a resume against work that never ended.
 
+    A reservation newer than the worker record is no park either. Between a
+    resume being admitted and its worker writing the run's worker record, the
+    record still describes the attempt that parked, so a reading taken from the
+    record alone would free the reservation the resume had just taken and admit
+    a second launch beside a worker that is on disk nowhere yet. The reservation
+    names the attempt it took, so a reservation for a later attempt than the
+    record's — or one written after the record was — is held.
+
     Both the reservation door and the resume doors read this, so a parked run
     is refused by none of them for looking alive and by all of them once its
     worker is.
@@ -1147,6 +1155,7 @@ def parked_on_declared_wait(
     wait = external_wait(record, now_seconds=now_seconds)
     if wait is None or not wait.get("valid"):
         return None
+    reservation = _latest_reservation(record)
     # The pointer's pid names the supervisor for a supervised launch, and an
     # idle supervisor is exactly what a parked run has beside it. The worker is
     # the process the declaration speaks for, so its liveness is read from the
@@ -1156,7 +1165,83 @@ def parked_on_declared_wait(
     worker.pop("pid_start_time", None)
     if live_worker_reading(worker).alive is True:
         return None
+    if reservation is not None and _reservation_outruns_worker(record, reservation):
+        return None
     return wait
+
+
+def _latest_reservation(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The highest-numbered launch reservation in the run's own directory."""
+    try:
+        directory = _run_directory(record)
+        candidates = sorted(
+            directory.glob("attempt-*.reservation"),
+            key=lambda path: _attempt_number(path.name),
+        )
+    except (OSError, ValueError):
+        return None
+    for path in reversed(candidates):
+        try:
+            data = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            continue
+        if isinstance(data, Mapping):
+            return data
+    return None
+
+
+def _attempt_number(name: str) -> int:
+    """The attempt a run directory's file name is keyed on, or -1."""
+    head = name.split("-", 2)
+    if len(head) < 2 or head[0] != "attempt":
+        return -1
+    try:
+        return int(head[1])
+    except ValueError:
+        return -1
+
+
+def _reservation_outruns_worker(
+    record: Mapping[str, Any], reservation: Mapping[str, Any]
+) -> bool:
+    """Whether a reservation was taken after the run's worker record landed.
+
+    The attempt number is the primary key: a resume reserves the attempt after
+    the one whose worker record stands, so a reservation naming a later attempt
+    is a launch whose worker has not written itself down yet. Where either side
+    names no attempt, the reservation's own stamp is compared with the worker
+    record's write time, which answers the same question one layer lower.
+    """
+    worker = _worker_record(record)
+    if worker is None:
+        return True
+    reserved_attempt = _int_or_none(reservation.get("attempt"))
+    worker_attempt = _int_or_none(worker.get("attempt"))
+    if reserved_attempt is not None and worker_attempt is not None:
+        return reserved_attempt > worker_attempt
+    reserved_at = _seconds_from_stamp(reservation.get("at"))
+    written_at = _worker_record_mtime(record)
+    if reserved_at is None or written_at is None:
+        return False
+    return reserved_at > written_at
+
+
+def _worker_record_mtime(record: Mapping[str, Any]) -> float | None:
+    """When the run's worker record was last written, or None when it is absent."""
+    try:
+        return (_run_directory(record) / WORKER_RECORD_NAME).stat().st_mtime
+    except (OSError, ValueError):
+        return None
+
+
+def _seconds_from_stamp(value: Any) -> float | None:
+    """An ISO timestamp as epoch seconds, or None when it does not parse."""
+    if not isinstance(value, str) or not value.strip():
+        return None
+    try:
+        return datetime.fromisoformat(value.strip()).timestamp()
+    except ValueError:
+        return None
 
 
 def _reading_host() -> str:
