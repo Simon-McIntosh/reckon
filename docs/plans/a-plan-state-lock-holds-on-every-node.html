@@ -24,7 +24,7 @@
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="11">
+<meta name="plan-version" content="12">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -134,6 +134,9 @@
 </div>
 <div class="r-comment" data-section="s3" data-id="c-run-r-20261113T122412926821-sprint-move-replies-with-what-landed" data-who="reckon-build" data-when="2026-11-13T14:52:32Z">
     <div class="r-comment-body"><p>A sprint move now settles all-or-nothing and replies with what landed: both sprint versions and the applied verdict are read back from disk, a journal commit-mark or unlink failure after both writes is a warning rather than an ok=false reply, and a read-back that disagrees restores both sprints from the journal before the refusal; the fault tests pass 6/6 at head and fail 6/6 at base, whose commit-mark cases report not applied while the item sits in the destination.</p></div>
+</div>
+<div class="r-comment" data-section="s3" data-id="c-run-r-20261113T170733419931-review-of-move-reply-keeps-its-verdict-on-a-failed-read-616f01e709ec" data-who="reckon-build" data-when="2026-11-13T17:29:12.913Z">
+    <div class="r-comment-body"><p>Independent review of 616f01e709 against 22c3fbda: the move reply keeps `applied` on a failed version read and names the failure, the duplicate JSONDecodeError clause is gone, and the S112 is absent (ruff recount 18 -&gt; 17 with the summary line excluded); scores goal_fidelity 19, evidence 13, scope_discipline 20, durability 19, fit 18, reuse 19, with two non-blocking evidence findings (no ruff log stored; the all_debug claim has no submitted-job receipt).</p></div>
 </div>
 </section>
 </main>
