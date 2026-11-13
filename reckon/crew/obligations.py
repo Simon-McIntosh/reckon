@@ -56,6 +56,7 @@ from reckon.crew.node import (
     PlanReviewMissingError,
     parse_duration,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
@@ -834,7 +835,9 @@ def _review_dispatch_refusal(
         ]
     except (OSError, ValueError):
         return None
-    closed = run_id in ledger.run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
     for record in stored:
         if (
             review_lifecycle.lifecycle(
@@ -2520,7 +2523,19 @@ def _run_namings(
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.runs(project, root=_ledger_read_root(project, repository))
+        from reckon.crew import open_run_index
+
+        root = _ledger_read_root(project, repository)
+        signature = _HELD_SOURCE_SIGNATURE.get()
+        if (
+            open_run_index.pointers() is not None
+            and signature is not None
+            and open_run_index.matches_sources(project, root, signature)
+        ):
+            rows = ledger.open_runs(project, root)
+            rows.extend(open_run_index.rows_naming_trees(project, signature[4], root))
+        else:
+            rows = ledger.runs(project, root=root)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return None
     for row in rows:
@@ -3167,7 +3182,13 @@ def _sub_floor_items_by_session(
     """
     if not floors:
         return {}
-    closed = recovery._promoted_run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = {
+        str(pointer.get("run_id") or "")
+        for pointer in _live_pointers(project)
+        if pointer.get("run_id") and has_row(project, str(pointer["run_id"]))
+    }
     by_session: dict[str, list[dict[str, Any]]] = {}
     for pointer in _live_pointers(project):
         session = str(pointer.get("session") or "")
@@ -3424,6 +3445,7 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+@operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
 ) -> dict[str, Any]:
@@ -3810,7 +3832,7 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
-    closure = runs.drain(project, session=session)
+    unreconciled = runs.drain_unreconciled_by_session(project).get(session, 0)
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
@@ -3819,7 +3841,7 @@ def _obligations_view(
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(closure["unreconciled_runs"]),
+        "unreconciled_runs": int(unreconciled),
     }
     view = {
         "project": project,

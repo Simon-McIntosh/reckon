@@ -472,7 +472,6 @@ def _budget_verdict(
     block. A group no lift covers is handed the configuration unchanged.
     """
     from reckon import budget as budget_module
-
     from reckon.crew import budget_group as budget_group_module
 
     wallet = group or budget_group_module.declared_group_for(config, backend_name)
@@ -964,9 +963,14 @@ def _inspect_workspace(
 
 
 def _ledgered_records(repo: Path, project: str | None) -> list[dict[str, Any]]:
+    from reckon.crew import open_run_index
+
     result: list[dict[str, Any]] = []
     for name in _gc_projects(repo, project):
-        result.extend(ledger.runs(str(name), root=repo))
+        reader = (
+            ledger.open_runs if open_run_index.pointers() is not None else ledger.runs
+        )
+        result.extend(reader(str(name), root=repo))
     return result
 
 

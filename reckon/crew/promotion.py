@@ -93,6 +93,7 @@ from reckon.crew.node import (
     parse_duration,
     role_may_write_repository_paths,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.picker.outcomes import (
     OVERRIDDEN_HOLD_ROUTE_MODE,
     overridden_hold,
@@ -418,6 +419,7 @@ def _landing_checkout(
     )
 
 
+@operational_read
 def complete(
     run_id: str,
     *,
@@ -1283,6 +1285,7 @@ def _budget_overrun_facts(
     }
 
 
+@operational_read
 def _complete_locked(
     run_id: str,
     *,
@@ -1380,20 +1383,15 @@ def _complete_locked(
     if ledger_reads is None:
         reads.enter_context(ledger.index_reuse())
     with reads:
-        ledger_data, ledger_version = ledger.load(project, root=ledger_root)
+        ledger_data, ledger_version = ledger.load_open(project, root=ledger_root)
         damaged_record = ledger.run_path(project, run_id, ledger_root)
         if damaged_record in ledger.damaged_run_records(project):
             raise ledger.LedgerError(
                 f"cannot promote run {run_id!r}: its record is damaged at {damaged_record}"
             )
-        existing = next(
-            (
-                item
-                for item in ledger_data["runs"]
-                if str(item.get("run_id") or "") == run_id
-            ),
-            None,
-        )
+        from reckon.crew.open_run_index import row_for_run
+
+        existing = row_for_run(project, run_id, ledger_root)
         if existing is not None:
             existing_path = ledger.run_path(project, run_id, ledger_root)
             if not existing_path.is_file():
@@ -1557,14 +1555,9 @@ def _complete_locked(
             session_id=session_id,
             observed_at=finished,
         )
-        previous = next(
-            (
-                item
-                for item in reversed(ledger_data["runs"])
-                if session_id and item.get("session_id") == session_id
-            ),
-            None,
-        )
+        from reckon.crew.open_run_index import latest_session_row
+
+        previous = latest_session_row(project, session_id, ledger_root)
         measured_budget = ledger.per_run_budget(stream.budget, previous)
         # The overrun the worker was messaged about rides the committed row, so the
         # live pointer's verdict is not the only place a run's overrun exists. The
@@ -2002,15 +1995,7 @@ def _complete_locked(
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
         # still a refusal.
-        refreshed, ledger_version = ledger.load(project, root=ledger_root)
-        existing = next(
-            (
-                item
-                for item in refreshed["runs"]
-                if str(item.get("run_id") or "") == run_id
-            ),
-            None,
-        )
+        existing = row_for_run(project, run_id, ledger_root)
         if existing is None:
             raise
         already_promoted = True
@@ -2031,10 +2016,11 @@ def _complete_locked(
     # This never fails the promotion: the profile is an operational reading, and
     # a cache write that fails leaves the previous reading in place rather than
     # undoing a landed run.
+    profile_refresh = None
     try:
         from reckon.crew.picker import lane_context as _lane_context
 
-        _lane_context.refresh_run_time_profile(
+        profile_refresh = _lane_context.refresh_run_time_profile(
             project, appended=(run,), anchor=profile_anchor
         )
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
@@ -2195,6 +2181,11 @@ def _complete_locked(
         # review it delivered. A run that is not a plan review carries no such
         # field, so the field's absence itself states the run had no review to
         # store.
+        if (
+            isinstance(profile_refresh, Mapping)
+            and profile_refresh.get("status") == "unavailable"
+        ):
+            receipt["run_time_profile"] = dict(profile_refresh)
         if plan_review_store is not None:
             receipt["plan_review_store"] = plan_review_store
         return receipt

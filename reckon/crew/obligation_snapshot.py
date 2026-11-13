@@ -1496,6 +1496,14 @@ class FleetState:
 
 
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+    """Derive a sweep inside one shared open-run population."""
+    from reckon.crew.open_run_index import read_scope
+
+    with read_scope():
+        return _derive_fleet_state(project, now=now)
+
+
+def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Derive everything a sweep's per-session payloads are sliced from.
 
     The derivation opens the three regions its readers share: one run index

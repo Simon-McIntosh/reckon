@@ -107,14 +107,12 @@ def _shadow_primary_row(
         return None
     from reckon import ledger
 
+    from reckon.crew.open_run_index import row_for_run
+
     try:
-        rows = ledger.runs(project)
-    except (OSError, ValueError, KeyError):
+        return row_for_run(project, primary_run_id)
+    except (OSError, ValueError, KeyError, ledger.LedgerError):
         return None
-    return next(
-        (row for row in rows if str(row.get("run_id") or "") == primary_run_id),
-        None,
-    )
 
 
 def _shadow_masks_for_record(record: Mapping[str, Any]) -> tuple[str, ...]:
