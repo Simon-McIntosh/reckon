@@ -1123,6 +1123,42 @@ def external_wait(
     )
 
 
+def parked_on_declared_wait(
+    record: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+) -> dict[str, Any] | None:
+    """The wait a run's worker is parked on, or None when it is not parked.
+
+    A parked run has ended its turn: its manifest declares a wait the fleet's
+    reader honours, and no worker this host can observe is still running it.
+    The declaration is not enough on its own — a manifest keeps a wait block
+    after the worker has been resumed — so a worker that is still running is
+    not parked, whatever the stale declaration beside it says.
+
+    A declaration the reader refuses is no park either: its probe cannot lift
+    it, so the run waits on a repair rather than on its condition, and treating
+    it as parked would admit a resume against work that never ended.
+
+    Both the reservation door and the resume doors read this, so a parked run
+    is refused by none of them for looking alive and by all of them once its
+    worker is.
+    """
+    wait = external_wait(record, now_seconds=now_seconds)
+    if wait is None or not wait.get("valid"):
+        return None
+    # The pointer's pid names the supervisor for a supervised launch, and an
+    # idle supervisor is exactly what a parked run has beside it. The worker is
+    # the process the declaration speaks for, so its liveness is read from the
+    # run's own worker record instead.
+    worker = dict(record)
+    worker.pop("pid", None)
+    worker.pop("pid_start_time", None)
+    if live_worker_reading(worker).alive is True:
+        return None
+    return wait
+
+
 def _reading_host() -> str:
     """The host this reader runs on, for gating process-table lookups."""
     return socket.gethostname()

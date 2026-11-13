@@ -1367,7 +1367,9 @@ def _launcher_refusal(
     run_id = str(record.get("run_id") or "")
     if record.get("launch") != "cli":
         return CrewError(f"run {run_id!r} is not a spawned run; resume it in-harness")
-    if record_process_alive(record, process_alive) is True:
+    if record_process_alive(record, process_alive) is True and not _parked_on_a_wait(
+        record
+    ):
         # This guard's message is the launcher's own, held word for word by the
         # prediction-parity test beside it, so it is not restated here: both
         # doors compose it through the one refusal below.
@@ -1400,6 +1402,20 @@ def _launcher_refusal(
     # restating the reading: a preview that skipped it would offer a lift the
     # real resume refuses, which is the whole claim `would_resume` makes.
     return _stream_reading_refusal(record, reading=_observed_process_reading(record))
+
+
+def _parked_on_a_wait(record: Mapping[str, Any]) -> bool:
+    """Whether the run's worker has parked on a declared wait.
+
+    A parked worker has ended its turn: the manifest declares a wait the
+    fleet's reader honours and no worker this host can observe is running it.
+    Every door that refuses a second worker over a live process reads this, so
+    a parked run is admitted while an idle supervisor sits beside it, and a
+    worker that is still running is refused exactly as before.
+    """
+    from reckon.crew.recovery_liveness import parked_on_declared_wait
+
+    return parked_on_declared_wait(record) is not None
 
 
 def _newest_stream_ended(record: Mapping[str, Any]) -> bool:
@@ -1506,6 +1522,13 @@ def _observed_end_refusal(record: Mapping[str, Any]) -> CrewError | None:
     act on a reading the reader was never shown, and the reason names the
     reading it is holding.
     """
+    if _parked_on_a_wait(record):
+        # A parked worker has ended its turn and declared what ends its park,
+        # so the end of the *work that matters* is observed on the declaration
+        # rather than on the process table. The live pid is the idle supervisor
+        # beside it, and refusing on that pid is what kept a parked run
+        # unwoken for as long as its supervisor lived.
+        return None
     reading = _observed_process_reading(record)
     if reading == "process gone":
         return None

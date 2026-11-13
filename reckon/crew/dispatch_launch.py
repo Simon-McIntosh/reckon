@@ -2491,7 +2491,10 @@ def reservation_in_flight(
 
     Once a supervisor is recorded the reservation is freed by that supervisor's
     exit, whatever the reserving process is doing — the admit service outlives
-    every run it launches.
+    every run it launches. The one exception is a run parked on a declared
+    wait: its worker has ended its turn, the supervisor beside it is idle, and
+    the reservation holds nothing a resume could collide with, so the hold
+    lifts while the park stands and returns the moment a worker is running.
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
@@ -2510,10 +2513,31 @@ def reservation_in_flight(
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
-        return record_process_alive(supervisor, process_alive) is True
+        if record_process_alive(supervisor, process_alive) is not True:
+            return False
+        # An idle supervisor holds nothing. A run whose worker has parked on a
+        # declared wait has ended its turn, and the supervisor beside it is
+        # waiting on a worker that is doing no work; refusing a resume there
+        # kept a parked run unwoken for as long as its supervisor lived, which
+        # is what left one run forty minutes past the end of its job. A worker
+        # that is still running is not parked, and its reservation still holds.
+        return not _run_is_parked_on_a_declared_wait(run_directory)
     if record_process_alive(payload, process_alive) is not True:
         return False
     return not _unreached_launch(payload, run_directory, attempt)
+
+
+def _run_is_parked_on_a_declared_wait(run_directory: Path | None) -> bool:
+    """Whether the run this reservation holds has parked on a declared wait."""
+    if run_directory is None:
+        return False
+    from reckon.crew.recovery_liveness import parked_on_declared_wait
+
+    try:
+        record = read_pointer(run_directory.name)
+    except CrewError:
+        return False
+    return parked_on_declared_wait(record) is not None
 
 
 def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:
