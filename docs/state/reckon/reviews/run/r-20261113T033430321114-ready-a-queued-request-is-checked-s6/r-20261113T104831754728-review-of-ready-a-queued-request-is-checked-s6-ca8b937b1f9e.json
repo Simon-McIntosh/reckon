@@ -1,0 +1,49 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [],
+  "completed_at": "2026-11-13T11:28:37.474Z",
+  "dispatched_at": "2026-11-13T11:21:50Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s6.html",
+      "line": 40,
+      "severity": "non-blocking",
+      "text": "The negative-control paragraph presents the recorded mutant as the plan's stated control, but the mutation (`manifest_path = ... or \"\"`) makes `_queue_batch` fail the queue-time contract, so logs/negative-control-mutant.log reddens all three cases at queue time (`refused: 1`) and never reaches the edit path the plan's control names; the edit-path refusal is demonstrated separately by test_a_request_stored_without_a_manifest_path_cannot_be_edited, so the record's claim is true of the gate but not a transcript of the control the plan specified."
+    }
+  ],
+  "justifications": {
+    "durability": "the node adds no assertion, so nothing new guards this change; the behaviour it certifies is guarded by tests/test_a_batch_request_can_be_edited.py:143 (a queue-time path assertion spelled independently of the run_dir helper) and tests/test_a_batch_request_can_be_edited.py:184 (the refusal), and the recorded mutant shows those three cases redden when the assignment is dropped.",
+    "evidence": "logs/base-arm.log and logs/after-arm.log each header the revision, tree and command and end on a bare `EXIT=0` over `54 passed`, and logs/negative-control-mutant.log ends `EXIT=1` over `3 failed`, so the done_when's 54-passed pair and a red mutant are recorded rather than claimed.",
+    "fit": "the fragment is named for the node id as reckon/evidence.py:697 compose_landed_record requires, uses the `data-node` section shape that 671 of the 1812 fragments under docs/evidence/fragments/ use, and introduces no identifier the naming rules forbid.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:734 carries `node.manifest_path = node.manifest_path or str(run_dir(run_id) / \"manifest.md\")` identically at base 4c4cf23439 and head ca8b937b1f, so the section's deliverable (batch-made requests editable in the queue) holds at the head; the node's own contribution is the verification record rather than a product change.",
+    "reuse": "no definition is added or forked: the fragment re-records the existing `_queue_batch` assignment and the existing tests/test_a_batch_request_can_be_edited.py, and the search for an owner of a batch queue-time manifest path found `_queue_batch` (reckon/crew/dispatch_batch.py:734) already owning it.",
+    "scope_discipline": "the whole diff at ca8b937b1f is one new file, docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s6.html (53 insertions), and `git diff 4c4cf23439:reckon/crew/dispatch_batch.py ca8b937b1f:...` plus the same for tests/test_a_batch_request_can_be_edited.py are both empty."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch-made request can be edited in the queue; reckon/crew/dispatch_batch.py:734 sets runs_dir()/<run_id>/manifest.md for every batch entry naming none, identically at base 4c4cf23439 and head ca8b937b1f, so the goal's substance holds at the head.\nVERDICT done_when: the done_when names a new tests/test_a_batch_request_can_be_edited.py asserting the stored path, the stored `--time-budget 90m` edit and an independently-verifiable refusal; that file exists at the base and its three cases are the gate the node ran, recorded as 54 passed in both arms in logs/base-arm.log and logs/after-arm.log.\nVERDICT write_paths: the declared write paths include docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s6.html and reckon/crew/dispatch_batch.py; the diff touches only the first, which is inside them.\nVERDICT manifest: read; it states status complete, records commits ca8b937b1f, names both arm logs and the mutant log, and reports 54 passed per arm with the mutant at 3 failed, all of which the logs on disk bear out.\nVERDICT diff: read commit by commit against 4c4cf23439; one commit, one new 53-line evidence fragment, and no product or test source changed.\nCALL_SITES: none\nSCORE goal_fidelity: 17\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:734 carries the manifest-path assignment identically at base 4c4cf23439 and head ca8b937b1f, so the section's deliverable holds at the head and the node's own contribution is the verification record rather than a product change.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/base-arm.log and logs/after-arm.log each header the revision, tree and command and end on a bare EXIT=0 over 54 passed, and logs/negative-control-mutant.log ends EXIT=1 over 3 failed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff at ca8b937b1f is one new file under docs/evidence/fragments/a-queued-request-is-checked-when-queued/ (53 insertions), and reckon/crew/dispatch_batch.py and tests/test_a_batch_request_can_be_edited.py are byte-identical between base and head.\nSCORE durability: 15\nJUSTIFICATION durability: the node adds no assertion, and the behaviour it certifies rests on the pre-existing tests/test_a_batch_request_can_be_edited.py:143 and :184, whose assertions the recorded mutant reddens.\nSCORE fit: 19\nJUSTIFICATION fit: the fragment is named for the node id as reckon/evidence.py:697 compose_landed_record requires and uses the `data-node` section shape that most fragments under docs/evidence/fragments/ use.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added or forked; the record re-states the existing assignment owned by reckon/crew/dispatch_batch.py:734 and re-runs the existing tests/test_a_batch_request_can_be_edited.py.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s6.html:40 non-blocking: the negative-control paragraph presents the recorded mutant as the plan's stated control, but the mutation makes `_queue_batch` fail the queue-time contract, so the log reddens all three cases at queue time and never reaches the edit path the plan's control names; the edit-path refusal is demonstrated separately by test_a_request_stored_without_a_manifest_path_cannot_be_edited.",
+  "review_run_id": "r-20261113T104831754728-review-of-ready-a-queued-request-is-checked-s6-ca8b937b1f9e",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "ca8b937b1f9e916d649dafb32b5d2ede79f631a9",
+  "reviewed_run_id": "r-20261113T033430321114-ready-a-queued-request-is-checked-s6",
+  "scores": {
+    "durability": 15,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:18:38.105984+00:00",
+  "total": 109,
+  "verdicts": {
+    "call_sites": "The landed change is a docs/evidence fragment, so no production code path reaches it; the behaviour it certifies is reached from reckon/crew/dispatch_batch.py:_queue_batch and the crew queue edit command.",
+    "diff": "Read commit by commit against 4c4cf23439; one commit, one new 53-line evidence fragment, no product or test source changed.",
+    "done_when": "The done_when names a new tests/test_a_batch_request_can_be_edited.py asserting the stored path, the stored --time-budget 90m edit and an independently-verifiable refusal; that file exists at the base and its three cases are the gate the node ran, recorded at 54 passed in both arms at logs/base-arm.log and logs/after-arm.log.",
+    "goal": "The node goal is that a batch-made request can be edited in the queue; reckon/crew/dispatch not applicable -- the landed change is the record; reckon/crew/dispatch_batch.py:734 sets runs_dir()/<run_id>/manifest.md for every entry naming none, identically at base and head, so the goal's substance holds.",
+    "manifest": "Read; it states status complete, records commits ca8b937b1f, names both arm logs and the mutant log, and reports 54 passed per arm with the mutant at 3 failed, all of which the logs on disk bear out.",
+    "write_paths": "The declared write paths include docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s6.html and reckon/crew/dispatch_batch.py; the diff touches only the first, which is inside them."
+  }
+}
