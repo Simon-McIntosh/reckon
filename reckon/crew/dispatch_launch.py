@@ -2466,7 +2466,7 @@ def _unreached_launch(
     attempt left no worker record, and it is older than
     :data:`UNREACHED_LAUNCH_BOUND_SECONDS`. The bound keeps a launch slowed by
     storage from being reclaimed mid-flight; the fence in
-    :func:`_launch_still_newest` is what makes the release safe, because a
+    :func:`_refuse_superseded_launch` is what makes the release safe, because a
     launch that was released and relaunched abandons rather than starting a
     second supervisor.
     """

@@ -1240,6 +1240,33 @@ def _recorded_fleet_times(
 
 
 
+def _restore_carried_words(path, carried: Mapping[str, str] | None) -> None:
+    """Restore what the pane carried, for a row path that a new process built.
+
+    A landing is news only where the pane carried the delivery it follows, and
+    the row policy reads that from its own memory of the rows it released. An
+    in-place reload keeps that memory because it keeps the process; a re-arm
+    does not, so the landing for a run the pane showed as delivered would be
+    withheld as observer context and the pane would never learn the work landed.
+
+    The checkpoint the previous image wrote names the state the pane last showed
+    each run, so the carried word is restored from it. Only the landing
+    judgement is restored, never the row path's visible memory: a state seeded
+    there would suppress the fleet replay's own inventory rows, which a re-arm
+    still owes the reader.
+    """
+    from reckon.crew import ticker as ticker_module
+
+    policy = getattr(path, "_policy", None)
+    printed = getattr(policy, "_printed", None)
+    if not isinstance(printed, dict):
+        return
+    for run_id, state in dict(carried or {}).items():
+        word = ticker_module._remembered_word(state)
+        if run_id and word:
+            printed.setdefault(str(run_id), word)
+
+
 def _fleet_replay(
     path,
     *,
@@ -2242,6 +2269,23 @@ def _follow_watch_lines(
             stream_path=stream_path,
             resume_state=resume_state,
         )
+        # The states the pane already showed, as the checkpoint that a fresh
+        # arming read carries them, for the runs the fleet replay below will not
+        # re-announce. A run still live in the fleet is drawn afresh by that
+        # replay, so handing its word to the grid would render the inventory row
+        # as a self-transition and drop the fleet from the pane; a run that has
+        # already left the fleet has no such row, and its next row — a landing,
+        # above all — must continue from the word the pane shows.
+        live_baseline = {
+            str(row.get("run_id") or "")
+            for row in cursor["baseline"]
+            if row.get("run_id")
+        }
+        continuing = {
+            run_id: state
+            for run_id, state in recorded.items()
+            if run_id and run_id not in live_baseline
+        }
         if reloading and mode != "continue":
             # An in-place reload continues only where its recorded place still
             # names this stream. A resume whose checkpoint names a replaced
@@ -2319,6 +2363,10 @@ def _follow_watch_lines(
             # both. The capture also snaps back to the byte after the last
             # newline, so a record the producer is still writing is not split
             # across the two reads: a line boundary is a record boundary.
+            # What the previous image's pane carried is restored first, so a
+            # landing for a run the pane showed as delivered is news on this
+            # paneless process rather than observer context.
+            _restore_carried_words(path, recorded)
             boundary = _follow_boundary(stream_path)
             # A re-arm reads its memory from the stored history: the groups the
             # pane last showed as in force are the grants on that log not yet
@@ -2380,16 +2428,18 @@ def _follow_watch_lines(
                     ),
                 }
             if mode != "baseline" and first_attach:
-                # The event restores the pane's stored history for a terminal,
-                # and carries no remembered states: the replay below draws the
-                # runs that moved, and seeding the pane's memory with the very
-                # states it is about to re-announce would suppress every row of
-                # it. The rows themselves restore the memory as they are drawn.
+                # The event restores the pane's stored history for a terminal
+                # and hands the grid the words the pane already shows for the
+                # runs the replay below will not re-announce. A live run's own
+                # row restores its word as it is drawn, so it is left out: a
+                # grid seeded with the very state such a row is about to
+                # draw would render it as a self-transition and withhold the
+                # fleet's inventory from the pane.
                 yield {
                     "event": FOLLOWER_RESUME_EVENT,
                     "project": project,
                     "session": session or "",
-                    "reported": {},
+                    "reported": dict(continuing),
                 }
             if record:
                 # The diff covers the whole gap, so the read loop opens at the

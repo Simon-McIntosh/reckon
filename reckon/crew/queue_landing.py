@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import fcntl
 import json
 import os
 import re
 import subprocess
 import sys
 import time
+import uuid
 from collections.abc import Mapping, Sequence
 from contextlib import ExitStack
 from dataclasses import replace
@@ -1014,6 +1016,7 @@ def _measure_delivery(
     stored: Sequence[Mapping[str, Any]] = (),
     *,
     promoted: bool = False,
+    request: Mapping[str, Any] | None = None,
 ) -> Any:
     """Measure current primary against the merge of one delivered run.
 
@@ -1055,11 +1058,20 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    timeout = _measure_timeout(pointer)
+    config = request["config"] if request is not None else _measure_config(pointer)
+    timeout = (
+        landing_measure.measure_timeout(config)
+        if request is not None
+        else _measure_timeout(pointer)
+    )
     logs = runs.run_dir(run_id) / "landing-measure"
-    if promoted:
+    if request is not None:
+        logs = Path(str(request["logs_dir"]))
+    elif promoted:
         logs = logs / "promoted"
-    primary = _primary_revision(pointer)
+    primary = (
+        str(request["primary"]) if request is not None else _primary_revision(pointer)
+    )
     if not primary:
         measured = landing_measure.Measurement(
             command=command,
@@ -1083,6 +1095,10 @@ def _measure_delivery(
                 measured_head, measured_tree = stack.enter_context(
                     landing_measure.candidate_checkout(repo, primary, head, timeout)
                 )
+            elif request is not None:
+                measured_tree = stack.enter_context(
+                    landing_measure.base_checkout(repo, head, timeout)
+                )
             if not promoted and _landed_elsewhere(pointer, run_id):
                 raise _LandedElsewhereError
             base_tree = stack.enter_context(
@@ -1103,7 +1119,7 @@ def _measure_delivery(
                     stored=stored,
                     project=project,
                     changed=changed,
-                    config=_measure_config(pointer),
+                    config=config,
                 )
                 measured = replace(
                     measured,
@@ -1132,14 +1148,154 @@ def _measure_delivery(
             head=head,
             project=project,
         )
-    _record_suite_evidence(run_id, measured, promoted=promoted)
+    if request is None:
+        _record_suite_evidence(run_id, measured, promoted=promoted)
     return measured
+
+
+def run_measurement_request(path: Path) -> None:
+    """Run the comparisons inside their scheduler allocation, never the fleet."""
+    from reckon._store import write_json_atomically
+
+    request = json.loads(path.read_text(encoding="utf-8"))
+    # The outer job owns the allocation. Its arms run there rather than
+    # submitting further scheduler jobs and waiting for a second allocation.
+    config = dict(request["config"])
+    config["landing"] = {**config.get("landing", {}), "measure_partition": ""}
+    request["config"] = config
+    os.environ["PYTHONPATH"] = "."
+    measured = _measure_delivery(
+        request["pointer"],
+        request["run_id"],
+        request["head"],
+        request["pointer"]["repo"],
+        request["stored"],
+        promoted=True,
+        request=request,
+    )
+    write_json_atomically(
+        path.parent / "result.json", replace(measured, execution="slurm").as_dict()
+    )
+
+
+def _scheduled_measurement(
+    pointer: Mapping[str, Any],
+    run_id: str,
+    head: str,
+    primary: str,
+    stored: Sequence[Mapping[str, Any]],
+    active: set[str],
+) -> landing_measure.Measurement | None:
+    """Adopt a persisted job, or submit once when the configured width allows."""
+    from reckon._store import write_json_atomically
+
+    job = pointer.get("landing_measurement_job")
+    if isinstance(job, Mapping) and job.get("status") in {"pending", "complete"}:
+        try:
+            measured = landing_measure.read_measurement_job(job)
+        except landing_measure.MeasurementJobError:
+            raise
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            # An unavailable scheduler says nothing about job completion.
+            # Keep its slot occupied and try the observation on a later pass.
+            return None
+        if measured is None:
+            return None
+        active.discard(run_id)
+        runs._mutate_pointer(
+            run_id,
+            lambda record: {
+                **record,
+                "landing_measurement_job": {**job, "status": "complete"},
+            },
+        )
+        if (
+            job["head"] == head
+            and job["command"] == pointer.get("suite_command")
+            and (
+                job["primary"] == primary
+                or _moved_primary_keeps_the_measurement(
+                    pointer, job["primary"], primary
+                )
+            )
+        ):
+            _record_suite_evidence(run_id, measured)
+            return measured
+        # A finished job for another head still releases its slot, but cannot
+        # stand as evidence about the delivery now being judged.
+    if len(active) >= landing_measure.measurement_width():
+        return None
+    config = _measure_config(pointer)
+    directory = runs.run_dir(run_id) / "landing-measure" / uuid.uuid4().hex
+    directory.mkdir(parents=True, exist_ok=True)
+    request_path = directory / "request.json"
+    request = {
+        "run_id": run_id,
+        "head": head,
+        "primary": primary,
+        "pointer": dict(pointer),
+        "stored": list(stored),
+        "config": dict(config),
+        "logs_dir": str(directory),
+    }
+    write_json_atomically(request_path, request)
+    # Four comparison arms plus isolated repeats share one bounded job. The
+    # stored arm rates widen its bound when previous populations took longer.
+    elapsed = max(
+        (
+            sum(
+                float(arm.get("elapsed_seconds") or 0)
+                for arm in landing_measure._arm_records(record)
+            )
+            for record in stored
+        ),
+        default=0,
+    )
+    bound = max(_measure_timeout(pointer) * 10, elapsed * 2)
+    job = landing_measure.submit_measurement(request_path, config=config, bound=bound)
+    runs._mutate_pointer(
+        run_id, lambda record: {**record, "landing_measurement_job": job}
+    )
+    active.add(run_id)
+    return None
 
 
 def _promoted_candidate(
     pointer: Mapping[str, Any], run_id: str, head: str, tree: str
 ) -> str:
     """Measure publication after completion has committed its records."""
+    from reckon.crew import merge
+
+    primary = _primary_revision(pointer)
+    command = str(pointer.get("suite_command") or "").strip()
+    measured = _stored_measurement(run_id, head, command, primary, pointer)
+    if measured is not None:
+        candidate = merge.build_merge_commit(
+            Path(str(pointer.get("repo") or tree)),
+            primary,
+            head,
+            "merge: integrate the measured delivery",
+            "Combine the reviewed delivery with publication records that leave "
+            "the measured product unchanged.",
+        )
+        _record_suite_evidence(
+            run_id,
+            replace(
+                measured,
+                population={
+                    **measured.population,
+                    "main_sha": primary,
+                    "candidate_sha": candidate,
+                },
+            ),
+            promoted=True,
+        )
+        return candidate
+    if (_measure_config(pointer).get("landing") or {}).get("measure_partition"):
+        raise CrewError(
+            "the primary product changed during promotion; a new scheduler "
+            "measurement is required before publishing the candidate"
+        )
     measured = _measure_delivery(pointer, run_id, head, tree, promoted=True)
     refusal = _measure_guard(measured)
     if refusal:
@@ -1681,12 +1837,11 @@ def _delivery_order(pointer: Mapping[str, Any]) -> tuple[int, str]:
 def land_once() -> dict[str, Any]:
     """Land each accepted delivery once and return obligations for refusals.
 
-    At most one delivered run is measured per pass. A measurement runs the
-    suite at two revisions plus up to six isolated re-runs, so measuring every
-    waiting run in one pass would delay the next landing for the sum of their
-    suite times. Admission runs independently. The rest wait for later passes
-    in delivery order, and a measurement is reused while its primary, delivered
-    head and command stay unchanged.
+    Partitioned measurements are submitted without waiting, up to the
+    configured in-flight width. Later passes adopt their persisted jobs and
+    consume completed receipts. A delivery with reusable evidence can land in
+    the same pass while those jobs remain pending. In-place measurements keep
+    their single-measurement bound for callers outside the scheduler service.
 
     A head refused on an earlier pass is judged again as soon as the rule that
     refused it or the review it read has changed, so a run held by a rule since
@@ -1717,9 +1872,16 @@ def land_once() -> dict[str, Any]:
 
     # A landing promoted but never merged is finished before new deliveries are
     # judged: its promotion already counts as landed everywhere else.
-    finished = pending_landing.finish_pending_landings()
-    with plan_read_scopes():
-        result = _land_deliveries()
+    lock = runs.crew_home() / "locks" / "landing-pass.lock"
+    lock.parent.mkdir(parents=True, exist_ok=True)
+    with lock.open("a+b") as handle:
+        try:
+            fcntl.flock(handle.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            return {"landed": [], "obligations": [], "deferred": [], "busy": True}
+        finished = pending_landing.finish_pending_landings()
+        with plan_read_scopes():
+            result = _land_deliveries()
     if finished:
         result["interrupted_landings"] = finished
     return result
@@ -1733,6 +1895,7 @@ def _land_deliveries() -> dict[str, Any]:
     deferred_reasons: dict[str, str] = {}
     measured_this_pass = False
     live = sorted(runs.list_live(), key=_delivery_order)
+    active_measurements = landing_measure.active_measurement_jobs(live)
     # One history read per project for the whole pass, not one per run: the
     # run directory holds thousands of entries on shared storage, and the pass
     # exists to stay off that cost.
@@ -1976,6 +2139,44 @@ def _land_deliveries() -> dict[str, Any]:
             # The stored head is this head: reuse it, and re-apply it to the
             # pointer so a promoted pass still records what it measured on.
             _record_suite_evidence(run_id, measured)
+        elif (_measure_config(pointer).get("landing") or {}).get(
+            "measure_partition"
+        ) or pointer.get("landing_measurement_job"):
+            if project not in history:
+                history[project] = _pass_history(live, project)
+            try:
+                measured = _scheduled_measurement(
+                    pointer,
+                    run_id,
+                    head,
+                    primary,
+                    history[project],
+                    active_measurements,
+                )
+            except (OSError, ValueError, subprocess.TimeoutExpired) as exc:
+                job = pointer.get("landing_measurement_job")
+                if isinstance(job, Mapping):
+                    active_measurements.discard(run_id)
+                    runs._mutate_pointer(
+                        run_id,
+                        lambda record, job=job: {
+                            **record,
+                            "landing_measurement_job": {**job, "status": "failed"},
+                        },
+                    )
+                measured = landing_measure.Measurement(
+                    command=command,
+                    suite={},
+                    population={},
+                    head=head,
+                    unreadable=str(exc),
+                )
+            if measured is None:
+                deferred.append(run_id)
+                deferred_reasons[run_id] = (
+                    "the measurement job is pending or its in-flight width is full"
+                )
+                continue
         elif command and measured_this_pass:
             deferred.append(run_id)
             deferred_reasons[run_id] = (

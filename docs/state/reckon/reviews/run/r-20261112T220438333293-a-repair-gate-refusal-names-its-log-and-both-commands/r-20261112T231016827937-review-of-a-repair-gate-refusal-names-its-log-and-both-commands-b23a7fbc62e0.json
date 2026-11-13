@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "569ce821b2a1f9f8c75b0ae146c4940d5d4075ed",
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/pending_landing.py:_delivered_repair:225",
+    "reckon/crew/pending_landing.py:finish_pending_landings:381",
+    "reckon/crew_run_commands.py:3547",
+    "reckon/crew/queue_landing.py:1720"
+  ],
+  "completed_at": "2026-11-12T23:24:42.035Z",
+  "dispatched_at": "2026-11-12T23:14:11Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: non-blocking: the \"the manifest states no tests: command\" branch cannot be reached through _require_repair_gate, because a refusal requires a non-empty check command, which _default_gate_evidence_from_manifest sets from",
+      "recorded_at": "2026-11-13T00:03:27.644977+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Non-blocking, accepted for this landing: non-blocking: the done-when asks the two arms be run on all_debug, and baseline-suite.log and after-suite.log record in-place runs on 98dci4-clu-2023; the runs are single-process and 14-26 s so the measure stands, but th",
+      "recorded_at": "2026-11-13T00:03:53.902469+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "302",
+      "severity": "non-blocking",
+      "text": "non-blocking: the \"the manifest states no tests: command\" branch cannot be reached through _require_repair_gate, because a refusal requires a non-empty check command, which _default_gate_evidence_from_manifest sets from the manifest's tests line whenever that line is a command and otherwise leaves equal to the log's recorded command."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T220438333293-a-repair-gate-refusal-names-its-log-and-both-commands/manifest.md",
+      "line": "19",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when asks the two arms be run on all_debug, and baseline-suite.log and after-suite.log record in-place runs on 98dci4-clu-2023; the runs are single-process and 14-26 s so the measure stands, but the record does not show the partition the done-when named."
+    }
+  ],
+  "head_log_revision": "b23a7fbc62e0b48828beb5ce24c1331262dc9800",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "read the single commit b23a7fbc against 569ce821; it replaces the bare refusal with two helpers in reckon/crew/pending_landing.py:273 and :288, adds the 97-line test, and adds the evidence fragment, 185 insertions and 4 deletions.",
+    "done_when": "the done_when names three refusal shapes, a matching gate and the base revision's bare-message negative control; tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py drives exactly those four, and negative-control.log records 3 failed/1 passed at 569ce821 with each failure quoting the bare message.",
+    "goal": "the node's goal is that a repair-gate refusal names its log and both commands; reckon/crew/pending_landing.py:259-266 at the reviewed head builds the message from the resolved check log_path and the recorded and declared commands.",
+    "manifest": "read; it records status complete, the literal gate command, 4 passed on the node gate, 51 passed on both suite arms and the negative control at 3 failed/1 passed.",
+    "write_paths": "the node was fenced to reckon/crew/pending_landing.py, tests/, its evidence fragment and its figures directory; every path in the diff lies inside that scope and the figures directory is unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_a_mismatched_command_names_the_log_and_both_commands, test_a_log_with_no_command_line_says_the_log_records_none and test_the_after_suite_log_is_the_one_the_refusal_names all redden on the base revision while test_a_matching_gate_lands stays green, so reinstating the bare message is proven to fail the guard.",
+    "evidence": "the gate at tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py covers the four done-when cases and negative-control.log shows 3 failed/1 passed at 569ce821, though the suite arms in baseline-suite.log and after-suite.log ran in place on the allocation rather than on all_debug as the done-when names.",
+    "fit": "the two helpers at reckon/crew/pending_landing.py:273 and :288 follow the module's lazy-import and docstring idiom, and ruff check and ruff format --check pass on both changed Python paths; the unreachable else at :302 is the one thing that does not carry a behaviour.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:259-266 and :288-310 name the resolved log path, the manifest's declared command and the log's recorded command, which is the deliverable verbatim.",
+    "reuse": "the change reuses _fresh_manifest from reckon/crew/promotion_checks.py:452, _command_from_gate_log and _normalized_command from reckon/crew/promotion_records.py:230 and :475, and adds no second reader for any of them.",
+    "scope_discipline": "the diff touches only reckon/crew/pending_landing.py, tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py and the node's own evidence fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a repair-gate refusal names its log and both commands; reckon/crew/pending_landing.py:259-266 at the reviewed head builds the message from the resolved check log_path and the recorded and declared commands.\nVERDICT done_when: the done_when names three refusal shapes, a matching gate and the base revision's bare-message negative control; tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py drives exactly those four, and negative-control.log records 3 failed/1 passed at 569ce821 with each failure quoting the bare message.\nVERDICT write_paths: the node was fenced to reckon/crew/pending_landing.py, tests/, its evidence fragment and its figures directory; every path in the diff lies inside that scope and the figures directory is unused.\nVERDICT manifest: read; it records status complete, the literal gate command, 4 passed on the node gate, 51 passed on both suite arms and the negative control at 3 failed/1 passed.\nVERDICT diff: read the single commit b23a7fbc against 569ce821; it replaces the bare refusal with two helpers in reckon/crew/pending_landing.py:273 and :288, adds the 97-line test, and adds the evidence fragment, 185 insertions and 4 deletions.\nVERDICT call_sites: the refusal is reachable in production from reckon/crew/pending_landing.py:225 via _delivered_repair, itself called at :381 by finish_pending_landings, which runs from reckon/crew_run_commands.py:3547 and reckon/crew/queue_landing.py:1720.\nCALL_SITES: reckon/crew/pending_landing.py:_delivered_repair:225, reckon/crew/pending_landing.py:finish_pending_landings:381, reckon/crew_run_commands.py:3547, reckon/crew/queue_landing.py:1720\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:259-266 and :288-310 name the resolved log path, the manifest's declared command and the log's recorded command, which is the deliverable verbatim.\nSCORE evidence: 17\nJUSTIFICATION evidence: the gate at tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py covers the four done-when cases and negative-control.log shows 3 failed/1 passed at 569ce821, though the suite arms in baseline-suite.log and after-suite.log ran in place on the allocation rather than on all_debug as the done-when names.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/pending_landing.py, tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py and the node's own evidence fragment, all inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: negative-control.log shows test_a_mismatched_command_names_the_log_and_both_commands, test_a_log_with_no_command_line_says_the_log_records_none and test_the_after_suite_log_is_the_one_the_refusal_names all redden on the base revision while test_a_matching_gate_lands stays green, so reinstating the bare message is proven to fail the guard.\nSCORE fit: 18\nJUSTIFICATION fit: the two helpers at reckon/crew/pending_landing.py:273 and :288 follow the module's lazy-import and docstring idiom, and ruff check and ruff format --check pass on both changed Python paths; the unreachable else at :302 is the one thing that does not carry a behaviour.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change reuses _fresh_manifest from reckon/crew/promotion_checks.py:452, _command_from_gate_log and _normalized_command from reckon/crew/promotion_records.py:230 and :475, and adds no second reader for any of them.\nFINDING reckon/crew/pending_landing.py:302 non-blocking: the \"the manifest states no tests: command\" branch cannot be reached through _require_repair_gate, because a refusal requires a non-empty check command, which _default_gate_evidence_from_manifest sets from the manifest's tests line whenever that line is a command and otherwise leaves equal to the log's recorded command.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T220438333293-a-repair-gate-refusal-names-its-log-and-both-commands/manifest.md:19 non-blocking: the done-when asks the two arms be run on all_debug, and baseline-suite.log and after-suite.log record in-place runs on 98dci4-clu-2023; the runs are single-process and 14-26 s so the measure stands, but the record does not show the partition the done-when named.",
+  "review_run_id": "r-20261112T231016827937-review-of-a-repair-gate-refusal-names-its-log-and-both-commands-b23a7fbc62e0",
+  "reviewed_base_sha": "569ce821b2a1f9f8c75b0ae146c4940d5d4075ed",
+  "reviewed_head_sha": "b23a7fbc62e0b48828beb5ce24c1331262dc9800",
+  "reviewed_run_id": "r-20261112T220438333293-a-repair-gate-refusal-names-its-log-and-both-commands",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:00:40.237702+00:00",
+  "total": 113
+}

@@ -1,0 +1,81 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "none",
+  "completed_at": "2026-11-13T00:07:33.809Z",
+  "dispatched_at": "2026-11-12T23:52:36Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the generator duplicates reckon/crew/metering.py's stream measurement; carried to the next-wave report node, which rebuilds the generator on metering.run_streams and measure_stream_tokens; no figure in this interim record moves",
+      "recorded_at": "2026-11-13T00:38:11.387610+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "no run in this five-run wave has a lane-change stream, so no figure moves; carried to the next-wave report node, which reads streams through metering.run_streams and so includes lane-change streams",
+      "recorded_at": "2026-11-13T00:38:23.919023+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the departure and arm-membership prose is true of this population of five; carried to the next-wave report node, which must generate that prose from the wave input rather than render literals",
+      "recorded_at": "2026-11-13T00:38:37.051659+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "scripts/interim_arm_report.py",
+      "id": "3295ea18123",
+      "line": 121,
+      "severity": "non-blocking",
+      "text": "`parse_claude` (and `parse_codex` at :233, `launches` at :45) re-implements the per-stream token measurement and stream discovery the repository already owns in `reckon/crew/metering.py`: `measure_stream_tokens` at :73, `_claude_usage` at :161, `_codex_usage` at :207 and `run_streams` at :319. The duplicate carries the same Claude dedupe-by-message-id rule and the same peak-context figure (`maximum_request_input_tokens`). It duplicates rather than extends or wraps that owner, so a correction to the owner's reading will not reach this record and the two can drift silently."
+    },
+    {
+      "file": "scripts/interim_arm_report.py",
+      "id": "0ef470bb36b",
+      "line": 45,
+      "severity": "non-blocking",
+      "text": "`launches()` returns only `stream.jsonl` and `resume-*.jsonl`, dropping `lane-change-*.jsonl`; `reckon/crew/metering.py:319` `run_streams` includes lane-change streams specifically because a lane change keeps the run id and its spend would otherwise be silently lost. None of this wave's five runs carries a lane-change stream, so no figure in the record moves, but the next wave's run that changes lane would report a cumulative input missing that lane's work."
+    },
+    {
+      "file": "scripts/interim_arm_report.py",
+      "id": "03804e5ff3d",
+      "line": 831,
+      "severity": "non-blocking",
+      "text": "The departures paragraph ('Two sections departed from the draw: ...') and the arm-membership paragraph at :839 are hardcoded prose in `render()`, while the record's own method section states the record is 'generated, not transcribed'. A second wave regenerates the tables from data but renders these literals unchanged, so prose describing a population of five would sit beside tables describing a different one."
+    }
+  ],
+  "justifications": {
+    "durability": "The diff adds no test and the write scope admits none; scripts/interim_arm_report.py:405 split_selfcheck exercises the split instrument at render time but asserts nothing, so a regression in the parsers at :121 or :233 would change the record's numbers with nothing failing.",
+    "evidence": "Re-running scripts/interim_arm_report.py reproduced every figure exactly and its store cross-check at :523 reads 5 of 5 runs, but the manifest records no gate log - the checks live only in the rendered record, and the manifest's ruff claim has no log file behind it.",
+    "fit": "The script follows the surrounding argparse-script idiom and ruff check --no-cache passes, but the hardcoded narrative at :831 and :839 contradicts the record's own claim at :879 that it is generated rather than transcribed.",
+    "goal_fidelity": "docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/interim-arm-report.html carries the per-arm table with intervals, the population by run id, each arm's effort-hour mix, the seed 20261112 and the no-verdict paragraph the done-when requires.",
+    "reuse": "scripts/interim_arm_report.py:121 re-implements the token measurement and stream discovery that reckon/crew/metering.py owns at :73 and :319 instead of calling it.",
+    "scope_discipline": "Both paths in the diff are in the manifest's write_paths, and the third declared path docs/figures/workers-spend-fewer-tokens-per-landed-node/interim-arm-report is unused with the reason recorded in outside_scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261112T233127145467-review-of-interim-arm-report-6e212b90e479",
+  "reviewed_base_sha": "06e99ec0ed92641df95fbd2b0414bc94520c518c",
+  "reviewed_head_sha": "6e212b90e479d2093e791325f001905a18b6d3df",
+  "reviewed_run_id": "r-20261112T225203868878-interim-arm-report",
+  "rubric": "six-dimension landed-change review",
+  "scores": {
+    "durability": 7,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 4,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:14:00+00:00",
+  "total": 79,
+  "verdicts": {
+    "call_sites": "No production runtime code imports or invokes scripts/interim_arm_report.py; a grep of reckon/, scripts/ and tests/ for its name returns only its own file, so the generator is operator-run and the record is a docs fragment.",
+    "diff": "Read commit 6e212b90e4 against base 06e99ec0ed: two files, +1065 lines, comprising the 129-line evidence fragment and a 936-line generator, with no test file, no plan edit and no change outside the declared paths.",
+    "done_when": "Section 12's done-when is the record itself; I re-ran scripts/interim_arm_report.py in --json mode and it reproduced every per-run figure exactly (clive 59,738,957 input / 456 tool calls / 7 refusals in 73 edit calls, omp-local 22,564,282, clive-anchored 24,737,000, codex 55,922,951, codex-anchored 36,598,180, and the store cross-check reading 5 of 5 runs), so the record measures what the done-when asserts rather than restating it.",
+    "goal": "The goal is to write the interim comparison of the five arms over the first wave as the section's evidence record; docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/interim-arm-report.html carries it, and every element the section's done-when enumerates is present in it.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T225203868878-interim-arm-report/manifest.md; it records status complete, one commit 6e212b90e4, both changed paths, the landing summary and the six rubric lines, and states that no test file is in the write scope, with baseline_suite and after_suite absent because the suite is unarmed and negative_control_log set to none.",
+    "write_paths": "The manifest declares three paths; the single commit touches docs/evidence/fragments/workers-spend-fewer-tokens-per-landed-node/interim-arm-report.html and scripts/interim_arm_report.py, both inside them, and the unused third path (the figures directory) is explained in the manifest's outside_scope."
+  }
+}

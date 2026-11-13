@@ -50,12 +50,18 @@ Two modes, selected by ``--hook``:
   pointers as the hook refuses. When the snapshot is not fresh for any reason it
   derives inline under a bounded budget instead, and if that budget runs out it
   allows the stop with one line naming the not-fresh reason, so no producer
-  state can trap a coordinator. The block fires at most once per list:
-  ``stop_hook_active`` marks a turn that already continued on a blocking
-  reason, and the hook then stays silent rather than looping. Stopping is read
-  by the harness as a verdict on the turn, so this mode's verdict never consults
-  the digest; it clears that record when the list is empty, because whichever
-  event first sees the emptying is the last one that can notice it.
+  state can trap a coordinator. The block fires at most once per unchanged
+  list: the mode records the duty set it last refused a turn over and stays
+  silent when that set is read again, so a growing age or overdue figure — the
+  only thing that changes about a list nobody has added to — does not re-block.
+  A list that gains or loses a duty is a different set and blocks again, and an
+  emptied list clears the record so a duty that drains and returns is refused
+  once more. That record is the stop mode's own, not the prompt mode's: the
+  prompt path injects the very list a stop that follows it reads, so comparing
+  against the prompt record would let every stop after an injection through.
+  ``stop_hook_active`` still marks a turn that already continued on a blocking
+  reason, and both guards run, so neither a re-fired stop nor a repeated list
+  can loop.
 
 A command the hook prints is one a coordinator may type, so it edits the lane a
 composed remedy names. A remedy that dispatches new work — a review, a new node
@@ -509,12 +515,24 @@ def _format_age(seconds: int) -> str:
 # follower registration, so the record of what this coordinator was told lives
 # with the record of the session itself.
 _DIGEST_SUFFIX = ".obligations"
+# The stop mode's own record of the duty set it last refused a turn over. The
+# prompt record cannot serve it: the prompt path injects the very list a stop
+# that follows it reads, so a stop compared against that record would be let
+# through after every injection, and a stop allowed over outstanding work is
+# the forgetting this hook exists to prevent.
+_STOP_DIGEST_SUFFIX = ".obligations-stop"
 
 
 def digest_path(project: str, session: str) -> Path:
     """The file holding the duty set one session was last injected with."""
     lock = snapshot_module().follower_lock_path(project, session)
     return lock.with_suffix(_DIGEST_SUFFIX)
+
+
+def stop_digest_path(project: str, session: str) -> Path:
+    """The file holding the duty set the stop mode last blocked a turn over."""
+    lock = snapshot_module().follower_lock_path(project, session)
+    return lock.with_suffix(_STOP_DIGEST_SUFFIX)
 
 
 def duty_digest(
@@ -1642,11 +1660,11 @@ def _stop(payload: dict[str, Any]) -> int:
                 sys.stdout.write(json.dumps({"systemMessage": line}))
             return 0
     follow_each_local_lane(resolved, project=project)
+    resolved_project = str(resolved.get("project") or project)
+    resolved_session = str(resolved.get("session") or session)
     items = resolved.get("obligations") or ()
-    digest_file = digest_path(
-        str(resolved.get("project") or project),
-        str(resolved.get("session") or session),
-    )
+    digest_file = digest_path(resolved_project, resolved_session)
+    stop_digest_file = stop_digest_path(resolved_project, resolved_session)
     if not items:
         # An empty list is the one change the digest cannot record by
         # comparison: there is no checklist to inject and nothing to compare
@@ -1655,27 +1673,47 @@ def _stop(payload: dict[str, Any]) -> int:
         # read as a repeat of what the session was already shown, and the duty
         # that emptied and came back is never spoken again. Either mode clears
         # it, because whichever event first sees the list empty is the last one
-        # that can notice it went away: a duty drained over a stop and returned
+        # that can notice it went away: a duty drained over a list and returned
         # before the next prompt is exactly the case a prompt-only clear would
-        # swallow.
+        # swallow. The stop's own refused-set record clears with it, so the
+        # duty that returns is refused once more rather than read as the list
+        # this mode already blocked over.
         _clear_digest(digest_file)
+        _clear_digest(stop_digest_file)
         return 0
     if not _blocking_items(items):
         # Only duties some reflex already owns: they are listed, and they do
-        # not hold the turn open. The recorded set is left as it stands,
-        # because the prompt path injected this very list and clearing it
-        # would make the same duties speak twice.
+        # not hold the turn open.
         return 0
     # The snapshot's list is what the sweep computed, not what the fleet owes
     # now. An acknowledgement written since it was published is honoured here
     # rather than at the next republish, so a deferral does not hold the turn
     # open for a duty the coordinator has already excused.
-    resolved = reapply_acknowledgements(
-        resolved, project=str(resolved.get("project") or project)
-    )
-    if not _blocking_items(resolved.get("obligations") or ()):
+    resolved = reapply_acknowledgements(resolved, project=resolved_project)
+    blocking = _blocking_items(resolved.get("obligations") or ())
+    if not blocking:
+        # Nothing is held open: either the snapshot listed no actionable duty
+        # or an acknowledgement in force defers the ones it named. The record
+        # of what this mode last refused is cleared with the emptiness, because
+        # an acknowledgement bounds only itself. A deferral that lapses puts
+        # the same duty identity back in the list, and a record left standing
+        # across the deferral would read it as the set already refused and
+        # never block for it again -- one acknowledgement silencing a duty for
+        # good.
+        _clear_digest(stop_digest_file)
+        return 0
+    # The block fires at most once per unchanged list. A list whose duties are
+    # the same ones this mode last refused a turn over has nothing new to say:
+    # only its ages and overdue figures moved, and repeating the refusal for
+    # those is what made a coordinator's hook block four times in a row on one
+    # duty. The digest is over identities, so an added or removed duty is a
+    # different set and blocks again. ``stop_hook_active`` still guards a turn
+    # that already continued, so the two together cannot loop.
+    blocking_digest = duty_digest(blocking)
+    if _read_digest(stop_digest_file) == blocking_digest:
         return 0
     emit("stop", payload, resolved)
+    _write_digest(stop_digest_file, blocking_digest)
     return 0
 
 

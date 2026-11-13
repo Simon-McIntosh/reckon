@@ -1,0 +1,64 @@
+<section id="dispatch-over-the-backlog" class="evidence-fragment">
+  <h2>§3 — A dispatch is not refused on its session's backlog</h2>
+  <p>
+    A session that had fallen behind on reconciling the runs it delivered was
+    refused both a direct dispatch and a queue-time check. The check read the
+    session's overdue terminal runs and raised <code>UnreconciledRuns</code>
+    before any worktree existed, so the only way past it was
+    <code>--allow-unreconciled-runs</code>. The backlog those rows describe is a
+    set of duties the coordinator owes, already listed by the obligations view,
+    and refusing new work on it left a session's queued work stranded behind an
+    unattended coordinator.
+  </p>
+  <p>
+    Dispatch now reads the rows on the other side of the decision instead of in
+    front of it: it copies this session's overdue terminal runs onto the run
+    record it writes, under <code>unreconciled_override</code>, on the live
+    pointer and on the committed ledger row, so a later reader sees the work was
+    started over unreconciled runs. The batch queue writer records the same
+    backlog on each request it stores, so a batch entry says the same thing a
+    direct dispatch says. Only this session's own rows are copied; another
+    session's backlog is neither counted nor recorded. The
+    <code>--allow-unreconciled-runs</code> flag still parses and is still
+    recorded in the field's <code>requested</code> value, and gates nothing,
+    because no gate is left for it to open. The project-wide queue bound
+    <code>queue.max_requests</code> is untouched and still refuses a dispatch
+    past it.
+  </p>
+  <p id="dispatch-over-the-backlog-measure">
+    Measure: the new
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_dispatch_is_not_refused_on_its_backlog.py</code>
+    reports <strong>4 passed</strong>: a direct dispatch and a batch entry from
+    a session holding one overdue unreconciled run both succeed and name that
+    run on the record they write, a session with no overdue run records none,
+    and the overdue run is still listed by the session's obligations. The node's
+    whole gate, resolved at head <code>d366c92e51</code>, reports
+    <strong>9 failed, 247 passed</strong>; the same set minus the new test file,
+    resolved at base <code>7aa21029e0</code>, reports
+    <strong>9 failed, 243 passed</strong>, and the nine failures are the same
+    nine test for test on both sides — sandbox effects, not this change. The
+    negative control — reinstating the refusal inside the backlog reader —
+    makes the direct-dispatch case raise <code>UnreconciledRuns</code>:
+    <strong>4 failed, 4 passed</strong>.
+  </p>
+  <p id="dispatch-over-the-backlog-witnesses">
+    Seven tests asserted the retired refusal before this section landed. All
+    seven now assert the recorded backlog instead: the two cases in
+    <code>tests/test_crew.py</code>, the subset case in
+    <code>tests/test_closure_fence_agreement.py</code>, the two parametrised
+    cases of
+    <code>tests/test_a_reflex_owned_review_never_blocks_a_dispatch.py::test_a_run_without_a_current_reflex_wait_is_dispatched_over_and_recorded</code>,
+    <code>tests/test_a_review_is_not_refused_for_its_run.py::test_an_implementation_dispatch_in_the_same_state_records_the_backlog</code>
+    and
+    <code>tests/test_review_reflex_sweep.py::test_the_dispatch_without_the_waiver_records_the_run_it_ran_over</code>.
+    Each keeps the case it was written for: only this session's own overdue
+    rows are named, every run past the grace is named, the CLI writes the same
+    backlog the direct call does, the dispatched review says its waiver was
+    requested while the direct dispatch beside it says it was not, and the
+    grace the run outlived is on the record. A refusal in a file that also
+    carries other cases stays where the section does not reach it:
+    <code>tests/test_review_reflex_sweep.py::test_the_review_dispatch_waives_the_unreconciled_fence</code>
+    reads a pointer for a field the pointer omits and fails at base as it does
+    at head, so it is unchanged and remains red on both sides.
+  </p>
+</section>

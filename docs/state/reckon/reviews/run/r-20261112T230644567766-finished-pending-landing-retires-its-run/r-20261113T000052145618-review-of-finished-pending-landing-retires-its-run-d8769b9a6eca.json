@@ -1,0 +1,112 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_review": [
+    {
+      "fails_if": "The fixture does not create a pointer with a distinct attempt identity; this is a setup precondition, not the regression guard.",
+      "lines": "141-144"
+    },
+    {
+      "fails_if": "Finishing does not report finished after a newer pointer is written during merge.",
+      "lines": "154"
+    },
+    {
+      "fails_if": "Finishing selects a revision different from the actual Git repair commit; the expected SHA is independently read from Git by the shared helper.",
+      "lines": "155"
+    },
+    {
+      "fails_if": "The repaired head is absent from remote main or the independently checked combined source-content marker is missing.",
+      "lines": "156 (shared helper lines 66-69)"
+    },
+    {
+      "fails_if": "Pointer retirement ignores the attempt comparison and removes the newer pointer; negative-newer.log demonstrates this exact failure.",
+      "lines": "157"
+    },
+    {
+      "fails_if": "Finishing alters any persisted newer-pointer field or replaces its identity; runs.read_pointer rereads the on-disk file after the real merge, so this is a preservation invariant rather than an echoed argument assertion.",
+      "lines": "158"
+    },
+    {
+      "fails_if": "Finishing removes the newer attempt worktree directory.",
+      "lines": "159"
+    },
+    {
+      "fails_if": "The preserved directory no longer resolves to the actual repaired Git commit.",
+      "lines": "160"
+    },
+    {
+      "fails_if": "Finishing unregisters the newer attempt worktree even if the directory remains.",
+      "lines": "161"
+    },
+    {
+      "fails_if": "Successful integration leaves the pending landing record behind.",
+      "lines": "162"
+    }
+  ],
+  "call_sites": [],
+  "call_sites_note": "The incremental diff adds only tests and evidence; production code has no runtime caller of either added test definition. The exercised owner is pending_landing.finish_pending_landings and its marked-pointer release guard.",
+  "checklist_verdicts": {
+    "diff": "Read commits 136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e and d8769b9a6ecaf5803b1e54920225fb4a41fcebd2 separately against previous reviewed head f187424518493f36b7c234c1d33c53c27c2fe3d4; they add one regression case and its evidence in the two declared files with no production change.",
+    "done_when": "Read live s29 and r-20261112T230644567766-finished-pending-landing-retires-its-run/manifest.md; the new test at tests/test_a_finished_pending_landing_retires_its_run.py:132 exercises a real merge/push and checks pointer, worktree and pending-record state, with after-exact.log recording 55 passed and negative-newer.log recording its pointer assertion failing.",
+    "goal": "Read the source goal in r-20261112T230644567766-finished-pending-landing-retires-its-run/prompt.txt and live section s29 at version 120; tests/test_a_finished_pending_landing_retires_its_run.py:132 adds preservation of a newer live attempt while the existing production guard remains unchanged.",
+    "manifest": "Read r-20261112T230644567766-finished-pending-landing-retires-its-run/manifest.md and the actual baseline-exact.log, after-exact.log, probe-newer.log, negative-newer.log and lint-newer.log; the completed summaries support zero added failures and preservation already working before this test was added.",
+    "write_paths": "Read the source prompt and manifest declarations; both incremental commits change only tests/test_a_finished_pending_landing_retires_its_run.py and docs/evidence/fragments/work-flows-to-the-lane/finished-pending-landing-retires-its-run.html, inside the declared fence."
+  },
+  "completed_at": "2026-11-13T00:10:08Z",
+  "dispatched_at": "2026-11-13T00:03:59Z",
+  "evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_finished_pending_landing_retires_its_run.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/after-exact.log",
+      "measurement_cwd": "/tmp/pending-attempt-5zv5pfj8/tree",
+      "measurement_module": "/tmp/pending-attempt-5zv5pfj8/tree/reckon/crew/pending_landing.py",
+      "observed_failure_ids": [],
+      "revision": "d8769b9a6ecaf5803b1e54920225fb4a41fcebd2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/baseline-exact.log",
+      "measurement_cwd": "/tmp/pending-attempt-1ikfy2it/tree",
+      "measurement_module": "/tmp/pending-attempt-1ikfy2it/tree/reckon/crew/pending_landing.py",
+      "observed_failure_ids": [],
+      "revision": "bcca31c1c13df0d941db58e9d02ba96be5f321e0"
+    },
+    "failure_delta_method": "Read completed source baseline_suite and after_suite log summaries and terminal EXIT=0; extracted FAILED/ERROR ids are both empty. The same parser observes one FAILED id and EXIT=1 in negative-newer.log, a positive control for the absence claim.",
+    "lint_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/lint-newer.log",
+    "negative_control": "negative-newer.log: 1 failed in 3.04s; EXIT=1 after removal of marked-attempt comparison",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T230644567766-finished-pending-landing-retires-its-run/negative-newer.log",
+    "reproduction": "probe-newer.log: 1 passed in 2.85s; EXIT=0 at previous reviewed head with candidate test overlaid"
+  },
+  "findings": [],
+  "project": "reckon",
+  "review": "VERDICT goal: Read the source goal in r-20261112T230644567766-finished-pending-landing-retires-its-run/prompt.txt and live section s29 at version 120; tests/test_a_finished_pending_landing_retires_its_run.py:132 adds preservation of a newer live attempt while the existing production guard remains unchanged.\nVERDICT done_when: Read live s29 and r-20261112T230644567766-finished-pending-landing-retires-its-run/manifest.md; the new test at tests/test_a_finished_pending_landing_retires_its_run.py:132 exercises a real merge/push and checks pointer, worktree and pending-record state, with after-exact.log recording 55 passed and negative-newer.log recording its pointer assertion failing.\nVERDICT write_paths: Read the source prompt and manifest declarations; both incremental commits change only tests/test_a_finished_pending_landing_retires_its_run.py and docs/evidence/fragments/work-flows-to-the-lane/finished-pending-landing-retires-its-run.html, inside the declared fence.\nVERDICT manifest: Read r-20261112T230644567766-finished-pending-landing-retires-its-run/manifest.md and the actual baseline-exact.log, after-exact.log, probe-newer.log, negative-newer.log and lint-newer.log; the completed summaries support zero added failures and preservation already working before this test was added.\nVERDICT diff: Read commits 136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e and d8769b9a6ecaf5803b1e54920225fb4a41fcebd2 separately against previous reviewed head f187424518493f36b7c234c1d33c53c27c2fe3d4; they add one regression case and its evidence in the two declared files with no production change.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_finished_pending_landing_retires_its_run.py:132-163 verifies the live plan's additional newer-attempt requirement through actual remote integration followed by pointer and worktree preservation.\nSCORE evidence: 20\nJUSTIFICATION evidence: r-20261112T230644567766-finished-pending-landing-retires-its-run/after-exact.log records 55 passed at d8769b9a6ecaf5803b1e54920225fb4a41fcebd2, baseline-exact.log records 51 passed at the original base, and negative-newer.log records EXIT=1 at tests/test_a_finished_pending_landing_retires_its_run.py:157 after remote checks succeed.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: Commit 136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e changes only tests/test_a_finished_pending_landing_retires_its_run.py and commit d8769b9a6ecaf5803b1e54920225fb4a41fcebd2 changes only its declared evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: Removing the attempt comparison in reckon/crew/pending_landing.py:_release_marked_pointer makes tests/test_a_finished_pending_landing_retires_its_run.py:157 fail in negative-newer.log, while lines 158-163 independently guard pointer contents, directory, head, registration and record cleanup.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_finished_pending_landing_retires_its_run.py:132 follows the existing deliveries fixture and real Git helper idiom with mechanism-based names, and r-20261112T230644567766-finished-pending-landing-retires-its-run/lint-newer.log records clean Ruff and format checks.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches for newer attempts and marked-pointer identity locate reckon/crew/pending_landing.py:pointer_attempt and _release_marked_pointer as owners; tests/test_a_finished_pending_landing_retires_its_run.py:146 wraps merge.land and reuses _promoted_repair, whose deliveries owner is tests/test_a_conflicting_landing_is_repaired.py:56, without duplicating production behavior.\n",
+  "review_run_id": "r-20261113T000052145618-review-of-finished-pending-landing-retires-its-run-d8769b9a6eca",
+  "reviewed_base_sha": "f187424518493f36b7c234c1d33c53c27c2fe3d4",
+  "reviewed_commits": [
+    "136ba5f0a2e5bcc783cb8bf95b9036a7bd33632e",
+    "d8769b9a6ecaf5803b1e54920225fb4a41fcebd2"
+  ],
+  "reviewed_head_sha": "d8769b9a6ecaf5803b1e54920225fb4a41fcebd2",
+  "reviewed_run_id": "r-20261112T230644567766-finished-pending-landing-retires-its-run",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "self_referential_assertions": [],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:14:18.073453+00:00",
+  "total": 120
+}

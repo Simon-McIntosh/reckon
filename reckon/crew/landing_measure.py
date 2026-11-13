@@ -38,6 +38,7 @@ from __future__ import annotations
 import ast
 import contextlib
 import hashlib
+import json
 import math
 import os
 import re
@@ -80,6 +81,13 @@ BOUND_MULTIPLE = 2.0
 #: A line a failing test runner reports its failing id on.
 _FAILED_ID = re.compile(r"^(?:FAILED|ERROR)[ \t]+(\S+)", re.MULTILINE)
 
+#: The receipt a partitioned arm's own EXIT trap prints. The scheduler writes
+#: lines of its own after it — an ``srun: error: … Exited with exit code N``
+#: line, for one — so the receipt is read on its own line and not as the log's
+#: last one. The last match wins: a line the suite itself printed earlier is
+#: superseded by the trap's own, which is written after everything the arm ran.
+_EXIT_RECEIPT = re.compile(r"^EXIT=(\d+)[ \t]*$", re.MULTILINE)
+
 #: The token an armed command carries in place of the node's own test files.
 _SCOPED_PLACEHOLDER = "{node_test_files}"
 
@@ -88,6 +96,165 @@ _SCOPED_PLACEHOLDER = "{node_test_files}"
 _ASSIGNMENT = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*=")
 
 _RUN = subprocess.run
+_SCHEDULER_RUN = subprocess.run
+
+# The limit covers whole measurements, including their isolated re-runs.
+MEASUREMENT_WIDTH_ENV = "RECKON_LANDING_MEASUREMENT_WIDTH"
+DEFAULT_MEASUREMENT_WIDTH = 2
+_ACTIVE_JOB_STATES = frozenset(
+    {"PENDING", "RUNNING", "CONFIGURING", "COMPLETING", "SUSPENDED", "REQUEUED"}
+)
+
+
+class MeasurementJobError(ValueError):
+    """A terminal scheduler job cannot supply evidence for its landing."""
+
+
+def measurement_width() -> int:
+    """The number of scheduler measurements the lander may have in flight."""
+    try:
+        return max(1, int(os.environ.get(MEASUREMENT_WIDTH_ENV, "2")))
+    except ValueError:
+        return DEFAULT_MEASUREMENT_WIDTH
+
+
+def submit_measurement(
+    request_path: Path, *, config: Mapping[str, Any], bound: float
+) -> dict[str, Any]:
+    """Submit a whole measurement and return its durable scheduler identity."""
+    import sys
+
+    request = json.loads(request_path.read_text(encoding="utf-8"))
+    log = request_path.parent / "job.log"
+    source = Path(__file__).resolve().parents[2]
+    invocation = shlex.join(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path; import sys; "
+                "from reckon.crew.queue_landing import run_measurement_request; "
+                "run_measurement_request(Path(sys.argv[1]))"
+            ),
+            str(request_path),
+        ]
+    )
+    script = f"""set -euo pipefail
+scratch=
+trap 'status=$?; if [ -n "$scratch" ]; then rm -rvf "$scratch"; fi; printf "EXIT=%s\\n" "$status"' EXIT
+export TMPDIR={NODE_LOCAL_TEMP_ROOT}
+scratch=$(mktemp -d "$TMPDIR/$USER-landing-job-XXXXXX")
+export TMPDIR="$scratch" RECKON_WORKER_SCRATCH_ROOT="$scratch"
+export PYTHONPATH={shlex.quote(str(source))}
+{invocation}
+"""
+    landing = config.get("landing") or {}
+    selected, argv, environment = partition_submission(
+        script=script,
+        partition=str(landing.get("measure_partition") or "all_debug"),
+        long_partition=str(landing.get("measure_long_partition") or "rigel"),
+        bound_seconds=bound,
+        chdir=Path(request["pointer"]["repo"]),
+        log_path=log,
+    )
+    argv.remove("--wait")
+    finished = _SCHEDULER_RUN(
+        argv, capture_output=True, text=True, check=False, timeout=30, env=environment
+    )
+    match = re.fullmatch(r"(\d+)(?:;[^\n]+)?\n?", finished.stdout or "")
+    if finished.returncode or not match:
+        raise ValueError(
+            f"measurement submission failed; log {log}: "
+            f"{finished.stderr or finished.stdout or finished.returncode}"
+        )
+    return {
+        "job_id": match.group(1),
+        "log_path": str(log),
+        "request_path": str(request_path),
+        "result_path": str(request_path.parent / "result.json"),
+        "partition": selected,
+        "bound_seconds": bound,
+        "submitted_at": time.time(),
+        "status": "pending",
+        "head": request["head"],
+        "primary": request["primary"],
+        "command": request["pointer"]["suite_command"],
+    }
+
+
+def measurement_job_state(job: Mapping[str, Any]) -> str:
+    """Read one scheduler observation; an absent accounting row is unknown."""
+    job_id = str(job["job_id"])
+    for argv in (
+        ["squeue", "-h", "-j", job_id, "-o", "%T"],
+        ["sacct", "-n", "-X", "-j", job_id, "--format=State", "--parsable2"],
+    ):
+        finished = _SCHEDULER_RUN(
+            argv, capture_output=True, text=True, check=False, timeout=10
+        )
+        if finished.returncode:
+            raise ValueError(
+                f"job {job_id}, log {job['log_path']}: scheduler query failed: "
+                f"{finished.stderr or finished.stdout}"
+            )
+        states = (finished.stdout or "").strip().splitlines()
+        if states:
+            return states[0].strip().split("|")[0].split()[0].rstrip("+")
+    return "UNKNOWN"
+
+
+def active_measurement_jobs(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
+    """Count scheduler work even when its delivery currently waits on review."""
+    active = set()
+    for pointer in pointers:
+        job = pointer.get("landing_measurement_job")
+        if not isinstance(job, Mapping) or job.get("status") != "pending":
+            continue
+        try:
+            state = measurement_job_state(job)
+        except (OSError, ValueError, subprocess.TimeoutExpired):
+            state = "UNKNOWN"
+        if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+            active.add(str(pointer["run_id"]))
+    return active
+
+
+def read_measurement_job(job: Mapping[str, Any]) -> Measurement | None:
+    """A terminal job needs both a successful receipt and a matching result."""
+    job_id, log_path = str(job["job_id"]), str(job["log_path"])
+    state = measurement_job_state(job)
+    if state in _ACTIVE_JOB_STATES or state == "UNKNOWN":
+        return None
+    if state != "COMPLETED":
+        raise MeasurementJobError(
+            f"measurement job {job_id} ended {state}; log {log_path}"
+        )
+    try:
+        output = Path(log_path).read_text(encoding="utf-8")
+        record = json.loads(Path(str(job["result_path"])).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError) as exc:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {exc}"
+        ) from exc
+    error = ""
+    if not re.search(r"^EXIT=0\n?\Z", output, re.MULTILINE):
+        error = "the job has no terminal EXIT=0 receipt"
+    elif not isinstance(record, Mapping):
+        error = "the job result is not a measurement record"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    measured = Measurement.from_dict(record)
+    if measured.head != job["head"] or measured.command != job["command"]:
+        error = "the job result names a different delivery"
+    elif measured.population.get("main_sha") != job["primary"]:
+        error = "the job result names a different primary"
+    if error:
+        raise MeasurementJobError(
+            f"measurement job {job_id} receipt unreadable; log {log_path}: {error}"
+        )
+    return measured
 
 
 @dataclass(frozen=True)
@@ -99,6 +266,10 @@ class Arm:
     failure_ids: tuple[str, ...]
     log_path: str = ""
     timed_out: bool = False
+    #: Why a submitted arm's log could not be read, when the reason is known:
+    #: a log with no receipt, or one whose receipt disagrees with the status
+    #: the scheduler returned. Empty when the arm simply has no status.
+    unreadable_reason: str = ""
     #: Wall-clock seconds the arm took, and how many files its population
     #: read. The pair is what a later arm's bound is sized from, so an arm
     #: that took 900 s is not judged again under a bound that ignores it.
@@ -545,6 +716,7 @@ def _arm(
         int(finished.returncode),
         failing_ids(output),
         str(log_path),
+        unreadable_reason=str(getattr(finished, "unreadable_reason", "") or ""),
         elapsed_seconds=elapsed,
         file_count=file_count,
     )
@@ -751,16 +923,29 @@ exit "$status"
         output = log.read_text() if log.exists() else ""
         # Only the arm receipt can report a test exit. A failed submission or a
         # job killed before its receipt is unreadable even if stdout looks green.
-        receipt = re.search(r"^EXIT=(\d+)\n?\Z", output, re.MULTILINE)
-        status = int(receipt.group(1)) if receipt else 3
-        if status != finished.returncode:
+        # The scheduler appends lines of its own to the job's log after the
+        # arm's trap has printed the receipt, so the receipt is read on its own
+        # line rather than as the log's last one; the last such line is the
+        # trap's, since the trap prints after everything the arm itself ran.
+        receipts = _EXIT_RECEIPT.findall(output)
+        status = int(receipts[-1]) if receipts else 3
+        reason = ""
+        if not receipts:
+            reason = "carries no exit receipt"
+        elif status != finished.returncode:
+            reason = (
+                f"reported exit {status} in its receipt while the job returned "
+                f"{finished.returncode}"
+            )
             status = 3
-        return subprocess.CompletedProcess(
+        returned = subprocess.CompletedProcess(
             command,
             status,
             output or f"{finished.stdout or ''}{finished.stderr or ''}",
             "",
         )
+        returned.unreadable_reason = reason
+        return returned
 
     return run
 
@@ -1075,6 +1260,8 @@ def armed_observations(
             unreadable = (
                 f"the measured {name} arm exceeded its {timeout:g}s bound"
                 if arm.timed_out
+                else f"the measured {name} arm {arm.unreadable_reason}"
+                if arm.unreadable_reason
                 else f"the measured {name} arm did not run"
             )
     if unreadable:
@@ -1157,6 +1344,8 @@ def control_mutation_observation(
             "unreadable": (
                 f"the control mutation exceeded its {timeout:g}s bound"
                 if arm.timed_out
+                else f"the control mutation {arm.unreadable_reason}"
+                if arm.unreadable_reason
                 else "the control mutation did not run"
             )
         }

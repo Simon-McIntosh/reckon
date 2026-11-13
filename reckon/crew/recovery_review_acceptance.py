@@ -1,7 +1,10 @@
 # ruff: noqa: I001, UP035
 from __future__ import annotations
 
+import hashlib
+import json
 import subprocess
+from contextlib import suppress
 from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
@@ -355,6 +358,81 @@ def _remote_unreadable_reason(
     )
 
 
+def _acceptance_inputs(
+    pointer: Mapping[str, Any],
+    head: str,
+    tree: Path | None,
+    review: Mapping[str, Any] | None,
+    gate: Mapping[str, Any] | None,
+    commits: Sequence[str],
+) -> str:
+    """Identify the run, review and gate judged, without observing the remote."""
+    from .recovery_memo import _file_identity, _worktree_head_identity
+
+    fields = (
+        "run_id",
+        "project",
+        "repo",
+        "worktree",
+        "base_sha",
+        "node",
+        "attempt",
+        "attempt_kind",
+        "phase",
+        "pid",
+        "pid_start_time",
+        "session_id",
+        "backend",
+        "agent",
+        "log_path",
+        "resume_launch_in_flight",
+        "manifest_path",
+    )
+    checkout = str(pointer.get("repo") or "")
+    manifest = str(pointer.get("manifest_path") or "")
+    gate_log = str((gate or {}).get("log_path") or "")
+    inputs = {
+        "pointer": {field: pointer.get(field) for field in fields},
+        "head": head,
+        "tree_head": _worktree_head_identity(tree),
+        "checkout_head": _worktree_head_identity(Path(checkout)) if checkout else "",
+        "checkout_exists": Path(checkout).is_dir() if checkout else False,
+        "review": review,
+        "gate": gate,
+        "commits": list(commits),
+        "manifest": _file_identity(manifest) if manifest else "",
+        "gate_log": _file_identity(gate_log) if gate_log else "",
+    }
+    return hashlib.sha256(
+        json.dumps(inputs, sort_keys=True, default=str).encode()
+    ).hexdigest()
+
+
+def _acceptance_remote_inputs(checkout: Path | None, commits: Sequence[str]) -> list:
+    """The remote tip and commit availability that can release a refusal.
+
+    Read the remote even when a refusal is cached: a push from another checkout
+    moves no local ref, but makes an unmerged run eligible for acceptance.
+    """
+    from reckon.crew import merge
+
+    if checkout is None or not checkout.is_dir() or not commits:
+        return []
+    branch, detail = _checked_out_branch(checkout)
+    remote_head, _route, remote_detail = (
+        merge._read_remote_head(checkout, "origin", branch)
+        if branch
+        else (None, None, "")
+    )
+    return [
+        branch,
+        detail,
+        remote_head,
+        remote_detail,
+        [_names_a_commit(checkout, commit) for commit in commits],
+    ]
+
+
 def accept_clean_review(
     pointer: Mapping[str, Any],
     *,
@@ -383,6 +461,7 @@ def accept_clean_review(
     nothing to add. A dict is returned whenever the run was eligible and an
     outcome was reached, so the sweep records why a refusal did not promote.
     """
+    pointer = {**pointer, **runs.read_dispatch_detail(pointer)}
     run_id = str(pointer.get("run_id") or "")
     project = str(pointer.get("project") or "")
     if not run_id or not project:
@@ -398,19 +477,45 @@ def accept_clean_review(
         return None
     checkout_value = str(pointer.get("repo") or "").strip()
     checkout = Path(checkout_value).expanduser() if checkout_value else None
-    if checkout is None or not checkout.is_dir():
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": "the run names no repository to verify the merged gate against",
-        }
     gate_check, commits = _recorded_gate_passed(pointer)
+    inputs = _acceptance_inputs(pointer, head, tree, review, gate_check, commits)
+    refusal_key = [inputs, _acceptance_remote_inputs(checkout, commits)]
+    memo_path = runs.run_dir(run_id) / "acceptance-refusal.json"
+    try:
+        memo = json.loads(memo_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        memo = None
+    if (
+        isinstance(memo, dict)
+        and memo.get("inputs") == refusal_key
+        and isinstance(memo.get("refusal"), dict)
+        and memo["refusal"].get("accepted") is False
+    ):
+        return {**memo["refusal"], "unchanged": True}
+
+    def refuse(result: dict[str, Any]) -> dict[str, Any]:
+        # A cache that cannot be written costs another judgement, not a
+        # different acceptance verdict.
+        with suppress(OSError):
+            runs._write_json(memo_path, {"inputs": refusal_key, "refusal": result})
+        return result
+
+    if checkout is None or not checkout.is_dir():
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": "the run names no repository to verify the merged gate against",
+            }
+        )
     if gate_check is None:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": "the run records no passing gate to re-run at the merged head",
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": "the run records no passing gate to re-run at the merged head",
+            }
+        )
     # The run's work must already be on the branch the remote carries. A run
     # reaching acceptance straight after its review has not been merged, so a
     # gate re-run here would verify a tree the change is not in and record a
@@ -419,22 +524,26 @@ def accept_clean_review(
     # so acceptance stands down naming the cause rather than promoting blind.
     missing, remote_refusal = _commits_missing_from(checkout, commits)
     if remote_refusal is not None:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": _remote_unreadable_reason(remote_refusal, commits),
-            "remote_cause": remote_refusal.get("cause"),
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": _remote_unreadable_reason(remote_refusal, commits),
+                "remote_cause": remote_refusal.get("cause"),
+            }
+        )
     if missing:
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": (
-                "the run's commits are not on the primary branch yet; a "
-                "coordinator merges it: " + ", ".join(sha[:12] for sha in missing)
-            ),
-            "unmerged_commits": list(missing),
-        }
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": (
+                    "the run's commits are not on the primary branch yet; a "
+                    "coordinator merges it: " + ", ".join(sha[:12] for sha in missing)
+                ),
+                "unmerged_commits": list(missing),
+            }
+        )
     from reckon.crew import promotion as promotion_module
 
     worktree = str(pointer.get("worktree") or "").strip()
@@ -446,24 +555,61 @@ def accept_clean_review(
         worktree_roots=(worktree,) if worktree else (),
     )
     if str(report.get("integrated_verdict")) != "passed":
-        return {
-            "run_id": run_id,
-            "accepted": False,
-            "reason": str(
-                report.get("finding")
-                or report.get("reason")
-                or "the integrated gate did not pass at the merged head"
-            ),
-            "gate_report": report,
-        }
-    try:
-        result = promotion_module.complete(
-            run_id,
-            gate="passed",
-            gate_check=gate_check,
-            root=checkout,
-            promoted_by="review-acceptance",
+        return refuse(
+            {
+                "run_id": run_id,
+                "accepted": False,
+                "reason": str(
+                    report.get("finding")
+                    or report.get("reason")
+                    or "the integrated gate did not pass at the merged head"
+                ),
+                "gate_report": report,
+            }
         )
+    try:
+        with promotion_module._promotion_host_lease(run_id):
+            # Manifest-backed runs are live deliveries. Reconstructed records
+            # supplied directly without a manifest keep complete's own resolver.
+            current = (
+                runs.read_pointer(run_id) if pointer.get("manifest_path") else pointer
+            )
+            current = {**current, **runs.read_dispatch_detail(current)}
+            from .recovery_memo import _classification_input_tick
+            from .recovery_review_dispatch import _resolve_review_head_and_tree
+
+            # A sweep's review snapshot predates the judgement. Re-read its
+            # inputs under the lease rather than reusing that tick's answer.
+            with _classification_input_tick():
+                current_head, current_tree = (
+                    _resolve_review_head_and_tree(current)
+                    if pointer.get("manifest_path")
+                    else _review_head_and_tree(current)
+                )
+                current_review, _ = select_review_for_head(
+                    project, run_id, current_head, tree=current_tree
+                )
+                current_gate, current_commits = _recorded_gate_passed(current)
+                if inputs != _acceptance_inputs(
+                    current,
+                    current_head,
+                    current_tree,
+                    current_review,
+                    current_gate,
+                    current_commits,
+                ):
+                    return {
+                        "run_id": run_id,
+                        "accepted": False,
+                        "reason": "the run or its acceptance inputs changed while it was judged",
+                    }
+            result = promotion_module.complete(
+                run_id,
+                gate="passed",
+                gate_check=gate_check,
+                root=checkout,
+                promoted_by="review-acceptance",
+            )
     except (CrewError, OSError) as refusal:
         return {
             "run_id": run_id,

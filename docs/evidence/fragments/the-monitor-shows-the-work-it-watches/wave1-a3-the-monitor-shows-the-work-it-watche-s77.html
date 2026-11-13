@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A follower armed after a settle continues the pane's words</title>
+</head>
+<body>
+<section id="wave1-a3-the-monitor-shows-the-work-it-watche-s77-landing" data-reckon="section">
+<h2>§77 — A follower armed after a settle continues the pane's words</h2>
+<p><strong>Path found.</strong> The checkpoint was not the defect: the copied pane
+records under <code>~/.cache/reckon-monitor-noise/2026-10-21/</code> carry the run
+in <code>reported</code> (<code>r-20261021T165659379209-cbl-replay-hardening:
+"promoted"</code>), and the history shows the pane drawing
+<code>working → delivered</code> for it at 21:12:46 and <code>new → landed</code>
+at 21:16:09. The restore was computed and then thrown away: the fresh-arming
+branch of <code>_follow_watch_lines</code> receives the checkpoint's states from
+<code>_follow_resume_plan</code> and yields the resume event with an empty
+<code>reported</code> map, while only the in-place-reload branch calls
+<code>path.reseed(recorded, lift_groups=carried_lifts)</code>.</p>
+<p><strong>Reproduction at base.</strong> A run is drawn as delivered by one
+arming, that arming settles, the promotion leaves the live fleet, and a second
+arming reads the landing. At the base revision the second arming draws no row at
+all: a landing is observer context unless the pane carried the delivery it
+follows, and the new process's row path starts with no such memory.</p>
+<p><strong>Fix.</strong> <code>_restore_carried_words</code> restores the word the
+pane carried from the checkpoint, and the resume event carries the checkpoint's
+states for the runs the fleet replay will not re-announce, so the grid continues
+from the word the reader saw. Live runs are left out of that map: seeding them
+would collapse the replay's inventory rows into self-transitions and take the
+fleet off the pane.</p>
+<p><strong>Measure.</strong> <code>tests/test_a_second_follower_keeps_a_landing_from_state.py</code>
+drives follower A to draw <code>delivered</code> and settle, then arms follower B
+for the same project and session as the host does; B's row for the landing reads
+<code>delivered → landed</code>. The negative control removes the restore, and B
+draws no row for the run.</p>
+</section>
+</body>
+</html>

@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T19:11:57.115Z",
+  "dispatched_at": "2026-11-12T18:59:00Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "refuted: the finding cites 85df5f3562b7d20bf3de720eb4f416b9971c1639, which swaps two characters of the real commit 85df5f3562b7d20bf3de720be4f416b9971c1639. That commit is in the object store (git cat-file -t answers commit, git show reads its message and diff) and is an ancestor of the head, so landing the head merges it. The manifest's commits list omitting it is cosmetic.",
+      "recorded_at": "2026-11-12T19:17:45.363349+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_crew.py",
+      "line": "2122",
+      "severity": "blocking",
+      "text": "blocking: the commit 85df5f3562b7d20bf3de720eb4f416b9971c1639 that rewrote the remaining refusal cases is absent from the object store - git cat-file -t, git show and git log -1 all answer 'bad object' in both this worktree and the main checkout, while only rev-list resolves it from the commit-graph - so the reviewed history cannot be walked through it, the manifest's commits list omits it, and promotion cannot read that commit's message or diff to audit it."
+    },
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/dispatch-over-the-backlog.html",
+      "line": "35",
+      "severity": "non-blocking",
+      "text": "non-blocking: the landing fragment records its measure at head d366c92e51 as 9 failed / 247 passed against 9 failed / 243 passed at base, while the gate arms stored for the landed head report 10 failed / 264 passed at cc5e7cfe84 and 10 failed / 260 passed at 7aa21029e0, and no log left in the run directory carries the fragment's figures; a reader comparing the landed evidence to the arms beside it finds numbers that reconcile with no log."
+    },
+    {
+      "file": "reckon/crew/dispatch.py",
+      "line": "2168",
+      "severity": "non-blocking",
+      "text": "non-blocking: the backlog= keyword added at the five held-dispatch call sites (2168, 2404, 2483, 2528, 2600) has no assertion that reddens if it is dropped - no test reads the pointer a held dispatch stores before admission, and the admission launch re-records unreconciled_override under source 'admission-launch', so removing the keyword leaves every gate green while the queued request silently stops naming the backlog it was made over."
+    }
+  ],
+  "project": "reckon",
+  "review_run_id": "r-20261112T184555122869-review-of-dispatch-over-the-backlog-cc5e7cfe84f5",
+  "reviewed_base_sha": "6da1c0a4edd0cf8dc6eaf9ef73fcf0704eb9f41d",
+  "reviewed_head_sha": "cc5e7cfe84f567c0cdb3d4d1daae5670bdf533d3",
+  "reviewed_run_id": "r-20261112T160215702275-dispatch-over-the-backlog",
+  "scores": {
+    "durability": 16,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T19:14:54.113998+00:00",
+  "total": 105
+}

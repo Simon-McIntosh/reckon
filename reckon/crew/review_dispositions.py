@@ -173,6 +173,45 @@ def sub_floor_dimensions(
     return rows
 
 
+def sub_floor_evidence(
+    record: Mapping[str, Any] | None,
+    floors: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Return each sub-floor row with the review's own account of that dimension.
+
+    A row naming only the score and the floor tells a repair which standard it
+    missed and nothing about what missed it, so a worker reading the advice has
+    to rediscover the cause the reviewer already recorded. The justification
+    the reviewer wrote for that dimension, and the findings the same record
+    raised, are that account; they travel together with the row so the caller
+    composing advice can quote them.
+
+    Findings carry no dimension of their own — the record is one review of one
+    run, and every finding on it is part of what the reviewer observed while
+    scoring — so the record's findings are repeated on each row rather than
+    attributed to one. A dimension the reviewer justified but raised no finding
+    about still carries its justification, and a record with neither yields a
+    row with both empty: the score and the floor remain the only fact, which is
+    what the caller had before.
+    """
+    rows = sub_floor_dimensions(record, floors)
+    if not rows or not isinstance(record, Mapping):
+        return rows
+    justifications = record.get("justifications")
+    written = justifications if isinstance(justifications, Mapping) else {}
+    findings = record.get("findings")
+    raised = (
+        [dict(finding) for finding in findings] if isinstance(findings, list) else []
+    )
+    evidence: list[dict[str, Any]] = []
+    for row in rows:
+        justification = str(written.get(row["dimension"]) or "").strip()
+        evidence.append(
+            {**row, "justification": justification, "findings": list(raised)}
+        )
+    return evidence
+
+
 def _carry_answer_to_delivered_copies(
     reviewed_run_id: str,
     record: Mapping[str, Any],

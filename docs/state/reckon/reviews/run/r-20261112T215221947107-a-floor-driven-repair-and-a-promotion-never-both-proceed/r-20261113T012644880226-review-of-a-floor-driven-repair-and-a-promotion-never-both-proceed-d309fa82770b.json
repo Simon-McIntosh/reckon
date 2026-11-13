@@ -1,0 +1,57 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T01:45:06.214Z",
+  "dispatched_at": "2026-11-13T01:31:23Z",
+  "finding_dispositions": {
+    "2": {
+      "kind": "exempted",
+      "reason": "Corrected in the run record: the manifest's tests line now carries the literal command recorded in ~/.cache/reckon-floor-repair/logs/repair-head.txt at d309fa8, with test_logs pointing to that log; the as-delivered manifest is kept beside it",
+      "recorded_at": "2026-11-13T01:50:06.633720+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_floor_repair_and_a_promotion_are_exclusive.py",
+      "line": 18,
+      "severity": "non-blocking",
+      "summary": "the module docstring still states the base revision holds no round and reports no holder, which this commit's own control falsifies"
+    },
+    {
+      "file": "tests/test_a_floor_repair_and_a_promotion_are_exclusive.py",
+      "line": 148,
+      "severity": "non-blocking",
+      "summary": "the fixture writes the short hostname while production readers compare the full socket.gethostname(), so the seeded worker reads as a foreign host"
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "blocking",
+      "summary": "the tests line is a prose sentence rather than the literal command that ran, so promotion cannot build a gate receipt it can re-run"
+    },
+    {
+      "file": "manifest.md",
+      "line": 23,
+      "severity": "non-blocking",
+      "summary": "baseline_suite and after_suite omit failure_count, so a reader that counts failures rather than comparing ids reads null for both arms"
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a floor-driven repair and a promotion never both proceed, and this increment's share is the negative control; tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:88-95 now declares a launchable local lane and :143-148 a spawned, exited worker, so the base revision's reflex pass reaches its repair door instead of refusing for a missing lane.\nVERDICT done_when: the section's done-when names the base revision as the control where the first case's reflex pass starts a round for the promoted run; the manifest records base 415ac3c9 one failed one passed (EXIT=1) and head d309fa8277 two passed (EXIT=0), and repair-base.txt shows the round the base records.\nVERDICT write_paths: the manifest declares four source modules, the new test file and the evidence fragment; the increment at e31da84a8d..d309fa8277 touches exactly tests/test_a_floor_repair_and_a_promotion_are_exclusive.py and docs/evidence/fragments/scoring-should-stop-a-promotion/a-floor-driven-repair-and-a-promotion-never-both-proceed.html, both inside that declared scope.\nVERDICT manifest: read; it reports the head arm two passed and the base arm one failed one passed naming the round it opened, and points at repair-base.txt, repair-head.txt and the two suite logs; its tests: line at manifest.md:18 is a prose sentence rather than the literal command, and both suite arms omit failure_count.\nVERDICT diff: read commit by commit (one commit, d309fa8277); it adds a probe lane to the fixture's flight layer, a spawned-and-exited worker to the seeded pointer with an inline short hostname, and moves the round assertion ahead of the report assertions, with the evidence page's control paragraph updated to match.\nCALL_SITES: none\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:275-279 asserts the pointer carries no REPAIR_DISPATCH_FIELD after the sweep, so the node's central claim is demonstrated rather than asserted.\nSCORE evidence: 15\nJUSTIFICATION evidence: /home/ITER/mcintos/.cache/reckon-floor-repair/logs/repair-base.txt records the base round {'status': 'resumed', 'dimensions': ['goal_fidelity']} under a bare EXIT=1, so the control now measures a round actually started.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat e31da84a8d..d309fa8277 names exactly the two paths the node's goal names, with no stray edit.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:275 reddens at the base revision, demonstrated in repair-base.txt, so reinstating the absent hold reopens the round and fails the case.\nSCORE fit: 14\nJUSTIFICATION fit: tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:18-20 still says the base holds no round, contradicting the case this commit makes it drive.\nSCORE reuse: 17\nJUSTIFICATION reuse: the case reads the pointer through reckon.crew.runs:read_pointer and reckon.crew.recovery_review_dispatch:REPAIR_DISPATCH_FIELD rather than re-deriving them, with only the hostname at :148 written inline.\nFINDING tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:18 non-blocking: the module docstring still states the base revision holds no round and reports no holder, which repair-base.txt falsifies for exactly this commit, so the file's stated guarantee contradicts the case it now drives and a reader trusting it would take the control for a no-op.\nFINDING tests/test_a_floor_repair_and_a_promotion_are_exclusive.py:148 non-blocking: the fixture writes socket.gethostname().split('.')[0] while production readers compare the full socket.gethostname() (reckon/crew/runs.py:3857), so the seeded worker reads as a foreign host; host_lease.local_host(), from the module the test already imports, is the owner of that identity.\nFINDING manifest.md:18 blocking: the tests line is a prose sentence rather than the literal command that ran, so promotion cannot build a gate receipt from a line it can re-run; the suite arms lost their placeholders but this line did not, leaving the earlier blocking finding only half answered.\nFINDING manifest.md:23 non-blocking: baseline_suite and after_suite omit failure_count, so a reader that counts failures rather than comparing ids reads null for both arms.\n",
+  "review_run_id": "r-20261113T012644880226-review-of-a-floor-driven-repair-and-a-promotion-never-both-proceed-d309fa82770b",
+  "reviewed_base_sha": "e31da84a8d6bcf2c6870fce0cf2c21304c4fda7d",
+  "reviewed_head_sha": "d309fa82770bcaa2e9e6fffad103e2f2b6b31713",
+  "reviewed_run_id": "r-20261112T215221947107-a-floor-driven-repair-and-a-promotion-never-both-proceed",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 14,
+    "goal_fidelity": 18,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:45:00+00:00",
+  "total": 103
+}

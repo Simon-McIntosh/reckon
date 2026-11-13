@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-12T23:18:13.221Z",
+  "dispatched_at": "2026-11-12T23:09:39Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_repair_dispatch.py",
+      "line": "858",
+      "severity": "non-blocking",
+      "text": "non-blocking: _dimension_evidence_block re-implements the file:line join that reckon/crew/repair.py:614 _finding_location already owns, so the same location rule now exists in a third place (the second is _open_finding_names at recovery_repair_dispatch.py:1194); the rendered result is identical today, but a later change to the location rule will not reach this copy."
+    },
+    {
+      "file": "tests/test_a_floor_repair_advice_carries_the_evidence.py",
+      "line": "129",
+      "severity": "non-blocking",
+      "text": "non-blocking: the unit case asserts rows[0]['findings'] == [DUPLICATED_HELPER] against the same list the test handed the record, so a sub_floor_evidence that returned the record's own findings list without copying it would still pass; durability therefore rests on the two advice cases, which do fail at the base revision."
+    }
+  ],
+  "justifications": {
+    "durability": "both advice cases fail at the base revision on content (the advice lacks the justification and the finding text, per negative-control.log) and redden again if the _dimension_evidence_block call at recovery_repair_dispatch.py:1866 is reverted; the unit case at tests/test_a_floor_repair_advice_carries_the_evidence.py:129 reds only by AttributeError at base and echoes the record it passed in.",
+    "evidence": "the arm-base.log and arm-head.log pair over the 39 test files importing the changed modules records 2 failed / 313 passed against 2 failed / 316 passed with 0 added ids, and negative-control.log is a content red (3 failed) rather than an error; the done_when's ruff clause is not recorded in the manifest, and ruff check and ruff format --check on the three staged paths passed when this review ran them.",
+    "fit": "reckon/crew/review_dispositions.py:176 extends the existing sub_floor_dimensions reader in the same shape as the module's other floor readers, and the function-local review_dispositions import at recovery_repair_dispatch.py:1859 matches the idiom already used by _sub_floor_dimensions_named at line 461.",
+    "goal_fidelity": "reckon/crew/recovery_repair_dispatch.py:945 appends the review's own justification and findings beneath the composed brief, so the advice for a sub-floor round carries the record's account of the score, which is what the goal states.",
+    "reuse": "sub_floor_evidence at reckon/crew/review_dispositions.py:197 calls sub_floor_dimensions rather than re-deriving the rows, and no existing owner renders per-dimension evidence; the one duplicated sub-capability is the file:line join re-implemented at recovery_repair_dispatch.py:858, already owned by repair.py:614 _finding_location.",
+    "scope_discipline": "the diff touches only reckon/crew/recovery_repair_dispatch.py, reckon/crew/review_dispositions.py, tests/test_a_floor_repair_advice_carries_the_evidence.py and the declared evidence fragment, all inside the node's fenced write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a floor repair's advice carries the findings behind the score; reckon/crew/recovery_repair_dispatch.py:945 renders the review's justification and findings beneath the brief for every sub-floor dimension.\nVERDICT done_when: the done_when names a stored review scoring reuse 6 against floor 10, an advice carrying its justification and finding text, a no-finding justification case, and a base negative control; tests/test_a_floor_repair_advice_carries_the_evidence.py asserts all three and the manifest records the arms.\nVERDICT write_paths: read the declared paths (recovery_repair_dispatch.py, review_dispositions.py, tests/, the evidence fragment); every path the diff changes is inside them.\nVERDICT manifest: read; it states status complete, the two commits, 2 failed / 316 passed against 2 failed / 313 passed over the same ids, and names the five logs, including negative-control.log with 3 failed.\nVERDICT diff: read both commits against base 2578b4c5; 03e4ac48 adds sub_floor_evidence, _dimension_evidence_block and its call, and 080dc360 adds only the evidence fragment, all inside scope.\nCALL_SITES: reckon/crew/recovery_review_acceptance.py:883\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_repair_dispatch.py:945 carries the record's justification and findings for each sub-floor dimension, which is the goal's deliverable.\nSCORE evidence: 18\nJUSTIFICATION evidence: arm-base.log and arm-head.log record 0 added failure ids over the 39 importing test files and negative-control.log is red on content, while the done_when's ruff clause is verified by this review but not recorded in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every changed path in the diff 2578b4c5..080dc360 is one of the node's declared write paths, and no unrelated file moved.\nSCORE durability: 18\nJUSTIFICATION durability: reverting the _dimension_evidence_block call at reckon/crew/recovery_repair_dispatch.py:1866 reddens both advice cases, and negative-control.log shows them red at base, though the unit case at tests/test_a_floor_repair_advice_carries_the_evidence.py:129 reds only by AttributeError at base.\nSCORE fit: 16\nJUSTIFICATION fit: reckon/crew/review_dispositions.py:176 mirrors the neighbouring floor readers and the lazy import at reckon/crew/recovery_repair_dispatch.py:1859 follows the file's existing idiom.\nSCORE reuse: 15\nJUSTIFICATION reuse: reckon/crew/review_dispositions.py:197 reuses sub_floor_dimensions rather than forking it, but reckon/crew/recovery_repair_dispatch.py:858 re-implements the location join owned by reckon/crew/repair.py:614.\nFINDING reckon/crew/recovery_repair_dispatch.py:858 non-blocking: non-blocking: _dimension_evidence_block re-implements the file:line join that reckon/crew/repair.py:614 _finding_location already owns, so the same location rule now exists in a third place (the second is _open_finding_names at recovery_repair_dispatch.py:1194); the rendered result is identical today, but a later change to the location rule will not reach this copy.\nFINDING tests/test_a_floor_repair_advice_carries_the_evidence.py:129 non-blocking: non-blocking: the unit case asserts rows[0]['findings'] == [DUPLICATED_HELPER] against the same list the test handed the record, so a sub_floor_evidence that returned the record's own findings list without copying it would still pass; durability therefore rests on the two advice cases, which do fail at the base revision.\n",
+  "review_run_id": "r-20261112T230528821712-review-of-a-floor-repair-s-advice-carries-the-findings-behind-the-scor-080dc36004c3",
+  "reviewed_base_sha": "2578b4c527a41935e40909939fd9911aaf33d943",
+  "reviewed_head_sha": "080dc36004c3cbfb37d2840401f11de65944bd49",
+  "reviewed_run_id": "r-20261112T215856851067-a-floor-repair-s-advice-carries-the-findings-behind-the-scor",
+  "reviewer": {
+    "backend": "clive",
+    "effort": null,
+    "model": "deepseek-v4.1-flash"
+  },
+  "reviewer_run_id": "r-20261112T230528821712-review-of-a-floor-repair-s-advice-carries-the-findings-behind-the-scor-080dc36004c3",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 16,
+    "goal_fidelity": 19,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T23:15:41.864882+00:00",
+  "total": 106
+}

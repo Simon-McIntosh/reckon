@@ -343,12 +343,17 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
     holds an assistant record only while that turn is producing work. A resumed
     turn has ended once its stream's last record is the result line a finished
     turn writes, so a finished resume no longer reads as a turn in progress and
-    does not hold the round busy forever. A run recording no process and
-    carrying no unfinished resumed turn is left free to be repaired.
+    does not hold the round busy forever. An unfinished stream is only evidence
+    about a turn whose process is still there: a recorded process proved gone
+    leaves the stream behind it, so an unfinished resume is read as a turn in
+    progress only while no recorded process is proved dead. A run recording no
+    process and carrying no unfinished resumed turn is left free to be repaired.
     """
-    if runs.record_process_alive(record, process_alive) is True:
+    pointer_alive = runs.record_process_alive(record, process_alive)
+    if pointer_alive is True:
         return "the reviewed run's worker is live"
-    if _worker_record_liveness(record) is True:
+    worker_alive = _worker_record_liveness(record)
+    if worker_alive is True:
         return "the reviewed run's worker is live"
     found = _record_newest_stream(record)
     if (
@@ -357,6 +362,8 @@ def _reviewed_run_is_busy(record: Mapping[str, Any]) -> str:
         and _stream_holds_assistant_record(found[0])
         and _newest_stream_last_record_type(record) != STREAM_RESULT_RECORD_TYPE
     ):
+        if pointer_alive is False or worker_alive is False:
+            return ""
         return "the reviewed run has a resumed turn in progress"
     return ""
 
@@ -831,12 +838,45 @@ def _grant_reason(path: str, findings: Sequence[Mapping[str, Any]]) -> str:
     return str(findings[0].get("id") or "") if findings else ""
 
 
+def _dimension_evidence_block(
+    dimensions: Sequence[Mapping[str, Any]],
+) -> str:
+    """Render each sub-floor dimension with the review's account of its score.
+
+    The brief names a sub-floor dimension by the sentence its score and floor
+    compose, which says which standard was missed and nothing about why. The
+    reviewer's justification for that dimension, and the findings the same
+    record raised, are the account a repair can act on, and they are written
+    here rather than in the brief so the advice carries them whichever composer
+    built the round.
+    """
+    lines = ["The review's own account of each dimension below its floor:"]
+    for row in dimensions:
+        dimension = str(row.get("dimension") or "")
+        score = row.get("score")
+        floor = row.get("floor")
+        heading = f"- {dimension} {score}/{floor}"
+        justification = str(row.get("justification") or "").strip()
+        lines.append(heading + (f": {justification}" if justification else ""))
+        for finding in row.get("findings") or ():
+            text = str(finding.get("text") or "").strip()
+            if not text:
+                continue
+            location = str(finding.get("file") or "").strip()
+            line = str(finding.get("line") or "").strip()
+            if location and line:
+                location = f"{location}:{line}"
+            lines.append(f"  finding: {location + ' ' if location else ''}{text}")
+    return "\n".join(lines)
+
+
 def _repair_resume_advice(
     composed: Mapping[str, Any],
     scope: Sequence[str],
     round_id: str,
     *,
     conflicts: Sequence[Mapping[str, str]] = (),
+    dimensions: Sequence[Mapping[str, Any]] = (),
 ) -> str:
     """The advice a resume of the reviewed run carries for its composed round.
 
@@ -857,6 +897,12 @@ def _repair_resume_advice(
     The advice opens with the round id, so a worker's refusal that quotes the
     advice names the round it refused and a retry can tell it from a manifest
     quoting an earlier round's advice.
+
+    ``dimensions`` names each dimension the review scored below its floor
+    together with the record's own justification for it and the findings it
+    raised. A repair dispatched for such a dimension otherwise reads only the
+    score and the floor, which tells the worker which standard was missed and
+    nothing about what missed it.
 
     The opening count is of the findings the record classified as blocking. A
     finding that states neither a severity nor a prefix is repaired as blocking
@@ -904,6 +950,10 @@ def _repair_resume_advice(
     parts += [
         "",
         str(composed.get("brief") or ""),
+    ]
+    if dimensions:
+        parts += ["", _dimension_evidence_block(dimensions)]
+    parts += [
         "",
         REPAIR_ADVICE_SCOPE_LINE + (", ".join(scope) if scope else "none"),
         "",
@@ -1813,7 +1863,15 @@ def dispatch_repair_for_run(
                 "reason": "repair is held for coordinator advice before resume",
             }
         scope, granted, conflicts = _grant_round_scope(run_id, scope, blocking)
-        advice = _repair_resume_advice(composed, scope, round_id, conflicts=conflicts)
+        from reckon.crew import review_dispositions
+
+        advice = _repair_resume_advice(
+            composed,
+            scope,
+            round_id,
+            conflicts=conflicts,
+            dimensions=review_dispositions.sub_floor_evidence(review, floors),
+        )
         if coordinator_advice:
             advice += (
                 "\nCoordinator advice added during the repair hold:\n"

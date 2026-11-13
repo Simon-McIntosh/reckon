@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/recovery_stream.py:155 _historical_reference_rate",
+    "reckon/ledger.py:1814 index_reuse",
+    "reckon/ledger.py:2531 write",
+    "reckon/ledger.py:3321 append_run",
+    "reckon/crew/promotion_checks.py:2420 _landing_preconditions"
+  ],
+  "completed_at": "2026-11-12T22:21:05.867Z",
+  "dispatched_at": "2026-11-12T22:03:06Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "The landing guard's string check is weak, but the fleet side's equality and the decode count are the measures the done-when names, and both can fail",
+      "recorded_at": "2026-11-12T22:34:19.645735+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "Dead test constant; harmless, left for the next edit of that file",
+      "recorded_at": "2026-11-12T22:34:27.898090+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py",
+      "line": 333,
+      "severity": "non-blocking",
+      "text": "assert shared_landing cannot fail \u2014 json.dumps of any dict, including {}, is a non-empty string, so the \"answered nothing\" guard passes even when promotion_checks._landing_preconditions answers an empty mapping; the delta made the fleet side's positive control real but left its landing counterpart unable to name a failing condition."
+    },
+    {
+      "file": "tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py",
+      "line": 55,
+      "severity": "non-blocking",
+      "text": "DIVERGENT_RUN_ID is defined and never used \u2014 the divergence case builds its row through _fleet_row(FLEET_SAMPLE_COUNT + 1, ...), whose generated run id the constant does not supply, so the constant is dead."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 4c28ca09b5 commit by commit; a7a7f35cf8 seeds the config-home ledger that recovery_stream._historical_reference_rate's rootless ledger.load actually resolves and adds a divergence case, ecc1e701d0 records that distinction and the mutant result in the fragment, and no product module changed in either.",
+    "done_when": "read \u00a775's clauses; logs/head-gate.log records 7 passed EXIT=0 for both test modules at ecc1e701d0, logs/baseline-suite.log and logs/head-suite.log record 51 passed EXIT=0 each, logs/ruff.log is clean, and the three mutant logs are red, so the clause the previous review found unmeasured (fleet-state parity) is now measured rather than asserted over empty readings.",
+    "goal": "read \u00a775 at docs/plans/a-read-answers-inside-its-deadline.html:416; the deliverable is \"A promotion decodes the ledger index at most once\", and this delta adds no product code because the reuse region already sits at reckon/ledger.py:1814, so what it lands is the measure and its evidence record.",
+    "manifest": "read the reviewed run's manifest.md; it states status complete, commits 4c28ca09b5/a7a7f35cf8/ecc1e701d0, a 7-passed gate, 51-passed suite arms, the bare negative-control log path and three red mutant logs, and the files under logs/ bear every one of those figures out.",
+    "write_paths": "the scope declared for the reviewed run is reckon/ledger.py, reckon/crew/promotion.py, reckon/crew/promotion_checks.py, tests/, the \u00a775 fragment and the figures directory; git diff --stat 4c28ca09b5..ecc1e701d0 touches only tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-decodes-the-ledger-index-at-most-once.html, both inside it."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: read \u00a775 at docs/plans/a-read-answers-inside-its-deadline.html:416; the deliverable is \"A promotion decodes the ledger index at most once\", and this delta adds no product code because the reuse region already sits at reckon/ledger.py:1814, so what it lands is the measure and its evidence record.\nVERDICT done_when: read \u00a775's clauses; logs/head-gate.log records 7 passed EXIT=0 for both test modules at ecc1e701d0, logs/baseline-suite.log and logs/head-suite.log record 51 passed EXIT=0 each, logs/ruff.log is clean, and the three mutant logs are red, so the clause the previous review found unmeasured (fleet-state parity) is now measured rather than asserted over empty readings.\nVERDICT write_paths: the scope declared for the reviewed run is reckon/ledger.py, reckon/crew/promotion.py, reckon/crew/promotion_checks.py, tests/, the \u00a775 fragment and the figures directory; git diff --stat 4c28ca09b5..ecc1e701d0 touches only tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py and docs/evidence/fragments/a-read-answers-inside-its-deadline/a-promotion-decodes-the-ledger-index-at-most-once.html, both inside it.\nVERDICT manifest: read the reviewed run's manifest.md; it states status complete, commits 4c28ca09b5/a7a7f35cf8/ecc1e701d0, a 7-passed gate, 51-passed suite arms, the bare negative-control log path and three red mutant logs, and the files under logs/ bear every one of those figures out.\nVERDICT diff: read both commits against 4c28ca09b5 commit by commit; a7a7f35cf8 seeds the config-home ledger that recovery_stream._historical_reference_rate's rootless ledger.load actually resolves and adds a divergence case, ecc1e701d0 records that distinction and the mutant result in the fragment, and no product module changed in either.\nCALL_SITES: reckon/crew/recovery_stream.py:155 _historical_reference_rate, reckon/ledger.py:1814 index_reuse, reckon/ledger.py:2531 write, reckon/ledger.py:3321 append_run, reckon/crew/promotion_checks.py:2420 _landing_preconditions\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the delta makes tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:296 measure the fleet clause the previous review found unmeasured, which is what the node had left to deliver given reckon/ledger.py:1814 was already at base.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/head-gate.log carries \"7 passed\" and EXIT=0, and logs/negative-control-fleet-empty.log records the [null, 0] failure the positive control exists to catch.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the diff over 4c28ca09b5..ecc1e701d0 changes only tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py and the \u00a775 fragment, both inside the declared write paths.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:339 and :371 each redden on a recorded mutant, but :333's assert shared_landing cannot fail because json.dumps of an empty dict is a non-empty string.\nSCORE fit: 19\nJUSTIFICATION fit: the fixture reuse at tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:62 follows the repo's .__wrapped__ idiom (tests/test_the_fleet_gate_holds_dispatch.py:391), and no name carries a plan, ticket or version identifier.\nSCORE reuse: 18\nJUSTIFICATION reuse: tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:62 reuses fixture.home and fixture.repository instead of copying them, leaving only _seed_fleet_ledger at :86 restating the ledger envelope fixture._seed_ledger already builds.\nFINDING tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:333 non-blocking: assert shared_landing cannot fail \u2014 json.dumps of any dict, including {}, is a non-empty string, so the \"answered nothing\" guard passes even when promotion_checks._landing_preconditions answers an empty mapping; the delta made the fleet side's positive control real but left its landing counterpart unable to name a failing condition.\nFINDING tests/test_a_promotion_decodes_the_ledger_index_at_most_once.py:55 non-blocking: DIVERGENT_RUN_ID is defined and never used \u2014 the divergence case builds its row through _fleet_row(FLEET_SAMPLE_COUNT + 1, ...), whose generated run id the constant does not supply, so the constant is dead.\n",
+  "review_run_id": "r-20261112T214204772466-review-of-a-promotion-decodes-the-ledger-index-at-most-once-ecc1e701d046",
+  "reviewed_base_sha": "4c28ca09b59763e80c8064a3a88b2472638c9cc0",
+  "reviewed_head_sha": "ecc1e701d046270eca87975ed63b6d166fc5b23b",
+  "reviewed_run_id": "r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 18,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-12T22:31:41.286233+00:00",
+  "total": 111
+}

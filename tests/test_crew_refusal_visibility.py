@@ -76,8 +76,10 @@ CONFIG = {
 def _formatter_family_calls() -> set[str]:
     root = Path(__file__).resolve().parents[1]
     families: set[str] = set()
-    for relative_path in REFUSAL_SOURCE_PATHS:
-        tree = ast.parse((root / relative_path).read_text(encoding="utf-8"))
+    sources = [root / relative_path for relative_path in REFUSAL_SOURCE_PATHS]
+    sources.extend(sorted((root / "reckon/crew/dispatching").rglob("*.py")))
+    for source in sources:
+        tree = ast.parse(source.read_text(encoding="utf-8"))
         for node in ast.walk(tree):
             if not isinstance(node, ast.Call) or not node.args:
                 continue

@@ -1,0 +1,38 @@
+<section id="a-merge-repair-is-not-held-by-a-dead-worker-evidence">
+  <h3>A merge repair is released once the dead turn's process is gone</h3>
+  <p>The repair reflex read a reviewed run's newest resume stream as a turn in
+  progress whenever the stream carried an assistant record and no result line.
+  That stream is only evidence about a process that is still there: a worker
+  that died mid-turn left the same stream behind and no process, so the round
+  was held for ever with <q>the reviewed run has a resumed turn in progress</q>
+  — the reported state of a run whose recorded supervisor pid the kernel had
+  already proved gone.</p>
+  <p>The busy check now reads liveness before the stream: a pointer pid or
+  worker-record pid that the process table proves dead releases the round, so
+  the repair is reached. Liveness the record cannot answer — a pointer written
+  before the worker registered — keeps the old stream reading, because silence
+  about a process is not proof of its death. A live pid still holds the round
+  through the same check that always answered for it.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Measured result</th></tr></thead>
+    <tbody>
+      <tr><td>Node gate at the delivered head</td><td>4 passed in 3.84s</td></tr>
+      <tr><td>Negative control at the base revision</td><td>2 failed, 2 passed in 1.85s — both dead-pid cases hold the round there; the live-pid and no-record cases pass</td></tr>
+    </tbody>
+  </table>
+  <p>The red arm is the delivered test file against the base module: the base
+  answers the hold with the in-progress reason for a dead recorded pid. The two
+  cases that must not change — a live pid, and a run recording no process —
+  pass on both arms.</p>
+  <p>Importers of the changed module: 184 passed at the base revision, 188
+  passed at the delivered head (the four added cases), <strong>zero added
+  failure ids</strong>. The suite template's census file passes 51/51 on both
+  arms. Every run is on the <code>all_debug</code> partition, one arm at a time,
+  at <code>-n 4</code>, and every log ends in its own <code>EXIT=</code> line.
+  Ruff check and <code>ruff format --check</code> add no findings on the two
+  staged Python paths.</p>
+  <p>Delivered commits: <code>2f6e077d51</code> carries the release and its
+  test, <code>a07d40b5de</code> registers the shared fixture without shadowing
+  its name so the test suite lints clean. Exact commands, both arm receipts and
+  the red log are named in the worker manifest.</p>
+</section>

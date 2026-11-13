@@ -1,0 +1,78 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "a4717d952ffeb8c419c7af981147ad5feea479ac",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/mcp_views.py:4618",
+    "reckon/hooks/coordinator_obligations.py:1512"
+  ],
+  "completed_at": "2026-11-12T23:54:36.021Z",
+  "dimension_dispositions": {
+    "reuse": {
+      "kind": "folded",
+      "node": "a-snapshot-duty-whose-run-has-gone-is-not-shown",
+      "recorded_at": "2026-11-13T00:33:53.108191+00:00"
+    }
+  },
+  "dispatched_at": "2026-11-12T23:46:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1227",
+      "severity": "non-blocking",
+      "text": "non-blocking: the settlement covers only the review-missing kind, while a review-queued row (reckon/crew/obligations.py:205, set at :2365 from the pointer's review_dispatch refusal and its bound) carries the same pointer-borne evidence, so a held answer can still list a queued review for a run whose pointer has gone and whose review nothing can now launch."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1121",
+      "severity": "non-blocking",
+      "text": "non-blocking: _same_revision duplicates same_revision at reckon/crew/recovery_review_subject.py:105 rather than extending its owner; the module's load-by-path constraint argues for the copy, but unlike the PRODUCER_POLL_INTERVAL_CAP_SECONDS mirror at :76 no test pins the two to agreement."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1148",
+      "severity": "non-blocking",
+      "text": "non-blocking: _review_dispatch_for_head accepts a dispatch entry whose recorded head is absent as covering any head the duty names, which is the permissive direction; a pointer whose dispatch record lost its head settles a duty that may in fact still be owed."
+    }
+  ],
+  "head_log_revision": "3b1ed7f4260fc2be897b9cf4286435f3ba9b3a80",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against a4717d952f: 3b1ed7f426 adds the settlement and its helpers, 35a31e3b8a adds the test file and restates the superseded assertion, 69e234d535 adds the evidence fragment; five files, 509 insertions and 23 deletions.",
+    "done_when": "the done-when names a test that builds both the station and the session snapshot, removes the run's pointer, and reads through the view and the hook; tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py does exactly that and its result is recorded in gate-after2.log and the manifest.",
+    "goal": "the node's goal is that a snapshot duty naming a run that has gone is not shown; reckon/crew/obligation_snapshot.py:1227 settles the review-missing row and both surfaces that serve a stored answer reach the settlement at reckon/mcp_views.py:4618 and reckon/hooks/coordinator_obligations.py:1512.",
+    "manifest": "read; it records status complete, three commits, the focused gate at 6 passed EXIT=0, both population arms and the base-revision negative control, and its baseline_suite and after_suite failure-id lists match the two population logs.",
+    "write_paths": "the declared fence is reckon/crew/obligations.py, reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/ and the node fragment; every changed path in the diff is inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:265 fails at the base revision per gate-negative-control.log, and every added assertion compares a test-chosen run id or head against the settled payload rather than against a value the test handed the code.",
+    "evidence": "gate-baseline.log (revision a4717d952f) ends '15 failed, 333 passed in 47.88s' EXIT=1 and gate-after2.log (revision 3b1ed7f426) ends '15 failed, 339 passed in 56.39s' EXIT=1, their failure-id sets diff to empty in both directions, and gate-negative-control.log ends '4 failed, 2 passed in 1.43s' EXIT=1.",
+    "fit": "reckon/crew/obligation_snapshot.py:1073-1175 follows the module's existing sentinel-and-Mapping idiom and adds no plan, sprint, ticket or author identifier.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1227 settles the review-missing row on the pointer's absence and on a dispatched review for the named head, as the goal and the section's Done when state, but the review-queued kind at reckon/crew/obligations.py:205 carries the same pointer-borne evidence and is left unsettled.",
+    "reuse": "reckon/crew/obligation_snapshot.py:1121 duplicates same_revision, whose owner is reckon/crew/recovery_review_subject.py:105, without extending the owner and without an agreement test pinning the mirror.",
+    "scope_discipline": "git diff --stat a4717d952f..69e234d535 lists only reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py, tests/test_a_promoted_run_owes_no_promotion.py, the new test file and the node's evidence fragment, every one inside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a snapshot duty naming a run that has gone is not shown; reckon/crew/obligation_snapshot.py:1227 drops the review-missing row when the run's live pointer is absent or records a dispatched review for the head the row names.\nVERDICT done_when: the done-when names a test building both the station and session snapshots and reading through the view and the hook; tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py does that, and its 6-passed result and the base-revision negative control are recorded in the manifest and the gate logs.\nVERDICT write_paths: the fence is obligations.py, obligation_snapshot.py, hooks/coordinator_obligations.py, tests/ and the node fragment; every changed path in the diff lies inside it.\nVERDICT manifest: read; it states complete, names three commits, records the focused gate, both population arms and the negative control, and its failure-id lists match the logs.\nVERDICT diff: read commit by commit against a4717d952f; three commits, five files, 509 insertions and 23 deletions, all inside the declared scope.\nCALL_SITES: reckon/mcp_views.py:4618, reckon/hooks/coordinator_obligations.py:1512\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1227 settles review-missing as the goal states, but the review-queued kind at reckon/crew/obligations.py:205 carries the same pointer-borne evidence and is left unsettled.\nSCORE evidence: 18\nJUSTIFICATION evidence: gate-baseline.log (a4717d952f, 15 failed/333 passed, EXIT=1) and gate-after2.log (3b1ed7f426, 15 failed/339 passed, EXIT=1) share an identical failure-id set, and gate-negative-control.log fails 4 of the 6 new tests at EXIT=1.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff --stat a4717d952f..69e234d535 lists only the three declared source paths, tests/ and the node's evidence fragment.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:265 fails at the base revision, so reinstating the old keep-every-row rule reddens it.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:1073-1175 follows the module's existing sentinel-and-Mapping idiom and adds no plan, ticket or author identifier.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:1121 duplicates same_revision, owned by reckon/crew/recovery_review_subject.py:105, without extending the owner.\nFINDING reckon/crew/obligation_snapshot.py:1227 non-blocking: the settlement covers review-missing only, leaving a review-queued row for a departed run still shown.\nFINDING reckon/crew/obligation_snapshot.py:1121 non-blocking: _same_revision duplicates same_revision at reckon/crew/recovery_review_subject.py:105 with no agreement test pinning the mirror.\nFINDING reckon/crew/obligation_snapshot.py:1148 non-blocking: a dispatch entry with no recorded head settles any head the duty names, the permissive direction for a row that may still be owed.\n",
+  "review_run_id": "r-20261112T234344795028-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-69e234d535a2",
+  "reviewed_base_sha": "a4717d952ffeb8c419c7af981147ad5feea479ac",
+  "reviewed_head_sha": "69e234d535a239016a81557410c2ebe5b4ec5f71",
+  "reviewed_run_id": "r-20261112T221639887735-a-snapshot-duty-whose-run-has-gone-is-not-shown",
+  "reviewer": "review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-69e234d535a2",
+  "reviewer_run_id": "r-20261112T234344795028-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-69e234d535a2",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 16,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:06:03.946581+00:00",
+  "total": 94
+}

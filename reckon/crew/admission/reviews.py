@@ -340,8 +340,9 @@ def _build_plan_review_record(
     from reckon import _plan_html as plan_html
     from reckon.crew import plan_review
 
+    document = path.read_text(encoding="utf-8", errors="replace")
     records, uncovered, changes = plan_review.review_coverage(
-        project, plan_slug, plan=path
+        project, plan_slug, plan=document
     )
     return _PlanReviewRecord(
         project=project,
@@ -350,8 +351,8 @@ def _build_plan_review_record(
         records=records,
         uncovered=uncovered,
         changes=changes,
-        digests=plan_review._section_digests(path),
-        state=plan_html.read_state_file(path),
+        digests=plan_review._section_digests(document),
+        state=plan_html.read_state(document),
     )
 
 

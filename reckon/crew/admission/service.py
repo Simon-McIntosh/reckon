@@ -193,7 +193,9 @@ def admit_until_stopped(
     The landing pass is not a stage of this loop: it runs in a worker thread
     under a lock that admits at most one action at a time, so a slow landing
     delays only the next landing and never a launch or a release. ``--once``
-    waits for the landing it starts, because a manual pass reports what it did.
+    waits for the landing pass it starts, because a manual pass reports what
+    it did. That pass submits scheduler measurements without waiting for their
+    jobs; their persisted identities are adopted by a later pass.
 
     Every pass whose lane had a queued pointer leaves one JSON line in the
     verdict log under the crew home, so a request that waited without launching

@@ -1147,7 +1147,10 @@ def _filed_match(
 # record pays one pass per pointer. The index below holds those two facts — not
 # the record content — and is built at most once per store directory and per
 # process, then reused while the directory's stat identity is unchanged, which
-# is exactly when its set of entries can have moved.
+# is exactly when its set of entries can have moved. The last element says
+# whether the whole-store revalidation is settled for the entries held: true
+# for an index adopted from a persisted document whose store has not moved,
+# false for one this process built or updated itself.
 
 _STORE_INDEXES: dict[
     Path,
@@ -1463,7 +1466,9 @@ def _update_store_entries(
 
 
 def _persisted_index_document(
-    directory: Path, entries: Iterable[dict[str, Any]]
+    directory: Path,
+    entries: Iterable[dict[str, Any]],
+    identity: tuple[int, ...] | None,
 ) -> dict[str, Any]:
     """The document one store directory's index is persisted as.
 
@@ -1471,11 +1476,17 @@ def _persisted_index_document(
     file it finds, so that reader can tell a file it may reuse from one it must
     parse, and the facts both lookups select on. The file's path is not stored:
     the store directory is in the document, and a name inside it resolves
-    there.
+    there. The directory's own identity stored beside them is the one taken
+    *before* the listing those entries came from, never a later stat: a record
+    filed between the listing and this write is absent from the entries, and a
+    stored identity that covered it would let a cold reader adopt an index that
+    does not hold the record at all. An identity no reader can compare is
+    stored as none, which makes the next reader list the store.
     """
     return {
         "code_stamp": _index_code_stamp(),
         "store": _resolved(directory),
+        "directory_identity": list(identity or ()),
         "entries": [
             {
                 "name": entry["name"],
@@ -1491,17 +1502,24 @@ def _persisted_index_document(
     }
 
 
-def _persist_store_entries(directory: Path, entries: list[dict[str, Any]]) -> None:
+def _persist_store_entries(
+    directory: Path,
+    entries: list[dict[str, Any]],
+    identity: tuple[int, ...] | None,
+) -> None:
     """Write the store's index where this node's processes can start from it.
 
-    A disposable cache: an unwritable directory, a full disk or a reader that
-    arrives mid-write costs a later process a from-scratch build rather than
-    the cache, so a write that fails is not an error a lookup reports.
+    ``identity`` is the store directory's identity as it stood before the
+    listing ``entries`` were read from. A disposable cache: an unwritable
+    directory, a full disk or a reader that arrives mid-write costs a later
+    process a from-scratch build rather than the cache, so a write that fails
+    is not an error a lookup reports.
     """
     if not _resolved(directory):
         return
     write_cache_document(
-        _index_cache_path(directory), _persisted_index_document(directory, entries)
+        _index_cache_path(directory),
+        _persisted_index_document(directory, entries, identity),
     )
 
 
@@ -1530,14 +1548,20 @@ def _entry_from_persisted(directory: Path, raw: Any) -> dict[str, Any] | None:
     }
 
 
-def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
+def _load_persisted_entries(
+    directory: Path,
+) -> tuple[list[dict[str, Any]], tuple[int, ...] | None] | None:
     """The store's index as another process left it, or ``None`` when unusable.
 
     An index is usable only when this checkout's reader wrote it for this store
     directory: a document stamped with other code's identity, or naming another
     store, is ignored rather than trusted, and the caller builds from scratch.
     A missing, half-written or malformed document gets the same answer, because
-    a cache that cannot be read is not a cache.
+    a cache that cannot be read is not a cache. The directory's identity at the
+    moment the document's entries were read comes back with them, so the caller
+    can tell a store whose set of files has not moved since from one that has;
+    a document written before that identity was recorded carries none, and the
+    caller then treats it as one whose store it must look at.
     """
     store = _resolved(directory)
     if not store:
@@ -1552,13 +1576,20 @@ def _load_persisted_entries(directory: Path) -> list[dict[str, Any]] | None:
     raw_entries = document.get("entries")
     if not isinstance(raw_entries, list):
         return None
+    raw_identity = document.get("directory_identity")
+    recorded: tuple[int, ...] | None = None
+    if isinstance(raw_identity, list) and raw_identity:
+        try:
+            recorded = tuple(int(item) for item in raw_identity)
+        except (TypeError, ValueError):
+            return None
     entries: list[dict[str, Any]] = []
     for raw in raw_entries:
         entry = _entry_from_persisted(directory, raw)
         if entry is None:
             return None
         entries.append(entry)
-    return entries
+    return entries, recorded
 
 
 def _store_indexes(
@@ -1576,6 +1607,23 @@ def _store_indexes(
     costs one listing and one parse per changed file rather than a pass over
     all of them. The updated index is persisted for the next process on the
     node.
+
+    A process holding none that loads a persisted index adopts it as it stands
+    when the directory's identity is the one that document recorded: no record
+    has been added, removed or atomically replaced since its entries were read,
+    which is every write the store's own writers make. Only a document whose
+    store has moved is listed again, so a one-shot promotion pays one read of
+    the index rather than a stat per stored record. That adoption is also why
+    the adopted entries are held as already revalidated: the whole-store pass
+    below stays for an index this process built or updated itself, where a
+    record rewritten in place is exactly the change it exists to see.
+
+    The identity read here precedes every listing this call makes, and it is
+    the one persisted with the entries those listings produced. A record filed
+    between a listing and the write is absent from those entries, so the
+    recorded identity must not cover it: recording the earlier identity leaves
+    that write having moved the directory away from it, and the next reader
+    lists the store rather than adopting an index short of the record.
     """
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
@@ -1589,15 +1637,30 @@ def _store_indexes(
     cached = _STORE_INDEXES.get(directory)
     if cached is not None and cached[0] == identity:
         return cached[1], cached[2]
-    entries = cached[3] if cached is not None else _load_persisted_entries(directory)
+    settled_identity: tuple[int, ...] | None = None
+    if cached is not None:
+        entries: list[dict[str, Any]] | None = cached[3]
+    else:
+        loaded = _load_persisted_entries(directory)
+        entries, settled_identity = loaded if loaded is not None else (None, None)
     if entries is None:
         reviewed, review_runs = _build_store_indexes(directory)
         entries = _index_files(reviewed, review_runs)
+    elif settled_identity == identity:
+        reviewed, review_runs = _index_maps(entries)
+        _STORE_INDEXES[directory] = (
+            identity,
+            reviewed,
+            review_runs,
+            entries,
+            True,
+        )
+        return reviewed, review_runs
     else:
         entries = _update_store_entries(directory, entries)
         reviewed, review_runs = _index_maps(entries)
     _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, False)
-    _persist_store_entries(directory, entries)
+    _persist_store_entries(directory, entries, identity)
     return reviewed, review_runs
 
 
@@ -1646,20 +1709,29 @@ def _refresh_store_entries(
     costs seconds. It is therefore paid at most once per store directory and per
     process, and only for a lookup no entry the index holds can explain -- a
     record rewritten in place to name a run the index has no entry for at all.
-    Every later miss answers from the refreshed index.
+    Every later miss answers from the refreshed index. An index adopted from a
+    persisted document whose store has not moved holds that pass as already
+    paid: its entries were read from a store no writer has changed since, and
+    the pass would re-derive them at a cost that grows with the store.
+
+    The identity persisted with the refreshed entries is read before the
+    listing that produced them, never the one the cache held and never a later
+    stat, so a record filed between that listing and this write is missing from
+    the entries and the next reader lists the store rather than adopting them.
     """
     if _TICK_REVIEW_STORES.get() is not None:
         return _store_index(directory)
     cached = _STORE_INDEXES.get(directory)
     if cached is None:
         return _store_index(directory)
-    identity, reviewed, review_runs, entries, refreshed = cached
+    _, reviewed, review_runs, entries, refreshed = cached
     if refreshed:
         return reviewed
+    identity = _store_directory_identity(directory)
     entries = _update_store_entries(directory, entries)
     reviewed, review_runs = _index_maps(entries)
-    _STORE_INDEXES[directory] = (identity, reviewed, review_runs, entries, True)
-    _persist_store_entries(directory, entries)
+    _STORE_INDEXES[directory] = (identity or (), reviewed, review_runs, entries, True)
+    _persist_store_entries(directory, entries, identity)
     return reviewed
 
 
@@ -1818,6 +1890,49 @@ def record_for_review_run_anywhere(
     if not _review._review_rubric_matches(record, rubric):
         return None, None
     return path, dict(record)
+
+
+def review_run_record_rubrics(
+    project: str,
+    reviewed_run_id: str,
+    review_run_id: str,
+    *,
+    base_dir: str | Path | None = None,
+) -> list[str]:
+    """The rubric families a review run's record for a run is stored under.
+
+    A lookup that filters by rubric can only answer ``None`` when the record it
+    was asked for is held under another family, and a caller reading that
+    ``None`` cannot tell the two cases apart: no record at all, or a record it
+    could reach by naming the family it is in. This answers the second question
+    without the filter, so a refusal can name what the store does hold.
+
+    The name returned is the record's own rubric, as the record carries it; a
+    text review is the empty name, because it is the family every record
+    without a rubric belongs to. The committed tree is read first and the
+    staging store after it, the same order
+    :func:`record_for_review_run_anywhere` reads. An empty list means no
+    readable record of the named review run belongs to this run.
+    """
+    name = str(review_run_id or "").strip()
+    if not name:
+        return []
+    families: list[str] = []
+
+    def _note(record: Mapping[str, Any]) -> None:
+        rubric = _review._review_record_rubric(record)
+        if rubric not in families:
+            families.append(rubric)
+
+    for _path, record in _committed_records_for_run(project, reviewed_run_id):
+        if str(record.get("review_run_id") or "").strip() == name:
+            _note(record)
+    staged = record_for_review_run(project, name, base_dir=base_dir)
+    if staged is not None:
+        _path, record = staged
+        if str(record.get("reviewed_run_id") or "").strip() == reviewed_run_id:
+            _note(record)
+    return families
 
 
 def _indexed_head_matches(entry: Mapping[str, Any], named: str | None) -> bool:

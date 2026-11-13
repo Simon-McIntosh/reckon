@@ -9,10 +9,14 @@ So ``--land`` writes one small record per run under the crew home before it
 promotes, and removes it once the merge is on the branch. The landing pass reads
 that directory every pass. A record whose run has a promotion row in the ledger
 and whose reviewed head is not on the primary branch is finished with the same
-``merge.land`` call ``--land`` makes. A record whose run never promoted is left
-while its run is live and dropped once it is old and its run is gone. A merge
-that fails is recorded on the record and retried on later passes, up to a bound,
-so a conflicting head stops costing a pass and stays visible.
+``merge.land`` call ``--land`` makes. A record whose run never promoted is
+dropped once it is old and its run is gone. A record whose run is still live,
+whose pointer carries an unanswered land attempt, which has no promoted row and
+whose promotion holds no lease names a promotion that ended between the record
+and its ledger row: the pass clears it and retires the attempt, so the reflex
+promotes the run again. A
+merge that fails is recorded on the record and retried on later passes, up to a
+bound, so a conflicting head stops costing a pass and stays visible.
 """
 
 from __future__ import annotations
@@ -36,6 +40,16 @@ MAX_FINISH_ATTEMPTS = 3
 #: How long a record whose run never promoted, and whose run is gone, is kept
 #: before it is dropped as a landing that was refused or abandoned.
 UNPROMOTED_RECORD_SECONDS = 2 * 3600
+
+#: How long a record whose run never promoted, while its run is still live, is
+#: left alone before the promotion that wrote it is treated as ended.
+#:
+#: A promotion claims its host lease within seconds of the record being written:
+#: the only step it takes first is waiting out a deferred pick, bounded at five
+#: seconds, and the lease itself goes stale after thirty. So a record this old,
+#: with no live lease holder and no promoted row, names a promotion that
+#: stopped between its record and its ledger row rather than one still running.
+UNFINISHED_PROMOTION_SECONDS = 60.0
 
 
 def pending_dir() -> Path:
@@ -197,6 +211,67 @@ def _reviewed_head(row: Mapping[str, Any]) -> str:
     return next((sha for sha in reversed(commits) if sha), "")
 
 
+def _promoted_row_absent(project: str, run_id: str) -> bool:
+    """Whether the project's ledger proves the run has no row.
+
+    A row that exists but cannot be read is not evidence of absence: retiring
+    the record of a promoted-but-unmerged run would strand its head off the
+    branch with nothing left to finish it.
+    """
+    from reckon import ledger
+    from reckon.crew import merge
+
+    try:
+        repository = merge.project_repository(project)
+        return not ledger.run_path(project, run_id, repository).is_file()
+    except (OSError, ledger.LedgerError, merge.MergeError):
+        return False
+
+
+def _promotion_lease_held(run_id: str) -> bool:
+    """Whether a promotion of this run still holds its host lease."""
+    from reckon.crew import promotion
+    from reckon.crew.host_lease import HostLease
+
+    lease = HostLease(
+        runs.crew_home(), promotion._promotion_lease_name(run_id), "", 0, ""
+    )
+    return lease.holder() is not None
+
+
+def _land_attempt_unanswered(run_id: str) -> bool:
+    """Whether the run's live pointer carries a land attempt with no receipt."""
+    try:
+        pointer = runs.read_pointer(run_id)
+    except runs.CrewError:
+        return False
+    attempt = pointer.get("admission_landing")
+    return isinstance(attempt, Mapping) and attempt.get("status") == "attempting"
+
+
+def _retire_interrupted_landing(run_id: str) -> bool:
+    """Retire the land attempt a promotion that ended never answered for.
+
+    The landing pass refuses a run whose recorded attempt produced no receipt
+    and raises an obligation instead of retrying it, which is right while the
+    attempt's fate is unknown. A pending-landing record is that attempt's own
+    evidence that the promotion stopped before its ledger row, so the marker is
+    retired and the reflex is free to promote the run again.
+    """
+
+    def retire(pointer: dict[str, Any]) -> dict[str, Any]:
+        attempt = pointer.get("admission_landing")
+        if isinstance(attempt, Mapping) and attempt.get("status") == "attempting":
+            pointer["admission_landing"] = {**dict(attempt), "status": "interrupted"}
+        return pointer
+
+    try:
+        runs._mutate_pointer(run_id, retire)
+    except runs.CrewError:
+        return False
+    return True
+
+
 def _delivered_repair(
     pointer: Mapping[str, Any],
     original: str,
@@ -256,14 +331,60 @@ def _require_repair_gate(
         raise runs.CrewError("repair gate requires a readable captured log") from exc
     if _recorded_exit_status(text) != 0:
         raise runs.CrewError("repair gate log must end with EXIT=0")
-    if _normalized_command(_command_from_gate_log(text)) != _normalized_command(
-        check["command"]
-    ):
-        raise runs.CrewError("repair gate command does not match its captured log")
+    recorded_command = _command_from_gate_log(text)
+    if _normalized_command(recorded_command) != _normalized_command(check["command"]):
+        declared_command = _manifest_declared_command(pointer)
+        raise runs.CrewError(
+            _repair_gate_command_refusal(
+                str(check["log_path"]), declared_command, recorded_command
+            )
+        )
     first_line = next((line for line in text.splitlines() if line.strip()), "")
     revisions = (match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line))
     if not any(_commit_canonical_id(repository, rev) == head for rev in revisions):
         raise runs.CrewError(f"repair gate log must name repaired revision {head}")
+
+
+def _manifest_declared_command(pointer: Mapping[str, Any]) -> str:
+    """The command a repair manifest's own ``tests:`` line states, or "".
+
+    A repair gate compares the command the manifest declares with the one its
+    cited log records, and a refusal has to name both to be actionable. The
+    manifest is read through the same freshness reader the gate itself used, so
+    the command the refusal quotes is the one that was compared rather than a
+    later rewrite of the file.
+    """
+    from reckon.crew.promotion_checks import _fresh_manifest
+
+    manifest = _fresh_manifest(pointer) or {}
+    return str(manifest.get("tests") or "").strip()
+
+
+def _repair_gate_command_refusal(
+    log_path: str, declared_command: str, recorded_command: str
+) -> str:
+    """Why a repair gate refused: the log it read and the two commands.
+
+    A repair gate refuses when the command its manifest declares is not the one
+    its captured log records. The refusal states the log it read, the command
+    the manifest declares and the command the log records — or that the log
+    records none — because the operator's whole repair is editing one of the
+    two, and a message naming neither leaves them with nothing to compare.
+    """
+    stated = (
+        f"the manifest states {declared_command!r}"
+        if declared_command
+        else "the manifest states no tests: command"
+    )
+    held = (
+        f"the log records {recorded_command!r}"
+        if recorded_command
+        else "the log records no command line"
+    )
+    return (
+        f"repair gate command does not match its captured log {log_path!r}: "
+        f"{stated}, {held}"
+    )
 
 
 def finish_pending_landings(
@@ -308,22 +429,52 @@ def finish_pending_landings(
             continue
         if row is None:
             age = moment - float(record.get("written_at") or moment)
-            if run_id not in live and age > UNPROMOTED_RECORD_SECONDS:
+            if run_id not in live:
+                if age > UNPROMOTED_RECORD_SECONDS:
+                    clear_pending(run_id)
+                    results.append({"run_id": run_id, "status": "dropped-unpromoted"})
+                continue
+            # A promotion that ended between writing this record and its ledger
+            # row leaves a live pointer carrying an unanswered land attempt, no
+            # promoted row and no lease. Left alone it is a hold nothing lifts:
+            # the record outlives every pass and the attempt refuses every
+            # landing. Only that unanswered attempt is retried, because without
+            # one the record blocks nothing and the reflex already re-promotes.
+            if (
+                age > UNFINISHED_PROMOTION_SECONDS
+                and _promoted_row_absent(project, run_id)
+                and not _promotion_lease_held(run_id)
+                and _land_attempt_unanswered(run_id)
+            ):
                 clear_pending(run_id)
-                results.append({"run_id": run_id, "status": "dropped-unpromoted"})
+                results.append(
+                    {
+                        "run_id": run_id,
+                        "status": "retried-unfinished",
+                        "attempt_retired": _retire_interrupted_landing(run_id),
+                    }
+                )
             continue
         conflict = record.get("merge_conflict") or {}
         pointer = None
-        # A live pointer is read even without a recorded conflict, because a
-        # promotion that could not remove its pointer marks it and leaves the
-        # landing to this pass. Reading it is what tells the two apart: an
-        # unmarked live pointer belongs to a newer attempt and is left alone.
+        # A live pointer is read even without a recorded conflict, because the
+        # promotion that could not remove it also reads it here: a marked
+        # pointer names the attempt this landing finishes, and an unmarked one
+        # the attempt a resume wrote after it moved. A record carrying the
+        # pointer ``--land`` held is the promotion's own claim that it owed a
+        # merge, so the merge runs even after the mark was overwritten; the
+        # pointer is released only where a mark names it, and a record written
+        # without a pointer leaves a live unmarked one to its own attempt.
         if conflict or run_id in live:
             try:
                 pointer = runs.read_pointer(run_id)
             except runs.CrewError:
                 pointer = None
-        if run_id in live and not (pointer or {}).get("pending_landing_repair"):
+        if (
+            run_id in live
+            and not (pointer or {}).get("pending_landing_repair")
+            and not record.get("pointer")
+        ):
             continue
         head = _reviewed_head(row)
         if not head:

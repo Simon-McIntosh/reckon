@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Interim arm comparison, first wave</title>
+</head>
+<body>
+<article class="r-evidence" id="interim-arm-report">
+  <h3 id="interim-arm-report-summary">Interim comparison of the five arms at the first wave's population</h3>
+
+  <p id="interim-arm-report-no-verdict"><strong>No verdict is drawn.</strong> Five runs, one per arm,
+  were drawn onto five different sections (seed <code>20261112</code>), so every figure below also
+  measures the difficulty of the section its run was given. At this count neither an interval nor a
+  same-arm split separates an arm's effect from the sections' difficulty, so no arm is called
+  better or worse, no flight default moves and no treatment is removed; those remain &sect;8's at
+  its own counts.</p>
+
+  <h4 id="interim-arm-report-per-arm">Per-arm table</h4>
+  <p>Spend columns are per landed node; count columns are per run. The interval is a 90% percentile
+  bootstrap over the arm's landed runs, 10,000 resamples, seeded. At one run per arm every
+  resample is that run, so an interval is a point, not evidence of stability; it is shown because
+  &sect;8 asks for it. Output tokens marked <strong>*</strong> are a lower bound: a launch that was
+  killed before writing its <code>result</code> event recorded no output total, and the stream's
+  per-message usage carries none.</p>
+  <table>
+    <thead><tr><th>Arm</th><th>Runs</th><th>Landed</th><th>Effort-hour mix</th>
+    <th>Cumulative input</th><th>Input per landed node</th><th>90% interval</th>
+    <th>Tool calls / run</th><th>Output tokens / run</th><th>Peak context</th>
+    <th>Landing rate</th><th>Corrective rounds</th></tr></thead>
+    <tbody>
+      <tr><td><code>clive</code></td><td>1</td><td>1</td><td>1.25 h</td><td>59.74M</td><td>59.74M</td><td>59.74M to 59.74M</td><td>456</td><td>138,757*</td><td>196,862</td><td>1/1</td><td>6</td></tr><tr><td><code>clive-anchored</code></td><td>1</td><td>1</td><td>1 h</td><td>24.74M</td><td>24.74M</td><td>24.74M to 24.74M</td><td>199</td><td>16,211*</td><td>196,477</td><td>1/1</td><td>1</td></tr><tr><td><code>omp-local</code></td><td>1</td><td>1</td><td>1 h</td><td>22.56M</td><td>22.56M</td><td>22.56M to 22.56M</td><td>184</td><td>111,384</td><td>223,300</td><td>1/1</td><td>1</td></tr><tr><td><code>codex</code></td><td>1</td><td>1</td><td>1.25 h</td><td>55.92M</td><td>55.92M</td><td>55.92M to 55.92M</td><td>261</td><td>185,110</td><td>not measured</td><td>1/1</td><td>1</td></tr><tr><td><code>codex-anchored</code></td><td>1</td><td>1</td><td>1 h</td><td>36.60M</td><td>36.60M</td><td>36.60M to 36.60M</td><td>300</td><td>161,525</td><td>not measured</td><td>1/1</td><td>2</td></tr>
+    </tbody>
+  </table>
+  <p id="interim-arm-report-spread">The spread a same-arm comparison already shows is <strong>undefined</strong>: the baseline local arm holds 1 run, so its only distinct half-split (1 considered, 1 undefined) leaves an empty half, and a half with no landed node has no defined difference. The negative control therefore could not be taken, and each arm's figures are reported without one. Every arm's figure above is reported beside that
+  spread, and none is read as an arm difference.</p>
+
+  <h4 id="interim-arm-report-population">The population, every run by id</h4>
+  <p>The wave is these five runs and none other. A/B requests dispatched on 11 November under node
+  ids beginning <code>ab-</code> or <code>ab2-</code> were not assigned by this draw and are outside
+  it. A resume, repair round or corrective redispatch belongs to its run's node: its input is added
+  to the node's total under the original arm and adds no run to the query.
+  No run is excluded from both arms.</p>
+  <table>
+    <thead><tr><th>Run</th><th>Plan section</th><th>Backend</th><th>Arm</th><th>Effort h</th>
+    <th>Launches</th><th>Cumulative input</th><th>Output</th><th>Peak context</th>
+    <th>Tool calls</th><th>Edit failures / calls</th><th>Anchored edits / reads</th><th>State</th></tr></thead>
+    <tbody>
+      <tr><td><code>r-20261112T065434682902-wave1-a3-the-monitor-shows-the-work-it-watche-s77</code></td><td>the-monitor-shows-the-work-it-watches#s77</td><td><code>omp-local</code></td><td><code>omp-local</code></td><td>1</td><td>2</td><td>22.56M</td><td>111,384</td><td>223,300</td><td>184</td><td>1 / 9</td><td>0 / 0</td><td>landed</td></tr><tr><td><code>r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80</code></td><td>the-monitor-shows-the-work-it-watches#s80</td><td><code>clive</code></td><td><code>clive</code></td><td>1.25</td><td>7</td><td>59.74M</td><td>138,757*</td><td>196,862</td><td>456</td><td>7 / 73</td><td>0 / 0</td><td>landed</td></tr><tr><td><code>r-20261112T065000679453-wave1-b1-the-monitor-shows-the-work-it-watche-s81</code></td><td>the-monitor-shows-the-work-it-watches#s81</td><td><code>codex</code></td><td><code>codex</code></td><td>1.25</td><td>2</td><td>55.92M</td><td>185,110</td><td>not measured</td><td>261</td><td>0 / 9</td><td>0 / 0</td><td>landed</td></tr><tr><td><code>r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87</code></td><td>the-monitor-shows-the-work-it-watches#s87</td><td><code>clive-anchored</code></td><td><code>clive-anchored</code></td><td>1</td><td>2</td><td>24.74M</td><td>16,211*</td><td>196,477</td><td>199</td><td>1 / 34</td><td>33 / 16</td><td>landed</td></tr><tr><td><code>r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44</code></td><td>a-plan-is-reviewed-before-it-is-built#s44</td><td><code>codex-anchored</code></td><td><code>codex-anchored</code></td><td>1</td><td>3</td><td>36.60M</td><td>161,525</td><td>not measured</td><td>300</td><td>0 / 0</td><td>0 / 6</td><td>landed</td></tr>
+    </tbody>
+  </table>
+  <p id="interim-arm-report-share">No edit call in the codex-anchored arm was counted at all: 0 <code>edit_anchored</code> calls and no <code>file_change</code> item, so the share of edits routed through the tool is undefined; the run's edits went through <code>command_execution</code> commands, after 6 <code>read_anchored</code> calls.</p>
+
+  <h4 id="interim-arm-report-draw">The draw</h4>
+  <p>Seed <strong>20261112</strong>; the arm list <code>clive, clive-anchored, omp-local, codex, codex-anchored</code> was shuffled by
+  <code>random.Random(20261112)</code> and zipped onto these sections in the order recorded in
+  <code>interim-arm-wave.json</code>:</p>
+  <table>
+    <thead><tr><th>Section</th><th>Effort hours</th><th>Drawn arm</th><th>Ran arm</th><th>Departure</th></tr></thead>
+    <tbody>
+      <tr><td>the-monitor-shows-the-work-it-watches#s77</td><td>1</td><td><code>omp-local</code></td><td><code>omp-local</code></td><td>none</td></tr><tr><td>the-monitor-shows-the-work-it-watches#s80</td><td>1.25</td><td><code>clive</code></td><td><code>clive</code></td><td>none</td></tr><tr><td>the-monitor-shows-the-work-it-watches#s81</td><td>1.25</td><td><code>codex</code></td><td><code>codex</code></td><td>none</td></tr><tr><td>the-monitor-shows-the-work-it-watches#s87</td><td>1</td><td><code>codex-anchored</code></td><td><code>clive-anchored</code></td><td>drawn to codex-anchored; the codex lane was budget-held, so it ran clive-anchored (recorded as a draw departure in the plan comments)</td></tr><tr><td>a-plan-is-reviewed-before-it-is-built#s44</td><td>1</td><td><code>clive-anchored</code></td><td><code>codex-anchored</code></td><td>drawn to clive-anchored; the local lane refused it on context fit (about 297k tokens against a 230k window), so it ran codex-anchored (recorded as a draw departure)</td></tr>
+    </tbody>
+  </table>
+  <p id="interim-arm-report-departures">Two sections departed from the draw: the codex lane was
+  budget-held when the section drawn to <code>codex-anchored</code> was ready, so it ran
+  <code>clive-anchored</code>; and the local lane refused the section drawn to
+  <code>clive-anchored</code> on context fit (about 297k tokens against a 230k window), so it ran
+  <code>codex-anchored</code>. Each run is listed under the arm it actually ran on.</p>
+
+  <h4 id="interim-arm-report-membership">Arm membership</h4>
+  <p>A Claude-dialect run belongs to an anchored arm only when its session-start record lists
+  <code>reckon-anchored-edit</code> as <code>connected</code>. The clive-anchored run's first launch
+  recorded <code>anchored_edit: true</code> and its resumed launch recorded <code>false</code>
+  (reason <code>disabled</code>), yet the resumed session's own start record still lists the server
+  connected with both tools, because the run home kept the server the first launch seeded. The
+  session-start record is the fact read, which is why this run counts in the anchored arm. A codex
+  run belongs to the anchored arm when a launch record carries <code>anchored_edit: true</code>: the
+  codex-anchored run's first launch did, its later launches did not, and its stream carries
+  6 <code>read_anchored</code> and 0 <code>edit_anchored</code> calls,
+  the reads all in the first launch.</p>
+
+  <h4 id="interim-arm-report-controls">Controls</h4>
+  <table>
+    <thead><tr><th>Control</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Positive, local: the edit-failure rate read by &sect;1's method over the baseline
+      local arm is of the same order as &sect;1's 11.2%</td>
+      <td>9.6% (7 refused edits in 73 edit calls on the single baseline run); one run is one sample, so the control shows the instrument reads refusals where they exist and not that the population's rate is &sect;1's 11.2%</td></tr>
+      <tr><td>Positive, codex: the edit-failure parser first finds a refused patch in the stream
+      known to contain one (<code>docs/research/fixtures/codex-refused-patch-stream.jsonl</code>)</td>
+      <td>1 refused patch found by the same text rule the codex arms are read with, so
+      a zero for a codex arm means zero and not an unread field. A refused codex patch is not an
+      item in <code>codex exec --json</code> at all, so a codex edit-failure rate is a lower bound
+      read from message text.</td></tr>
+      <tr><td>Instrument: the split code run over a synthetic four-run arm, so that
+      &ldquo;undefined&rdquo; is a fact about the measured population and not a broken control</td>
+      <td>3 distinct splits, largest absolute difference 200</td></tr>
+      <tr><td>Instrument: each run's stored cumulative input in the harness's own run store
+      reproduces the input the stream reader counts for one of that run's launches</td>
+      <td>5 of 5 runs reproduce a launch's input exactly in the harness's own run store (the store holds 5 of the 5), so the stream reading and the harness agree on what a token of cumulative input is; the store's per-run figure covers one launch, which is why the run totals are summed across launches rather than read from it</td></tr>
+      <tr><td>Negative: the baseline local arm split into two halves in every distinct way,
+      reporting the largest absolute difference in cumulative input per landed node</td>
+      <td>The control could not be taken: the baseline local arm holds 1 run, so every split puts it in one half and leaves the other empty, and a half with no landed node has no defined difference. Every split is listed as undefined, and each arm's figures are reported without it.</td></tr>
+    </tbody>
+  </table>
+  <table>
+    <thead><tr><th>Half A</th><th>Input per landed node</th><th>Half B</th><th>Input per landed node</th><th>|difference|</th></tr></thead>
+    <tbody><tr><td>no run</td><td>undefined</td><td>r-20261112T064442039104-wave1-a1-the-monitor-shows-the-work-it-watche-s80</td><td>59.74M</td><td>undefined</td></tr></tbody>
+  </table>
+
+  <h4 id="interim-arm-report-method">The query that produced this record</h4>
+  <p>The record is generated, not transcribed: <code>scripts/interim_arm_report.py</code> reads the
+  wave file, each run's stream files (<code>stream.jsonl</code> and <code>resume-*.jsonl</code> under
+  the run's own directory), each run's <code>attempt-*-worker.json</code> launch records, the plan
+  sections' effort hours, and <code>git -C reckon log main --grep "land(&lt;run_id&gt;)"</code> for
+  landing. Its run-store cross-check reads <code>SELECT detail FROM run_details WHERE run_id = ?</code>:
+  the store's <code>budget.tokens.input_tokens_cumulative</code> is written at a launch boundary and
+  covers one launch rather than the whole run, so the per-run totals are summed from the streams,
+  while the store's figure is used to check the reading against the harness's own count. Definitions: cumulative input is the whole
+  prompt of every request, cached segments included (Claude Code assistant records deduplicated by
+  message id, which reproduces each launch's <code>result</code> usage exactly; omp's per-turn
+  <code>message_end</code> usage; codex's <code>turn.completed</code> usage); edit calls are
+  <code>Edit</code>, <code>MultiEdit</code>, <code>edit_anchored</code>, omp's <code>edit</code> tool
+  and codex <code>file_change</code> items, with a refusal read from the tool result's error flag or,
+  for codex, from the model's message text; peak context is the widest single prompt, which codex's
+  stream does not carry. Landing is a <code>land(&lt;run_id&gt;)</code> commit on <code>main</code>;
+  every one of the five runs has one.</p>
+</article>
+</body>
+</html>

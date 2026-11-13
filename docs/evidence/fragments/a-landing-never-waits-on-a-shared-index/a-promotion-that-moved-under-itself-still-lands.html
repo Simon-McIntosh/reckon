@@ -1,0 +1,15 @@
+<section id="a-promotion-that-moved-under-itself-still-lands-evidence">
+  <h3>A promoted landing survives a pointer that moved again</h3>
+  <p>A <code>crew complete --land</code> that cannot remove its live pointer marks the pointer and leaves the merge to the landing pass. That pass read the mark as its only evidence that a landing was owed, so when a resumed attempt rewrote the pointer and dropped the mark it did nothing at all: the ledger row read landed, the reviewed head was on no branch, and the pointer stayed held.</p>
+  <p>The pass now takes the pending record's own pointer snapshot as the promotion's claim that it owed a merge, and finishes the landing whenever the promoted row's reviewed head is off the branch. A record written without a pointer snapshot still leaves a live unmarked pointer to its own attempt, which is the boundary the existing guard exists for.</p>
+  <table>
+    <thead><tr><th>Temporary repository, bare remote, <code>--land</code> under a moving pointer</th><th>Result</th></tr></thead>
+    <tbody>
+      <tr><td>Pointer marked by the refused promotion</td><td>Next pass merges the reviewed head, releases the pointer, clears the record.</td></tr>
+      <tr><td>Resumed attempt rewrote the pointer and dropped the mark</td><td>Next pass merges the reviewed head and clears the record; the rewrote attempt keeps its pointer.</td></tr>
+      <tr><td>Head merged by hand before the pass</td><td>Pass recognises it as already landed, releases the pointer, writes no second merge.</td></tr>
+    </tbody>
+  </table>
+  <p>Gate: <strong>8 passed in 34.19s</strong> at the head. Negative control at base revision <code>c3ab4d3c8021</code>, the same test with the base module substituted: <strong>1 failed, 2 passed</strong>, the dropped-mark case returning an empty pass (<code>results == []</code>, head off the branch, pointer held), <code>EXIT=1</code>.</p>
+  <p>Importer arm <code>tests/test_a_landing_record_waits_for_the_merge.py</code>: 5 passed at base, and the same file passes at head alongside the new test. Ruff check and format checks pass on both staged Python paths.</p>
+</section>

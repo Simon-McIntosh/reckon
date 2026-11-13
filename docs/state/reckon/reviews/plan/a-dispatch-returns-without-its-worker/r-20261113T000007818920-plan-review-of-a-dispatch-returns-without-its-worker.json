@@ -1,0 +1,114 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T00:10:05.188Z",
+  "dispatched_at": "2026-11-13T00:02:24Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1072",
+      "id": "anchors_resolve-1",
+      "reason": "a node dispatched against these paths is fenced out of the file that holds the ordering and the docstring, so it either blocks or widens scope, and neither the planned fence move nor the done-when's docstring obligation can be satisfied from the files the plan names.",
+      "text": "\u00a730's write paths name reckon/crew/dispatch.py and reckon/crew/dispatch_launch.py, but since the dispatch package split (b6789f4d23, \"preserve dispatch changes across the package split\", 2026-11-12) the fresh-dispatch body is reckon/crew/dispatching/launch.py: dispatch.py is a 660-line facade whose only mention of these names is the export registry at :287/:319/:631, _prepare_attempt_records is called at dispatching/launch.py:911 ahead of the first _refuse_if_superseded at :923, and the _SupersededLaunchError class whose docstring clause 1 requires correcting is defined at dispatching/launch.py:105-112 \u2014 so both the fence-move remedy and the docstring clause sit outside the declared write paths, while only the weaker \"refuses when its attempt is no longer the newest\" remedy is reachable.",
+      "type": "anchors_resolve",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/Code/reckon/docs/plans/a-dispatch-returns-without-its-worker.html:1072",
+      "id": "reasoning-1",
+      "reason": "every section of this plan is code-anchored in the same way, the outcome is identical whichever remedy the worker picks, and restating the clause as an invariant would not change what the node edits or what its gate asserts.",
+      "text": "the Deliverable prescribes the implementation, naming the two remedies (\"the fence moves ahead of _prepare_attempt_records, or _prepare_attempt_records refuses\u2026\") and the exact private symbols to change, rather than stating the endpoint as the invariant the node must establish and measure.",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "45c64360a7a8891d987a2234b6da7225bb01687e",
+  "plan_fingerprint": "32247c97cce8323433aa2de1180d462b1fca5155133d1bfa04e26fc88afbdb41",
+  "plan_slug": "a-dispatch-returns-without-its-worker",
+  "plan_version": 237,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "45c64360a7a8891d987a2234b6da7225bb01687e",
+      "commit_basis": "edit",
+      "finding": "anchors_resolve-1",
+      "note": "\u00a730 now names reckon/crew/dispatching/launch.py (the fresh-dispatch body, _SupersededLaunchError and _refuse_if_superseded after the package split) and reckon/crew/dispatch_launch.py (_prepare_attempt_records, _refuse_superseded_launch) as its write paths; dispatch.py is dropped.",
+      "reason": "",
+      "when": "2026-11-13T00:43:14.878727+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-1",
+      "reason": "Agreed with the reviewer's own reasoning: the plan is code-anchored throughout, either remedy gives the same outcome, and the done-when measures the invariant (the newer attempt's records are byte-identical) rather than the remedy.",
+      "when": "2026-11-13T00:43:31.849451+00:00"
+    }
+  ],
+  "responses": {
+    "anchors_resolve-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "45c64360a7a8891d987a2234b6da7225bb01687e",
+      "commit_basis": "edit",
+      "note": "\u00a730 now names reckon/crew/dispatching/launch.py (the fresh-dispatch body, _SupersededLaunchError and _refuse_if_superseded after the package split) and reckon/crew/dispatch_launch.py (_prepare_attempt_records, _refuse_superseded_launch) as its write paths; dispatch.py is dropped.",
+      "reason": "",
+      "when": "2026-11-13T00:43:14.878727+00:00"
+    },
+    "reasoning-1": {
+      "action": "declined",
+      "by": "",
+      "reason": "Agreed with the reviewer's own reasoning: the plan is code-anchored throughout, either remedy gives the same outcome, and the done-when measures the invariant (the newer attempt's records are byte-identical) rather than the remedy.",
+      "when": "2026-11-13T00:43:31.849451+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-a-dispatch-returns-without-its-worker.v237.json",
+  "review_run_id": "r-20261113T000007818920-plan-review-of-a-dispatch-returns-without-its-worker",
+  "reviewed_blob_sha": "122c139f1a6cb5b697fe5685bd7c57d808e3835a",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "a finding \u2014 the named write paths reckon/crew/dispatch.py and reckon/crew/dispatch_launch.py do not hold the call ordering or the docstring the section requires changed; at this revision they live in reckon/crew/dispatching/launch.py.",
+    "done_when": "pass \u2014 the two cases are measurable and the negative control names the one assertion that goes red at base (the newer attempt's records overwritten or unlinked); the \"no supervisor starts\" half passes at base because the first fence already raises there, which is why the control names the record assertion rather than the spawn.",
+    "evidence_paths": "pass \u2014 each matched arm's log goes under the run directory through an all_debug sbatch job submitted with env -u SLURM_JOB_ID, so no evidence lands on the fleet node or in node-local /tmp.",
+    "naming": "pass \u2014 the section carries no plan label, stage name, ticket number or version tag into a symbol, comment or filename it asks for; \"(finding 1)\" and \"(finding 0)\" appear only as plan prose describing what changed.",
+    "reasoning": "a finding \u2014 the root cause reproduces at this revision exactly as stated (dispatch_launch._prepare_attempt_records is called at reckon/crew/dispatching/launch.py:911, the first _refuse_if_superseded is at :923, and the _SupersededLaunchError class docstring at :105-112 still reads \"Raised only at the pre-spawn fence\"), and reachability is the anchors_resolve finding; the section separately prescribes which implementation to choose, filed below.",
+    "single_goal": "pass \u2014 one deliverable (no canonical attempt, worker, exit or supervisor record is written or unlinked before the launch has passed the fence), with the stale docstring corrected as a consequence of where that fence ends up rather than as a second mechanism.",
+    "wiring": "pass \u2014 s30 waits on a-dispatch-returns-without-its-worker#s29 in plan-section-depends-on, s29 is declared done and its section status is done, and the open followup f-adrwiw-030 points at a \u00a730 that exists."
+  },
+  "section_digests": {
+    "_document": "a18be9a33fcb737f29e63d21e2fe4957776fc20b3140ca9839ddfdc1b1d0d215",
+    "s1": "e28838b990406106b728a03b1ce4d69905073033be3fbe16e2adec3322ccb41c",
+    "s10": "e0dad3fb234ab0708520137693f2171fd162f14f568d4b2869b4c71edc0efac0",
+    "s11": "c6b91fa66c01d6a9c4559aab10c088c049ede69554509210d53e1320ff55e7fd",
+    "s12": "06d045128a1a1f7a3d660e692c5d22b6d99cc3f1d9900b353c62ac8bfd3d60d7",
+    "s13": "ef8cd63a45cd947493184ee0e6449ec77593c6d63b58e49bc53238a950b5eaee",
+    "s14": "defc27c7ad0a511d1d46f705963f70f7e81c3191dd1c6d99c5a17c443abf908a",
+    "s15": "69ab8a4cf40c7cd5f8d8bc43e78f0e061d4659cd2a47f435f049183d9514fee6",
+    "s16": "1336f961b97041db0650d8602be3a96c2c59934a8d4873beb798369d9c5f927f",
+    "s17": "88d9571bb685887322a3326dcc28b4564790835781000548808ff28a2f4a41c4",
+    "s18": "74bce0c984fecfcbfa0463cb56ac1208fa8643d81d778787e2426ea1659e6c59",
+    "s19": "795e59e9c05c23a6a1ac9bb6442c5f6bcf5053cab2e3c3751412c914d3bc3971",
+    "s2": "4a27b5dea20b1d3354fb4c55104e868cf43416f93c5e221d90a6f07f7dd74114",
+    "s20": "49fa75b158c7050846bac6d83dd9130a6d2e79c5994e1d1a1cd53fe02871a56a",
+    "s21": "13c716b3c1bbbc8942518f34eb913c0cfdd8f50eddd2c354cd750826cd589d41",
+    "s22": "11e4ea82910dbc44c680b335b3492b480dede92aefca198a5f77d5afa94f580d",
+    "s23": "c91ce6a0b316e854ceafb7addbfc7bc53cbde49e623fd1f2f794b2f612e60332",
+    "s24": "2bf6e7c384b7a13336594083c1dbadbffefb7c5d52142917063db4e951331526",
+    "s25": "cc23505f11a53b6805235d1291e66a2c125b10d71645b70b50b7c29a9e2de0ee",
+    "s26": "ca859de70832b19bd595ec082b963a83ad8cda76b0f083eeb7178ddb47771957",
+    "s27": "eac4a3e04958e98f59e51c91d4bc2a9b689284ffd6b314309af2e6ec6b206808",
+    "s28": "d8ae29323972b12bcdfe13dc0c83467f079a5c2ac64bfb3a8d684bbce498e7df",
+    "s29": "9e5f8cbbe7799f02f10a6a4857dff226a334655f7b9a2e40e31a6629deaf33f1",
+    "s3": "825a19937c51e9c0642eb9f634ccf4d61bdbd31335debd0a28807c04739fc31a",
+    "s30": "231edbad35ca57d8b1a6db252fbbc836c32cdf44702eb31de9d36e831fa23dbd",
+    "s4": "3c9553df00b4b52978a7b856a781f44cfbc9040b5369476acbfbd26c1401d109",
+    "s5": "902423914229fd3034527b5d329e757e05b7e2e5368f41a9832f90bee29f1e43",
+    "s6": "bf0a39b8c4fdfbb05246451d1868e014a84296c86dfe7d6090e7343db3dbd70b",
+    "s7": "3016609b879a9d7722cbebc8bff660b9e141e11eb02b98d195da3851f2340144",
+    "s8": "c93baadf650a2e67225cfb81b756692522c1ada3166037ba4f460feec98bc021",
+    "s9": "466c5aea5f624160543c791b665d76df99dcc43842ea4d5ea64071eed7aa0e00"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:43:06.657502+00:00",
+  "total": null
+}
