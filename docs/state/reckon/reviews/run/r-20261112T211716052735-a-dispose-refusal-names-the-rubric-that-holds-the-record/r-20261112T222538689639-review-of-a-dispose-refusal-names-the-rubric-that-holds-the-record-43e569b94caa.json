@@ -1,0 +1,60 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "2c24811ad3f5d85cd92e145f12726fc7e3e043c2",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew_run_commands.py:1057 crew_dispose (the --review branch that raises the refusal)",
+    "reckon/mcp_crew_actions.py:297 MCP \"dispose\" action -> crew_dispose",
+    "reckon/crew/review_dispositions.py:774 dispose_commands (operator commands routed to that verb)"
+  ],
+  "completed_at": "2026-11-12T23:11:17.795Z",
+  "dispatched_at": "2026-11-12T22:54:22Z",
+  "findings": [
+    {
+      "file": "reckon/crew_run_commands.py",
+      "line": "795",
+      "severity": "non-blocking",
+      "text": "non-blocking: the `if not family` and `else` branches of the message at 785-799 cannot be reached, and the else branch states a rule the store does not implement. A refusal fires only when record_for_review_run_anywhere found no record matching the requested rubric; because _review_rubric_matches (reckon/crew/review.py:2753) classifies every non-figure record as the text family for rubric=None, any record this reader would report under an empty or third family would already have been returned as named_record, so only the figure branch at 790 is live. The else text also claims \"which a disposition does not select\" for a named family, while _review_rubric_matches would let --rubric <that family> select a non-figure record. It is dead code asserting a behaviour the selection does not have, and it would mislead whoever makes a third family selectable."
+    }
+  ],
+  "head_log_revision": "43e569b94caabac59080a0dda1490d2e10fe8069",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites reaching the changed refusal: the crew dispose verb's --review branch, the MCP dispose action that dispatches to that verb, and the dispose commands review_dispositions composes for operators.",
+    "diff": "read commit by commit against 2c24811ad3: 2ab1e2488d adds review_run_record_rubrics and the composer, 1561988af0 splits the text-family wording out of the message with its reason, 43e569b94c adds the \u00a726 landing fragment; the production change is +109/-3 across reckon/crew/review_records.py and reckon/crew_run_commands.py plus a 300-line test file.",
+    "done_when": "the done_when asks for a refusal naming --rubric figure with nothing written, the same call with --rubric figure disposing, a no-record review keeping the existing refusal, and the base revision as negative control; tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:240, :270 and :300 assert exactly those, and the manifest's test_logs record head 3 passed EXIT=0 with base 1 failed, 2 passed EXIT=1 whose log quotes the old refusal.",
+    "goal": "the node's goal is that a dispose refusal names the rubric family holding the named review run's record; reckon/crew/review_records.py:1823 review_run_record_rubrics answers the families without the rubric filter and reckon/crew_run_commands.py:752 _no_named_review_record_refusal composes the message, which names --rubric figure for a figure record reached by --review alone.",
+    "manifest": "read; status complete, commits 2ab1e2488d, 1561988af0 and 43e569b94c, changed_paths matching the diff, tests the new test file's literal command, test_logs naming the head and base gates, both suite arms, the two importer arms and ruff, baseline_suite (2c24811ad3, 0 failures) and after_suite (43e569b94c, 0 failures), and a failure_attribution explaining the discarded bare-extraction arm's setup errors as scaffolding.",
+    "write_paths": "the manifest declares reckon/crew_run_commands.py, reckon/crew/review_records.py, tests/, the \u00a726 landing fragment and a figures directory; the diff touches the two modules, one new test file and the fragment, so every path is inside the fence and the unused figures grant is untouched."
+  },
+  "justifications": {
+    "durability": "the base arm at logs/base_new_test.log reinstate the defect and reddens test_the_refusal_names_the_rubric_that_holds_the_record on \"--rubric figure\" in result.output, while the other two cases stay green, so the guard is shown to fail rather than merely to pass; only the figure branch of the message at reckon/crew_run_commands.py:783-799 is exercised.",
+    "evidence": "logs/head_new_test.log (rev 43e569b94c) reads \"3 passed\" EXIT=0 and logs/base_new_test.log (rev 2c24811ad3) reads \"1 failed, 2 passed\" EXIT=1 failing on tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:240's assertion against the base message; logs/head_suite.log and logs/base_suite_repo.log both read \"51 passed\" EXIT=0; the weakness is that logs/head_importers.log and logs/ruff.log carry \"revision: head\" rather than a sha.",
+    "fit": "the family reader sits at reckon/crew/review_records.py:1823 beside record_for_review_run_anywhere and follows the same committed-then-staged order; the dead text-family and third-family branches at reckon/crew_run_commands.py:785-799 are the one place the shape is heavier than the reachable behaviour.",
+    "goal_fidelity": "reckon/crew_run_commands.py:790-794 composes \"its record is the figure review, which this verb selects with --rubric figure\" for a record held in the figure family, and the head gate shows the disposition landing on that record at tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:270.",
+    "reuse": "the reader reuses _committed_records_for_run, record_for_review_run and _review_record_rubric, and adds the unfiltered family answer record_for_review_run_anywhere cannot give because _review_rubric_matches at reckon/crew/review.py:2753 drops figure records under rubric=None; the two-store walk is however restated from that function's body rather than factored out of it.",
+    "scope_discipline": "git diff --stat 2c24811ad3..43e569b94c changes exactly reckon/crew/review_records.py, reckon/crew_run_commands.py, tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py and the \u00a726 landing fragment, every one inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a dispose refusal names the rubric that holds the named review run's record; reckon/crew/review_records.py:1823 review_run_record_rubrics answers the families without the rubric filter and reckon/crew_run_commands.py:752 _no_named_review_record_refusal composes the message, which reads \"its record is the figure review, which this verb selects with --rubric figure\" at reckon/crew_run_commands.py:790-794.\nVERDICT done_when: read; the new test asserts the requirement through the CLI at tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:240 (\"--rubric figure\" in the refusal, both records byte-identical, the blocking list intact), :270 (the same call with --rubric figure lands the disposition at the figure record path) and :300 (a no-record review keeps the plain refusal with no --rubric offered); the manifest's test_logs record head 3 passed EXIT=0 and base 1 failed, 2 passed EXIT=1, and logs/base_new_test.log quotes the defect's refusal verbatim.\nVERDICT write_paths: the manifest declares reckon/crew_run_commands.py, reckon/crew/review_records.py, tests/, docs/evidence/fragments/a-review-can-see-the-figure/a-dispose-refusal-names-the-rubric-that-holds-the-record.html and a figures directory; git diff --stat 2c24811ad3..43e569b94c changes exactly the two modules, the one new test file and the fragment, every path inside the fence.\nVERDICT manifest: read; status complete, commits 2ab1e2488d, 1561988af0, 43e569b94c, changed_paths matching the diff, tests the new test file's literal command, test_logs naming the head and base gates, both suite arms, the two importer arms and ruff, base and head suite arms both 0 failures, and a failure_attribution attributing a discarded bare-extraction arm's setup errors to scaffolding.\nVERDICT diff: read commit by commit against 2c24811ad3 \u2014 2ab1e2488d adds review_run_record_rubrics and the composer, 1561988af0 splits the text-family wording out of the message, 43e569b94c adds the \u00a726 landing fragment; the production change is +109/-3 across reckon/crew/review_records.py and reckon/crew_run_commands.py plus a 300-line test file.\nCALL_SITES: reckon/crew_run_commands.py:1057 crew_dispose (the --review branch that raises the refusal), reckon/mcp_crew_actions.py:297 MCP dispose action -> crew_dispose, reckon/crew/review_dispositions.py:774 dispose_commands (operator commands routed to that verb)\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew_run_commands.py:790-794 names the figure family and the --rubric figure value that selects it, and the head gate shows the disposition landing on that record at tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:270.\nSCORE evidence: 18\nJUSTIFICATION evidence: logs/head_new_test.log (rev 43e569b94c) reads \"3 passed\" EXIT=0 and logs/base_new_test.log (rev 2c24811ad3) reads \"1 failed, 2 passed\" EXIT=1 on the rubric assertion, but logs/head_importers.log and logs/ruff.log carry \"revision: head\" rather than a sha.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 2c24811ad3..43e569b94c lists only reckon/crew/review_records.py, reckon/crew_run_commands.py, the new test and the landing fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: reinstating the base behaviour reddens test_the_refusal_names_the_rubric_that_holds_the_record on the \"--rubric figure\" assertion at tests/test_a_dispose_refusal_names_the_rubric_that_holds_the_record.py:240 while the other two cases stay green, but only the figure branch of reckon/crew_run_commands.py:783-799 is exercised.\nSCORE fit: 18\nJUSTIFICATION fit: the reader at reckon/crew/review_records.py:1823 sits beside record_for_review_run_anywhere in the store module and follows the same committed-then-staged order, with the dead branches at reckon/crew_run_commands.py:785-799 the only excess.\nSCORE reuse: 17\nJUSTIFICATION reuse: it reuses _committed_records_for_run, record_for_review_run and the review module's _review_record_rubric, adding the unfiltered family answer record_for_review_run_anywhere cannot give because _review_rubric_matches at reckon/crew/review.py:2753 drops figure records, but it restates that function's two-store walk instead of factoring it out.\nFINDING reckon/crew_run_commands.py:795 non-blocking: the `if not family` and `else` branches at 785-799 are unreachable and the else states a rule the store does not implement \u2014 any non-figure record matches the text family under _review_rubric_matches (reckon/crew/review.py:2753), so such a record would already have been returned as named_record and never reach this refusal; it also claims a disposition does not select a third family the selection would in fact match.",
+  "review_run_id": "r-20261112T222538689639-review-of-a-dispose-refusal-names-the-rubric-that-holds-the-record-43e569b94caa",
+  "reviewed_base_sha": "2c24811ad3f5d85cd92e145f12726fc7e3e043c2",
+  "reviewed_head_sha": "43e569b94caabac59080a0dda1490d2e10fe8069",
+  "reviewed_run_id": "r-20261112T211716052735-a-dispose-refusal-names-the-rubric-that-holds-the-record",
+  "reviewer_run_id": "r-20261112T222538689639-review-of-a-dispose-refusal-names-the-rubric-that-holds-the-record-43e569b94caa",
+  "scores": {
+    "durability": 18,
+    "evidence": 18,
+    "fit": 18,
+    "goal_fidelity": 20,
+    "reuse": 17,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T00:09:57.981183+00:00",
+  "total": 111
+}
