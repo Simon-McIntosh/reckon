@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A session mismatch never skips the host silently | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A session mismatch never skips the host silently</h1>
+      <p class="lead">A dispatch issued with <code>--session</code> naming something other
+      than the calling Claude session was refused by the host hand-off, and refused
+      silently: <code>_request_host_follower</code> returned <code>False</code> on the
+      name comparison, so no host was ever asked for the run's follower. The caller's
+      pane showed nothing while the run read as unattached everywhere else. The mismatch
+      case now prints one line naming both sessions, and hands the run to the calling
+      session's own waiting host.</p>
+    </header>
+
+    <section id="a-session-mismatch-never-skips-the-host-silently-measure">
+      <h2>Measure</h2>
+      <p><code>tests/test_a_session_mismatch_never_skips_the_host_silently.py</code>
+      exercises four cases on a temporary crew home with a stub reader on the caller's
+      session-host FIFO:</p>
+      <ul>
+        <li>a mismatched session with a waiting host writes the run's request to the
+        caller's FIFO, prints one line naming both sessions, and returns
+        <code>host_handoff</code> with <code>requested_session</code>,
+        <code>calling_session</code> and <code>handed_to_host</code> true;</li>
+        <li>a mismatched session with no waiting host returns <code>handed_to_host</code>
+        false and the line says no waiting host received the run;</li>
+        <li>a matching session leaves the ordinary ask path alone and
+        <code>_request_host_follower</code> still writes its request;</li>
+        <li>an empty session name is not a mismatch.</li>
+      </ul>
+      <p>Head arm at <code>020a3ae95f</code>:
+      <code>tests/test_a_session_mismatch_never_skips_the_host_silently.py</code> and
+      <code>tests/test_staged_write_inventory.py</code> &mdash; 53 passed, 2 errors. The
+      two errors are <code>test_staged_write_inventory</code> failing to run
+      <code>git</code> in the scratch tree, identically in both arms; they are
+      scaffolding and not this change's.</p>
+      <p>The wider arm over every test file importing <code>reckon.crew.dispatch_watch</code>
+      ran on <code>all_debug</code>: base <code>d74a74fb</code> 3 failed, 161 passed;
+      head <code>020a3ae95f</code> the same 3 failed, 165 passed. The extra 4 passes are
+      this node's new cases; <strong>zero failures are added</strong>. Both arms were
+      submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=all_debug</code>
+      and never ran on the fleet node.</p>
+      <p><strong>Negative control.</strong> Restoring the base guard so a mismatched
+      session writes nothing and prints nothing ran red: 4 failed, 0 passed, naming every
+      case above &mdash; the mismatched hand-off asserted <code>None</code> where
+      <code>host_handoff</code> was expected, and no line was printed. Log:
+      <code>negative-control.log</code> in the run directory.</p>
+    </section>
+
+    <section id="a-session-mismatch-never-skips-the-host-silently-scope">
+      <h2>What the change does not reach</h2>
+      <p>The hand-off is a module-level entry point on <code>reckon.crew.dispatch_watch</code>. The
+      dispatch path that would read <code>host_handoff</code> into the dispatch JSON lives
+      in <code>reckon/crew/dispatching/requests.py</code> and
+      <code>reckon/crew/dispatching/launch.py</code>, which this node's write scope does
+      not include; the wiring is recorded as out of scope on the manifest rather than
+      performed here.</p>
+    </section>
+  </main>
+</body>
+</html>
