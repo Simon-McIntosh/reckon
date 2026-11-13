@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-title" content="Declared services reload at bounded pass boundaries">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s37">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="blocked">
+  <title>Declared service pass boundary evidence</title>
+</head>
+<body>
+<article id="service-reloads-between-passes-record" data-node="service-reloads-between-passes" data-reckon="landed">
+  <h2 id="service-reloads-between-passes-heading">Declared services reload at bounded pass boundaries</h2>
+  <p id="service-reloads-between-passes-reproduction">The base revision
+  <code>b575b660a03426db747bcf6b452599b2c47712fa</code> selects a restart while the
+  stub's pass lock is held. The probe records
+  <code>pass_active=true; code_decision=restart; completion_before_restart=false</code>.
+  The admission loop already checks the checkout before each pass; the supervisor's
+  unconditional stop bypasses that boundary.</p>
+  <p id="service-reloads-between-passes-mechanism">A supervised admission service holds a
+  pass lock from entry through verdict publication. A supervisor requesting new code
+  writes a reload request, which prevents another pass from entering, and waits for
+  the active lock to become free. Its next cycle stops the copy before starting its
+  replacement. The pass records its own start and bound; a stale copy exceeding the
+  bound is restarted with the bound in the log. Admission's default bound is
+  <strong>1800 seconds</strong>. Services without this protocol retain their existing
+  restart behavior. Manual admission commands need no boundary file.</p>
+  <p id="service-reloads-between-passes-safety">Withdrawal of a code change or refusal
+  of its replacement checkout releases the pending request. A live copy's recorded
+  stamp is retained in supervisor state when its runtime PID record disappears;
+  disappearance alone does not restart it. The implementation reuses the atomic JSON
+  writer, flock, existing checkout-trust decisions, and existing stop/start paths.</p>
+  <table id="service-reloads-between-passes-measurements">
+    <thead><tr><th>Measurement on all_debug</th><th>Base</th><th>Head</th></tr></thead>
+    <tbody>
+      <tr><td>Armed node gate and staged-write inventory</td><td>51 passed</td><td>59 passed</td></tr>
+      <tr><td>Importer population, up to four workers</td><td>131 failed, 682 passed</td><td>131 failed, 689 passed, 1 error</td></tr>
+      <tr><td>Importer delta including setup errors</td><td colspan="2">One added error ID, zero removed IDs; required zero-added condition is unmet.</td></tr>
+    </tbody>
+  </table>
+  <p id="service-reloads-between-passes-tests">The eight new tests exercise an active
+  pass completing before replacement, replacement before its next pass, a fresh
+  supervisor adopting active work, replacement between passes in one cycle, an
+  overlong pass's logged bound, cancellation of a pending request, a vanished runtime
+  record, admission's lock through verdict publication, and an unsupervised manual
+  pass. Controlled subprocess markers identify the running copy and the code stamp
+  read by each pass. All eight pass.</p>
+  <p id="service-reloads-between-passes-control">Declared mutation: restart on the stamp
+  change regardless of the pass. Replacing the boundary decision with an unconditional
+  restart produces <strong>5 failed, 54 passed</strong>, <code>EXIT=1</code>. The active-pass
+  test fails because its original PID is stopped and replaced during the pass; that
+  test passes at the delivered source head. The overrun case also detects the missing
+  bound in the restart log. The mutation is confined to a disposable extraction.</p>
+  <p id="service-reloads-between-passes-provenance">Accepted measurements use isolated Git
+  metadata naming their exact revisions and print the imported module path and
+  resolved working directory. Base, head and mutation arms run sequentially in separate
+  partition jobs. Exploratory arms using the worktree's live Git pointer are superseded.
+  Test scratch is removed after each job; the cancelled exploratory job's scratch was
+  explicitly removed on its owning node. Ruff check and format check pass for all three
+  changed Python files.</p>
+  <p id="service-reloads-between-passes-handoff">Product source is committed through
+  <code>cb64c37031a3e6fd47ab5d4279eaa3cb80b87193</code>. Commands, summaries, failure IDs,
+  the red mutation log and the exact remaining blocker are held in the run manifest
+  and receipts under <code>r-20261113T033507849520-service-reloads-between-passes</code>.
+  The coordinator owns the blocker disposition, independent review, integration,
+  merged-head verification and shared plan-state update.</p>
+</article>
+</body>
+</html>
