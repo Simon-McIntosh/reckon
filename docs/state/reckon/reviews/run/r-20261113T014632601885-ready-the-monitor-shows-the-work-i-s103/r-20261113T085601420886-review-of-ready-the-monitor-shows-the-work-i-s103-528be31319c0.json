@@ -1,0 +1,70 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/mcp_views.py:4641",
+    "reckon/hooks/coordinator_obligations.py:1364",
+    "reckon/hooks/coordinator_obligations.py:1634",
+    "reckon/crew/obligation_snapshot.py:1549"
+  ],
+  "completed_at": "2026-11-13T11:09:53.296Z",
+  "dispatched_at": "2026-11-13T10:59:21Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1549",
+      "severity": "non-blocking",
+      "text": "non-blocking: payload_for has no branch for a repair-round row, so a fresh published snapshot omits it and the coordinator's prompt checklist at coordinator_obligations.py:1364 still shows nothing for a run mid-repair; the repair belongs in obligation_snapshot.py, outside this node's write scope, and should be folded into a follow-on node."
+    },
+    {
+      "file": "reckon/crew/obligations.py",
+      "line": "1596",
+      "severity": "non-blocking",
+      "text": "non-blocking: _repair_round_in_flight re-implements the opening-status predicate owned by resumption.py:1145 live_repair_round and repeated at obligations.py:2117, adding another copy rather than sharing one helper."
+    },
+    {
+      "file": "tests/test_a_repair_round_shows_on_the_obligations.py",
+      "line": "162",
+      "severity": "non-blocking",
+      "text": "non-blocking: the executed negative control removes the stored-review read, not the round-record read the plan's done_when names, so the round-record falsification is asserted at line 202 but never shown red."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "Read commit by commit from 95d7c8ce to 528be313; 023493cc adds REPAIR_ROUND_DUTY_KIND and three row fields, four helpers, the pre-classification branch at obligations.py:3753, the hook mirror entry at coordinator_obligations.py:257 and the four-case test, and 528be313 adds only the evidence fragment.",
+    "done_when": "The done_when names a new tests/test_a_repair_round_shows_on_the_obligations.py with four measured outcomes; the file carries four cases at lines 162, 183, 202 and 216, and logs/after-suite.log records 55 passed with EXIT=0 while logs/negative-control.log records 1 failed with EXIT=1, though the stop-hook clause is exercised at test line 198 on a live payload rather than on the fresh snapshot the hook reads at reckon/hooks/coordinator_obligations.py:1364.",
+    "goal": "The node goal is that an automatic repair round shows on the obligations; reckon/crew/obligations.py:1640 builds the repair-round row in the live derivation, reached from obligations.py:3753, and it names the review run, the finding and the pid, but the snapshot slice at reckon/crew/obligation_snapshot.py:1549 carries no such row.",
+    "manifest": "Read; status is complete, commits are 023493cc and 528be313, the tests line names a literal pytest command, and baseline_suite and after_suite each record 0 failures with logs ending in a bare EXIT= line.",
+    "write_paths": "The declared paths are reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py and the new test; git diff 95d7c8ce..528be313 touches exactly those three plus the granted evidence fragment and no file outside them."
+  },
+  "justifications": {
+    "durability": "the negative control reddens test_a_repair_round_in_flight_names_its_review_finding_and_pid by removing the stored-review read, so the naming assertions at tests/test_a_repair_round_shows_on_the_obligations.py:174 depend on code the change added.",
+    "evidence": "logs/after-suite.log, logs/base-suite.log and logs/negative-control.log record the gate and both suite arms, but the stop-hook measure is taken on a live payload at tests/test_a_repair_round_shows_on_the_obligations.py:198 rather than on the fresh-snapshot path production takes.",
+    "fit": "the helpers at obligations.py:1590 follow the module's existing _live_item and docstring idiom, and no added name or comment carries a plan, sprint, ticket or author label.",
+    "goal_fidelity": "obligations.py:1640 builds the row the deliverable describes, but the coordinator's per-turn checklist reads the snapshot at coordinator_obligations.py:1364, whose slice drops any running-phase row at obligation_snapshot.py:1549.",
+    "reuse": "_repair_round_in_flight at obligations.py:1596 re-tests REPAIR_ROUND_OPENING_STATUSES that resumption.py:1145 live_repair_round and obligations.py:2117 _coordinator_resume_in_flight already own, and _repair_round_head at obligations.py:1619 repeats the round-id head parse at recovery_repair_dispatch.py:1085.",
+    "scope_discipline": "every path in git diff 95d7c8ce..528be313 is inside the brief's declared scope, and the new test file the machine scope omits is recorded in the manifest's scope_note."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node goal is that an automatic repair round shows on the obligations; reckon/crew/obligations.py:1640 builds the repair-round row in the live derivation, reached from obligations.py:3753, and it names the review run, the finding and the pid, but the snapshot slice at reckon/crew/obligation_snapshot.py:1549 carries no such row.\nVERDICT done_when: The done_when names a new tests/test_a_repair_round_shows_on_the_obligations.py with four measured outcomes; the file carries four cases at lines 162, 183, 202 and 216, and logs/after-suite.log records 55 passed with EXIT=0 while logs/negative-control.log records 1 failed with EXIT=1, though the stop-hook clause is exercised at test line 198 on a live payload rather than on the fresh snapshot the hook reads at reckon/hooks/coordinator_obligations.py:1364.\nVERDICT write_paths: The declared paths are reckon/crew/obligations.py, reckon/hooks/coordinator_obligations.py and the new test; git diff 95d7c8ce..528be313 touches exactly those three plus the granted evidence fragment and no file outside them.\nVERDICT manifest: Read; status is complete, commits are 023493cc and 528be313, the tests line names a literal pytest command, and baseline_suite and after_suite each record 0 failures with logs ending in a bare EXIT= line.\nVERDICT diff: Read commit by commit from 95d7c8ce to 528be313; 023493cc adds REPAIR_ROUND_DUTY_KIND and three row fields, four helpers, the pre-classification branch at obligations.py:3753, the hook mirror entry at coordinator_obligations.py:257 and the four-case test, and 528be313 adds only the evidence fragment.\nCALL_SITES: reckon/mcp_views.py:4641, reckon/hooks/coordinator_obligations.py:1364, reckon/hooks/coordinator_obligations.py:1634, reckon/crew/obligation_snapshot.py:1549\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: obligations.py:1640 builds the row the deliverable describes, but the coordinator's per-turn checklist reads the snapshot at coordinator_obligations.py:1364, whose slice drops any running-phase row at obligation_snapshot.py:1549.\nSCORE evidence: 13\nJUSTIFICATION evidence: logs/after-suite.log, logs/base-suite.log and logs/negative-control.log record the gate and both suite arms, but the stop-hook measure is taken on a live payload at tests/test_a_repair_round_shows_on_the_obligations.py:198 rather than on the fresh-snapshot path production takes.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: every path in git diff 95d7c8ce..528be313 is inside the brief's declared scope, and the new test file the machine scope omits is recorded in the manifest's scope_note.\nSCORE durability: 15\nJUSTIFICATION durability: the negative control reddens test_a_repair_round_in_flight_names_its_review_finding_and_pid by removing the stored-review read, so the naming assertions at tests/test_a_repair_round_shows_on_the_obligations.py:174 depend on code the change added.\nSCORE fit: 18\nJUSTIFICATION fit: the helpers at obligations.py:1590 follow the module's existing _live_item and docstring idiom, and no added name or comment carries a plan, sprint, ticket or author label.\nSCORE reuse: 5\nJUSTIFICATION reuse: _repair_round_in_flight at obligations.py:1596 re-tests REPAIR_ROUND_OPENING_STATUSES that resumption.py:1145 live_repair_round and obligations.py:2117 _coordinator_resume_in_flight already own, and _repair_round_head at obligations.py:1619 repeats the round-id head parse at recovery_repair_dispatch.py:1085.\nFINDING reckon/crew/obligation_snapshot.py:1549 non-blocking: payload_for has no branch for a repair-round row, so a fresh published snapshot omits it and the coordinator's prompt checklist at coordinator_obligations.py:1364 still shows nothing for a run mid-repair; the repair belongs in obligation_snapshot.py, outside this node's write scope, and should be folded into a follow-on node.\nFINDING reckon/crew/obligations.py:1596 non-blocking: _repair_round_in_flight re-implements the opening-status predicate owned by resumption.py:1145 live_repair_round and repeated at obligations.py:2117, adding another copy rather than sharing one helper.\nFINDING tests/test_a_repair_round_shows_on_the_obligations.py:162 non-blocking: the executed negative control removes the stored-review read, not the round-record read the plan's done_when names, so the round-record falsification is asserted at line 202 but never shown red.",
+  "review_run_id": "r-20261113T085601420886-review-of-ready-the-monitor-shows-the-work-i-s103-528be31319c0",
+  "reviewed_base_sha": "95d7c8ced1c9974983f4df1e74b49bfc924a6974",
+  "reviewed_head_sha": "528be31319c0ff6bafaf39f77d83e465112baf4f",
+  "reviewed_run_id": "r-20261113T014632601885-ready-the-monitor-shows-the-work-i-s103",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 18,
+    "goal_fidelity": 14,
+    "reuse": 5,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:46:27.479250+00:00",
+  "total": 84
+}
