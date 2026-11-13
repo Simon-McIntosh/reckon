@@ -1,0 +1,222 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "_document": "59e8d4928ed22056b1dbe2a9a2a31701b280e97fbed4042374d4028f65dd9131",
+        "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19"
+      },
+      "reason": "the edits make exactly the acted answers' changes to this review's findings",
+      "units": [
+        "_document",
+        "s42"
+      ],
+      "when": "2026-11-13T02:20:18.413110+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T01:51:28.370Z",
+  "dispatched_at": "2026-11-13T01:43:44Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:642",
+      "id": "done_when-1",
+      "reason": "a case whose base arm passes measures nothing, so the node would ship and gate a duplicate memo while believing it had proven the change.",
+      "text": "\u00a742's second case requires that \"two refreshes over an unchanged run call git for that run's review tier once\", with the control \"at the base revision \u2026 the second refresh calls git again\", but base already memoises that tier: `obligations._review_tier_for_duty` (`reckon/crew/obligations.py:2044-2049`) returns through `file_memo.memoized_key(\"obligation_review_tier\", _review_tier_key(...), \u2026)`, and `tests/test_a_review_duty_reads_its_run_review_once.py::test_each_review_is_read_once_until_its_entries_move` already asserts at base that an unchanged pass re-reads nothing \u2014 so the control is green at base and the case cannot distinguish head from base",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:642",
+      "id": "done_when-2",
+      "reason": "the instrument to falsify it exists at base (`review_records.review_store_tick()` is defined at `reckon/crew/review_records.py:47-57` and no non-review caller installs it, so base globs per item), and without that arm the node cannot show its third change is what fixed the glob.",
+      "text": "\u00a742's third measure, that a refresh over many duty items \"calls `directory.glob` on the review store at most once per tick\", carries no negative control: the stated control names only the blocked-derivation and repeated-git cases, so the store-glob half of the gate rests on an assertion that could pass on the unfixed code",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:642",
+      "id": "single_goal-1",
+      "reason": "this plan already narrowed \u00a732 from two deliverables to one for the same reason, and narrowing \u00a742 to the two changes that are not already present at base leaves one coherent node with one verdict.",
+      "text": "\u00a742 puts three independently closable deliverables on one node \u2014 publish phase transitions before duty derivation, memoise the review-tier git calls, and install the per-tick review store \u2014 each with its own measure and its own negative control, so one verdict cannot close all three and a partially-failing gate reads as failing the whole section",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:642",
+      "id": "reasoning-1",
+      "reason": "the node would spend its effort layering a second memo over a working one instead of measuring what the tick actually still costs, which is the phase ordering and the store glob.",
+      "text": "deliverable (2) states that `_run_review_tier`'s git calls are to be \"memoised per (run id, head revision) for the life of the station process, so a run whose head has not moved costs no git process on a later tick\", but that steady-state property already holds at base through the bounded memo on `_review_tier_key` (row, pointer, head, tree), so the section re-states an existing guard as a fix and its cited root cause (git per run per tick) overstates what remains",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:642",
+      "id": "reasoning-2",
+      "reason": "the done-when beneath it is phrased as three observables that can each fail, and naming the write paths is this plan's established house idiom in every section, so rewriting it changes style rather than the endpoint the node is held to.",
+      "text": "the deliverable fixes implementation rather than the endpoint: it names the reordering of two internal stages, the exact memo key \"(run id, head revision)\", the direction to install the per-tick store, and the named modules to change, so the plan asserts a method a later reader cannot check against an observable",
+      "type": "reasoning",
+      "would_change": false
+    }
+  ],
+  "plan_commit": "63522670a6a925b7a62907e81218cd43f190010a",
+  "plan_fingerprint": "cb4e21aafd430659c7b93d74483c6de1653b767e3e8385f814c73bd931592aaa",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 229,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a742 drops the review-tier memo deliverable and its case: base already memoises the tier through obligations._review_tier_for_duty (file_memo key on row, pointer, head, tree).",
+      "reason": "",
+      "when": "2026-11-13T02:11:11.595211+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "The store-glob change moves to its own section \u00a743, whose done-when carries a negative control: at the base revision the refresh globs the review store once per duty item, counted through review_records.review_store_tick.",
+      "reason": "",
+      "when": "2026-11-13T02:11:35.343045+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "finding": "single_goal-1",
+      "note": "\u00a742 is narrowed to one deliverable, publishing run-phase transitions before review duties are derived; the per-tick review store is split into \u00a743; the memo change is dropped as already present.",
+      "reason": "",
+      "when": "2026-11-13T02:11:54.876519+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a742's Why no longer claims git runs per run per tick; it states the remaining cost as the serial derivation in the publishing thread and the per-item store glob, with the memo noted as already present at base.",
+      "reason": "",
+      "when": "2026-11-13T02:12:14.547541+00:00"
+    },
+    {
+      "action": "declined",
+      "by": "",
+      "finding": "reasoning-2",
+      "reason": "Agreed with the reviewer: the done-when is three falsifiable observables and naming write paths is this plan's house idiom.",
+      "when": "2026-11-13T02:12:34.206936+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "note": "\u00a742 drops the review-tier memo deliverable and its case: base already memoises the tier through obligations._review_tier_for_duty (file_memo key on row, pointer, head, tree).",
+      "reason": "",
+      "when": "2026-11-13T02:11:11.595211+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "note": "The store-glob change moves to its own section \u00a743, whose done-when carries a negative control: at the base revision the refresh globs the review store once per duty item, counted through review_records.review_store_tick.",
+      "reason": "",
+      "when": "2026-11-13T02:11:35.343045+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "note": "\u00a742's Why no longer claims git runs per run per tick; it states the remaining cost as the serial derivation in the publishing thread and the per-item store glob, with the memo noted as already present at base.",
+      "reason": "",
+      "when": "2026-11-13T02:12:14.547541+00:00"
+    },
+    "reasoning-2": {
+      "action": "declined",
+      "by": "",
+      "reason": "Agreed with the reviewer: the done-when is three falsifiable observables and naming write paths is this plan's house idiom.",
+      "when": "2026-11-13T02:12:34.206936+00:00"
+    },
+    "single_goal-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "33fa1d52b9e247dc672457438cc9c249e205adaa",
+      "commit_basis": "edit",
+      "note": "\u00a742 is narrowed to one deliverable, publishing run-phase transitions before review duties are derived; the per-tick review store is split into \u00a743; the memo change is dropped as already present.",
+      "reason": "",
+      "when": "2026-11-13T02:11:54.876519+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v229.json",
+  "review_run_id": "r-20261113T013829173897-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "9aefe513367772fefe52ff07d6a9950775d7b856",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `station_obligations.publish` and `.refresh`, `obligation_snapshot.payload_for`, `obligations._review_duty_item` and `_review_tier_for_duty`, `review_records._store_paths` and `_tick_store`, `promotion_checks._run_review_tier`, `promotion_evidence._committed_scope` and `work-flows-to-the-lane#s29` all resolve in the tree at base.",
+    "done_when": "a finding \u2014 \u00a742's third case (one `directory.glob` per tick) has no negative control, and the second case's control cannot fire because the tier is already memoised at base.",
+    "evidence_paths": "pass \u2014 both arms' logs are named as sitting under the run directory with a revision-and-command header and a bare `EXIT=` line, submitted to `all_debug` via `env -u SLURM_JOB_ID -u SLURM_JOBID sbatch`, never the fleet node.",
+    "naming": "pass \u2014 the section names mechanisms and write paths; no plan label, stage name, ticket number or version tag reaches them, and the one `review-missing`/`promotable-stale` citation is an emitted verdict word, not a label.",
+    "reasoning": "a finding \u2014 deliverable (2) is already implemented at base, so the stated root cause is partly the same cost the plan then asks to re-fix, and the section additionally prescribes its three mechanisms rather than their observables.",
+    "single_goal": "a finding \u2014 \u00a742 carries three independent deliverables, each with its own measure, so one verdict cannot close it.",
+    "wiring": "pass \u2014 \u00a742 is declared `implementable` with `f-tmref-042` carrying `/reckon-build the-monitor-reads-each-fact-once \u00a742`, and the new `s41` entry in `plan-section-depends-on` (`work-flows-to-the-lane#s29`) resolves to a section that exists and matches \u00a741's own stated wait."
+  },
+  "section_digests": {
+    "_document": "1c201ed57cfd27b2db51ea9d34cab3b1045c90fe53ae5438413a3617fb85b9ec",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "5765a948ba9010bd3a6488c444e4bec05d185186a90a8ca57d0c6ce07877a220",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:10:58.771443+00:00",
+  "total": null
+}
