@@ -1,0 +1,206 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "The isolated home does not contain all fifty live fixture pointers.",
+      "lines": [
+        46
+      ]
+    },
+    {
+      "failure_condition": "Admission does not launch the queued identity exactly once.",
+      "lines": [
+        72,
+        73
+      ]
+    },
+    {
+      "failure_condition": "Reinstate unconditional _recorded_backlog: the instrument records the fifty fleet runs and queued run instead of at most the queued run.",
+      "lines": [
+        74,
+        75
+      ]
+    },
+    {
+      "failure_condition": "Reinstate queued backlog recording: unreconciled_override becomes a populated mapping instead of None.",
+      "lines": [
+        77
+      ]
+    },
+    {
+      "failure_condition": "Admission drops or rewrites the admitted_from request identity.",
+      "lines": [
+        78
+      ]
+    },
+    {
+      "failure_condition": "The persisted argv diverges from the argv actually handed to the capturing launcher; this asserts output consistency, not independent base equivalence.",
+      "lines": [
+        79
+      ]
+    },
+    {
+      "failure_condition": "Direct dispatch skips backlog collection, changes its source, omits an owned overdue run or includes a peer run; expected IDs come from independently seeded fixture membership.",
+      "lines": [
+        97,
+        98
+      ]
+    },
+    {
+      "failure_condition": "Classifier instrumentation misses any fixture run or direct dispatch no longer exercises the fleet classifier; this is the positive control for the zero admission count.",
+      "lines": [
+        101
+      ]
+    },
+    {
+      "failure_condition": "The changed dispatch computes queued backlog or the immutable base no longer yields the independently seeded ten-run backlog; the recorded mutation fails the first assertion.",
+      "lines": [
+        174,
+        175
+      ]
+    },
+    {
+      "failure_condition": "The changed preparation path alters any captured launch input besides backlog compared with execution of preparation.py read from the immutable base commit.",
+      "lines": [
+        176
+      ]
+    },
+    {
+      "failure_condition": "Launch serialization fails to retain None for changed admission backlog or the baseline ten-run backlog.",
+      "lines": [
+        194,
+        195
+      ]
+    },
+    {
+      "failure_condition": "The different backlog inputs affect another returned record or live pointer field when replayed through the unchanged launch owner with fixed clock and worktree.",
+      "lines": [
+        196,
+        197
+      ]
+    },
+    {
+      "failure_condition": "Either launch replay fails to call the launcher exactly once, or backlog input changes the generated command.",
+      "lines": [
+        198,
+        199
+      ]
+    }
+  ],
+  "assertion_independence": "No added assertion is justified as a regression guard solely by echoing a supplied expected value; line 79 is a consistency check, with independent preparation comparison at line 176 and immutable-base restoration control at lines 174-175. The final records and argv comparisons intentionally share the unchanged launch owner, so they protect the effect of the changed preparation inputs rather than freezing unrelated launch internals.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:501",
+    "reckon/crew/admission/selection.py:517",
+    "reckon/crew/admission/launching.py:_launch_queued",
+    "reckon/crew/admission/launching.py:_await_moved_launch",
+    "reckon/crew/dispatching/preparation.py:dispatch"
+  ],
+  "completed_at": "2026-11-13T06:59:53Z",
+  "dispatched_at": "2026-11-13T06:51:00Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_never_classifies_the_fleet.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/final-head-gate.log",
+      "revision": "bd0fc739e4306993388458f248755abbc36294d2"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/baseline.log",
+      "revision": "2c04e1a4da11c68694631b3297694c611bbad839"
+    },
+    "separate_importer_delta": {
+      "added_failure_count": 2,
+      "added_failure_ids": [
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py::test_an_admission_launch_waives_its_coordinator_backlog",
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py::test_the_stored_override_does_not_govern_the_admission_launch"
+      ],
+      "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/importers-head.log",
+      "after_revision": "d1e6f28d034511a79677a4043c49a46d8f9597e3",
+      "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/importers-base.log",
+      "note": "Not substituted for the required declared suite pair; reported as blocking finding."
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatching/preparation.py",
+      "line": "486",
+      "severity": "blocking",
+      "text": "blocking: Removing admission backlog records makes tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :271 raise TypeError on None; importers-base.log records 19 passed and importers-head.log records 2 failed and 17 passed, so authorize and land expectation updates for the intended no-backlog behavior before integrating this node."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read 261e5abfa761ce02de513a97e71bd3d5fb8f7ab8, d1e6f28d034511a79677a4043c49a46d8f9597e3 and bd0fc739e4306993388458f248755abbc36294d2 against 2c04e1a4da11c68694631b3297694c611bbad839; the diff contains one conditional backlog calculation, its caller comment, three regression tests and the evidence fragment.",
+    "done_when": "The source prompt.txt:163 measure is demonstrated by the 50-run fixture, ten-run direct backlog, base handoff comparison, failing mutation and passing direct concern importers; importers-head.log separately records two incompatible older facade-test expectations.",
+    "goal": "The source dispatch goal at prompt.txt:38 is to skip session backlog on admission launches, and reckon/crew/dispatching/preparation.py:486 does so while retaining direct dispatch recording.",
+    "manifest": "The source manifest.md names all three commits and readable gate receipts, accurately reporting 54 passing scoped tests and separately disclosing the two older expectation failures under outside_scope.",
+    "write_paths": "The scope at source prompt.txt:80 permits both implementation directories, the new test and evidence fragment, and all four changed paths stay within it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_launch_never_classifies_the_fleet.py:74 rejects fleet classification and :77 rejects backlog recording, and negative-control.log proves restoring unconditional backlog calculation fails those guards and the base-comparison test while the direct positive control remains green.",
+    "evidence": "Source final-head-gate.log records 54 passed and EXIT=0 with zero classifier calls and ten direct-backlog rows, but source importers-head.log records two added expectation failures requiring reconciliation.",
+    "fit": "reckon/crew/dispatching/preparation.py:486 uses the existing admission_launch flag and _recorded_backlog owner, and the changed Python paths have recorded clean Ruff check and formatting receipts without forbidden names.",
+    "goal_fidelity": "reckon/crew/dispatching/preparation.py:486 bypasses _recorded_backlog only for admission_launch, while the existing caller at reckon/crew/admission/launching.py:351 supplies that flag.",
+    "reuse": "The production diff extends the existing backlog owner in reckon/crew/dispatching/preparation.py:486, while tests/test_a_queued_launch_never_classifies_the_fleet.py:20 reuses the existing admission fixture and launch helpers rather than duplicating them; capability searches found only local clock examples and no shared fleet-counter or immutable-base launch comparator.",
+    "scope_discipline": "The four paths changed by the three reviewed commits are all covered by source prompt.txt:81 through its explicitly assigned implementation, test and evidence grants."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The source dispatch goal at prompt.txt:38 is to skip session backlog on admission launches, and reckon/crew/dispatching/preparation.py:486 does so while retaining direct dispatch recording.\nVERDICT done_when: The source prompt.txt:163 measure is demonstrated by the 50-run fixture, ten-run direct backlog, base handoff comparison, failing mutation and passing direct concern importers; importers-head.log separately records two incompatible older facade-test expectations.\nVERDICT write_paths: The scope at source prompt.txt:80 permits both implementation directories, the new test and evidence fragment, and all four changed paths stay within it.\nVERDICT manifest: The source manifest.md names all three commits and readable gate receipts, accurately reporting 54 passing scoped tests and separately disclosing the two older expectation failures under outside_scope.\nVERDICT diff: Read 261e5abfa761ce02de513a97e71bd3d5fb8f7ab8, d1e6f28d034511a79677a4043c49a46d8f9597e3 and bd0fc739e4306993388458f248755abbc36294d2 against 2c04e1a4da11c68694631b3297694c611bbad839; the diff contains one conditional backlog calculation, its caller comment, three regression tests and the evidence fragment.\nCALL_SITES: reckon/crew/admission/selection.py:501, reckon/crew/admission/selection.py:517, reckon/crew/admission/launching.py:_launch_queued, reckon/crew/admission/launching.py:_await_moved_launch, reckon/crew/dispatching/preparation.py:dispatch\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/preparation.py:486 bypasses _recorded_backlog only for admission_launch, while the existing caller at reckon/crew/admission/launching.py:351 supplies that flag.\nSCORE evidence: 17\nJUSTIFICATION evidence: Source final-head-gate.log records 54 passed and EXIT=0 with zero classifier calls and ten direct-backlog rows, but source importers-head.log records two added expectation failures requiring reconciliation.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The four paths changed by the three reviewed commits are all covered by source prompt.txt:81 through its explicitly assigned implementation, test and evidence grants.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_queued_launch_never_classifies_the_fleet.py:74 rejects fleet classification and :77 rejects backlog recording, and negative-control.log proves restoring unconditional backlog calculation fails those guards and the base-comparison test while the direct positive control remains green.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/dispatching/preparation.py:486 uses the existing admission_launch flag and _recorded_backlog owner, and the changed Python paths have recorded clean Ruff check and formatting receipts without forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: The production diff extends the existing backlog owner in reckon/crew/dispatching/preparation.py:486, while tests/test_a_queued_launch_never_classifies_the_fleet.py:20 reuses the existing admission fixture and launch helpers rather than duplicating them; capability searches found only local clock examples and no shared fleet-counter or immutable-base launch comparator.\nFINDING reckon/crew/dispatching/preparation.py:486 blocking: Removing admission backlog records makes tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :271 raise TypeError on None; importers-base.log records 19 passed and importers-head.log records 2 failed and 17 passed, so authorize and land expectation updates for the intended no-backlog behavior before integrating this node.\n",
+  "reproduction_evidence": {
+    "exit_status": 1,
+    "head_positive_control": "direct dispatch backlog: 10",
+    "log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/reproduction-instrumented.log",
+    "negative_control_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/negative-control.log",
+    "negative_control_summary": "2 failed, 1 passed in 5.51s",
+    "quote": "admission classifier calls: 51",
+    "summary": "2 failed, 1 passed in 5.21s"
+  },
+  "reuse_search": {
+    "assessment": "No production definitions added; test definitions extend existing fixture and runtime owners. Local capture, reset and same-worktree wrappers orchestrate comparison rather than implement another dispatcher.",
+    "owners_opened": [
+      "reckon/crew/dispatching/fences.py:_recorded_backlog",
+      "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:admit_repo/_queue/_launcher/_write_overdue_run",
+      "tests/test_dispatch_speed.py:Clock"
+    ],
+    "queries": [
+      "backlog collection and admission_launch bypass",
+      "classifier calls and instrumented fleet counting",
+      "immutable base module loading and reference launch comparison",
+      "fixed or frozen datetime test clocks"
+    ]
+  },
+  "review_run_id": "r-20261113T064457972733-review-of-queued-launch-never-classifies-the-fleet-bd0fc739e430",
+  "reviewed_base_sha": "2c04e1a4da11c68694631b3297694c611bbad839",
+  "reviewed_commits": [
+    "261e5abfa761ce02de513a97e71bd3d5fb8f7ab8",
+    "d1e6f28d034511a79677a4043c49a46d8f9597e3",
+    "bd0fc739e4306993388458f248755abbc36294d2"
+  ],
+  "reviewed_head_sha": "bd0fc739e4306993388458f248755abbc36294d2",
+  "reviewed_run_id": "r-20261113T060010212800-queued-launch-never-classifies-the-fleet",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:05:44.815671+00:00",
+  "total": 116
+}
