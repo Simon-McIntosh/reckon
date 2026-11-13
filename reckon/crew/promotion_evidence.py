@@ -1324,9 +1324,10 @@ def _log_failure_count(log_text: str) -> int | None:
     carries a percentage, and its test programs print counts of their own
     (``0 failed`` among them), so the pytest reader matched a program's line
     and reported zero for a suite with failures. ctest's own count is the
-    number of entries in its ``The following tests FAILED:`` block, which is
-    the same set the ids comparison reads, so the two figures cannot disagree
-    about which tests failed.
+    number of entries across its ``The following tests FAILED:`` blocks — one
+    block per ctest invocation, so a multi-label gate contributes every label's
+    failures — which is the same set the ids comparison reads, so the two
+    figures cannot disagree about which tests failed.
 
     ``None`` means the log is in neither format and so states no count at all.
     The caller leaves the count uncompared rather than reading the absence as
@@ -1341,17 +1342,39 @@ def _log_failure_count(log_text: str) -> int | None:
     return review_module.pytest_summary_failure_count(log_text)
 
 
+def _text_the_receipt_describes(log_text: str) -> str:
+    """The part of a gate log one receipt's figures describe.
+
+    A receipt states the figures of the gate it ran. How much of the log those
+    figures span is the log's own convention. A pytest log holds one run per
+    attempt at the same suite, so the receipt describes the last of them, the
+    one whose exit status the capture records at the tail. A ctest gate may
+    invoke ctest once per label, appending one run per label into the same log,
+    and there the labels are one gate rather than successive attempts:
+    inherited failures in an earlier label belong to the receipt even when the
+    final label is clean, so the whole log is what the receipt describes.
+    """
+    if review_module._gate_log_format(log_text) == "ctest":
+        return log_text
+    return review_module.last_run_text(log_text)
+
+
 def _receipt_mismatches(
     arm: Mapping[str, Any] | None, log_path: str, log_text: str
 ) -> list[str]:
     """Name every figure in a suite arm the cited log does not agree with.
 
     The arm is the receipt: the exit status, the failure count and the failure
-    ids a worker asserted for one gate. The log is the evidence. A log holding
-    two runs makes the comparison worth making — a receipt copied from the first
+    ids a worker asserted for one gate. The log is the evidence. What the
+    receipt describes depends on how its runner writes a log. A pytest log
+    holding two runs holds two attempts at one suite, so its figures are the
+    last run's, the one the status comes from: a receipt copied from the first
     run's figures beside the second run's status passes every check that reads
-    only the tail — so each figure is read from the log's last run, the one the
-    status comes from.
+    only the tail. A ctest gate runs ctest once per label into one log, so its
+    labels are one gate rather than successive attempts, and a receipt states
+    the gate's figures whole — every label's failures together. Reading only the
+    last label refuses an honest receipt whose gate inherited failures in an
+    earlier label and ran clean in its final one.
 
     The failure count is read in the log's own format (``_log_failure_count``),
     so a ctest receipt is counted by its FAILED block rather than by a pytest
@@ -1367,33 +1390,33 @@ def _receipt_mismatches(
         return []
     if not _arm_describes_the_cited_log(arm, log_path, log_text):
         return []
-    last_run = review_module.last_run_text(log_text)
+    read_text = _text_the_receipt_describes(log_text)
     mismatches: list[str] = []
     recorded_count = arm.get("failure_count")
     if isinstance(recorded_count, int) and not isinstance(recorded_count, bool):
-        measured = _log_failure_count(last_run)
+        measured = _log_failure_count(read_text)
         if measured is not None and measured != recorded_count:
             mismatches.append(
-                f"its failure_count records {recorded_count} and the log's last "
-                f"run names {measured} failed or errored test(s)"
+                f"its failure_count records {recorded_count} and the log names "
+                f"{measured} failed or errored test(s)"
             )
     recorded_ids = arm.get("failure_ids")
     if isinstance(recorded_ids, list) and all(
         isinstance(test_id, str) for test_id in recorded_ids
     ):
-        log_ids = review_module.gate_log_failure_ids(log_text, last_run=True)
+        log_ids = review_module.gate_log_failure_ids(read_text)
         if log_ids is not None:
             matched = review_module.failure_ids_match(recorded_ids, log_ids)
             if matched.unmatched_head:
                 mismatches.append(
-                    "the log's last run reports "
+                    "the log reports "
                     f"{sorted(matched.unmatched_head)!r}, which its failure_ids "
                     "do not cover"
                 )
             if matched.unmatched_base:
                 mismatches.append(
                     f"its failure_ids name {sorted(matched.unmatched_base)!r}, "
-                    "which the log's last run does not report"
+                    "which the log does not report"
                 )
     return mismatches
 
@@ -1524,9 +1547,9 @@ def _require_gate_log_agrees(
             f"{log_path!r} does not agree with the {arm_name} arm that "
             f"describes it: {'; '.join(mismatches)}. Found: a receipt figure "
             "that disagrees with its log. The arm and the log are two records "
-            "of one run, so a figure only the first of two runs in the log "
-            "could produce is a receipt copied from that run. Correct the arm "
-            "to the last run's figures, or re-run the gate into its own log"
+            "of one gate, and a figure only one part of the log could produce "
+            "is a receipt copied from another. Correct the arm to the figures "
+            "the log reports, or re-run the gate into its own log"
         )
     command = str(gate_check.get("command") or "").strip()
     if _PYTEST_COMMAND.search(command):
