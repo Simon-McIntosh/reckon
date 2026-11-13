@@ -156,4 +156,49 @@
     commit and the fresh own gate run after that commit; no promotion is
     requested by this repair.</p>
   </section>
+
+  <section id="no-caller-waits-on-a-promotion-released-hold">
+    <h3>A released hold invalidates the cached acceptance refusal</h3>
+    <p>An eligible delivery held by its coordinator produced a durable held
+    refusal. Releasing only that hold left the memo identity unchanged, so
+    acceptance returned the cached refusal before checking the released hold.
+    Both ordinary and head-bound holds reproduced this: the result still read
+    <code>accepted: false</code> and <code>held: true</code> after release.</p>
+
+    <p>Answering commit <code>93f8975688dd546dea8f7e4a22fe288ed50e2a42</code>
+    includes <code>delivery_hold</code> in the acceptance input identity. An
+    unchanged hold keeps its cached refusal. Changing or releasing that hold
+    now requires a fresh judgment, and the same identity is rechecked under
+    the promotion lease.</p>
+
+    <p>Regression commit <code>40ebc24a30204f7476969031524648e5fb83de34</code>
+    uses a temporary repository, bare remote, recorded gate and stored clean
+    review. It observes the held refusal and confirms that a repeated held
+    request is cached, then releases the hold through the real release API.
+    All other pointer fields, the checkout head, gate and manifest bytes are
+    asserted unchanged before acceptance is retried. Both hold forms then
+    promote the same delivery and record its commit in the ledger.</p>
+
+    <table id="no-caller-waits-on-a-promotion-released-hold-measures">
+      <caption>Held-release measurements retained in this run directory.</caption>
+      <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+      <tbody>
+        <tr><td>Reproduction before product repair</td>
+          <td>2 failed, 19 deselected in 1.39 s; EXIT=1</td></tr>
+        <tr><td>Focused repair, with refusal and promotion receipts</td>
+          <td>2 passed, 19 deselected in 2.06 s; EXIT=0</td></tr>
+        <tr><td>Exact armed suite at repair base
+          <code>11ae57aaeee308e36dfe395a32e05da02445fb6a</code></td>
+          <td>70 passed in 130.57 s; EXIT=0</td></tr>
+      </tbody>
+    </table>
+
+    <p>The final armed head suite, fixed-population importer comparison and
+    negative control reversing the entire answering commit run after this
+    evidence is committed. Their receipts are recorded in the manifest without
+    claiming a pending measurement here. The original dispatch-base and earlier
+    repair suite pairs remain recorded separately. Logs include
+    <code>hold-reproduction.log</code>, <code>hold-focused.log</code> and
+    <code>hold-baseline-suite.log</code>.</p>
+  </section>
 </section>
