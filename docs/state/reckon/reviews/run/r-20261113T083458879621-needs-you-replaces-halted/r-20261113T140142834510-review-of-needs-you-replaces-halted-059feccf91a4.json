@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own baseline_suite and after_suite gate logs: logs/baseline-suite.log (revision b6045ab33d) and logs/after-suite.log (revision 059feccf91) each record `51 passed` with EXIT=0, so the failure-id set difference is empty. Corroborated by the node's wider population arms: logs/repair2-base-arm.log records 7 failed / 824 passed EXIT=1 and logs/repair2-head-arm.log records 7 failed / 828 passed EXIT=1, carrying the same seven ids at both revisions; the extra four passes are the four cases of tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py, which is absent from the base tree, not a repaired test.",
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/ticker.py:3755 (_stats renders each counter cell as count + STAT_LETTER[label])",
+    "reckon/crew/ticker.py:723 (STAT_LETTER maps `needs you` to `n`)",
+    "reckon/crew/ticker.py:712 (_COUNT_FIELD maps `needs you` to the `blocked` event key)",
+    "reckon/crew/ticker.py:431 (PANE_STATES holds the drawn word set)",
+    "reckon/crew_follow_commands.py:2740 (_display_state on live state rows)"
+  ],
+  "completed_at": "2026-11-13T14:18:52.855Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-13T14:04:29Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the Population paragraph reads `the delta is zero added and the four tests the first pass missed now pass`, but the three files the first population missed hold twelve tests (3 + 8 + 1) and all twelve pass in both arms, while the four-test rise from 824 to 828 is the four cases of tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py, which the base arm records as absent; the sentence credits the repaired files with the gate file's passes and leaves a reader unable to see that the arms measure only the no-failure delta, the repair itself being evidenced by the three per-commit negative controls."
+    },
+    {
+      "file": "logs/repair2-head-arm.log",
+      "line": "3",
+      "severity": "non-blocking",
+      "text": "non-blocking: the population arms ran with `-n 8` (logs/repair-arms2.sh:7,18 and the arm logs' own command headers) where the node's done_when caps concurrency at `-n 4 at most`, and no header line records the partition or host, so the record cannot show the arms ran on all_debug as the done_when: the results are unaffected (the same seven ids fail in both arms) but the recorded gate does not evidence the measure as stated."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call sites",
+    "diff": "read the four commits (bc48336592, f0a73d8c6d, 50d44a54c2, 059feccf91) against base 186b4cd2b7: 17 insertions and 16 deletions over exactly the four named paths, every change either a test literal now naming the drawn word or letter, or evidence-page prose; no production source changed.",
+    "done_when": "the source done_when requires the four-case gate, a population arm with no added failures against the base, and clean ruff; the gained commits' gate is the 79-file pair recorded at logs/repair2-base-arm.log (7 failed, 824 passed) and logs/repair2-head-arm.log (7 failed, 828 passed) with the same seven ids, so the added-failure measure is met, though the arms ran `-n 8` against a `-n 4` cap and record no partition.",
+    "goal": "the source node's goal is that the pane draws `needs you` with counter letter `n` wherever it drew `halted`, and the gained commits repair the population that goal left red: tests/test_the_pane_speaks_seven_words.py:20,71,73,93 now read `needs you` and `n`, tests/test_the_pane_shows_every_state_change.py:145 reads `needs you {ticker.ARROW} in review`, and tests/test_a_pane_counts_its_session_across_projects.py:136,163,169,176,182,192 read `2n`.",
+    "manifest": "read; status complete, it names the four commits with their shas, records the population pair with both arm logs and their seven shared ids, and states three per-commit negative controls whose logs I opened and read.",
+    "write_paths": "the source node's declared write paths are reckon/crew/ticker.py, skills/reckon-build/SKILL.md, tests/, the evidence fragment and its figures directory; every path in the gained diff (three test files and the fragment) is inside that grant."
+  },
+  "justifications": {
+    "durability": "the three literal assertions bind to what the pane draws, so a source revert to `halted`/`h` reddens tests/test_the_pane_speaks_seven_words.py:93, tests/test_the_pane_shows_every_state_change.py:145 and tests/test_a_pane_counts_its_session_across_projects.py:136, and the per-commit negative controls at logs/seven-words-negative-control.log (2 failed, EXIT=1) and logs/drawn-word-negative-control.log (2 failed, EXIT=1) show the same literals reddening where the drawn value no longer matches.",
+    "evidence": "the arms at logs/repair2-base-arm.log and logs/repair2-head-arm.log record a zero added-failure delta with seven shared ids, but they ran `-n 8` against the done_when's `-n 4` cap and record no partition, and the fragment's clause at line 24 misattributes the four-pass rise to the repaired tests.",
+    "fit": "the edited literals keep the surrounding idioms of their files, reading the module's own ticker.ARROW at tests/test_the_pane_shows_every_state_change.py:145 and the existing counter-block shape at tests/test_a_pane_counts_its_session_across_projects.py:136, and introduce no name the naming rules forbid.",
+    "goal_fidelity": "the gained commits make tests/test_the_pane_speaks_seven_words.py:44 and :71, tests/test_the_pane_shows_every_state_change.py:145 and tests/test_a_pane_counts_its_session_across_projects.py:136 assert the `needs you` word and `n` letter that reckon/crew/ticker.py:723 and :431 draw.",
+    "reuse": "the diff adds no definition at all; a search of reckon/crew for a pane-word table found the existing owner at reckon/crew/ticker.py:431 and :723, which every edited assertion reads rather than restating in a helper.",
+    "scope_discipline": "every changed path in the diff (the three tests under tests/ and the evidence fragment) is inside the source node's declared grant, with no production file, plan meta or index touched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the pane draws `needs you` with counter letter `n` wherever it drew `halted`; the gained commits repair the population that rename left red, and tests/test_the_pane_speaks_seven_words.py:20,71 now read `needs you` and `n`.\nVERDICT done_when: the done_when names a four-case gate, a no-added-failure population arm and clean ruff; the gained commits' gate is the 79-file pair at logs/repair2-base-arm.log (7 failed, 824 passed) and logs/repair2-head-arm.log (7 failed, 828 passed) with the same seven ids.\nVERDICT write_paths: the declared paths are reckon/crew/ticker.py, skills/reckon-build/SKILL.md, tests/, the evidence fragment and its figures directory; every path in the gained diff is inside that grant.\nVERDICT manifest: read; status complete, it names the four commits, both arm logs and their shared seven ids, and three per-commit negative controls whose logs I opened.\nVERDICT diff: read the four commits against base 186b4cd2b7; 17 insertions and 16 deletions over exactly the four named paths, all test literals and evidence-page prose, with no production source changed.\nCALL_SITES: reckon/crew/ticker.py:3755, reckon/crew/ticker.py:723, reckon/crew/ticker.py:712, reckon/crew/ticker.py:431, reckon/crew_follow_commands.py:2740\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: the gained commits make tests/test_the_pane_speaks_seven_words.py:71 and tests/test_the_pane_shows_every_state_change.py:145 assert the `needs you` word and `n` letter that reckon/crew/ticker.py:723 draws.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/repair2-base-arm.log and logs/repair2-head-arm.log record a zero added-failure delta, but ran `-n 8` against the `-n 4` cap and record no partition, and the fragment's line 24 misattributes the four-pass rise.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only tests/ and the evidence fragment, all inside the source node's declared grant.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_pane_speaks_seven_words.py:93 and tests/test_a_pane_counts_its_session_across_projects.py:136 redden on a source revert to `halted`/`h`, as logs/seven-words-negative-control.log and logs/drawn-word-negative-control.log show.\nSCORE fit: 19\nJUSTIFICATION fit: the edited literals read ticker.ARROW at tests/test_the_pane_shows_every_state_change.py:145 and keep the counter-block shape at tests/test_a_pane_counts_its_session_across_projects.py:136.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition; every edited assertion reads the existing owner at reckon/crew/ticker.py:431 and :723.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted.html:24 non-blocking: the Population paragraph credits the repaired tests with the 824->828 rise, which is the four cases of the gate test absent from the base arm.\nFINDING logs/repair2-head-arm.log:3 non-blocking: the arms ran `-n 8` against the done_when's `-n 4` cap and record no partition, so the gate does not evidence the measure as stated.",
+  "review_node": "review-of-needs-you-replaces-halted-059feccf91a4",
+  "review_run_id": "r-20261113T140142834510-review-of-needs-you-replaces-halted-059feccf91a4",
+  "reviewed_base_sha": "186b4cd2b7ab6d3f1346cb04744928176417c252",
+  "reviewed_head_sha": "059feccf91a4d5b5e80a195f0879ada9c276a912",
+  "reviewed_run_id": "r-20261113T083458879621-needs-you-replaces-halted",
+  "reviewer": {
+    "backend": "local",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T140142834510-review-of-needs-you-replaces-halted-059feccf91a4"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:18:03.660469+00:00",
+  "total": 109
+}
