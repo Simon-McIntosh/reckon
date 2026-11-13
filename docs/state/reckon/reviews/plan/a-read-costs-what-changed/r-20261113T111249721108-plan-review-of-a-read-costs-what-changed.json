@@ -1,0 +1,63 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T12:16:24.255Z",
+  "dispatched_at": "2026-11-13T12:01:17Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-read-costs-what-changed/r-20261113T111249721108-plan-review-of-a-read-costs-what-changed/plan.html:145",
+      "id": "reasoning-1",
+      "reason": "the two shares are nested, not additive, so the plan overstates \u00a723's standalone value (1.4% residual, not 47%) and should say its evidence is a post-\u00a722 profile and that its benefit follows \u00a722's landing.",
+      "text": "\u00a723's Why presents 47.0% of a 6,078-sample profile as a cost distinct from \u00a722's 86.1%, but in that same profile 2,771 of the 2,854 `_unparsed_section_warnings` samples (and 2,589 of the profile's 2,665 BeautifulSoup-construction samples) sit inside `_resolve_plan_ref`, which \u00a722 replaces with an index read; only 83 samples (1.4% of the profile) are the top-level plan read's own diagnostics",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "ddcf93775270490b042c0e3a90a0bb0fba946b77",
+  "plan_fingerprint": "4822c78a4e023a4e9a0b7c937a502e865bbc369bfdface0e28e7209e1cf7efe1",
+  "plan_slug": "a-read-costs-what-changed",
+  "plan_version": 102,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261113T111249721108-plan-review-of-a-read-costs-what-changed",
+  "reviewed_blob_sha": "09154a621e7714402fd2de62e860002f6275ab88",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/mcp.py:1938` is the `_resolve_plan_ref` call inside `_section_dependency_rows`, `reckon/mcp.py:1971` is the `read_plan` call inside `_resolve_plan_ref`, `reckon/_store.py:812/:700/:738` are `_read_state`, `_unparsed_section_warnings` and `_state_with_diagnostics`, and `reckon/_plan_html.py:2292` is the `_PlanDocumentParse` construction \u2014 each resolves to the mechanism the section names.",
+    "done_when": "pass \u2014 \u00a722 and \u00a723 each name a measurable count, a base-revision comparison, a declared negative control (per-ref `_resolve_plan_ref` making the full-read count six; the restored parse in `_unparsed_section_warnings` making the first case count at least one tree) and a named partition for the arms.",
+    "evidence_paths": "pass \u2014 both done-whens put every log under the run directory, starting with its revision and literal command and ending in `EXIT=`, which survives the run.",
+    "naming": "pass \u2014 the new test filenames and the prose name behaviour (`test_a_plan_read_reads_each_referenced_plan_once.py`, `test_a_persisted_read_parses_no_html_again.py`), with no plan labels, ticket numbers or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a723's stated share (47.0% under `_unparsed_section_warnings`) is 97% the same samples \u00a722 removes, because those parses happen inside the full `read_plan` each `_resolve_plan_ref` call makes.",
+    "single_goal": "pass \u2014 \u00a722 delivers one endpoint (per-plan reads answer from the index, once) and \u00a723 one endpoint (a persisted-answered read builds no second BeautifulSoup tree).",
+    "wiring": "pass \u2014 `plan-section-depends-on` now carries `s21` on `s18`; `s22` and `s23` declare none, and both consume only \u00a77's measurement log, which already exists at run `r-20261113T031406256175-ready-a-read-costs-what-changed-s7`."
+  },
+  "section_digests": {
+    "_document": "0cd2d8defeaa01dd43d5b114767d75200318f3f1b4286d20b27096289eb02a5e",
+    "s1": "f8fb0fbbfbbc79977a59ec9d78c0d66f47803aa96db83e4d628a1dfb6b40e6c3",
+    "s10": "68fc6d75acf0741225ab448369611e4eda9f862b50d7907857c1abb24b4138e4",
+    "s11": "2a249381081ebbf2d99b7f9da3b09b1d3b87c6ada44952d6b665283e27021c40",
+    "s12": "c6c234ba14598d6a537e09000d8f5d406295ad40c3c124db34cb1b84868bb22e",
+    "s13": "5ad3b5418d98e6b0afe0d6762c6e34b89b31509e7e0c346c4b5757fc5f9bc443",
+    "s14": "3614708cc686b1aae04bdaa66c5ca55268305b0b9aa743e9b43fdfe333694c78",
+    "s15": "8ea78063ba6178b6ed86513ba9524097199475bbde30df76a27c561a07ae5cd8",
+    "s16": "961c662c2ad9983efdef372ae1d8050c1bc2ad2d5eb48187e5a1460a866750d7",
+    "s17": "dcb1e4207827e554da6f993942f652e42a11e274ac6c0445eb3ca51b1eeabab6",
+    "s18": "017dacf94ae980a1743060b70b94c6310d932d5242464e9503625aad656aeddc",
+    "s19": "7627296ee16bd9037416c990cebedbf14e5920992ee92443ee041d007a4f86b5",
+    "s2": "7de6c2e256fca5545163c6149c674fea249ddd1a72361b49c89ef5beaa22263d",
+    "s20": "13f50ad158e680404f34a74f292834eb01df268bb398d42bd113140aa56a5533",
+    "s21": "c9999579889f86ad547fb804ec54f122a0f8554343ddcc9075ae15c3cd37c4f0",
+    "s22": "0f5b52699cf0cfaae609fa09396bb9b43cae6fb15b3274facd659db2c83bbf41",
+    "s23": "2c18d6e5c07ba3a8160c87a6b0535a2dccd938f5f499e7c403c562ffab502976",
+    "s3": "d11cdceab942c4935f32d292e26f2111b011ca4571980a6c54ef6ae23894aadb",
+    "s4": "d14b5fa9a6b6ef26da6f95b50c43aa782fdbe679ca28020a3095af71cd579417",
+    "s5": "ba22eff9814ea16ac19404864f9a2d1ec8da449b3011fba623d0d1856b2c6ecf",
+    "s6": "b0053663cc25e5e7e15595ae342d21c4c467abe74f06c8c4db86982b276898cc",
+    "s7": "2c7c6fb207a002d2bb1e223ebf1f770570f6b06942edf9ac6647253b410a67b7",
+    "s8": "9a012c065cbd8db9e5e69070d20531b84a584582cc0bf8f45fff060b7f31f464",
+    "s9": "1404fbf63401ab3bd4204175d16adb89094eaa1f1b25160e73fd2bb9c625d0b1"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:02:36.480599+00:00",
+  "total": null
+}
