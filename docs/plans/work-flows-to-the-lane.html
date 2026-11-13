@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="153">
+<meta name="plan-version" content="154">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -510,6 +510,9 @@
 </div>
 <div class="r-comment" data-section="s30" data-id="c-run-r-20261113T060812296939-review-of-scheduler-wait-is-not-abandoned-0d4f6e2f062e" data-who="reckon-build" data-when="2026-11-13T06:23:14.428Z">
     <div class="r-comment-body"><p>independent review of r-20261113T003754418594-scheduler-wait-is-not-abandoned at 0d4f6e2f062ef5f2dd627ae59dee27fc016c3197 (base d20dde38d630b4c00c73a6c26d328cbd393a9d6a): parsed record, six dimensions scored 19/18/20/19/19/20 (total 115), added_failure_count 0 with no added failure ids against the reviewed arms (74 passed head vs 64 base), one non-blocking finding and no blocking finding.</p></div>
+</div>
+<div class="r-comment" data-section="s30" data-id="c-run-r-20261113T003754418594-scheduler-wait-is-not-abandoned" data-who="reckon-build" data-when="2026-11-13T07:16:14Z">
+    <div class="r-comment-body"><p>a wait whose probe passes a comma-separated batch of scheduler job ids names those jobs, so one live job keeps it from reading as abandoned. The command decides what a bare number list is — ports under a command that takes ports by position, jobs under any other — with the port ceiling as the one override, and a job flag&#x27;s comma list is read from the raw vector so no id in it is dropped. A batch whose query could not be put keeps the wait and its row says the scheduler could not be asked; the row names the jobs the scheduler listed none of, says the scheduler was not consulted when the wait names no job, and names the run&#x27;s own process. Armed head arm 74 passed against 64 at base with the same 2 scaffolding errors, the importer arms hold an identical failure set at 10 failed with 728 passed at head against 718 at base, and each half of the answering commit removed in turn fails the case its finding names.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261113T015221321497-review-of-coordinator-holds-a-delivered-run-f9eab85d420b" data-who="reckon-build" data-when="2026-11-13T02:06:38.226Z">
     <div class="r-comment-body"><p>Reviewed run r-20261113T011510453024-coordinator-holds-a-delivered-run at f9eab85d420b against base 55d49260706d; parsed review record stored with scores goal_fidelity 14, evidence 13, scope_discipline 16, durability 13, fit 15, reuse 18, and three findings, one blocking: the "being promoted" resume refusal is reachable only after the live pointer is already gone, so a resume during a promotion is not refused.</p></div>
