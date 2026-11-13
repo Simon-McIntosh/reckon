@@ -17,19 +17,19 @@
       <p class="eyebrow">Execution evidence &middot; fragment</p>
       <h1>A session mismatch never skips the host silently</h1>
       <p class="lead">A dispatch issued with <code>--session</code> naming something other
-      than the calling Claude session was refused by the host hand-off, and refused
-      silently: <code>_request_host_follower</code> returned <code>False</code> on the
-      name comparison, so no host was ever asked for the run's follower. The caller's
-      pane showed nothing while the run read as unattached everywhere else. The mismatch
-      case now prints one line naming both sessions, and hands the run to the calling
-      session's own waiting host.</p>
+      than the calling Claude session reaches the host of the process that ran it, so
+      <code>_request_host_follower</code> refuses the pair: that host does not own the
+      session. With nothing beside the refusal the caller's pane showed no run while the
+      run read as unattached everywhere else. The dispatch now hands the run to the
+      calling session's own waiting host, names both sessions, and records the hand-off on
+      the launch payload.</p>
     </header>
 
     <section id="a-session-mismatch-never-skips-the-host-silently-measure">
       <h2>Measure</h2>
       <p><code>tests/test_a_session_mismatch_never_skips_the_host_silently.py</code>
-      exercises four cases on a temporary crew home with a stub reader on the caller's
-      session-host FIFO:</p>
+      exercises five cases on a temporary crew home, with a stub reader holding the
+      caller's session-host FIFO:</p>
       <ul>
         <li>a mismatched session with a waiting host writes the run's request to the
         caller's FIFO, prints one line naming both sessions, and returns
@@ -39,35 +39,62 @@
         false and the line says no waiting host received the run;</li>
         <li>a matching session leaves the ordinary ask path alone and
         <code>_request_host_follower</code> still writes its request;</li>
-        <li>an empty session name is not a mismatch.</li>
+        <li>an empty session name is not a mismatch;</li>
+        <li><strong>the real entry point</strong>: <code>crew.dispatch(...)</code> with a
+        mismatched <code>session</code> writes the request to the caller's FIFO, names
+        both sessions, and the returned payload carries <code>host_handoff</code> with
+        <code>handed_to_host</code> true beside <code>watch.delivery == "host"</code>.
+        That case arms a watch producer, because the shared fixture suppresses arming for
+        every other test, and a suppressed dispatch waives the watch before the follower
+        is arranged at all, so it would never reach the hand-off.</li>
       </ul>
-      <p>Head arm at <code>020a3ae95f</code>:
+      <p>Head arm at <code>34da715ada</code>:
       <code>tests/test_a_session_mismatch_never_skips_the_host_silently.py</code> and
-      <code>tests/test_staged_write_inventory.py</code> &mdash; 53 passed, 2 errors. The
+      <code>tests/test_staged_write_inventory.py</code> &mdash; 54 passed, 2 errors. The
       two errors are <code>test_staged_write_inventory</code> failing to run
       <code>git</code> in the scratch tree, identically in both arms; they are
       scaffolding and not this change's.</p>
-      <p>The wider arm over every test file importing <code>reckon.crew.dispatch_watch</code>
-      ran on <code>all_debug</code>: base <code>d74a74fb</code> 3 failed, 161 passed;
-      head <code>020a3ae95f</code> the same 3 failed, 165 passed. The extra 4 passes are
-      this node's new cases; <strong>zero failures are added</strong>. Both arms were
+      <p>The wider arm over the 14 test files that import the dispatch or watch modules
+      ran on <code>all_debug</code>: base <code>d74a74fb</code> 1 failed, 68 passed; head
+      <code>34da715ada</code> the same 1 failed, 68 passed. The single failure,
+      <code>test_the_supervisor_sheds_identity_before_it_starts_the_producer</code>, is
+      present at both revisions; <strong>zero failures are added</strong>. All arms were
       submitted with <code>env -u SLURM_JOB_ID -u SLURM_JOBID sbatch --partition=all_debug</code>
-      and never ran on the fleet node.</p>
-      <p><strong>Negative control.</strong> Restoring the base guard so a mismatched
-      session writes nothing and prints nothing ran red: 4 failed, 0 passed, naming every
-      case above &mdash; the mismatched hand-off asserted <code>None</code> where
-      <code>host_handoff</code> was expected, and no line was printed. Log:
+      and ran on compute nodes, never on the fleet node.</p>
+      <p><strong>Negative control.</strong> Making
+      <code>hand_off_mismatched_session</code> return before any write or print &mdash; the
+      base behaviour &mdash; turns the mismatched cases red while the matching-session
+      cases stay green, which is the split the control exists to show. Log:
       <code>negative-control.log</code> in the run directory.</p>
     </section>
 
-    <section id="a-session-mismatch-never-skips-the-host-silently-scope">
-      <h2>What the change does not reach</h2>
-      <p>The hand-off is a module-level entry point on <code>reckon.crew.dispatch_watch</code>. The
-      dispatch path that would read <code>host_handoff</code> into the dispatch JSON lives
-      in <code>reckon/crew/dispatching/requests.py</code> and
-      <code>reckon/crew/dispatching/launch.py</code>, which this node's write scope does
-      not include; the wiring is recorded as out of scope on the manifest rather than
-      performed here.</p>
+    <section id="a-session-mismatch-never-skips-the-host-silently-wiring">
+      <h2>Where the hand-off reaches a real dispatch</h2>
+      <p><code>_arrange_dispatch_follower</code>
+      (<code>reckon/crew/dispatching/requests.py</code>) calls the hand-off in the branch
+      where neither the run's own host nor a follower of it was found, so a real dispatch
+      with a mismatched <code>--session</code> goes through it. When a waiting host took
+      the run, the delivery verdict becomes <code>host</code>, which is what stops
+      <code>launch.py</code> from also arming a Monitor watch for a run it would then
+      double-deliver.</p>
+      <p>The record is composed after the follower is arranged, so the hand-off travels
+      between them in this process through <code>take_session_hand_off()</code>, which
+      clears as it reads: <code>_launch_dispatch</code> puts the value on the payload as
+      <code>host_handoff</code>, and a dispatch held or queued on an earlier step cannot
+      leave one behind for the next dispatch's record. A matched session carries no field
+      rather than a null, which would read as a hand-off that found no host.</p>
+      <p>A resume whose run belongs to another session hands the run over the same way and
+      reports a refusal only when no waiting host took it.</p>
+    </section>
+
+    <section id="a-session-mismatch-never-skips-the-host-silently-line">
+      <h2>Where the line goes</h2>
+      <p>A dispatch writes its payload to stdout and callers parse it as JSON, so a line
+      printed beside it makes the payload unparseable; the refusal path caught exactly
+      that as a decode failure at the first character. The line is for the operator, so it
+      is written where a terminal receives it and nowhere else; a piped dispatch carries
+      the same fact in <code>host_handoff</code>, which is what a caller reads instead of
+      the line.</p>
     </section>
   </main>
 </body>
