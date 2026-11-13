@@ -2554,9 +2554,10 @@ def _drain_row(
     )
     valid = closure_disposition_valid(disposition, classification)
     run_id = str(pointer.get("run_id") or "")
-    in_flight = bool(run_id) and run_id in _in_flight_round_ids(
-        _live_pointer_siblings(pointer)
-    )
+    excused = _ROW_EXCUSED.get()
+    if excused is None:
+        excused = _in_flight_round_ids(_row_snapshot(pointer))
+    in_flight = bool(run_id) and run_id in excused
     return {
         **row,
         "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
@@ -2826,15 +2827,53 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     return {"project": project_view, "plans": plans}
 
 
-def _live_pointer_siblings(pointer: Mapping[str, Any]) -> list[dict[str, Any]]:
-    """The live pointers a single run is counted among.
+_ROW_SNAPSHOT: ContextVar[list[dict[str, Any]] | None] = ContextVar(
+    "reckon_closure_row_snapshot", default=None
+)
+_ROW_EXCUSED: ContextVar[set[str] | None] = ContextVar(
+    "reckon_closure_row_excused", default=None
+)
 
-    A row resolved without a snapshot reads the pointers itself, through the
-    quiet reader: a watcher transition is a public event, and deriving one run's
-    row is not a reason to publish one.
+
+def _row_snapshot(pointer: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The live pointers one run is counted among.
+
+    A drain sets the snapshot once for its whole reading, so a view over many
+    pointers reads the directory once instead of once per row. A caller
+    deriving a single row — a promotion's fleet reading — leaves it unset and
+    the row reads the pointers itself, through the quiet reader: a watcher
+    transition is a public event, and deriving one run's row is not a reason to
+    publish one.
     """
+    snapshot = _ROW_SNAPSHOT.get()
+    if snapshot is not None:
+        return snapshot
     project = str(pointer.get("project") or "")
     return _list_live_records(project=project or None)
+
+
+def _round_has_delivered(pointer: Mapping[str, Any]) -> bool:
+    """Whether a review or repair round has already written a terminal manifest.
+
+    A round still working is the work its subject waits on, so neither the
+    subject nor the round is a duty yet. A round that has delivered is itself
+    the coordinator's next action — completing it is the duty — so its own
+    pointer stays counted, which is what a plan-review round holding a live
+    pointer shows.
+    """
+    from reckon.crew.recovery_stream import manifest_status_is_terminal
+
+    path = str(pointer.get("manifest_path") or "")
+    if not path:
+        return False
+    try:
+        text = Path(path).read_text(encoding="utf-8")
+    except OSError:
+        return False
+    for line in text.splitlines():
+        if line.startswith("status:"):
+            return manifest_status_is_terminal(line.partition(":")[2].strip())
+    return False
 
 
 def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
@@ -2859,10 +2898,12 @@ def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
     for pointer in launched:
         run_id = str(pointer.get("run_id") or "")
         if recovery._is_review_run(pointer):
-            excused.add(run_id)
+            if not _round_has_delivered(pointer):
+                excused.add(run_id)
             continue
         if recovery._is_repair_node(pointer):
-            excused.add(run_id)
+            if not _round_has_delivered(pointer):
+                excused.add(run_id)
             node_id = str((pointer.get("node") or {}).get("id") or "")
             source = repair_module.round_node_source(
                 node_id, repair_module.REPAIR_NODE_PREFIX
@@ -2889,7 +2930,15 @@ def _closure_rows(pointers: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]
     and why it is not counted — so the count and the list cannot disagree about
     how many runs the counted set holds.
     """
-    return [_drain_row(pointer) for pointer in pointers]
+    points = list(pointers)
+    snapshot_token = _ROW_SNAPSHOT.set(points)
+    excused: set[str] = _in_flight_round_ids(points)
+    excused_token = _ROW_EXCUSED.set(excused)
+    try:
+        return [_drain_row(pointer) for pointer in points]
+    finally:
+        _ROW_EXCUSED.reset(excused_token)
+        _ROW_SNAPSHOT.reset(snapshot_token)
 
 
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
