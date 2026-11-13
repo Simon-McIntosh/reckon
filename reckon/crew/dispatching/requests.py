@@ -298,10 +298,8 @@ def _arrange_dispatch_follower(
             # delivery, so the caller's pane shows a run it dispatched under
             # another name.
             handoff = hand_off_mismatched_session(project, session)
-            if handoff is not None:
-                dispatch_watch["host_handoff"] = handoff
-                if handoff["handed_to_host"]:
-                    session_delivery = "host"
+            if handoff is not None and handoff["handed_to_host"]:
+                session_delivery = "host"
     return dispatch_watch, session_delivery, watch_override
 
 

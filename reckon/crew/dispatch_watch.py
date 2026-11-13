@@ -822,6 +822,21 @@ def _ask_session_host(
     return False
 
 
+def _await_session_host_child(project: str, session: str) -> bool:
+    """Whether this host runs a live child for the pair, within the ask's bound.
+
+    The wait is the one a request waits out, bounded by the same producer
+    deadline, so a caller that has already delivered its request reads the same
+    answer the ask would: the host's own live child for the pair, or nothing.
+    """
+    deadline = time.monotonic() + WATCHER_LOAD_BOUND_SECONDS
+    while time.monotonic() < deadline:
+        if _session_host_child_pid(project, session) is not None:
+            return True
+        time.sleep(0.1)
+    return False
+
+
 def _ask_session_host_for_follower(project: str, session: str | None) -> bool:
     """Ask this session's host to follow the project, returning whether it did.
 
@@ -867,7 +882,14 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         # A resume composes no launch record, so the hand-off it recorded is
         # dropped here rather than left for a later dispatch to claim.
         take_session_hand_off()
-        if handoff is not None and handoff["handed_to_host"]:
+        # A delivered request is not a follower: the answer is this host's live
+        # child for the pair, observed within the same bound the matched ask
+        # waits out, so a resume never reports a re-arm the pane does not show.
+        if (
+            handoff is not None
+            and handoff["handed_to_host"]
+            and _await_session_host_child(project, session)
+        ):
             return True, ""
         return False, (
             f"the run belongs to session {session}, and no waiting host for the "

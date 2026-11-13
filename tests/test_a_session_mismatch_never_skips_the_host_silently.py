@@ -270,6 +270,24 @@ def _dispatch_node(config_home: Path) -> crew.TaskNode:
     )
 
 
+@pytest.fixture()
+def stub_backend(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    """A backend command this machine may not have, on a PATH the case owns.
+
+    The launch resolves the backend's command along the PATH it would search, so
+    a case that names a real harness is only runnable where that harness is
+    installed. The stub stands in for it, and the PATH is cut down to the stub
+    directory beside the system bin so the case cannot reach a real one.
+    """
+    binaries = tmp_path / "stub-bin"
+    binaries.mkdir()
+    command = binaries / "codex"
+    command.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
+    command.chmod(0o755)
+    monkeypatch.setenv("PATH", f"{binaries}:/usr/bin:/bin")
+    return binaries
+
+
 def _register_watcher(project: str) -> None:
     """Register this live process as the project's watcher seat."""
     path = crew.watch_lock_path(project)
@@ -286,6 +304,7 @@ def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
     home: Path,
     claude_session: Path,
     stub_host: _StubSessionHost,
+    stub_backend: Path,
     capsys: pytest.CaptureFixture[str],
 ) -> None:
     """The production dispatch path hands the run over and says so in its payload."""
