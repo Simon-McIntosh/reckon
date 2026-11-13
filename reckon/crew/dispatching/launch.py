@@ -108,18 +108,23 @@ _FACADE_BINDINGS = (
 class _SupersededLaunchError(CrewError):
     """A dispatch that another launch of the same run has taken the attempt from.
 
-    Raised only at the pre-spawn fence, so the caller can tell this refusal from
-    every other one that unwinds a dispatch: the pointer, the run directory and
-    the worktree belong to the newer attempt and must be left standing.
+    Raised by :func:`_refuse_if_superseded` at each of the fresh dispatch's two
+    re-reads of its reservation: before the attempt records are prepared, and
+    again immediately before the supervisor is started. The caller tells this
+    refusal from every other one that unwinds a dispatch because the pointer,
+    the run directory and the worktree belong to the newer attempt and must be
+    left standing.
     """
 
 
 def _refuse_if_superseded(run_directory: Path, reservation: Any, run_id: str) -> None:
     """Stop a dispatch whose attempt another launch has taken from it.
 
-    The shared supervisor spec belongs to whichever attempt is newest, so this
-    runs before the spec is written as well as before the supervisor starts: a
-    stale launch must not hand the newer attempt's supervisor its spec.
+    The attempt records and the shared supervisor spec belong to whichever
+    attempt is newest, so this runs before the attempt records are prepared,
+    before the spec is written and before the supervisor starts: a stale launch
+    must neither retire the newer attempt's canonical worker and exit records,
+    nor hand its own attempt's supervisor the newer attempt's spec.
     """
     try:
         _refuse_superseded_launch(run_directory, reservation, run_id)
@@ -908,6 +913,16 @@ def _launch_dispatch(
             # directory or worktree behind.
             try:
                 if launcher is None:
+                    # Another launch may have taken the run while this one
+                    # stalled. This re-read comes before the attempt records are
+                    # published: preparing them retires the canonical worker and
+                    # exit records, which belong to the newer attempt once a
+                    # newer reservation exists, and they are still the newer
+                    # attempt's while its worker is not yet live. The spec
+                    # written below is the run's shared one too, so a superseded
+                    # launch must reach neither it nor the supervisor that reads
+                    # it.
+                    _refuse_if_superseded(directory, reservation, run_id)
                     _prepare_attempt_records(
                         directory,
                         run_id=run_id,
@@ -916,11 +931,6 @@ def _launch_dispatch(
                         attempt_started_at=str(record["attempt_started_at"]),
                     )
                     spec_path = directory / SUPERVISOR_SPEC_NAME
-                    # Another launch may have taken the run while this one
-                    # stalled. The spec below is the run's shared one, so this
-                    # re-read comes first: a superseded launch must not write
-                    # it, still less start the supervisor that would read it.
-                    _refuse_if_superseded(directory, reservation, run_id)
                     _write_json(
                         spec_path,
                         _supervisor_spec(
