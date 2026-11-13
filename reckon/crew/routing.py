@@ -856,13 +856,18 @@ def _inspect_workspace(
     )
     claims = sorted(claimed_by)
     commits: list[dict[str, str]] | None = None
-    if release_residue and not reachable:
+    if release_residue and not reachable and not claims:
         commits = _commits_beyond_merge_base(repo, path, integrated_into)
     if commits is None:
         if not release_residue:
             unmeasured_reason = (
                 "release_residue is false: this caller did not ask for the "
                 "commits beyond the integration head to be measured"
+            )
+        elif claims:
+            unmeasured_reason = (
+                "a live pointer retains this worktree; "
+                "its history cannot change the refusal"
             )
         elif reachable:
             unmeasured_reason = (

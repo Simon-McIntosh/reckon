@@ -6,7 +6,14 @@ from pathlib import Path
 
 import pytest
 
-from reckon.crew import gc, promotion, promotion_release, runs, terminal_cleanup
+from reckon.crew import (
+    gc,
+    promotion,
+    promotion_release,
+    routing,
+    runs,
+    terminal_cleanup,
+)
 from tests.helpers.git import git
 from tests.helpers.landing_repository import _complete_land
 from tests.test_a_landed_head_releases_its_worktree import _landed_run
@@ -46,12 +53,20 @@ def _assert_retired(run):
 
 
 def test_landing_retires_the_entire_run(tmp_path, monkeypatch):
+    from reckon.crew import promotion_evidence, review
+
     run = _run(tmp_path, monkeypatch)
     result = _complete_land(run)
     report = json.loads(result.output)
     assert report["steps"]["land"]["pushed"] is True
     _assert_retired(run)
     assert result.exit_code == 0, result.output
+    archived_record = report["promotion"]["record"]
+    assert promotion_evidence._manifest_text(archived_record).startswith("node:")
+    gate = review._read_gate_log(
+        archived_record["gate_check"]["log_path"], runs.run_dir(run["run_id"])
+    )
+    assert gate is not None and "EXIT=0" in gate
 
 
 def test_discard_retires_the_entire_run(tmp_path, monkeypatch):
@@ -194,3 +209,30 @@ def test_discard_of_an_unlaunched_request_creates_no_run_home(tmp_path, monkeypa
     assert Path(result["discard_record"]).is_file()
     assert not runs.run_dir(record["run_id"]).exists()
     assert not terminal_cleanup.cleanup_path(record["run_id"]).exists()
+
+
+def test_gc_does_not_compare_history_of_a_live_worktree(tmp_path, monkeypatch):
+    run = _run(tmp_path, monkeypatch)
+    calls = []
+
+    def compare(*args):
+        calls.append(args)
+        raise RuntimeError("historical patch comparison reached a live worktree")
+
+    monkeypatch.setattr(routing, "_commits_beyond_merge_base", compare)
+    with pytest.raises(RuntimeError, match="historical patch comparison"):
+        compare(run["repository"], run["worktree"], "HEAD")
+    assert len(calls) == 1
+    calls.clear()
+    result = routing._inspect_workspace(
+        run["repository"],
+        run["worktree"],
+        "HEAD",
+        [run["run_id"]],
+        release_residue=True,
+    )
+    assert result["classification"] == "live-referenced"
+    assert result["non_equivalent_commits"] is None
+    assert "live pointer" in result["commits_unmeasured_reason"]
+    assert calls == []
+    assert run["worktree"].is_dir()
