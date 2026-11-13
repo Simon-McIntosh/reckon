@@ -160,26 +160,39 @@ def _waiting_run(run_id: str, *, probe: list[str]) -> dict:
 
 
 def _scheduler_stub(
-    monkeypatch: pytest.MonkeyPatch, listed: frozenset[str]
+    monkeypatch: pytest.MonkeyPatch,
+    listed: frozenset[str],
+    *,
+    refusal: str | None = None,
 ) -> list[list[str]]:
     """Stub the scheduler query, and report what it was asked.
 
-    Only ``squeue`` is answered: it lists the job when it is in ``listed`` and
-    prints nothing when it is not, which is what the real query does. Every
-    other command is delegated to the real runner, because the classifier
-    reaches git for the same run. The argv of each scheduler query is recorded
-    so a case can assert which job was asked about.
+    Only ``squeue`` is answered: it prints a row for each job of the queried
+    batch that is in ``listed`` and prints nothing when none are, which is what
+    the real query does. Every other command is delegated to the real runner,
+    because the classifier reaches git for the same run. The argv of each
+    scheduler query is recorded so a case can assert which jobs were asked
+    about.
+
+    ``refusal`` stubs a query that could not be put: ``absent`` is a command
+    this host does not have, ``failed`` is one that runs and refuses. Neither
+    measured anything about the jobs, which is why a case can tell what the row
+    says about a question nobody answered.
     """
     real_run = subprocess.run
     asked: list[list[str]] = []
 
     def fake_run(argv, *args, **kwargs):
-        if Path(str(argv[0])).name == "squeue":
-            asked.append([str(item) for item in argv])
-            job_id = str(argv[argv.index("-j") + 1])
-            row = f"{job_id} RUNNING fixture\n" if job_id in listed else ""
-            return subprocess.CompletedProcess(argv, 0, stdout=row, stderr="")
-        return real_run(argv, *args, **kwargs)
+        if Path(str(argv[0])).name != "squeue":
+            return real_run(argv, *args, **kwargs)
+        asked.append([str(item) for item in argv])
+        if refusal == "absent":
+            raise FileNotFoundError(2, "No such file or directory", "squeue")
+        if refusal == "failed":
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="refused")
+        batch = str(argv[argv.index("-j") + 1]).split(",")
+        rows = "".join(f"{job} RUNNING fixture\n" for job in batch if job in listed)
+        return subprocess.CompletedProcess(argv, 0, stdout=rows, stderr="")
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     return asked
@@ -187,7 +200,9 @@ def _scheduler_stub(
 
 def _asked_jobs(asked: list[list[str]]) -> list[str]:
     """The job ids the stub was asked about, in the order it was asked."""
-    return [query[query.index("-j") + 1] for query in asked]
+    return [
+        job for query in asked for job in str(query[query.index("-j") + 1]).split(",")
+    ]
 
 
 def _row(run: dict) -> dict:

@@ -662,9 +662,6 @@ _WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
 _WAIT_PROBE_JOB_FLAGS = frozenset({"-j", "--job", "--jobs", "--jobid", "--job-id"})
 # The commands whose bare digit operand is a job id rather than a pid or a port.
 _WAIT_PROBE_SCHEDULER_COMMANDS = frozenset({"squeue", "sacct"})
-# The fewest digits a scheduler job id carries, which is what makes an
-# unlabelled comma list of numbers readable as jobs rather than as ports.
-_WAIT_PROBE_JOB_ID_DIGITS = 5
 _WAIT_PROBE_PID_FLAGS = frozenset({"--pid"})
 _WAIT_PROBE_PORT_FLAGS = frozenset({"--port", "--local-port"})
 # ``-p`` names a pid or a port depending on the command it belongs to.
@@ -842,19 +839,32 @@ def _wait_probe_program_words(probe: Sequence[str]) -> tuple[str, tuple[str, ...
     return command, words
 
 
-def _wait_probe_glued_job_value(token: str) -> str:
-    """The job id a token spells with its flag glued on, or "".
+def _wait_probe_glued_job_values(token: str) -> list[str]:
+    """The job ids a token spells with its flag glued on, singly or as a list.
 
     ``squeue -j1306915`` names the same job as ``squeue -j 1306915``, and the
     glued spelling is common enough to be refused as a probe that cannot fail
-    when the flag rule reads only the separated form.
+    when the flag rule reads only the separated form. The glued value may also
+    be a batch — ``-j1312389,1312390`` — which is why this reader returns the
+    whole list rather than one id.
+
+    A token carrying ``=`` is left to the exact flag rule: a prefix match here
+    would read ``--jobs=1312389`` as the shorter ``--job`` flag's glued value.
     """
-    for flag in _WAIT_PROBE_JOB_FLAGS:
+    if "=" in token:
+        return []
+    for flag in sorted(_WAIT_PROBE_JOB_FLAGS, key=len, reverse=True):
         if token.startswith(flag) and len(token) > len(flag):
-            value = token[len(flag) :]
-            if _wait_probe_names_a_count(value):
-                return value.strip()
-    return ""
+            values = _wait_probe_job_values(token[len(flag) :])
+            if values:
+                return values
+    return []
+
+
+def _wait_probe_glued_job_value(token: str) -> str:
+    """The job id a token spells with its flag glued on, or ""."""
+    values = _wait_probe_glued_job_values(token)
+    return values[0] if values else ""
 
 
 def _wait_probe_count_list(token: str) -> list[str]:
@@ -872,30 +882,26 @@ def _wait_probe_count_list(token: str) -> list[str]:
     return parts
 
 
-def _wait_probe_names_a_job_count(value: str) -> bool:
-    """True when a value is written the way a scheduler job id is.
-
-    A job id carries at least five digits. A port is four at most and a pid
-    can be any length, so the length is what separates a list of jobs from a
-    list of ports when nothing in the probe says which one it is: ``nc -z host
-    80,443`` names two ports and no job.
-    """
-    if not _wait_probe_names_a_count(value):
-        return False
-    return len(value.strip()) >= _WAIT_PROBE_JOB_ID_DIGITS
-
-
-def _wait_probe_job_shaped_list(token: str) -> list[str]:
+def _wait_probe_job_shaped_list(token: str, *, command_takes_ports: bool) -> list[str]:
     """The job ids an unlabelled operand spells as a list, or an empty list.
 
     Only an operand that says nothing else about itself is read here, so the
-    list has to look like jobs on its own: two or more ids, each long enough
-    to be one. A scheduler command's operand and a job flag's value are read
-    by :func:`_wait_probe_job_values` instead, where the probe has already
-    said the numbers are jobs.
+    list has to look like jobs on its own. Its numbers cannot settle that: a
+    scheduler id and a port are both plain digits, and the port vocabulary in
+    this module runs to 65535, so ``50000,50001`` is as plausible a pair of
+    ports as a pair of jobs. What settles it is the command. A command that
+    takes ports by position — ``nc -z a-host 80,443`` — has a list of numbers
+    inside the port vocabulary read as ports, and a probe whose command takes
+    no ports, such as an interpreter handed a script, has the same list read
+    as jobs.
+
+    One reading overrides the command: a number above the port ceiling cannot
+    be a port, so a list carrying one is a job list whatever the command.
     """
     parts = [part.strip() for part in token.split(",")]
-    if len(parts) < 2 or not all(_wait_probe_names_a_job_count(part) for part in parts):
+    if len(parts) < 2 or not all(_wait_probe_names_a_count(part) for part in parts):
+        return []
+    if command_takes_ports and all(_wait_probe_names_a_port(part) for part in parts):
         return []
     return parts
 
@@ -927,12 +933,32 @@ def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
 
     An operand carries no label, so the list has to be job-shaped to be read at
     all: ``nc -z host 80,443`` hands over two numbers the same way and names
-    ports, and a list of four-digit ports must not become a list of jobs.
+    ports, and a list of ports must not become a list of jobs.
+
+    A flag's value is read from the vector's own items as well as from the
+    words the probe runs. The word split breaks at a comma, so
+    ``--jobs=1312389,1312390`` reaches the words as ``--jobs=1312389`` and a
+    stray ``1312390``, and only the first job would ever be asked about. The
+    raw token still carries the whole list, so the list is read there.
     """
-    job_ids: list[str] = []
-    for item in probe[1:]:
-        job_ids.extend(_wait_probe_job_shaped_list(str(item)))
     command, words = _wait_probe_program_words(probe)
+    takes_ports = command in _WAIT_PROBE_PORT_COMMANDS
+    job_ids: list[str] = []
+    raw_tokens = [command, *(str(item) for item in probe[1:])]
+    for index, token in enumerate(raw_tokens):
+        name, separator, inline = token.partition("=")
+        if name in _WAIT_PROBE_JOB_FLAGS:
+            value = (
+                inline
+                if separator
+                else (raw_tokens[index + 1] if index + 1 < len(raw_tokens) else "")
+            )
+            job_ids.extend(_wait_probe_job_values(value))
+        job_ids.extend(_wait_probe_glued_job_values(token))
+    for item in probe[1:]:
+        job_ids.extend(
+            _wait_probe_job_shaped_list(str(item), command_takes_ports=takes_ports)
+        )
     tokens = [command, *words]
     for index, token in enumerate(tokens):
         name, separator, inline = token.partition("=")
@@ -943,9 +969,7 @@ def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
                 else (tokens[index + 1] if index + 1 < len(tokens) else "")
             )
             job_ids.extend(_wait_probe_job_values(value))
-        glued = _wait_probe_glued_job_value(token)
-        if glued:
-            job_ids.append(glued)
+        job_ids.extend(_wait_probe_glued_job_values(token))
     if any(Path(token).name in _WAIT_PROBE_SCHEDULER_COMMANDS for token in tokens):
         for token in tokens[1:]:
             job_ids.extend(_wait_probe_job_values(token))

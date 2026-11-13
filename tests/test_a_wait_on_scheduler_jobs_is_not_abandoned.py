@@ -22,24 +22,21 @@ its answer, so the ids the query carries are the ones the classifier derived.
 
 from __future__ import annotations
 
-import json
-import os
-import socket
-import subprocess
-from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from reckon.crew import recovery, recovery_classification, recovery_wait
-from reckon.crew.runs import _write_json, pointer_path, runs_dir
-
-PROJECT = "waiting-on-a-job-batch-fixture"
-SESSION = "fixture-session"
-HOST = socket.gethostname()
-STALE_AFTER_SECONDS = 900
-NOW_SECONDS = 1_788_853_920.0
-BOUND = recovery_classification.WAIT_PRODUCER_GONE_SECONDS
+from reckon.crew import recovery_classification, recovery_wait
+from reckon.crew.runs import runs_dir
+from tests.test_a_run_parked_on_a_live_job_keeps_waiting import (
+    BOUND,
+    _asked_jobs,
+    _row,
+    _scheduler_stub,
+)
+from tests.test_a_run_parked_on_a_live_job_keeps_waiting import (
+    _waiting_run as _parked_run,
+)
 
 # The probe the run declared, in the shape that sat idle: an interpreter handed
 # a script and the batch as one comma-separated operand. Its digits are not a
@@ -59,7 +56,9 @@ SINGLE_NUMBER_PROBE = ["python", "{script}", SINGLE_JOB[0]]
 # this reader too eager. ``nc -z a-host 80,443`` hands the probe two numbers
 # the way the job batch does, and neither is a job.
 PORT_LIST = ("80", "443")
-PORT_LIST_PROBE = ["python", "{script}", ",".join(PORT_LIST)]
+# The host operand is a path that exists, so the probe resolves a reference and
+# is not refused as one that cannot fail before the port rule is reached.
+PORT_LIST_PROBE = ["nc", "-z", "{state}", ",".join(PORT_LIST)]
 NC_PORT_PROBE = ["nc", "-z", "a-host", ",".join(PORT_LIST)]
 
 RUN_IDS = (
@@ -69,6 +68,7 @@ RUN_IDS = (
     "r-single-bare-number",
     "r-batch-scheduler-unaskable",
     "r-port-list",
+    "r-flag-list",
 )
 
 
@@ -83,170 +83,22 @@ def _the_real_pointer_directory_is_untouched() -> None:
     assert not any(path.exists() for path in mine)
 
 
-def _absent_pid() -> int:
-    """A pid the kernel will never allocate: beyond the pid_max ceiling."""
-    return int(Path("/proc/sys/kernel/pid_max").read_text().strip()) + 4096
-
-
-def _stamp(seconds: float) -> str:
-    return datetime.fromtimestamp(seconds, tz=UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
-
-
-def _history(*entries: tuple[float, str, bool]) -> list[dict[str, object]]:
-    """A recorded probe history: (seconds before now, observed, answered)."""
-    return [
-        {"at": _stamp(NOW_SECONDS - ago), "observed": observed, "answered": answered}
-        for ago, observed, answered in entries
-    ]
-
-
 def _waiting_run(run_id: str, *, probe: list[str]) -> dict:
-    """One parked run with the manifest and pointer a declared wait needs.
+    """The shared parked run, with the files its batch probe names beside it.
 
-    No process of the run is alive, which is the ordinary state of a run while
-    the job it started is still running. The value the probe answers has stood
-    still longer than the bound, which is what a healthy wait on a long job
-    looks like, so the scheduler alone decides whether the stillness means the
-    work has ended.
+    The fixtures are the parked-run module's own; what this module adds is the
+    files a probe reaches. The script is a real path on this host, because a
+    probe that resolves no reference at all is refused as one that cannot fail
+    before any of this reading is reached.
     """
     directory = runs_dir() / run_id
     directory.mkdir(parents=True, exist_ok=True)
     state = directory / "state.txt"
     state.write_text("RUNNING\n", encoding="utf-8")
-    # The script the probe runs is a real path on this host, because a probe
-    # that resolves no reference at all is refused as one that cannot fail
-    # before any of this reading is reached.
     script = directory / "wait_jobs.py"
     script.write_text("import sys\nprint('PENDING')\n", encoding="utf-8")
     resolved = [part.format(state=state, script=script) for part in probe]
-    manifest = directory / "manifest.md"
-    manifest.write_text(
-        "\n".join(
-            (
-                f"node: {run_id}",
-                "status: waiting",
-                "wait_condition: the scheduler jobs write their final rows",
-                f"wait_probe: {json.dumps(resolved)}",
-                f"wait_terminal: {json.dumps(['COMPLETED', 'FAILED'])}",
-                "resume_brief: collect the rows and finish the report",
-            )
-        )
-        + "\n",
-        encoding="utf-8",
-    )
-    stamp = NOW_SECONDS - 10.0
-    os.utime(manifest, (stamp, stamp))
-    _write_json(directory / "attempt.json", {"attempt": 1, "at": _stamp(NOW_SECONDS)})
-    tree = runs_dir() / f"{run_id}-tree"
-    tree.mkdir(parents=True, exist_ok=True)
-    record = {
-        "run_id": run_id,
-        "project": PROJECT,
-        "repo": str(runs_dir()),
-        "worktree": str(tree),
-        "launch": "cli",
-        "argv": ["codex", "exec"],
-        "backend": "codex",
-        "role": "implement",
-        "session": SESSION,
-        "session_id": SESSION,
-        "created_at": _stamp(NOW_SECONDS - 4 * 3600),
-        "log_path": str(directory / "stream.jsonl"),
-        "stderr_path": str(directory / "stderr.log"),
-        "manifest_path": str(manifest),
-        "phase": "waiting",
-        "attempt": 1,
-        "process_alive": False,
-        "pid": _absent_pid(),
-        "launcher_host": HOST,
-        "wait_probe_history": _history(
-            (BOUND + 300, "RUNNING", True),
-            (BOUND + 60, "RUNNING", True),
-            (60, "RUNNING", True),
-        ),
-        "node": {
-            "id": run_id,
-            "plan": "plan-a",
-            "section": "a-declared-wait-names-the-jobs-it-rests-on",
-            "time_budget": "30m",
-            "write_paths": ["reckon/crew/recovery_classification.py"],
-        },
-    }
-    _write_json(pointer_path(run_id), record)
-    return record
-
-
-def _scheduler_stub(
-    monkeypatch: pytest.MonkeyPatch, listed: frozenset[str]
-) -> list[list[str]]:
-    """Stub the scheduler query, and report what it was asked.
-
-    Only ``squeue`` is answered: it prints a row for each job of the batch it
-    was asked about that is in ``listed``, and prints nothing when none are,
-    which is what the real query does. Every other command is delegated to the
-    real runner, because the classifier reaches git for the same run. Each
-    query's argv is recorded so a case can assert which jobs were asked about.
-    """
-    real_run = subprocess.run
-    asked: list[list[str]] = []
-
-    def fake_run(argv, *args, **kwargs):
-        if Path(str(argv[0])).name == "squeue":
-            asked.append([str(item) for item in argv])
-            batch = str(argv[argv.index("-j") + 1]).split(",")
-            rows = [f"{job} RUNNING fixture\n" for job in batch if job in listed]
-            return subprocess.CompletedProcess(argv, 0, stdout="".join(rows), stderr="")
-        return real_run(argv, *args, **kwargs)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    return asked
-
-
-def _scheduler_that_cannot_be_asked(
-    monkeypatch: pytest.MonkeyPatch, refusal: str
-) -> list[list[str]]:
-    """Stub the scheduler query as one this host cannot put.
-
-    ``absent`` is the command this host does not have; ``failed`` is the
-    command that runs and refuses the query. Neither measured anything about
-    the jobs, which is the point: an unanswered question is not a negative
-    answer. Every other command is delegated to the real runner, because the
-    classifier reaches git for the same run.
-    """
-    real_run = subprocess.run
-    asked: list[list[str]] = []
-
-    def fake_run(argv, *args, **kwargs):
-        if Path(str(argv[0])).name == "squeue":
-            asked.append([str(item) for item in argv])
-            if refusal == "absent":
-                raise FileNotFoundError(2, "No such file or directory", "squeue")
-            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="refused")
-        return real_run(argv, *args, **kwargs)
-
-    monkeypatch.setattr(subprocess, "run", fake_run)
-    return asked
-
-
-def _asked_jobs(asked: list[list[str]]) -> list[str]:
-    """Every job id the stub was asked about, in the order it was asked."""
-    return [
-        job for query in asked for job in str(query[query.index("-j") + 1]).split(",")
-    ]
-
-
-def _row(run: dict) -> dict:
-    return recovery.classify_pointer(
-        run,
-        now_seconds=NOW_SECONDS,
-        stale_after_seconds=STALE_AFTER_SECONDS,
-        condition_test=lambda _pointer, _wait: {
-            "state": "unknown",
-            "observed": "RUNNING",
-            "answered": True,
-            "detail": "the scheduler jobs are still in the queue",
-        },
-    )
+    return _parked_run(run_id, probe=resolved)
 
 
 def _detail(row: dict) -> str:
@@ -352,14 +204,14 @@ def test_a_single_bare_number_names_no_job(
 def test_a_port_list_is_not_read_as_a_job_batch(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """Two comma-separated ports are not two jobs, whatever command carries them.
+    """Two comma-separated ports are not two jobs, whatever their digits.
 
-    An operand's shape alone does not say the numbers are scheduler ids. A
-    port list is handed over exactly as a job batch is, so the list is read as
-    jobs only when the probe runs a scheduler command, passes a job flag, or
-    spells ids long enough to be jobs. Here the scheduler is stubbed to list
-    both ports, so a reader that mistook them for jobs would keep this run
-    waiting.
+    A number cannot say it is a job: the port vocabulary in this module runs to
+    65535, so ``50000,50001`` is as plausible a port pair as a job pair. The
+    command settles it. ``nc`` takes ports by position, so its numeric list is
+    read as ports; an interpreter handed a script takes none, so the same list
+    is read as jobs. The scheduler is stubbed to list both ports, so a reader
+    that mistook them for jobs would keep this run waiting.
     """
     asked = _scheduler_stub(monkeypatch, frozenset(PORT_LIST))
     run = _waiting_run(RUN_IDS[5], probe=PORT_LIST_PROBE)
@@ -367,7 +219,19 @@ def test_a_port_list_is_not_read_as_a_job_batch(
     row = _row(run)
 
     assert recovery_wait._wait_probe_job_ids(NC_PORT_PROBE) == ()
-    assert recovery_wait._wait_probe_job_ids(["python", "/x/y.py", "80,443"]) == ()
+    assert (
+        recovery_wait._wait_probe_job_ids(["nc", "-z", "a-host", "50000,50001"]) == ()
+    )
+    # Beyond the port ceiling a number cannot be a port, so the list is jobs
+    # even for the command that takes ports.
+    assert recovery_wait._wait_probe_job_ids(["nc", "-z", "a-host", "70000,70001"]) == (
+        "70000",
+        "70001",
+    )
+    assert recovery_wait._wait_probe_job_ids(["python", "/x/y.py", "1234,5678"]) == (
+        "1234",
+        "5678",
+    )
     assert asked == []
     assert row["classification"] == recovery_classification.PRODUCER_GONE_STATUS
     assert row["external_wait"]["producer_gone"]["scheduler_jobs"] == []
@@ -385,7 +249,7 @@ def test_a_batch_the_scheduler_could_not_answer_about_is_not_abandoned(
     the row says the scheduler could not be asked rather than that no job is
     alive — the second is a claim only a answered query could support.
     """
-    asked = _scheduler_that_cannot_be_asked(monkeypatch, refusal)
+    asked = _scheduler_stub(monkeypatch, frozenset(BATCH_JOBS), refusal=refusal)
     run = _waiting_run(RUN_IDS[4], probe=BATCH_PROBE)
 
     row = _row(run)
@@ -398,6 +262,34 @@ def test_a_batch_the_scheduler_could_not_answer_about_is_not_abandoned(
     assert "the 3 jobs the wait names" in detail
     assert "no scheduler job alive" not in detail
     assert "producer" not in detail
+
+
+def test_a_flag_list_is_read_whole_before_the_words_are_split(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A job flag's comma list names every job in it, not just the first.
+
+    The words a probe runs are split at a comma, so a flag carrying a batch
+    reaches them as the flag with its comma value and a stray second id. Only
+    the first would ever be asked about, and a wait resting on the second alone
+    would read as abandoned while its job ran. The list is read from the raw
+    vector, which still carries it whole, in the ``=``-joined and glued
+    spellings alike.
+    """
+    joined = ["python", "{script}", "--jobs=" + ",".join(BATCH_JOBS)]
+    glued = ["python", "{script}", "-j" + ",".join(BATCH_JOBS)]
+
+    assert recovery_wait._wait_probe_job_ids(joined) == BATCH_JOBS
+    assert recovery_wait._wait_probe_job_ids(glued) == BATCH_JOBS
+
+    # Only the job the word split keeps is alive, which is the case that read
+    # as abandoned while the rest of the list was dropped.
+    asked = _scheduler_stub(monkeypatch, frozenset({BATCH_JOBS[1]}))
+    row = _row(_waiting_run(RUN_IDS[6], probe=joined))
+
+    assert _asked_jobs(asked) == list(BATCH_JOBS)
+    assert row["classification"] == "waiting"
+    assert row["external_wait"].get("producer_gone") is None
 
 
 def test_no_detail_names_the_watch_producer(
