@@ -24,7 +24,7 @@
   <p>Implementation commits:
   <code>b4840067adb0d8717e49dedb48658ae3d0501796</code> and
   <code>1ff2fb47fe2cbf8df85f15329d2f300c461043e0</code>.
-  The new test module contains thirteen cases covering delayed CLI, sweep and
+  The initial test module contains thirteen cases covering delayed CLI, sweep and
   landing requests; width-two concurrency; failure and refusal receipts;
   session and snapshot obligations; restart adoption; duplicate requests;
   admission-service draining; commit identities; and explicit synchronous CLI
@@ -90,4 +90,57 @@
   <code>compatibility-importers.log</code>, <code>compatibility-delta.json</code>,
   <code>negative-control-final.log</code>, <code>live-final.log</code>,
   the earlier attempt logs, and the final-head measurement logs.</p>
+
+  <section id="no-caller-waits-on-a-promotion-recovery-repair">
+    <h3>A completed review promotion survives an interrupted receipt</h3>
+    <p>The service can stop after a review operation has persisted the promoted
+    ledger row and removed its live pointer, but before publishing
+    <code>promotion.json</code>. Both request kinds reproduced the defect:
+    <q>promotion-refused</q> instead of <q>promoted</q>, with
+    <q>CrewError: no live run</q>, even though the matching ledger row was present.</p>
+
+    <p>Answering commit <code>14f5694030b77790bcb1b835a27fc571aa377374</code>
+    recovers the result and its commit identities from that run's ledger row in
+    the project's registered repository when the pointer is absent. It verifies
+    the row's run identity, publishes the service receipt, and retires the
+    request without repeating either review operation. An absent row or a row
+    naming another run remains a refusal with a session obligation. A neighbor's
+    known-present row is read before testing absence, so the refusal test does
+    not mistake an unreadable instrument for a missing delivery.</p>
+
+    <p>The regression tests were committed separately at
+    <code>4739bf4c0f3b32f63edca8949b3bff05cef8469d</code>. They interrupt receipt
+    publication after the review callback writes a real per-run ledger document
+    and removes the pointer, then require a fresh service to recover the same
+    commits once. They verify that the ledger bytes remain unchanged, the
+    operation is not repeated, the request is retired, and no false failure
+    obligation is published. Six cases cover both review request kinds and their
+    missing-row and different-run refusal controls.</p>
+
+    <table id="no-caller-waits-on-a-promotion-recovery-measures">
+      <caption>Repair measurements retained in this run directory.</caption>
+      <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+      <tbody>
+        <tr><td>Confirmed crash-window reproduction against unchanged code</td>
+          <td>2 failed, 13 deselected in 10.01 s; EXIT=1</td></tr>
+        <tr><td>Focused repair with refusal output</td>
+          <td>6 passed, 13 deselected in 21.73 s; EXIT=0</td></tr>
+        <tr><td>Reverse the entire answering commit in a temporary tree</td>
+          <td>Both crash-window tests fail again: 2 failed, 13 deselected in
+          0.78 s; EXIT=1</td></tr>
+        <tr><td>Armed suite at repair base
+          <code>d513212c96665c026454b1e469b81849daa0ba36</code></td>
+          <td>64 passed in 130.39 s; EXIT=0</td></tr>
+      </tbody>
+    </table>
+
+    <p>The manifest records the original dispatch-base arm separately from the
+    repair-base arm. The final repair-head armed suite and importer comparison
+    run after this evidence is committed; their exact revision, commands,
+    summaries and failure-ID comparison are recorded in the manifest. Logs are
+    <code>repair-reproduction-confirmed.log</code>, <code>repair-focused.log</code>,
+    <code>repair-baseline-suite-final.log</code> and
+    <code>repair-negative-control.log</code>. Initial fixture and scratch Git
+    metadata errors are retained with their scaffolding attribution.</p>
+  </section>
 </section>
