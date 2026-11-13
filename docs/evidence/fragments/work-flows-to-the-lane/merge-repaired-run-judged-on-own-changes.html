@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="merge-repaired-run-judged-on-own-changes">
+  <meta name="plan-title" content="A repaired landing judges its own changes">
+  <meta name="plan-summary" content="Merge-base scope excludes primary receipts from the run's changes and boundary check; eight regressions pass with zero added importer failures.">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s40">
+  <meta name="plan-commits" content="2985c6c55e812b0c2a76d657952fcaacb78b7dbc,df18ab8899196133e87bf068c4cd4a77aa18ea80,3b7f7d7e9926cfc8bb587179757a4224a4ace50e">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>A repaired landing judges its own changes | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article id="merge-repaired-run-judged-on-own-changes-record" data-node="merge-repaired-run-judged-on-own-changes" data-reckon="landed">
+  <h2 id="merge-repaired-run-judged-on-own-changes-outcome">A repaired landing judges its own changes</h2>
+  <p>At assigned base <code>5954278873fdbbc3a405c5b3aba5c1d082fde0b6</code>,
+  the new temporary-repository regression reproduced the refusal before product edits:
+  <q>changed paths outside its declared write scope: primary-00.txt</q>, continuing through
+  all twenty primary files. The reproduction reports <code>2 failed, 5 passed in 4.53s</code>
+  and <code>EXIT=1</code>.</p>
+  <p><code>reckon/crew/promotion_evidence.py</code> now reads a repaired delivery's net diff
+  from its common ancestor with the current primary checkout. The existing Git readers and
+  scoped line counter supply the paths and counts. <code>promotion_checks.py</code> uses that
+  result for scope auditing; <code>promotion_scope.py</code> uses the same reader to restrict
+  boundary checks to the run's own declared changes. Unmerged runs retain the cited-commit
+  measurement, and already incorporated heads retain their citation accounting.</p>
+  <p><code>tests/test_a_merge_repaired_run_is_judged_on_its_own_changes.py</code> has eight
+  cases with temporary repositories and crew homes. A worker merges primary after primary
+  gains twenty generated receipts. Deliveries citing either the repaired head alone or the
+  worker commit plus repaired head promote without an accepted path and record one added
+  line in one file. An unrelated primary receipt left dirty within a broad grant remains
+  untouched. An actual scope escape refuses naming only <code>outside.txt</code>; dirt on
+  the worker's own receipt still refuses and retains the pointer without writing a ledger row.
+  Unmerged positive and escape cases retain their scope verdicts.</p>
+  <table>
+    <thead><tr><th>Measurement on all_debug, sequential arms</th><th>Runner summary</th></tr></thead>
+    <tbody>
+      <tr><td>Armed baseline; node test absent</td><td>51 passed in 8.84s; EXIT=0</td></tr>
+      <tr><td>Armed product head; eight node cases plus inventory</td><td>59 passed in 17.92s; EXIT=0</td></tr>
+      <tr><td>Promotion and landing importers at baseline, four workers</td><td>65 failed, 1306 passed, 7 warnings in 194.70s; EXIT=1</td></tr>
+      <tr><td>The same importers at product head, four workers</td><td>65 failed, 1306 passed, 7 warnings in 207.65s; EXIT=1</td></tr>
+      <tr><td>Dedicated promotion-scope tests at baseline</td><td>4 failed, 22 passed in 13.78s; EXIT=1</td></tr>
+      <tr><td>The same scope tests at product head</td><td>4 failed, 22 passed in 13.76s; EXIT=1</td></tr>
+      <tr><td>Mutation: audit from the original dispatch base</td><td>5 failed, 3 passed in 4.16s; EXIT=1</td></tr>
+    </tbody>
+  </table>
+  <p>Both related-test comparisons add <strong>zero failing IDs</strong>. Their baseline
+  failures remain recorded in the manifest's outside-scope entry. The importer arm's product
+  source is byte-identical to the delivered product source; subsequent commits change this
+  node's test fixture and evidence only. The manifest records a final armed gate at the
+  evidence commit.</p>
+  <p>The declared control changes only the repaired-scope diff base back to the original
+  dispatch base. The first successful-landing assertion then refuses naming all twenty
+  primary receipts. The control's five failing IDs pass in the ordinary head arm.
+  Receipt fixtures matter here: source text paths intentionally share, while generated
+  receipts exercise the protected boundary. An initial added control used a text path and
+  correctly encountered no refusal; its failed observation is retained in the run record.</p>
+  <p>Ruff check records two existing findings at baseline and the same two at head,
+  adding zero findings. Format check reports <code>4 files already formatted</code>.
+  Durable logs, commands, imported-module paths, revisions and scratch working directories
+  are under <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T074659623033-merge-repaired-run-judged-on-own-changes/</code>.
+  Key receipts are <code>reproduction.log</code>, <code>baseline-armed.log</code>,
+  <code>verified-armed.log</code>, <code>baseline-importers.log</code>, <code>after-importers.log</code>,
+  <code>scope-base-scope.log</code>, <code>scope-head-scope.log</code>,
+  <code>control-control.log</code>, <code>importer-delta.json</code> and <code>lint-delta.log</code>.
+  The archive-only measurement attempt lacked Git metadata; its logs are retained separately,
+  its sole job was cancelled, and its scratch removal is recorded.</p>
+</article>
+</body>
+</html>
