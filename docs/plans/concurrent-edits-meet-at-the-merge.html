@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="66">
+<meta name="plan-version" content="67">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -200,6 +200,12 @@
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261112T220438333293-a-repair-gate-refusal-names-its-log-and-both-commands" data-who="reckon-build" data-when="2026-11-12T22:37:04.804Z">
     <div class="r-comment-body"><p>A repair-gate refusal now names the log it read, the command the manifest declares and the command that log records (or that it records none); node gate 4 passed, census arms 51 passed at base and at head, negative control 3 failed/1 passed at the base revision.</p></div>
 </div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261112T231854969031-review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c" data-who="reckon-build" data-when="2026-11-12T23:30:42.628Z">
+    <div class="r-comment-body"><p>Independent review of §11 stored: goal met and evidence sound (base b30f1e1350 106 passed, head 1836dc71d0 111 passed, negative control 3 failed/2 passed at base, zero added failures); scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 16, reuse 20; three non-blocking findings (stale last-run docstring, whole-log ctest union on a re-run gate, manifest arm command disagreeing with its cited log headers).</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate" data-who="reckon-build" data-when="2026-11-12T22:40:00.917Z">
+    <div class="r-comment-body"><p>§11 makes the gate-log agreement check read a ctest gate whole: the reported 32/0 two-label log now agrees with a receipt of 32 while a receipt of 31, an unknown id and a pytest log&#x27;s earlier run still refuse; after arm 111 passed, base arm 106 passed, negative control 3 failed/2 passed at b30f1e1350.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T123713881297-review-of-a-source-file-is-shared-by-default-d7fb8d91992a" data-who="reckon-build" data-when="2026-11-08T12:59:46Z">
     <div class="r-comment-body"><p>Independent review stores all six scores and exact source revision; focused added-failure count is zero, with one blocking incomplete-importer finding.</p></div>
 </div>
@@ -274,9 +280,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261112T215811285812-a-merge-repair-is-not-held-by-a-dead-worker" data-who="reckon-build" data-when="2026-11-12T22:36:27.625Z">
     <div class="r-comment-body"><p>A merge repair is released once the resumed turn's process is gone — a pointer or worker-record pid proved dead no longer holds the round, while unknown liveness keeps the old stream reading; node gate 4 passed, negative control at the base revision 2 failed/2 passed, importer arms 184 passed at base and 188 at head with zero added failure ids, suite arms 51/51.</p></div>
-</div>
-<div class="r-comment" data-section="s11" data-id="c-run-r-20261112T231854969031-review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c" data-who="reckon-build" data-when="2026-11-12T23:30:42.628Z">
-    <div class="r-comment-body"><p>Independent review of §11 stored: goal met and evidence sound (base b30f1e1350 106 passed, head 1836dc71d0 111 passed, negative control 3 failed/2 passed at base, zero added failures); scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 16, reuse 20; three non-blocking findings (stale last-run docstring, whole-log ctest union on a re-run gate, manifest arm command disagreeing with its cited log headers).</p></div>
 </div>
 </section>
 </main>
