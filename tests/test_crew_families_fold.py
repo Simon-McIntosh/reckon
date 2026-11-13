@@ -631,7 +631,10 @@ def test_resume_reopens_a_complete_run_and_grants_its_path(
         ],
     )
     assert result.exit_code == 0, result.output
-    assert calls and calls[0][1]["advice"] == "continue"
+    # The reopen grants the path and launches nothing: an attempt here would
+    # start on advice composed for the state the run has left.
+    assert calls == []
+    assert json.loads(result.output.strip().splitlines()[-1])["launched"] is False
     assert runs_module.read_pointer(run_id)["node"]["write_paths"] == [
         "reckon/crew/runs.py",
         "reckon/crew/claims.py",
