@@ -25,7 +25,7 @@
   <title>A Read Costs What Changed | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="108">
+<meta name="plan-version" content="109">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -348,6 +348,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261103T103857095482-a-persisted-answer-still-reuses-rows" data-who="reckon-build" data-when="2026-11-04T09:22:03.388Z">
     <div class="r-comment-body"><p>Revalidating a persisted value no longer hashes the source file of each module that produced it: the envelope records each producer's source stat identity beside its digest and reuses the recorded digest when that identity has not moved, so a cold build reuses every covered row by stat identity again; both stat-identity tests and the code-version test pass 8/8 in each of three serial head passes, and reverting the fix turns exactly the two declared tests red.</p></div>
+</div>
+<div class="r-comment" data-section="s22" data-id="c-run-r-20261113T154650434261-review-of-read-costs-referenced-plan-once-s22-e967d2ecc630" data-who="reckon-build" data-when="2026-11-13T16:03:36.674Z">
+    <div class="r-comment-body"><p>Independent review of read-costs-referenced-plan-once-s22 at e967d2ecc6 against base bd28fcaf: goal_fidelity 19, evidence 17, scope_discipline 19, durability 16, fit 17, reuse 19; added_failure_count 0 over the reviewed run&#x27;s own arms; two non-blocking findings — the test cannot distinguish an index hit from its own parse fallback, and a live-plus-archived duplicate slug is now silently resolved to the live copy where a full read raises a collision.</p></div>
 </div>
 </section>
 </main>
