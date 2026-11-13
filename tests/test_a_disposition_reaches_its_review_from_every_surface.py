@@ -71,7 +71,7 @@ def world(tmp_path: Path, isolated_reckon_home: Path) -> World:
     git(repository, "config", "user.email", "test@example.invalid")
     git(repository, "config", "user.name", "Test")
     revisions = []
-    for value in ("base", "reviewed", "later"):
+    for value in ("base", "reviewed"):
         (repository / "work.txt").write_text(value + "\n")
         git(repository, "add", "work.txt")
         git(
@@ -84,6 +84,17 @@ def world(tmp_path: Path, isolated_reckon_home: Path) -> World:
             "Seed independent review revisions.",
         )
         revisions.append(git(repository, "rev-parse", "HEAD"))
+    revisions.append(
+        git(
+            repository,
+            "commit-tree",
+            "HEAD^{tree}",
+            "-p",
+            "HEAD",
+            "-m",
+            "test: prepare a subsequent reviewed revision",
+        )
+    )
     (isolated_reckon_home / "mounts.json").write_text(
         json.dumps({PROJECT: str(repository / "docs")})
     )
@@ -135,9 +146,6 @@ def test_a_dimension_duty_keeps_the_record_it_was_derived_from(
 ) -> None:
     # Delivery can advance the store between deriving the score and rendering
     # its command. The command must still answer the score shown in that row.
-    monkeypatch.setattr(
-        obligations, "stored_review_for_run", lambda *_: (world.records[TEXT], "")
-    )
     derive = review_dispositions.sub_floor_dimensions
 
     def deliver_during_derivation(record, floors):
