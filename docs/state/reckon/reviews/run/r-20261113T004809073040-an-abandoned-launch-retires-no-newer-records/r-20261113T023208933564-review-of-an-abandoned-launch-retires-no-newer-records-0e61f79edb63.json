@@ -1,0 +1,59 @@
+{
+  "added_failure_count": 1,
+  "added_failure_ids": [
+    "tests/test_a_stalled_fresh_dispatch_starts_no_second_supervisor.py::test_a_stalled_fresh_dispatch_starts_no_second_supervisor"
+  ],
+  "call_sites": [
+    "reckon/crew/dispatching/preparation.py:1395",
+    "reckon/crew/dispatching/launch.py:922",
+    "reckon/crew/dispatching/launch.py:939"
+  ],
+  "completed_at": "2026-11-13T03:12:41.156Z",
+  "dispatched_at": "2026-11-13T03:01:19Z",
+  "findings": [
+    {
+      "file": "tests/test_an_abandoned_launch_retires_no_newer_records.py",
+      "line": 281,
+      "severity": "non-blocking",
+      "text": "assert record.get(\"pid\") == os.getpid() compares the pid dispatch returned against the value the test's own _spawn_detached_supervisor stub supplied, so the two sides move together and the assertion holds whatever dispatch records about the supervisor; it is not part of the regression guard."
+    },
+    {
+      "file": "manifest.md",
+      "line": 18,
+      "severity": "non-blocking",
+      "text": "The after_suite arm was run at 7f07f79487, not at the reviewed head 0e61f79edb, and it records one added failure id against base; no matched arm exists at the revision that lands, so the done_when clause 'add no failure against base in matched arms' is not evidenced at the reviewed head, though node-gate-head.log re-measures that failing test green at 0e61f79edb."
+    },
+    {
+      "file": "logs/arm-head.log",
+      "line": 1749,
+      "severity": "non-blocking",
+      "text": "arm-head.log holds two concatenated runs (28 failed / 723 passed, then 29 failed / 722 passed) because two head runs raced the same log path, and after_suite quotes the first summary while the log's final summary line is the second's; a reader taking the log's last line reads a figure the record does not carry, the extra second-run id being the environment-dependent bind-mount case test_a_spawn_refused_over_a_vanished_protected_bind_is_retried[Can't bind mount]."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatching/preparation.py:1395 calls _launch_dispatch, which reads the fence at reckon/crew/dispatching/launch.py:922 and :939",
+    "diff": "read commit by commit from 6d150e482f to 0e61f79edb; five commits touch three files, moving the fence ahead of the attempt preparation and the spec write after the pre-spawn read, adding the two-case test and its evidence fragment",
+    "done_when": "the done_when names tests/test_an_abandoned_launch_retires_no_newer_records.py with a base-revision negative control and matched arms; node-gate-head.log records 4 passed / 0 failed at 0e61f79edb and negative-control-base.log records the first case red at 6d150e482f, while the matched head arm was run at 7f07f79487 rather than the reviewed head",
+    "goal": "the node's goal is to keep an abandoned fresh dispatch from writing a newer attempt's records, and reckon/crew/dispatching/launch.py:922 reads the superseded fence before _prepare_attempt_records so the abandoned dispatch writes only its own exit receipt",
+    "manifest": "read; manifest.md:5-19 reports status complete, five commits, the four-test node gate, the base negative control and both arms, and discloses that the full arm was not re-run at the reviewed head",
+    "write_paths": "the declared scope is reckon/crew/dispatching/launch.py, reckon/crew/dispatch_launch.py and tests/test_an_abandoned_launch_retires_no_newer_records.py; every path in the diff is inside it, with the evidence fragment at its own scope path"
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to keep an abandoned fresh dispatch from writing a newer attempt's records; reckon/crew/dispatching/launch.py:922 reads the superseded fence before _prepare_attempt_records, so the abandoned dispatch writes only its own attempt's exit receipt.\nVERDICT done_when: the done_when names tests/test_an_abandoned_launch_retires_no_newer_records.py with a base-revision negative control and matched arms; node-gate-head.log records 4 passed / 0 failed at 0e61f79edb and negative-control-base.log records the first case red at 6d150e482f, while the matched head arm was run at 7f07f79487 rather than the reviewed head.\nVERDICT write_paths: the declared scope is reckon/crew/dispatching/launch.py, reckon/crew/dispatch_launch.py and tests/test_an_abandoned_launch_retires_no_newer_records.py; every path in the diff is inside it, with the evidence fragment at its own scope path.\nVERDICT manifest: read; manifest.md:5-19 reports status complete, five commits, the four-test node gate, the base negative control and both arms, and discloses that the full arm was not re-run at the reviewed head.\nVERDICT diff: read commit by commit from 6d150e482f to 0e61f79edb; five commits touch three files, moving the fence ahead of the attempt preparation and the spec write after the pre-spawn read, adding the two-case test and its evidence fragment.\nCALL_SITES: reckon/crew/dispatching/preparation.py:1395, reckon/crew/dispatching/launch.py:922, reckon/crew/dispatching/launch.py:939\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/launch.py:922 reads _refuse_if_superseded before _prepare_attempt_records, which is the ordering the goal names.\nSCORE evidence: 13\nJUSTIFICATION evidence: node-gate-head.log records 4 passed / 0 failed at 0e61f79edb and negative-control-base.log is red at 6d150e482f, but the matched arm cited in manifest.md:18 ran at 7f07f79487 and adds one failure id.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/dispatching/launch.py, tests/test_an_abandoned_launch_retires_no_newer_records.py and the fragment, all inside the declared write paths.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_an_abandoned_launch_retires_no_newer_records.py:254-259 compares the newer attempt's on-disk records against bytes captured before the code under test runs, and negative-control-base.log shows that assertion reddening when the base ordering is restored.\nSCORE fit: 19\nJUSTIFICATION fit: the change follows the existing fence idiom and reuses _refuse_if_superseded rather than adding a check, and ruff check and ruff format --check are clean on both changed Python paths.\nSCORE reuse: 20\nJUSTIFICATION reuse: no definition is added; reckon/crew/dispatching/launch.py:130 wraps the existing owner _refuse_superseded_launch at reckon/crew/dispatch_launch.py:2773 rather than duplicating it.\nFINDING tests/test_an_abandoned_launch_retires_no_newer_records.py:281 non-blocking: assert record.get(\"pid\") == os.getpid() compares dispatch's output against the value the test's own stub returned, so it cannot fail on a pid-handling regression.\nFINDING manifest.md:18 non-blocking: the after_suite arm ran at 7f07f79487 and records one added failure id against base; no matched arm exists at the reviewed head 0e61f79edb, so the done_when arm clause is not evidenced at the revision that lands.\nFINDING logs/arm-head.log:1749 non-blocking: the log holds two concatenated runs with different summaries, so the record's quoted 28-failed figure is not the log's final summary line.\n",
+  "review_run_id": "r-20261113T023208933564-review-of-an-abandoned-launch-retires-no-newer-records-0e61f79edb63",
+  "reviewed_base_sha": "6d150e482f5c9ed80c698ab08e3940779d7d7383",
+  "reviewed_head_sha": "0e61f79edb63d40e7b0196376821369be0b7e859",
+  "reviewed_run_id": "r-20261113T004809073040-an-abandoned-launch-retires-no-newer-records",
+  "scores": {
+    "durability": 18,
+    "evidence": 13,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T03:23:54.707860+00:00",
+  "total": 109
+}
