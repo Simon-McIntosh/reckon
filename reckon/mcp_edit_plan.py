@@ -1757,6 +1757,7 @@ def _edit_plan(
         except (TypeError, ValueError, FileNotFoundError) as exc:
             return {
                 "ok": False,
+                "applied": False,
                 "error": "resource_edit_error",
                 "detail": str(exc),
             }

@@ -46,6 +46,7 @@ from reckon._schema import (
 from reckon._store import (
     _OP_DISPATCH,
     _fsync_directory,
+    sprint_item_slug,
     write_atomically,
     write_json_atomically,
 )
@@ -2116,10 +2117,40 @@ def _retire_move_journal(path: Path) -> list[str]:
 
 
 def _sprint_holds_item(sprint: dict[str, Any], slug: str) -> bool:
-    return any(
-        (row if isinstance(row, str) else row.get("slug")) == slug
-        for row in sprint.get("items", [])
-    )
+    return any(sprint_item_slug(row) == slug for row in sprint.get("items", []))
+
+
+def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
+    """Write both sprints back from a journal's before-bytes.
+
+    Returns False when the journal is already gone, so there is nothing left to
+    restore from.
+    """
+    try:
+        payload = json.loads(journal.read_text(encoding="utf-8"))
+        source_id = _safe_segment(str(payload["source_id"]), "journal source id")
+        target_id = _safe_segment(str(payload["target_id"]), "journal target id")
+        source_bytes = base64.b64decode(payload["source_before"], validate=True)
+        target_bytes = base64.b64decode(payload["target_before"], validate=True)
+    except FileNotFoundError:
+        return False
+    except (KeyError, ValueError, json.JSONDecodeError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    for resource_id, content in (
+        (source_id, source_bytes),
+        (target_id, target_bytes),
+    ):
+        path = resource_path(docs_dir, project, "sprint", resource_id)
+        path.parent.mkdir(parents=True, exist_ok=True)
+        write_atomically(
+            path,
+            lambda handle, data=content: handle.write(data),
+            mode=0o600,
+            fsync=True,
+            fsync_directory=True,
+            binary=True,
+        )
+    return True
 
 
 def _pending_transaction_journals(docs_dir: Path) -> list[Path]:
@@ -2321,12 +2352,18 @@ def move_sprint_item(
         applied = _sprint_holds_item(target_after, slug) and not _sprint_holds_item(
             source_after, slug
         )
-        warnings = _retire_move_journal(journal)
         if not applied:
+            # A read-back that disagrees with both writes means something
+            # reverted a sprint under the move. Restore both sides from the
+            # journal so the pair agrees with its before-bytes again, and only
+            # then retire the journal and report the refusal.
+            _restore_move_journal(docs_dir, project, journal)
+            _retire_move_journal(journal)
             raise ProjectStateError(
                 f"sprint move did not settle: {slug!r} is not in exactly "
                 f"{to_sprint!r} after both writes"
             )
+        warnings = _retire_move_journal(journal)
         return {
             "applied": True,
             "from_version": from_version,

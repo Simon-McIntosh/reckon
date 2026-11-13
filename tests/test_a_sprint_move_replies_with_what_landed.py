@@ -107,6 +107,37 @@ def _fault_marking_committed(
     monkeypatch.setattr(project_state, "_mark_move_journal_committed", wrapper)
 
 
+def _fault_read_back_disagrees(
+    monkeypatch: pytest.MonkeyPatch, stale: tuple[dict, int]
+) -> None:
+    """Make the post-write read of the source sprint report the pre-move state.
+
+    This is what a reverted sprint looks like to the read-back: both writes
+    landed and the source still holds the item.
+    """
+    original_read = project_state._read_resource_unchecked
+    original_write = project_state._write_resource_unlocked
+    state = {"writes": 0, "fired": False}
+
+    def write_wrapper(*args, **kwargs):
+        result = original_write(*args, **kwargs)
+        state["writes"] += 1
+        return result
+
+    def read_wrapper(docs_dir, project, resource_type, resource_id):
+        if (
+            not state["fired"]
+            and state["writes"] >= 2
+            and (resource_type, resource_id) == ("sprint", SOURCE)
+        ):
+            state["fired"] = True
+            return stale
+        return original_read(docs_dir, project, resource_type, resource_id)
+
+    monkeypatch.setattr(project_state, "_write_resource_unlocked", write_wrapper)
+    monkeypatch.setattr(project_state, "_read_resource_unchecked", read_wrapper)
+
+
 def _assert_reply_matches_disk(reply: dict, docs: Path, *, applied: bool) -> None:
     source, from_version = read_resource(docs, "sample", "sprint", SOURCE)
     target, to_version = read_resource(docs, "sample", "sprint", TARGET)
@@ -159,6 +190,29 @@ def test_commit_mark_with_journal_already_gone_reports_applied(
     _fault_marking_committed(monkeypatch, journal_gone=True)
     reply = _move(sprint_pair)
     _assert_reply_matches_disk(reply, sprint_pair, applied=True)
+
+
+def test_a_read_back_that_disagrees_restores_both_sprints_before_refusing(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    source_path = sprint_pair / "sprints" / f"{SOURCE}.html"
+    target_path = sprint_pair / "sprints" / f"{TARGET}.html"
+    source_before = source_path.read_bytes()
+    target_before = target_path.read_bytes()
+    stale = read_resource(sprint_pair, "sample", "sprint", SOURCE)
+    _fault_read_back_disagrees(monkeypatch, stale)
+
+    reply = _move(sprint_pair)
+
+    assert reply["ok"] is False, reply
+    assert reply.get("applied") is False, reply
+    assert source_path.read_bytes() == source_before
+    assert target_path.read_bytes() == target_before
+    _assert_reply_matches_disk(reply, sprint_pair, applied=False)
+    journals = list(
+        (sprint_pair / ".reckon" / "transactions").glob("sprint-move-*.json")
+    )
+    assert journals == []
 
 
 def test_a_settled_move_leaves_no_journal_between_the_sprints(
