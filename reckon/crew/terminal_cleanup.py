@@ -22,7 +22,7 @@ def cleanup_path(run_id: str) -> Path:
 
 def queue_cleanup(record: Mapping[str, Any], *, kind: str, gate: str = "") -> None:
     """Persist recovery inputs before the operation retires the live pointer."""
-    if gate and gate.strip().lower() != "passed":
+    if gate and gate.strip().lower() not in {"passed", "not-run"}:
         return
     run_id = str(record.get("run_id") or "")
     if not run_id or run_id in {".", ".."} or Path(run_id).name != run_id:
@@ -31,7 +31,7 @@ def queue_cleanup(record: Mapping[str, Any], *, kind: str, gate: str = "") -> No
         return
     runs._write_json(
         cleanup_path(run_id),
-        {"run_id": run_id, "kind": kind, "record": dict(record)},
+        {"run_id": run_id, "kind": kind, "gate": gate, "record": dict(record)},
     )
 
 
@@ -65,7 +65,10 @@ def archive_ended_run(
         raise runs.CrewError("cleanup refuses a symlinked run directory")
     pending = cleanup_path(run_id)
     if not source.is_dir() and not destination.is_dir():
-        pending.unlink(missing_ok=True)
+        if pending.exists():
+            pending.unlink()
+            if report_removals:
+                print(f"removed cleanup receipt {pending}", file=sys.stderr, flush=True)
         return {}
     try:
         intent = json.loads(pending.read_text())
@@ -100,6 +103,14 @@ def archive_ended_run(
     return {"run_archived": str(destination)}
 
 
+def _read_cleanup_intent(path: Path) -> dict[str, Any]:
+    payload = json.loads(path.read_text())
+    run_id = str(payload["run_id"])
+    if path != cleanup_path(run_id) or payload["record"].get("run_id") != run_id:
+        raise runs.CrewError("cleanup receipt does not name its own run")
+    return payload
+
+
 def sweep_ended_runs(
     *, limit: int = 20, repo: Path | None = None
 ) -> list[dict[str, Any]]:
@@ -117,15 +128,19 @@ def sweep_ended_runs(
     if not root.is_dir():
         return []
     result = []
-    # Directory iteration stops at the slice bound; it does not stat archived
-    # runs or inspect the historical ledger population.
-    for examined, path in enumerate(root.iterdir()):
-        if examined >= limit:
-            break
-        if path.suffix != ".json":
-            continue
+    cursor = runs.crew_home() / "cleanup-cursor.json"
+    try:
+        after = str(json.loads(cursor.read_text()).get("after") or "")
+    except (OSError, ValueError):
+        after = ""
+    paths = sorted(root.glob("*.json"))
+    candidates = [path for path in paths if path.name > after] or paths
+    # Only the pending queue is listed; archived run directories and the
+    # historical ledger are outside this traversal. The cursor gives a
+    # withheld operation no power to starve later cleanup intents.
+    for path in candidates[:limit]:
         try:
-            payload = json.loads(path.read_text())
+            payload = _read_cleanup_intent(path)
             record = payload["record"]
             if (
                 repo is not None
@@ -137,11 +152,22 @@ def sweep_ended_runs(
                 if runs.pointer_path(run_id).exists():
                     result.append({"run_id": run_id, "withheld": "live pointer"})
                     continue
-                gate = "" if payload.get("kind") == "discarded" else "passed"
+                gate = str(payload.get("gate") or "passed")
+                if payload.get("kind") == "discarded":
+                    gate = ""
+                retention = record.get("worktree_retention")
                 release = _release_run_workspace(
-                    record, gate=gate, report_removals=True
+                    record,
+                    retention if isinstance(retention, Mapping) else None,
+                    gate=gate,
+                    report_removals=True,
                 )
                 result.append({"run_id": run_id, **release})
         except (OSError, ValueError, KeyError, runs.CrewError) as exc:
             result.append({"path": str(path), "withheld": str(exc)})
+    if candidates:
+        last = candidates[min(limit, len(candidates)) - 1]
+        runs._write_json(
+            cursor, {"after": last.name if len(candidates) > limit else ""}
+        )
     return result

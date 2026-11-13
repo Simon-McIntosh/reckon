@@ -1437,9 +1437,13 @@ def _complete_locked(
                 path = pointer_path(run_id)
                 from reckon.crew.terminal_cleanup import queue_cleanup
 
-                queue_cleanup(record, kind="promoted", gate=str(gate))
-                _remove_promoted_pointer_or_defer(run_id, record)
                 retention = existing.get("worktree_retention")
+                queue_cleanup(
+                    {**record, "worktree_retention": retention},
+                    kind="promoted",
+                    gate=str(gate),
+                )
+                _remove_promoted_pointer_or_defer(run_id, record)
                 release = _release_after_promotion(
                     run_id,
                     record,
@@ -2118,7 +2122,11 @@ def _complete_locked(
         capture = capture_run_session(record)
         from reckon.crew.terminal_cleanup import queue_cleanup
 
-        queue_cleanup(record, kind="promoted", gate=str(gate))
+        queue_cleanup(
+            {**record, "worktree_retention": worktree_retention},
+            kind="promoted",
+            gate=str(gate),
+        )
         _remove_promoted_pointer_or_defer(run_id, record)
         release = _release_after_promotion(
             run_id,

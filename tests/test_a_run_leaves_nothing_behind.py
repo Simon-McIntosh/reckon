@@ -48,10 +48,10 @@ def _assert_retired(run):
 def test_landing_retires_the_entire_run(tmp_path, monkeypatch):
     run = _run(tmp_path, monkeypatch)
     result = _complete_land(run)
-    assert result.exit_code == 0, result.output
     report = json.loads(result.output)
     assert report["steps"]["land"]["pushed"] is True
     _assert_retired(run)
+    assert result.exit_code == 0, result.output
 
 
 def test_discard_retires_the_entire_run(tmp_path, monkeypatch):
@@ -99,13 +99,16 @@ def test_recoverable_run_keeps_its_workspace(tmp_path, monkeypatch, status):
     assert result["scratch_withheld"] == "run retained for recovery"
 
 
+@pytest.mark.parametrize("gate", ["passed", "not-run"])
 def test_sweep_recovers_a_crash_after_the_end_was_recorded(
-    tmp_path, monkeypatch, capsys
+    tmp_path, monkeypatch, capsys, gate
 ):
     run = _run(tmp_path, monkeypatch)
     git(run["repository"], "merge", "--ff-only", run["head"])
     record = runs.read_pointer(run["run_id"])
-    terminal_cleanup.queue_cleanup(record, kind="promoted", gate="passed")
+    if gate == "not-run":
+        Path(record["manifest_path"]).write_text("node: node-a\nstatus: blocked\n")
+    terminal_cleanup.queue_cleanup(record, kind="promoted", gate=gate)
     runs.pointer_path(run["run_id"]).unlink()
     rows = terminal_cleanup.sweep_ended_runs(limit=1)
     assert rows[0]["worktree_released"]
@@ -116,9 +119,27 @@ def test_sweep_recovers_a_crash_after_the_end_was_recorded(
     assert str(terminal_cleanup.cleanup_path(run["run_id"])) in output
 
 
-def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
+def test_a_withheld_cleanup_does_not_starve_the_next_slice(tmp_path, monkeypatch):
     run = _run(tmp_path, monkeypatch)
+    git(run["repository"], "merge", "--ff-only", run["head"])
+    record = runs.read_pointer(run["run_id"])
+    live = {"run_id": "live-held", "repo": str(run["repository"])}
+    runs._write_json(runs.pointer_path(live["run_id"]), live)
+    terminal_cleanup.queue_cleanup(live, kind="promoted", gate="passed")
+    terminal_cleanup.queue_cleanup(record, kind="promoted", gate="passed")
     runs.pointer_path(run["run_id"]).unlink()
+    assert terminal_cleanup.sweep_ended_runs(limit=1)[0]["withheld"] == "live pointer"
+    assert runs.pointer_path(live["run_id"]).is_file()
+    assert run["worktree"].is_dir()
+    assert terminal_cleanup.sweep_ended_runs(limit=1)[0]["worktree_released"]
+    _assert_retired(run)
+
+
+def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
+    from tests.test_crew_gc import repository
+
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
+    repo = repository(tmp_path)
     # Historical runs have already ended and are archived by their own
     # operations. The positive control is five live directories the gc
     # extraction reader must actually visit.
@@ -127,7 +148,7 @@ def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
         directory.mkdir(parents=True)
         (directory / "end.json").write_text("{}")
     live = runs.runs_dir()
-    run["directory"].rename(terminal_cleanup.archive_dir(run["run_id"]))
+    live.mkdir(parents=True)
     names = {f"live-{index}" for index in range(5)}
     for name in names:
         directory = live / name
@@ -138,16 +159,30 @@ def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
     from reckon.crew import fleet_supervisor
 
     visited = []
+    archive_reads = []
+    archive_root = terminal_cleanup.archive_dir("ended-0").parent
+    real_stat = Path.stat
     original = fleet_supervisor.run_directory_source_trees
 
     def observe(directory):
         visited.append(directory)
         return original(directory)
 
+    def observe_stat(path, *args, **kwargs):
+        if path == archive_root or archive_root in path.parents:
+            archive_reads.append(path)
+        return real_stat(path, *args, **kwargs)
+
     monkeypatch.setattr(fleet_supervisor, "run_directory_source_trees", observe)
-    gc.garbage_collect(repo=run["repository"], project="fixture")
+    monkeypatch.setattr(Path, "stat", observe_stat)
+    gc.garbage_collect(repo=repo, project="fixture")
     assert {path.name for path in visited} == names
     assert len(visited) == 5
+    assert archive_reads == []
+    # The same observer must see a known archived directory before its empty
+    # reading can establish that the gc left history untouched.
+    terminal_cleanup.archive_dir("ended-0").stat()
+    assert archive_reads == [archive_root / "ended-0"]
 
 
 def test_discard_of_an_unlaunched_request_creates_no_run_home(tmp_path, monkeypatch):
