@@ -1,0 +1,92 @@
+<section data-reckon="evidence" data-node="ready-work-is-never-stuck-behind-t-s31">
+  <h2 id="ready-work-is-never-stuck-behind-t-s31-heading">A promoted run never re-enters the queue</h2>
+
+  <p id="ready-work-is-never-stuck-behind-t-s31-change">Both write-backs an
+  admission pass can use to republish a request —
+  <code>_restore_queued</code> and the failed-launch requeue — write through
+  <code>_writeback_pointer</code>, which holds
+  <code>runs._pointer_lock</code> and calls
+  <code>_require_live_writeback</code>
+  (<code>reckon/crew/admission/launching.py</code>, re-exported by
+  <code>reckon/crew/queue_admission.py</code>). That guard reads the run's
+  promotion record through <code>runs._promoted_record_project</code> before it
+  looks at pointer presence, and raises <code>_PointerWritebackError</code>
+  naming the promotion when a record exists, or naming the removed pointer when
+  the file has gone. The refusal is recorded once in the pass's verdicts, and
+  the request is neither requeued nor reported as stalled. The failure
+  annotation path (<code>_record_queued_failure</code>) that runs before
+  restoration carries the same check inside its annotate closure.</p>
+
+  <p id="ready-work-is-never-stuck-behind-t-s31-reconstruct">Which write-back
+  recreated the recorded pointer is read from the failure fields. A reaper's
+  mark writes <code>launch_failures</code> and phase <code>launch-failed</code>;
+  neither is on the recorded pointer. It carries <code>failure</code>,
+  <code>failure_at</code>, <code>failure_attempts</code> and the
+  <code>failure_guard</code> shape that <code>_holds._stamp_failure</code>
+  writes, and a queue phase in place of any argv — what
+  <code>_restore_queued</code> produces. So the recreating write is a
+  restoration, and the failed-launch requeue is the second route the guard
+  closes. The guard does not depend on which of the two wrote: both pass
+  through it.</p>
+
+  <p id="ready-work-is-never-stuck-behind-t-s31-verify">The guard and the
+  regression file both exist at the base revision, so this node verified the
+  behaviour rather than reimplementing it. The regression file drives real
+  admission passes over a temporary crew home, and writes the promotion
+  <em>during</em> the launch attempt — after the pass has read its queue, which
+  is the window the incident came through.</p>
+
+  <h3 id="ready-work-is-never-stuck-behind-t-s31-arms">Measured</h3>
+
+  <table id="ready-work-is-never-stuck-behind-t-s31-table">
+    <caption>Every arm is a log whose first line names its revision, tree and
+    command and whose last line reads <code>EXIT=&lt;code&gt;</code>.</caption>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>node regression file, base tree</td>
+        <td><code>4d5c4389b7</code>, worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>negative control: promotion reading removed at import,
+        pointer-presence refusal kept</td>
+        <td><code>4d5c4389b7</code> + runtime mutation</td>
+        <td>3 failed, 2 passed, <code>EXIT=1</code> —
+        <code>test_a_launch_failure_after_promotion_is_not_written_back</code>
+        fails in both parametrisations</td></tr>
+      <tr><td>promotion suite (staged-write inventory), base tree</td>
+        <td><code>4d5c4389b7</code>, worktree</td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>node regression file, head</td>
+        <td><code>7b7e1387</code>, worktree</td>
+        <td>5 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>promotion suite (staged-write inventory), head</td>
+        <td><code>7b7e1387</code>, worktree</td>
+        <td>51 passed, <code>EXIT=0</code></td></tr>
+      <tr><td>importer sweep, two attempts</td>
+        <td><code>4d5c4389b7</code>, worktree</td>
+        <td><code>EXIT=124</code> both times — host load average near 60 during
+        the node, so the 82-file sweep did not reach its summary within its
+        bounded budget</td></tr>
+    </tbody>
+  </table>
+
+  <p id="ready-work-is-never-stuck-behind-t-s31-negative">The negative control
+  replaces <code>launching._require_live_writeback</code> at import with a
+  function that keeps the pointer-presence refusal and drops the promotion
+  reading. The first case then fails both ways: with the pointer left in place
+  the promoted pointer is rewritten (<code>a promoted pointer was rewritten</code>),
+  and with it removed the verdict detail reads
+  <code>live pointer for 'r-promoted' was removed</code> rather than naming the
+  promotion. The third failure is the requeue case's promotion arm, whose
+  verdict detail loses the promotion. The still-queued case and the removed arm
+  of the requeue case keep passing, which shows the guard was narrowed and not
+  disabled.</p>
+
+  <p id="ready-work-is-never-stuck-behind-t-s31-scope">The importer clause is
+  carried by the tree rather than by a completed sweep: this node's only changed
+  path is this fragment, so no source or test file an importer executes differs
+  from the base revision, and the two arms are byte-identical. The coordinator
+  can settle it with <code>git diff --stat 4d5c4389b7..HEAD</code>. Write paths
+  were the node's fragment and <code>reckon/crew/queue_admission.py</code>; no
+  product source change was needed, and the coordinator owns integration and
+  plan closure.</p>
+</section>
