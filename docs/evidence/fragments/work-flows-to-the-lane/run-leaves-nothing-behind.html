@@ -10,9 +10,9 @@
   <meta name="plan-summary" content="Terminal cleanup archives released deliveries, preserves recoverable work, and has bounded crash recovery; a live backstop archived 34 gc-prunable run directories.">
   <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s34">
-  <meta name="plan-commits" content="f301bde50286f3736c76fc4ed7f99d0100fdd334,a3b19408d40a842150624aff31d1c08975f46542,3c523e95f103a95969e3f36266c8b410ac6a69bc,7148cd0949d469f9d86a57a7e21bc36750e740c1,216e328628a2cb1db9403d470e55f1c2403e7d27,a6792d1de1323895bd0439b5b17b972a9adf22d9">
+  <meta name="plan-commits" content="f301bde50286f3736c76fc4ed7f99d0100fdd334,a3b19408d40a842150624aff31d1c08975f46542,3c523e95f103a95969e3f36266c8b410ac6a69bc,7148cd0949d469f9d86a57a7e21bc36750e740c1,216e328628a2cb1db9403d470e55f1c2403e7d27,a6792d1de1323895bd0439b5b17b972a9adf22d9,8646b869bf8ed924f9485eb4e240516811516fd7,6ea2e0fb758da980da364b8fac24b7961299de69">
   <meta name="plan-recorded-at" content="2026-11-13">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="recorded">
   <title>A run leaves nothing behind when it ends | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
@@ -85,18 +85,21 @@
   ledgered runs with live pointers and 307 other protected/recent directories. It changed no removal
   policy and does not claim the historical backlog is gone.</p>
   <p id="run-leaves-nothing-behind-gc-time">The full reckon repository gc dry run completed after the backstop in <strong>1001.291 s</strong>, with <code>dryrun EXIT=0</code>. Earlier probes exceeded a 600 s bound or were stopped after their stacks exposed the unnecessary live-worktree history comparisons. The final trace also records the remaining cost of inspecting unclaimed worktrees and protected historical directories; this result is a completed timing, not a claim that the whole legacy pass is fast.</p>
-  <h3 id="run-leaves-nothing-behind-remaining">Remaining gate and durable records</h3>
+  <h3 id="run-leaves-nothing-behind-remaining">Verification receipts and durable records</h3>
   <p>The first final arm at <code>55457e5862a4c94d254a2ba117f8f8abf5cbc53b</code> reported
   <code>2 failed, 60 passed in 17.52s</code>. One failure exposed a missing ledger parent directory
   in the strengthened population fixture, before gc ran. The fixture now creates that directory
-  through the ledger's path resolver. The other failure is the ungranted census entry below.
+  through the ledger's path resolver. The other failure was the missing census entry below.
   <code>after-final.log</code> preserves both failures; the final manifest records the subsequent arm.</p>
-  <p id="run-leaves-nothing-behind-census">The required staged-write census correctly reports the new directory-relocation owner <code>("reckon/crew/terminal_cleanup.py", "archive_ended_run")</code>. Its explicit owner list needs a five-line entry, prepared in <code>staged-inventory.patch</code> and checked with <code>git apply --check</code>. The suite contract names <code>tests/test_staged_write_inventory.py</code>, but the write fence grants only the dedicated new test, so that edit remains pending a path grant. No guard has been weakened or bypassed. The final armed receipt and worker status in the manifest expose this unresolved census gate.</p>
+  <p id="run-leaves-nothing-behind-census">The required staged-write census correctly reports the new directory-relocation owner <code>("reckon/crew/terminal_cleanup.py", "archive_ended_run")</code>. The resumed scope grant permits its five-line owner entry in <code>tests/test_staged_write_inventory.py</code>, applied from the checked patch and committed at <code>6ea2e0fb758da980da364b8fac24b7961299de69</code>. The entry explains why moving an intact directory belongs to this operation rather than the single-file writer. Ruff check and format check pass on the changed test. The census retains its explicit inventory assertion.</p>
   <p>The armed after command is
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_run_leaves_nothing_behind.py tests/test_staged_write_inventory.py</code>.
   It runs after this evidence commit. The manifest records the actual final full SHA, resolved command,
-  module path, working directory, summary and exit receipt. Importer arms run on <code>all_debug</code>
-  with at most four pytest workers, one arm at a time.</p>
+  module path, working directory, summary and exit receipt. A fresh importer comparison at the same
+  final head follows the armed gate, against the preserved base receipt. Both run on
+  <code>all_debug</code> with at most four pytest workers, one arm at a time; their definitive results
+  are in <code>scope-granted-after.log</code>, <code>scope-granted-importers.log</code> and
+  <code>scope-granted-importer-delta.json</code>, written after this evidence commit.</p>
   <p>Logs and measurement records live under
   <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T023226263467-run-leaves-nothing-behind/</code>:
   <code>baseline-fixed.log</code>, <code>baseline-fixed-importers.log</code>,
