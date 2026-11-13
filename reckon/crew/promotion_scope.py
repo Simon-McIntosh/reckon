@@ -794,6 +794,20 @@ def _repository_tree_boundary_violations(
             if isinstance(tree, Mapping) and str(tree.get("path") or "")
         ]
     declared = (record.get("node") or {}).get("write_paths") or ()
+    if own_tree is not None:
+        from reckon.crew.promotion_evidence import _merge_repair_scope
+
+        head = _resolve_commit(own_tree, "HEAD", strict=True)
+        repaired_scope = (
+            _merge_repair_scope(record, tree=own_tree, head=head) if head else None
+        )
+        if repaired_scope is not None:
+            outside = _outside_declared_scope(
+                repaired_scope.paths, declared, record=record, tree=own_tree
+            )
+            declared = tuple(
+                path for path in repaired_scope.paths if path not in outside
+            )
     declared_roots = _repository_scope_paths(
         declared,
         worktree=own_tree if own_tree is not None else repository,
