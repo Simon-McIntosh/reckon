@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-unreconciled-count-leaves-out-runs-whose-own-review-is-i">
+  <meta name="plan-title" content="The unreconciled count leaves out runs whose own review is in flight">
+  <meta name="plan-summary" content="The closure drain counted a delivered run whose own review or repair round was still working, because the run carried no closure disposition yet. Both drain entry points now build their rows through one builder that excuses a run whose own review or repair is live, and the working review or repair run itself; a request the lane has only queued stays counted. Focused gate at head: 53 passed (EXIT=0). Base arm at af288e1 over the same files: 51 passed (EXIT=0). Negative control, the head test against the base modules under the same fixture, fails both cases (EXIT=1) with the count reading 5 and 4 where the head reads 1 and 0.">
+  <meta name="plan-evidence-for" content="crew-observability-truth">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-tags" content="crew,obligations,closure,drain,review,repair">
+  <title>the unreconciled count leaves out runs whose own review is in flight | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" data-node="the-unreconciled-count-leaves-out-runs-whose-own-review-is-i" data-reckon="landed" data-when="2026-11-13">
+  <h2>The unreconciled count counts only runs a coordinator can act on now</h2>
+  <p><strong>Landed.</strong> <code>reckon/crew/runs.py</code> gains <code>_in_flight_round_ids</code> and <code>_closure_rows</code>, and both <code>drain</code> and <code>drain_unreconciled_by_session</code> build their rows through the latter. A run whose own review is working, recognised by the reflex's own <code>_review_in_flight</code> rule over the view's snapshot, and a run whose repair round is working, recognised by the minted <code>repair-of-</code> node id read back through <code>round_node_source</code>, no longer count as unreconciled. The working review or repair run itself is left out too. Rows stay in the payload and carry <code>in_flight: true</code>, so a reader still sees the run and why it is not counted. A request the lane has only queued is not working yet and keeps the count a parked request always has.</p>
+  <p><strong>Focused gate.</strong> <code>tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py</code> with <code>tests/test_staged_write_inventory.py</code> reads 53 passed at <code>EXIT=0</code> on <code>all_debug</code> (job 1313268). The same files at base revision <code>af288e1</code> read 51 passed at <code>EXIT=0</code>, so the change adds no failure against the base revision; the two-file difference is the new test file absent from the base arm.</p>
+  <p><strong>Negative control.</strong> The declared mutation is the base revision under the same fixture, where every live pointer is counted. With the head test file copied into a detached worktree at <code>af288e1</code>, both cases fail at <code>EXIT=1</code> — the first reads 5 where the head reads 1, the second reads 4 where the head reads 0 — naming <code>test_a_review_and_a_repair_in_flight_are_not_counted</code> and <code>test_the_count_follows_the_live_pointer_not_the_run</code>.</p>
+</article>
+</body>
+</html>
