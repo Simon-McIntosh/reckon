@@ -203,3 +203,44 @@ def test_a_batch_entry_carries_its_done_when_test(batch_repo: Path) -> None:
 
     assert result["queued"] == 3
     assert result["refused"] == 2
+
+
+def test_an_entry_that_gave_its_own_write_paths_is_not_re_asked_for_them(
+    batch_repo: Path,
+) -> None:
+    """A release re-derives only the fields the request took from the section.
+
+    The entry that supplied its own write paths carries no mark on them, so the
+    release never reads the write-paths sentence for it — and a described test
+    the sentence cannot resolve cannot refuse that release. The section read is
+    still the authority for the field the entry did take, and a request that
+    did take its write paths is still refused when the sentence cannot be
+    resolved.
+    """
+    from reckon.crew.plan_review import _digest
+
+    stored = {"done_when": "the old three check", "write_paths": ["custom/own.py"]}
+
+    values, digests = dispatch_batch.rederived_section_fields(
+        project=PROJECT,
+        plan=PLAN,
+        section="s3",
+        repo_root=batch_repo,
+        marked={"done_when": _digest("the old three check")},
+        stored=stored,
+    )
+    assert set(values) == {"done_when"}
+    assert values["done_when"].endswith("the three check passes.")
+    assert "write_paths" not in digests
+
+    # A request that did take its write paths from the section still gets the
+    # sentence read, and the ambiguous description still refuses it.
+    with pytest.raises(dispatch_batch.BatchEntryRefusedError):
+        dispatch_batch.rederived_section_fields(
+            project=PROJECT,
+            plan=PLAN,
+            section="s3",
+            repo_root=batch_repo,
+            marked={"write_paths": _digest(["three.py"])},
+            stored=stored,
+        )

@@ -532,7 +532,13 @@ def rederived_section_fields(
     from reckon.crew.plan_review import _digest
 
     read = _PlanRead(project, plan, Path(repo_root))
-    derivation = section_derivation(read, section)
+    # Only a field the request took from the section is re-derived, so a
+    # request that supplied its own write paths is never asked to read the
+    # write-paths sentence: a described test it cannot resolve must not refuse
+    # a release that was never going to use that field.
+    derivation = section_derivation(
+        read, section, derive_write_paths="write_paths" in marked
+    )
     values: dict[str, Any] = {}
     digests: dict[str, dict[str, str]] = {}
     for name, stored_digest in marked.items():
