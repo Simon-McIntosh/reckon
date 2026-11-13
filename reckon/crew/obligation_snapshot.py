@@ -1044,8 +1044,8 @@ def _with_unreadable_records(rows: Any, findings: Any) -> list[dict[str, Any]]:
 # and a hold, a refusal or a blocked row names state the run's record still
 # carries after its pointer is gone. A missing pointer says nothing about any
 # of them, and hiding one on a ``stat`` would be a silent omission rather than
-# a settlement. A ``review-missing`` row is the one exception, and it is
-# settled on more than the ``stat``: see :data:`REVIEW_MISSING_DUTY_KIND`.
+# a settlement. The review duties are the exception, and each is settled on
+# more than the ``stat``: see :data:`REVIEW_DUTY_KINDS`.
 LIVE_POINTER_DUTY_KINDS = frozenset(
     {"landing-refused", "review-ready", "promotable-stale"}
 )
@@ -1065,12 +1065,18 @@ QUEUED_POINTER_DUTY_KINDS = frozenset(
     {"run-queued", "queued-awaiting-session", "queued-contract-refused"}
 )
 
-# The duty of a run whose current head is owed a review, and the two facts that
-# settle it at the answer's own read time. A station can hold an answer for
-# minutes, and both facts move inside them: the run releases its live pointer
-# when it lands or ends, leaving no tree to review, and its pointer records a
-# dispatch when a review of that head is started, leaving nothing missing.
+# The duties of a run whose current head is owed a review, and the two facts
+# that settle them at the answer's own read time. A station can hold an answer
+# for minutes, and both facts move inside them: the run releases its live
+# pointer when it lands or ends, leaving no tree to review, and its pointer
+# records a dispatch when a review of that head is started, leaving nothing
+# missing. A ``review-queued`` row is the same duty in its wait -- the lane
+# refused one attempt as paused, or accepted a review run it has not launched --
+# so it is settled by the same two facts, as is a queued row whose review the
+# reflex has since dispatched.
 REVIEW_MISSING_DUTY_KIND = "review-missing"
+REVIEW_QUEUED_DUTY_KIND = "review-queued"
+REVIEW_DUTY_KINDS = frozenset({REVIEW_MISSING_DUTY_KIND, REVIEW_QUEUED_DUTY_KIND})
 
 # The pointer fields that record a review dispatch, one per rubric: a figure
 # review is recorded beside the text review rather than in its place. Spelled
@@ -1137,9 +1143,11 @@ def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
     A dispatch entry is written for every attempt, so only the status
     ``dispatched`` stands for a review that was started: a refusal, a skip or a
     withdrawal leaves the review still owed, and those are the entries a duty
-    must keep naming. An entry that records no head speaks for any head the
-    duty names, because the dispatch was composed before the figure existed;
-    ``head`` unknown on the duty's side is read the same way.
+    must keep naming. The entry must also name the head the duty names: an
+    entry recording no head cannot be shown to cover this duty's head, and
+    neither can one whose head the duty does not carry, so both keep the duty.
+    Reading a headless entry as covering every head would settle a duty on a
+    dispatch that may have read a different revision entire.
     """
     for field in REVIEW_DISPATCH_FIELDS:
         entry = document.get(field)
@@ -1150,14 +1158,16 @@ def _review_dispatch_for_head(document: Mapping[str, Any], head: Any) -> bool:
         if not str(entry.get("run_id") or ""):
             continue
         dispatched_head = entry.get("head")
-        if head and dispatched_head and not _same_revision(head, dispatched_head):
+        if not head or not dispatched_head:
+            continue
+        if not _same_revision(head, dispatched_head):
             continue
         return True
     return False
 
 
 def _review_duty_survives_read(row: Mapping[str, Any]) -> bool:
-    """Whether a ``review-missing`` row still holds at this read.
+    """Whether a review duty still holds at this read.
 
     False when the run has no live pointer, or when that pointer records a
     review dispatched for the head the duty names. An unreadable pointer keeps
@@ -1192,11 +1202,12 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
     stalled out has left that phase even though its pointer is alive, so the
     row is dropped on the phase rather than on the pointer's existence.
 
-    A ``review-missing`` row is settled on either of two facts read now: the
-    run has released its live pointer, so no tree is left to review; or that
-    pointer records a review dispatched for the head the duty names, so the
-    review is no longer missing. A review owed is owed against a tree that
-    still exists and that no dispatch has yet read.
+    A review duty -- ``review-missing`` or ``review-queued`` -- is settled on
+    either of two facts read now: the run has released its live pointer, so no
+    tree is left to review; or that pointer records a review dispatched for the
+    head the duty names, so the review is neither missing nor still waiting. A
+    review owed is owed against a tree that still exists and that no dispatch
+    has yet read.
 
     A duty of any other kind is kept, whatever its pointer state: its evidence
     is a ledger record or nothing at all -- a hold, a refusal, a blocked run or
@@ -1224,11 +1235,7 @@ def without_departed_run_duties(payload: Mapping[str, Any]) -> dict[str, Any]:
         ):
             dropped = True
             continue
-        if (
-            run_id
-            and kind == REVIEW_MISSING_DUTY_KIND
-            and not _review_duty_survives_read(row)
-        ):
+        if run_id and kind in REVIEW_DUTY_KINDS and not _review_duty_survives_read(row):
             dropped = True
             continue
         if run_id and kind in QUEUED_POINTER_DUTY_KINDS:

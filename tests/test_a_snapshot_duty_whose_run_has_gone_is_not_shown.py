@@ -97,9 +97,11 @@ def follower(config_home: Path):
         yield
 
 
-def _review_duty(*, run_id: str, node: str, head: str = _REVIEW_HEAD) -> dict:
+def _review_duty(
+    *, run_id: str, node: str, head: str = _REVIEW_HEAD, kind: str = "review-missing"
+) -> dict:
     return {
-        "kind": "review-missing",
+        "kind": kind,
         "run_id": run_id,
         "node": node,
         "plan": "fixture-plan",
@@ -356,3 +358,94 @@ def test_the_settlement_recomputes_the_summary(config_home: Path) -> None:
 
     assert [row["run_id"] for row in settled["obligations"]] == [""]
     assert settled["summary"]["count"] == 1, settled["summary"]
+
+
+def test_a_queued_review_duty_settles_the_same_way(config_home: Path) -> None:
+    """A review waiting in the lane is owed only while the run it names is there.
+
+    The queued reading is the missing reading inside a wait -- a refusal the
+    reflex retries, or a review run the lane has not launched -- so the same two
+    facts end it: a departed run leaves nothing to review, and a dispatch
+    recorded for the head means the wait is over. A refusal still standing on
+    the pointer, or a run still holding its pointer with no dispatch, keeps the
+    row.
+    """
+    _write_pointer(
+        DISPATCHED_RUN_ID,
+        phase="working",
+        review_dispatch={
+            "status": "dispatched",
+            "run_id": REVIEW_RUN_ID,
+            "head": _REVIEW_HEAD,
+        },
+    )
+    _write_pointer(
+        STANDING_RUN_ID,
+        phase="working",
+        review_dispatch={
+            "status": "lane-paused",
+            "head": _REVIEW_HEAD,
+            "at": datetime.now(tz=UTC).isoformat(),
+        },
+    )
+    rows = [
+        _review_duty(
+            run_id=DEPARTED_RUN_ID, node="departed-review-node", kind="review-queued"
+        ),
+        _review_duty(
+            run_id=DISPATCHED_RUN_ID,
+            node="dispatched-review-node",
+            kind="review-queued",
+        ),
+        _review_duty(
+            run_id=STANDING_RUN_ID, node="standing-review-node", kind="review-queued"
+        ),
+    ]
+
+    assert [row["run_id"] for row in _settle_rows(rows)] == [STANDING_RUN_ID]
+
+
+def test_a_dispatch_without_a_recorded_head_keeps_the_duty(config_home: Path) -> None:
+    """An entry that names no head cannot be shown to cover this duty's head."""
+    _write_pointer(
+        DISPATCHED_RUN_ID,
+        phase="working",
+        review_dispatch={"status": "dispatched", "run_id": REVIEW_RUN_ID},
+    )
+    rows = [_review_duty(run_id=DISPATCHED_RUN_ID, node="dispatched-review-node")]
+
+    assert [row["run_id"] for row in _settle_rows(rows)] == [DISPATCHED_RUN_ID]
+
+
+def test_the_revision_spelling_mirror_agrees_with_its_owner() -> None:
+    """The mirror cannot drift from the rule it copies.
+
+    This file is loaded by path, so it may reach no derivation module and
+    carries its own spelling of the revision comparison. The comparison is
+    checked against the review-subject module's own over the same inputs, which
+    is what keeps a copy from quietly answering differently from the rule the
+    rest of the crew reads.
+    """
+    from reckon.crew.recovery_review_subject import same_revision as owner
+
+    full = "1234567890abcdef1234567890abcdef12345678"
+    cases = [
+        ("", ""),
+        ("", full),
+        (full, ""),
+        (full, full),
+        (full, full[:10]),
+        (full[:10], full),
+        (full.upper(), full),
+        (f"  {full[:8]}  ", full),
+        (full[:8], full[-8:]),
+        ("1234567890abcdef", "1234567890abcdee"),
+        ("not-a-sha", "not-a-sha"),
+        ("abc", "abcdef"),
+    ]
+
+    for left, right in cases:
+        assert obligation_snapshot._same_revision(left, right) == owner(left, right), (
+            f"the mirrored comparison diverges from the review-subject rule on "
+            f"{left!r} against {right!r}"
+        )

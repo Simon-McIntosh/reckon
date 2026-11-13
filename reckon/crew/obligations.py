@@ -2137,9 +2137,9 @@ def _review_duty_item(
     what a snapshot keeps for a run that has already departed, so a promotion
     or review duty it still names is settled at read time by
     :func:`reckon.crew.obligation_snapshot.without_departed_run_duties`: a
-    ready or stale row on a ``stat`` of the run's pointer, and a missing-review
-    row on that pointer's absence or on a review it records dispatched for the
-    head the duty names.
+    ready or stale row on a ``stat`` of the run's pointer, and a missing or
+    queued review row on that pointer's absence or on a review it records
+    dispatched for the head the duty names.
 
     A missing review whose most recent attempt the lane refused as paused reads
     review-queued while the refusal is inside its bound, naming when the lane
