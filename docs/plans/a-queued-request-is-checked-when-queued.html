@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -154,6 +154,9 @@
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261113T032941649617-ready-a-queued-request-is-checked-s5" data-who="reckon-build" data-when="2026-11-13T12:06:04.593Z">
     <div class="r-comment-body"><p>§5 re-verified at base 078f7c80: the launch-side claim view keeps a live same-run worktree (node gate 4 passed at base and at head af1f6e03e7), the declared mutation makes a duplicate launch release the tree into _trash (2 failed, 2 passed, EXIT=1; probe payload_ok=True with trash entry sample-20261113T114420871767Z), and a foreign-host pointer stays a claim. No product change was required; the guard landed at b1cfbd7d30.</p></div>
 </div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261113T140733887352-review-of-ready-a-queued-request-is-checked-s5-b1a0691d6b13" data-who="reckon-build" data-when="2026-11-13T14:36:11.687Z">
+    <div class="r-comment-body"><p>Review of r-20261113T032941649617-ready-a-queued-request-is-checked-s5 at head b1a0691d6b from base 078f7c80 reports six parsed scores (goal_fidelity 16, evidence 17, scope_discipline 18, durability 18, fit 19, reuse 20, total 108) with no blocking finding and two non-blocking findings on the evidence fragment&#x27;s duplication and its unrecorded ruff claim.</p></div>
+</div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T192115481089-review-of-batch-request-editable-in-queue-f83af26ed25b" data-who="reckon-build" data-when="2026-11-07T19:42:02.753Z">
     <div class="r-comment-body"><p>§6 review — run r-20261107T174751033780-batch-request-editable-in-queue at head f83af26ed25b against base 25dd5d75d1a3 scores goal_fidelity 17, evidence 17, scope_discipline 15, durability 17, fit 17, reuse 14 (total 97); four non-blocking findings, no added failures, and both declared records pass crew check --review (EXIT=0).</p></div>
 </div>
@@ -203,7 +206,7 @@
     <div class="r-comment-body"><p>Independent review of r-20261113T034208853104-ready-a-queued-request-is-checked-s8 at head 15cbd88ddcc3 against base 4d5c4389b7: scores goal_fidelity 16, evidence 14, scope_discipline 19, durability 16, fit 14, reuse 20, added failures 0, three non-blocking findings (section label in the fragment filename, suite arms measuring an obligations-free file, an unlogged ruff claim) and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261113T034208853104-ready-a-queued-request-is-checked-s8" data-who="reckon-build" data-when="2026-11-13T10:15:56.830Z">
-    <div class="r-comment-body"><p>§8 is already satisfied at base 4d5c4389b7 — a queued request whose pointer carries a node-contract refusal yields the actionable `queued-contract-refused` row naming the refusal&#x27;s property names and its edit-or-drop command (commit 77129c667f, arms completed in c5ccda2605); gate tests/test_a_refused_request_names_its_refusal.py 5 passed EXIT=0, negative control 2 failed / 3 passed EXIT=1, added failure count 0.</p></div>
+    <div class="r-comment-body"><p>§8 is already satisfied at base 4d5c4389b7 — a queued request whose pointer carries a node-contract refusal yields the actionable `queued-contract-refused` row naming the refusal's property names and its edit-or-drop command (commit 77129c667f, arms completed in c5ccda2605); gate tests/test_a_refused_request_names_its_refusal.py 5 passed EXIT=0, negative control 2 failed / 3 passed EXIT=1, added failure count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261109T000223570702-review-of-a-batch-derives-an-absolute-write-path-12b5f3d1ce37" data-who="reckon-build" data-when="2026-11-09T00:10:04.413Z">
     <div class="r-comment-body"><p>review of run r-20261108T232922624067-a-batch-derives-an-absolute-write-path at head 12b5f3d1ce37ce5b0a5e5736a47fbefa4ad175c1 against base cb1b92d1c2e6c76d0605ea228f2fdf5ca1ee594e scores goal_fidelity 16, evidence 17, scope_discipline 19, durability 15, fit 16, reuse 20 (total 103), adds no failing test, and records four findings — one blocking, that a './'-prefixed relative path now derives absolute at reckon/crew/dispatch_batch.py:309 — with both records passing crew check --review (EXIT=0).</p></div>
