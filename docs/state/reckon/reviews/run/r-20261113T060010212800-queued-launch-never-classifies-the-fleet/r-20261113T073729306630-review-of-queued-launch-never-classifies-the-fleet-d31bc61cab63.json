@@ -1,0 +1,123 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "failure_condition": "Restoring unconditional _recorded_backlog on admission dispatch produces a non-None mapping for the seeded overdue run and fails this identity assertion.",
+      "file": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+      "independent": true,
+      "line": 208
+    },
+    {
+      "failure_condition": "Restoring admission backlog persistence despite stored allow_unreconciled_runs=False produces a non-None mapping and fails this identity assertion.",
+      "file": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+      "independent": true,
+      "line": 269
+    }
+  ],
+  "assertion_independence": "Both new assertions read the stored run through runs.dispatch_field after a real admit_once call; neither fixture supplies the expected None to the code under test. Existing launch-success assertions prevent a vacuous pass through no launch. No other assertion changed.",
+  "call_site_count": 0,
+  "call_sites": [],
+  "completed_at": "2026-11-13T07:51:35Z",
+  "dispatched_at": "2026-11-13T07:41:43Z",
+  "failure_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_ignores_the_coordinator_backlog.py tests/test_a_queued_launch_never_classifies_the_fleet.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/repair-final-head.log",
+      "revision": "d31bc61cab6359d0ef9ac5e58a94707c18d22a3d"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_ignores_the_coordinator_backlog.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/repair-original-base.log",
+      "revision": "2c04e1a4da11c68694631b3297694c611bbad839"
+    },
+    "head_importer_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_split_keeps_its_surface.py tests/test_a_requeued_refusal_draws_no_dropped_row.py tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/repair-head-importers.log",
+      "revision": "f7b605922f14ea2d998187d1905ad9719b857ed1"
+    },
+    "original_importer_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_dispatch_split_keeps_its_surface.py tests/test_a_requeued_refusal_draws_no_dropped_row.py tests/test_a_queued_launch_ignores_the_coordinator_backlog.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/repair-original-importers.log",
+      "revision": "2c04e1a4da11c68694631b3297694c611bbad839"
+    },
+    "repair_baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_queued_launch_ignores_the_coordinator_backlog.py tests/test_a_queued_launch_never_classifies_the_fleet.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 1,
+      "failure_count": 2,
+      "failure_ids": [
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py::test_an_admission_launch_waives_its_coordinator_backlog",
+        "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py::test_the_stored_override_does_not_govern_the_admission_launch"
+      ],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T060010212800-queued-launch-never-classifies-the-fleet/repair-base.log",
+      "revision": "bd0fc739e4306993388458f248755abbc36294d2"
+    }
+  },
+  "findings": [],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "none: this repair changes tests and evidence only; no production caller reaches either addition.",
+    "diff": "Read f7b605922f14ea2d998187d1905ad9719b857ed1 and d31bc61cab6359d0ef9ac5e58a94707c18d22a3d against bd0fc739e4306993388458f248755abbc36294d2; only tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html change, with no production-code delta.",
+    "done_when": "Source resume-1-advice.txt requires answering the finding and a three-file comparison; repair-base.log records 2 failed/56 passed, repair-final-head.log records 58 passed, and the original-base/head suite pair records zero added failures.",
+    "goal": "Source prompt.txt:38 requires skipping admission backlog; the repair in tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 aligns two legacy assertions with that behavior and answers finding f5ea3f39c9c.",
+    "manifest": "Source manifest.md names both repair commits, acted f5ea3f39c9c, the final-head receipt, original-base suite pair and separately identified repair-base pair; their failure IDs and summaries agree with the logs.",
+    "write_paths": "Source repair-advice-4f7736447439b528.txt explicitly grants tests/test_a_queued_launch_ignores_the_coordinator_backlog.py; both changed paths match that extended scope and the existing evidence-fragment grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 would both fail if admission again persisted a backlog mapping; None is read from actual dispatch output rather than supplied as fixture input, and repair-negative-control.log restores the two reviewed failures when the answering test delta is reversed.",
+    "evidence": "docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html:29-30 matches the recorded reproduction, 58-pass repaired arm, 19-pass importer arms and reverse-commit control; repair-final-head.log names the exact reviewed head and ends EXIT=0.",
+    "fit": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 use the surrounding identity-check idiom at :243-245, and its updated docstrings explain runtime behavior without introducing forbidden names.",
+    "goal_fidelity": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 require absent admission backlog while the direct-dispatch checks at :231-233 remain unchanged, matching the explicit repair instruction.",
+    "reuse": "tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 extend existing admission tests and docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html:26 appends to the existing evidence owner; the diff adds no function, class, helper or module requiring a new capability owner.",
+    "scope_discipline": "The two-commit diff changes only the explicitly granted tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and the existing docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html, preserving every unrelated assertion."
+  },
+  "negative_control_caveat": "The repair control reverses test expectations; it demonstrates the answer to the review finding, rather than independently re-proving the production guard. Durability of the new assertions is assessed by reading against restoration of production backlog persistence; the original production control was covered by the prior review.",
+  "prior_finding_answer": "f5ea3f39c9c is answered by f7b605922f14ea2d998187d1905ad9719b857ed1; repair-base.log reproduces both TypeErrors, repair-final-head.log passes, and repair-negative-control.log restores precisely those failures.",
+  "production_context_examined": [
+    "reckon/crew/admission/launching.py:_launch_queued:314-350 at d31bc61cab6359d0ef9ac5e58a94707c18d22a3d",
+    "reckon/crew/dispatching/preparation.py:dispatch:484-496 at d31bc61cab6359d0ef9ac5e58a94707c18d22a3d"
+  ],
+  "production_context_note": "These are the runtime paths exercised by the tests, not production callers of this test/document-only delta.",
+  "project": "reckon",
+  "review_run_id": "r-20261113T073729306630-review-of-queued-launch-never-classifies-the-fleet-d31bc61cab63",
+  "review_scope": "Only the two commits gained after the prior review; no rescoring of the previously reviewed production implementation.",
+  "review_text": "VERDICT goal: Source prompt.txt:38 requires skipping admission backlog; the repair in tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 aligns two legacy assertions with that behavior and answers finding f5ea3f39c9c.\nVERDICT done_when: Source resume-1-advice.txt requires answering the finding and a three-file comparison; repair-base.log records 2 failed/56 passed, repair-final-head.log records 58 passed, and the original-base/head suite pair records zero added failures.\nVERDICT write_paths: Source repair-advice-4f7736447439b528.txt explicitly grants tests/test_a_queued_launch_ignores_the_coordinator_backlog.py; both changed paths match that extended scope and the existing evidence-fragment grant.\nVERDICT manifest: Source manifest.md names both repair commits, acted f5ea3f39c9c, the final-head receipt, original-base suite pair and separately identified repair-base pair; their failure IDs and summaries agree with the logs.\nVERDICT diff: Read f7b605922f14ea2d998187d1905ad9719b857ed1 and d31bc61cab6359d0ef9ac5e58a94707c18d22a3d against bd0fc739e4306993388458f248755abbc36294d2; only tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html change, with no production-code delta.\nCALL_SITES: none\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 require absent admission backlog while the direct-dispatch checks at :231-233 remain unchanged, matching the explicit repair instruction.\nSCORE evidence: 20\nJUSTIFICATION evidence: docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html:29-30 matches the recorded reproduction, 58-pass repaired arm, 19-pass importer arms and reverse-commit control; repair-final-head.log names the exact reviewed head and ends EXIT=0.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The two-commit diff changes only the explicitly granted tests/test_a_queued_launch_ignores_the_coordinator_backlog.py and the existing docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html, preserving every unrelated assertion.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 would both fail if admission again persisted a backlog mapping; None is read from actual dispatch output rather than supplied as fixture input, and repair-negative-control.log restores the two reviewed failures when the answering test delta is reversed.\nSCORE fit: 20\nJUSTIFICATION fit: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 use the surrounding identity-check idiom at :243-245, and its updated docstrings explain runtime behavior without introducing forbidden names.\nSCORE reuse: 20\nJUSTIFICATION reuse: tests/test_a_queued_launch_ignores_the_coordinator_backlog.py:208 and :269 extend existing admission tests and docs/evidence/fragments/work-flows-to-the-lane/queued-launch-never-classifies-the-fleet.html:26 appends to the existing evidence owner; the diff adds no function, class, helper or module requiring a new capability owner.",
+  "reviewed_base_sha": "bd0fc739e4306993388458f248755abbc36294d2",
+  "reviewed_commits": [
+    "f7b605922f14ea2d998187d1905ad9719b857ed1",
+    "d31bc61cab6359d0ef9ac5e58a94707c18d22a3d"
+  ],
+  "reviewed_head_sha": "d31bc61cab6359d0ef9ac5e58a94707c18d22a3d",
+  "reviewed_run_id": "r-20261113T060010212800-queued-launch-never-classifies-the-fleet",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:54:56.416713+00:00",
+  "total": 120
+}
