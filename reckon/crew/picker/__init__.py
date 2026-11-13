@@ -38,7 +38,7 @@ def _step_label(stage: str) -> str:
     (``state_render_ms`` reads ``state-render``) rather than keeping a list of
     the step names beside it.
     """
-    key = stage[:-3] if stage.endswith("_ms") else stage
+    key = stage.removesuffix("_ms")
     return key.replace("_", "-")
 
 
