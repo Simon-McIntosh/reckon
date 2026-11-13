@@ -30,6 +30,28 @@ class _LandedElsewhereError(Exception):
     """The selected run no longer needs a landing attempt here."""
 
 
+def _promoted_row_head(pointer: Mapping[str, Any], run_id: str) -> str:
+    """The revision the run's ledger row records it was promoted at, or "".
+
+    A row exists for a run that was promoted, discarded or refused, so the row
+    alone does not say the run has been promoted. ``promoted_revision`` does,
+    and it is the fact that makes this pass's landing attempt redundant: a
+    promoted run's landing is finished from the record that named its head.
+    """
+    project = str(pointer.get("project") or "")
+    repo = str(pointer.get("repo") or "")
+    row_path = ledger.run_path(project, run_id, ledger._run_ledger_root(project, repo))
+    if not row_path.is_file():
+        return ""
+    try:
+        row = json.loads(row_path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        raise CrewError(f"ledger row unreadable for {run_id!r}: {exc}") from exc
+    if not isinstance(row, Mapping) or row.get("run_id") != run_id:
+        raise CrewError(f"ledger row names a different run: {row_path}")
+    return str(row.get("promoted_revision") or "").strip()
+
+
 def _landed_elsewhere(pointer: Mapping[str, Any], run_id: str) -> bool:
     """Read current ownership, not the live-set snapshot used for selection."""
     try:
@@ -1882,13 +1904,20 @@ def land_once() -> dict[str, Any]:
             return {"landed": [], "obligations": [], "deferred": [], "busy": True}
         finished = pending_landing.finish_pending_landings()
         with plan_read_scopes():
-            result = _land_deliveries()
+            result = _land_deliveries(
+                settled_landings={
+                    str(row.get("run_id") or "")
+                    for row in finished
+                    if row.get("status") in ("finished", "already-landed")
+                }
+            )
     if finished:
         result["interrupted_landings"] = finished
     return result
 
 
-def _land_deliveries() -> dict[str, Any]:
+def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
+    settled_landings = settled_landings or set()
     landed: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
@@ -1919,13 +1948,12 @@ def _land_deliveries() -> dict[str, Any]:
         head, tree = recovery._review_head_and_tree(pointer)
         if not head:
             continue
-        # A run the ledger already holds a row for has been promoted, and this
-        # pass never lands a promoted run. Its landing is finished from the
-        # pending-landing record that named the head it cited, so reading this
-        # pointer's reviews would hold the run awaiting-review at whatever head
-        # a resume moved it to — a revision no review read, and an obligation
-        # nothing in this pass can answer.
-        if _landed_elsewhere(pointer, run_id):
+        # This pass just finished this run's landing at the head that landing
+        # cited, so nothing here lands it again. Reading this pointer's reviews
+        # would hold the run awaiting-review at whatever head a resume moved it
+        # to — a revision no review read, and an obligation no later pass can
+        # answer, because the run is already promoted.
+        if run_id in settled_landings and _promoted_row_head(pointer, run_id):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
         entries = classified.get("manifest_commits") or ()
