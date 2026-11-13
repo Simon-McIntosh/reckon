@@ -1,0 +1,73 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs: after_suite (logs/head-arm.log, revision c51bc8e846) records 0 FAILED ids and exit_status 0; baseline_suite (logs/base-arm.log, revision b6045ab33d) records 3 FAILED ids, all three in the new test file; the set difference is empty, so added_failure_count is 0. The regression confirmed in this review (tests/test_the_pane_speaks_seven_words.py) is outside both arms and is recorded as a FINDING, not as an added failure of the reviewed arms.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1265 (_remembered_word on a policy's printed carry)",
+    "reckon/crew_follow_commands.py:2740 (_display_state on live state rows)",
+    "reckon/crew_follow_commands.py:2810 (delivered-state compare in _follow_resume_output)",
+    "reckon/crew_follow_commands.py:2913 (_remembered_word on remembered states)",
+    "reckon/crew/ticker.py:1595 (stream_carries status-repair rule)",
+    "reckon/crew/ticker.py:1883 (RowPolicy start rule)"
+  ],
+  "completed_at": "2026-11-13T12:00:18.770Z",
+  "dispatched_at": "2026-11-13T11:39:05Z",
+  "findings": [
+    {
+      "file": "tests/test_the_pane_speaks_seven_words.py",
+      "line": "44",
+      "severity": "blocking",
+      "text": "blocking: `assert set(ticker.PANE_STATES) == WORDS` fails at head (with `_MAX_CELLS`/`_COUNT_FIELD` failures at lines 70-73), because this ticker-importing test still names `halted` and was neither updated nor run; the node's 47-file population misses it, promotion would land a red test, and it is reachable because WORDS is compared to the renamed PANE_STATES keys."
+    },
+    {
+      "file": "docs/evidence/fragments/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted.html",
+      "line": "24",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment states the population as `the 47 test files importing reckon/crew/ticker.py` while roughly 63 tests import it \u2014 a single-line grep missed multi-line `from reckon.crew import (... ticker ...)` blocks \u2014 so the coverage claim is false as written even after the failing file is repaired."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read six commits against base b6045ab33d; a38714d8bb renames the word, hue, carried set and letter and adds the one mapping and the new test, four commits move existing test literals, 186b4cd2b7 adds the evidence fragment; the group members and the _COUNT_FIELD event keys are unchanged.",
+    "done_when": "the done_when names a four-case test; tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:66,76,94,167 assert exactly those four, and logs/head-arm.log records 499 passed EXIT=0 against logs/base-arm.log 3 failed / 496 passed EXIT=1, but the population omits at least sixteen ticker-importing files, one of which now fails.",
+    "goal": "the node goal is for the pane to draw `needs you` where it drew `halted`, with `n` for that counter and one stored-word mapping; reckon/crew/ticker.py:1092 defines SUPERSEDED_PANE_WORDS and PANE_STATES/DISPLAY_HUE/STAT_LETTER/SKILL.md all carry the new word.",
+    "manifest": "read; status complete, it records the four-case gate 4 passed at head and 3 failed/1 passed at base, the negative control red at EXIT=1 with 2 failed/2 passed, and names four logs I confirmed on disk.",
+    "write_paths": "the declared paths are reckon/crew/ticker.py, skills/reckon-build/SKILL.md, tests/, the evidence fragment and a figures directory; the diff touches only paths inside that grant."
+  },
+  "justifications": {
+    "durability": "tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:66,76,94,167 redden at base and, for the third and fourth, under the empty-mapping control, but the rename leaves tests/test_the_pane_speaks_seven_words.py:44 red at head.",
+    "evidence": "the gate at tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py measures the four stated cases, but its 47-file population missed tests/test_the_pane_speaks_seven_words.py:44, which fails at head.",
+    "fit": "the rename reuses the PANE_STATES grouping and the _display_state reverse lookup at reckon/crew/ticker.py:1078 rather than adding a parallel reader, and introduces no forbidden name.",
+    "goal_fidelity": "reckon/crew/ticker.py:451,190,202,720 and skills/reckon-build/SKILL.md:510 carry the word, both theme hues, the letter and the legend, and line 1092 is the single mapping both word paths fall through.",
+    "reuse": "a search of reckon/crew/ticker.py and reckon/crew_follow_commands.py for an existing superseded-word or alias mapping found none to fork, and SUPERSEDED_PANE_WORDS plugs into the existing _display_state both paths already use.",
+    "scope_discipline": "every changed path is inside the declared grant, though tests/test_recovery_state_typing.py:67-160 carries reformatting beyond literal changes under the formatter policy."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is for the pane to draw `needs you` where it drew `halted`, with `n` for that counter and one stored-word mapping; reckon/crew/ticker.py:1092 defines SUPERSEDED_PANE_WORDS and both PANE_STATES (line 451) and DISPLAY_HUE in both themes (lines 190, 202) carry `needs you`, at head commit 186b4cd2b7ab6d3f1346cb04744928176417c252.\nVERDICT done_when: the done_when names a four-case test; tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:66,76,94,167 assert exactly those four, and logs/head-arm.log records 499 passed EXIT=0 against logs/base-arm.log 3 failed / 496 passed EXIT=1, but the 47-file population the arm ran omits at least sixteen test files that import reckon.crew.ticker, one of which now fails.\nVERDICT write_paths: the declared paths are reckon/crew/ticker.py, skills/reckon-build/SKILL.md, tests/, the evidence fragment and a figures directory; the diff touches ticker.py, SKILL.md, 29 test files and the fragment, every one inside the grant, with no plan meta, index or sprint state written.\nVERDICT manifest: read; status complete, it records the four-case gate 4 passed at head and 3 failed/1 passed at base, the negative control red at EXIT=1 with 2 failed/2 passed, and names four logs which I opened and confirmed.\nVERDICT diff: read six commits against base b6045ab33d1cbee2e9c41051623351442a098d18; a38714d8bb renames the word, hue, carried set and letter and adds the one mapping and the new test, four commits move existing test literals, 186b4cd2b7 adds the evidence fragment; the group members, the _COUNT_FIELD event keys and every membership-keyed rule are unchanged as the plan requires.\nCALL_SITES: reckon/crew_follow_commands.py:1265 (_remembered_word on a policy's printed carry), reckon/crew_follow_commands.py:2740 (_display_state on live state rows), reckon/crew_follow_commands.py:2810 (delivered-state compare in _follow_resume_output), reckon/crew_follow_commands.py:2913 (_remembered_word on remembered states), reckon/crew/ticker.py:1595 (stream_carries status-repair rule), reckon/crew/ticker.py:1883 (RowPolicy start rule)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:451,190,202,720 and SKILL.md:510 carry the word, both theme hues, the letter and the legend, and reckon/crew/ticker.py:1092-1103 is the single mapping both word paths fall through.\nSCORE evidence: 8\nJUSTIFICATION evidence: the gate at tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py measures the four stated cases, but its population of 47 ticker-importing files missed tests/test_the_pane_speaks_seven_words.py:44, which fails at head, so the done_when's population claim is not met.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every changed path (reckon/crew/ticker.py, skills/reckon-build/SKILL.md, tests/, the evidence fragment) is inside the declared grant, though tests/test_recovery_state_typing.py:67-160 carries reformatting beyond the literal changes its commit message claims, sanctioned by the formatter policy.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_run_that_needs_its_orchestrator_reads_needs_you.py:66,76,94,167 redden at base and, for the third and fourth, under the empty-mapping control, but the same landmark rename leaves tests/test_the_pane_speaks_seven_words.py:44 red at head, so the delivered guard set is incomplete.\nSCORE fit: 18\nJUSTIFICATION fit: the rename reuses the existing PANE_STATES grouping and _display_state reverse lookup at reckon/crew/ticker.py:1078 rather than adding a parallel reader, and introduces no name the naming rules forbid, though updated tests keep stale HALTED_STATES local names.\nSCORE reuse: 20\nJUSTIFICATION reuse: a search of reckon/crew/ticker.py and reckon/crew_follow_commands.py for an existing superseded-word or alias mapping found none, and the one-line SUPERSEDED_PANE_WORDS at reckon/crew/ticker.py:1092 plugs into the existing _display_state both word paths already use.\nFINDING tests/test_the_pane_speaks_seven_words.py:44 blocking: `assert set(ticker.PANE_STATES) == WORDS` fails at head (with `_MAX_CELLS`/`_COUNT_FIELD` failures at lines 70-73), because this ticker-importing test still names `halted` and was neither updated nor run; the node's 47-file population misses it, promotion would land a red test, and it is reachable because WORDS is compared to the renamed PANE_STATES keys.\nFINDING docs/evidence/fragments/the-monitor-shows-the-work-it-watches/needs-you-replaces-halted.html:24 non-blocking: the fragment states the population as `the 47 test files importing reckon/crew/ticker.py` while roughly 63 tests import it \u2014 a single-line grep missed multi-line `from reckon.crew import (... ticker ...)` blocks \u2014 so the coverage claim is false as written even after the failing file is repaired.",
+  "review_node": "review-of-needs-you-replaces-halted-186b4cd2b7ab",
+  "review_run_id": "r-20261113T113420250309-review-of-needs-you-replaces-halted-186b4cd2b7ab",
+  "reviewed_base_sha": "b6045ab33d1cbee2e9c41051623351442a098d18",
+  "reviewed_head_sha": "186b4cd2b7ab6d3f1346cb04744928176417c252",
+  "reviewed_run_id": "r-20261113T083458879621-needs-you-replaces-halted",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T113420250309-review-of-needs-you-replaces-halted-186b4cd2b7ab"
+  },
+  "scores": {
+    "durability": 17,
+    "evidence": 8,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T12:06:17.542066+00:00",
+  "total": 100
+}
