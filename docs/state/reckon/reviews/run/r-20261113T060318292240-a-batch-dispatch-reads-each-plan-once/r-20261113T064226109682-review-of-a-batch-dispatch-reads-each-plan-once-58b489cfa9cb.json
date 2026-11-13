@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:1131 queue_batch",
+    "reckon/crew/dispatch_batch.py:650 plan_read_scopes entry",
+    "reckon/crew/admission/readiness.py:824 plan_document_text in _dispatch_nonrun_wait_state",
+    "reckon/crew/admission/wait_refs.py:241 plan_document_text in derive_wait_refs",
+    "reckon/crew/admission/wait_refs.py:376 plan_document_text in _validated_batch_waits",
+    "reckon/crew/dispatching/requests.py:198 _validated_batch_waits"
+  ],
+  "completed_at": "2026-11-13T06:59:50.990Z",
+  "dispatched_at": "2026-11-13T06:46:48Z",
+  "findings": [
+    {
+      "file": "reckon/crew/dispatch_batch.py",
+      "line": 154,
+      "severity": "non-blocking",
+      "text": "The docstring says the memoised authored-section-headings parse is shared by the roadmap's heading walk and by every wait edge, but reckon/roadmap.py:27 binds authored_section_headings by name at import time, so the wrapper installed on the module attribute at dispatch_batch.py:178 never sees the roadmap's calls; that half of the claimed saving does not happen and the docstring states a mechanism the code does not implement."
+    },
+    {
+      "file": "tests/test_a_batch_dispatch_reads_each_plan_once.py",
+      "line": 177,
+      "severity": "non-blocking",
+      "text": "The gate counts discovery_state calls and authored_section_headings calls but nothing measures plan-document reads, so reverting plan_document_text to a plain read leaves every assertion true; the text-cache third of the landed change has no test that fails if it regresses."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-dispatch-reads-each-plan-once.html",
+      "line": 5,
+      "severity": "non-blocking",
+      "text": "The fragment quotes 2 state reads and 4 heading parses for four plans at the changed revision; an independent counting plugin over the same gate test at the reviewed head records 3 state reads and 4 heading parses, so the quoted state figure does not reconcile with the run it cites."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "Read commit by commit from ba9ccabcef: eec64bf653 caches plan document text per read scope, memoises authored_section_headings in the batch's parse-once boundary, routes four call sites through the cache, and adds the batch scope; 58b489cfa9 adds the evidence fragment.",
+    "done_when": "The done-when is the section test passing with its negative control, no added failures in the importing tests, and clean ruff; the test passes at the reviewed head (EXIT=0), the negative control fails at base at 1026 state reads, the importing arms carry identical failure-id sets, and ruff is clean on all four changed paths.",
+    "goal": "The node goal is that a batch dispatch reads each plan once; reckon/crew/dispatch_batch.py:650 wraps the whole batch in readiness.plan_read_scopes and the gate measures 3 state reads and 4 heading parses for 20 entries over 4 plans.",
+    "manifest": "The manifest records status complete, commits eec64bf653 and 58b489cfa9, five changed paths, the head and base arms with commands and log paths, and a negative control; its artifacts line overstates the state-read count as 2 where the gate measures 3.",
+    "write_paths": "The declared write paths are reckon/crew/admission/wait_refs.py, reckon/crew/admission/readiness.py, reckon/crew/dispatch_batch.py, tests/test_a_batch_dispatch_reads_each_plan_once.py and the evidence fragment; the diff touches exactly those five files and the unused figures directory is untouched."
+  },
+  "justifications": {
+    "durability": "reckon/crew/readiness tests/test_a_batch_dispatch_reads_each_plan_once.py:172 fails if plan_read_scopes is dropped from queue_batch (1026 > 4 at base), but :177 counts heading parses and nothing counts document reads, so removing plan_document_text leaves the gate green.",
+    "evidence": "reckon/crew/dispatch_batch.py:633's gate ran at the reviewed head with EXIT=0 (arms/head.log, 52 passed) and its negative control failed at base with 1026 reads (arms/negative.log); the importing-test arms carry identical failure-id sets at both revisions, but the fragment's quoted state-read count does not reconcile and the arms record no partition.",
+    "fit": "The three changed source files and the new test pass ruff check and ruff format --check against the project configuration, and plan_document_text sits beside _persisted_plan_states in the same scope idiom.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:650 enters plan_read_scopes around the batch, and the gate records 3 state reads and 4 heading parses for 20 entries over 4 plans against 1026 state reads at the base revision, so each plan is read a number of times bounded by the plan count.",
+    "reuse": "readiness.plan_document_text extends the plan_read_scopes owner that already caches plan state for one pass, rather than a new subsystem, though reckon/_plan_html.py:2602 _read_plan_text already owns the memoised per-file text read and was not reused.",
+    "scope_discipline": "Every path in the diff (3 source files, the new test, the evidence fragment) is inside the declared write paths, and the diff carries no plan edit and no code the goal does not imply."
+  },
+  "outside_scope": "reckon/crew/admission/readiness.py:225 plan_read_scopes replaces _PASS_PLAN_STATES and _PLAN_DOCUMENT_CACHE on every nested entry although its docstring says a nested entry joins the open region; the behaviour predates this change and the batch only inherits it, so a nested scope costs an extra observation rather than returning a wrong answer.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch dispatch reads each plan once; reckon/crew/dispatch_batch.py:650 enters readiness.plan_read_scopes around the whole batch and the gate measures 3 state reads and 4 heading parses for 20 entries over 4 plans.\nVERDICT done_when: the done-when is the section test passing with its negative control, importing tests adding no failure, and clean ruff; the test passes at the reviewed head with EXIT=0, the negative control fails at base with 1026 state reads, the importing arms carry identical failure-id sets at both revisions, and ruff check and ruff format --check are clean on the four changed paths.\nVERDICT write_paths: the declared scope is wait_refs.py, readiness.py, dispatch_batch.py, the new test and the evidence fragment; the diff touches exactly those five files and leaves the declared figures directory unused.\nVERDICT manifest: read; it states complete with commits eec64bf653 and 58b489cfa9, the head and base arms with their commands and log paths, and a negative control, but its artifacts line reports 2 state reads where the gate measures 3.\nVERDICT diff: read commit by commit from ba9ccabcef; eec64bf653 adds the per-scope document cache and the headings memo and routes four readers through them, and 58b489cfa9 adds the evidence fragment.\nCALL_SITES: reckon/crew_dispatch_commands.py:1131, reckon/crew/dispatch_batch.py:650, reckon/crew/admission/readiness.py:824, reckon/crew/admission/wait_refs.py:241, reckon/crew/admission/wait_refs.py:376, reckon/crew/dispatching/requests.py:198\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:650 wraps the batch in one read scope and the gate records 3 state reads and 4 heading parses for 20 entries over 4 plans against 1026 at base.\nSCORE evidence: 14\nJUSTIFICATION evidence: arms/head.log records 52 passed EXIT=0 at the reviewed head and arms/negative.log records assert 1026 <= 4 EXIT=1, but the fragment's quoted count does not reconcile and no arm records the partition it ran on.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: all five paths in the diff are declared write paths, including the fragment, and no plan or out-of-scope file is touched.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_batch_dispatch_reads_each_plan_once.py:172 reddens if the batch loses its read scope, while :177 measures heading parses and leaves the document-read cache unguarded.\nSCORE fit: 16\nJUSTIFICATION fit: the changed files pass ruff check and ruff format --check and plan_document_text follows the scope idiom of reckon/crew/admission/readiness.py:210 _persisted_plan_states, though the docstring at :154 overstates what the headings memo reaches.\nSCORE reuse: 15\nJUSTIFICATION reuse: plan_document_text extends the plan_read_scopes owner in the same module, but reckon/_plan_html.py:2602 _read_plan_text already owns the memoised per-file text read and the addition wraps it with a second cache instead.\nFINDING reckon/crew/dispatch_batch.py:154 non-blocking: the docstring claims the roadmap's heading walk shares the memoised parse, but reckon/roadmap.py:27 binds authored_section_headings by name at import, so the wrapper installed at dispatch_batch.py:178 never sees those calls.\nFINDING tests/test_a_batch_dispatch_reads_each_plan_once.py:177 non-blocking: the gate counts state reads and heading parses only, so reverting plan_document_text to a plain read leaves all assertions true and the text cache unguarded.\nFINDING docs/evidence/fragments/a-queue-holds-the-whole-plan/a-batch-dispatch-reads-each-plan-once.html:5 non-blocking: the fragment quotes 2 state reads for four plans; an independent counter over the same gate test at the reviewed head measures 3.",
+  "review_run_id": "r-20261113T064226109682-review-of-a-batch-dispatch-reads-each-plan-once-58b489cfa9cb",
+  "reviewed_base_sha": "ba9ccabcef8fec794bd228fb97d3bdc91b2f96cc",
+  "reviewed_head_sha": "58b489cfa9cbb05603560cd7ca9ad67027e7ff6b",
+  "reviewed_run_id": "r-20261113T060318292240-a-batch-dispatch-reads-each-plan-once",
+  "scores": {
+    "durability": 13,
+    "evidence": 14,
+    "fit": 16,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:26:54.740211+00:00",
+  "total": 96
+}
