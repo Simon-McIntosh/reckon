@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/project_state.py:2694 (apply_resource_ops calls move_sprint_item)",
+    "reckon/project_state.py:2711 (apply_resource_ops calls push_sprint)",
+    "reckon/project_state.py:2720 (apply_resource_ops calls _close_sprint_with_carry_forward)",
+    "reckon/mcp_edit_plan.py:1681 (_edit_plan calls apply_resource_ops)",
+    "reckon/mcp_edit_plan.py:1476 (_edit_plan definition; _edit_plan_tool at :2224 calls it)",
+    "reckon/mcp.py:556 (edit_plan tool registration)"
+  ],
+  "completed_at": "2026-11-13T14:32:31.783Z",
+  "dispatched_at": "2026-11-13T14:13:40Z",
+  "findings": [
+    {
+      "file": "reckon/project_state.py",
+      "line": "2123",
+      "severity": "non-blocking",
+      "text": "_restore_move_journal re-implements the restore that recover_project_state_transactions already performs in the same module (:2211-2241): the same journal parse and _safe_segment ids, the same base64 decode with validate=True, and the same resource_path plus mkdir plus write_atomically(mode=0o600, fsync, fsync_directory, binary=True) loop. The two copies can drift about what a valid journal and a valid restore are, and extracting one primitive would let both callers share it."
+    },
+    {
+      "file": "tests/test_a_sprint_move_replies_with_what_landed.py",
+      "line": "158",
+      "severity": "non-blocking",
+      "text": "_assert_reply_matches_disk compares sprint_versions only in the applied branch (:153). On every not-applied step (four of the six cases plus the read-back case) the reply's versions are never compared against a fresh read, and the refusal branches at reckon/mcp_edit_plan.py:1750 and :1760 emit no versions to compare, so the done_when's 'verdict and versions match a fresh read' is measured only where the move landed."
+    },
+    {
+      "file": "tests/test_atomic_writer_has_one_owner.py",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "The population arm ran 27 test files, but 31 tests/*.py files import reckon.project_state; this one and seven others (test_a_cold_read_parses_each_plan_once, test_cleared_hold_releases_a_blocked_plan, test_dispatch_reads_derivations_cheaply, test_graph_target_reads_one_readiness, test_held_blocker_probe, test_the_served_count_and_the_orphan_rule_read_the_assembly, test_timestamp_callers_batch_b) are absent from population-head.log, so the done_when's stated population is not fully measured at either arm."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "move_sprint_item is reached from reckon/project_state.py:2694 apply_resource_ops, which reckon/mcp_edit_plan.py:1681 calls from _edit_plan, itself reached from _edit_plan_tool at :2224 and registered as the edit_plan tool at reckon/mcp.py:556; push_sprint and _close_sprint_with_carry_forward are reached at reckon/project_state.py:2711 and :2720, and _restore_move_journal only from :2360.",
+    "diff": "The single increment commit ba742341e8 against 26ee25c9bf changes three files, 97 insertions and 5 deletions: the sprint_item_slug delegation, the new _restore_move_journal helper, the restore-before-refusal branch, applied:false on the resource-edit refusal and the read-back-disagreement test.",
+    "done_when": "tests/test_a_sprint_move_replies_with_what_landed.py:143-172 runs the four injected faults and :195-215 adds the read-back-disagreement case; suite-after.log records 57 passed EXIT=0 at ba742341e881, negative-control-base.log records 6 failed EXIT=1, and population-base.log (1 failed, 279 passed) against population-head.log (1 failed, 285 passed) is a delta of zero against the same pre-existing tests/test_mcp_views.py id.",
+    "goal": "The increment's goal is that a read-back disagreeing with both sprint writes leaves the pair all-or-nothing before refusing; reckon/project_state.py:2359-2364 restores both sprints from the journal before retiring it and raising, and reckon/mcp_edit_plan.py:1760 supplies the applied:false verdict on the resource-edit refusal.",
+    "manifest": "manifest.md records status complete, commits 26ee25c9bf and ba742341e8, both suite arms with log paths and exit statuses, both population arms, a bare negative_control_log path with its note, and six rubric self-check lines.",
+    "write_paths": "The source dispatch declares reckon/project_state.py, the sprint branch of the edit-plan write path, tests/test_a_sprint_move_replies_with_what_landed.py, the landing fragment and a figure directory; the increment against 26ee25c9bf touches the first three and nothing outside them."
+  },
+  "justifications": {
+    "durability": "tests/test_a_sprint_move_replies_with_what_landed.py:195-213 compares both sprint files' bytes against snapshots taken before the move, so deleting the restore call at reckon/project_state.py:2360 reddens it, and negative-control-base.log shows it failing at base with reply ok=True.",
+    "evidence": "suite-after.log ends EXIT=0 with 57 passed at ba742341e881 and negative-control-base.log ends EXIT=1 with 6 failed, but tests/test_a_sprint_move_replies_with_what_landed.py:153 asserts sprint_versions only when applied and the population arm ran 27 of the 31 tests/*.py files that import project_state.",
+    "fit": "reckon/project_state.py:2123-2155 follows the adjacent helper idiom with a mechanism docstring and the same write_atomically flags as the compensating write at :2272, and no added name or comment carries a plan, sprint, ticket or version label.",
+    "goal_fidelity": "reckon/project_state.py:2352-2364 restores both sprints from the journal's before-bytes before refusing and reckon/mcp_edit_plan.py:1760 now carries applied:false on the resource-edit refusal, so a refused move both ends all-or-nothing and states its verdict.",
+    "reuse": "reckon/project_state.py:2131-2155 re-implements the restore that recover_project_state_transactions already owns at :2211-2241 rather than extending it, though _sprint_holds_item at :2120 now delegates to reckon/_store.py:3468 sprint_item_slug.",
+    "scope_discipline": "Every path in the diff against 26ee25c9bf (reckon/project_state.py, reckon/mcp_edit_plan.py and tests/test_a_sprint_move_replies_with_what_landed.py) lies inside the source dispatch's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the increment's goal is that a read-back disagreeing with both sprint writes leaves the pair all-or-nothing before refusing; reckon/project_state.py:2359-2364 restores both sprints from the journal before retiring it and raising, and reckon/mcp_edit_plan.py:1760 supplies the applied:false verdict on the resource-edit refusal.\nVERDICT done_when: tests/test_a_sprint_move_replies_with_what_landed.py:143-172 runs the four injected faults and :195-215 adds the read-back-disagreement case; suite-after.log records 57 passed EXIT=0 at ba742341e881, negative-control-base.log records 6 failed EXIT=1, and population-base.log (1 failed, 279 passed) against population-head.log (1 failed, 285 passed) is a delta of zero against the same pre-existing tests/test_mcp_views.py id.\nVERDICT write_paths: the diff against 26ee25c9bf touches reckon/project_state.py, reckon/mcp_edit_plan.py and tests/test_a_sprint_move_replies_with_what_landed.py, all inside the source dispatch's declared write paths.\nVERDICT manifest: manifest.md states complete with commits 26ee25c9bf and ba742341e8, both suite arms with log paths and exit statuses, both population arms, a bare negative_control_log path with its note, and six rubric self-check lines.\nVERDICT diff: the single increment commit ba742341e8 against 26ee25c9bf changes three files, 97 insertions and 5 deletions: the sprint_item_slug delegation, the new _restore_move_journal helper, the restore-before-refusal branch, applied:false on the resource-edit refusal and the read-back-disagreement test.\nCALL_SITES: reckon/project_state.py:2694 (apply_resource_ops calls move_sprint_item), reckon/project_state.py:2711 (apply_resource_ops calls push_sprint), reckon/project_state.py:2720 (apply_resource_ops calls _close_sprint_with_carry_forward), reckon/mcp_edit_plan.py:1681 (_edit_plan calls apply_resource_ops), reckon/mcp_edit_plan.py:1476 (_edit_plan definition; _edit_plan_tool at :2224 calls it), reckon/mcp.py:556 (edit_plan tool registration)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/project_state.py:2352-2364 restores both sprints before refusing and reckon/mcp_edit_plan.py:1760 carries applied:false on the resource-edit refusal, so a refused move both ends all-or-nothing and states its verdict.\nSCORE evidence: 16\nJUSTIFICATION evidence: suite-after.log ends EXIT=0 with 57 passed at ba742341e881 and the population delta is zero, but tests/test_a_sprint_move_replies_with_what_landed.py:153 checks sprint_versions only when applied and the population arm omits 8 of the 31 files importing project_state.\nSCORE scope_discipline: 17\nJUSTIFICATION scope_discipline: every path in the diff against 26ee25c9bf (reckon/project_state.py, reckon/mcp_edit_plan.py and the new test file) lies inside the declared write paths, and the increment carries nothing the goal does not imply.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_sprint_move_replies_with_what_landed.py:195-213 compares both sprint files' bytes against snapshots taken before the move, so deleting the restore call at reckon/project_state.py:2360 reddens it, and negative-control-base.log shows that test failing at base with reply ok=True.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/project_state.py:2123-2155 follows the adjacent helper idiom with a mechanism docstring and the same write_atomically flags as the compensating write at :2272, and no added name or comment carries a plan, sprint, ticket or version label.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/project_state.py:2131-2155 re-implements the restore that recover_project_state_transactions already owns at :2211-2241 rather than extending it, though _sprint_holds_item at :2120 now delegates to reckon/_store.py:3468 sprint_item_slug.\nFINDING reckon/project_state.py:2123 non-blocking: _restore_move_journal duplicates the restore of recover_project_state_transactions at :2211-2241, so two copies can drift about what a valid journal and a valid restore are.\nFINDING tests/test_a_sprint_move_replies_with_what_landed.py:158 non-blocking: the version half of the done_when is asserted only when applied, so five of six cases never compare the reply's versions against a fresh read and the refusal branches emit none.\nFINDING tests/test_atomic_writer_has_one_owner.py:25 non-blocking: this file imports project_state but is one of 8 such test files absent from both population arms, so the done_when's stated population is not fully measured.\n",
+  "review_run_id": "r-20261113T140952798148-review-of-sprint-move-replies-with-what-landed-ba742341e881",
+  "reviewed_base_sha": "26ee25c9bf4d4ef5ad9f919e868054a218ec7f35",
+  "reviewed_head_sha": "ba742341e88106ea5e3a391ca3bdf8e828fb7748",
+  "reviewed_run_id": "r-20261113T122412926821-sprint-move-replies-with-what-landed",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 17
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:48:08.411392+00:00",
+  "total": 94
+}
