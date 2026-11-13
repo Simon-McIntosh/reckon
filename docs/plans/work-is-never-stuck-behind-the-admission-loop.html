@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="386">
+<meta name="plan-version" content="387">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -933,6 +933,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T140745608963-review-of-ready-work-is-never-stuck-behind-t-s38-fb22b77a7426" data-who="reckon-build" data-when="2026-11-13T14:37:49.922Z">
+    <div class="r-comment-body"><p>§38 reviewed — the repair is correct and its tests are real: `TERMINAL_VERDICTS` joins the pass&#x27;s held set (admission/selection.py:714) and `_record_stalls` skips a terminal last verdict (admission/verdicts.py:183), the refusal case fails at base with `[&#x27;refused-before-launch&#x27;,&#x27;stalled&#x27;]` and stall rows 1 then 2, the head gate is 56 passed EXIT=0 at fb22b77a74 against 54 passed EXIT=0 at 433d71f0, and the importer arms add no failure (133 at head vs 135 at base). Two non-blocking findings: the new exit-record case at tests/test_a_launch_rereads_the_run_it_starts.py:348 duplicates the existing case at :297, and the base importer log opens with slurmstepd noise before its revision header.</p></div>
 </div>
 </section>
 </main>
