@@ -24,8 +24,8 @@
   <title>Workers Spend Fewer Tokens Per Landed Node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="68">
-<meta name="plan-modified" content="2026-11-12">
+<meta name="plan-version" content="69">
+<meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
   <main class="plan-doc">
@@ -146,6 +146,9 @@
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
+<div class="r-comment" data-section="_top" data-id="c-20261112T180909655662" data-who="" data-when="">
+    <div class="r-comment-body"><p>Wave 1 departures from the seeded draw (seed 20261112): the-monitor-shows-the-work-it-watches §87 was drawn to <code>codex-anchored</code> and ran on <code>clive-anchored</code> (run <code>r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87</code>, landed at re-review 100) because the Codex lane was budget-held; a-plan-is-reviewed-before-it-is-built §44 was drawn to <code>clive-anchored</code>, refused on context fit (297k estimated against a 230k window), and was queued on <code>codex-anchored</code> after the Codex weekly reset (run <code>r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44</code>). Both swaps are recorded here so the interim report lists each run under the arm it actually ran on.</p></div>
+</div>
 <div class="r-comment" data-section="s10" data-id="c-run-r-20261111T182732440494-review-of-anchored-tools-reach-a-claude-worker-8b20e22cf7f3" data-who="reckon-build" data-when="2026-11-11T18:37:49.041Z">
     <div class="r-comment-body"><p>Independent review of run r-20261111T171926056794-anchored-tools-reach-a-claude-worker at head 8b20e22cf7f3ce2e796d8b8a35361a145430b611 against base c560a4445193f06b58de30b990c3386e6d0c3734. There is exactly one commit and it lands the prompt half of the goal: a guarded append at reckon/_backends.py:3112 and an instruction constant plus helper at reckon/crew/prompts.py:648-695 that name read_anchored, edit_anchored, the anchor form and the ToolSearch query. The session-start half the same goal states — the anchored server reading connected at session start — is not shipped; probe-fixed.stream.jsonl still reports status pending and the repair lives in reckon/anchored_edit.py, outside the node's write paths, which the manifest records under outside_scope and blockers. Scores: goal_fidelity 11, evidence 12, scope_discipline 18, durability 17, fit 17, reuse 10. Two non-blocking findings: prompts.py:662 duplicates the prompt-append framing owned by with_anchored_edit_instruction at prompts.py:621, and _backends.py:3115 appends the instruction without stripping one the incoming prompt already carries, where the figure listing three lines above is stripped for exactly that reason. Added-failure count 0, derived from gate-base.log (71 passed, 2 errors, exit 1, failure_ids []) and gate-head.log (83 passed, exit 0, failure_ids []).</p></div>
 </div>
@@ -257,8 +260,8 @@
 <div class="r-comment" data-section="s9" data-id="c-close-s9" data-who="reckon-build" data-when="2026-11-11T06:45:00Z">
     <div class="r-comment-body"><p>§9 landed at <code>fcec1e7f5b06</code>: a node writing a data fixture under <code>tests/</code> can now be promoted. <a href="/reckon/evidence/archive/workers-spend-fewer-tokens-per-landed-node-landed.html#s9-armed-suite-collectible-tests">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="_top" data-id="c-20261112T180909655662" data-who="" data-when="">
-    <div class="r-comment-body"><p>Wave 1 departures from the seeded draw (seed 20261112): the-monitor-shows-the-work-it-watches §87 was drawn to <code>codex-anchored</code> and ran on <code>clive-anchored</code> (run <code>r-20261112T065943474159-wave1-a2-the-monitor-shows-the-work-it-watche-s87</code>, landed at re-review 100) because the Codex lane was budget-held; a-plan-is-reviewed-before-it-is-built §44 was drawn to <code>clive-anchored</code>, refused on context fit (297k estimated against a 230k window), and was queued on <code>codex-anchored</code> after the Codex weekly reset (run <code>r-20261112T180440138579-wave1-b2-a-plan-is-reviewed-before-it-is-buil-s44</code>). Both swaps are recorded here so the interim report lists each run under the arm it actually ran on.</p></div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261112T233127145467-review-of-interim-arm-report-6e212b90e479" data-who="reckon-build" data-when="2026-11-13T00:07:33.809Z">
+    <div class="r-comment-body"><p>independent review of r-20261112T225203868878-interim-arm-report at head 6e212b90e479d2093e791325f001905a18b6d3df against base 06e99ec0ed92641df95fbd2b0414bc94520c518c stored as parsed with all six dimensions scored (goal_fidelity 18, evidence 16, scope_discipline 19, durability 7, fit 15, reuse 4; total 79), three non-blocking findings, and added_failure_count 0</p></div>
 </div>
 </section>
 </main>
