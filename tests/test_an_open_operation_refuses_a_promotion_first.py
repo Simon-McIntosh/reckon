@@ -27,6 +27,7 @@ from click.testing import CliRunner
 
 from reckon import _plan_html, ledger, run_store
 from reckon import cli as cli_module
+from reckon.crew import open_run_index
 from reckon.crew.runs import _write_json, pointer_path, run_dir
 from tests.helpers.git import git as _git
 
@@ -240,10 +241,14 @@ def _invoke(root: Path) -> tuple[object, _ReadCounter]:
     counter = _ReadCounter()
     original_load = ledger.load
     original_open = ledger.load_open
+    original_named = open_run_index.row_for_run
     with (
         mock.patch.object(ledger, "load", counter.count_ledger_load(original_load)),
         mock.patch.object(
             ledger, "load_open", counter.count_ledger_load(original_open)
+        ),
+        mock.patch.object(
+            open_run_index, "row_for_run", counter.count_ledger_load(original_named)
         ),
         mock.patch.object(run_store.RunStore, "__init__", counter.count_run_store()),
     ):
