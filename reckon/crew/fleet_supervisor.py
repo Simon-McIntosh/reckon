@@ -109,6 +109,9 @@ SESSION_TMP_INFIX = "-fleet-"
 
 REQUEST_FIFO_NAME = "requests"
 RECORD_NAME = "record.json"
+# How long a service copy that outlived SIGKILL is left before a restart for
+# new code is tried again.
+STUCK_STOP_RETRY_SECONDS = 600.0
 SPAWNED_RECORD_NAME = "spawned.json"
 SUPERVISOR_STDERR_NAME = "supervisor.stderr.log"
 START_LOG_NAME = "zellij-start.log"
@@ -541,6 +544,58 @@ def publish_record(runtime: Path, environ: Mapping[str, str] | None = None) -> P
     path = state / RECORD_NAME
     _write_json(path, record)
     return path
+
+
+def _scheduler_job_state(job_id: str) -> str | None:
+    """The scheduler's state word for ``job_id``, or None when it cannot say."""
+    try:
+        result = subprocess.run(
+            ["squeue", "-h", "-j", job_id, "-o", "%T"],
+            capture_output=True,
+            text=True,
+            timeout=30,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired):
+        return None
+    if result.returncode:
+        return None
+    words = result.stdout.split()
+    return words[0] if words else None
+
+
+def superseding_job(
+    environ: Mapping[str, str] | None = None,
+    *,
+    job_state: Callable[[str], str | None] = _scheduler_job_state,
+) -> str | None:
+    """The running allocation the published record names, when it is not ours.
+
+    A migration promotes a new allocation by publishing its record. The old
+    supervisor keeps running until its allocation is retired, and every
+    start or re-execution of it would otherwise publish its own record over
+    the new one, sending every connection back to the node the fleet left.
+    A record naming a job the scheduler no longer runs is a fleet that died,
+    and a fresh start takes it over as before.
+    """
+    environ = os.environ if environ is None else environ
+    own = (environ.get("SLURM_JOB_ID") or "").strip()
+    if not own:
+        return None
+    try:
+        record = json.loads(
+            (state_directory(environ) / RECORD_NAME).read_text(encoding="utf-8")
+        )
+    except (OSError, ValueError):
+        return None
+    if not isinstance(record, Mapping):
+        return None
+    other = str(record.get("job_id") or "").strip()
+    if not other or other == own:
+        return None
+    if job_state(other) in {"RUNNING", "CONFIGURING"}:
+        return other
+    return None
 
 
 def record_of_own_job(environ: Mapping[str, str] | None = None) -> Mapping | None:
@@ -1402,6 +1457,11 @@ class _ServiceState:
     # that chose one and consumed by the start that follows it.
     start_image: Path | None = None
     code_stamp: str | None = None
+    # When a stop could not end this copy, the earliest time a restart for
+    # new code is tried again. A copy stuck in uninterruptible I/O can
+    # outlive SIGKILL for a long time; retrying at once would hold the
+    # service guard through another full stop grace on every pass.
+    restart_after: float | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1652,7 +1712,11 @@ class DeclaredServices:
     def _restart_locked(self, name: str, state: _ServiceState) -> None:
         """Stop the stale copy before starting its replacement on selected code."""
         argv, image = list(state.argv), state.start_image
-        self._stop_locked(name)
+        if not self._stop_locked(name):
+            # The stale copy is still alive, so it still holds the lock and
+            # whatever the service owns. A replacement started beside it
+            # would run two copies of a service meant to run once.
+            return
         replacement = self._states.setdefault(name, _ServiceState(argv=argv))
         replacement.start_image = image
         replacement.image_pin = _pin_image(image)
@@ -1850,8 +1914,12 @@ class DeclaredServices:
             for name in list(self._states):
                 self._stop_locked(name)
 
-    def _stop_locked(self, name: str) -> None:
+    def _stop_locked(self, name: str) -> bool:
         """Signal the recorded pid, and wait for the service to end.
+
+        Returns whether no copy is left running. A copy that outlives
+        SIGKILL is put back under supervision, with its lease kept, so it
+        stays visible and nothing is started beside it.
 
         Nothing is signalled unless the service's lock is held: a recorded pid
         whose process has already gone names nothing this supervisor started,
@@ -1875,10 +1943,10 @@ class DeclaredServices:
             pid_path.unlink(missing_ok=True)
             if lease is not None:
                 lease.release()
-            return
+            return True
         if pid is None:
             log(f"declared service {name} runs with no recorded pid; not stopped")
-            return
+            return False
         log(f"stopping declared service {name} (pid {pid})")
         signal_worker(pid, signal.SIGTERM, reason="fleet-service-stop")
         deadline = time.monotonic() + self._stop_grace
@@ -1904,7 +1972,14 @@ class DeclaredServices:
                             "while it lives"
                         )
                         self._collect_locked(pid)
-                        return
+                        if state is not None:
+                            state.restart_after = (
+                                self._clock() + STUCK_STOP_RETRY_SECONDS
+                            )
+                            self._states[name] = state
+                        if lease is not None:
+                            self._leases[name] = lease
+                        return False
                     time.sleep(SERVICE_POLL_SECONDS)
                 break
             time.sleep(SERVICE_POLL_SECONDS)
@@ -1912,6 +1987,7 @@ class DeclaredServices:
         pid_path.unlink(missing_ok=True)
         if lease is not None:
             lease.release()
+        return True
 
     def _collect_locked(self, pid: int) -> None:
         """Collect a child this image started, so it leaves no dead slot."""
@@ -1953,6 +2029,8 @@ class DeclaredServices:
                 log_path = service_log_directory(self._environ) / f"{name}.log"
                 trim_service_log(log_path, limit=self._log_limit, keep=self._log_keep)
                 if state.pid is not None and self._alive(name, state):
+                    if state.restart_after is not None and now < state.restart_after:
+                        continue
                     if self._code_decision(name, state.pid, state) == "restart":
                         self._restart_locked(name, state)
                     continue
@@ -2778,7 +2856,10 @@ def serve(
     # left to hold for, so it takes the fleet rather than standing by.
     resuming = standby and restarted_own_job(environ)
     is_standby = standby
-    if not standby:
+    superseded_by = None if standby else superseding_job(environ)
+    if superseded_by:
+        is_standby = True
+    if not is_standby:
         publish_record(runtime, environ)
         reserve_fleet_projects(environ)
     fifo = runtime / REQUEST_FIFO_NAME
@@ -2794,6 +2875,22 @@ def serve(
     start_health_sampler(environ)
     services = DeclaredServices(runtime, environ)
     station_process = StationProcess(runtime, environ)
+
+    def stand_down(other: str) -> None:
+        nonlocal is_standby
+        is_standby = True
+        log(
+            f"the fleet record names running job {other}; this supervisor "
+            "stands by and stops its declared services instead of "
+            "republishing its own record"
+        )
+        station_process.stop()
+        services.stop_all()
+        for name in declared_services(environ) or {}:
+            services.stop(name)
+
+    if superseded_by:
+        stand_down(superseded_by)
 
     def promote() -> None:
         nonlocal is_standby
@@ -2896,6 +2993,8 @@ def serve(
                         f"({verdict.detail}), so this image and the declared "
                         "services keep running the code they started on"
                     )
+            if not is_standby and (other := superseding_job(environ)):
+                stand_down(other)
             if not is_standby:
                 station_process.ensure()
             if not readable_within(descriptor, REQUEST_WAIT_SECONDS):
