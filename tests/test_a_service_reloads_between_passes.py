@@ -30,6 +30,15 @@ def stop(*args):
     (root / f"stopped-{pid}").write_text(str(active))
     raise SystemExit(0)
 signal.signal(signal.SIGTERM, stop)
+if bool(int(sys.argv[4])):
+    publish = fleet.write_json_atomically
+    def publish_after_release(path, payload, **kwargs):
+        if Path(path) == Path(os.environ[fleet.SERVICE_PASS_PATH_ENV]):
+            (root / "registering").touch()
+            while not (root / "publish-pass").exists():
+                time.sleep(0.01)
+        return publish(path, payload, **kwargs)
+    fleet.write_json_atomically = publish_after_release
 for number in range(2):
     with fleet.service_pass(bound=bound):
         active = True
@@ -69,8 +78,15 @@ def controlled(tmp_path, monkeypatch):
     monkeypatch.setattr(fleet, "all_process_cmdlines", dict)
     managers = []
 
-    def start(*, bound=30.0, idle=False):
-        argv = [sys.executable, str(script), str(tmp_path), str(bound), str(int(idle))]
+    def start(*, bound=30.0, idle=False, pause_registration=False):
+        argv = [
+            sys.executable,
+            str(script),
+            str(tmp_path),
+            str(bound),
+            str(int(idle)),
+            str(int(pause_registration)),
+        ]
         (config / "fleet" / "services.json").write_text(json.dumps({"demo": argv}))
         env = {
             **os.environ,
@@ -89,7 +105,8 @@ def controlled(tmp_path, monkeypatch):
         managers.append(manager)
         manager.reload()
         pid = fleet.recorded_service_pid(runtime, "demo")
-        _wait((tmp_path / f"begin-{pid}-0").exists)
+        marker = "registering" if pause_registration else f"begin-{pid}-0"
+        _wait((tmp_path / marker).exists)
         return manager, pid
 
     yield SimpleNamespace(root=tmp_path, runtime=runtime, start=start)
@@ -121,6 +138,34 @@ def test_a_stamp_change_finishes_the_pass_before_restarting(controlled):
     assert marker.read_text() == "after"
     assert not (home.root / f"begin-{pid}-1").exists()
     assert (home.root / f"stopped-{pid}").read_text() == "False"
+
+
+def test_first_pass_registration_finishes_before_a_reload_stops_it(controlled):
+    home = controlled
+    manager, pid = home.start(pause_registration=True)
+    path = home.runtime / "demo.pass"
+    assert not path.exists(), "the first pass record must still be unpublished"
+    with (
+        path.with_suffix(".pass.lock").open("a+b") as handle,
+        pytest.raises(BlockingIOError),
+    ):
+        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    (home.root / "stamp").write_text("after")
+    manager.supervise_once()
+    assert fleet.recorded_service_pid(home.runtime, "demo") == pid
+    assert not (home.root / f"stopped-{pid}").exists()
+    assert path.with_suffix(".pass.reload").exists()
+    (home.root / "publish-pass").touch()
+    _wait((home.root / f"begin-{pid}-0").exists)
+    (home.root / "release-0").touch()
+    _wait((home.root / f"complete-{pid}-0").exists)
+    _wait((home.root / f"idle-{pid}").exists)
+    manager.supervise_once()
+    replacement = fleet.recorded_service_pid(home.runtime, "demo")
+    assert replacement != pid
+    _wait((home.root / f"begin-{replacement}-0").exists)
+    assert (home.root / f"begin-{replacement}-0").read_text() == "after"
+    assert not (home.root / f"begin-{pid}-1").exists()
 
 
 def test_a_stamp_change_between_passes_restarts_in_one_cycle(controlled):
