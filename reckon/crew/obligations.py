@@ -3352,6 +3352,8 @@ def _sub_floor_items_by_session(
                 project,
                 run_id,
                 f"--dimension {shlex.quote(str(finding['dimension']))}",
+                review_run_id=str(record.get("review_run_id") or "") or None,
+                rubric=review_module._review_record_rubric(record) or None,
             )
             by_session.setdefault(session, []).append(
                 {
