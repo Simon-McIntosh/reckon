@@ -19,6 +19,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon.crew import promotion_release as promotion_release_module
 from reckon.crew import repair as repair_module
 from reckon.crew import review as review_module
 from reckon.crew import runs
@@ -89,14 +90,18 @@ def _write_delivered_run(
 
 
 def _write_working_review(
-    *, review_run_id: str, reviewed_run_id: str, head: str
+    *,
+    review_run_id: str,
+    reviewed_run_id: str,
+    head: str,
+    phase: str = "running",
 ) -> dict:
     """Record one launched review working on ``reviewed_run_id`` at ``head``."""
     pointer = {
         "run_id": review_run_id,
         "project": PROJECT,
         "session": SESSION,
-        "phase": "running",
+        "phase": phase,
         "backend": "local",
         "role": "review",
         "node": {
@@ -119,7 +124,11 @@ def _write_working_review(
 
 
 def _write_working_repair(
-    *, repair_run_id: str, source_node_id: str, head: str
+    *,
+    repair_run_id: str,
+    source_node_id: str,
+    head: str,
+    phase: str = "running",
 ) -> dict:
     """Record one launched repair round working on ``source_node_id``'s run."""
     node_id = repair_module.round_node_id(
@@ -129,7 +138,7 @@ def _write_working_repair(
         "run_id": repair_run_id,
         "project": PROJECT,
         "session": SESSION,
-        "phase": "running",
+        "phase": phase,
         "backend": "local",
         "role": "implement",
         "node": {
@@ -221,3 +230,77 @@ def test_the_count_follows_the_live_pointer_not_the_run(
     payload = runs.drain(PROJECT, session=SESSION)
     assert payload["unreconciled_runs"] == 1
     assert _unreconciled_run_ids(payload) == ["run-reviewing"]
+
+
+def test_a_queued_round_is_not_working_and_keeps_its_count(
+    repository: Path, tmp_path: Path
+) -> None:
+    """A request the lane has only queued has not started, so it excuses nothing.
+
+    The exclusion names work that is under way. A queued review is still a
+    request waiting on the lane, and the run it will review still awaits the
+    coordinator's verdict, so both keep the count a parked request always has.
+    """
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(
+        repository,
+        tmp_path,
+        run_id="run-queued-review",
+        node_id="src-queued",
+        head=head,
+    )
+    _write_working_review(
+        review_run_id="r-review-queued",
+        reviewed_run_id="run-queued-review",
+        head=head,
+        phase="queued",
+    )
+
+    payload = runs.drain(PROJECT, session=SESSION)
+
+    assert payload["unreconciled_runs"] == 2, payload["runs"]
+    assert set(_unreconciled_run_ids(payload)) == {
+        "run-queued-review",
+        "r-review-queued",
+    }
+    assert all(not row.get("in_flight") for row in payload["runs"])
+
+
+def test_a_promotion_reading_counts_the_same_runs_as_the_drain(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The fleet reading and the drain share the row builder, in-flight runs too.
+
+    A promotion stamps its own count on its row rather than consuming the
+    drain's, so the two readings are two callers of one composition. They must
+    agree on the shape this change introduced — a subject run whose review or
+    repair is working — not only on the shapes that predate it.
+    """
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-no-review", node_id="src-noreview", head=head
+    )
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-reviewing", node_id="src-reviewing", head=head
+    )
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-repairing", node_id="src-repairing", head=head
+    )
+    _write_working_review(
+        review_run_id="r-review-working",
+        reviewed_run_id="run-reviewing",
+        head=head,
+    )
+    _write_working_repair(
+        repair_run_id="r-repair-working",
+        source_node_id="src-repairing",
+        head=head,
+    )
+
+    drain_count = runs.drain(PROJECT, session=SESSION)["unreconciled_runs"]
+    promotion_count = promotion_release_module._unreconciled_live_runs(
+        runs.list_live(project=PROJECT)
+    )
+
+    assert drain_count == 1
+    assert promotion_count == drain_count

@@ -2530,6 +2530,11 @@ def _drain_row(
     re-reading the run's stream, manifest and review records. A caller with no
     such word passes none and the pointer is classified here, host-gated
     liveness and all.
+
+    The row also decides whether this run's own review or repair is working,
+    which leaves it out of the count. It reads that from the project's live
+    pointers, so the drain's count and a promotion's fleet reading — which counts
+    pointer by pointer through this same function — excuse the same runs.
     """
     from reckon.crew.recovery import (
         classify_pointer,
@@ -2548,11 +2553,16 @@ def _drain_row(
         str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
     )
     valid = closure_disposition_valid(disposition, classification)
+    run_id = str(pointer.get("run_id") or "")
+    in_flight = bool(run_id) and run_id in _in_flight_round_ids(
+        _live_pointer_siblings(pointer)
+    )
     return {
         **row,
         "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
         "disposition_valid": valid,
-        "unreconciled": not valid,
+        "unreconciled": not valid and not in_flight,
+        **({"in_flight": True} if in_flight else {}),
     }
 
 
@@ -2816,6 +2826,17 @@ def _drain_week_view(project: str, pointers: list[dict[str, Any]]) -> dict[str, 
     return {"project": project_view, "plans": plans}
 
 
+def _live_pointer_siblings(pointer: Mapping[str, Any]) -> list[dict[str, Any]]:
+    """The live pointers a single run is counted among.
+
+    A row resolved without a snapshot reads the pointers itself, through the
+    quiet reader: a watcher transition is a public event, and deriving one run's
+    row is not a reason to publish one.
+    """
+    project = str(pointer.get("project") or "")
+    return _list_live_records(project=project or None)
+
+
 def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
     """Run ids the closure count leaves out because a review or repair is working.
 
@@ -2868,14 +2889,7 @@ def _closure_rows(pointers: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]
     and why it is not counted — so the count and the list cannot disagree about
     how many runs the counted set holds.
     """
-    points = list(pointers)
-    excused = _in_flight_round_ids(points)
-    rows = [_drain_row(pointer) for pointer in points]
-    for row in rows:
-        if str(row.get("run_id") or "") in excused:
-            row["unreconciled"] = False
-            row["in_flight"] = True
-    return rows
+    return [_drain_row(pointer) for pointer in pointers]
 
 
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
