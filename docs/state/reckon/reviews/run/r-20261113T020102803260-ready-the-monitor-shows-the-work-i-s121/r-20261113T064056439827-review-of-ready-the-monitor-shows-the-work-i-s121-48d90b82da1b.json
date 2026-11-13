@@ -1,0 +1,81 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1370 _prompt -> freshness_reading(document, project=project, session=session)",
+    "reckon/hooks/coordinator_obligations.py:1642 _stop -> freshness_reading(document, project=project, session=session)",
+    "reckon/crew/recovery_watch.py:2731 obligation_snapshot.freshness_reading without a session, so its reading is unchanged"
+  ],
+  "completed_at": "2026-11-13T09:44:10.967Z",
+  "dispatched_at": "2026-11-13T09:26:52Z",
+  "findings": [
+    {
+      "file": "tests/test_a_quiet_foreign_producer_reads_live.py",
+      "line": "177",
+      "severity": "non-blocking",
+      "text": "the file is outside the node's declared write paths; the assertion had to change because the reading replaces the old remedy, and the manifest discloses the widening, but the fence in the brief named only the two product modules, the new test and the evidence fragment."
+    },
+    {
+      "file": "tests/test_a_stale_code_producer_is_not_reloading_forever.py",
+      "line": "121",
+      "severity": "non-blocking",
+      "text": "same outside-fence edit as the sibling legacy test; the new expectation is correct for the changed reading, but it lands at the head without the importing-population arm ever being rerun over it."
+    },
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "767",
+      "severity": "non-blocking",
+      "text": "asking only live reads a session with no registration file as one whose follower stopped, because follower_registration.py:628-640 returns live False with registered False and released False for that case, while the module's own docstring says such a session must not be read as one that gave up; asking released would keep that distinction."
+    },
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": "1107",
+      "severity": "non-blocking",
+      "text": "the follower-released arm takes the manual arming remedy without the live-host check the function applies at :1093-1099 for stale-snapshot and no-follower, so a session whose host is running is told to arm a follower the host will also arm."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites: the prompt hook and the stop hook now pass a session, and recovery_watch's call still passes none.",
+    "diff": "read all four commits against 9814cf5d2f: 6e87c540eb adds the follower-released reading and the hook branch (obligation_snapshot.py:749-832, coordinator_obligations.py:1073-1111), a099be63b5 restates the two legacy hook expectations, and 59b1182f23/48d90b82da add the evidence fragment.",
+    "done_when": "the done_when names tests/test_a_released_follower_is_told_to_rearm.py with three cases and a removed branch that puts case one back on the stale-code line, and logs/negative-control.txt reads 1 failed, 2 passed at EXIT=1 naming that case; but the recorded suite arms at logs/base-arm-2.txt and logs/after-arm-3.txt run four files, not the 63 test files importing the two modules that the same done_when nominates.",
+    "goal": "the node's goal is that a session whose follower is gone is told to re-arm it; reckon/crew/obligation_snapshot.py:831-832 returns follower-released for an aged snapshot on an older stamp behind a non-delivering registration, and reckon/hooks/coordinator_obligations.py:1073-1079,1107-1111 give it a stopped-follower reason ending in the reckon crew follow arming command.",
+    "manifest": "read; status complete, four commits, changed_paths listing six files, tests naming the four-file after arm at EXIT=0, test_logs naming base-arm-2.txt, after-arm-3.txt and negative-control.txt, and baseline_suite/after_suite recording 57 passed with 2 archive-tree setup errors against 62 passed; artifacts additionally record the 63/64-file arms at 20 failed 392 passed and 20 failed 395 passed.",
+    "write_paths": "the fence was reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_released_follower_is_told_to_rearm.py and the evidence fragment; the diff also changes tests/test_a_quiet_foreign_producer_reads_live.py:177 and tests/test_a_stale_code_producer_is_not_reloading_forever.py:121, which the fence does not grant and which the manifest's checkpoint discloses."
+  },
+  "justifications": {
+    "durability": "logs/negative-control.txt EXIT=1 reddens tests/test_a_released_follower_is_told_to_rearm.py:103 on the removed branch.",
+    "evidence": "logs/base-arm-2.txt and logs/after-arm-3.txt cover four test files, not the 63 the done_when nominates.",
+    "fit": "reckon/crew/obligation_snapshot.py:21-30 names the new word in the file's own vocabulary; the helper imports a private symbol at :767.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:831-832 and reckon/hooks/coordinator_obligations.py:1073-1111.",
+    "reuse": "reckon/crew/obligation_snapshot.py:767 calls follower_registration.py:644 _follower_liveness.",
+    "scope_discipline": "tests/test_a_quiet_foreign_producer_reads_live.py:177 and tests/test_a_stale_code_producer_is_not_reloading_forever.py:121 are outside the declared fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a session whose follower is gone is told to re-arm it; reckon/crew/obligation_snapshot.py:831-832 returns follower-released for an aged snapshot on an older stamp behind a non-delivering registration, and reckon/hooks/coordinator_obligations.py:1073-1079,1107-1111 give it a stopped-follower reason ending in the `reckon crew follow` arming command.\nVERDICT done_when: the done_when names tests/test_a_released_follower_is_told_to_rearm.py with three cases and a removed branch that puts case one back on the stale-code line, and logs/negative-control.txt reads \"1 failed, 2 passed\" at EXIT=1 naming that case; but the recorded suite arms at logs/base-arm-2.txt and logs/after-arm-3.txt run four files, not the 63 test files importing the same two modules that the same done_when nominates.\nVERDICT write_paths: the fence was reckon/crew/obligation_snapshot.py, reckon/hooks/coordinator_obligations.py, tests/test_a_released_follower_is_told_to_rearm.py and the evidence fragment; the diff also changes tests/test_a_quiet_foreign_producer_reads_live.py:177 and tests/test_a_stale_code_producer_is_not_reloading_forever.py:121, which the fence does not grant and which the manifest's checkpoint discloses.\nVERDICT manifest: read; status complete, four commits, changed_paths listing six files, tests naming the four-file after arm at EXIT=0, test_logs naming base-arm-2.txt, after-arm-3.txt and negative-control.txt, and baseline_suite/after_suite recording 57 passed with 2 archive-tree setup errors against 62 passed; artifacts additionally record the 63/64-file arms at 20 failed 392 passed and 20 failed 395 passed.\nVERDICT diff: read all four commits against 9814cf5d2f: 6e87c540eb adds the follower-released reading and the hook branch (obligation_snapshot.py:749-832, coordinator_obligations.py:1073-1111), a099be63b5 restates the two legacy hook expectations, and 59b1182f23/48d90b82da add the evidence fragment.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1370 _prompt passes a session to freshness_reading, reckon/hooks/coordinator_obligations.py:1642 _stop passes a session to freshness_reading, reckon/crew/recovery_watch.py:2731 obligation_snapshot.freshness_reading without a session so its reading is unchanged\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:831-832 and reckon/hooks/coordinator_obligations.py:1073-1111 give the released-and-aged population its own reading and the reader's arming remedy.\nSCORE evidence: 15\nJUSTIFICATION evidence: logs/negative-control.txt reads \"1 failed, 2 passed\" EXIT=1 on tests/test_a_released_follower_is_told_to_rearm.py:103, but logs/base-arm-2.txt and logs/after-arm-3.txt cover only four files while the done_when nominates the 63 test files importing the modules, and the 63/64-file arms at logs/base-arm.txt and logs/after-arm.txt leave the after arm at 6e87c540eb, before a099be63b5 rewrote the two assertions it added.\nSCORE scope_discipline: 13\nJUSTIFICATION scope_discipline: git diff --stat 9814cf5d2f..48d90b82da lists six files, and tests/test_a_quiet_foreign_producer_reads_live.py:177 and tests/test_a_stale_code_producer_is_not_reloading_forever.py:121 sit outside the declared fence.\nSCORE durability: 19\nJUSTIFICATION durability: removing the branch reddens tests/test_a_released_follower_is_told_to_rearm.py:103, recorded at logs/negative-control.txt EXIT=1, and the state asserted there comes from a registration the test really releases and checks at :98 rather than from a value it hands to the branch; the age check at :108 compares the rendered age against the 7_200 s the fixture wrote.\nSCORE fit: 17\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:21-30 states the new word in the file's own vocabulary and coordinator_obligations.py:1043 counts five states, with no plan label or attribution; the helper at :767 imports a private symbol across modules, the one seam.\nSCORE reuse: 17\nJUSTIFICATION reuse: obligation_snapshot.py:767 calls follower_registration.py:644 _follower_liveness, the owner of the released/live judgement, so liveness is not re-implemented, but the same line re-derives follower_lock_path(project, session) that follower_state at follower_registration.py:800 already composes.\nFINDING tests/test_a_quiet_foreign_producer_reads_live.py:177 non-blocking: the file is outside the node's declared write paths; the assertion had to change because the reading replaces the old remedy and the manifest discloses the widening, but the fence named only the two product modules, the new test and the evidence fragment.\nFINDING tests/test_a_stale_code_producer_is_not_reloading_forever.py:121 non-blocking: same outside-fence edit as its sibling; the new expectation is correct for the changed reading, but it lands at the head without the importing-population arm ever being rerun over it.\nFINDING reckon/crew/obligation_snapshot.py:767 non-blocking: asking only live reads a session with no registration file as one whose follower stopped, because follower_registration.py:628-640 returns live False with registered False and released False there while the module says such a session must not be read as one that gave up; asking released would keep that distinction.\nFINDING reckon/hooks/coordinator_obligations.py:1107 non-blocking: the follower-released arm takes the manual arming remedy without the live-host check the function applies at :1093-1099 for stale-snapshot and no-follower, so a session whose host is running is told to arm a follower the host will also arm.",
+  "review_run_id": "r-20261113T064056439827-review-of-ready-the-monitor-shows-the-work-i-s121-48d90b82da1b",
+  "reviewed_base_sha": "9814cf5d2fffa0a2ac23380efd6d227745bc2c2e",
+  "reviewed_head_sha": "48d90b82da1b31fa457f174164fcddd49ab3c811",
+  "reviewed_run_id": "r-20261113T020102803260-ready-the-monitor-shows-the-work-i-s121",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T064056439827-review-of-ready-the-monitor-shows-the-work-i-s121-48d90b82da1b"
+  },
+  "reviewer_run_id": "r-20261113T064056439827-review-of-ready-the-monitor-shows-the-work-i-s121-48d90b82da1b",
+  "scores": {
+    "durability": 19,
+    "evidence": 15,
+    "fit": 17,
+    "goal_fidelity": 19,
+    "reuse": 17,
+    "scope_discipline": 13
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:46:56.986041+00:00",
+  "total": 100
+}
