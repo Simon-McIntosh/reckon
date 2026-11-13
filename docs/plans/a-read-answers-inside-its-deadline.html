@@ -26,7 +26,7 @@
   <title>A Read Answers Inside Its Deadline | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="667">
+<meta name="plan-version" content="668">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1688,6 +1688,9 @@
 </div>
 <div class="r-comment" data-section="s74" data-id="c-run-r-20261113T064317809699-review-of-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion-0e10a6c1a6bd" data-who="reckon-build" data-when="2026-11-13T07:29:34.396Z">
     <div class="r-comment-body"><p>review of r-20261112T191137457543 at reviewed_base_sha 57f07fa2729c944018c7421fc703c9c73948b119 and reviewed_head_sha 0e10a6c1a6bdbc7504bf6111900301a6bfabb2d6: scores goal_fidelity 19, evidence 16, scope_discipline 19, durability 15, fit 18, reuse 20; added_failure_count 0; three non-blocking findings, none blocking</p></div>
+</div>
+<div class="r-comment" data-section="s74" data-id="c-run-r-20261112T191137457543-a-promotion-does-not-wait-for-its-worktree-copy-s-deletion" data-who="reckon-build" data-when="2026-11-13T06:32:37Z">
+    <div class="r-comment-body"><p>A promotion hands its released worktree copy&#x27;s deletion to the trash sweep: it enters deferring_worktree_copy_deletion around its release, so the copy is left in the worktree trash root, which the hourly retention pass now sweeps, and a promotion slowed by an injected 30 s copy deletion returns within 5 s of the undelayed one while a second promotion reaches its lock inside that budget against 31.1 s of waiting at the base revision.</p></div>
 </div>
 <div class="r-comment" data-section="s75" data-id="c-run-r-20261112T195500222423-review-of-a-promotion-decodes-the-ledger-index-at-most-once-4c28ca09b597" data-who="reckon-build" data-when="2026-11-12T20:10:13.135Z">
     <div class="r-comment-body"><p>review of r-20261112T191644410579-a-promotion-decodes-the-ledger-index-at-most-once at head 4c28ca09b597 scores goal_fidelity 18, evidence 12, scope_discipline 19, durability 13, fit 17, reuse 5, with one blocking finding — the fleet half of the parity assertion in the landed test compares two empty (None, 0) readings and cannot fail — and three non-blocking findings on forked test helpers, the unrecorded all_debug partition, and an unlogged second mutant; the record is stored at review-records/ under the reviewed run's directory</p></div>
