@@ -1,0 +1,53 @@
+<section class="evidence" data-node="ready-a-queued-request-is-checked-s6">
+  <h3 id="ready-a-queued-request-is-checked-s6-title">A batch-made request can be edited in the queue</h3>
+  <p id="ready-a-queued-request-is-checked-s6-what">
+    <code>_queue_batch</code> stores <code>runs_dir()/&lt;run_id&gt;/manifest.md</code>
+    for every entry that names no manifest, the same durable delivery path a
+    single queued dispatch stores, so <code>crew queue edit --time-budget 90m</code>
+    on a batch-made request passes the node contract and is stored rather than
+    refused. The behaviour and its check are already on the primary branch at
+    this node's base revision <code>4c4cf23439</code> (landed at
+    <code>f83af26ed2</code>, test hardened at <code>12b5f3d1ce</code> and
+    <code>f877312a85</code>), so this node changed no product source: it re-ran
+    the measure against the base revision, confirmed the check still fires
+    against a mutant that drops the path, and recorded the result.
+  </p>
+  <table id="ready-a-queued-request-is-checked-s6-changes">
+    <thead>
+      <tr><th>Path</th><th>Change</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>reckon/crew/dispatch_batch.py</code></td>
+        <td>Unchanged: the assignment at <code>_queue_batch</code> (<code>node.manifest_path = node.manifest_path or str(run_dir(run_id) / "manifest.md")</code>) was verified in place, and an entry naming its own <code>manifest</code> still wins (<code>_entry_node</code>).</td>
+      </tr>
+      <tr>
+        <td><code>tests/test_a_batch_request_can_be_edited.py</code></td>
+        <td>Unchanged and present at the base revision: it queues a batch entry in a synthesised repository, asserts the stored pointer's <code>manifest_path</code> equals <code>Path(runs.runs_dir()) / run_id / "manifest.md"</code>, shows the <code>--time-budget 90m</code> edit is stored, and shows the refusal when the path is dropped.</td>
+      </tr>
+    </tbody>
+  </table>
+  <h3 id="ready-a-queued-request-is-checked-s6-gate">Gate</h3>
+  <p id="ready-a-queued-request-is-checked-s6-gate-result">
+    <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q -n 4 tests/test_a_batch_request_can_be_edited.py tests/test_staged_write_inventory.py</code>
+    at the base revision <code>4c4cf23439</code> → <strong>54 passed</strong>
+    (EXIT=0). The same command at this node's head → <strong>54 passed</strong>
+    (EXIT=0). The three measured cases are the manifest-path assertion, the
+    stored <code>--time-budget 90m</code> edit, and the refusal of a request
+    stored without a path.
+  </p>
+  <h3 id="ready-a-queued-request-is-checked-s6-negative-control">Negative control</h3>
+  <p id="ready-a-queued-request-is-checked-s6-negative-control-result">
+    Replacing the assignment in <code>_queue_batch</code> with
+    <code>node.manifest_path = node.manifest_path or ""</code> turns the gate
+    red: <strong>3 failed</strong> (EXIT=1), every case refused at queue time by
+    the contract check with <code>independently-verifiable: no manifest path is
+    named, so completion could only be judged by reading the implementation</code>
+    — the wording the plan's report quoted from <code>crew queue edit</code>.
+    Separately, zeroing <code>manifest_path</code> on a stored pointer makes
+    <code>crew queue edit --run &lt;id&gt; --time-budget 90m</code> exit non-zero
+    naming <code>independently-verifiable</code> and leaves the stored
+    <code>time_budget</code> at <code>20m</code>. Restoring the assignment
+    returns the gate to <strong>3 passed</strong>.
+  </p>
+</section>
