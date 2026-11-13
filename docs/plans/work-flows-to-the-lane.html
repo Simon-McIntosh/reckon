@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="144">
+<meta name="plan-version" content="146">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -529,6 +529,9 @@
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261113T032923501296-admission-pass-reads-ledger-once" data-who="reckon-build" data-when="2026-11-13T05:26:31Z">
     <div class="r-comment-body"><p>Section waits reuse one indexed history snapshot per release stage: 2000 rows, ten requests, five sections, one load, zero run-document reads, unchanged 8 released / 2 waiting verdicts, and a concurrent landing released on the next pass.</p></div>
 </div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T054446457163-review-of-stopped-run-resumes-with-advice-643ea32dd7fb" data-who="reckon-build" data-when="2026-11-13T06:03:39Z">
+    <div class="r-comment-body"><p>Reviewed base 18385bba31f0292b7514a36666ccdfea1a906624 to head 643ea32dd7fbd4b67f86abe3c36ed747b71ded11; stored parsed six-dimension records, zero added failures, no blocking findings, and one non-blocking duplicated test polling helper requiring coordinator disposition.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
 </div>
@@ -597,6 +600,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
+</div>
+<div class="r-comment" data-section="s37" data-id="c-run-r-20261113T055235126665-review-of-service-reloads-between-passes-71765ae67b43" data-who="reckon-build" data-when="2026-11-13T06:10:40Z">
+    <div class="r-comment-body"><p>Independent revision-specific review stored for source head 71765ae67b433370aec37e5bd21e6262eb8ad7a7 against b575b660a03426db747bcf6b452599b2c47712fa; scores 16/19/20/17/20/20, zero added failure IDs, one blocking first-pass registration race.</p></div>
 </div>
 </section>
 </main>
