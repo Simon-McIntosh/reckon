@@ -890,19 +890,82 @@ def _request_host_follower(project: str, session: str | None) -> bool:
     fifo = _session_host_fifo()
     if fifo is None:
         return False
-    line = (
+    return _deliver_request(fifo, project, session)
+
+
+def _request_line(project: str, session: str) -> bytes:
+    """The one request line written to a session host's FIFO."""
+    return (
         json.dumps(
             {"project": project, "session": session, "owner_checked": True}
         ).encode("utf-8")
         + b"\n"
     )
+
+
+def _deliver_request(fifo: Path, project: str, session: str) -> bool:
+    """Write one follow request to ``fifo``, without waiting for a reader.
+
+    The deadline is already in the past, which asks ``_write_fleet_request``
+    for a single attempt: a FIFO with no reader is a fallback, not a wait.
+    """
     try:
-        # A deadline already in the past asks ``_write_fleet_request`` for a
-        # single attempt: no reader on the FIFO is a fallback, not a wait.
-        _write_fleet_request(fifo, line, time.monotonic())
+        _write_fleet_request(fifo, _request_line(project, session), time.monotonic())
     except CrewError:
         return False
     return True
+
+
+def _session_mismatch_line(handoff: Mapping[str, Any]) -> str:
+    """The one line a mismatched dispatch prints, naming both sessions."""
+    requested = handoff["requested_session"]
+    calling = handoff["calling_session"] or "no calling session"
+    if handoff["handed_to_host"]:
+        return (
+            f"dispatch session {requested} differs from calling session {calling}; "
+            "the calling session's waiting host took the run"
+        )
+    return (
+        f"dispatch session {requested} differs from calling session {calling}; "
+        "no waiting host received the run"
+    )
+
+
+def hand_off_mismatched_session(
+    project: str, session: str | None
+) -> dict[str, Any] | None:
+    """Hand a mismatched dispatch's run to the calling session's waiting host.
+
+    A dispatch issued with a ``--session`` that is not this process's Claude
+    session used to be refused by ``_request_host_follower``, and the refusal
+    was silent: no host was ever asked for the run's follower, so the caller's
+    pane showed nothing while the run read as unattached everywhere else. The
+    caller's pane is the one that has to show the run, so the request names the
+    run's own pair and travels to the calling process's host FIFO -- the same
+    FIFO every other request uses. The pair stays the run's, because that is
+    the pair the run is registered under; only the host that receives it is the
+    calling session's.
+
+    ``None`` is returned when the two names agree, leaving the ordinary ask
+    path untouched. Otherwise one line naming both sessions is printed, and the
+    ``host_handoff`` record names the requested session, the calling session,
+    and whether a waiting host took the request.
+    """
+    calling = _calling_session()
+    requested = str(session or "")
+    if not requested or requested == calling:
+        return None
+    fifo = _session_host_fifo()
+    handed = False
+    if fifo is not None and _session_host_waiting():
+        handed = _deliver_request(fifo, project, requested)
+    handoff: dict[str, Any] = {
+        "requested_session": requested,
+        "calling_session": calling,
+        "handed_to_host": handed,
+    }
+    print(_session_mismatch_line(handoff), flush=True)
+    return handoff
 
 
 def _session_host_may_be_waiting() -> bool:
