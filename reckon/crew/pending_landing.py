@@ -457,16 +457,24 @@ def finish_pending_landings(
             continue
         conflict = record.get("merge_conflict") or {}
         pointer = None
-        # A live pointer is read even without a recorded conflict, because a
-        # promotion that could not remove its pointer marks it and leaves the
-        # landing to this pass. Reading it is what tells the two apart: an
-        # unmarked live pointer belongs to a newer attempt and is left alone.
+        # A live pointer is read even without a recorded conflict, because the
+        # promotion that could not remove it also reads it here: a marked
+        # pointer names the attempt this landing finishes, and an unmarked one
+        # the attempt a resume wrote after it moved. A record carrying the
+        # pointer ``--land`` held is the promotion's own claim that it owed a
+        # merge, so the merge runs even after the mark was overwritten; the
+        # pointer is released only where a mark names it, and a record written
+        # without a pointer leaves a live unmarked one to its own attempt.
         if conflict or run_id in live:
             try:
                 pointer = runs.read_pointer(run_id)
             except runs.CrewError:
                 pointer = None
-        if run_id in live and not (pointer or {}).get("pending_landing_repair"):
+        if (
+            run_id in live
+            and not (pointer or {}).get("pending_landing_repair")
+            and not record.get("pointer")
+        ):
             continue
         head = _reviewed_head(row)
         if not head:
