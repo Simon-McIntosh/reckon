@@ -323,3 +323,34 @@ def test_reconstructed_promotion_keeps_its_named_ledger_record(
     )
     assert result["already_promoted"]
     assert result["record"]["run_id"] == "run-00"
+
+
+def test_a_refused_projection_keeps_the_existing_ledger_reader(tmp_path, monkeypatch):
+    from reckon.crew import open_run_index
+
+    row = {
+        "run_id": "known-history",
+        "node": "known-node",
+        "session_id": "known-session",
+    }
+    ledger.write(PROJECT, {"runs": [row], "members": [], "holds": []}, 0, tmp_path)
+
+    def refused(*args, **kwargs):
+        raise PermissionError("projection cache is unavailable")
+
+    monkeypatch.setattr(open_run_index, "_connect", refused)
+    assert [item["run_id"] for item in ledger.open_runs(PROJECT, tmp_path)] == [
+        row["run_id"]
+    ]
+    assert ledger.load_open(PROJECT, tmp_path)[0]["runs"][0]["run_id"] == row["run_id"]
+    assert (
+        open_run_index.row_for_run(PROJECT, row["run_id"], tmp_path)["run_id"]
+        == row["run_id"]
+    )
+    assert open_run_index.has_row(PROJECT, row["run_id"], tmp_path)
+    assert (
+        open_run_index.latest_session_row(PROJECT, row["session_id"], tmp_path)[
+            "run_id"
+        ]
+        == row["run_id"]
+    )

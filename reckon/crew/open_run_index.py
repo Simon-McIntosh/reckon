@@ -75,6 +75,63 @@ def _publish(function):
     return publish
 
 
+def _read_fallback(history_reader):
+    """A missing cache capability keeps the established authoritative reader."""
+
+    def decorate(function):
+        @wraps(function)
+        def read(*args, **kwargs):
+            try:
+                return function(*args, **kwargs)
+            except (OSError, sqlite3.Error):
+                return history_reader(*args, **kwargs)
+
+        return read
+
+    return decorate
+
+
+def _history_rows(project, root=None, *, retained_only=False):
+    from reckon import ledger
+
+    return ledger.runs(project, root=root)
+
+
+def _history_row(project, run_id, root=None):
+    return next(
+        (row for row in _history_rows(project, root) if row.get("run_id") == run_id),
+        None,
+    )
+
+
+def _history_session(project, session, root=None):
+    rows = [
+        row for row in _history_rows(project, root) if row.get("session_id") == session
+    ]
+    return max(
+        rows,
+        key=lambda row: (
+            str(row.get("completed_at") or ""),
+            str(row.get("run_id") or ""),
+        ),
+        default=None,
+    )
+
+
+def _history_membership(project, run_id, root=None):
+    return _history_row(project, run_id, root) is not None
+
+
+def _history_version(project, root=None):
+    from reckon import ledger
+
+    return ledger.load_aggregate(project, root)[1]
+
+
+def _history_tree_rows(project, trees, root=None):
+    return _history_rows(project, root)
+
+
 def index_path(project: str, root: str | Path | None = None) -> Path:
     """One projection per authoritative ledger path, including private trees."""
     from reckon import ledger
@@ -296,6 +353,7 @@ def bootstrap_complete(project: str, root=None) -> None:
         connection.execute("INSERT OR REPLACE INTO metadata VALUES ('ready', '1')")
 
 
+@_read_fallback(_history_rows)
 def read_rows(
     project: str, root=None, *, retained_only: bool = False
 ) -> list[dict[str, Any]]:
@@ -524,6 +582,7 @@ def review_paths(directory: Path) -> list[Path] | None:
     return sorted(paths)
 
 
+@_read_fallback(_history_version)
 def ledger_version(project: str, root=None) -> int:
     """The aggregate version captured by its writer or initial bootstrap."""
     with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
@@ -533,6 +592,7 @@ def ledger_version(project: str, root=None) -> int:
         return int(row[0]) if row else 0
 
 
+@_read_fallback(_history_row)
 def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
     """Lookup one promoted identity without decoding unrelated history."""
     from reckon import ledger
@@ -560,6 +620,7 @@ def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
         return json.loads(row[0])
 
 
+@_read_fallback(_history_tree_rows)
 def rows_naming_trees(
     project: str, trees: Sequence[Path], root=None
 ) -> list[dict[str, Any]]:
@@ -577,6 +638,7 @@ def rows_naming_trees(
     return list(result.values())
 
 
+@_read_fallback(_history_session)
 def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] | None:
     """The prior cumulative-meter reading for one resolved worker session."""
     if not session:
@@ -589,6 +651,7 @@ def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] 
         return json.loads(row[0]) if row else None
 
 
+@_read_fallback(_history_membership)
 def has_row(project: str, run_id: str, root=None) -> bool:
     """Test one promoted identity without enumerating historical membership."""
     from reckon import ledger
