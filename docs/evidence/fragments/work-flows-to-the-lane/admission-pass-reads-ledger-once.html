@@ -31,7 +31,11 @@
   a reachable promotion, an unreachable promotion, a section completed without
   a run, a discarded run, and a section with both reachable and unreachable
   promotions. A promotion written after the first snapshot leaves its two
-  waiters pending in that stage and releases both on the next stage.</p>
+  waiters pending in that stage and releases both on the next stage. Another
+  case fast-forwards the temporary checkout to its pending revision after that
+  section's first wait verdict; both waiters remain pending in the current
+  stage and release on the next one, with one ledger load per stage and no
+  per-run document reads.</p>
   <table>
     <thead><tr><th>Measurement</th><th>Whole-ledger resolution</th><th>Shared snapshot</th></tr></thead>
     <tbody>
@@ -49,8 +53,9 @@
   instruments the document reader; the negative control proves that instrument
   sees the traversal.</p>
   <p>All test arms ran sequentially on <code>all_debug</code>. The required
-  baseline arm passed 51 checks; the repaired arm passed 53, including both
-  new tests. Related admission checks passed 34 at both base and head, with
+  baseline arm passed 51 checks; the repaired arm passes those checks and the
+  added snapshot and freshness cases. Related admission checks passed 34 at
+  both base and head, with
   zero added failures. Ruff check and format checks passed on all changed
   Python paths. The run directory retains revision-labelled gate logs, the
   deliberate failing mutation, and the delivery manifest under

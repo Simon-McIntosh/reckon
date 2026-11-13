@@ -151,7 +151,7 @@ def test_one_release_stage_reads_history_once(history, monkeypatch):
     assert counts["run_document_opens"] == 0, counts
 
 
-def test_a_landing_during_the_pass_is_seen_next_pass(history, monkeypatch):
+def test_a_promotion_during_the_pass_is_seen_next_pass(history, monkeypatch):
     _repository, requests, _pending = history
     pointers = _store(requests)
     counts = _count_reads(monkeypatch, ledger.run_path(PROJECT, "seed").parent)
@@ -185,3 +185,33 @@ def test_a_landing_during_the_pass_is_seen_next_pass(history, monkeypatch):
     assert counts["loads"] == 2, counts
     assert counts["unindexed"] == 0, counts
     print("two-pass read counts:", json.dumps(counts, sort_keys=True))
+
+
+def test_a_landing_during_the_pass_is_seen_next_pass(history, monkeypatch):
+    repository, requests, pending = history
+    pointers = _store(requests)
+    counts = _count_reads(monkeypatch, ledger.run_path(PROJECT, "seed").parent)
+    original = release._resolve_and_move
+    merged = False
+
+    def land_after_wait(pointer, **options):
+        nonlocal merged
+        phase = original(pointer, **options)
+        if not merged and pointer["run_id"] == "r-waiter-1":
+            assert phase == "awaiting-upstream"
+            fixtures._git(repository, "merge", "--ff-only", pending)
+            assert fixtures._git(repository, "rev-parse", "HEAD") == pending
+            merged = True
+        return phase
+
+    monkeypatch.setattr(release, "_resolve_and_move", land_after_wait)
+    release.advance_waiting_requests(pointers)
+    assert merged
+    assert _phases(pointers)[1::5] == ["awaiting-upstream"] * 2
+    assert counts["loads"] == 1, counts
+    release.advance_waiting_requests(pointers)
+    assert _phases(pointers) == ["queued"] * 10
+    assert counts["loads"] == 2, counts
+    assert counts["unindexed"] == 0, counts
+    assert counts["run_documents"] == 0, counts
+    assert counts["run_document_opens"] == 0, counts
