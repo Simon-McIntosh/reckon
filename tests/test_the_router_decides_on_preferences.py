@@ -14,6 +14,7 @@ has no router to ask.
 
 from __future__ import annotations
 
+import os
 from datetime import UTC, datetime
 
 import pytest
@@ -111,6 +112,24 @@ def _view() -> dict:
             {"backend": "codex-astra", "held": False, "state": _state()},
         ],
     }
+
+
+#: The mutations this file's negative controls make. An env-selected value
+#: makes the same mutation to every case, so a test run under one is the red
+#: log a promotion reads: the case it falsifies fails there and passes at head.
+MUTATIONS = {
+    "reserved-exclusion": lambda mp: mp.setattr(
+        snapshot, "_reserved_lane_evidence", lambda reason: ([reason], [])) ,
+    "offer-unfit-lane": lambda mp: mp.setattr(
+        snapshot, "_fit", lambda *args, **kwargs: ([], [])),
+}
+
+
+@pytest.fixture(autouse=True)
+def _declared_mutation(monkeypatch):
+    mutate = MUTATIONS.get(os.environ.get("RECKON_PICKER_MUTATION", ""))
+    if mutate is not None:
+        mutate(monkeypatch)
 
 
 @pytest.fixture
