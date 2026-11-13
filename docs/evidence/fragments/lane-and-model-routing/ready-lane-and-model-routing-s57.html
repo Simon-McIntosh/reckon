@@ -17,8 +17,13 @@
   </p>
   <p id="ready-lane-and-model-routing-s57-measure">
     Measure: the new <code>tests/test_the_router_decides_on_preferences.py</code>
-    passes its five cases and both negative controls; the two landed tests that
-    asserted the removed exclusion now assert the lane is offered and marked
-    reserved, with or without a lift.
+    passes its five cases and both negative controls; the five landed test files
+    that asserted the removed exclusion now assert the lane is offered and that
+    the term travels beside it, with or without a lift. Over every test file
+    importing the picker, the base revision fails 17 tests; the head first
+    failed 24, the seven extra being tests that still asserted the removed
+    exclusion, and each of those files now passes. Two live picks, with a lift
+    in force, both routed rather than holding, and placed the low-think node on
+    the local lane.
   </p>
 </section>
