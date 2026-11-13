@@ -22,12 +22,17 @@
     <code>review_dispatch_refusal</code> now ask one shared predicate, the dispatch records
     the refusal on the run it acted for, and the review-missing duty names that refusal and
     the command that dispatches the review by hand instead of sending its reader to inspect a
-    follower with nothing wrong with it.</p>
-    <p><strong>Measure.</strong> Degenerate check: the three cases in
-    <code>tests/test_every_delivery_the_reflex_owns_gets_its_review.py</code> pass at the
-    head, and at the base revision
-    <code>287b29e162b208076192a8cb10503fe4ea9e0563</code> the repair-delivery case yields no
-    review and the failure case's duty names no refusal (2 failed, 1 passed).</p>
+    follower with nothing wrong with it. The duty reads the refusal the run recorded when the
+    read-only predicate would not answer — a dispatch refused at the launch leaves its reason
+    on the run, and that is the refusal a coordinator needs — and the hand-dispatch command
+    it prints comes from one builder shared with the code that renders it.</p>
+    <p><strong>Measure.</strong> The three cases in
+    <code>tests/test_every_delivery_the_reflex_owns_gets_its_review.py</code> drive real
+    sweeps over an armed follower — the first delivery, the repair delivery after a resume,
+    and a delivery whose launch the lane refuses — and all three pass at the head. At the
+    base revision <code>287b29e162b208076192a8cb10503fe4ea9e0563</code> the repair-delivery
+    case yields no review and the refused-dispatch case's duty names no refusal (2 failed,
+    1 passed).</p>
   </article>
 </body>
 </html>
