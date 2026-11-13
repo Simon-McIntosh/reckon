@@ -24,7 +24,7 @@
   <title>A Re-exec Never Orphans A Dispatch | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="31">
+<meta name="plan-version" content="32">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -127,6 +127,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261111T075900526642-ab-clive-anchored-a-reexec-never-orphans-s5" data-who="reckon-build" data-when="2026-11-11T08:45:42.828Z">
     <div class="r-comment-body"><p>A service waits for its in-flight dispatches before it re-executes: dispatch_claims keeps a process-wide register of dispatches between claim and worker, one bounded wait_for_dispatches_in_flight() serves the station, a follower and the admit service before each os.execve, and the bound logs what it abandons by node; gate 5/5 pass, base arm carries the same failing ids, four mutations each fail their own case.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261113T032606972809-ready-a-reexec-never-orphans-a-dis-s5" data-who="reckon-build" data-when="2026-11-13T12:13:34Z">
+    <div class="r-comment-body"><p>Real-claim reload checks pass for station, follower and admit; scoped base/head gates each pass 56 cases, and all five falsification controls fail as intended. The raw importer delta is one failure; the exact failure reproduces at base and two of three head rechecks pass, meeting the authorised environment-sensitive criterion.</p></div>
 </div>
 </section>
 </main>
