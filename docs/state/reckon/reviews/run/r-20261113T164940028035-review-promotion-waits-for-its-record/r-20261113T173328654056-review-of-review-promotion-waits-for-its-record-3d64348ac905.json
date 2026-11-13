@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew/promotion_requests.py:275 (_execute dispatches promote_review_run_itself)",
+    "reckon/crew/promotion_requests.py:165 (_review_self_waits calls review_self_state)",
+    "reckon/crew/admission/service.py:233 (PromotionService tick drives the drain)",
+    "reckon/crew/resumption.py:2803 (dispatch_awaiting_reviews sweep entry)"
+  ],
+  "completed_at": "2026-11-13T17:59:08.353Z",
+  "dispatched_at": "2026-11-13T17:48:38Z",
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "line": 427,
+      "severity": "non-blocking",
+      "text": "the drain parks every promote_review_run_itself result carrying waiting=True, so a reviewer whose process has ended but whose manifest does not read complete (reckon/crew/recovery_review_acceptance.py:708) or whose supervisor recorded no exit (:727) is re-requested and re-parked on every sweep and never refused, contrary to the section's requirement that a reviewer which has ended without a record leaves a refusal, and to the _review_self_waits docstring's claim that such a request leaves the refusal its coordinator must see; failure_obligations reads only ERRORS so no obligation is raised, and each sweep spends a promotion slot launching it before parking it again."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read both commits against 5c05b3dd71: promotion_requests.py +72, recovery_review_acceptance.py +176/-59, a new 364-line test file and a 68-line evidence fragment, every path inside the declared scope.",
+    "done_when": "the done_when's clauses are asserted by tests/test_review_promotion_waits_for_its_record.py:252, :299 and :345 plus the declared negative control, and gate-head.log records 54 passed at 3d64348ac9 against 51 at the base arm.",
+    "goal": "the goal is that a review's own promotion waits for the record it has not written; reckon/crew/recovery_review_acceptance.py:688 adds review_self_state and reckon/crew/promotion_requests.py:37 adds the promotion-waiting phase that carries the wait.",
+    "manifest": "read; it records the head arm 54 passed with EXIT=0 at 3d64348ac9, the base arm 51 passed with EXIT=0 at 5c05b3dd71, the negative control 1 failed with EXIT=1 at ee37c3d19c, and names each log path.",
+    "write_paths": "the node declares reckon/crew/recovery_review_acceptance.py, reckon/crew/promotion_requests.py, the new test file, the evidence fragment and a figures directory; the diff changes the first four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_review_promotion_waits_for_its_record.py:330 and :332 redden if the park or the pointer's working phase is reverted and :361 reddens if the refusal stops naming the missing record, but the drain-side park at reckon/crew/promotion_requests.py:427 has no test that reddens on it.",
+    "evidence": "gate-head.log's own summary line reads 54 passed with EXIT=0 at revision 3d64348ac9 against 51 passed at 5c05b3dd71 in gate-base.log, sacct -j 1314529 shows the arms job ran on all_debug, and negative-control.log carries a real FAILED at tests/test_review_promotion_waits_for_its_record.py:271.",
+    "fit": "the REVIEW_SELF_* state constants at reckon/crew/recovery_review_acceptance.py:683 and the WAITING phase at reckon/crew/promotion_requests.py:37 follow the surrounding module-level phase vocabulary, and every added name describes the mechanism with no plan, ticket or author label.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:688 answers ready/waiting/refused and reckon/crew/promotion_requests.py:371 and :427 park the request outside PENDING, which is the deliverable's three-way behaviour except for the ended-without-an-exit-record case named in the finding.",
+    "reuse": "a search of reckon/crew for an existing review-readiness owner found only the presence checks at reckon/crew/obligations.py:664 and reckon/crew/promotion_checks.py:1586, and review_self_state composes this module's own _delivered_review_record, _declared_head_keyed_record and _run_exit_record rather than forking a second one.",
+    "scope_discipline": "the four paths in the two commits are all inside the five write paths the node and the manifest declare, and no commit touches plan state, plan meta or the shared project index."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a review's own promotion waits for the record it has not written; reckon/crew/recovery_review_acceptance.py:688 adds review_self_state and reckon/crew/promotion_requests.py:37 adds the promotion-waiting phase that carries the wait.\nVERDICT done_when: the done_when's clauses are asserted by tests/test_review_promotion_waits_for_its_record.py:252, :299 and :345 plus the declared negative control, and gate-head.log records 54 passed at 3d64348ac9 against 51 at the base arm.\nVERDICT write_paths: the node declares reckon/crew/recovery_review_acceptance.py, reckon/crew/promotion_requests.py, the new test file, the evidence fragment and a figures directory; the diff changes the first four and nothing else.\nVERDICT manifest: read; it records the head arm 54 passed with EXIT=0 at 3d64348ac9, the base arm 51 passed with EXIT=0 at 5c05b3dd71, the negative control 1 failed with EXIT=1 at ee37c3d19c, and names each log path.\nVERDICT diff: read both commits against 5c05b3dd71: promotion_requests.py +72, recovery_review_acceptance.py +176/-59, a new 364-line test file and a 68-line evidence fragment, every path inside the declared scope.\nCALL_SITES: reckon/crew/promotion_requests.py:275 (_execute dispatches promote_review_run_itself), reckon/crew/promotion_requests.py:165 (_review_self_waits calls review_self_state), reckon/crew/admission/service.py:233 (PromotionService tick drives the drain), reckon/crew/resumption.py:2803 (dispatch_awaiting_reviews sweep entry)\nSCORE goal_fidelity: 17\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 15\nSCORE fit: 18\nSCORE reuse: 20\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:688 answers ready/waiting/refused and reckon/crew/promotion_requests.py:371 and :427 park the request outside PENDING, which is the deliverable's three-way behaviour except for the ended-without-an-exit-record case named in the finding.\nJUSTIFICATION evidence: gate-head.log's own summary line reads 54 passed with EXIT=0 at revision 3d64348ac9 against 51 passed at 5c05b3dd71 in gate-base.log, sacct -j 1314529 shows the arms job ran on all_debug, and negative-control.log carries a real FAILED at tests/test_review_promotion_waits_for_its_record.py:271.\nJUSTIFICATION scope_discipline: the four paths in the two commits are all inside the five write paths the node and the manifest declare, and no commit touches plan state, plan meta or the shared project index.\nJUSTIFICATION durability: tests/test_review_promotion_waits_for_its_record.py:330 and :332 redden if the park or the pointer's working phase is reverted and :361 reddens if the refusal stops naming the missing record, but the drain-side park at reckon/crew/promotion_requests.py:427 has no test that reddens on it.\nJUSTIFICATION fit: the REVIEW_SELF_* state constants at reckon/crew/recovery_review_acceptance.py:683 and the WAITING phase at reckon/crew/promotion_requests.py:37 follow the surrounding module-level phase vocabulary, and every added name describes the mechanism with no plan, ticket or author label.\nJUSTIFICATION reuse: a search of reckon/crew for an existing review-readiness owner found only the presence checks at reckon/crew/obligations.py:664 and reckon/crew/promotion_checks.py:1586, and review_self_state composes this module's own _delivered_review_record, _declared_head_keyed_record and _run_exit_record rather than forking a second one.\nFINDING reckon/crew/promotion_requests.py:427 non-blocking: the drain parks every promote_review_run_itself result carrying waiting=True, so a reviewer whose process has ended but whose manifest does not read complete (reckon/crew/recovery_review_acceptance.py:708) or whose supervisor recorded no exit (:727) is re-requested and re-parked on every sweep and never refused, contrary to the section's requirement that a reviewer which has ended without a record leaves a refusal, and to the _review_self_waits docstring's claim that such a request leaves the refusal its coordinator must see; failure_obligations reads only ERRORS so no obligation is raised, and each sweep spends a promotion slot launching it before parking it again.\n",
+  "review_run_id": "r-20261113T173328654056-review-of-review-promotion-waits-for-its-record-3d64348ac905",
+  "reviewed_base_sha": "5c05b3dd71a59b55da93d519f04f4c76b294911f",
+  "reviewed_head_sha": "3d64348ac905146ce21b48343dc401f59026b318",
+  "reviewed_run_id": "r-20261113T164940028035-review-promotion-waits-for-its-record",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 18,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T18:46:27.030507+00:00",
+  "total": 107
+}
