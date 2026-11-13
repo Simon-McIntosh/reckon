@@ -1,0 +1,159 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T14:47:19.102Z",
+  "dispatched_at": "2026-11-13T14:40:52Z",
+  "findings": [
+    {
+      "anchor": "plan.html:306",
+      "id": "wiring-1",
+      "reason": "the section would sit unbuilt indefinitely with the plan's own chain reading complete, which is the same defect the earlier reviews raised against f-wftl-011 and f-wftl-012.",
+      "text": "\u00a742 is declared implementable (plan.html:23, plan.html:229) and is named by no followup: f-wftl-013, the plan's only open followup, names \u00a722 and \u00a79 only, so a coordinator driving the plan from its open followup with its recommended invocation (/reckon-build work-flows-to-the-lane \u00a722) never dispatches \u00a742",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:230",
+      "id": "reasoning-1",
+      "reason": "a node reading \"no command performs it\" will build a second extractor beside a working one the section itself relies on (\"the figure the routing derivation computes\"), instead of delivering the residual gap (a dry run by default and a report across every project in the shared crew home).",
+      "text": "the Why states the other projects' rows \"were never backfilled, and no command performs it\", but scripts/derive_run_figures.py (committed at 1d7f6bcd06 on 2026-09-09, before this section was written) is a re-runnable, idempotent command that takes --project and --root, fills tool_steps and orientation_input_tokens from the run's own stream, records both as absent (never zero) when the stream is gone, and reports rows filled and rows skipped per project \u2014 so the stated gap is wider than the system's actual state",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:230",
+      "id": "done_when-1",
+      "reason": "absence is the destructive outcome the section introduces, and without a bound on it the live gate cannot fail on exactly the implementation that loses the evidence the section exists to preserve.",
+      "text": "the applied-run gate requires only that a retention dry run from a fresh cursor report a missing-derived-figure count of zero, and no case bounds how many rows the command records as absent: a command that wrongly resolves every stream as gone records absence on all 2,614 rows, which retention treats as reapable, so the streams are destroyed and the gate still passes \u2014 and the dry-run case (\"reports a fill count per project\") passes on an all-zero count",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "45d8513c23d1c29a6d1ac2e235ef405ddca0a820",
+  "plan_fingerprint": "229f37d49a059b7301ac3c4936cdb7aceed19e91d702cb790ebe0a00be4f8baa",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 182,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-wftl-014 now names \u00a742 and recommends building it",
+      "reason": "",
+      "when": "2026-11-13T14:48:22.486419+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "the Why now names scripts/derive_run_figures.py as the existing command, run so far only for reckon; the deliverable is running it for the four projects, not a second extractor",
+      "reason": "",
+      "when": "2026-11-13T14:48:29.326354+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "the done-when now requires the per-project absent count to equal an independent pre-fill on-disk census of rows with no stream, so a mass false absence fails",
+      "reason": "",
+      "when": "2026-11-13T14:48:35.906333+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "note": "the done-when now requires the per-project absent count to equal an independent pre-fill on-disk census of rows with no stream, so a mass false absence fails",
+      "reason": "",
+      "when": "2026-11-13T14:48:35.906333+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "note": "the Why now names scripts/derive_run_figures.py as the existing command, run so far only for reckon; the deliverable is running it for the four projects, not a second extractor",
+      "reason": "",
+      "when": "2026-11-13T14:48:29.326354+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "b00339b14ccbbabb3da92b4b8a8226f422b4a354",
+      "commit_basis": "edit",
+      "note": "f-wftl-014 now names \u00a742 and recommends building it",
+      "reason": "",
+      "when": "2026-11-13T14:48:22.486419+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-flows-to-the-lane.v182.json",
+  "review_run_id": "r-20261113T143935191161-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "0f1c25dd134a8ef45c5819dd29705645b16a27c0",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 the census path ~/.cache/reckon-gpfs-footprint/retention-census-1314067.log exists and the per-slice logs sit beside it; the commits cited in the new \u00a732 and \u00a741 close comments (116d122e4a, 5d90c63b7a) and their evidence anchors (/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s32-no-caller-waits-on-a-promotion, #s41-retention-retires-a-review-run) all resolve.",
+    "done_when": "a finding \u2014 \u00a742's applied-run case (plan.html:230) is satisfied by a command that records an absence on every row, so its gate cannot tell a fill from a mass false absence.",
+    "evidence_paths": "pass \u2014 \u00a742's gate runs on all_debug with its log written to the section's durable evidence fragment under docs/evidence/fragments/work-flows-to-the-lane/.",
+    "naming": "pass \u2014 \u00a742 names no code symbol, file or function, and carries no plan label, ticket number, version tag or changelog prose.",
+    "reasoning": "a finding \u2014 \u00a742's Why states \"no command performs it\" (plan.html:230), but a committed, idempotent command in this repository already does exactly the fill the section describes.",
+    "single_goal": "pass \u2014 \u00a742 carries one deliverable: one command that records the two stream-derived figures on withheld ledger rows.",
+    "wiring": "a finding \u2014 f-wftl-013, the plan's only open followup (plan.html:306), names \u00a722 and \u00a79 but not \u00a742, which this version declares implementable (plan.html:23, plan.html:229)."
+  },
+  "section_digests": {
+    "_document": "97c1cca6e06d0cc6fa8487e070ecd51fbd9c8d29d6e7d9694add71e5ae141b57",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "6b87a65f56033f720b634f56c22424f9243d93aa09b8d223f9256a45a62b8401",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "2f8f373cb0aea17e906875fcfee5e31675e99c3770486edcd5ca6381e7c45682",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s17": "61f7c6cf19aeea97c136c1e61b863688591bf51fc6ecee75fd76577abe685e5b",
+    "s18": "83c96035969192d1b3be1f3898d127f112e33f0dbac58a7ccb624ab20c5d4844",
+    "s19": "7e2db89abd0f36c289ae715d8efbeeb340e4295f5671e1d350cb85b452cd2119",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s20": "a3a48d30a0815970f76f95987246e39304eca36cfb2135e853829cf79bf092ba",
+    "s21": "534978447da306fad3f72e4fb24ba76d2de45ed2650892c581fad1c8b520a7fa",
+    "s22": "a5d78fa647145c171d2f286382057bec8f66c55347171ac921967bfc5efdc858",
+    "s23": "2bef8c7bbc76d3d3a437c02cc89a91aae529b00b0073c0a3c030b4fbff677ef1",
+    "s24": "d5bb21282d0bbd0556f4a66c410ce0b238b6f6da4c9469af5bd64c0a50434b84",
+    "s25": "cb57590a3a2c45deb077d3ffbc49193ad01682577ee75c5b057eba28163f50b4",
+    "s26": "89a92efceb488f777af08540355f65ea8f87428c99c0ed45ec80be685c3fee19",
+    "s27": "35a0948378d380410d9c7f73a9f9e29cd168f930b1d4373a8744f335b1574aed",
+    "s28": "cf82ffda11d9fd109a3ed44f706095a2fff7275d2c1c0f7fd64518f7a61aadb9",
+    "s29": "0b58f8bd3beebc3e32a96527bd0f873d4850ceb104a05ed10cd4af6237a59862",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s30": "2a73bd72bdcc87421c26a7292a470f8ed0c046f06b67c09e50223451c8b56b27",
+    "s31": "8a42898fce5462fb994793c7f8697c3f11af025b71f89251169edc9d7f302552",
+    "s32": "7130574157aca67198cbaa9e5005abe6772165f4b45d24aea4f3a6c554a7529b",
+    "s33": "5cb11b883822cc98b799266558f2dfa18afd6cc78ab0efa4351d607f7d2c52a2",
+    "s34": "9929ef3f403622f53690250ef6fa4241e473d12cf758556f925c1dabab265c36",
+    "s35": "bc7d0f54020517eefeef623ae8fa4e1d0e92fac832f4d560dae282ea5a2bca8a",
+    "s36": "ab240fcf30777d2562045ec3e67c6899642cc80b3c568025cb1bce9e5929928f",
+    "s37": "2aa999f459e028c25919ac86153fa48445b6cb04037f61021998270bfae88021",
+    "s38": "5d2a6b32a6f4169d9ab94998540c285fe8cb797fc1e7a9d36dd00596bf10149d",
+    "s39": "f967aa9592023fd789832d7840c7c336addb657f3ca81c21557e8ca0628749ca",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s40": "3bfbf8ed0ff967780ee0923932c5e95b55731c4bb1fb10f02a76b5f9908f25a9",
+    "s41": "253e2044eac6f5e216403adea71bd159e40f03846cc6a76e85d66ac2eba636f9",
+    "s42": "be452b525070273e8b04ee91ce5a78fb67c21f1f940656e9d0879968cebeab7f",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:48:16.952779+00:00",
+  "total": null
+}
