@@ -1,0 +1,89 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T10:48:23.923Z",
+  "dispatched_at": "2026-11-13T10:40:00Z",
+  "findings": [
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261113T085221047330-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:231",
+      "id": "done_when-1",
+      "reason": "the node's gate can go green with the restart and events-file behaviours unbuilt, so the plan would close a node that measures one third of its own deliverable.",
+      "text": "the case \"A lapsed producer is restarted within one lease interval\" already holds at base (`WATCH_UNIT_TEMPLATE` in reckon/crew/watch_unit.py carries `Restart=always` and `RestartSec=5`, and `DEFAULT_PRODUCER_LEASE_SECONDS = 600` at reckon/crew/runs.py:2903), while the two declared negative-control mechanisms \u2014 removing the exit record \u2014 falsify only the first case, so the second case can pass on unfixed code and the third deliverable has no case at all",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261113T085221047330-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:231",
+      "id": "single_goal-1",
+      "reason": "a single verdict cannot be honest about three outcomes, and the gated half will carry the ungated half through promotion.",
+      "text": "\u00a725 asks for an incident reconstruction plus exit recording, a supervisor restart within a lease and events-file recovery, three behaviours that share no code and are verified by independent cases, yet one verdict has to close all of them",
+      "type": "single_goal",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261113T085221047330-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:231",
+      "id": "reasoning-1",
+      "reason": "a worker dispatched to this deliverable would find the interval already thirty times tighter than required, and would either change nothing or tune a five-second delay, leaving the actual 28-minute supervision gap untouched.",
+      "text": "the Why concludes that a restart should happen \"within one lease interval\" from a 28-minute gap, but the only mechanism that restarts a project's producer is the systemd unit, whose template already sets `Restart=always` with `RestartSec=5` (reckon/crew/watch_unit.py:636-637) and which \u00a72 of this same plan explicitly keeps, so a supervised producer is already restarted in five seconds; the cited evidence therefore points at supervision being absent, not running, or start-limited (systemd drops a unit after its start-limit burst), and the section neither diagnoses that nor repairs it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "/home/ITER/mcintos/.config/reckon/crew/reports/reckon/plan-review/a-seat-held-elsewhere-is-not-restarted/r-20261113T085221047330-plan-review-of-a-seat-held-elsewhere-is-not-restarted/plan.html:231",
+      "id": "wiring-1",
+      "reason": "an implementable section with no followup is the same defect an earlier review raised for \u00a722/\u00a723 and the plan answered by writing a followup, so leaving it repeats a gap the plan has already agreed to close.",
+      "text": "\u00a725 is declared `implementable` but no followup carries its invocation; the newest followup prompt dispatches \u00a722, \u00a723 and \u00a724 only, so the section has no dispatch path of the plan's own record",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2071ac05f92b48ed34dcd7dca10ec209eb0d0348",
+  "plan_fingerprint": "b992c9fd33752c0bdc222db9653720faaa11fe8fe633918951fdc2f103121b66",
+  "plan_slug": "a-seat-held-elsewhere-is-not-restarted",
+  "plan_version": 111,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261113T085221047330-plan-review-of-a-seat-held-elsewhere-is-not-restarted",
+  "reviewed_blob_sha": "c0d765ad28f0a8d709e63fc39ed3c4cb9fc7b3ac",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/watch_unit.py` and `reckon/crew/recovery_watch.py` exist, the new test path is new, and the cited evidence path `watch/power_convertor-2f320d946ced.events` resolves: `sha256(\"power_convertor\")[:12]` is `2f320d946ced` and the file exists (40,715,434 bytes).",
+    "done_when": "a finding \u2014 \u00a725's second case (\"A lapsed producer is restarted within one lease interval\") is satisfied at the base revision by the unit template's `Restart=always` / `RestartSec=5`, and the third deliverable (the events file dying while the producer lives) has no case and no negative control at all.",
+    "evidence_paths": "pass \u2014 the section declares no gate-log path of its own and its evidence is the repository's test tree, which survives the run.",
+    "naming": "pass \u2014 the new test filename and the field names the section describes carry no plan labels, stage names or ticket numbers.",
+    "reasoning": "a finding \u2014 the section attributes a ~28-minute producer outage to a restart-interval guarantee that the code already meets by a wide margin, so its stated repair does not address the evidence it cites.",
+    "single_goal": "a finding \u2014 \u00a725 bundles an incident reconstruction with three independent code behaviours across two modules (exit recording, supervisor restart, events-file recovery) under one verdict, and only the first two are gated.",
+    "wiring": "a finding \u2014 \u00a725 is `data-status=\"implementable\"` at plan.html:231 but no followup prompt names it (the last is `/reckon-build a-seat-held-elsewhere-is-not-restarted \u00a722 \u00a723 \u00a724`), so nothing dispatches the section."
+  },
+  "section_digests": {
+    "_document": "f74f7d81fb3d336d7eb4bb6a5eb0fca4bb78787e3691bdd89954cc5d9be5bf7e",
+    "s1": "e775b15757e63b277715e69df2ef97f2cf13db4e6364fc83b2f4ad6aa3bc858c",
+    "s10": "fd9ced512f1fc6a0610cb111ec8c734e3c55a84ea11034055f5f1c9e60e0c649",
+    "s11": "9d7552bb9a0f7179067d09a67e819e7194fbbac1e34cf450bb6dd2631508389d",
+    "s12": "41b7e2f138ff584e94cdef995cae4ab65e47e6e0efb43dc6d30b0045664f611d",
+    "s13": "441358f17906d8fa159ba5911fc62cfb32cabff650e9ae63b1300701b43f7b6d",
+    "s14": "15dd48418b8a42e818c6a6c93d4914efb531dc5439e368a148fd7168b3a89faa",
+    "s15": "707b8d39391cbd7e59f3dbd9cc4748c655d8870e48f237e84889148855f5b9e7",
+    "s16": "e185fa1e0f4aa25f213b2df34164fcfb48751f19156d05a48ec1118841ee463d",
+    "s17": "73a4699a4193793731da87cf3a489de8f9e91df7e596e68dad4897797177cb9e",
+    "s18": "8999758c87844624774b694fe81fcd076a62c6ef3bccc2334956bdae4b71957d",
+    "s19": "05cfac9a876e27aee75692ed6d7d2815bd728a33a3afadca32fcaaec730bcfc5",
+    "s2": "0ed10d108f8d1ab2183625c90b68b4eafa74562e02814b07bb8c2079f5f67566",
+    "s20": "cd0a0b3f8567f97846d7714a748891cd6d09203129332088a3be394654535d12",
+    "s21": "11df7904ae80164747f5a6f47235e25070efa14378053efe9015c68716761fd3",
+    "s22": "6470c81e3aa8d6f4cd1c53b986487c4953a9d2c3b95db7c21ac99f15cf45f1ed",
+    "s23": "a831720fb57ea3306095f6633e8c6eb79b2d648b4672ba1067c6a2e9d5da79ab",
+    "s24": "7abb9c9dd76867bd93484e690c4577e662149bdaa04b6d01fbddfb44df2ef0a1",
+    "s25": "8fc151fe6753a9bbe958d7d90262ebf48ddcf98aa8dcca4a7608bd059887e752",
+    "s3": "738aba9bff855c84122fa9ea72b1f1ef13486345a013a765e54c0cfa391a20c0",
+    "s4": "ca75c5c574381e50431d8d43b8f5532df7925573cf2dee356bea7941fcbd55cb",
+    "s5": "96d5fc1c72a25970cab856a7dde0a3cab839fd87c83786b7b49ffc4c1dabb1ab",
+    "s6": "c7b09760750dbf67efa83f9127581fea7578c7bf1e30b595ecd6c313b7505bad",
+    "s7": "d3e16f60d17ef3ee4666f9cd189aa6cd8e26f038173b65ee34b68f3f2cd822e7",
+    "s8": "b41130ef26282f759c1b7be0de0136701972d055ed7878e2f2d9cd21c96b4f63",
+    "s9": "a2cb7135c4bd3f1439c3ec948d6146c2f5b7527da59b1bbd4c7ce4c141ec3055"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:08:46.275960+00:00",
+  "total": null
+}
