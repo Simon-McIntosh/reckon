@@ -15,10 +15,19 @@
   while any of them is listed: one completed job beside five still running is a
   healthy wait, and asking per job would call the scheduler's answer negative on
   the one that finished.</p>
-  <p>Three readings are distinct on the row. A live job in the batch keeps the
+  <p>An operand carries no label, so the list is read as jobs only when the
+  probe runs a scheduler command, passes a job flag, or spells ids long enough
+  to be jobs — five digits or more. Without that rule the same shape read
+  <code>nc -z a-host 80,443</code> as jobs 80 and 443, because a comma list was
+  read whole whatever the command. A port list now names no job, and the
+  scheduler is not asked about it.</p>
+  <p>Four readings are distinct on the row. A live job in the batch keeps the
   run waiting. A batch the scheduler listed none of reads as nothing can lift
-  it, and the row names the jobs that were asked about. A wait naming no job,
-  including one given a single bare number, reads as it did before, and its row
+  it, and the row names the jobs that were asked about. A batch whose query
+  could not be put — the scheduler command absent, or run and refusing the
+  query — keeps the wait and its row says the scheduler could not be asked, so
+  nothing there claims the jobs have ended. A wait naming no job, including one
+  given a single bare number or a port list, reads as it did before, and its row
   says the scheduler was not consulted rather than that no job is alive. Every
   detail names the run's own process, so the reading can no longer be acted on
   as a stopped project watch producer; the classification and obligation kind
@@ -54,5 +63,8 @@
   <p>The added cases drive a stubbed scheduler rather than the reader that
   reports its answer, so the job ids the query carries are the ones the
   classifier derived, and the batch case asserts the query asked about all
-  three.</p>
+  three. The unaskable batch is stubbed both ways, as a command this host does
+  not have and as one that runs and refuses the query, and the port list is
+  stubbed to list both ports so a reader that mistook them for jobs would keep
+  its run waiting.</p>
 </section>
