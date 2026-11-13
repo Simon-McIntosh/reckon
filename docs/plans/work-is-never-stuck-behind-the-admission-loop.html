@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="379">
+<meta name="plan-version" content="380">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -622,6 +622,9 @@
 <div class="r-comment" data-section="s20" data-id="c-run-r-20261102T213931926007-a-vanished-lock-starts-no-second-copy" data-who="reckon-build" data-when="2026-11-03T00:27:54Z">
     <div class="r-comment-body"><p>Landed 33dcdfc6ce, b4838498fc, eca23f33d2, 138a7a3ff9 and fbaa51c15f: `_alive` keeps a copy alive while its recorded pid names a process whose command line is that service's (alert once per vanished lock, no restart), each supervision pass stops every copy but the recorded one by pid after logging the list, the pid record carries the live lock file's inode with the previous record only as fallback, `announce_requeue` writes the alerts log through the one `alert()` appender, and the recreated-lock case asserts the inode of the file on disk rather than requiring the number to change; 4 cases in `tests/test_a_vanished_lock_starts_no_second_copy.py`, head arm 4 passed / exit 0 at fbaa51c15f.</p></div>
 </div>
+<div class="r-comment" data-section="s21" data-id="c-run-r-20261113T025817814954-ready-work-is-never-stuck-behind-t-s21" data-who="reckon-build" data-when="2026-11-13T12:15:38Z">
+    <div class="r-comment-body"><p>Named-request admission, persisted queue positions and live-view projection delivered; 64 armed tests pass including 13 owned cases, all 3 admission controls and the projection control fail their intended cases, and 0 importer failures are added against the base.</p></div>
+</div>
 <div class="r-comment" data-section="s22" data-id="c-run-r-20261106T162505021196-review-of-a-launch-that-succeeds-is-recorded-whatever-a-refused-b0e72030bf1a" data-who="reckon-build" data-when="2026-11-06T16:35:19Z">
     <div class="r-comment-body"><p>Parsed independent review of 5e655fa1585bda633923fac1afa1285f3568b619..b0e72030bf1a3b349f99e8935d76933edb287e1d records six scores and one blocking finding: the importer pair has one added follower-readiness failure.</p></div>
 </div>
@@ -717,6 +720,9 @@
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261113T114625493069-review-of-ready-work-is-never-stuck-behind-t-s31-3f89152c80c5" data-who="reckon-build" data-when="2026-11-13T12:18:26.908Z">
     <div class="r-comment-body"><p>Reviewed r-20261113T030543522181-ready-work-is-never-stuck-behind-t-s31 at head 3f89152c80c50f94deed6a6585384a90b1752d5e against base 4d5c4389b7cffd9462a79412ccd472e3bce0589a; scores goal_fidelity 17, evidence 14, scope_discipline 18, durability 19, fit 17, reuse 20; added_failure_count 0; two non-blocking findings (fragment misnames the restore path's mechanism; manifest after_suite.revision names a revision its log does not carry). The landed diff is one evidence fragment (92 insertions, no source or test change); the guard and its regression file predate the run, and the negative control shows the test fails when the promotion reading is removed.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261113T030543522181-ready-work-is-never-stuck-behind-t-s31" data-who="reckon-build" data-when="2026-11-13T10:45:55.447Z">
+    <div class="r-comment-body"><p>Verified that every admission write-back refuses a departed request: `_restore_queued` and the failed-launch requeue both write through `_writeback_pointer`, which calls `_require_live_writeback` under the pointer lock and reads the promotion record before pointer presence, so a promoted run never re-enters the queue; the regression file passes 5 cases at base and at head, and a mutation dropping only the promotion reading fails the first case (3 failed, 2 passed).</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-unwait-s32" data-who="reckon-build" data-when="2026-11-08T07:00:00Z">
     <div class="r-comment-body"><p>§32's waits removed on 8 November, when the lead moved §32 to reckon-be's S27 coordination for dispatch on codex. §28 and §30 are done, so those waits ordered nothing. §31 writes reckon/crew/queue_admission.py like §32 but produces nothing §32 consumes, so that wait only serialised the file; the dispatch scope check now does that, holding whichever launches second on the other's claim. §32's 5 November request was a codex request left awaiting-upstream, which is never launched.</p></div>
@@ -915,9 +921,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s21" data-id="c-run-r-20261113T025817814954-ready-work-is-never-stuck-behind-t-s21" data-who="reckon-build" data-when="2026-11-13T12:15:38Z">
-    <div class="r-comment-body"><p>Named-request admission, persisted queue positions and live-view projection delivered; 64 armed tests pass including 13 owned cases, all 3 admission controls and the projection control fail their intended cases, and 0 importer failures are added against the base.</p></div>
 </div>
 </section>
 </main>
