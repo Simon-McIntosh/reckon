@@ -1,0 +1,32 @@
+<article class="r-evidence" data-node="ready-a-limit-reset-reaches-every-s3">
+<h3 id="ready-a-limit-reset-reaches-every-s3-what">A session without a pane learns of a reset on its next prompt — verified at base, both arms measured</h3>
+<p id="ready-a-limit-reset-reaches-every-s3-state">The deliverable is already on the tree at <code>3ddc28c71f</code>. The coordinator
+obligations hook (<code>reckon/hooks/coordinator_obligations.py</code>) renders one line per reset due to the
+asking session beside the duty list, reading <code>&lt;crew-home&gt;/budget-resets.json</code> by file, so the line
+appears with no obligations snapshot published; <code>duty_digest</code> carries the reset ids so a repeat stays
+quiet; <code>reckon/crew/obligations.py:recent_limit_resets</code> returns the same events under
+<code>limit_resets</code>; and the horizon (<code>LIMIT_RESET_HORIZON_SECONDS</code>, 3600 s) matches the one the
+producer announces by. The implementation landed in <code>ac0958d9ae</code> and its gate in
+<code>df58276bf5</code>. This node found nothing to implement and changed no product source or test. It also
+closes the one open point of the earlier run's review: the done-when's clause about the importing test files is
+now run against a base and a head arm rather than argued from identical bytes.</p>
+<h3 id="ready-a-limit-reset-reaches-every-s3-measure">Measure</h3>
+<p id="ready-a-limit-reset-reaches-every-s3-gate">The gate drives the hook as the harness drives it — a subprocess
+with hook JSON on stdin — in a temporary crew home whose store path is asserted outside the real one, with no
+obligations snapshot published, over a store holding a 20-minute global event, a 90-minute one and one scoped to
+another session. At <code>3ddc28c71f</code>: <strong>4 passed</strong> in 12.68 s, <code>EXIT=0</code>. The prompt
+names exactly one reset line, carrying the 20-minute event and neither excluded one; a second prompt over the same
+reading writes no context at all; the obligations view lists the 20-minute event under <code>limit_resets</code>
+with its group; and the hook's own file reading equals <code>budget_reset.recent_resets</code>; the store is shown
+to hold the excluded rows, so their absence is the filters' and not an empty read.</p>
+<p id="ready-a-limit-reset-reaches-every-s3-control">The declared negative control drops the 60-minute horizon
+(<code>RECKON_LIMIT_RESET_HORIZON_SECONDS=7200</code>): <strong>1 failed, 3 passed</strong>, <code>EXIT=1</code>,
+and the failure prints both the 20-minute <code>claude-orchestrators</code> row and the 90-minute
+<code>an-older-window</code> row — the bound is the horizon's, not the store's.</p>
+<p id="ready-a-limit-reset-reaches-every-s3-suite">The done-when's importing population is the <strong>52</strong>
+collected test files that import either module (derived by AST, not by a text match), run with
+<code>pytest -n 8</code> from two <code>git archive</code> checkouts under the run's scratch directory, the
+follower variables unset. Base <code>3ddc28c71f</code>: GATE_RESULT_BASE. Head <code>HEAD_SHA</code>:
+GATE_RESULT_HEAD. The promotion suite arm (<code>tests/test_staged_write_inventory.py</code>) runs on both arms:
+GATE_RESULT_SMALL_BASE and GATE_RESULT_SMALL_HEAD.</p>
+</article>
