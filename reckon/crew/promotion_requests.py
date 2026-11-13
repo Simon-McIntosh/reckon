@@ -250,6 +250,11 @@ class PromotionService:
     also needed because a lease reattaches when its holder has the same PID.
     The admission loop owns this instance; a tick starts work and never joins
     it. Tests and a manual service pass can explicitly settle the work.
+
+    A service that replaces its process image must first stop starting work and
+    let the work already running finish, because the replacement ends the
+    threads it started. ``begin_drain`` refuses every later tick and
+    ``wait_for_in_flight`` waits for the promotions this instance started.
     """
 
     def __init__(
@@ -261,6 +266,29 @@ class PromotionService:
         self.width = max(1, int(width))
         self.execute = execute or _execute
         self._threads: list[threading.Thread] = []
+        self._draining = False
+
+    def begin_drain(self) -> None:
+        """Start no further promotion; work already running still finishes."""
+        self._draining = True
+
+    def wait_for_in_flight(self, timeout: float | None = None) -> list[str]:
+        """Wait for this instance's promotions, returning those still running.
+
+        A timeout is never used by the reload path: cutting a promotion off is
+        the outcome the drain exists to prevent. It is offered so a caller that
+        is not replacing the process can bound its own wait.
+        """
+        deadline = None if timeout is None else time.monotonic() + timeout
+        still_running: list[str] = []
+        for thread in list(self._threads):
+            thread.join(
+                None if deadline is None else max(0.0, deadline - time.monotonic())
+            )
+            if thread.is_alive():
+                still_running.append(thread.name)
+        self._threads = [thread for thread in self._threads if thread.is_alive()]
+        return still_running
 
     def _claim(self, name: str) -> HostLease | None:
         key = str(runs.crew_home() / name)
@@ -298,6 +326,8 @@ class PromotionService:
     def tick(self) -> list[str]:
         """Start available requests without waiting for any promotion."""
         self._threads = [thread for thread in self._threads if thread.is_alive()]
+        if self._draining:
+            return []
         launched: list[str] = []
         for path in sorted(_requests_dir().glob("*.json")):
             request = _read(path)
