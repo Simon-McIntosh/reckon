@@ -19,12 +19,12 @@
   <meta name="plan-sprint" content="S27">
   <meta name="plan-owner" content="Simon McIntosh">
   <meta name="plan-tags" content="crew,reckon-tooling">
-  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;implementable&quot;,&quot;s3&quot;:&quot;implementable&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
+  <meta name="plan-section-declarations" content="{&quot;s1&quot;:&quot;done&quot;,&quot;s2&quot;:&quot;done&quot;,&quot;s3&quot;:&quot;done&quot;,&quot;s4&quot;:&quot;implementable&quot;}">
   <meta name="plan-section-depends-on" content="{&quot;s4&quot;:[&quot;a-plan-state-lock-holds-on-every-node#s2&quot;]}">
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="9">
+<meta name="plan-version" content="10">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -53,7 +53,7 @@
 <p>The same primitive appears 74 times in 23 modules under <code>reckon/</code>. <a href="/reckon/a-seat-held-elsewhere-is-not-restarted.html#s8">a-seat-held-elsewhere-is-not-restarted §8</a> found the node-local <code>flock</code> for follower registrations and judged them by a renewed lease instead. Plan state was not covered.</p>
 
     <h2 id="s2">§2 — A plan-state write and its recovery exclude each other on every node</h2>
-<section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s2" data-effort-hours="2.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="elevated" data-status="done" data-links=""></section>
 <p>Deliverable: while a process on one node holds a plan-state resource lock, another process on any node that asks for the same lock waits or is refused. This covers sprint moves, pushes, closes and every other <code>project_state</code> write, and the transaction recovery that reads beside them. Exclusion between two holders inside one process (two threads, or two opens of the lock file) is no weaker than today's.</p>
 <p>Done when:</p>
 <ul>
@@ -66,7 +66,7 @@
 <p>Write paths: <code>reckon/project_state.py</code>, one new module under <code>reckon/</code> if the lock is factored out, the probe script under <code>scripts/</code>, and <code>tests/test_a_plan_state_lock_holds_on_every_node.py</code>.</p>
 
     <h2 id="s3">§3 — A sprint move replies with what landed</h2>
-<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="implementable" data-links=""></section>
+<section data-reckon="section" data-id="s3" data-effort-hours="1.5" data-capability-version="1.0" data-capability-class="general" data-capability-reasoning="deep" data-capability-verification="strict" data-capability-risk="moderate" data-status="done" data-links=""></section>
 <p>Deliverable: a sprint move, push or close that touches two sprint resources ends in one of two states, both applied or neither applied. Its reply through <code>edit_plan</code> names which one, with both versions as they now stand on disk. A failure after both writes have landed does not report <code>ok=false</code> as if nothing changed. A failure of the move itself never leaves an item in both sprints or in neither. A reader on another node recovering mid-move is §2's case, not this section's.</p>
 <p>Done when a test with a temporary docs tree injects a fault at each step of a move:</p>
 <ul>
