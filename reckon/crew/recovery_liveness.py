@@ -1127,6 +1127,105 @@ def external_wait(
     )
 
 
+def parked_on_declared_wait(
+    record: Mapping[str, Any],
+    *,
+    now_seconds: float | None = None,
+) -> dict[str, Any] | None:
+    """The wait a run's worker is parked on, or None when it is not parked.
+
+    A parked run has ended its turn: its manifest declares a wait the fleet's
+    reader honours, and no worker this host can observe is still running it.
+    The declaration is not enough on its own — a manifest keeps a wait block
+    after the worker has been resumed — so a worker that is still running is
+    not parked, whatever the stale declaration beside it says.
+
+    A declaration the reader refuses is no park either: its probe cannot lift
+    it, so the run waits on a repair rather than on its condition, and treating
+    it as parked would admit a resume against work that never ended.
+
+    A reservation newer than the worker record is no park either. Between a
+    resume being admitted and its worker writing the run's worker record, the
+    record still describes the attempt that parked, so a reading taken from the
+    record alone would free the reservation the resume had just taken and admit
+    a second launch beside a worker that is on disk nowhere yet. The reservation
+    names the attempt it took, so a reservation for a later attempt than the
+    record's — or one written after the record was — is held.
+
+    Both the reservation door and the resume doors read this, so a parked run
+    is refused by none of them for looking alive and by all of them once its
+    worker is.
+    """
+    wait = external_wait(record, now_seconds=now_seconds)
+    if wait is None or not wait.get("valid"):
+        return None
+    reservation = _latest_reservation(record)
+    # The pointer's pid names the supervisor for a supervised launch, and an
+    # idle supervisor is exactly what a parked run has beside it. The worker is
+    # the process the declaration speaks for, so its liveness is read from the
+    # run's own worker record instead.
+    worker = dict(record)
+    worker.pop("pid", None)
+    worker.pop("pid_start_time", None)
+    if live_worker_reading(worker).alive is True:
+        return None
+    if reservation is not None and _reservation_outruns_worker(record, reservation):
+        return None
+    return wait
+
+
+def _latest_reservation(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The highest-numbered launch reservation in the run's own directory.
+
+    The file family, its name pattern and its payload reader all belong to
+    ``reckon.crew.dispatch_launch``, which writes them. This module asks that
+    owner rather than parsing the names again, so a reservation is one thing
+    to both the launch that takes it and the parked reading that weighs it.
+    """
+    from reckon.crew.dispatch_launch import latest_reservation
+
+    try:
+        directory = _run_directory(record)
+    except (OSError, ValueError):
+        return None
+    found = latest_reservation(directory)
+    return None if found is None else found[2]
+
+
+def _reservation_outruns_worker(
+    record: Mapping[str, Any], reservation: Mapping[str, Any]
+) -> bool:
+    """Whether a reservation was taken after the run's worker record landed.
+
+    The attempt number is the primary key: a resume reserves the attempt after
+    the one whose worker record stands, so a reservation naming a later attempt
+    is a launch whose worker has not written itself down yet. Where either side
+    names no attempt, the reservation's own stamp is compared with the worker
+    record's write time, which answers the same question one layer lower.
+    """
+    worker = _worker_record(record)
+    if worker is None:
+        return True
+    reserved_attempt = _int_or_none(reservation.get("attempt"))
+    worker_attempt = _int_or_none(worker.get("attempt"))
+    if reserved_attempt is not None and worker_attempt is not None:
+        return reserved_attempt > worker_attempt
+    reserved_stamp = parse_utc(reservation.get("at"))
+    reserved_at = reserved_stamp.timestamp() if reserved_stamp is not None else None
+    written_at = _worker_record_mtime(record)
+    if reserved_at is None or written_at is None:
+        return False
+    return reserved_at > written_at
+
+
+def _worker_record_mtime(record: Mapping[str, Any]) -> float | None:
+    """When the run's worker record was last written, or None when it is absent."""
+    try:
+        return (_run_directory(record) / WORKER_RECORD_NAME).stat().st_mtime
+    except (OSError, ValueError):
+        return None
+
+
 def _reading_host() -> str:
     """The host this reader runs on, for gating process-table lookups."""
     return socket.gethostname()

@@ -2373,6 +2373,44 @@ def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
     return run_directory / f"attempt-{attempt}{RESERVATION_SUFFIX}"
 
 
+def reservations_in(
+    run_directory: Path,
+) -> list[tuple[int, Path, Mapping[str, Any]]]:
+    """Every reservation the run directory holds, ascending by attempt.
+
+    The attempt is read from the file name by this module's own pattern and
+    the payload by its own reader, so every caller that has to answer a
+    question about an ``attempt-N.reservation`` file — the launch taking one,
+    the parked reading deciding whether one outruns the worker record — gets
+    the same answer about the same file. A reservation whose payload cannot
+    be read as a mapping carries no attempt anyone can act on and is skipped.
+    """
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return []
+    found: list[tuple[int, Path, Mapping[str, Any]]] = []
+    for name in names:
+        match = _RESERVATION_PATTERN.match(name)
+        if match is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if payload is None:
+            continue
+        found.append((int(match.group(1)), path, payload))
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def latest_reservation(
+    run_directory: Path,
+) -> tuple[int, Path, Mapping[str, Any]] | None:
+    """The highest-numbered reservation the run directory holds, with its attempt."""
+    found = reservations_in(run_directory)
+    return found[-1] if found else None
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -2385,28 +2423,17 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    try:
-        names = [path.name for path in run_directory.iterdir()]
-    except OSError:
-        return None
     pid = os.getpid()
-    for name in sorted(names):
-        match = _RESERVATION_PATTERN.match(name)
-        if match is None:
-            continue
-        path = run_directory / name
-        payload = _read_reservation(path)
-        if not isinstance(payload, Mapping):
-            continue
+    for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
         if payload.get("pid") != pid:
             continue
-        if int(match.group(1)) < at_least:
+        if attempt < at_least:
             continue
         return LaunchReservation(
             run_id=str(payload.get("run_id") or run_directory.name),
-            attempt=int(match.group(1)),
+            attempt=attempt,
             path=path,
             kind=str(payload.get("kind") or ""),
         )
@@ -2491,7 +2518,10 @@ def reservation_in_flight(
 
     Once a supervisor is recorded the reservation is freed by that supervisor's
     exit, whatever the reserving process is doing — the admit service outlives
-    every run it launches.
+    every run it launches. The one exception is a run parked on a declared
+    wait: its worker has ended its turn, the supervisor beside it is idle, and
+    the reservation holds nothing a resume could collide with, so the hold
+    lifts while the park stands and returns the moment a worker is running.
 
     Before one is recorded, the reserving process itself is the launch, and
     while it lives the launch is in flight, including a launch still waiting for
@@ -2510,10 +2540,31 @@ def reservation_in_flight(
             "pid": payload.get("supervisor_pid"),
             "pid_start_time": payload.get("supervisor_pid_start_time"),
         }
-        return record_process_alive(supervisor, process_alive) is True
+        if record_process_alive(supervisor, process_alive) is not True:
+            return False
+        # An idle supervisor holds nothing. A run whose worker has parked on a
+        # declared wait has ended its turn, and the supervisor beside it is
+        # waiting on a worker that is doing no work, so a reservation held on
+        # that supervisor's liveness refuses a resume for as long as the park
+        # stands. A worker that is still running is not parked, and its
+        # reservation still holds.
+        return not _run_is_parked_on_a_declared_wait(run_directory)
     if record_process_alive(payload, process_alive) is not True:
         return False
     return not _unreached_launch(payload, run_directory, attempt)
+
+
+def _run_is_parked_on_a_declared_wait(run_directory: Path | None) -> bool:
+    """Whether the run this reservation holds has parked on a declared wait."""
+    if run_directory is None:
+        return False
+    from reckon.crew.recovery_liveness import parked_on_declared_wait
+
+    try:
+        record = read_pointer(run_directory.name)
+    except CrewError:
+        return False
+    return parked_on_declared_wait(record) is not None
 
 
 def _reserved_attempt_ended(run_directory: Path, attempt: int) -> bool:

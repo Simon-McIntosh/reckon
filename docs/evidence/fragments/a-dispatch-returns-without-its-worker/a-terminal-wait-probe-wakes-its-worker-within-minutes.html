@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="a-dispatch-returns-without-its-worker">
+  <meta name="plan-evidence-for" content="a-dispatch-returns-without-its-worker">
+  <title>A terminal wait probe wakes its worker | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+  <main class="plan-doc">
+    <header>
+      <p class="eyebrow">Execution evidence &middot; fragment</p>
+      <h1>A terminal wait probe wakes its worker</h1>
+      <p class="lead">A worker that ends its turn on a declared external wait leaves its supervisor alive beside it, and every resume door read that live supervisor as an attempt in flight. The sweep evaluated the probe, saw it turn terminal, and refused to resume the run &mdash; so a job that ended wake nothing, and one run sat thirty minutes past the end of its job until an operator stopped it. The narrowing is that an idle supervisor holds nothing: a run parked on a wait it declared no longer carries a reservation, and is no longer refused by the launcher's live-process guard or by the observed-end guard. A worker that is still running is not parked, and its reservation holds exactly as before.</p>
+    </header>
+
+    <section id="terminal-wait-probe-what-changed">
+      <h2>What changed</h2>
+      <ul>
+        <li><code>reckon/crew/recovery_liveness.py</code>: <code>parked_on_declared_wait</code> is the single reading all three gates share. A run is parked when it declares a valid external wait, the liveness read of its <b>worker</b> record is not alive, and the run's newest reservation does not outrun that record. The pointer's own <code>pid</code> names the supervisor for a supervised launch, and an idle supervisor is exactly what a parked run has beside it, so that field is dropped before the worker reading is taken. A manifest keeps its wait block after the worker was resumed, so a worker that is still running is not parked; an invalid declaration is no park either.</li>
+        <li><code>parked on a declared wait</code> also holds a reservation that is newer than the worker record: a reservation keyed on a later attempt than the record's, or written after the record landed. Between a resume being admitted and its worker writing the record, the record still describes the attempt that parked, so a reading from the record alone would free the reservation the resume had just taken. The attempt number is the primary key and the reservation's stamp against the record's write time is the fallback.</li>
+        <li>The reservation file family is read through its owner. <code>dispatch_launch</code> writes <code>attempt-N.reservation</code>, so it now exposes <code>reservations_in</code> and <code>latest_reservation</code> over its own name pattern and payload reader, and both the launch that takes a reservation and the parked reading that weighs one ask them. The parked reading no longer carries a second glob, name split and json read for the same files, so the two cannot disagree about what an <code>attempt-N.reservation</code> is. Its reservation stamp goes through <code>parse_utc</code>, the module's one timestamp reader, rather than a private <code>fromisoformat</code> wrapper that refused every value the shared reader accepts as an epoch.</li>
+        <li><code>reckon/crew/dispatch_launch.py</code>: <code>reservation_in_flight</code> returns not-held for a reservation whose supervisor is alive but whose run is parked. <code>_run_is_parked_on_a_declared_wait</code> reads the run's own pointer and manifest, and any failure to read them leaves the hold standing.</li>
+        <li><code>reckon/crew/resumption.py</code>: <code>_parked_on_a_wait</code> lifts <code>_launcher_refusal</code>'s live-process refusal and <code>_observed_end_refusal</code>'s &ldquo;nothing observed the end&rdquo; refusal for a parked run &mdash; the second being the reason the probe's conversion to terminal previously changed nothing.</li>
+        <li><code>tests/test_a_terminal_wait_probe_wakes_its_worker.py</code> (new) covers four behaviours: a parked worker's idle supervisor holds no reservation and a resume is admitted; a running worker's reservation is still held; a reservation keyed on a later attempt than the worker record &mdash; a resume that has not written its worker record &mdash; is still held and a second resume is refused; and a probe that turns terminal wakes its worker inside five minutes on the run's own clock while the station's tick is held.</li>
+        <li>The wake case drives production code rather than a stand-in: <code>station.run_station</code> with its own <code>SweepBeat</code> and <code>ReflexBeat</code> threads, and the tick genuinely blocked inside its per-project refresh stage on an event only the case's cleanup sets. The station's clock is injected and the case reads it forward until the hold spans the plan's thirty minutes, so the half hour is a figure the case measures rather than one its comments claim: the tick's block records the clock where it began, and the wake assertion requires the span from that moment to the wake to be at least 1800 s of the run's own clock. The same assertion reads an event the tick sets only after its block ends, so a tick that had already returned — by timeout or by release — is caught instead of being read as held. The wake is the resume the sweep offers, recorded in place of the launch it would compose; any sweep that raises fails the case.</li>
+      </ul>
+    </section>
+
+    <section id="terminal-wait-probe-reproduction">
+      <h2>The defect, before the repair</h2>
+      <p>The node's new test file was run against the base revision <code>d788950a</code> in a tree of the base revision's own source, carrying only the new test file on top of it. The two failures are the two the node exists to close.</p>
+      <pre><code>AssertionError: a parked worker's idle supervisor still held the reservation</code></pre>
+      <pre><code>AssertionError: the terminal probe woke nothing; failures=[] last_skip=[{... 'reason': 'resume-refused', 'detail': "run 'r-parked-wait' is not resumed: the process reading is 'liveness unknown' &mdash; no pid was checked dead on this host and no supervisor exit was recorded &mdash; so nothing observed the end the lift would rest on"}]</code></pre>
+      <p>Both halves of the reported shape are in those two lines: the reservation stood behind an idle supervisor, and the sweep that saw the probe turn terminal refused the resume because the only end it would rest on was a supervisor exit that never came.</p>
+    </section>
+
+    <section id="terminal-wait-probe-the-gate">
+      <h2>The gate</h2>
+      <p>Every arm ran on <code>all_debug</code> through <code>sbatch</code>, each in its own tree, and each log opens with the committed revision it ran, its tree, and the literal command it ran &mdash; no placeholder, every test file named &mdash; and ends with a bare <code>EXIT=</code> line. The two fence arms resolve the suite template over their own tree: at the base revision the node's test file does not exist, so the template is the staged-write inventory alone.</p>
+      <table>
+        <thead><tr><th>Arm</th><th>Result</th><th>Log</th></tr></thead>
+        <tbody>
+          <tr><td>Base <code>d788950a</code>, fence template over the base tree</td><td>51 passed, <code>EXIT=0</code></td><td><code>base-arm.log</code></td></tr>
+          <tr><td>Head <code>16e5b077</code>, fence template over the head tree</td><td>55 passed, <code>EXIT=0</code></td><td><code>after-arm.log</code></td></tr>
+          <tr><td>Node test file at base <code>d788950a</code> (declared control)</td><td>2 failed, 2 passed, <code>EXIT=1</code></td><td><code>negative-control.log</code></td></tr>
+          <tr><td>Base <code>d788950a</code>, the reservation and wait files</td><td>2 failed, 39 passed, <code>EXIT=1</code></td><td><code>related-base-arm.log</code></td></tr>
+          <tr><td>Head <code>35b74118</code>, the same reservation and wait files</td><td>2 failed, 39 passed, <code>EXIT=1</code></td><td><code>related-arm.log</code></td></tr>
+        </tbody>
+      </table>
+      <p>The two fence arms are the delta that matters and it is green both sides: the inventory suite passes 51 at base, and the same 51 plus this node's four cases pass at head. The two failures in the related arms are identical at base and at head, by file and by test id &mdash; <code>test_waiting_claims_never_block_a_launch.py::test_working_claim_still_refuses_a_dispatch</code> and <code>::test_ready_waiter_stays_queued_while_the_launched_claim_holds_its_path</code>, where a dispatch the case expects to be refused exits 0 on this machine &mdash; so this node adds no failure, and they are recorded under <code>outside_scope</code> rather than triaged here. The cases the narrowing must not disturb are in both related arms and report no failure, including <code>test_a_launch_that_never_reached_its_worker_frees_its_hold.py</code>.</p>
+      <p>Ruff: the changed modules report 2 findings at base and 2 at head &mdash; the delta is zero and both are pre-existing checks on lines this node did not touch &mdash; and the new test file reports none. All files are <code>ruff format --check</code> clean.</p>
+    </section>
+
+    <section id="terminal-wait-probe-negative-control">
+      <h2>Declared negative control</h2>
+      <p>Declared: <em>the base revision, where the delayed tick delays the wake past five minutes and the resume is refused</em>. The control is the node's own test file run against the base revision's source, so the same held tick drives it: <code>test_a_parked_worker_frees_the_reservation_its_idle_supervisor_holds</code> fails on <code>AssertionError: a parked worker's idle supervisor still held the reservation</code>, and <code>test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held</code> fails because the terminal reading is refused, so the wake the case waits for never arrives. Both pass at head, and the file's other two cases pass at both revisions.</p>
+    </section>
+
+    <section id="terminal-wait-probe-reuse-control">
+      <h2>Controls for the reuse repair</h2>
+      <p>Each repaired check was reverted on its own and made to fail without it. The held-tick operand was reverted by releasing the tick inside its block while keeping its thread alive: the case as it stood before the repair <b>passes</b> that release (<code>1 passed</code>), and the repaired case fails it on <code>AssertionError: the tick returned before the wake; the case proves nothing about a held tick</code>. The measured span was reverted by dropping the clock advance: the repaired case fails on <code>AssertionError: the station clock did not reach the half hour the case holds the tick for</code>. If the tick never blocks at all, the case already fails at <code>the tick never entered its refresh stage</code>. All three are in <code>negative-control-repair.log</code>.</p>
+      <p>The owner-reuse repair has no behavioural test to fail, so its control is structural and uses the finding's own instrument: at <code>3dc3f09f13</code> <code>recovery_liveness.py</code> carries two reservation-name parsers and one <code>fromisoformat</code> call of its own; at the head that answers the review it carries neither, because the enumeration, the name pattern and the payload reader are <code>dispatch_launch</code>'s. Both counts are in the same log.</p>
+    </section>
+
+    <section id="terminal-wait-probe-commits">
+      <h2>Commits</h2>
+      <p><code>2182aea9668f9a0550b41381462ac5cad79c7327</code> &mdash; fix(crew): wake a worker parked on a terminal wait. Changes <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/dispatch_launch.py</code>, <code>reckon/crew/resumption.py</code> and <code>tests/test_a_terminal_wait_probe_wakes_its_worker.py</code>.</p>
+      <p><code>35b74118419c21de1a1dd80f0e3a8863f602afdb</code> &mdash; fix(crew): hold a reservation a resume has taken but not staffed. Changes <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/dispatch_launch.py</code> and <code>tests/test_a_terminal_wait_probe_wakes_its_worker.py</code>. This is the repair the review at <code>f6afb5ab1c</code> asked for.</p>
+      <p><code>16e5b07725c6e555810eb36a5754dea7391e8542</code> &mdash; refactor(crew): read reservations through the module that writes them. Changes <code>reckon/crew/recovery_liveness.py</code>, <code>reckon/crew/dispatch_launch.py</code> and <code>tests/test_a_terminal_wait_probe_wakes_its_worker.py</code>. This is the repair the reuse review at <code>3dc3f09f13</code> asked for.</p>
+    </section>
+  </main>
+</body>
+</html>
