@@ -1,0 +1,53 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew_dispatch_commands.py:queue_batch (:1131, the --batch dispatch path)",
+    "reckon/crew/admission/reviews.py:_section_rederivation (:580, the release path)"
+  ],
+  "completed_at": "2026-11-13T16:28:25.262Z",
+  "dispatched_at": "2026-11-13T16:16:56Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_a_batch_entry_carries_its_done_when_test.py",
+      "line": "243",
+      "severity": "non-blocking",
+      "text": "assert stored[s6][write_paths] == [custom/own_six.py] compares the stored value against the literal the test itself supplied in the entry at :146, so it holds for any code that merely echoes its input and would not fail if the derivation ran and produced the same list; the adjacent status assertion at :242 is the guard that actually fails when the queue-time exemption is removed."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit over 81274f7aad..5135e8e34df5: 77cd57ee57 replaces the local suffix-accepting extractor in _described_test_path with _TEST_PATH_PATTERN, 5e18747fdb adds fixture sections s6 and s7 and the assertions that pin each sub-finding, 5135e8e34d records the change in the evidence fragment; 72 insertions and 25 deletions over the three files.",
+    "done_when": "the done-when's one-file, two-file, none and literal-path cases are asserted at tests/test_a_batch_entry_carries_its_done_when_test.py:212-245, and the manifest records logs/reuse-head-suite.log 53 passed EXIT=0 at 5e18747fdb and logs/reuse-base-suite.log 51 passed EXIT=0 at 9049dfcc75.",
+    "goal": "the node goal is that a batch entry whose write-paths sentence names a file only by description carry the test path its done-when names; reckon/crew/dispatch_batch.py:396 _described_test_path now reads that path through the repository's shared _TEST_PATH_PATTERN, and the fixture stores entry s1 as [one.py, tests/test_one.py] at tests/test_a_batch_entry_carries_its_done_when_test.py:212.",
+    "manifest": "read; status complete, seven commits, baseline_suite 51 passed at 9049dfcc75 and after_suite 53 passed at 5e18747fdb with exit_status 0 and empty failure_ids, two per-sub-finding negative controls, and the pre-existing seven test_a_released_request_takes_the_sections_current_contract.py failures recorded under outside_scope.",
+    "write_paths": "the reviewed manifest's orientation names reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py, the evidence fragment and a figure directory; git diff 81274f7aad..5135e8e34df5 --name-only lists exactly the first three and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_batch_entry_carries_its_done_when_test.py:220 reddens against a local suffix-accepting extractor (logs/reuse-negative-local-pattern.log: assert queued == refused) and :242 reddens with the queue-time exemption removed (logs/reuse-negative-no-exempt.log: assert refused == queued), so both halves of the change are held by an assertion that fails on its reversion.",
+    "evidence": "logs/reuse-head-suite.log and logs/reuse-base-suite.log both end in a bare EXIT=0 with their revision, tree, command, module and cwd on the header lines, and logs/reuse-negative-no-exempt.log and logs/reuse-negative-local-pattern.log each end EXIT=1 failing the exact assertion their note names.",
+    "fit": "reckon/crew/dispatch_batch.py:411 lazily imports the shared private pattern inside the method and drops the parallel extractor, matching the module's existing lazy import of plan_review._digest at :491; no added name carries a plan, sprint, ticket or version label.",
+    "goal_fidelity": "reckon/crew/dispatch_batch.py:411-421 resolves the described test through the one shared pattern and still raises by name on zero or two candidates, which is what the goal asks the entry to carry.",
+    "reuse": "reckon/crew/dispatch_batch.py:420 now reads a described test path through _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687, the repository's existing owner of a test path a text names, instead of the second extractor the prior review found, and no other definition of that capability remains; plan_review.py:5465 _PY_PATH_TOKEN matches any python path, not a tests/ path, so it is a different capability.",
+    "scope_discipline": "every path in git diff 81274f7aad..5135e8e34df5 --name-only -- reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py and the one evidence fragment -- sits inside the manifest's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch entry whose write-paths sentence names a file only by description carry the test path its done-when names; reckon/crew/dispatch_batch.py:396 _described_test_path now reads that path through the repository's shared _TEST_PATH_PATTERN, and the fixture stores entry s1 as [one.py, tests/test_one.py] at tests/test_a_batch_entry_carries_its_done_when_test.py:212.\nVERDICT done_when: the done-when's one-file, two-file, none and literal-path cases are asserted at tests/test_a_batch_entry_carries_its_done_when_test.py:212-245, and the manifest records logs/reuse-head-suite.log 53 passed EXIT=0 at 5e18747fdb and logs/reuse-base-suite.log 51 passed EXIT=0 at 9049dfcc75.\nVERDICT write_paths: the reviewed manifest's orientation names reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py, the evidence fragment and a figure directory; git diff 81274f7aad..5135e8e34df5 --name-only lists exactly the first three and nothing else.\nVERDICT manifest: read; status complete, seven commits, baseline_suite 51 passed at 9049dfcc75 and after_suite 53 passed at 5e18747fdb with exit_status 0 and empty failure_ids, two per-sub-finding negative controls, and the pre-existing seven test_a_released_request_takes_the_sections_current_contract.py failures recorded under outside_scope.\nVERDICT diff: read commit by commit over 81274f7aad..5135e8e34df5: 77cd57ee57 replaces the local suffix-accepting extractor in _described_test_path with _TEST_PATH_PATTERN, 5e18747fdb adds fixture sections s6 and s7 and the assertions that pin each sub-finding, 5135e8e34d records the change in the evidence fragment; 72 insertions and 25 deletions over the three files.\nCALL_SITES: reckon/crew_dispatch_commands.py:queue_batch (:1131, the --batch dispatch path), reckon/crew/admission/reviews.py:_section_rederivation (:580, the release path)\nSCORE goal_fidelity: 19\nSCORE evidence: 17\nSCORE scope_discipline: 20\nSCORE durability: 17\nSCORE fit: 19\nSCORE reuse: 19\nJUSTIFICATION goal_fidelity: reckon/crew/dispatch_batch.py:411-421 resolves the described test through the one shared pattern and still raises by name on zero or two candidates, which is what the goal asks the entry to carry.\nJUSTIFICATION evidence: logs/reuse-head-suite.log and logs/reuse-base-suite.log both end in a bare EXIT=0 with their revision, tree, command, module and cwd on the header lines, and logs/reuse-negative-no-exempt.log and logs/reuse-negative-local-pattern.log each end EXIT=1 failing the exact assertion their note names.\nJUSTIFICATION scope_discipline: every path in git diff 81274f7aad..5135e8e34df5 --name-only -- reckon/crew/dispatch_batch.py, tests/test_a_batch_entry_carries_its_done_when_test.py and the one evidence fragment -- sits inside the manifest's declared write paths.\nJUSTIFICATION durability: tests/test_a_batch_entry_carries_its_done_when_test.py:220 reddens against a local suffix-accepting extractor (logs/reuse-negative-local-pattern.log: assert queued == refused) and :242 reddens with the queue-time exemption removed (logs/reuse-negative-no-exempt.log: assert refused == queued), so both halves of the change are held by an assertion that fails on its reversion.\nJUSTIFICATION fit: reckon/crew/dispatch_batch.py:411 lazily imports the shared private pattern inside the method and drops the parallel extractor, matching the module's existing lazy import of plan_review._digest at :491; no added name carries a plan, sprint, ticket or version label.\nJUSTIFICATION reuse: reckon/crew/dispatch_batch.py:420 now reads a described test path through _TEST_PATH_PATTERN at reckon/crew/recovery_repair_dispatch.py:687, the repository's existing owner of a test path a text names, instead of the second extractor the prior review found, and no other definition of that capability remains; plan_review.py:5465 _PY_PATH_TOKEN matches any python path, not a tests/ path, so it is a different capability.\nFINDING tests/test_a_batch_entry_carries_its_done_when_test.py:243 non-blocking: assert stored[s6][write_paths] == [custom/own_six.py] compares the stored value against the literal the test itself supplied in the entry at :146, so it holds for any code that merely echoes its input and would not fail if the derivation ran and produced the same list; the adjacent status assertion at :242 is the guard that actually fails when the queue-time exemption is removed.\n",
+  "review_run_id": "r-20261113T161522520515-review-of-a-batch-entry-carries-its-done-when-test-5135e8e34df5",
+  "reviewed_base_sha": "81274f7aad38ee23533b45d5c5987941ddc2a0a7",
+  "reviewed_head_sha": "5135e8e34df5a50348772bcd007db077afb25e9c",
+  "reviewed_run_id": "r-20261113T130945823094-a-batch-entry-carries-its-done-when-test",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 19,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:33:31.481205+00:00",
+  "total": 111
+}
