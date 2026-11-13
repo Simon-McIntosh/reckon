@@ -1113,8 +1113,9 @@ def _worker_runtime_plan(
 def _worker_process_environment(
     environment: Mapping[str, str] | None, *, dialect: str
 ) -> dict[str, str]:
-    """Merge inherited launch state while withholding Claude headers from Codex."""
+    """Merge worker launch state without inheriting service pass ownership."""
     merged = {**os.environ, **(environment or {})}
+    merged.pop("RECKON_SERVICE_PASS_PATH", None)
     if dialect != "claude":
         merged.pop("ANTHROPIC_CUSTOM_HEADERS", None)
     return merged

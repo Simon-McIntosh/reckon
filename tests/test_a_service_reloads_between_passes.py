@@ -5,6 +5,7 @@ from __future__ import annotations
 import fcntl
 import json
 import os
+import subprocess
 import sys
 import time
 from pathlib import Path
@@ -238,3 +239,43 @@ def test_a_manual_pass_needs_no_supervisor_boundary(monkeypatch):
     monkeypatch.delenv(fleet.SERVICE_PASS_PATH_ENV, raising=False)
     with fleet.service_pass():
         pass
+
+
+@pytest.mark.parametrize("dialect", ["claude", "codex"])
+@pytest.mark.parametrize("overlaid", [False, True])
+def test_a_launched_worker_has_no_parent_service_boundary(
+    tmp_path, monkeypatch, dialect, overlaid
+):
+    from reckon.crew import dispatch_launch
+
+    boundary = str(tmp_path / "parent.pass")
+    monkeypatch.setenv(fleet.SERVICE_PASS_PATH_ENV, boundary)
+    overlay = {"WORKER_PAYLOAD": "retained"}
+    if overlaid:
+        overlay[fleet.SERVICE_PASS_PATH_ENV] = str(tmp_path / "overlay.pass")
+    environment = dispatch_launch._worker_process_environment(overlay, dialect=dialect)
+    launched = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import json, os; print(json.dumps({"
+                "key: os.environ[key] for key in "
+                "('RECKON_SERVICE_PASS_PATH', 'WORKER_PAYLOAD') if key in os.environ}))"
+            ),
+        ],
+        env=environment,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    assert json.loads(launched.stdout) == {"WORKER_PAYLOAD": "retained"}
+    assert os.environ[fleet.SERVICE_PASS_PATH_ENV] == boundary
+    assert overlay == (
+        {
+            "WORKER_PAYLOAD": "retained",
+            fleet.SERVICE_PASS_PATH_ENV: str(tmp_path / "overlay.pass"),
+        }
+        if overlaid
+        else {"WORKER_PAYLOAD": "retained"}
+    )
