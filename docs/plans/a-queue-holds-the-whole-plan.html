@@ -25,7 +25,7 @@
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
 <meta name="plan-sprint" content="S27">
-<meta name="plan-version" content="355">
+<meta name="plan-version" content="356">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -865,6 +865,12 @@
 <div class="r-comment" data-section="s41" data-id="c-run-r-20261112T162431914028-queued-write-path-edit-reaches-the-fence" data-who="reckon-build" data-when="2026-11-12T17:42:20Z">
     <div class="r-comment-body"><p>A queued write-path edit now survives the plan-review release: the release re-derives under the pointer lock from the record it writes and never re-derives a field whose mark the queue writer cleared.</p></div>
 </div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261113T064226109682-review-of-a-batch-dispatch-reads-each-plan-once-58b489cfa9cb" data-who="reckon-build" data-when="2026-11-13T06:59:50.990Z">
+    <div class="r-comment-body"><p>review of a-batch-dispatch-reads-each-plan-once at head 58b489cfa9 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 13, fit 16, reuse 15 with zero added failures and three non-blocking findings.</p></div>
+</div>
+<div class="r-comment" data-section="s42" data-id="c-run-r-20261113T060318292240-a-batch-dispatch-reads-each-plan-once" data-who="reckon-build" data-when="2026-11-13T06:38:45.274Z">
+    <div class="r-comment-body"><p>§42 lands: a batch enters one plan-read scope for its duration, so the metadata index is observed once per project, each plan document is read once, and each plan&#x27;s authored headings are parsed once per distinct document — 20 entries over 4 plans read state 2 times and parse headings 4 times at head, against 1026 state reads for 4 plans at the base revision; the stored requests are unchanged.</p></div>
+</div>
 <div class="r-comment" data-section="s5" data-id="c-20261023-s5-review" data-who="reckon-build" data-when="2026-10-23T09:30:00Z">
     <div class="r-comment-body"><p>Design review on 2026-10-23: <code>_store_brief</code> is defined in <code>reckon/crew/dispatch_admission.py</code>, not <code>dispatch.py</code>, and §5's new <code>crew queue</code> verbs should name what they retire or merge against the CLI surface.</p></div>
 </div>
@@ -978,9 +984,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261026T221905269639-drain-lists-unloaded" data-who="reckon-build" data-when="2026-10-27T00:05:11Z">
     <div class="r-comment-body"><p>docs/evidence/fragments/a-queue-holds-the-whole-plan/drain-lists-unloaded.html — matched six-file delta: 1 landing failure and 60 passed at source-reverted base, 61 passed at repaired head; both answering-commit inverse controls failed the landing assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s42" data-id="c-run-r-20261113T064226109682-review-of-a-batch-dispatch-reads-each-plan-once-58b489cfa9cb" data-who="reckon-build" data-when="2026-11-13T06:59:50.990Z">
-    <div class="r-comment-body"><p>review of a-batch-dispatch-reads-each-plan-once at head 58b489cfa9 scores goal_fidelity 18, evidence 14, scope_discipline 20, durability 13, fit 16, reuse 15 with zero added failures and three non-blocking findings.</p></div>
 </div>
 </section>
 </main>
