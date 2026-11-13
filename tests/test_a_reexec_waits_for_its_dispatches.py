@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import os
 import threading
-import time
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Self
 
@@ -31,23 +31,19 @@ from reckon.crew import (
     runs as runs_module,
 )
 
-#: How long a held dispatch stays outstanding before it reaches its worker.
-#: Long enough that an unwaiting exec is certain to run inside the window, and
-#: short enough that three cases cost under a second.
-HOLD_SECONDS = 0.3
-
 #: The bound the cases run under. Large, so a service that waits is never
 #: abandoned by it; the bound case patches its own small value.
 BOUND_SECONDS = 30.0
 
 
 @pytest.fixture(autouse=True)
-def reexec_bound(monkeypatch: pytest.MonkeyPatch) -> object:
+def reexec_bound(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> object:
     """Hold the register empty between cases and set the wait's bound.
 
     The register is process-wide, so a case that fails mid-flight would seed
     the next one with an outstanding dispatch it never asked for.
     """
+    monkeypatch.setenv("RECKON_HOME", str(tmp_path / "crew"))
     monkeypatch.setattr(claims, "REEXEC_DISPATCH_WAIT_SECONDS", BOUND_SECONDS)
     claims._DISPATCHES_IN_FLIGHT.clear()
     yield
@@ -55,34 +51,65 @@ def reexec_bound(monkeypatch: pytest.MonkeyPatch) -> object:
 
 
 class _DispatchInFlight:
-    """One dispatch between its claim and its worker, held open by a thread.
+    """Hold a real node claim until the shared wait releases its condition lock."""
 
-    The thread stands in for the sweep, the producer or an admission pass: it
-    owns the dispatch and reaches its worker a moment after the service does,
-    which is exactly the overlap the wait exists for.
-    """
+    def __init__(self, monkeypatch: pytest.MonkeyPatch, *, sweep: bool = False):
+        self.run_id = "r-in-flight"
+        self.node_id = "node-waiting"
+        self.started = threading.Event()
+        self.finish = threading.Event()
+        self.finished = threading.Event()
+        self.errors: list[BaseException] = []
+        self.sweep = sweep
+        condition_wait = claims._DISPATCHES_IN_FLIGHT_IDLE.wait
 
-    def __init__(self, run_id: str = "r-in-flight", node_id: str = "node-waiting"):
-        self.run_id = run_id
-        self.node_id = node_id
-        self.released = threading.Event()
-        self._thread = threading.Thread(target=self._hold, daemon=True)
+        def release_when_waiting(timeout: float | None = None) -> bool:
+            self.finish.set()
+            return condition_wait(timeout)
 
-    def _hold(self) -> None:
-        time.sleep(HOLD_SECONDS)
-        claims._leave_dispatch_in_flight(self.run_id)
-        self.released.set()
+        monkeypatch.setattr(
+            claims._DISPATCHES_IN_FLIGHT_IDLE, "wait", release_when_waiting
+        )
+
+    def _hold(self, *_args: object, **_kwargs: object) -> None:
+        try:
+            claim = claims._claim_node_dispatch(
+                project="project",
+                worktree_identity="tree",
+                node_id=self.node_id,
+                run_id=self.run_id,
+                session="session",
+            )
+            try:
+                if self.sweep:
+                    assert threading.current_thread().name == "station-sweep"
+                self.started.set()
+                assert self.finish.wait(5), "dispatch was never released"
+            finally:
+                claim.release()
+        except BaseException as exc:  # noqa: BLE001 - surface thread failures to pytest
+            self.errors.append(exc)
+        finally:
+            self.started.set()
+            self.finished.set()
 
     def __enter__(self) -> Self:
-        claims._enter_dispatch_in_flight(self.run_id, self.node_id)
-        # A positive control on the instrument: a register that was never
-        # seeded would make every case below pass without a wait at all.
+        if self.sweep:
+            beat = station.SweepBeat(sweep=self._hold)
+            assert beat.request(
+                "project", "session", moment=datetime.now(UTC), changed=True
+            )
+        else:
+            threading.Thread(target=self._hold).start()
+        assert self.started.wait(5), "dispatch did not acquire its claim"
+        assert not self.errors, self.errors
         assert claims.dispatches_in_flight() == {self.run_id: self.node_id}
-        self._thread.start()
         return self
 
     def __exit__(self, *_exc: object) -> None:
-        self.released.wait()
+        self.finish.set()
+        assert self.finished.wait(5), "dispatch thread did not finish"
+        assert not self.errors, self.errors
 
 
 def _recording_execve(monkeypatch: pytest.MonkeyPatch) -> list[dict[str, str]]:
@@ -133,7 +160,10 @@ def test_the_station_waits_for_a_dispatch_before_it_reexecutes(
     monkeypatch.setattr(follower_reload, "image_reexec_environment", lambda *a, **k: {})
     at_exec = _recording_execve(monkeypatch)
 
-    with _DispatchInFlight(), pytest.raises(OSError, match="execve captured"):
+    with (
+        _DispatchInFlight(monkeypatch, sweep=True),
+        pytest.raises(OSError, match="execve captured"),
+    ):
         reloader.poll()
 
     assert at_exec == [{}], f"the station exec'd with {at_exec} in flight"
@@ -159,7 +189,7 @@ def test_the_follower_waits_for_a_dispatch_before_it_reexecutes(
     monkeypatch.setattr(reloader, "_replacement_imports", lambda: (True, ""))
     at_exec = _recording_execve(monkeypatch)
 
-    with _DispatchInFlight():
+    with _DispatchInFlight(monkeypatch):
         reloader.poll({})
 
     assert at_exec == [{}], f"the follower exec'd with {at_exec} in flight"
@@ -176,7 +206,10 @@ def test_the_admit_service_waits_for_a_dispatch_before_it_reexecutes(
     )
     at_exec = _recording_execve(monkeypatch)
 
-    with _DispatchInFlight(), pytest.raises(OSError, match="execve captured"):
+    with (
+        _DispatchInFlight(monkeypatch),
+        pytest.raises(OSError, match="execve captured"),
+    ):
         queue_admission._reexec_into_current_code()
 
     assert at_exec == [{}], f"the admit service exec'd with {at_exec} in flight"
