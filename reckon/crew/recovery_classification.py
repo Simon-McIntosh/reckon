@@ -527,25 +527,32 @@ def _wait_value_still_seconds(
 
 
 def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
-    """Whether the scheduler still lists the job a wait's probe names.
+    """Whether the scheduler still lists any job a wait's probe names.
 
-    The job id comes from the shared probe reader, so every shape a wait is
-    written in names its job: an ``squeue`` vector, a ``sacct`` vector, and an
-    interpreter's code string reaching either. Reading the id from the probe's
-    own head instead would ask the scheduler nothing about the two shapes whose
-    command is not ``squeue``, and their silence is indistinguishable from a
-    job that has ended.
+    The job ids come from the shared probe reader, so every shape a wait is
+    written in names its jobs: an ``squeue`` vector, a ``sacct`` vector, an
+    interpreter's code string reaching either, and a script handed a
+    comma-separated batch of ids. Reading them from the probe's own head
+    instead would ask the scheduler nothing about the shapes whose command is
+    not ``squeue``, and their silence is indistinguishable from jobs that have
+    ended.
+
+    A wait may name a batch, so the question is asked about all of them in one
+    query and answered True as soon as the scheduler lists any. The batch is
+    why the answer is not a single job's: one completed job beside five still
+    running is a healthy wait, and reading it per job would call the wait dead
+    on the one that finished.
 
     None means the wait names no scheduler job, or the scheduler could not be
-    asked: an unreadable answer is not evidence the job is gone, so it never
-    contributes to calling the producer gone.
+    asked: an unreadable answer is not evidence the jobs are gone, so it never
+    contributes to calling the run abandoned.
     """
-    job_id = _wait_probe_job_id(probe)
-    if not job_id:
+    job_ids = _wait_probe_job_ids(probe)
+    if not job_ids:
         return None
     try:
         result = subprocess.run(
-            ["squeue", "-h", "-j", job_id],
+            ["squeue", "-h", "-j", ",".join(job_ids)],
             capture_output=True,
             text=True,
             check=False,
@@ -585,11 +592,12 @@ def _producer_gone_verdict(
     """
     if alive is not False or liveness_proven is not True:
         return None
-    # A wait that names a job is only settled by a scheduler that answered and
-    # listed no such job; a scheduler that could not be asked leaves the job's
+    # A wait that names jobs is only settled by a scheduler that answered and
+    # listed none of them; a scheduler that could not be asked leaves their
     # liveness unknown rather than absent. A wait naming no job asks nothing of
     # the scheduler, so its silence says nothing either way.
     probe = wait.get("probe") or ()
+    job_ids = _wait_probe_job_ids(probe)
     if (
         _wait_probe_job_id(probe) is not None
         and _scheduler_job_alive(probe) is not False
@@ -603,8 +611,12 @@ def _producer_gone_verdict(
     return {
         "still_seconds": int(still),
         "observed": (observation or {}).get("observed"),
-        "probe": [str(item) for item in wait.get("probe") or ()],
+        "probe": [str(item) for item in probe],
         "terminal": list(wait.get("terminal") or ()),
+        # The jobs the scheduler was asked about, so the row can say what was
+        # consulted instead of asserting no job is alive on a question nobody
+        # put. An empty list is the wait that names none of them.
+        "scheduler_jobs": [str(job_id) for job_id in job_ids],
     }
 
 
@@ -1749,18 +1761,35 @@ def classify_pointer(
             # produce the thing waited on. The row stops reading as working and
             # the session owes a decision, because no later sweep will lift it.
             classification = PRODUCER_GONE_STATUS
+            scheduler_jobs = verdict.get("scheduler_jobs") or []
+            if scheduler_jobs:
+                # The scheduler answered and listed none of the jobs the wait
+                # names, so the row can say that rather than assert an absence
+                # it never looked for. The batch is named in full because one
+                # completed job beside five still running is a healthy wait,
+                # and a reader must be able to see which ones were asked about.
+                scheduler_clause = (
+                    f"and the scheduler listed none of the {len(scheduler_jobs)} "
+                    f"jobs the wait names ({', '.join(scheduler_jobs)}), so no "
+                    "later sweep can lift it"
+                )
+            else:
+                scheduler_clause = (
+                    "and the wait names no scheduler job, so the scheduler was "
+                    "not consulted and its silence says nothing about whether "
+                    "the work has ended"
+                )
             detail = (
                 f"waiting {wait['age_seconds']}s on {wait['condition']}; the "
-                f"producer is gone — no process of the run is alive and the "
-                f"probe {verdict['observed']!r} has not changed for "
-                f"{verdict['still_seconds']}s — with no scheduler job alive, so "
-                f"no later sweep can lift it; terminal when the probe reports "
-                f"{', '.join(verdict['terminal'])}"
+                f"run's own process is gone — no process of the run is alive "
+                f"and the probe {verdict['observed']!r} has not changed for "
+                f"{verdict['still_seconds']}s — {scheduler_clause}; terminal "
+                f"when the probe reports {', '.join(verdict['terminal'])}"
             )
             action = (
                 f"reckon crew resume --run {run_id} --advice continue to carry "
-                f"the wait past its gone producer, or discard the run with "
-                f"reckon crew discard --run {run_id}"
+                f"the wait past the end of the run's own process, or discard "
+                f"the run with reckon crew discard --run {run_id}"
             )
             wait_verdict = verdict
         else:
@@ -2714,6 +2743,7 @@ from .recovery_wait import (  # noqa: E402
     _run_wait_condition_probe,
     _wait_condition_observation,
     _wait_probe_job_id,
+    _wait_probe_job_ids,
 )
 from .recovery_watch import (  # noqa: E402
     FLEET_SETTLED_STATES,

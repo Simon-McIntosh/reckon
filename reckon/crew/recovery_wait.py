@@ -854,33 +854,78 @@ def _wait_probe_glued_job_value(token: str) -> str:
     return ""
 
 
-def _wait_probe_job_id(probe: Sequence[str]) -> str | None:
-    """The scheduler job a probe names, or None when it names none.
+def _wait_probe_count_list(token: str) -> list[str]:
+    """The job ids a token spells as a comma-separated list, or an empty list.
 
-    The job id is read out of the words the probe actually runs, so a ``sacct``
-    probe and an interpreter probe name their job as an ``squeue`` probe does:
-    through the job flag, in its separated, ``=``-joined or glued spelling. A
-    bare digit is read as a job only when the probe runs a scheduler command,
-    because a port and a pid are bare digits too and a wait on one of those is
-    not a wait on a scheduler job.
+    A probe hands a batch of jobs to a script as one operand —
+    ``python wait_jobs.py 1312389,1312390,1312391`` — and that list is the
+    whole point of the wait. A single number is deliberately not read here: it
+    may as well be a pid or a port, and only the operand's place in a scheduler
+    command or a job flag settles which one it is.
     """
+    parts = [part.strip() for part in token.split(",")]
+    if len(parts) < 2 or not all(_wait_probe_names_a_count(part) for part in parts):
+        return []
+    return parts
+
+
+def _wait_probe_job_values(value: str) -> list[str]:
+    """The job ids one flag value or operand names, singly or as a list."""
+    listed = _wait_probe_count_list(value)
+    if listed:
+        return listed
+    return [value.strip()] if _wait_probe_names_a_count(value) else []
+
+
+def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
+    """The scheduler jobs a probe names, in the order it names them.
+
+    The job ids are read out of the words the probe actually runs, so a
+    ``sacct`` probe and an interpreter probe name their jobs as an ``squeue``
+    probe does: through the job flag, in its separated, ``=``-joined or glued
+    spelling. A bare digit is read as a job only when the probe runs a
+    scheduler command, because a port and a pid are bare digits too and a wait
+    on one of those is not a wait on a scheduler job.
+
+    One shape is read from the vector's own items instead of from those words.
+    A batch of jobs is handed to a script as a comma-separated operand, and the
+    interpreter separator set splits that operand into its digits, where a run
+    of bare numbers is indistinguishable from pids. Reading the operand whole
+    keeps the list a list and is what makes a wait on seven jobs name all
+    seven rather than none.
+    """
+    job_ids: list[str] = []
+    for item in probe[1:]:
+        job_ids.extend(_wait_probe_count_list(str(item)))
     command, words = _wait_probe_program_words(probe)
     tokens = [command, *words]
     for index, token in enumerate(tokens):
         name, separator, inline = token.partition("=")
         if name in _WAIT_PROBE_JOB_FLAGS:
-            if separator and _wait_probe_names_a_count(inline):
-                return inline.strip()
-            if index + 1 < len(tokens) and _wait_probe_names_a_count(tokens[index + 1]):
-                return tokens[index + 1].strip()
+            value = (
+                inline
+                if separator
+                else (tokens[index + 1] if index + 1 < len(tokens) else "")
+            )
+            job_ids.extend(_wait_probe_job_values(value))
         glued = _wait_probe_glued_job_value(token)
         if glued:
-            return glued
+            job_ids.append(glued)
     if any(Path(token).name in _WAIT_PROBE_SCHEDULER_COMMANDS for token in tokens):
         for token in tokens[1:]:
-            if _wait_probe_names_a_count(token):
-                return token.strip()
-    return None
+            job_ids.extend(_wait_probe_job_values(token))
+    return tuple(dict.fromkeys(job_ids))
+
+
+def _wait_probe_job_id(probe: Sequence[str]) -> str | None:
+    """The first scheduler job a probe names, or None when it names none.
+
+    A wait may name more than one job, and :func:`_wait_probe_job_ids` is the
+    reader that returns them all; this one answers the single-job question the
+    callers that ask it are asking.
+    """
+    job_ids = _wait_probe_job_ids(probe)
+    return job_ids[0] if job_ids else None
 
 
 def _wait_probe_names_an_operand(item: str) -> bool:
