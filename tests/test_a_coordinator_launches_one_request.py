@@ -40,6 +40,9 @@ def _drive(monkeypatch, repository, tmp_path, *, slots):
         )
 
     monkeypatch.setattr(queue_admission, "_launch_queued", launch)
+    monkeypatch.setattr(
+        queue_admission, "_resolve_lane_config", lambda _pointer, **_options: config
+    )
     real_admit = queue_admission.admit_once
 
     def admit(**options):
@@ -206,3 +209,90 @@ def test_the_help_names_the_single_request_boundary():
     assert "only this queued request" in text
     assert "without release or landing" in text
     assert "under the admit lock" in text
+
+
+@pytest.mark.parametrize("narrowed", [False, True])
+def test_live_view_shows_the_stored_queue_position_rank_and_verdict(
+    admit_repo, tmp_path, monkeypatch, narrowed
+):
+    driver = _drive(monkeypatch, admit_repo, tmp_path, slots=0)
+    _two_requests(admit_repo)
+    driver.admit()
+    expected = {run_id: runs.read_pointer(run_id) for run_id in ("r-first", "r-chosen")}
+    fields = ("queue_position", "rank_key", "last_admission")
+    assert all(set(fields) <= set(pointer) for pointer in expected.values())
+    arguments = [
+        "crew",
+        "view",
+        "live",
+        "--project",
+        queued.PROJECT,
+        "--checkout-path",
+        str(admit_repo),
+    ]
+    if narrowed:
+        arguments.extend(["--fields", ",".join(fields)])
+
+    result = CliRunner().invoke(cli.main, arguments)
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"], payload
+    rows = {row["run_id"]: row for row in payload["runs"]}
+    assert set(rows) == set(expected)
+    for run_id, pointer in expected.items():
+        for field in fields:
+            assert rows[run_id][field] == pointer[field]
+        if narrowed:
+            assert set(rows[run_id]) == {"run_id", *fields}
+
+
+def test_live_view_accepts_admission_fields_when_no_request_is_queued(admit_repo):
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "view",
+            "live",
+            "--project",
+            queued.PROJECT,
+            "--checkout-path",
+            str(admit_repo),
+            "--fields",
+            "queue_position,rank_key,last_admission",
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    payload = json.loads(result.output)
+    assert payload["ok"], payload
+    assert payload["runs"] == []
+
+
+def test_live_view_omits_stored_queue_fields_after_launch(
+    admit_repo, tmp_path, monkeypatch
+):
+    driver = _drive(monkeypatch, admit_repo, tmp_path, slots=0)
+    _two_requests(admit_repo)
+    driver.admit()
+    pointer = runs.read_pointer("r-chosen")
+    assert pointer["queue_position"] == 2
+    runs._mutate_pointer("r-chosen", lambda current: {**current, "phase": "starting"})
+
+    result = CliRunner().invoke(
+        cli.main,
+        [
+            "crew",
+            "view",
+            "live",
+            "--project",
+            queued.PROJECT,
+            "--checkout-path",
+            str(admit_repo),
+        ],
+    )
+
+    assert result.exit_code == 0, result.output
+    rows = {row["run_id"]: row for row in json.loads(result.output)["runs"]}
+    assert set(rows) == {"r-first", "r-chosen"}
+    assert not {"queue_position", "rank_key", "last_admission"} & set(rows["r-chosen"])

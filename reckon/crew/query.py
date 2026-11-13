@@ -88,6 +88,7 @@ LIVE_OVERRUN_FIELDS = frozenset(
 #: unconditionally: a caller asking where a queued run stands must not have its
 #: request refused on a lane that happens to have no queued request in flight.
 LIVE_PLACEMENT_FIELDS = ("position", "rank")
+LIVE_ADMISSION_FIELDS = ("queue_position", "rank_key", "last_admission")
 
 
 #: The keys :func:`reckon.crew.recovery_classification.classify_pointer`
@@ -283,6 +284,7 @@ LIVE_FIELD_VOCABULARY: frozenset[str] = (
     frozenset(LIVE_CLASSIFICATION_FIELDS)
     | LIVE_OVERRUN_FIELDS
     | frozenset(LIVE_PLACEMENT_FIELDS)
+    | frozenset(LIVE_ADMISSION_FIELDS)
     | frozenset(COMMON_RUN_FIELDS)
 )
 
@@ -454,7 +456,13 @@ def project_live_rows(
     from reckon.crew.queue_admission import queued_placements
 
     placements = queued_placements(records)
+    pointers_by_run = {str(record.get("run_id") or ""): record for record in records}
     for row in classified:
+        pointer = pointers_by_run.get(str(row.get(LIVE_ROW_ANCHOR) or ""), {})
+        if pointer.get("phase") == "queued":
+            row.update(
+                {key: pointer[key] for key in LIVE_ADMISSION_FIELDS if key in pointer}
+            )
         placement = placements.get(str(row.get(LIVE_ROW_ANCHOR) or ""))
         if placement is not None:
             row.update(placement)

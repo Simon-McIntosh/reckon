@@ -16,7 +16,9 @@
     existing admit lock. It reuses the lane, claim, review and launch checks,
     skips queue-wide release and recovery, and starts no landing worker.
     Full passes store <code>queue_position</code>, <code>rank_key</code> and
-    <code>last_admission</code> on requests that remain queued.</p>
+    <code>last_admission</code> on requests that remain queued. The live view
+    projects these stored fields for queued requests and accepts their names
+    with an empty queue; launched requests omit stale queue fields.</p>
   <p>The rank key binds the computed fair-share position to arrival time and run
     identity. An unchanged verdict and position retain their receipt time, so
     repeated holds stay byte-identical. Metadata writes reuse the existing
@@ -30,10 +32,14 @@
       <tr><td>Idle ordered pass</td><td>Both queued pointers carry their computed positions, rank keys and admission verdicts.</td></tr>
     </tbody>
   </table>
-  <p id="ready-work-is-never-stuck-behind-t-s21-measure">On <code>all_debug</code>, the baseline staged-write gate passes 51 tests and the changed-source gate passes 60 tests. The focused hold/promotion regression gate passes 21 tests. All three negative controls fail their intended cases. Paired importer and help receipts, including every failure identity and the final delta, are retained in the run manifest.</p>
+  <p id="ready-work-is-never-stuck-behind-t-s21-measure">On <code>all_debug</code>, the baseline staged-write gate passes 51 tests and the changed-source gate passes 64 tests, including 13 admission and live-view cases. The focused hold/promotion regression gate passes 21 tests. All three admission negative controls fail their intended cases. Paired importer and help receipts, including every failure identity and the final delta, are retained in the run manifest.</p>
   <p id="ready-work-is-never-stuck-behind-t-s21-controls">Three controls fail their intended case:
     whole-pass routing launches both requests; service-loop routing calls release
-    once; removing the pointer write leaves the queue-position field absent.</p>
+    once; removing the pointer write leaves the queue-position field absent.
+    With the live projection absent, three additional cases fail: the default
+    row lacks stored fields, and narrowed field requests are refused with a
+    populated queue and an empty queue. The launched-row omission case passes
+    both before and after the projection.</p>
   <p>Source commits: <code>13ab3de25c9212d752dfe75d60db21fb5070db54</code> and
     <code>8cd68eaf6a37a6009803091474fb3754410b27ef</code>. Logs and receipts are
     retained under the run directory
