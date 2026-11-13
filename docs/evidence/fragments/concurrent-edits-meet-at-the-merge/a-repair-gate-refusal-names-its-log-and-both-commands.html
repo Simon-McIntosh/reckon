@@ -1,0 +1,38 @@
+<section id="a-repair-gate-refusal-names-its-log-and-both-commands-results">
+  <h3>A repair-gate refusal names its log and both commands</h3>
+  <p>A pending landing whose repair gate refuses on a command mismatch used to
+  report only <q>repair gate command does not match its captured log</q>. The
+  operator was left to guess which of two cited logs the gate had read, and
+  which two commands disagreed. The refusal now names all three: the resolved
+  path of the log it read, the command the manifest's <code>tests:</code> line
+  says, and the command that log records — or that it records none.</p>
+  <p>The message is built by
+  <code>_repair_gate_command_refusal</code> from the same log path the fill
+  resolved, so a refusal about an <code>after_suite</code> log names that log
+  rather than the <code>test_logs</code> entry it was chosen over. The declared
+  command is read through the same freshness reader the gate used, so the
+  refusal quotes the command that was actually compared.</p>
+  <table id="a-repair-gate-refusal-names-its-log-and-both-commands-table">
+    <thead><tr><th>Case</th><th>What the refusal names</th></tr></thead>
+    <tbody>
+      <tr><td>Manifest command differs from the log's header</td><td>Log path, manifest command, log command.</td></tr>
+      <tr><td>Log carries no command header</td><td>Log path, manifest command, <q>the log records no command line</q>.</td></tr>
+      <tr><td>An <code>after_suite</code> log wins over <code>test_logs</code></td><td>The <code>after_suite</code> path, never the superseded <code>test_logs</code> entry, plus both commands.</td></tr>
+      <tr><td>Matching gate</td><td>No refusal: the repaired head is admitted.</td></tr>
+    </tbody>
+  </table>
+  <p>Node gate <code>tests/test_a_repair_gate_refusal_names_its_log_and_both_commands.py</code>:
+  <strong>4 passed</strong>. Negative control at the base revision, the same
+  test driven against the base implementation: <strong>3 failed, 1 passed</strong>
+  — each refusal case failing on the bare message, which quotes exactly
+  <code>repair gate command does not match its captured log</code>, while the
+  matching-gate case passes there too. The command-mismatch and
+  no-command-header cases fail on the missing names; the
+  <code>after_suite</code> case fails on the missing names, which also confirms
+  the <code>after_suite</code> log is the one read.</p>
+  <p>The census suite arm at the base revision and at the delivered head both
+  report <strong>51 passed</strong>, so the change adds no failure. Ruff lint
+  and format are clean on both staged Python paths.</p>
+  <p>Every log starts with its revision and the literal command and ends in a
+  bare <code>EXIT=</code> line; the worker manifest records their paths.</p>
+</section>

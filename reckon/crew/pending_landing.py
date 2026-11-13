@@ -331,14 +331,60 @@ def _require_repair_gate(
         raise runs.CrewError("repair gate requires a readable captured log") from exc
     if _recorded_exit_status(text) != 0:
         raise runs.CrewError("repair gate log must end with EXIT=0")
-    if _normalized_command(_command_from_gate_log(text)) != _normalized_command(
-        check["command"]
-    ):
-        raise runs.CrewError("repair gate command does not match its captured log")
+    recorded_command = _command_from_gate_log(text)
+    if _normalized_command(recorded_command) != _normalized_command(check["command"]):
+        declared_command = _manifest_declared_command(pointer)
+        raise runs.CrewError(
+            _repair_gate_command_refusal(
+                str(check["log_path"]), declared_command, recorded_command
+            )
+        )
     first_line = next((line for line in text.splitlines() if line.strip()), "")
     revisions = (match.group(1) for match in _GATE_LOG_REVISION.finditer(first_line))
     if not any(_commit_canonical_id(repository, rev) == head for rev in revisions):
         raise runs.CrewError(f"repair gate log must name repaired revision {head}")
+
+
+def _manifest_declared_command(pointer: Mapping[str, Any]) -> str:
+    """The command a repair manifest's own ``tests:`` line states, or "".
+
+    A repair gate compares the command the manifest declares with the one its
+    cited log records, and a refusal has to name both to be actionable. The
+    manifest is read through the same freshness reader the gate itself used, so
+    the command the refusal quotes is the one that was compared rather than a
+    later rewrite of the file.
+    """
+    from reckon.crew.promotion_checks import _fresh_manifest
+
+    manifest = _fresh_manifest(pointer) or {}
+    return str(manifest.get("tests") or "").strip()
+
+
+def _repair_gate_command_refusal(
+    log_path: str, declared_command: str, recorded_command: str
+) -> str:
+    """Why a repair gate refused: the log it read and the two commands.
+
+    A repair gate refuses when the command its manifest declares is not the one
+    its captured log records. The refusal states the log it read, the command
+    the manifest declares and the command the log records — or that the log
+    records none — because the operator's whole repair is editing one of the
+    two, and a message naming neither leaves them with nothing to compare.
+    """
+    stated = (
+        f"the manifest states {declared_command!r}"
+        if declared_command
+        else "the manifest states no tests: command"
+    )
+    held = (
+        f"the log records {recorded_command!r}"
+        if recorded_command
+        else "the log records no command line"
+    )
+    return (
+        f"repair gate command does not match its captured log {log_path!r}: "
+        f"{stated}, {held}"
+    )
 
 
 def finish_pending_landings(
