@@ -23,6 +23,7 @@ round and reports no holder, and no promotion it reaches names a floor.
 from __future__ import annotations
 
 import json
+import socket
 from pathlib import Path
 from typing import Any
 
@@ -85,6 +86,10 @@ def repository(isolated_reckon_home: Path, tmp_path: Path) -> Path:
     state = root / "docs" / "state" / PROJECT
     state.mkdir(parents=True, exist_ok=True)
     (state / "flight.yaml").write_text(
+        "default_backend: probe\n"
+        "local_backend: probe\n"
+        "lanes:\n  probe:\n    launch: cli\n    command: probe\n"
+        "    sandbox: worktree-full\n    time_budget: 20m\n"
         f"gates:\n  dimension_floors:\n    {LOW_DIMENSION}: {FLOOR}\n",
         encoding="utf-8",
     )
@@ -135,9 +140,14 @@ def _write_run(
             "repo": str(repository),
             "worktree": str(worktree),
             "base_sha": base,
-            "launch": "in-harness",
+            "launch": "cli",
+            "session": "probe-session",
+            "session_id": "probe-session",
+            "argv": ["codex", "exec", "x"],
+            "pid": 4194303,
+            "host": socket.gethostname().split(".")[0],
             "role": "implement",
-            "backend": "native",
+            "backend": "probe",
             "created_at": "2026-11-12T22:00:00Z",
             "manifest_path": str(manifest),
             "node": {
@@ -262,10 +272,14 @@ def test_a_promotion_in_flight_opens_no_floor_repair_round(
     finally:
         lease.release()
 
+    round_opened = read_pointer(RUN_ID).get(REPAIR_DISPATCH_FIELD)
+    assert round_opened is None, (
+        "no repair round is recorded on a run whose promotion has begun: "
+        f"the round recorded is {round_opened}"
+    )
     assert report["repaired"] == [], report
-    assert [entry["run_id"] for entry in report.get("repair_held", [])] == [RUN_ID], report
-    assert read_pointer(RUN_ID).get(REPAIR_DISPATCH_FIELD) is None, (
-        "no repair round is recorded on a run whose promotion has begun"
+    assert [entry["run_id"] for entry in report.get("repair_held", [])] == [RUN_ID], (
+        report
     )
 
     # The promotion then runs, and its own output names the floor it lands over.
