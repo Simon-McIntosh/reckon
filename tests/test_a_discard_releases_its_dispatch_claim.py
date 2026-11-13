@@ -69,6 +69,9 @@ def test_discard_releases_the_claim_its_run_holds(crew_store: Path) -> None:
     result = promotion.discard("abandoned-run")
 
     assert not held.path.exists()
+    # A deliberate discard is not a stale claim: the claim is given up, not
+    # displaced to the artifact the reclaim path leaves for a stale one.
+    assert list(held.path.parent.glob(f"{held.path.name}.reclaimed-*")) == []
     second = _take_claim("next-run")
     assert second.reclaimed is None
     assert _record(second.path)["run_id"] == "next-run"
