@@ -93,6 +93,11 @@ def parse_layout(source: str) -> list[dict[str, Any]]:
     return tabs
 
 
+def fleet_zellij_socket_dir(environ: Mapping[str, str] | None = None) -> str:
+    """Where the fleet supervisor's zellij servers keep their sockets."""
+    return str(runtime_directory(environ) / "zellij")
+
+
 def _listed_sessions(
     *,
     invoke: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
@@ -103,6 +108,10 @@ def _listed_sessions(
     environment = os.environ.copy()
     for key in ("ZELLIJ", "ZELLIJ_SESSION_NAME", "ZELLIJ_PANE_ID"):
         environment.pop(key, None)
+    # The fleet's zellij servers listen in the fleet runtime directory, not
+    # wherever the caller's environment points: a step launched from a
+    # login node inherits that node's settings and would list none.
+    environment["ZELLIJ_SOCKET_DIR"] = fleet_zellij_socket_dir(environment)
     options: dict[str, Any] = {
         "capture_output": True,
         "text": True,
@@ -577,6 +586,24 @@ def _worker_steps(job_id: str) -> list[str]:
     ]
 
 
+def _runs_launched_on(node: str, live: list[dict[str, Any]]) -> list[str]:
+    """Live runs whose worker was launched on ``node``.
+
+    A worker the supervisor spawns runs in the allocation's batch step, not
+    in a step of its own, so the step list does not show it; cancelling the
+    allocation would end it all the same. The run pointer names the host
+    that launched it.
+    """
+    short = node.split(".", 1)[0]
+    if not short:
+        return []
+    return sorted(
+        str(run.get("run_id") or "?")
+        for run in live
+        if str(run.get("launcher_host") or "").split(".", 1)[0] == short
+    )
+
+
 def _cancel_job(job_id: str) -> subprocess.CompletedProcess[str]:
     return _run_step(["scancel", job_id])
 
@@ -828,6 +855,7 @@ def migrate(
         [Mapping[str, str], str], dict[str, Any]
     ] = _inspect_remote_session,
     list_worker_steps: Callable[[str], list[str]] = _worker_steps,
+    list_live_runs: Callable[[], list[dict[str, Any]]] = runs.list_live,
     cancel_job: Callable[[str], subprocess.CompletedProcess[str]] = _cancel_job,
     pause: Callable[[float], None] = time.sleep,
     hostname: Callable[[], str] = socket.gethostname,
@@ -1194,6 +1222,12 @@ def migrate(
             raise MigrationError(
                 f"old job {old_job_id} still holds worker steps: {', '.join(steps)}"
             )
+        old_node = str(ledger["stand_up"]["old_record"].get("node") or "")
+        resident = _runs_launched_on(old_node, list_live_runs())
+        if resident:
+            raise MigrationError(
+                f"old node {old_node} still hosts live runs: {', '.join(resident)}"
+            )
         argv = fleet_node.placement_argv(
             {"jobid": old_job_id},
             [sys.executable, "-m", "reckon.crew.fleet_migrate", "list-sessions"],
@@ -1219,6 +1253,11 @@ def migrate(
             raise MigrationError(
                 f"old job {old_job_id} acquired worker steps: {', '.join(steps)}"
             )
+        resident = _runs_launched_on(old_node, list_live_runs())
+        if resident:
+            raise MigrationError(
+                f"old node {old_node} acquired live runs: {', '.join(resident)}"
+            )
         answer = cancel_job(old_job_id)
         if answer.returncode:
             raise MigrationError(
@@ -1239,6 +1278,7 @@ def migrate(
 
 
 if __name__ == "__main__":
+    os.environ["ZELLIJ_SOCKET_DIR"] = fleet_zellij_socket_dir()
     if sys.argv[1:] == ["collect-local"]:
         print(json.dumps(collect_local()))
     elif len(sys.argv) >= 3 and sys.argv[1] == "request":
