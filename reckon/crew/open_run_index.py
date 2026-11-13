@@ -172,11 +172,17 @@ def _ensure(project: str, root=None) -> Path:
             if not connection.execute(
                 "SELECT value FROM metadata WHERE key='ready'"
             ).fetchone():
-                token = _READERS.set(None)
-                try:
-                    data, _version = ledger.load(project, root)
-                finally:
-                    _READERS.reset(token)
+                aggregate = ledger.ledger_path(project, root)
+                if not aggregate.exists() and not any(
+                    (aggregate.parent / "runs").glob("*.json")
+                ):
+                    data, _version = {"runs": []}, 0
+                else:
+                    token = _READERS.set(None)
+                    try:
+                        data, _version = ledger.load(project, root)
+                    finally:
+                        _READERS.reset(token)
                 connection.executemany(
                     "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
                     [_values(row) for row in data["runs"] if row.get("run_id")],
