@@ -482,12 +482,17 @@ def has_row(project: str, run_id: str, root=None) -> bool:
     if ledger.run_path(project, run_id, root).is_file():
         return True
     with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
-        return (
-            connection.execute(
-                "SELECT 1 FROM records WHERE run_id=?", (run_id,)
-            ).fetchone()
-            is not None
-        )
+        found = connection.execute(
+            "SELECT 1 FROM records WHERE run_id=?", (run_id,)
+        ).fetchone()
+        if found is None:
+            return False
+        source = ledger.run_path(project, run_id, root).resolve()
+        if connection.execute(
+            "SELECT 1 FROM sources WHERE name=?", (str(source),)
+        ).fetchone():
+            return row_for_run(project, run_id, root) is not None
+        return True
 
 
 def matches_sources(project: str, root, signature: tuple) -> bool:
