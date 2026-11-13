@@ -86,7 +86,7 @@ def fixture(tmp_path, monkeypatch):
     directory.mkdir(parents=True)
     binary = tmp_path / "bin" / "codex"
     binary.parent.mkdir()
-    received = tmp_path / "received.json"
+    received = directory / "received.json"
     binary.write_text(
         f"#!{sys.executable}\n"
         "import json, sys\nfrom pathlib import Path\n"
@@ -209,7 +209,14 @@ def _resume(fixture):
         crew_resume, ["--run", fixture["run_id"], "--advice", ADVICE]
     )
     assert result.exit_code == 0, result.output
-    _wait(fixture["received"].exists, "the resumed stub did not receive advice")
+    try:
+        _wait(fixture["received"].exists, "the resumed stub did not receive advice")
+    except AssertionError:
+        for name in ("supervisor.stderr.log", "resume-1.stderr.log", "exit.json"):
+            path = fixture["directory"] / name
+            if path.exists():
+                print(name, path.read_text())
+        raise
     received = json.loads(fixture["received"].read_text())
     assert ADVICE in received["stdin"] or any(ADVICE in arg for arg in received["argv"])
     assert "fixture-session" in received["argv"]
