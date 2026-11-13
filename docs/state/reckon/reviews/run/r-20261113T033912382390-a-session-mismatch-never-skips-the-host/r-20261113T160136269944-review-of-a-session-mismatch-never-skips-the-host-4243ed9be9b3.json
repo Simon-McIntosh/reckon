@@ -1,0 +1,58 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T16:09:46.200Z",
+  "dispatched_at": "2026-11-13T16:04:23Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-session-mismatch-never-skips-the-host.html",
+      "line": 57,
+      "severity": "non-blocking",
+      "text": "the Measure section states the wider arm ran over 14 test files with 1 failed and 68 passed at both revisions and names 34da715ada as the head arm, while base-importers.log and head-importers.log record 15 files with the same 6 failure ids at both revisions and the delivered head is 4243ed9be9."
+    },
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": 825,
+      "severity": "non-blocking",
+      "text": "_await_session_host_child re-implements the bounded poll loop owned by _ask_session_host at reckon/crew/dispatch_watch.py:819, whose docstring already names the predicate seam for a caller needing only the wait."
+    },
+    {
+      "file": "tests/test_a_session_mismatch_never_skips_the_host_silently.py",
+      "line": 75,
+      "severity": "non-blocking",
+      "text": "the fixture replaces _mismatch_stream, so the TTY gate at reckon/crew/dispatch_watch.py:972 that keeps a piped dispatch's payload parseable is never executed and inverting it leaves all five cases green."
+    },
+    {
+      "file": "reckon/crew/dispatch_watch.py",
+      "line": 886,
+      "severity": "non-blocking",
+      "text": "no case exercises _rearm_session_follower's mismatched branch, so the live-child gate added in 4243ed9be9 has no assertion that reddens if removed."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "reckon/crew/dispatching/requests.py:_arrange_dispatch_follower, reckon/crew/dispatching/launch.py:_launch_dispatch, reckon/crew/dispatch_watch.py:_rearm_session_follower via reckon/crew/resumption.py:2005.",
+    "diff": "read commit by commit; six commits, 612 insertions across the five declared paths, the earlier review's two findings fixed in 4243ed9be9.",
+    "done_when": "tests/test_a_session_mismatch_never_skips_the_host_silently.py is five cases; head-suite.log 54 passed/2 scaffolding errors against base-suite.log 49 passed/2 identical ids, negative-control.log 3 failed/2 passed at EXIT=1, path-reduced.log 5 passed at EXIT=0.",
+    "goal": "a dispatch whose --session differs from the caller now writes the run to the calling session's host, prints one line naming both sessions, and returns host_handoff; reckon/crew/dispatching/requests.py:300 and reckon/crew/dispatching/launch.py:676 are the wiring, proven by the real-entry-point case.",
+    "manifest": "read; complete, with both suite arms, both importer arms, the negative control, the reduced-PATH run and four commits recorded.",
+    "write_paths": "the five declared paths are exactly the five files in git diff d74a74fb..4243ed9be9; no other file changed."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source goal is that a dispatch whose --session differs from the caller never skips the session host silently; the landed diff calls hand_off_mismatched_session at reckon/crew/dispatching/requests.py:300 and reads take_session_hand_off at reckon/crew/dispatching/launch.py:676, so a real dispatch writes the run to the calling session's host, prints one line naming both sessions, and returns host_handoff on its payload.\nVERDICT done_when: the done_when names tests/test_a_session_mismatch_never_skips_the_host_silently.py with five cases, a negative control and matched importer arms; head-suite.log records 54 passed with 2 scaffolding errors against base-suite.log's 49 passed with the same 2 ids, negative-control.log records 3 failed and 2 passed at EXIT=1, and path-reduced.log records 5 passed at EXIT=0 with PATH cut to /usr/bin:/bin.\nVERDICT write_paths: the manifest declares exactly the five paths the diff touches; git diff --stat d74a74fb..4243ed9b changes reckon/crew/dispatch_watch.py, reckon/crew/dispatching/requests.py, reckon/crew/dispatching/launch.py, tests/test_a_session_mismatch_never_skips_the_host_silently.py and the evidence fragment, and the two dispatching/ paths entered the fence through the run's own resume-1-advice.txt.\nVERDICT manifest: read; status complete, it records both suite arms with revision, literal command and log path, both importer arms, the negative control with the mutation named, the reduced-PATH run, the fragment and the four commits 8f8ab73a1c, 34da715ada, ed148b0549 and 4243ed9be9.\nVERDICT diff: read commit by commit against d74a74fb: 020a3ae95f adds the hand-off helper and its first cases, 64415afa60 adds the fragment, 8f8ab73a1c wires the call into requests.py and the payload field into launch.py, 34da715ada gates the printed line behind a TTY, ed148b0549 rewrites the fragment, and 4243ed9be9 makes the real-entry-point case hermetic, adds _await_session_host_child and drops the dead watch-dict copy; 612 insertions, no file outside the five.\nCALL_SITES: reckon/crew/dispatching/requests.py:_arrange_dispatch_follower (called from reckon/crew/dispatching/preparation.py:614,878,919,989,1053,1354), reckon/crew/dispatching/launch.py:_launch_dispatch, reckon/crew/dispatch_watch.py:_rearm_session_follower (called from reckon/crew/resumption.py:2005)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/dispatching/requests.py:300 hands the run over in the branch where neither the run's own host nor its follower answered, and tests/test_a_session_mismatch_never_skips_the_host_silently.py:314 drives crew.dispatch itself and reads host_handoff off the returned record.\nSCORE evidence: 14\nJUSTIFICATION evidence: the gate named in the done_when is recorded with revision, command and EXIT in head-suite.log and base-suite.log, but the delivered fragment at docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-session-mismatch-never-skips-the-host.html:51 still names 34da715ada as the head arm and 1 failed, 68 passed over 14 files where head-importers.log records 6 failed, 63 passed over 15 at 4243ed9be9.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: every path in git diff d74a74fb..4243ed9b is one of the five the manifest declares, and the two reckon/crew/dispatching/ paths were added to the fence by the run's own resume advice rather than taken unilaterally.\nSCORE durability: 14\nJUSTIFICATION durability: the negative control reddens exactly the three mismatched cases (negative-control.log: 3 failed, 2 passed), but the TTY gate at reckon/crew/dispatch_watch.py:972 is monkeypatched away at tests/test_a_session_mismatch_never_skips_the_host_silently.py:75 so it never runs, and no case exercises the resume branch at reckon/crew/dispatch_watch.py:857.\nSCORE fit: 17\nJUSTIFICATION fit: the new helpers follow reckon/crew/dispatch_watch.py:958's module idiom and the function-local imports at reckon/crew/dispatching/requests.py:269 match that file's existing pattern at :144, with no plan or ticket identifier in any added name or comment.\nSCORE reuse: 12\nJUSTIFICATION reuse: the hand-off reuses _deliver_request and _request_line, but reckon/crew/dispatch_watch.py:825 re-implements the bounded wait-until-predicate loop that reckon/crew/dispatch_watch.py:801 already owns and already accepts a caller's reading for.\nFINDING docs/evidence/fragments/a-dispatch-returns-without-its-worker/a-session-mismatch-never-skips-the-host.html:57 non-blocking: the Measure section states the wider arm ran over 14 test files with 1 failed and 68 passed at both revisions and names 34da715ada as the head arm, while the run's own base-importers.log and head-importers.log record 15 files with the same 6 failure ids at both revisions and the delivered head is 4243ed9be9, so the landed evidence record does not reconcile with the logs it cites.\nFINDING reckon/crew/dispatch_watch.py:825 non-blocking: _await_session_host_child re-implements the bounded poll loop owned by _ask_session_host at reckon/crew/dispatch_watch.py:819, whose docstring already names the predicate seam for a caller that needs only the wait, so the two deadlines and poll intervals can drift apart.\nFINDING tests/test_a_session_mismatch_never_skips_the_host_silently.py:75 non-blocking: the fixture replaces _mismatch_stream, so the TTY gate at reckon/crew/dispatch_watch.py:972 that keeps a piped dispatch's JSON payload parseable is never executed by any case and inverting it would leave all five green.\nFINDING reckon/crew/dispatch_watch.py:886 non-blocking: no case exercises _rearm_session_follower's mismatched branch, so the live-child gate added to it in 4243ed9be9 has no assertion that reddens if it is removed.\n",
+  "review_run_id": "r-20261113T160136269944-review-of-a-session-mismatch-never-skips-the-host-4243ed9be9b3",
+  "reviewed_base_sha": "d74a74fb4c0c8e4305660c01e803d867d0f7dc7a",
+  "reviewed_head_sha": "4243ed9be9b35e7d9fb3f7a4b9233e19053602f8",
+  "reviewed_run_id": "r-20261113T033912382390-a-session-mismatch-never-skips-the-host",
+  "scores": {
+    "durability": 14,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 12,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:25:16.671923+00:00",
+  "total": 93
+}
