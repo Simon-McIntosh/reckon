@@ -563,12 +563,10 @@ def review_paths(directory: Path) -> list[Path] | None:
         with contextlib.closing(
             sqlite3.connect(f"{index.as_uri()}?mode=ro", uri=True)
         ) as connection:
-            stamp = connection.execute(
-                "SELECT value FROM review_meta WHERE key='directory'"
-            ).fetchone()
-            if stamp is None or stamp[0] != json.dumps(
-                ledger._file_identity(directory)
-            ):
+            metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
+            if metadata.get("complete") != "1" or metadata.get(
+                "directory"
+            ) != json.dumps(ledger._file_identity(directory)):
                 return None
             for run_id in ids:
                 paths.update(
