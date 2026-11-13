@@ -1,0 +1,71 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/crew_run_commands.py:2883 crew_module.discard(run_id)",
+    "reckon/crew/queue_edit.py:542 crew_module.discard(run_id, allowed_phases=WAITING_PHASES)",
+    "reckon/crew/recovery_review_dispatch.py:515 promotion_module.discard(review_run_id)"
+  ],
+  "completed_at": "2026-11-13T14:31:38.298Z",
+  "dispatched_at": "2026-11-13T14:17:05Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:04:33.707744+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "tests/test_a_discard_releases_its_dispatch_claim.py",
+      "id": "f31c02732dd",
+      "line": "72",
+      "severity": "non-blocking",
+      "text": "non-blocking: the file is the node's whole product change and is named as a write path by the plan's done-when, but it is absent from the dispatch's declared write_paths list, so the landed change sits outside its recorded fence."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified three production call sites: reckon/crew_run_commands.py:2883 and reckon/crew/queue_edit.py:542 call crew_module.discard, and reckon/crew/recovery_review_dispatch.py:515 calls promotion_module.discard.",
+    "diff": "read the three commits against 078f7c800c: d7687b3f80 adds the no-artifact assertion to the test, e19c16aefa and 2c07d0ea5e record the evidence fragment, and reckon/crew/promotion.py is unchanged (git diff empty).",
+    "done_when": "the done_when demands a new test showing two behaviours plus two negative controls and no added failures against base; the manifest records both cases at logs/head_final.log, three mutations at logs/mutation_a/b/c.log, and identical 15-failure id sets between logs/base_arm.log and logs/base_delta.log, though the file it calls new predates the node.",
+    "goal": "the node's goal is to deliver the section so a discard releases its run's dispatch claim; that behaviour is already present at base in reckon/crew/promotion.py:2364-2388 and the landed change adds the missing assertion that a discard leaves no .reclaimed- artifact.",
+    "manifest": "read; status complete, commits d7687b3f80, e19c16aefa and 2c07d0ea5e, tests the node test at 2 passed.",
+    "write_paths": "the dispatch's write_paths are reckon/crew/promotion.py, the evidence fragment and a figures directory; the diff touches the evidence fragment and tests/test_a_discard_releases_its_dispatch_claim.py, and the test path is named only by the done-when while promotion.py carries no change because the behaviour needed none."
+  },
+  "justifications": {
+    "durability": "tests/test_a_discard_releases_its_dispatch_claim.py:72 fails when release() is replaced by a rename to a .reclaimed- sibling, as logs/mutation_c.log records, so a regression to displacement reddens that assertion alone.",
+    "evidence": "logs/head_final.log reads 2 passed EXIT=0, logs/mutation_c.log reads 1 failed, 1 passed EXIT=1, and logs/base_arm.log (547 passed, 15 failed) and logs/base_delta.log (111 passed, 15 failed) carry the identical 15 FAILED ids.",
+    "fit": "the comment at tests/test_a_discard_releases_its_dispatch_claim.py:70-71 states the mechanism with no plan, ticket or author reference and matches the surrounding test idiom.",
+    "goal_fidelity": "tests/test_a_discard_releases_its_dispatch_claim.py:72 adds the deliverable's no-.reclaimed--artifact clause, while the release behaviour the section asks for is already present at base in reckon/crew/promotion.py:2364-2388, so the node verified rather than delivered new behaviour.",
+    "reuse": "the node adds no definition; it reuses _NodeDispatchClaim.release() at reckon/crew/promotion.py:2385 and the existing two-case test rather than introducing a second claim mechanism.",
+    "scope_discipline": "git diff 078f7c800c..2c07d0ea5e touches only tests/test_a_discard_releases_its_dispatch_claim.py and the evidence fragment, but the test path is absent from the dispatch's declared write_paths list."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: tests/test_a_discard_releases_its_dispatch_claim.py:72 adds the deliverable's no-.reclaimed--artifact clause while the release behaviour itself already exists at base in reckon/crew/promotion.py:2364-2388, so the node verified and tightened rather than delivered new behaviour.\nVERDICT done_when: logs/head_final.log reads 2 passed EXIT=0, logs/mutation_a/b/c.log each red their intended case, and logs/base_arm.log (547 passed, 15 failed) and logs/base_delta.log (111 passed, 15 failed) carry the identical 15 ids, though the done-when's new test file predates the node.\nVERDICT write_paths: the dispatch names promotion.py, the evidence fragment and a figures directory; the diff touches the evidence fragment and tests/test_a_discard_releases_its_dispatch_claim.py, the test path coming from the done-when rather than the fence list.\nVERDICT manifest: read; status complete, commits d7687b3f80, e19c16aefa and 2c07d0ea5e, tests the node test at 2 passed, with suite arms 51 passed each and their logs named.\nVERDICT diff: read the three commits against base 078f7c800c: d7687b3f80 adds the no-artifact assertion, e19c16aefa and 2c07d0ea5e record the evidence fragment, and promotion.py carries no change (git diff empty).\nCALL_SITES: reckon/crew_run_commands.py:2883, reckon/crew/queue_edit.py:542, reckon/crew/recovery_review_dispatch.py:515\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: tests/test_a_discard_releases_its_dispatch_claim.py:72 adds the deliverable's no-.reclaimed--artifact clause, but promotion.py:2364-2388 already carried the release behaviour at base, so the change is verification rather than delivery.\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/head_final.log reads 2 passed EXIT=0 and logs/base_arm.log and logs/base_delta.log carry the same 15 FAILED ids, but the done-when's demand for a new test is met by a pre-existing file.\nSCORE scope_discipline: 15\nJUSTIFICATION scope_discipline: git diff 078f7c800c..2c07d0ea5e touches only tests/test_a_discard_releases_its_dispatch_claim.py and the evidence fragment, and the test path is not in the dispatch's declared write_paths.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_discard_releases_its_dispatch_claim.py:72 fails when release() is replaced by a rename to a .reclaimed- sibling, which logs/mutation_c.log records, so the added assertion sees the regression rather than passing inert.\nSCORE fit: 19\nJUSTIFICATION fit: the comment at tests/test_a_discard_releases_its_dispatch_claim.py:70-71 states the mechanism without a plan, ticket or author reference and matches the surrounding test idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: the node adds no definition and reuses _NodeDispatchClaim.release() at reckon/crew/promotion.py:2385 and the existing two-case test rather than forking a claim mechanism.\nFINDING tests/test_a_discard_releases_its_dispatch_claim.py:72 non-blocking: the file is the node's whole product change and is named as a write path by the plan's done-when, but it is absent from the dispatch's declared write_paths list, so the landed change sits outside its recorded fence.",
+  "review_run_id": "r-20261113T140716033864-review-of-ready-a-reexec-never-orphans-a-dis-s3-2c07d0ea5ef5",
+  "reviewed_base_sha": "078f7c800cf487e36209d42418e0e77863abb17d",
+  "reviewed_head_sha": "2c07d0ea5ef5afdd6020aceb43f46c6a5d3bead9",
+  "reviewed_run_id": "r-20261113T032149110034-ready-a-reexec-never-orphans-a-dis-s3",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T140716033864-review-of-ready-a-reexec-never-orphans-a-dis-s3-2c07d0ea5ef5"
+  },
+  "reviewer_run_id": "r-20261113T140716033864-review-of-ready-a-reexec-never-orphans-a-dis-s3-2c07d0ea5ef5",
+  "scores": {
+    "durability": 17,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 15
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:31:41.781370+00:00",
+  "total": 104
+}
