@@ -24,6 +24,7 @@ from reckon.crew.routing import (
 )
 from reckon.crew.runs import (
     drain,  # noqa: F401 - importable so a caller can substitute the fleet reading's drain
+    read_pointer,
     run_dir,
 )
 
@@ -359,25 +360,79 @@ def _require_executable_gate_command(
             "header or in --outcome"
         )
     program = argv[0]
-    if "/" in program:
-        candidate = Path(program).expanduser()
-        try:
-            runnable = candidate.is_file() and os.access(candidate, os.X_OK)
-        except OSError:
-            runnable = False
-    else:
+    candidates: tuple[Path, ...] = ()
+    if "/" not in program:
         runnable = shutil.which(program) is not None
+    else:
+        expanded = Path(program).expanduser()
+        if expanded.is_absolute():
+            candidates = (expanded,)
+        else:
+            # A command is recorded by the worker inside its own checkout, so
+            # a relative program such as ``.venv/bin/python`` is relative to
+            # that tree. Resolving it against the promoting process's working
+            # directory would let the answer depend on who ran the promotion:
+            # the same command passes in the caller's shell and is refused in
+            # the admission service, which runs from the crew home.
+            candidates = tuple(root / expanded for root in _run_checkout_roots(run_id))
+        runnable = any(_is_executable_file(path) for path in candidates)
     if runnable:
         return
     raise CrewError(
         f"run {run_id!r} records the gate command {command!r}, whose program "
-        f"{program!r} names no executable — it is neither an existing "
-        "executable file nor a command found on PATH, so the integration "
-        "re-run would fail before running the check. Found: a first token that "
-        "names no executable. Record the literal command that ran — the real "
-        "program the check was started with — and put any readable summary in "
-        "the gate log header or in --outcome"
+        f"{program!r} names no executable{_resolution_seat(program, candidates)}"
+        f" — it is neither an existing executable file nor a command found on "
+        "PATH, so the integration re-run would fail before running the check. "
+        "Found: a first token that names no executable. Record the literal "
+        "command that ran — the real program the check was started with — and "
+        "put any readable summary in the gate log header or in --outcome"
     )
+
+
+def _is_executable_file(path: Path) -> bool:
+    """Whether ``path`` names a file this process can execute."""
+    try:
+        return path.is_file() and os.access(path, os.X_OK)
+    except OSError:
+        return False
+
+
+def _run_checkout_roots(run_id: str) -> tuple[Path, ...]:
+    """The directories a relative gate program is resolved against, in order.
+
+    A run's checkout comes first, then the repository it belongs to: a worker
+    records its command in a worktree that may be removed by the time the
+    promotion is drained, and the repository remains the tree the re-run
+    measures. A run whose record cannot be read resolves against nothing, which
+    refuses the command rather than falling back to whatever directory the
+    promoting process happens to occupy.
+    """
+    try:
+        record = read_pointer(run_id)
+    except CrewError:
+        return ()
+    roots: list[Path] = []
+    for field in ("worktree", "repo"):
+        recorded = str(record.get(field) or "").strip()
+        if not recorded:
+            continue
+        candidate = Path(recorded).expanduser()
+        if candidate not in roots:
+            roots.append(candidate)
+    return tuple(roots)
+
+
+def _resolution_seat(program: str, candidates: Sequence[Path]) -> str:
+    """Where a failed program was looked for, phrased for the refusal."""
+    if candidates:
+        named = ", ".join(str(candidate) for candidate in candidates)
+        return f" under the run's checkout and repository ({named})"
+    if "/" in program:
+        return (
+            " because the run records no checkout or repository to resolve a "
+            "relative program against"
+        )
+    return ""
 
 
 def _paths_differing_between(
