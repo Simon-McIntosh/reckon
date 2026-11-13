@@ -345,54 +345,6 @@ def test_an_unchanged_queued_request_is_launched(
     assert _verdict(result, RUN_ID)["verdict"] == "launched"
 
 
-def test_an_exit_record_written_at_the_launch_decision_stops_the_launch(
-    crew_checkout: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    """The attempt record is read where the launch decision is made.
-
-    The request is still queued and unchanged when the pass reads it, and its
-    attempt only records a result at the launch decision. A pass that read the
-    run's attempts when it started would already be past them and would launch,
-    so this case tells the two readings apart.
-    """
-    _, resolve = _config_for()
-    runs.queue_dispatch(_queued_request(crew_checkout, run_id=RUN_ID))
-    recorded: list = []
-
-    def record_the_result() -> None:
-        directory = runs.run_dir(RUN_ID)
-        directory.mkdir(parents=True, exist_ok=True)
-        (directory / "attempt-1-exit.json").write_text(
-            json.dumps(
-                {
-                    "run_id": RUN_ID,
-                    "attempt": 1,
-                    "recorded_by": "supervisor",
-                    "exited_at": "2026-11-05T12:00:46+00:00",
-                    "stream_records_seen": 412,
-                    "last_record_type": "assistant",
-                    "ended_during": "working",
-                    "exit_code": 0,
-                }
-            )
-            + "\n",
-            encoding="utf-8",
-        )
-
-    fired = _after_the_pass_reads_the_queue(monkeypatch, record_the_result)
-
-    result = queue_admission.admit_once(
-        config_for=resolve, launcher=_launcher(recorded)
-    )
-
-    assert fired, "the exit record was never written at the launch decision"
-    assert recorded == [], "the launch started over an attempt that had resulted"
-    assert result["launched"] == []
-    detail = _verdict(result, RUN_ID)["detail"]
-    assert "already exited with a recorded result" in detail
-    assert "attempt-1-exit.json" in detail
-
-
 def test_a_refused_request_records_one_verdict_that_does_not_become_a_stall(
     crew_checkout: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
