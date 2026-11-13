@@ -42,7 +42,7 @@
     <thead><tr><th>Measurement</th><th>Observed result</th></tr></thead>
     <tbody>
       <tr><td>Armed base at <code>1a251aab7ee9b65cca12cc62f7b9b8aeda9d9280</code>; new test absent</td><td>51 passed in 11.41s; EXIT=0</td></tr>
-      <tr><td>Dedicated terminal, recovery, population and live-history cases</td><td>11 passed in 29.77s; EXIT=0</td></tr>
+      <tr><td>Dedicated cases before strengthening the population with ledger records</td><td>11 passed in 29.77s; EXIT=0</td></tr>
       <tr><td>174 gc/landing/discard importer files at base</td><td>48 failed, 1232 passed, 7 warnings in 188.41s (0:03:08); EXIT=1</td></tr>
       <tr><td>The same importer files at product head <code>7148cd0949d469f9d86a57a7e21bc36750e740c1</code></td><td>48 failed, 1232 passed, 7 warnings in 217.14s (0:03:37); EXIT=1; zero added failure IDs</td></tr>
       <tr><td>Declared control: disable post-merge workspace release</td><td>1 failed in 2.99s; EXIT=1; landed worktree remains on disk</td></tr>
@@ -86,6 +86,11 @@
   policy and does not claim the historical backlog is gone.</p>
   <p id="run-leaves-nothing-behind-gc-time">The full reckon repository gc dry run completed after the backstop in <strong>1001.291 s</strong>, with <code>dryrun EXIT=0</code>. Earlier probes exceeded a 600 s bound or were stopped after their stacks exposed the unnecessary live-worktree history comparisons. The final trace also records the remaining cost of inspecting unclaimed worktrees and protected historical directories; this result is a completed timing, not a claim that the whole legacy pass is fast.</p>
   <h3 id="run-leaves-nothing-behind-remaining">Remaining gate and durable records</h3>
+  <p>The first final arm at <code>55457e5862a4c94d254a2ba117f8f8abf5cbc53b</code> reported
+  <code>2 failed, 60 passed in 17.52s</code>. One failure exposed a missing ledger parent directory
+  in the strengthened population fixture, before gc ran. The fixture now creates that directory
+  through the ledger's path resolver. The other failure is the ungranted census entry below.
+  <code>after-final.log</code> preserves both failures; the final manifest records the subsequent arm.</p>
   <p id="run-leaves-nothing-behind-census">The required staged-write census correctly reports the new directory-relocation owner <code>("reckon/crew/terminal_cleanup.py", "archive_ended_run")</code>. Its explicit owner list needs a five-line entry, prepared in <code>staged-inventory.patch</code> and checked with <code>git apply --check</code>. The suite contract names <code>tests/test_staged_write_inventory.py</code>, but the write fence grants only the dedicated new test, so that edit remains pending a path grant. No guard has been weakened or bypassed. The final armed receipt and worker status in the manifest expose this unresolved census gate.</p>
   <p>The armed after command is
   <code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_run_leaves_nothing_behind.py tests/test_staged_write_inventory.py</code>.

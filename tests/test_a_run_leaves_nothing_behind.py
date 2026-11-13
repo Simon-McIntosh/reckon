@@ -161,6 +161,7 @@ def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
 
     monkeypatch.setenv("RECKON_HOME", str(tmp_path / "config"))
     repo = repository(tmp_path)
+    ledger.run_path("fixture", "ended-0", repo).parent.mkdir(parents=True)
     # Historical runs have already ended and are archived by their own
     # operations. The positive control is five live directories the gc
     # extraction reader must actually visit.
