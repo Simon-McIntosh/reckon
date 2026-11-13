@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="work-flows-to-the-lane">
+  <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
+  <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s36">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <title>One indexed ledger reading per admission release stage | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="admission-pass-reads-ledger-once-landing"
+  data-node="admission-pass-reads-ledger-once" data-reckon="landed" data-when="2026-11-13">
+  <h2>Section waits share the release stage's ledger snapshot</h2>
+  <p>The section landing check in <code>reckon/crew/admission/readiness.py</code>
+  passes its existing indexed ledger snapshot to
+  <code>reckon/crew/runs.py::_unloaded_sections</code> through the optional
+  <code>ledger_rows</code> argument. The shared helper retains its landing
+  derivation and its existing read when no snapshot is supplied. The snapshot
+  lives in the release stage's cache, so the next stage reads current history.</p>
+  <p><code>tests/test_an_admission_pass_reads_the_ledger_once.py</code> seeds
+  2,000 per-run ledger records, warms their index, and resolves ten requests
+  waiting on five sections. Eight requests release and two stay waiting,
+  matching the whole-ledger derivation for the same records. The cases include
+  a reachable promotion, an unreachable promotion, a section completed without
+  a run, a discarded run, and a section with both reachable and unreachable
+  promotions. A promotion written after the first snapshot leaves its two
+  waiters pending in that stage and releases both on the next stage.</p>
+  <table>
+    <thead><tr><th>Measurement</th><th>Whole-ledger resolution</th><th>Shared snapshot</th></tr></thead>
+    <tbody>
+      <tr><td>Ledger loads per release stage</td><td>4</td><td>1</td></tr>
+      <tr><td>Unindexed ledger loads</td><td>3</td><td>0</td></tr>
+      <tr><td>Per-run document reader calls</td><td>6,000</td><td>0</td></tr>
+      <tr><td>Released / still waiting</td><td>8 / 2</td><td>8 / 2</td></tr>
+    </tbody>
+  </table>
+  <p>The base reproduction at <code>13350b465eef53803dbfe406edbf323300dabe6f</code>
+  failed the one-load assertion with <code>loads: 4, unindexed: 3</code>.
+  Removing only <code>ledger_rows=rows</code> from the repaired caller in a
+  scratch extraction reproduced the failure and the 6,000 document-reader
+  calls. Physical opens alone read zero on that warmed cache, so the test also
+  instruments the document reader; the negative control proves that instrument
+  sees the traversal.</p>
+  <p>All test arms ran sequentially on <code>all_debug</code>. The required
+  baseline arm passed 51 checks; the repaired arm passed 53, including both
+  new tests. Related admission checks passed 34 at both base and head, with
+  zero added failures. Ruff check and format checks passed on all changed
+  Python paths. The run directory retains revision-labelled gate logs, the
+  deliberate failing mutation, and the delivery manifest under
+  <code>r-20261113T032923501296-admission-pass-reads-ledger-once</code>.</p>
+</article>
+</body>
+</html>
