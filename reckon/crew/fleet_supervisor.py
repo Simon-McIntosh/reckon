@@ -1322,18 +1322,32 @@ def service_pass(*, bound: float = SERVICE_PASS_BOUND_SECONDS) -> Iterator[None]
     if bound <= 0:
         raise ValueError("a service pass bound must be positive")
     path = Path(location)
-    with path.with_suffix(".pass.lock").open("a+b") as handle:
+    with (
+        path.with_suffix(".pass.registration").open("a+b") as registration,
+        path.with_suffix(".pass.lock").open("a+b") as handle,
+    ):
         while True:
-            fcntl.flock(handle, fcntl.LOCK_EX)
-            if not path.with_suffix(".pass.reload").exists():
-                break
-            fcntl.flock(handle, fcntl.LOCK_UN)
+            fcntl.flock(registration, fcntl.LOCK_EX)
+            try:
+                if not path.with_suffix(".pass.reload").exists():
+                    try:
+                        fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    except BlockingIOError:
+                        pass
+                    else:
+                        write_json_atomically(
+                            path,
+                            {
+                                "pid": os.getpid(),
+                                "started": time.monotonic(),
+                                "bound": bound,
+                            },
+                        )
+                        break
+            finally:
+                fcntl.flock(registration, fcntl.LOCK_UN)
             time.sleep(SERVICE_POLL_SECONDS)
         try:
-            write_json_atomically(
-                path,
-                {"pid": os.getpid(), "started": time.monotonic(), "bound": bound},
-            )
             yield
         finally:
             fcntl.flock(handle, fcntl.LOCK_UN)
@@ -1603,22 +1617,30 @@ class DeclaredServices:
     def _pass_allows_restart(self, name: str, pid: int) -> bool:
         """Request a boundary and refuse a restart while bounded work owns it."""
         path = self._runtime / f"{name}.pass"
-        try:
-            record = json.loads(path.read_text(encoding="utf-8"))
-            if record["pid"] != pid:
-                return True
-            started, bound = float(record["started"]), float(record["bound"])
-        except (OSError, ValueError, KeyError, TypeError):
-            return True
+        # A registration must either see this request before entering or hold
+        # the pass lock until its work completes, even before its first record.
         path.with_suffix(".pass.reload").touch()
-        with path.with_suffix(".pass.lock").open("a+b") as handle:
+        with (
+            path.with_suffix(".pass.registration").open("a+b") as registration,
+            path.with_suffix(".pass.lock").open("a+b") as handle,
+        ):
+            try:
+                fcntl.flock(registration, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            except BlockingIOError:
+                return False
             try:
                 fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
             except BlockingIOError:
-                # A pass may have entered after the first read but before the
-                # request became visible. Measure the pass holding the lock.
-                record = json.loads(path.read_text(encoding="utf-8"))
-                started, bound = float(record["started"]), float(record["bound"])
+                try:
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    if record["pid"] != pid:
+                        return False
+                    started = float(record["started"])
+                    bound = float(record["bound"])
+                except (OSError, ValueError, KeyError, TypeError):
+                    # Publication happens under the held pass lock. No record
+                    # is not evidence that the registration owner is idle.
+                    return False
                 if time.monotonic() - started < bound:
                     return False
                 log(
