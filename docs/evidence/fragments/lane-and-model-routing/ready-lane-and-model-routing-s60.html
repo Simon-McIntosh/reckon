@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="lane-and-model-routing">
+  <meta name="plan-title" content="Every dispatcher finds the router's key">
+  <meta name="plan-summary" content="credential_path() anchors its default at the main checkout: when the package root is a linked worktree it follows the worktree's .git pointer and that git directory's commondir to the shared checkout, so a follower, service or MCP server importing reckon from a worktree reads the key from the main checkout's .env. A new test starts the lookup the way the follower starts, and a restored parents[3] lookup fails it.">
+  <meta name="plan-evidence-for" content="reckon:lane-and-model-routing">
+  <meta name="plan-verifies" content="reckon:lane-and-model-routing#s60">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="picker,jev,credential,worktree,follower">
+  <title>Every dispatcher finds the router's key — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-lane-and-model-routing-s60-landing" data-node="ready-lane-and-model-routing-s60" data-reckon="landed" data-when="2026-11-13">
+  <h2>Every dispatcher finds the router's key</h2>
+  <p id="ready-lane-and-model-routing-s60-summary">The follower, the admission service and the MCP server each start with <code>sys.path</code> rooted at the checkout that supplied the import — <code>reckon/crew/admission/service.py</code> and <code>reckon/crew/follower_reload.py</code> both build that launcher — and that checkout is often a linked worktree. <code>credential_path()</code> in <code>reckon/crew/picker/client.py</code> used to resolve <code>Path(__file__).resolve().parents[3] / ".env"</code>, which in a linked worktree is the worktree's own root. It now resolves the main checkout first: when the checkout root carries a <code>.git</code> file, <code>main_checkout()</code> reads the <code>gitdir:</code> pointer, reads that git directory's <code>commondir</code> file, and takes the parent of the shared git directory. A main checkout, an exported tree with no <code>.git</code>, or a pointer that cannot be read resolves to the checkout itself, so nothing else changes. <code>RECKON_PICKER_CREDENTIAL</code> still wins when it is set, and <code>load_key()</code> still names the environment and the file path it read.</p>
+  <p id="ready-lane-and-model-routing-s60-cause"><strong>Which cause held.</strong> Both candidate causes were read before the repair. The variable is not set anywhere on this host: <code>env -i HOME=$HOME bash -lc</code> reports <code>UNSET</code> for <code>OPENROUTER_API_KEY_RECKON</code>, and no shell profile assigns it — so the only source of the key is the main checkout's <code>.env</code> at <code>/home/ITER/mcintos/Code/reckon/.env</code>. That file is not carried uniformly by worktrees: of the 93 leaf checkouts under <code>Code/.reckon-worktrees/reckon-*/*/*/</code>, 18 hold no <code>.env</code> at all, and the remaining 75 hold a symlink to the main checkout's file. A dispatcher importing reckon from one of the 18 looked in a directory with no file, which is the import-location cause; the variable was never the source. The recorded failure is in the run's own selection: <code>docs/state/reckon/runs/r-20261105T133445345987-review-of-every-sweep-classifies-from-its-records … picker_selection</code> reads <code>{"decision_source": "flight-default", "fallback_reason": "jev-error: LiveJevDisabledError"}</code>, a call that never left the process (<code>jev_latency_ms: 0.533</code>).</p>
+  <p id="ready-lane-and-model-routing-s60-measure"><strong>Measure.</strong> Gate: <code>tests/test_every_dispatcher_finds_the_router_key.py</code> (3 passed) — the lookup runs in a subprocess started the way the follower starts, over a temporary main checkout holding <code>.env</code> and a linked worktree of it holding none, with <code>HOME</code> temporary and no key in the environment. The first case asserts the module under test was imported from the worktree and that the resolved path is the main checkout's <code>.env</code>; the second asserts a checkout with no file and no variable still raises <code>LiveJevDisabledError</code> naming the environment and the path it looked in. Every test file importing <code>reckon.crew.picker.client</code> (13 files) measured the same in both arms: base arm at <code>7d8105febe26ad51bfac7c2a82f799e9a50f2c01</code> 7 failed / 127 passed <code>EXIT=1</code>, head arm 7 failed / 130 passed <code>EXIT=1</code> — the delta is the three new tests, and the seven failures are the same pre-existing <code>tests/test_review_carries_forward.py</code> ids in both arms.</p>
+  <p id="ready-lane-and-model-routing-s60-negative-control"><strong>Negative control.</strong> Restoring the follower's lookup path — the base revision's <code>credential_path()</code> returning <code>Path(__file__).resolve().parents[3] / ".env"</code> — over a scratch copy of the tree turns the first case red: <code>assert PosixPath('.../linked/.env') == PosixPath('.../main/.env')</code>, and the second case red because the message names the worktree's own <code>.env</code>. <code>2 failed, 1 passed</code>, <code>EXIT=1</code>; the head tree passes all three.</p>
+</article>
+</body>
+</html>
