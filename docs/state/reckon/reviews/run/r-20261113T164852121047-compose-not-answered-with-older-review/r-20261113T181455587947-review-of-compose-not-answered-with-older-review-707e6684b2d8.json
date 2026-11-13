@@ -1,0 +1,69 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "ca3eecced",
+  "call_site_count": 3,
+  "call_sites": [
+    "reckon/crew/plan_review.py:4313 _owed_review_skip_reason",
+    "reckon/crew/obligations.py:1847 _plan_review_this_request_awaits",
+    "reckon/crew/recovery_review_dispatch.py:2557 and :2580 _dispatch_text_review_for_run"
+  ],
+  "completed_at": "2026-11-13T18:37:56.432Z",
+  "dispatched_at": "2026-11-13T18:30:33Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2381",
+      "severity": "non-blocking",
+      "text": "The terminal-phase branch of _plan_review_worker_finished has no test: every case drives the manifest-status clause through runs._round_has_delivered (the pointers the tests write carry phase 'working'), so deleting lines 2381-2382 leaves the suite green while a pointer left at a terminal phase whose manifest is gone (a cleaned run directory) again holds the compose gate."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2405",
+      "severity": "non-blocking",
+      "text": "The sidecar read re-implements the record reader plan_review already owns (plan_review.py:1482 _load and plan_review.py:1507 _read_record, same json.loads plus OSError/JSONDecodeError returning None), so a change to that contract, or the within-pass cache _load provides, does not reach this reader."
+    },
+    {
+      "file": "reckon/crew/recovery_review_dispatch.py",
+      "line": "2456",
+      "severity": "non-blocking",
+      "text": "Both fallbacks in _plan_review_plan_path are untested: every case supplies pointer['plan_path'], so a regression in the repo/docs/plans resolution or the mount-registry resolution goes uncaught while any pointer lacking a recorded path would compose a duplicate review."
+    }
+  ],
+  "head_log_revision": "707e6684b2",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Traced the three production callers of _standing_plan_review: plan_review.py:4313 _owed_review_skip_reason (the compose refusal), obligations.py:1847 _plan_review_this_request_awaits (the queued-row reading) and recovery_review_dispatch.py:2557 and :2580 in _dispatch_text_review_for_run; all three now compose a review of the newer version rather than name the older one.",
+    "diff": "Read commit by commit: 2e5707a407 adds _composed_review_directory, _plan_review_worker_finished, _plan_review_reads_current and _plan_review_plan_path and reorders the two skips in _standing_plan_review (recovery_review_dispatch.py:734, 2368-2470, 2514-2520), 707e6684b2 adds only the evidence fragment.",
+    "done_when": "The done_when names four measures -- a complete-manifest review of vN composing a review that reads vN+1, a working current-version review answering with its own run id, a scope-covering working review answering the same, and a negative control returning the old id -- and tests/test_compose_not_answered_with_older_review.py:215, :231, :243 and negative-control.log carry each one; the all_debug gate it names ran as job 1314507 and is recorded in the evidence fragment.",
+    "goal": "The goal is that a plan review composed for a newer plan version is not answered with an older one; recovery_review_dispatch.py:2517-2520 now skips a pointer whose worker has ended and one that reads neither the current version nor every changed unit, and recovery_review_subject.py:1093 confirms a real composed pointer carries the report directory as its write path, so _composed_review_directory resolves outside the fixture.",
+    "manifest": "Read; status complete, it records base 51 passed EXIT=0 and after 56 passed EXIT=0 with the three named logs, and each of base-arm.log, after-arm.log and negative-control.log was opened and ends on a bare EXIT= line under a revision header.",
+    "write_paths": "The node was fenced to four declared paths (three files plus a figures directory); git diff --stat ca3eecced3..707e6684b2 lists exactly three paths and every one is inside that fence, and the figures directory is simply unused."
+  },
+  "justifications": {
+    "durability": "negative-control.log shows test_a_delivered_review_does_not_answer_a_newer_plan failing at line 204 with 'r-plan-review-older-version', so reverting the two skips reddens the suite; the terminal-phase branch at :2381 and both plan-path fallbacks at :2456 and :2462 however have no case that fails if they are removed.",
+    "evidence": "base-arm.log records 51 passed EXIT=0 at ca3eecced3 and after-arm.log 56 passed EXIT=0 at 2e5707a407 (exactly the five added cases), and negative-control.log reddens at the pre-change reader with the old run id printed in the traceback.",
+    "fit": "The additions are private helpers with the module's own docstring voice and its function-local 'from reckon.crew.node import _TERMINAL_RUN_PHASES' idiom, and no added name carries a version, plan label or stage identifier.",
+    "goal_fidelity": "recovery_review_dispatch.py:2517 and :2519 skip a finished worker and a review whose scope does not cover the newer plan, which is exactly the incident the plan records at work-flows-to-the-lane.html:250 (pointer at promotion-requested, record unstored, every compose answered with the old run id).",
+    "reuse": "The change extends the owners it should (plan_review._section_digests, _normalise_sections, TRACED_UNITS_KEY, _REVIEW_SIDECAR_NAME, and runs._round_has_delivered) and folds _composed_review_run_id onto the new _composed_review_directory, but the sidecar read at :2405 duplicates plan_review._read_record (plan_review.py:1507).",
+    "scope_discipline": "git diff --stat ca3eecced3..707e6684b2 names only recovery_review_dispatch.py, tests/test_compose_not_answered_with_older_review.py and the evidence fragment, all three of the node's declared write paths."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T181455587947-review-of-compose-not-answered-with-older-review-707e6684b2d8",
+  "reviewed_base_sha": "ca3eecced39603d4b210de860e0c3e8e6706cbde",
+  "reviewed_head_sha": "707e6684b2d816f610d65f449242d3fa9b597616",
+  "reviewed_run_id": "r-20261113T164852121047-compose-not-answered-with-older-review",
+  "reviewer_run_id": "r-20261113T181455587947-review-of-compose-not-answered-with-older-review-707e6684b2d8",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 15,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T18:54:57.950794+00:00",
+  "total": 105
+}
