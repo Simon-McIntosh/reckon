@@ -3751,6 +3751,9 @@ def _obligations_view(
         )
     )
     items.extend(_held_worktrees(project, session, now=now))
+    from reckon.crew.promotion_requests import failure_obligations
+
+    items.extend(failure_obligations(project, session, now=now))
     # A main checkout's index can stage a path as deleted while HEAD and the
     # working tree both hold the file, and the next plain commit there records
     # the deletion. The condition belongs to the project rather than to a run,

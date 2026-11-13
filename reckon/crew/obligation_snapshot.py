@@ -1551,6 +1551,9 @@ def payload_for(state: FleetState, session: str) -> dict[str, Any]:
             items.append(module._live_item(row, kind=kind, now=state.now))
     items.extend(state.sub_floor.get(session, []))
     items.extend(state.held_worktrees.get(session, []))
+    from reckon.crew.promotion_requests import failure_obligations
+
+    items.extend(failure_obligations(state.project, session, now=state.now))
     # The project's main checkout is read here exactly as the derivation reads
     # it, through the derivation's own detector rather than a second one, so a
     # session's published payload carries the index-lag notice its stop hook

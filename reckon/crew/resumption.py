@@ -2674,14 +2674,15 @@ def sweep(
     reviews: dict[str, Any] = {}
     if not dry_run:
         try:
-            width, wait_seconds = _promotion_settings(config)
+            from reckon.crew.promotion_requests import PromotionRequests
+
             reviews = dispatch_awaiting_reviews(
                 project=project,
                 config=config,
                 launcher=launch,
                 session=session,
                 pointers=live,
-                promotions=PromotionWorkers(width=width, wait_seconds=wait_seconds),
+                promotions=PromotionRequests(),
             )
         except Exception as exc:  # noqa: BLE001 - preserve the other sweep passes
             # A review pass that cannot run must not take the resume pass's

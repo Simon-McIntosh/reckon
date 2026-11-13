@@ -13,8 +13,6 @@ from reckon.crew_dispatch_commands import (
     _accept_a_matching_project,
     _budget_check_report,
     _crew_modules,
-    _emit,
-    _emit_crew_result,
     _lane_paused_detail,
     _resolved_flight,
     _resolved_gc_repo,
@@ -22,6 +20,39 @@ from reckon.crew_dispatch_commands import (
     crew,
     crew_review,
 )
+from reckon.crew_dispatch_commands import (
+    _emit as _publish,
+)
+from reckon.crew_dispatch_commands import (
+    _emit_crew_result as _publish_crew_result,
+)
+
+
+def _emit(payload, pretty: bool) -> None:
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+
+    reply = COMMAND_REPLY.get()
+    if reply is not None:
+        reply.append(dict(payload))
+        return
+    _publish(payload, pretty)
+
+
+def _emit_crew_result(result, pretty: bool, **kwargs) -> None:
+    from reckon.crew.promotion_requests import COMMAND_REPLY
+    from reckon.crew_dispatch_commands import _crew_result_ok
+
+    if COMMAND_REPLY.get() is None:
+        _publish_crew_result(result, pretty, **kwargs)
+        return
+    payload = dict(result)
+    payload["ok"] = _crew_result_ok(
+        payload, observation=kwargs.get("observation", False)
+    )
+    _emit(payload, pretty)
+    if not payload["ok"]:
+        raise click.exceptions.Exit(kwargs.get("failure_exit", 1))
+
 
 # Preserve the CLI re-export while the retired name resolves through the
 # crew group's tombstone lookup.
@@ -3475,22 +3506,30 @@ def crew_complete(
     project=None,
     candidate="",
 ):
-    """Promote one finished run into the owning repository's committed ledger.
+    """Request promotion and return the run's durable promotion-requested receipt.
 
-    The ledger append happens before the pointer is deleted, so an interruption
-    between them leaves a recoverable pointer rather than a lost record. A
-    passing gate is refused unless it carries the check that produced it —
-    this is the sole route by which a run is promoted, so the requirement is
-    unconditional here even though the underlying ledger call remains
-    permissive for internal callers assembling records from other evidence.
-
-    With ``--land`` the promotion is followed by three reported steps: the
-    reviewed head is merged onto the project's primary branch without touching
-    the shared index, the merged tree is refused unless it carries a marker the
-    change introduced and lacks any marker it removed, and the branch is pushed
-    before the worktree is released. A step that fails stops the call and the
-    report names the command that resumes from it.
+    The fleet service checks the recorded gate and review, writes the ledger,
+    and retains the outcome on the run. With --land it also merges, verifies,
+    pushes and releases the worktree. A refusal or failure becomes an obligation
+    for the run's session. Repeating a pending request creates no second job.
+    --dry-run reports the current guards without recording a request.
     """
+    from reckon.crew.promotion_requests import COMMAND_REPLY, request_promotion
+
+    if not dry_run and COMMAND_REPLY.get() is None:
+        parameters = dict(locals())
+        for name in ("COMMAND_REPLY", "request_promotion"):
+            parameters.pop(name, None)
+        from reckon.crew.node import CrewError
+
+        try:
+            result = request_promotion(
+                run_id, kind="command", options=parameters, retry=True
+            )
+        except CrewError as exc:
+            raise click.ClickException(str(exc)) from exc
+        _emit_crew_result(result, pretty)
+        return
     _accept_a_matching_project(run_id, project)
     if candidate and not land:
         raise click.UsageError("--candidate requires --land")
