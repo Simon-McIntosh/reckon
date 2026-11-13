@@ -189,6 +189,11 @@
     <p>§37 landed at <code>3085087130</code> (run <code>r-20261113T033507849520-service-reloads-between-passes</code>). A declared service that must move to new code finishes its pass and moves at the boundary; a pass that overruns its bound is still restarted, with the bound named in the log. A worker no longer inherits its parent service's pass-boundary variable. On 13 November the supervisor had restarted the admit service on every landing, killing each pass before it ended. The review's one blocking finding, a race on the first pass record, was closed in a repair round, and the re-review scored 19 to 20 with no findings.</p>
   </section>
 
+  <section id="s39-queued-launch-never-classifies-the-fleet" data-evidence-origin="append">
+    <h2>§39 — a queued launch never classifies the fleet</h2>
+    <p>§39 landed at <code>5cdffb591f</code> (run <code>r-20261113T060010212800-queued-launch-never-classifies-the-fleet</code>). A launch made by the admission service now records no session backlog and classifies no run but its own, while a coordinator's direct dispatch still records the backlog as §3 requires. Measured in its test: zero classifier calls for a queued launch, and ten backlog runs recorded on a direct dispatch. This removes the regression §3 had introduced on the admission path, where every queued launch classified every live run on loaded GPFS and the local lane stood at 0 to 2 running. The first review's blocking finding, two assertions still expecting a backlog on queued launches, was closed in a repair round, and the re-review scored 20 on every dimension.</p>
+  </section>
+
 </main>
 </body>
 </html>
