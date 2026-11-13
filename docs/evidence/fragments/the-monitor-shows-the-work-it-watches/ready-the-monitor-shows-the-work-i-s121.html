@@ -30,6 +30,8 @@
       <tr><td>base 9814cf5d2f</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q</code> over the 63 test files importing either module, run against a <code>git archive</code> of that revision</td><td>20 failed, 392 passed, EXIT=1</td></tr>
       <tr><td>head 6e87c540eb</td><td>the same template over the 64 files the head tree carries, run from the worktree</td><td>20 failed, 395 passed, EXIT=1</td></tr>
       <tr><td>negative control</td><td>the branch removed, then <code>pytest -q tests/test_a_released_follower_is_told_to_rearm.py</code></td><td>1 failed, 2 passed, EXIT=1</td></tr>
+      <tr><td>base 9814cf5d2f, named files</td><td><code>PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_quiet_foreign_producer_reads_live.py tests/test_a_stale_code_producer_is_not_reloading_forever.py tests/test_staged_write_inventory.py</code>, against a <code>git archive</code> of that revision</td><td>57 passed, 2 errors, EXIT=1</td></tr>
+      <tr><td>after a099be63b5, named files</td><td>the same command plus <code>tests/test_a_released_follower_is_told_to_rearm.py</code>, run from the worktree</td><td>62 passed, EXIT=0</td></tr>
     </tbody>
   </table>
 
@@ -46,14 +48,14 @@
   released cannot pass for one that did.</p>
 
   <p id="ready-the-monitor-shows-the-work-i-s121-legacy">Two earlier tests write exactly this
-  population and assert the text this reading replaces:
+  population and asserted the text this reading replaces:
   <code>test_a_stale_code_producer_is_not_reloading_forever.py::test_hook_names_old_code_rather_than_a_reload_for_an_aged_stale_snapshot</code>
   and <code>test_a_quiet_foreign_producer_reads_live.py::test_snapshot_from_predecessor_uses_seated_producers_stamp[False]</code>
-  each arm a registration, release it, and write a twenty-hour-old snapshot on an older stamp. They are
-  the two failures the after arm adds over the base arm and they sit outside this node's write scope,
-  so they are reported rather than edited: each needs the follower-stopped sentence and the
-  <code>reckon crew follow</code> arming command asserted in place of the producer's older-code remedy.
-  Their shared helper calls <code>freshness</code> with no session and keeps its reading unchanged.</p>
+  each arm a registration, release it, and write a twenty-hour-old snapshot on an older stamp. Each now
+  asserts the follower-stopped sentence and the <code>reckon crew follow</code> arming command in its
+  place. Their shared helper calls <code>freshness</code> with no session, which cannot answer the
+  registration question for anyone, so its own reading is unchanged and still pins
+  <code>producer-stale-code</code> for the document.</p>
 
   <p id="ready-the-monitor-shows-the-work-i-s121-control">One negative control, logged at
   <code>logs/negative-control.txt</code>: removing the new branch turns the first case red against the
