@@ -84,6 +84,19 @@ class Candidate:
     # lane a policy reserves and a lane offered by an exception read alike in
     # ``reasons`` -- empty -- and the note is what distinguishes them.
     note: str | None = None
+    # Whether a flight policy reserves this candidate's lane, and the terms it
+    # was judged on: the tier floor, the attempt threshold, the window ceiling,
+    # the window's use, any lift in force and its reason, and the policy's own
+    # statement of what the lane is for. A reservation is a preference the
+    # router weighs, so it never appears in ``reasons``.
+    reserved: bool = False
+    reservation: dict[str, Any] | None = None
+    # The judgments that do not make a lane unable to run the node: a competence
+    # verdict, a pacing ceiling the account would still serve, and a
+    # reservation's own terms. They are stated for the router to weigh and are
+    # never read as exclusions; the deterministic fallback applies them as rules
+    # because it has no router to ask.
+    preferences: list[str] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

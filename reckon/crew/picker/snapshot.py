@@ -742,7 +742,16 @@ def _fit(
     verdict_inputs: dict[str, Any] | None = None,
     context_out: dict[str, Any] | None = None,
     authority: Mapping[str, Any] | None = None,
-) -> list[str]:
+) -> tuple[list[str], list[str]]:
+    """The lane's fit as an exclusion (first) and a preference (second).
+
+    Context fit and an execution refusal make the lane unable to run the node,
+    so they remove it. A competence verdict is a judgment about whether the
+    lane's measured success horizon covers a node of this size, which is what
+    the router exists to weigh; it is stated beside the lane, not applied to
+    remove it. The one competence refusal that restates a context overflow is
+    already carried as ``context-fit`` above, so it is not stated twice.
+    """
     execution = capability.assess_execution_fit(
         request.node.done_when,
         role=request.node.role,
@@ -788,14 +797,15 @@ def _fit(
         reasons.append(
             f"context-fit: requested {request.estimated_context} tokens exceeds {context['window_tokens']}"
         )
-    if not competence["allowed"]:
-        reasons.append("competence: " + competence["reason"])
+    preferences: list[str] = []
+    if not competence["allowed"] and competence.get("reason") != "context-window-exceeded":
+        preferences.append("competence: " + competence["reason"])
     # The verdict measured this backend's window once; hand the measurement to
     # the caller rather than measuring it a second time for the candidate's
     # context block.
     if context_out is not None:
         context_out[name] = context
-    return reasons
+    return reasons, preferences
 
 
 def _budget_view_input_paths(config: Mapping[str, Any]) -> list[str]:
@@ -1213,8 +1223,8 @@ def _budget_exclusion_reasons(
     utilisation: float | None,
     now: datetime,
     session: str | None,
-) -> list[str]:
-    """The reasons a lane's budget withholds it.
+) -> tuple[list[str], list[str]]:
+    """The lane's budget as an exclusion and as a preference, in that order.
 
     The budget gate reads the verdict of :func:`reckon.budget.decide` through
     the group's effective block -- the same verdict and the same block a
@@ -1232,9 +1242,16 @@ def _budget_exclusion_reasons(
     ceiling less the reserves dispatch withholds -- is applied even where the
     verdict reads the lane open on an availability observation, so the picker
     refuses a lane a dispatch would refuse.
+
+    Only the first list removes the lane. A verdict that reads the lane held is
+    the account refusing the request, which makes the lane unable to run the
+    node. A window at or above the pacing ceiling while the account would still
+    serve it is a preference: the lane can run the node, and a pacing ceiling is
+    the operator's even-share guidance rather than the account's own limit, so
+    it is stated for Jev to weigh and the lane stays offered.
     """
     if not fresh:
-        return []
+        return [], []
     block = _effective_budget_block(config, group, now=now, session=session)
     judged = budget.policy({**config, "budget": block})
     credit_lift = "credit_lift" in judged
@@ -1243,17 +1260,32 @@ def _budget_exclusion_reasons(
     )
     if verdict.get("held"):
         reason = str(verdict.get("reason") or "the lane's budget withholds it")
-        return [f"budget-ceiling: {reason}"]
+        return [f"budget-ceiling: {reason}"], []
     if not credit_lift and utilisation is not None:
         limit = budget.effective_ceiling(judged, "dispatch")
         if utilisation >= limit:
-            return [
+            return [], [
                 (
-                    f"budget-ceiling: {utilisation:g}% is at or above the "
-                    f"{limit:g}% ceiling for a dispatch"
+                    f"budget-pace: {utilisation:g}% is at or above the "
+                    f"{limit:g}% pacing ceiling for a dispatch"
                 )
             ]
-    return []
+    return [], []
+
+
+def _reserved_lane_evidence(withheld: str) -> tuple[list[str], list[str]]:
+    """Split a reserved lane's policy text into exclusions (first) and evidence.
+
+    A reservation states when the orchestrators' shared lane is meant to be
+    spent, which is a preference the router weighs rather than a fact about
+    what the lane can run: a node below the policy's tier floor, on a lane whose
+    window is under the policy's ceiling, is work the lane is capable of and
+    simply not work the reservation prefers. Removing the lane here would make
+    the decision before the router is asked, so the policy's own words travel
+    beside the candidate as evidence and the fallback, which has no router to
+    ask, is the one place they decide.
+    """
+    return [], [withheld]
 
 
 def _reserved_lane_exclusion(
@@ -1396,14 +1428,14 @@ def _group_name(group: Any, config: Mapping[str, Any] | None) -> str | None:
     return None
 
 
-OVERSIZE_CONTEXT_WAIVER_NOTE = "offered because no open lane fits the node's context"
-
-
-def _excluded_only_on_context(reasons: list[str]) -> bool:
-    """Whether context fit is the whole of why a candidate was removed."""
-    return bool(reasons) and all(
-        reason.startswith("context-fit: ") for reason in reasons
-    )
+#: What a reservation says a lane is for. The policy removes nothing; it says
+#: whose capacity the lane is and what work is worth spending it on, so the
+#: statement travels with the lane as evidence rather than as a rule.
+RESERVED_LANE_INTENT = (
+    "the orchestrators' own shared capacity, spent on work a wrong answer would "
+    "make expensive: open-ended, multi-file or diagnostic work, and work that "
+    "has grown hard by failing elsewhere"
+)
 
 
 def _candidate_availability(
@@ -1633,10 +1665,6 @@ def candidates(
         else:
             variants.append((name, None, None))
     result = []
-    # The reserved candidates a policy withheld, with the readings their policy
-    # was judged on, so the set-wide oversize waiver below can re-judge each of
-    # them without re-reading a window or a budget.
-    reserved_withheld: list[dict[str, Any]] = []
     for name, model_key, _model_settings in variants:
         local = name == config.get("local_backend")
         # A lane model's row is built through the same two steps dispatch takes:
@@ -1697,7 +1725,7 @@ def candidates(
         # reserved-lane term below resolves for itself whether any lift governs,
         # since a reading this gate declines to judge is the case where that
         # release matters most.
-        budget_reasons = _budget_exclusion_reasons(
+        budget_reasons, budget_preferences = _budget_exclusion_reasons(
             name,
             config,
             group.get("group") if isinstance(group, Mapping) else None,
@@ -1708,6 +1736,7 @@ def candidates(
             session=request.session,
         )
         reasons.extend(budget_reasons)
+        preferences: list[str] = list(budget_preferences)
         gate = _dispatch_lane_gate(backend)
         if gate["state"] in {"paused", "unreadable"}:
             reasons.append("lane-gate: " + gate["state"])
@@ -1766,33 +1795,54 @@ def candidates(
                 lift_in_force=lift_in_force,
             )
             if withheld:
-                reasons.append(withheld)
-                reserved_withheld.append(
-                    {
-                        "backend": name,
-                        "backend_settings": backend,
-                        "model": model,
-                        "family": family,
-                        "utilisation": reserved_utilisation,
-                        "lift_in_force": lift_in_force,
-                        "availability_cache": availability_cache,
-                    }
-                )
+                excluded_reasons, evidence = _reserved_lane_evidence(withheld)
+                reasons.extend(excluded_reasons)
+                preferences.extend(evidence)
+            reservation = {
+                "family": family,
+                "floor": sorted(
+                    reserved[family].get(flight.PICKER_RESERVED_LANE_FLOOR_KEY) or {}
+                ),
+                "attempts_threshold": reserved[family].get(
+                    flight.PICKER_RESERVED_LANE_ATTEMPTS_KEY
+                ),
+                "attempts": attempts,
+                "ceiling_pct": (
+                    float(
+                        reserved[family].get(flight.PICKER_RESERVED_LANE_CEILING_KEY)
+                        or 0
+                    )
+                    * 100
+                ),
+                "window_utilisation_pct": reserved_utilisation,
+                # A reservation is the operator's statement that this lane's
+                # account is the orchestrators' own capacity, spent on work a
+                # wrong answer would make expensive. The intent travels with the
+                # lane so the router weighs the reservation rather than
+                # inferring it from a bare flag.
+                "intent": RESERVED_LANE_INTENT,
+                "lift_in_force": lift_in_force,
+                "lift": lane_lift or None,
+                "withheld": withheld,
+            }
+        else:
+            reservation = None
+            lift_in_force = False
         # Already-excluded candidates need no repository census or serving probe.
         context_block = None
         if not reasons:
             contexts: dict[str, Any] = {}
-            reasons.extend(
-                _fit(
-                    request,
-                    name,
-                    backend,
-                    repo,
-                    verdict_inputs=shared,
-                    context_out=contexts,
-                    authority=authority,
-                )
+            fit_reasons, fit_preferences = _fit(
+                request,
+                name,
+                backend,
+                repo,
+                verdict_inputs=shared,
+                context_out=contexts,
+                authority=authority,
             )
+            reasons.extend(fit_reasons)
+            preferences.extend(fit_preferences)
             context_block = _context_block(
                 contexts.get(name), node_context_tokens, lane_utilisation.get(name, {})
             )
@@ -1868,6 +1918,9 @@ def candidates(
                 moved_in=_outcome_counts(moved_in_counts.get((name, model), Counter())),
                 moved_off=moved_off_counts.get((name, model), 0),
                 reasons=reasons,
+                reserved=bool(family in reserved and request.node.role != "review"),
+                reservation=reservation,
+                preferences=preferences,
                 budget_reason=budget_reason,
                 budget_source=budget_source,
                 stale=stale,
@@ -1881,93 +1934,4 @@ def candidates(
                 ),
             )
         )
-    # A node too large for every lane no policy reserves would be refused
-    # outright, and its work never enters the queue. That decision belongs here
-    # because only this function holds the whole set: when no unreserved
-    # candidate is left and every unreserved one was removed on context fit
-    # alone, the tier and attempts terms of a reserved lane's policy are waived
-    # for this node. Nothing else is: the window ceiling and the budget verdict
-    # were already applied when the candidate's reasons were built, and a
-    # candidate held by one of those is left exactly as it was. A candidate the
-    # waiver does admit is measured on its own context fit -- a reserved lane
-    # whose window the node also exceeds cannot run it either -- and probed for
-    # serving like any other offered candidate, since an offer that skipped the
-    # probe would be the only one in the set that did.
-    unreserved = [candidate for candidate in result if candidate.family not in reserved]
-    if (
-        reserved_withheld
-        and unreserved
-        and all(_excluded_only_on_context(c.reasons) for c in unreserved)
-    ):
-        for withheld_lane in reserved_withheld:
-            candidate = next(
-                (
-                    c
-                    for c in result
-                    if c.backend == withheld_lane["backend"]
-                    and c.model == withheld_lane["model"]
-                ),
-                None,
-            )
-            if candidate is None:
-                continue
-            # The waiver reaches the policy's own terms and nothing else. A lane
-            # a budget verdict, a paused gate, a review exclusion or an
-            # in-harness launch already removed is removed for that reason, and
-            # a reason list holding any of them is left exactly as it is rather
-            # than emptied along with the policy's.
-            policy_reasons = [
-                reason
-                for reason in candidate.reasons
-                if reason.startswith("reserved-lane: ")
-            ]
-            if not policy_reasons or len(policy_reasons) != len(candidate.reasons):
-                continue
-            still_withheld = _reserved_lane_exclusion(
-                withheld_lane["family"],
-                reserved[withheld_lane["family"]],
-                declared=declared_requirements,
-                attempts=attempts,
-                utilisation=withheld_lane["utilisation"],
-                lift_in_force=withheld_lane["lift_in_force"],
-                waive_tier=True,
-            )
-            if still_withheld:
-                continue
-            contexts: dict[str, Any] = {}
-            fit_reasons = _fit(
-                request,
-                candidate.backend,
-                withheld_lane["backend_settings"],
-                repo,
-                verdict_inputs=shared,
-                authority=authority,
-                context_out=contexts,
-            )
-            if fit_reasons:
-                candidate.reasons[:] = fit_reasons
-                continue
-            for reason in policy_reasons:
-                candidate.reasons.remove(reason)
-            candidate.context = _context_block(
-                contexts.get(candidate.backend),
-                node_context_tokens,
-                lane_utilisation.get(candidate.backend, {}),
-            )
-            availability = _candidate_availability(
-                request,
-                candidate.backend,
-                config,
-                withheld_lane["backend_settings"],
-                candidate.model,
-                repo,
-                availability_cache=withheld_lane["availability_cache"],
-                cached_only=cached_only,
-                now=now,
-            )
-            if availability in {"refused", "unavailable", "logged-out"}:
-                candidate.reasons.append("availability: " + availability)
-                continue
-            candidate.availability = availability
-            candidate.note = OVERSIZE_CONTEXT_WAIVER_NOTE
     return result

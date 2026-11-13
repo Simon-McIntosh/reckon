@@ -95,7 +95,7 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _no_fleet_reads(monkeypatch: pytest.MonkeyPatch) -> None:
     """Freeze every fleet read so a pick touches only the code under test."""
 
-    monkeypatch.setattr(snapshot, "_fit", lambda *a, **k: [])
+    monkeypatch.setattr(snapshot, "_fit", lambda *a, **k: ([], []))
     monkeypatch.setattr(snapshot, "estimated_context_tokens", lambda *a, **k: 0)
     monkeypatch.setattr(
         snapshot,
@@ -252,6 +252,14 @@ def _has_reason(options, backend: str, prefix: str) -> bool:
     return any(reason.startswith(prefix) for reason in _reasons(options, backend))
 
 
+def _candidate(options, backend: str):
+    return next(item for item in options if item.backend == backend)
+
+
+def _preferences(options, backend: str) -> list[str]:
+    return _candidate(options, backend).preferences
+
+
 def _grant_uncapped(config: dict, *, session: str | None) -> dict:
     return bl.grant(
         config,
@@ -281,50 +289,60 @@ def _grant_credits(config: dict) -> dict:
 # --- the window the account publishes -----------------------------------------
 
 
-def test_an_operative_window_offers_the_lane_and_the_tier_keeps_it_from_an_ordinary_node():
-    """Neither named clock observed: the operative window's headroom is read."""
+def test_an_operative_window_offers_the_lane_to_an_ordinary_node_as_well():
+    """Neither named clock observed: the operative window's headroom is read.
+
+    The tier floor is a preference, not an exclusion, so an ordinary node is
+    offered the reserved lane with the policy's own words beside it.
+    """
 
     now = _moment()
     view = _operative_view(pct=0.0, now=now)
 
     hardest = _candidates(CONFIG, view, capability=HARDEST)
     assert "codex-lane" in _offered(hardest)
+    assert _candidate(hardest, "codex-lane").reserved
+    assert _preferences(hardest, "codex-lane") == []
 
     ordinary = _candidates(CONFIG, view)
-    assert "codex-lane" not in _offered(ordinary)
-    assert _has_reason(ordinary, "codex-lane", "reserved-lane:")
-    assert "hardest tier" in _reasons(ordinary, "codex-lane")[0]
+    assert "codex-lane" in _offered(ordinary)
+    assert _candidate(ordinary, "codex-lane").reserved
+    assert any(
+        "hardest tier" in preference
+        for preference in _preferences(ordinary, "codex-lane")
+    )
+    assert _reasons(ordinary, "codex-lane") == []
 
 
-def test_an_operative_window_past_the_ceiling_is_withheld_by_the_window_term():
+def test_an_operative_window_past_the_ceiling_is_stated_beside_the_lane():
     """The operative window's 70% is judged against the 60% reserved ceiling."""
 
     now = _moment()
     options = _candidates(
         CONFIG, _operative_view(pct=70.0, now=now), capability=HARDEST
     )
-    assert "codex-lane" not in _offered(options)
+    assert "codex-lane" in _offered(options)
     withheld = next(
-        reason
-        for reason in _reasons(options, "codex-lane")
-        if reason.startswith("reserved-lane:")
+        preference
+        for preference in _preferences(options, "codex-lane")
+        if preference.startswith("reserved-lane:")
     )
     assert "70" in withheld
     assert "60" in withheld
 
 
-def test_an_operative_window_past_its_shelf_life_is_withheld_as_stale():
+def test_an_operative_window_past_its_shelf_life_is_stated_as_stale():
     """A reading older than the shelf life is unknown headroom, not headroom."""
 
     now = _moment()
     options = _candidates(
         CONFIG, _operative_view(pct=0.0, fresh=False, now=now), capability=HARDEST
     )
-    assert "codex-lane" not in _offered(options)
+    assert "codex-lane" in _offered(options)
     withheld = next(
-        reason
-        for reason in _reasons(options, "codex-lane")
-        if reason.startswith("reserved-lane:")
+        preference
+        for preference in _preferences(options, "codex-lane")
+        if preference.startswith("reserved-lane:")
     )
     assert "unknown or stale" in withheld
 
@@ -363,11 +381,11 @@ def test_an_uncapped_session_lift_releases_a_window_the_lane_never_published():
 
     hardest = _candidates(config, view, capability=HARDEST, session="s")
     assert "codex-lane" in _offered(hardest)
+    assert _candidate(hardest, "codex-lane").reservation["lift_in_force"]
 
-    ordinary = _candidates(config, view, session="s")
-    assert "codex-lane" not in _offered(ordinary)
-    assert _has_reason(ordinary, "codex-lane", "reserved-lane:")
-    assert any("hardest tier" in reason for reason in _reasons(ordinary, "codex-lane"))
+    ordinary = _candidates(config, view, capability=HARDEST, session="s")
+    assert "codex-lane" in _offered(ordinary)
+    assert _preferences(ordinary, "codex-lane") == []
 
 
 def test_a_session_lift_does_not_release_a_window_for_another_session():
@@ -382,11 +400,12 @@ def test_a_session_lift_does_not_release_a_window_for_another_session():
     view = _operative_view(pct=None, now=now)
 
     options = _candidates(config, view, capability=HARDEST, session="s")
-    assert "codex-lane" not in _offered(options)
+    assert "codex-lane" in _offered(options)
+    assert not _candidate(options, "codex-lane").reservation["lift_in_force"]
     withheld = next(
-        reason
-        for reason in _reasons(options, "codex-lane")
-        if reason.startswith("reserved-lane:")
+        preference
+        for preference in _preferences(options, "codex-lane")
+        if preference.startswith("reserved-lane:")
     )
     assert "unknown or stale" in withheld
 
@@ -414,7 +433,10 @@ def test_a_drain_by_lift_leaves_the_budget_verdict_to_withhold_the_lane():
     assert "codex-lane" not in _offered(options)
     assert _has_reason(options, "codex-lane", "budget-ceiling:")
     # The lift released the window term, so the policy's own term is silent.
-    assert not _has_reason(options, "codex-lane", "reserved-lane:")
+    assert not any(
+        preference.startswith("reserved-lane:")
+        for preference in _preferences(options, "codex-lane")
+    )
 
 
 def test_a_fresh_operative_window_sends_no_reserved_window_probe(monkeypatch):
