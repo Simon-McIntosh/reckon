@@ -1,0 +1,72 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T14:33:55.328Z",
+  "dispatched_at": "2026-11-13T14:19:53Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:10:12.700034+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:10:17.819462+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:10:21.129570+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/dispatching/requests.py",
+      "id": "fb30f0f37c5",
+      "line": 124,
+      "severity": "non-blocking",
+      "text": "non-blocking: plan section 7's deliverable requires the single queued dispatch to refuse a node that cannot fit as well as _queue_batch, and queue_requests (line 124) composes write-scope, admission_domain_findings and validate_node but never calls node_context_fit_finding, so that half is unmet; the file was outside this node's write paths and was recorded under outside_scope, so it does not hold this node's landing but section 7 cannot be recorded as done on the batch half alone."
+    },
+    {
+      "file": "tests/test_staged_write_inventory.py",
+      "id": "f5f199bcb53",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "non-blocking: the done_when asks that the test files importing reckon.crew.dispatch_admission or reckon.crew.dispatch_batch add no failure against the base revision, but the armed suite run on both arms was tests/test_staged_write_inventory.py, which imports neither module; the importer population (roughly 52 test files) was never measured, so that clause of the done_when is unverified despite the two green suite arms."
+    },
+    {
+      "file": "docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s7.html",
+      "id": "f64d102506e",
+      "line": 12,
+      "severity": "non-blocking",
+      "text": "non-blocking: the landed fragment ends without a trailing newline, so the file is reported as changed at its last line by tools that normalise line endings."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "pass: reckon/crew/dispatch_batch.py:_queue_batch is the only caller of reckon/crew/dispatch_admission.py:node_context_fit_finding in the tree; reckon/crew/dispatching/requests.py:queue_requests was checked and reaches the context verdict nowhere.",
+    "diff": "pass: read commit by commit against base 4e19968951; one commit f596d669 adds one new twelve-line evidence fragment and no product source or test, and the body's '3 arms' sentence has no closing parenthesis. The fragment's claim that node_context_fit_finding (reckon/crew/dispatch_admission.py:2000) is called from _queue_batch before queue_one (reckon/crew/dispatch_batch.py:743 then :758) is accurate.",
+    "done_when": "pass: the done_when names tests/test_a_batch_entry_fits_its_window_when_queued.py and its three arms; the manifest's tests line and gate.log/gate-after.log record that exact command at base 4e19968951 and head f596d6692e with 3 passed (EXIT=0), and negative-control.log records 1 failed, 2 passed (EXIT=1) under the mutation.",
+    "goal": "pass: the node goal is that a batch entry's context fit is judged at queue time; the diff lands a fragment at docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s7.html recording that the behaviour already exists at the base revision with the gate re-run, and the section's single-dispatch half is recorded as unmet rather than claimed.",
+    "manifest": "pass: read in full; it states status complete, the gate result '3 passed', the negative control '1 failed, 2 passed' EXIT=1, a 51-passed suite pair, and records the single-dispatch gap under outside_scope rather than claiming it.",
+    "write_paths": "pass: the manifest declares write paths reckon/crew/dispatch_admission.py, reckon/crew/dispatch_batch.py, the new test and the fragment directory; the sole path in the diff is the fragment inside that directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a batch entry's context fit is judged at queue time; the diff lands a fragment at docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s7.html recording that the behaviour already exists at the base revision with the gate re-run, and the section's single-dispatch half is recorded as unmet rather than claimed.\nVERDICT done_when: the done_when names tests/test_a_batch_entry_fits_its_window_when_queued.py and its three arms; the manifest's tests line and gate.log/gate-after.log record that exact command at base 4e19968951 and head f596d6692e with 3 passed (EXIT=0), and negative-control.log records 1 failed, 2 passed (EXIT=1) under the mutation.\nVERDICT write_paths: the manifest declares write paths reckon/crew/dispatch_admission.py, reckon/crew/dispatch_batch.py, the new test and the fragment directory; the sole path in the diff is the fragment inside that directory.\nVERDICT manifest: read in full; it states status complete, the gate result '3 passed', the negative control '1 failed, 2 passed' EXIT=1, a 51-passed suite pair, and records the single-dispatch gap under outside_scope rather than claiming it.\nVERDICT diff: read commit by commit against base 4e19968951; one commit f596d669 adds one new twelve-line evidence fragment and no product source or test, and the body's '3 arms' sentence has no closing parenthesis. The fragment's claim that node_context_fit_finding (reckon/crew/dispatch_admission.py:2000) is called from _queue_batch before queue_one (reckon/crew/dispatch_batch.py:743 then :758) is accurate.\nCALL_SITES: reckon/crew/dispatch_batch.py:_queue_batch, reckon/crew/dispatch_admission.py:node_context_fit_finding, reckon/crew/dispatching/requests.py:queue_requests\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: the landed change only documents reckoning the batch half at docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s7.html, while section 7's single-dispatch clause at reckon/crew/dispatching/requests.py:124 remains unimplemented.\nSCORE evidence: 15\nJUSTIFICATION evidence: tests/test_a_batch_entry_fits_its_window_when_queued.py ran 3 passed at both revisions with a red negative control, but the done_when's importer-population clause was measured with tests/test_staged_write_inventory.py, which imports neither changed module.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: the whole diff is one new file under docs/evidence/fragments/a-queued-request-is-checked-when-queued/, inside the manifest's declared write paths, with no product source or test touched.\nSCORE durability: 15\nJUSTIFICATION durability: this change adds no assertion of its own; the guard it records is held by tests/test_a_batch_entry_fits_its_window_when_queued.py:166, which negative-control.log shows reddens when node_context_fit_finding returns None.\nSCORE fit: 18\nJUSTIFICATION fit: the fragment follows the surrounding evidence-record idiom of docs/evidence/fragments/, and the only blemish is a missing trailing newline at its last line.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition, and the verification reuses tests/test_a_batch_entry_fits_its_window_when_queued.py rather than reimplementing the guard.\nFINDING reckon/crew/dispatching/requests.py:124 non-blocking: section 7's deliverable also requires a single queued dispatch to refuse an oversized node, and queue_requests never calls node_context_fit_finding, so that half is unmet; it was recorded under outside_scope and does not hold this node's landing.\nFINDING tests/test_staged_write_inventory.py:1 non-blocking: the done_when asks that the test files importing the changed modules add no failure, but the armed suite run on both arms imports neither, so the importer population was not measured.\nFINDING docs/evidence/fragments/a-queued-request-is-checked-when-queued/ready-a-queued-request-is-checked-s7.html:12 non-blocking: the landed fragment ends without a trailing newline.",
+  "review_run_id": "r-20261113T140740513301-review-of-ready-a-queued-request-is-checked-s7-f596d6692e4a",
+  "reviewed_base_sha": "4e19968951d74d29ddcea7feee3f027cd3a23c13",
+  "reviewed_head_sha": "f596d6692e4a2fd9b1cb6ba0ed9394d09b3839bd",
+  "reviewed_run_id": "r-20261113T033755088312-ready-a-queued-request-is-checked-s7",
+  "scores": {
+    "durability": 15,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:34:30.480237+00:00",
+  "total": 103
+}

@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="71">
+<meta name="plan-version" content="72">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -170,7 +170,7 @@
     <div class="r-comment-body"><p>The review of r-20261113T033430321114-ready-a-queued-request-is-checked-s6 at ca8b937b1f is</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261113T033430321114-ready-a-queued-request-is-checked-s6" data-who="reckon-build" data-when="2026-11-13T09:03:46.306Z">
-    <div class="r-comment-body"><p>Verified, no product change: _queue_batch already stores runs_dir()/&lt;run_id&gt;/manifest.md for a batch entry that names none, so crew queue edit --time-budget 90m on a batch-made request is stored (54 passed both arms at 4c4cf23439 and at this head; mutant dropping the assignment turns the gate to 3 failed with the contract&#x27;s independently-verifiable refusal).</p></div>
+    <div class="r-comment-body"><p>Verified, no product change: _queue_batch already stores runs_dir()/&lt;run_id&gt;/manifest.md for a batch entry that names none, so crew queue edit --time-budget 90m on a batch-made request is stored (54 passed both arms at 4c4cf23439 and at this head; mutant dropping the assignment turns the gate to 3 failed with the contract's independently-verifiable refusal).</p></div>
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261108T004233619983-review-of-batch-context-fit-at-queue-time-9b1492157b5d" data-who="reckon-build" data-when="2026-11-08T01:04:38.451Z">
     <div class="r-comment-body"><p>§7 review of r-20261107T175209652907 at head 9b1492157b - parsed record, six dimensions scored (goal_fidelity 17, evidence 18, scope_discipline 15, durability 18, fit 16, reuse 12; total 96), added failures 0, three non-blocking findings, stored under the reviewed run's review-records/ and not in any worktree</p></div>
@@ -183,6 +183,9 @@
 </div>
 <div class="r-comment" data-section="s7" data-id="c-run-r-20261113T033755088312-ready-a-queued-request-is-checked-s7" data-who="reckon-build" data-when="2026-11-13T11:51:28.132Z">
     <div class="r-comment-body"><p>ready-a-queued-request-is-checked-s7 — verified at base 4e19968951 that a batch entry's context fit is already judged at queue time: node_context_fit_finding is called by _queue_batch before queue_one, so an oversized entry is refused in its batch row naming the estimate and window with no pointer written, a regenerate path is not charged, and an in-window entry queues; gate 3 passed, armed suite 51 passed on both arms, negative control (return None at the guard's entry) red with the oversized entry queuing.</p></div>
+</div>
+<div class="r-comment" data-section="s7" data-id="c-run-r-20261113T140740513301-review-of-ready-a-queued-request-is-checked-s7-f596d6692e4a" data-who="reckon-build" data-when="2026-11-13T14:33:55.328Z">
+    <div class="r-comment-body"><p>review of r-20261113T033755088312-ready-a-queued-request-is-checked-s7 at base 4e19968951d74d29ddcea7feee3f027cd3a23c13 / head f596d6692e4a2fd9b1cb6ba0ed9394d09b3839bd: scores goal_fidelity 15, evidence 15, scope_discipline 20, durability 15, fit 18, reuse 20; three non-blocking findings (single-dispatch half of section 7 unmet and out of scope, importer population unmeasured, fragment missing trailing newline); added_failure_count 0.</p></div>
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261107T175329716070-admission-refusal-named-in-obligation" data-who="reckon-build" data-when="2026-11-07T19:19:30.185Z">
     <div class="r-comment-body"><p>A queued request admission refused on its node contract now yields a `queued-contract-refused` duty whose reason carries the refusal's own property names and whose next_command is `reckon crew queue edit --run &lt;id&gt;` for an editable property or `reckon crew queue drop --run &lt;id&gt;` for a plan-owned one; the refused pointer read `run-queued` / "waiting for a lane slot" before, and `tests/test_a_refused_request_names_its_refusal.py` shows 3 passed EXIT=0 at the head against 2 failed 1 passed EXIT=1 at the base.</p></div>
