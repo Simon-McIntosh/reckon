@@ -665,6 +665,9 @@ def garbage_collect(
     if retention_days < 0:
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
+
+    ended_cleanup = sweep_ended_runs(repo=repo_root) if apply and run_id is None else []
     from reckon.crew.recovery import _resolve_commit
 
     if not _resolve_commit(repo_root, integrated_into):
@@ -1150,6 +1153,7 @@ def garbage_collect(
         "already_removed": bool(already_removed_run),
         "already_removed_run": already_removed_run,
         "already_removed_worktree": already_removed_worktree,
+        "ended_cleanup": ended_cleanup,
         "run_lock": run_lock_reports,
         "unledgered_run_directories": unledgered_run_reports,
         "unledgered_run_directories_removed": sum(
@@ -1850,6 +1854,9 @@ def retention_sweep(
     so a pass killed under its timeout still leaves a record of how far it got.
     """
     from reckon import flight
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
+
+    ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
 
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
@@ -1983,6 +1990,7 @@ def retention_sweep(
         "projects": projects,
         "unreachable_projects": unreachable,
         "limit": limit,
+        "ended_cleanup": ended_cleanup,
         "examined": examined,
         "judged": judged,
         "offered": offered,

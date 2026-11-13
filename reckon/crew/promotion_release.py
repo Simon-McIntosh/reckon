@@ -388,6 +388,7 @@ def _release_run_workspace(
     gate: str = "",
     integration_repo: Path | None = None,
     integration_commit: str = "",
+    report_removals: bool = False,
 ) -> dict[str, Any]:
     """Release a promoted run's own worktree, process, and scratch directory.
 
@@ -412,6 +413,12 @@ def _release_run_workspace(
     repo_value = str(record.get("repo") or "")
     worktree = Path(worktree_value) if worktree_value else None
     repo = Path(repo_value) if repo_value else None
+    if gate and str(_declared_manifest(record).get("status") or "").lower() in {
+        "blocked",
+        "waiting",
+    }:
+        release_worktree = False
+        keep_process = True
     if not release_worktree:
         result["worktree_withheld"] = worktree_withheld or (
             "promotion did not pass; worktree retained for recovery"
@@ -517,6 +524,9 @@ def _release_run_workspace(
         else record
     )
     result["worktree_audit"] = _worktree_audit(audit_record, retention)
+    if not release_worktree or retention is not None or keep_process:
+        result["scratch_withheld"] = "run retained for recovery"
+        return result
     # The scratch directory a run owned dies with it. Both promotion and
     # discard funnel through this release step, so the removal is wired once
     # here and the two cannot disagree about whether it happens. It is removed
@@ -537,6 +547,9 @@ def _release_run_workspace(
     # a reviewer reads, and the scratch removal above still runs, because
     # scratch is node-local space rather than evidence.
     result.update(remove_cited_arms(record, gate=gate))
+    from reckon.crew.terminal_cleanup import archive_ended_run
+
+    result.update(archive_ended_run(record, result, report_removals=report_removals))
     return result
 
 

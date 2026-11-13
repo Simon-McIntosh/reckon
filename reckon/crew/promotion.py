@@ -1435,6 +1435,9 @@ def _complete_locked(
                 )
                 capture = capture_run_session(record)
                 path = pointer_path(run_id)
+                from reckon.crew.terminal_cleanup import queue_cleanup
+
+                queue_cleanup(record, kind="promoted", gate=str(gate))
                 _remove_promoted_pointer_or_defer(run_id, record)
                 retention = existing.get("worktree_retention")
                 release = _release_after_promotion(
@@ -2113,6 +2116,9 @@ def _complete_locked(
         # ownership has already been copied onto the committed ledger row.
         _stop_at_stage_boundary("the release")
         capture = capture_run_session(record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="promoted", gate=str(gate))
         _remove_promoted_pointer_or_defer(run_id, record)
         release = _release_after_promotion(
             run_id,
@@ -2316,6 +2322,10 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         # record behind it, and a record written afterwards leaves a window in
         # which the departure is indistinguishable from a vanished pointer.
         written = _write_discard_record(run_id, record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="discarded")
+        preserve_discard_record(run_id)
         path.unlink()
         return {
             "run_id": run_id,

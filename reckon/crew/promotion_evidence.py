@@ -704,8 +704,12 @@ def _commits_field_declares_absence(
 
 def _manifest_text(record: Mapping[str, Any]) -> str:
     """The run's manifest bytes, or the empty string when it cannot be read."""
+    from reckon.crew.runs import resolve_run_path
+
     try:
-        return Path(str(record["manifest_path"])).read_text(encoding="utf-8")
+        return resolve_run_path(str(record["manifest_path"])).read_text(
+            encoding="utf-8"
+        )
     except (OSError, KeyError):
         return ""
 
