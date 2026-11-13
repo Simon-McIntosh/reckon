@@ -1,0 +1,54 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1740 (main dispatch to _stop)",
+    "reckon/hooks/install.py:61 (COORDINATOR_HOOK_SCRIPT_NAME registers the hook script)"
+  ],
+  "completed_at": "2026-11-12T23:27:42.451Z",
+  "dispatched_at": "2026-11-12T23:18:11Z",
+  "findings": [
+    {
+      "file": "reckon/hooks/coordinator_obligations.py",
+      "line": 1694,
+      "severity": "blocking",
+      "text": "The non-blocking-after-acknowledgement early return leaves the stop digest in place, so a duty the coordinator acknowledged and whose deferral has since expired re-enters the list with the same (kind, run_id) and reads as the set already refused, and the stop never blocks for it again; this contradicts reapply_acknowledgements' own documented contract at lines 1557-1559 ('the duty returns to the list and the stop blocks again') and lets one acknowledgement silence a duty permanently."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Read all three commits against base b30f1e13: 707cf54b20 adds the stop digest guard, b63bd77c37 formats the new test cases, c6dba3af65 adds the evidence fragment; 168 insertions and 22 deletions over three files.",
+    "done_when": "The plan's done_when asks for a test that shows the list through the prompt path then runs three stops over a growing overdue figure; tests/test_coordinator_obligations_hook.py:974 does exactly that and asserts one block, plus a gained duty that blocks again, and the manifest records both arms.",
+    "goal": "The node's goal is that the Stop hook blocks once per unchanged duty list; reckon/hooks/coordinator_obligations.py:1697-1707 records a digest of the blocking rows in a stop-mode file and returns silently when the same (kind, run_id) set is read again.",
+    "manifest": "Read; status complete, both arms carry revision/command/log path and a completed flag, and the one head failure is the same failure recorded at base.",
+    "write_paths": "The node declared reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py, tests/, the landing fragment and the figures directory; the diff touches only the hook, the test file and the fragment, all inside them."
+  },
+  "justifications": {
+    "durability": "The done-when test reddens at base with three blocks, but no assertion covers the acknowledgement-expiry path at reckon/hooks/coordinator_obligations.py:1694-1696, where the recorded digest silences a duty whose deferral has expired.",
+    "evidence": "tests/test_coordinator_obligations_hook.py:974 drives the prompt path then three stops while the manifest is backdated and asserts exactly one block, and after-arm.log records '1 failed, 95 passed' with a terminal EXIT=1.",
+    "fit": "The added names _STOP_DIGEST_SUFFIX and stop_digest_path extend the existing digest_path idiom at reckon/hooks/coordinator_obligations.py:512-533 and carry no plan, stage or ticket label.",
+    "goal_fidelity": "reckon/hooks/coordinator_obligations.py:1703-1707 compares the (kind, run_id) digest of the blocking rows against the stop mode's own record and returns 0 when the set is unchanged.",
+    "reuse": "The change reuses duty_digest, _read_digest, _write_digest and _clear_digest in reckon/hooks/coordinator_obligations.py rather than adding a second digest mechanism; no other module under reckon/ owns a last-blocked duty set.",
+    "scope_discipline": "All three changed paths -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py and docs/evidence/fragments/crew-observability-truth/the-stop-hook-blocks-once-per-unchanged-duty-list.html -- are inside the node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: The node's goal is that the Stop hook blocks once per unchanged duty list; reckon/hooks/coordinator_obligations.py:1697-1707 records a digest of the blocking rows in a stop-mode file and returns silently when the same (kind, run_id) set is read again.\nVERDICT done_when: The plan's done_when asks for a test that shows the list through the prompt path then runs three stops over a growing overdue figure; tests/test_coordinator_obligations_hook.py:974 does exactly that and asserts one block, plus a gained duty that blocks again, and the manifest records both arms.\nVERDICT write_paths: The node declared reckon/hooks/coordinator_obligations.py, reckon/crew/obligations.py, tests/, the landing fragment and the figures directory; the diff touches only the hook, the test file and the fragment, all inside them.\nVERDICT manifest: Read; status complete, both arms carry revision/command/log path and a completed flag, and the one head failure is the same failure recorded at base.\nVERDICT diff: Read all three commits against base b30f1e13: 707cf54b20 adds the stop digest guard, b63bd77c37 formats the new test cases, c6dba3af65 adds the evidence fragment; 168 insertions and 22 deletions over three files.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1740 (main dispatch to _stop), reckon/hooks/install.py:61 (COORDINATOR_HOOK_SCRIPT_NAME registers the hook script)\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/hooks/coordinator_obligations.py:1703-1707 compares the (kind, run_id) digest of the blocking rows against the stop mode's own record and returns 0 when the set is unchanged.\nSCORE evidence: 19\nJUSTIFICATION evidence: tests/test_coordinator_obligations_hook.py:974 drives the prompt path then three stops while the manifest is backdated and asserts exactly one block, and after-arm.log records '1 failed, 95 passed' with a terminal EXIT=1.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: All three changed paths -- reckon/hooks/coordinator_obligations.py, tests/test_coordinator_obligations_hook.py and docs/evidence/fragments/crew-observability-truth/the-stop-hook-blocks-once-per-unchanged-duty-list.html -- are inside the node's declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: The done-when test reddens at base with three blocks, but no assertion covers the acknowledgement-expiry path at reckon/hooks/coordinator_obligations.py:1694-1696, where the recorded digest silences a duty whose deferral has expired.\nSCORE fit: 19\nJUSTIFICATION fit: The added names _STOP_DIGEST_SUFFIX and stop_digest_path extend the existing digest_path idiom at reckon/hooks/coordinator_obligations.py:512-533 and carry no plan, stage or ticket label.\nSCORE reuse: 20\nJUSTIFICATION reuse: The change reuses duty_digest, _read_digest, _write_digest and _clear_digest in reckon/hooks/coordinator_obligations.py rather than adding a second digest mechanism; no other module under reckon/ owns a last-blocked duty set.\nFINDING reckon/hooks/coordinator_obligations.py:1694 blocking: The non-blocking-after-acknowledgement early return leaves the stop digest in place, so a duty the coordinator acknowledged and whose deferral has since expired re-enters the list with the same (kind, run_id) and reads as the set already refused, and the stop never blocks for it again; this contradicts reapply_acknowledgements' own documented contract at lines 1557-1559 ('the duty returns to the list and the stop blocks again') and lets one acknowledgement silence a duty permanently.",
+  "review_run_id": "r-20261112T231456947857-review-of-the-stop-hook-blocks-once-per-unchanged-duty-list-c6dba3af657b",
+  "reviewed_base_sha": "b30f1e1350adcc64d38de45901cccf13801e5b2c",
+  "reviewed_head_sha": "c6dba3af657ba5603f95f82a8de359c6506f630d",
+  "reviewed_run_id": "r-20261112T220918968738-the-stop-hook-blocks-once-per-unchanged-duty-list",
+  "scores": {
+    "durability": 15,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:00:59.791442+00:00",
+  "total": 111
+}
