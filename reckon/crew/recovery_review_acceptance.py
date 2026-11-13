@@ -680,6 +680,86 @@ def accept_clean_review(
     }
 
 
+REVIEW_SELF_READY = "ready"
+REVIEW_SELF_WAITING = "waiting"
+REVIEW_SELF_REFUSED = "refused"
+
+
+def review_self_state(
+    pointer: Mapping[str, Any],
+) -> tuple[str, str, Path | None]:
+    """Whether a review run's own promotion is ready, still coming, or lost.
+
+    A review stores its record while it is still working, so "the record is not
+    there yet" is the ordinary state of a live reviewer and not a finding
+    against it. Only a run that has ended without storing a record has nothing
+    left to deliver. That distinction is what stops an early request from being
+    refused while the reviewer still owes the record, and what refuses the same
+    request once the reviewer has ended.
+
+    ``("ready", "", record_path)`` means the promotion may proceed.
+    ``("waiting", reason, None)`` means the run is still producing the record,
+    so a request waits instead of being drained or refused.
+    ``("refused", reason, None)`` means nothing further will arrive, so the
+    request is refused naming the condition that failed.
+    """
+    project = str(pointer.get("project") or "")
+    manifest_path = Path(str(pointer.get("manifest_path") or ""))
+    if _complete_manifest_write_time(manifest_path) is None:
+        return (
+            REVIEW_SELF_WAITING,
+            (
+                "the review run's manifest does not read complete, so its "
+                "verdict has not been written"
+            ),
+            None,
+        )
+    # A live worker owns the run and is still producing the record this
+    # promotion reads, so the request waits rather than deleting its pointer.
+    if record_process_alive(pointer) is True:
+        return (
+            REVIEW_SELF_WAITING,
+            "the review run's worker is still alive",
+            None,
+        )
+    # The supervisor records its exit in the run directory before it ends, so
+    # its exit record is the run's receipt that both processes have stopped.
+    if _run_exit_record(pointer) is None:
+        return (
+            REVIEW_SELF_WAITING,
+            (
+                "the review run's supervisor has recorded no exit, so the run "
+                "has not ended"
+            ),
+            None,
+        )
+    # A run review's delivery is identified by the head it was dispatched to
+    # read, and a record of an earlier round is not this run's verdict.
+    declares = _declared_head_keyed_record(pointer, project)
+    if _is_run_review_node(pointer) and declares is None:
+        return (
+            REVIEW_SELF_REFUSED,
+            (
+                "the review run declares no head-keyed record path, so the "
+                "head it was dispatched to read is unnamed; its record cannot "
+                "be told from an earlier round's"
+            ),
+            None,
+        )
+    stored = _delivered_review_record(pointer, project)
+    if stored is None:
+        named = f" for head {declares[1]}" if declares is not None else ""
+        return (
+            REVIEW_SELF_REFUSED,
+            (
+                f"the review run stored no readable record{named} for the run "
+                "it read, so it has nothing a coordinator would not add"
+            ),
+            None,
+        )
+    return REVIEW_SELF_READY, "", stored[1]
+
+
 def promote_review_run_itself(
     pointer: Mapping[str, Any],
     *,
@@ -701,9 +781,10 @@ def promote_review_run_itself(
     itself and never dispatches a review of it, so no chain of reviews of
     reviews can start. The reflex's skip of every review node stays in force
     for acceptance and for review dispatch. A review run whose manifest is not
-    complete, whose worker is still alive, whose supervisor has not recorded
-    an exit, or whose record is missing or unparsed is left for the
-    coordinator, and the refusal returned names which of those held.
+    complete, whose worker is still alive, or whose supervisor has not
+    recorded an exit is still producing that record, so it is reported as
+    waiting and its pointer keeps its working phase. One that has ended
+    without a readable record is refused, naming the missing record.
 
     ``None`` is returned for a run that is not a review run at all, because an
     ordinary or implement run is never promoted by this path. A dict is
@@ -715,66 +796,17 @@ def promote_review_run_itself(
     run_id = str(pointer.get("run_id") or "")
     if not run_id:
         return None
-    project = str(pointer.get("project") or "")
-    manifest_path = Path(str(pointer.get("manifest_path") or ""))
-    if _complete_manifest_write_time(manifest_path) is None:
+    state, reason, record_path = review_self_state(pointer)
+    if state != REVIEW_SELF_READY:
+        # A run still producing its record has not failed: the caller keeps the
+        # request waiting rather than refusing it and losing the run's only
+        # promotion path.
         return {
             "run_id": run_id,
             "promoted": False,
-            "reason": (
-                "the review run's manifest does not read complete, so its "
-                "verdict has not been written"
-            ),
+            "waiting": state == REVIEW_SELF_WAITING,
+            "reason": reason,
         }
-    # The worker must have exited: a live worker owns the run, and promoting it
-    # would delete the pointer out from under a process still producing the
-    # record this branch reads.
-    if record_process_alive(pointer) is True:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": "the review run's worker is still alive",
-        }
-    # The supervisor records its exit in the run directory before it ends, so
-    # its exit record is the run's receipt that both processes have stopped.
-    if _run_exit_record(pointer) is None:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                "the review run's supervisor has recorded no exit, so the run "
-                "has not ended"
-            ),
-        }
-    # A run review's delivery is identified by the head it was dispatched to
-    # read, which its dispatch spells as the head-keyed record path it grants.
-    # One declaring no such path cannot be told apart from a round that read an
-    # earlier revision, so it is refused here naming the unnamed head rather
-    # than promoted on whichever record happens to sit where it was told to
-    # write.
-    declares = _declared_head_keyed_record(pointer, project)
-    if _is_run_review_node(pointer) and declares is None:
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                "the review run declares no head-keyed record path, so the "
-                "head it was dispatched to read is unnamed; its record cannot "
-                "be told from an earlier round's"
-            ),
-        }
-    stored = _delivered_review_record(pointer, project)
-    if stored is None:
-        named = f" for head {declares[1]}" if declares is not None else ""
-        return {
-            "run_id": run_id,
-            "promoted": False,
-            "reason": (
-                f"the review run stored no readable record{named} for the run "
-                "it read, so it has nothing a coordinator would not add"
-            ),
-        }
-    _, record_path = stored
     from reckon.crew import promotion as promotion_module
 
     checkout_value = str(pointer.get("repo") or "").strip()
@@ -862,6 +894,7 @@ def dispatch_awaiting_reviews(
     accepted: list[str] = []
     self_promoted: list[str] = []
     review_self_refused: list[dict[str, Any]] = []
+    review_self_waiting: list[dict[str, Any]] = []
     awaiting_lane: list[str] = []
     lane_paused: list[str] = []
     repaired: list[str] = []
@@ -911,6 +944,10 @@ def dispatch_awaiting_reviews(
         if kind == "review-self":
             if result.get("promoted"):
                 self_promoted.append(str(result.get("run_id") or ""))
+            elif result.get("waiting"):
+                # The reviewer still owes its record, so nothing has been
+                # refused and the run keeps its working phase.
+                review_self_waiting.append(result)
             else:
                 # A refused self-promotion is kept in its own list rather than
                 # in ``reports``: that list is what a caller reads to find the
@@ -962,6 +999,26 @@ def dispatch_awaiting_reviews(
                 # a sweep acts only on the live run it was asked to handle.
                 run_id = str(pointer.get("run_id") or "")
                 runs.read_pointer(run_id)
+                # A reviewer that is still running is not owed a request:
+                # requesting now is what moved a working pointer to
+                # promotion-requested and then refused it for a record that had
+                # not been written yet. The request is made on a later pass,
+                # once the reviewer has ended. One that ended without a record
+                # is requested, so its refusal reaches the coordinator.
+                state, reason, _record = review_self_state(pointer)
+                if (
+                    record_process_alive(pointer) is True
+                    and state == REVIEW_SELF_WAITING
+                ):
+                    review_self_waiting.append(
+                        {
+                            "run_id": run_id,
+                            "promoted": False,
+                            "waiting": True,
+                            "reason": reason,
+                        }
+                    )
+                    continue
                 _hand_off(
                     run_id,
                     "review-self",
@@ -1164,6 +1221,7 @@ def dispatch_awaiting_reviews(
         "self_promoted": self_promoted,
         "in_flight": in_flight,
         "review_self_refused": review_self_refused,
+        "review_self_waiting": review_self_waiting,
         "awaiting_lane": awaiting_lane,
         "lane_paused": lane_paused,
         "repaired": repaired,
