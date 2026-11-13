@@ -1,0 +1,65 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "6f14466d52c68ae32e8ff592aaec6134dd8fd8d1",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/station.py:773 station tick -> station_obligations.publish",
+    "reckon/crew/station_obligations.py:469 publish -> refresh"
+  ],
+  "completed_at": "2026-11-13T10:54:27.190Z",
+  "dispatched_at": "2026-11-13T10:48:08Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_a_refresh_lists_each_review_store_once.py",
+      "line": "185",
+      "severity": "non-blocking",
+      "text": "non-blocking: the case counts listings only through Path.glob and os.scandir, so a future regression that enumerated the store with os.listdir or Path.iterdir would not redden this guard and the count would read the same as a healthy tick."
+    }
+  ],
+  "head_log_revision": "c99c76180f9fae32e3c10603b93df4afb09a9203",
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified the production chain station.py:773 -> station_obligations.py:469 publish -> refresh; recovery_memo.py:510 installs the same review_store_tick and nesting restores the outer token on exit.",
+    "diff": "read all three commits against 6f14466d52: 50befec096 wraps refresh's derivation in review_records.review_store_tick() and re-indents the body unchanged, 921e276548 adds the 32-line evidence fragment, and c99c76180f adds a fragment paragraph restating where a command sits in a log; no other file moves.",
+    "done_when": "the done_when names tests/test_a_refresh_lists_each_review_store_once.py driving one refresh over at least 20 duty items and counting every glob and scandir of the store directory; logs/base-case.log reproduces 194 listings at 6f14466d52 against the head arm's single pass at 1, and ruff.log records ruff check and ruff format --check clean.",
+    "goal": "the node's goal is to install the per-tick review store before the refresh derives duties; reckon/crew/station_obligations.py:257 opens review_records.review_store_tick() around the whole derivation body and closes it after the absent-session rewrites.",
+    "manifest": "read; status complete, commits 50befec096, 921e276548 and c99c76180f, changed_paths matching the diff, the gate command plus six logs, the declared negative control at logs/mutated.log, and logs/crew-check.log now records ok: true, which answers the prior review's blocking finding on log header order.",
+    "write_paths": "the declared fence was reckon/crew/station_obligations.py, reckon/crew/review_records.py, tests/test_a_refresh_lists_each_review_store_once.py and the node's fragment; git diff --stat 6f14466d52..c99c76180f lists the first, third and fourth, and review_records.py needed no edit because it already owns review_store_tick."
+  },
+  "justifications": {
+    "durability": "logs/mutated.log removes review_store_tick from station_obligations.refresh and reddens test_a_refresh_lists_the_review_store_once at 194 listings, a test id the head arm passes, so the assertion fails on the regression it was added for.",
+    "evidence": "logs/base-case.log records 'the refresh listed the review store once per duty item instead of once per tick: 194 listings' at 6f14466d52 while the head arm passes at 1, and logs/crew-check.log now records ok: true for the manifest.",
+    "fit": "the added comment at reckon/crew/station_obligations.py:250-255 states the mechanism and per-duty cost with no plan, ticket or attribution, and the case's helpers (_pointer, _classified_row, _record_listings) name what they build, matching the surrounding tests.",
+    "goal_fidelity": "reckon/crew/station_obligations.py:257 installs review_records.review_store_tick() around exactly the derivation the goal names, leaving the body's logic untouched.",
+    "reuse": "the change installs reckon/crew/review_records.py:49 review_store_tick, the repository's existing per-tick store owner, rather than adding a second enumeration cache.",
+    "scope_discipline": "git diff --stat 6f14466d52..c99c76180f lists only station_obligations.py, the new case and the evidence fragment, every one inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to install the per-tick review store before the refresh derives duties; reckon/crew/station_obligations.py:257 opens review_records.review_store_tick() around the whole derivation body and closes it after the absent-session rewrites.\nVERDICT done_when: the done_when names tests/test_a_refresh_lists_each_review_store_once.py driving one refresh over at least 20 duty items and counting every glob and scandir of the store directory; logs/base-case.log reproduces 194 listings at 6f14466d52 against the head arm's single pass at 1, and ruff.log records ruff check and ruff format --check clean.\nVERDICT write_paths: the declared fence was reckon/crew/station_obligations.py, reckon/crew/review_records.py, tests/test_a_refresh_lists_each_review_store_once.py and the node's fragment; git diff --stat 6f14466d52..c99c76180f lists the first, third and fourth, and review_records.py needed no edit because it already owns review_store_tick.\nVERDICT manifest: read; status complete, commits 50befec096, 921e276548 and c99c76180f, changed_paths matching the diff, the gate command plus six logs, the declared negative control at logs/mutated.log, and logs/crew-check.log now records ok: true, which answers the prior review's blocking finding on log header order.\nVERDICT diff: read all three commits against 6f14466d52: 50befec096 wraps refresh's derivation in review_records.review_store_tick() and re-indents the body unchanged, 921e276548 adds the 32-line evidence fragment, and c99c76180f adds a fragment paragraph restating where a command sits in a log; no other file moves.\nCALL_SITES: reckon/crew/station.py:773 station tick -> station_obligations.publish, reckon/crew/station_obligations.py:469 publish -> refresh\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/station_obligations.py:257 installs review_records.review_store_tick() around exactly the derivation the goal names, leaving the body's logic untouched.\nSCORE evidence: 19\nJUSTIFICATION evidence: logs/base-case.log records 'the refresh listed the review store once per duty item instead of once per tick: 194 listings' at 6f14466d52 while the head arm passes at 1, and logs/crew-check.log now records ok: true.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --stat 6f14466d52..c99c76180f lists only station_obligations.py, the new case and the evidence fragment, every one inside the declared write paths.\nSCORE durability: 19\nJUSTIFICATION durability: logs/mutated.log removes review_store_tick from station_obligations.refresh and reddens test_a_refresh_lists_the_review_store_once at 194 listings, a test id the head arm passes.\nSCORE fit: 19\nJUSTIFICATION fit: the added comment at reckon/crew/station_obligations.py:250-255 states the mechanism and per-duty cost with no plan, ticket or attribution.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change installs reckon/crew/review_records.py:49 review_store_tick, the existing owner of the per-tick store, rather than adding a second enumeration cache.\nFINDING tests/test_a_refresh_lists_each_review_store_once.py:185 non-blocking: the case counts listings only through Path.glob and os.scandir, so a future regression that enumerated the store with os.listdir or Path.iterdir would not redden this guard.",
+  "review_run_id": "r-20261113T104334041108-review-of-a-refresh-lists-each-review-store-once-c99c76180f9f",
+  "reviewed_base_sha": "6f14466d52c68ae32e8ff592aaec6134dd8fd8d1",
+  "reviewed_head_sha": "c99c76180f9fae32e3c10603b93df4afb09a9203",
+  "reviewed_run_id": "r-20261113T022719183906-a-refresh-lists-each-review-store-once",
+  "reviewer": {
+    "backend": "clive",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T104334041108-review-of-a-refresh-lists-each-review-store-once-c99c76180f9f"
+  },
+  "scores": {
+    "durability": 19,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:39:26.838301+00:00",
+  "total": 117
+}
