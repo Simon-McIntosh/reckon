@@ -1,0 +1,146 @@
+{
+  "absent_items": [],
+  "accepted_edits": [
+    {
+      "by": "1fb615a0-2801-4418-bbb4-c2914719e520",
+      "digests": {
+        "s43": "0ca81d067129f3af34ec2d359c605e716be1488a1545039d936cdb1c7bbee2ec"
+      },
+      "reason": "the edit makes exactly the two acted answers' changes to section 43's done-when",
+      "units": [
+        "s43"
+      ],
+      "when": "2026-11-13T06:25:14.350940+00:00"
+    }
+  ],
+  "completed_at": "2026-11-13T06:19:21.697Z",
+  "dispatched_at": "2026-11-13T06:09:04Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:646",
+      "id": "done_when-1",
+      "reason": "the one defect the gate exists to catch, a tick store that is not shared across duty items within one refresh, is invisible to it, so the measure must count the listing where it now happens or assert exactly one and the unchanged duty set.",
+      "text": "the head arm counts only `directory.glob`, which `_store_paths` never calls once `review_store_tick` is installed because `_tick_store` lists with `os.scandir` (verified: two `_store_paths` calls inside the tick record 0 globs), so \"at most one listing per store per tick\" is satisfied by zero and a refresh that installed a fresh tick per duty item would list the store 20 times through `os.scandir` and still pass",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/the-monitor-reads-each-fact-once.html:646",
+      "id": "done_when-2",
+      "reason": "a control written as an equality fails at base for a reason unrelated to the defect, and a node reading that failure concludes the defect did not reproduce.",
+      "text": "the base arm is asserted to equal the number of duty items, but a cold index also lists the store to build it (verified: three `_store_index` calls on a fresh directory cost one glob), so the base count for the stated 20 duty items is 21 in a fresh process",
+      "type": "done_when",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "2bf9be5c304fbc72b76eba522698ac8facd00ff2",
+  "plan_fingerprint": "0df385c76016f94b532e3bccdef681d4bb2070c30148bd3bba527c75247b1421",
+  "plan_slug": "the-monitor-reads-each-fact-once",
+  "plan_version": 232,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8523272f10100391d6bdf3541106940048331c94",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a743 now counts every listing of the review store, through a recording stand-in for both directory.glob and os.scandir on that directory, and asserts at most one per store per tick.",
+      "reason": "",
+      "when": "2026-11-13T06:22:00.790315+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "8523272f10100391d6bdf3541106940048331c94",
+      "commit_basis": "edit",
+      "finding": "done_when-2",
+      "note": "\u00a743's negative control now requires at least as many listings as duty items at base, not equality, since a cold index lists the store once more to build it.",
+      "reason": "",
+      "when": "2026-11-13T06:22:17.349928+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "8523272f10100391d6bdf3541106940048331c94",
+      "commit_basis": "edit",
+      "note": "\u00a743 now counts every listing of the review store, through a recording stand-in for both directory.glob and os.scandir on that directory, and asserts at most one per store per tick.",
+      "reason": "",
+      "when": "2026-11-13T06:22:00.790315+00:00"
+    },
+    "done_when-2": {
+      "action": "acted",
+      "by": "",
+      "commit": "8523272f10100391d6bdf3541106940048331c94",
+      "commit_basis": "edit",
+      "note": "\u00a743's negative control now requires at least as many listings as duty items at base, not equality, since a cold index lists the store once more to build it.",
+      "reason": "",
+      "when": "2026-11-13T06:22:17.349928+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-the-monitor-reads-each-fact-once.v232.json",
+  "review_run_id": "r-20261113T044516987247-plan-review-of-the-monitor-reads-each-fact-once",
+  "reviewed_blob_sha": "37fd82871211d8344a993bb5f619c2666f47d477",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `review_records._store_paths`, `review_records.review_store_tick`, `reckon/crew/station_obligations.py` and \u00a742 all resolve; the named test file is a write path the node creates, not an anchor.",
+    "done_when": "a finding \u2014 \u00a743's measure counts `directory.glob`, which the tick-store path never calls, so the head arm's count is always zero.",
+    "evidence_paths": "pass \u2014 both arms' logs sit under the run directory, each opening with its revision and literal command and ending in an `EXIT=` line.",
+    "naming": "pass \u2014 the test file and the section's mechanism are named by behaviour, with no plan label, stage name or ticket id.",
+    "reasoning": "pass \u2014 the stated cause reproduces in the code: `_store_paths` falls back to `directory.glob`, and a run with no committed record reaches a whole-store listing per duty item at `review_records.py:779`; the measure can fail at base.",
+    "single_goal": "pass \u2014 one deliverable, that the station's refresh installs the per-tick review store before deriving duties.",
+    "wiring": "pass \u2014 \u00a743 is declared implementable and carried by open followup f-tmref-043, and its endpoint needs no ordering on \u00a742 even though both edit `station_obligations.refresh`."
+  },
+  "section_digests": {
+    "_document": "59e8d4928ed22056b1dbe2a9a2a31701b280e97fbed4042374d4028f65dd9131",
+    "s1": "bd759b66b2b75254305e473bf6b8af6218ef25d95b0db1638ed2668f0cdd9441",
+    "s10": "d21f2adf110c82d39fa9834752ac3f47dba7ac886c59cfd85feb23c1e8d1003f",
+    "s11": "9e8b94316ed45fc2103d1edc216fbb0dd3862f559824ad1c43299b305a3af6bd",
+    "s12": "21fc271f915167db3cca4f7d0eee1f4553b5dec7b96127d71d294e5ae242bc02",
+    "s13": "3b11fe0cd53015121e6d566c554c6c77b13236b3700a90279e77a6bc755ea0a3",
+    "s14": "5f6675ba84aab4ad594b121e888aace2d69e497390559d38f0c220e5894ac588",
+    "s15": "efa38c205c7332a7867b6d87358cd9f89fe1568beaa9f9e5eee96862dd70b6f0",
+    "s16": "65cd8e559a7a5ebf018bc9fe50a07bb0954f67405ab6f17c7377c38ccd363aa7",
+    "s17": "1dee50822a308fa4eeea0a45fd3cdaf6de52d9a1d74a91c2b9c7605d179da2ad",
+    "s18": "ba63c0b1b83ec93cc99d92a3c1f67dcf92d700e20f4f9acd88362705d6b4d123",
+    "s19": "16239e5fae49e56b170433557a77981816880756e3ae545a741ca9ec70feae63",
+    "s2": "e0f306f01b1530661ef28be3f19592348c45f24e7826567d58a2f0a4f79dd284",
+    "s20": "d14d2b70bb40dd552f306726f24f5e3c79bc5efcd7f9b74bcb7d3de8f16f5e8e",
+    "s21": "9ff7b29b83f9c8ab95a0a469c997950ef226fc3d99d8dcffdbf0683df7a1f26c",
+    "s22": "1bdc9ac90396c56bcbcc8c3c4f44aa6b30cbd59c4da001825159a7b8245e054c",
+    "s23": "a810ffe181d2787722d8f9538a4348592269fe163ba23cc59939376cb13edcbb",
+    "s24": "e861dcc5044a0a1fb36c4a374ca71717aeb97054e5a3ff1aef57c9779c7147f5",
+    "s25": "a0939bd3d8ab0fa4b5c0c88de3cb9cdab3531338fe35d0c12b4338fc3c4d1563",
+    "s26": "a8fb9d8585830b87ed826347ff724ddecc8fb9a43ad9ac1540d6499e3689d03e",
+    "s27": "3c9e47dc777eeadabbe3898d4b8f69d91defbaff009d050f2906732cb87e50c8",
+    "s28": "982b473728d61b81a3d37050384bee85f3f1fb5366aad0668c5370a51367e82c",
+    "s29": "159b45ee319dc13bffea961474eb544e5a26d161bf686ebe5b7fabf95f5266c7",
+    "s3": "f42c4644817feac0c199cd8510d2e284079b1c8fb777c7b79ced63531a8d983f",
+    "s30": "2d8c9efccd4f8eeede43f5fabe6f6b9cacc2207ce97ca700584bfedd0e512dd2",
+    "s31": "27817d420beefc15258f2f52ea8c616f3e04b4035773fe437f6cfe7f31506100",
+    "s32": "836f1473b1691ab0150f1e32791c295f7511abd66cb29f93b48dc0d347998d51",
+    "s33": "39a7d7a43bc6e97cd0c11235cfbe6c06a5b6968dab69e8147978bd164bbfef4e",
+    "s34": "16da5de7a5c4ee31ac2d9a43b888bed8fb1ec1138a2194a35c9b8eacbf03a2b1",
+    "s35": "4a0acdec0fa4d9eaa1066ee46c8a4aec8079db0452d014a442005e104c03c2cc",
+    "s36": "2a4a0d6ab4a994e2d7542482f7b44d106ab0920143bf39d14b292c7c2ec02e8a",
+    "s37": "4d92cdfe9ba1661dc549241d07f5134250aedec9d46757600f427fc52c4741dd",
+    "s38": "2cd435157dcdf14e39d4dbcd90e98b171feba9df13c5e142e0edf0d8fd4a3bf5",
+    "s39": "8808ed4531ebe4589c1b5bb7c7b0e5644b141d532a6dcc3fef92ae640e08d57c",
+    "s4": "c98e197194f43124e5a982992370bf1c08593aa17fb304787a4d7b87f42a0107",
+    "s40": "444368fd31b2649852412e7533de8628a94071d7942154f1a75921b923006779",
+    "s41": "b1092da2f507a79ce2706ec4aa2660d53c3b5250d4790b92d2dcd190f4387e17",
+    "s42": "ef98f2534552feb3a2ebf8768c6fcb43355940cef2804ddc7c77c6917785de19",
+    "s43": "d14907fdfb90d5c51d270f8f4e9b9e00e4d9bfb90dd01a7bc48f54fc7cb476d6",
+    "s5": "0329936ec702c07e4a2ef8c756961740635d0dd8c7a1d14646983f1c32f09790",
+    "s6": "1f19e9f8c46bc0674347ba5a3c97588b846d125a5fbcf9533e8a5a3f9ec00bb6",
+    "s7": "dff81fd58ae3afef69063faed237df9bb4056bdb98556a1e5a053e6807ae3d16",
+    "s8": "4a70cad80d8613feb4b30861587298ff1109616ba9a35992821009274f17ae3f",
+    "s9": "8597fbe3fc93694e846c364272c698acf84b09466b4798491eb74279d62cef1d"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:21:53.151905+00:00",
+  "total": null
+}
