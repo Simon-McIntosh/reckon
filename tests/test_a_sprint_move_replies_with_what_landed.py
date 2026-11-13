@@ -228,3 +228,50 @@ def test_a_settled_move_leaves_no_journal_between_the_sprints(
         (sprint_pair / ".reckon" / "transactions").glob("sprint-move-*.json")
     )
     assert journals == []
+
+
+def _fault_version_read_after_settle(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Fail the reply's own version read once the move has settled.
+
+    The move and its internal read-back have both finished; only the read the
+    reply performs to name the sprints' versions fails.
+    """
+    original_write = project_state._write_resource_unlocked
+    original_read = mcp_module.read_resource
+    state = {"writes": 0}
+
+    def write_wrapper(*args, **kwargs):
+        result = original_write(*args, **kwargs)
+        state["writes"] += 1
+        return result
+
+    def read_wrapper(docs_dir, project, resource_type, resource_id):
+        if state["writes"] >= 2 and resource_type == "sprint":
+            raise OSError("injected version read failure")
+        return original_read(docs_dir, project, resource_type, resource_id)
+
+    monkeypatch.setattr(project_state, "_write_resource_unlocked", write_wrapper)
+    monkeypatch.setattr(mcp_module, "read_resource", read_wrapper)
+
+
+def test_a_failed_post_write_version_read_keeps_the_applied_verdict(
+    sprint_pair: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _fault_version_read_after_settle(monkeypatch)
+
+    reply = _move(sprint_pair)
+
+    assert reply["ok"] is True, reply
+    assert reply.get("applied") is True, (
+        f"a failed version read must not drop the verdict: {reply}"
+    )
+    source, _ = read_resource(sprint_pair, "sample", "sprint", SOURCE)
+    target, _ = read_resource(sprint_pair, "sample", "sprint", TARGET)
+    assert SLUG not in _slugs(source)
+    assert SLUG in _slugs(target)
+    assert not reply.get("sprint_versions"), reply
+    warnings = reply.get("warnings") or []
+    assert any(row.startswith("sprint_version_read_failed=") for row in warnings), (
+        f"the reply must name the failed read: {reply}"
+    )
+    assert any(SOURCE in row for row in warnings), reply
