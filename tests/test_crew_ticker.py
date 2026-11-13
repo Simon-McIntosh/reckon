@@ -1019,7 +1019,7 @@ def test_every_field_holds_one_column_across_every_row_kind(monkeypatch) -> None
         # start one column early on a two-digit count by absorbing the space
         # that separates the cells from each other.
         found = re.search(
-            r"(?<=\s)([ \d]{2}w) ([ \d]{2}h) ([ \d]{2}d) ([ \d]{2}q)", row
+            r"(?<=\s)([ \d]{2}w) ([ \d]{2}n) ([ \d]{2}d) ([ \d]{2}q)", row
         )
         assert found, row
         # Both edges come off the row: the first cell's own pad is where the

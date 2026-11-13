@@ -177,7 +177,7 @@ def test_the_counter_block_carries_one_space_between_cells(grid):
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
     assert "w  4n" in line
-    assert "h  1d" in line
+    assert "n  1d" in line
     assert "·" not in line
 
 

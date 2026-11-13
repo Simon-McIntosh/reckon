@@ -187,7 +187,7 @@ def test_every_counter_bucket_renders_at_one_width(grid):
         if queued:
             event["waiting"] = 9
         line = plain(grid.render(event))
-        block = re.search(r"\d+w *\d+h *\d+d *\d+q", line)
+        block = re.search(r"\d+w *\d+n *\d+d *\d+q", line)
         assert block, line
         counts.append(block.group(0))
     assert {len(block) for block in counts} == {len(counts[0])}, counts

@@ -100,7 +100,7 @@ def test_the_counter_block_keeps_four_cells_and_its_width() -> None:
 
     # Four cells and three single-space gaps, at the width the module states
     # for the block: the launch failure's number did not widen the block.
-    assert re.findall(r"\\d[wdqn]", launch) == ["1w", "2n", "0d", "1q"]
+    assert re.findall(r"\d[wdqn]", launch) == ["1w", "2n", "0d", "1q"]
     assert BLOCK in launch
     assert launch.count("·") == 0
     assert len(BLOCK) == BLOCK_WIDTH == STATS
