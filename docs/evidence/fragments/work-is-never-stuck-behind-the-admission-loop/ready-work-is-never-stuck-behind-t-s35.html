@@ -1,6 +1,18 @@
 <section id="ready-work-is-never-stuck-behind-t-s35-hold-verification">
-<h3>Queue steering verified; delivery scope needs ratification</h3>
-<p>The base already contains the functional hold/release and pre-launch phase re-read fix in commit <code>037d4ec219c102e9c4ce3dc060700c0299eb4eb2</code>. Its three existing tests pass. This delivery strengthens them to five cases: hold and release under the occupied admission lock for both prior phases, a request held after queue selection being refused, and an unheld positive control reaching launch.</p>
-<p>The focused gate reports <strong>5 passed in 3.42s</strong>. Restoring the admission lock makes the hold case fail its one-second budget (<strong>1 failed in 4.08s</strong>); removing the phase re-read launches the held request and fails the race case (<strong>1 failed in 2.63s</strong>). Ruff check and format check pass on the changed test.</p>
-<p>The baseline standing gate reports <strong>51 passed in 20.98s</strong>. The broader importer comparison was stopped without a completion claim after the delivery audit refused the mandatory test path: the live section and dispatch measure grant that test, but the recorded run scope omits it. Product source is unchanged. Coordinator ratification of <code>tests/test_a_queue_hold_does_not_wait_for_the_pass.py</code> is required before promotion and the remaining gate.</p>
+<h3>Queue steering verified with completed measures</h3>
+<p>The base already contains the functional hold/release and pre-launch phase reread fix in commit <code>037d4ec219c102e9c4ce3dc060700c0299eb4eb2</code>. This delivery strengthens its three existing tests to five cases: hold and release under the occupied admission lock for both prior phases, a request held after queue selection being refused, and an unheld positive control reaching launch.</p>
+<p>The focused gate reports <strong>5 passed in 3.42s</strong>. Restoring the admission lock fails the hold case's one-second budget (<strong>1 failed in 4.08s</strong>); removing the phase reread launches the held request and fails the race case (<strong>1 failed in 2.63s</strong>). Ruff check and format check pass on the changed test.</p>
+<p>Both completed measurement arms ran sequentially on <code>all_debug</code>, with at most four pytest workers. The importer comparison covers <strong>98 test files</strong> and adds <strong>zero failures</strong>: both revisions have the same 130 failing test IDs. The final gate passes at both pinned revisions.</p>
+<table><thead><tr><th>Arm</th><th>Measured revision</th><th>Importer population</th><th>Final gate</th></tr></thead><tbody>
+<tr><td>baseline</td><td><code>4c4cf234390f5326b995cee7ad6bda55fe01b5c0</code></td><td>130 failed, 580 passed in 128.48s (0:02:08)</td><td>54 passed in 9.82s; EXIT=0</td></tr>
+<tr><td>head</td><td><code>b14fde8ac69275dffce1f805a2637474bcc67fc0</code></td><td>130 failed, 582 passed in 130.14s (0:02:10)</td><td>56 passed in 9.56s; EXIT=0</td></tr>
+</tbody></table>
+<p>Completed measure logs:</p>
+<ul>
+<li>importers, baseline: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-importers-baseline.log</code></li>
+<li>importers, head: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-importers-head.log</code></li>
+<li>final, baseline: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-final-baseline.log</code></li>
+<li>final, head: <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-final-head.log</code></li>
+</ul>
+<p>The exact failure-ID comparison is recorded at <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35/resumed-importer-comparison.json</code>. Importer logs end with EXIT=1 for the unchanged failure set; final-gate logs end with EXIT=0. Product source is unchanged.</p>
 </section>
