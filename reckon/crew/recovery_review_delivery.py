@@ -383,6 +383,50 @@ def _with_derived_total(body: Mapping[str, Any]) -> Mapping[str, Any]:
     return review_module._derive_landed_total(body)
 
 
+def _review_missing_measures_for_rubric(
+    review: Mapping[str, Any] | None,
+) -> list[str]:
+    """The measures a stored review lacks, read by the record's own rubric.
+
+    The rubric is the one :func:`reckon.crew.review.review_record_refusals`
+    reads, so the record ``crew check --review`` accepts is the record this
+    check judges complete rather than one measured against a rubric it never
+    followed. A figure review judges the rendered artifact and records a
+    verdict per rubric item instead of the six landed-node score dimensions,
+    so it is complete when it carries a verdict for every item of
+    :data:`FIGURE_REVIEW_ITEMS`. Every other record keeps the completeness rule
+    :func:`_review_missing_measures` owns, which already reads a claims record
+    on its own terms.
+    """
+    if (
+        review
+        and review.get("status") == "parsed"
+        and review_module._review_record_rubric(review)
+        == review_module.FIGURE_REVIEW_RUBRIC
+    ):
+        return _figure_missing_measures(review)
+    return _review_missing_measures(review)
+
+
+def _figure_missing_measures(review: Mapping[str, Any]) -> list[str]:
+    """The figure rubric items a record carries no verdict for.
+
+    A verdict line that states nothing is not a verdict, so an item whose value
+    is blank is reported missing rather than taken as checked. A
+    ``rubric_items`` value that is not a mapping cannot name the items it
+    carries, so every item is reported missing rather than iterated over
+    something that does not answer.
+    """
+    items = review.get("rubric_items")
+    if not isinstance(items, Mapping):
+        return list(review_module.FIGURE_REVIEW_ITEMS)
+    return [
+        item
+        for item in review_module.FIGURE_REVIEW_ITEMS
+        if not str(items.get(item) or "").strip()
+    ]
+
+
 def _review_delivery_verdict(
     record: Mapping[str, Any],
     project: str,
@@ -440,7 +484,7 @@ def _review_delivery_verdict(
             "remedy": "store the review record there, or pass --outcome",
         }
     body, mtime = read
-    missing = _review_missing_measures(_with_derived_total(body))
+    missing = _review_missing_measures_for_rubric(_with_derived_total(body))
     if missing:
         listed = ", ".join(missing)
         return {
