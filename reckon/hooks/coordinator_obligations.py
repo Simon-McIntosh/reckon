@@ -240,9 +240,11 @@ def derive_within_budget(
 # is already owned by a reflex that retries, a queued run waits on the lane's
 # own admission pass, a stalled run is one that pass could launch and did not,
 # an unreadable record is a reading of a file caught mid-write rather than a
-# duty the coordinator can act on, and an index that stages a path HEAD still
-# holds belongs to the project rather than to any run's work, so blocking would
-# ask a coordinator to act on a condition no run of this session created.
+# duty the coordinator can act on, an index that stages a path HEAD still
+# holds belongs to the project rather than to any run's work, and a repair
+# round is a worker the reflex resumed and will re-fire when the round ends, so
+# blocking would ask a coordinator to act on a condition no run of this session
+# created.
 # Mirrors the derivation's own vocabulary, which cannot be imported here on the
 # paths that read a fresh snapshot.
 _NON_BLOCKING_KINDS = frozenset(
@@ -252,6 +254,7 @@ _NON_BLOCKING_KINDS = frozenset(
         "run-stalled",
         "unreadable-review-record",
         "index-lags-head",
+        "repair-round",
     }
 )
 

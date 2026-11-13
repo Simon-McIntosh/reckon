@@ -126,6 +126,19 @@ CLASSIFIER_DETAIL_DUTY_KINDS = frozenset({"unreadable", "exited-unfinished"})
 # run the review is about rather than the reviewing run.
 SUB_FLOOR_DUTY_KIND = "review-dimension-sub-floor"
 
+#: A review that files a blocking finding resumes the reviewed run's own worker
+#: with the findings as advice, and records the round on that run's pointer. The
+#: resumed worker reopens work the run had already delivered, so the classifier
+#: reads the run as running and the duty list shows nothing for it — leaving a
+#: repair round in flight indistinguishable from a delivered run whose promotion
+#: the coordinator still owes. This kind names the round while it is in flight:
+#: the review that raised the finding, the finding itself and the pid that is
+#: answering it. The reflex owns the round and re-fires when it ends, so the row
+#: carries no command and holds no stop open; when the round delivers, the run's
+#: head moves past the reviewed revision and the ordinary review duty for the new
+#: head stands again.
+REPAIR_ROUND_DUTY_KIND = "repair-round"
+
 #: The fields a duty row can carry, beside the ones a duty of one kind adds.
 #:
 #: The two lists this view serves — the duties owed and the ones acknowledged —
@@ -188,8 +201,14 @@ DUTY_ROW_FIELDS = (
     "still_seconds",
     # The live or queued plan review a refused queued request is waiting on, so
     # a reader sees which run ends the wait rather than the compose command that
-    # would duplicate it.
+    # would duplicate it; a repair round carries the review that raised the
+    # finding it answers.
     "review_run_id",
+    # A repair round in flight: the round's identity, the worker pid it resumed
+    # and the finding the round was composed to answer.
+    "round_id",
+    "pid",
+    "finding",
     # The paths a checkout's index stages as deleted while HEAD and the working
     # tree both still carry them.
     "paths",
@@ -326,6 +345,7 @@ NON_BLOCKING_DUTY_KINDS = frozenset(
         QUEUED_RUN_DUTY_KIND,
         STALLED_RUN_DUTY_KIND,
         INDEX_LAG_DUTY_KIND,
+        REPAIR_ROUND_DUTY_KIND,
     }
 )
 
@@ -1569,6 +1589,110 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     item["next_command"] = (
         f"reckon crew resume --run {run_id} --advice continue, or "
         f"reckon crew discard --run {run_id}"
+    )
+    return item
+
+
+def _repair_round_in_flight(pointer: Mapping[str, Any]) -> Mapping[str, Any] | None:
+    """The repair round a run's pointer records as open, or ``None``.
+
+    The record is the reflex's own account of the round it acted on. Only an
+    opening status means work is under way: a round the reflex held, declined,
+    refused or exhausted produced no worker answering it, so it names nothing in
+    flight however recently it was written. The record's ``round_id`` is the run
+    at the revision its review read, which is both the round's identity and the
+    key to the stored review that raised the finding.
+    """
+    dispatch = pointer.get(recovery_review_dispatch.REPAIR_DISPATCH_FIELD)
+    if not isinstance(dispatch, Mapping):
+        return None
+    if (
+        str(dispatch.get("status") or "")
+        not in recovery_review_dispatch.REPAIR_ROUND_OPENING_STATUSES
+    ):
+        return None
+    if not str(dispatch.get("round_id") or ""):
+        return None
+    return dispatch
+
+
+def _repair_round_head(dispatch: Mapping[str, Any]) -> str:
+    """The reviewed head a round is keyed to, from its ``<run>@<head>`` id."""
+    round_id = str(dispatch.get("round_id") or "")
+    return round_id.rpartition("@")[2] if "@" in round_id else ""
+
+
+def _round_finding_text(review: Mapping[str, Any]) -> str:
+    """The finding text a round was composed to answer, or empty.
+
+    A blocking finding is what opens a round, so the first one that states a
+    claim is the one the coordinator is owed sight of. A record whose findings
+    are all non-blocking or unstated names none, and the row then carries the
+    round without inventing a finding for it.
+    """
+    for finding in repair_module.blocking_findings(review):
+        text = str(finding.get("text") or "").strip()
+        if text:
+            return text
+    return ""
+
+
+def _repair_round_item(
+    project: str,
+    row: Mapping[str, Any],
+    pointer: Mapping[str, Any] | None,
+    *,
+    now: datetime,
+) -> dict[str, Any] | None:
+    """The row a reviewed run owes a coordinator while its repair round runs.
+
+    A review that files a blocking finding resumes the reviewed run's own worker
+    with the findings as advice, so the run is working again at the revision it
+    had already delivered and the classifier has no duty to project for it. The
+    coordinator is left unable to tell a round answering a finding from a
+    delivery waiting to be promoted, which is the state this row separates: it
+    names the review that raised the finding, the finding itself and the worker
+    pid answering it.
+
+    The round is in flight only while that worker is alive. A round that has
+    delivered has moved the run's head past the reviewed revision, where the
+    ordinary review duty for the new head stands again; a round whose worker has
+    ended without delivering is the reflex's to retry, and reads through the
+    classifier's own remedy rather than as work under way.
+
+    The row carries no command: the reflex owns the round and re-fires when it
+    ends, so there is nothing here for the coordinator to run.
+    """
+    if pointer is None:
+        return None
+    dispatch = _repair_round_in_flight(pointer)
+    if dispatch is None:
+        return None
+    if row.get("process_alive") is not True:
+        return None
+    item = _live_item(row, kind=REPAIR_ROUND_DUTY_KIND, now=now)
+    item["next_command"] = ""
+    item["round_id"] = str(dispatch.get("round_id") or "")
+    pid = pointer.get("pid")
+    if isinstance(pid, int) and not isinstance(pid, bool):
+        item["pid"] = pid
+    head = _repair_round_head(dispatch)
+    review: Mapping[str, Any] | None = None
+    if head:
+        review, _also = _selected_review(
+            project, str(row.get("run_id") or ""), head, tree=None
+        )
+    if review is not None:
+        reviewer = str(review.get("review_run_id") or "").strip()
+        if reviewer:
+            item["review_run_id"] = reviewer
+        finding = _round_finding_text(review)
+        if finding:
+            item["finding"] = finding
+    item["reason"] = (
+        "an automatic repair round is in flight: the review raised a blocking "
+        "finding and resumed this run's own worker to answer it, so the round "
+        "owns the work until it delivers"
     )
     return item
 
@@ -3621,6 +3745,16 @@ def _obligations_view(
             pointers.get(str(row.get("run_id") or ""), {}).get("phase")
             == queue_admission.HELD_PHASE
         ):
+            continue
+        # A reviewed run whose repair round is answering a blocking finding is
+        # working again at the revision it delivered, so the classifier reads it
+        # as running and owes no duty. The round is named here, before any other
+        # reading, so a coordinator sees the reflex's work rather than a gap.
+        repair_round = _repair_round_item(
+            project, row, pointers.get(str(row.get("run_id") or "")), now=now
+        )
+        if repair_round is not None:
+            items.append(repair_round)
             continue
         classification = str(row.get("classification") or "")
         recovery_reading = str(row.get("recovery_classification") or "")
