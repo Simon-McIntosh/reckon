@@ -25,7 +25,7 @@
   <title>The Crew Home Has A Bound | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="117">
+<meta name="plan-version" content="118">
 <meta name="plan-modified" content="2026-11-13">
 <meta name="plan-section-depends-on" content="{&quot;s13&quot;:[&quot;the-crew-home-has-a-bound#s11&quot;]}">
 </head>
@@ -282,6 +282,12 @@
 <div class="r-comment" data-section="s12" data-id="c-run-r-20261113T021735186686-ready-the-crew-home-has-a-bound-s12" data-who="reckon-build" data-when="2026-11-13T05:27:04.776Z">
     <div class="r-comment-body"><p>No source change was needed: the damaged-run-record tolerance is already at base (78d775ca09), so this node verified it instead — `tests/test_a_damaged_run_record_stops_only_its_run.py` passes 3/3 through both the index read and a use_index=False load while only the damaged run's own promotion is refused, and three isolated source mutations each break exactly one case (3/3 controls red, EXIT=1); importer population 874 passed / 16 failed, the 16 base-revision failures being zero added since head equals base.</p></div>
 </div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261113T062652445923-review-of-ready-the-crew-home-has-a-bound-s13-c9bb250a988b" data-who="reckon-build" data-when="2026-11-13T08:53:33.005Z">
+    <div class="r-comment-body"><p>Review of run r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13 (base 3ddc28c71, head c9bb250a9) stored as a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 14, fit 15, reuse 15 (total 98) with three findings — one blocking (the memo-removal announcement writes to stdout, corrupting the JSON report channel both callers use) and two non-blocking (three of the seven persisted-cache kinds swept; the garbage_collect wiring untested) — and added_failure_count 0 from the reviewed run's own arm logs.</p></div>
+</div>
+<div class="r-comment" data-section="s13" data-id="c-run-r-20261113T103935593817-review-of-ready-the-crew-home-has-a-bound-s13-32ebd74ddfee" data-who="reckon-build" data-when="2026-11-13T11:17:35.408Z">
+    <div class="r-comment-body"><p>review of r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13 at head 32ebd74ddf against base 3ddc28c71f: parsed, scores goal 16 / evidence 15 / scope 18 / durability 15 / fit 18 / reuse 15 (total 98), four non-blocking findings, added_failure_count 0 — the blocking stdout-corruption finding from the c9bb250a9 review is repaired and its negative control is on record.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261011T002644790277-gc-sweeps-ledger-indexes" data-who="reckon-build" data-when="2026-10-11T01:11:49.247Z">
     <div class="r-comment-body"><p>crew gc now sweeps ledger indexes whose checkout is gone: each run index records the resolved ledger path it serves in its metadata table, and gc reports, and under --apply removes, every ledger-*.sqlite in the pick-input cache root whose recorded path no longer exists or which records no path and has not been opened for seven days, leaving picker-*.json inputs and any index a live process holds — the record sits at docs/evidence/fragments/the-crew-home-has-a-bound/gc-sweeps-ledger-indexes.html</p></div>
 </div>
@@ -425,9 +431,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261017T141450191818-cache-guard-whole-suite-at-merge-2" data-who="reckon-build" data-when="2026-10-17T15:06:46.086Z">
     <div class="r-comment-body"><p>two-arm whole-suite measurement under the cache-root guard - base a5d6f187de73b70a4b803e52f2ef8a1d29cc130f 36F/14166P, candidate 04be2a6dc06aecaf72f2b88777e4d37389037171 32F/14170P, zero added failing ids, guard names no test resolving the real cache; no repository path changed by this node</p></div>
-</div>
-<div class="r-comment" data-section="s13" data-id="c-run-r-20261113T062652445923-review-of-ready-the-crew-home-has-a-bound-s13-c9bb250a988b" data-who="reckon-build" data-when="2026-11-13T08:53:33.005Z">
-    <div class="r-comment-body"><p>Review of run r-20261113T022155260577-ready-the-crew-home-has-a-bound-s13 (base 3ddc28c71, head c9bb250a9) stored as a parsed record scoring goal_fidelity 17, evidence 18, scope_discipline 19, durability 14, fit 15, reuse 15 (total 98) with three findings — one blocking (the memo-removal announcement writes to stdout, corrupting the JSON report channel both callers use) and two non-blocking (three of the seven persisted-cache kinds swept; the garbage_collect wiring untested) — and added_failure_count 0 from the reviewed run&#x27;s own arm logs.</p></div>
 </div>
 </section>
 <section data-reckon="decisions" id="decisions" class="r-decisions">
