@@ -15,12 +15,21 @@
   while any of them is listed: one completed job beside five still running is a
   healthy wait, and asking per job would call the scheduler's answer negative on
   the one that finished.</p>
-  <p>An operand carries no label, so the list is read as jobs only when the
-  probe runs a scheduler command, passes a job flag, or spells ids long enough
-  to be jobs — five digits or more. Without that rule the same shape read
-  <code>nc -z a-host 80,443</code> as jobs 80 and 443, because a comma list was
-  read whole whatever the command. A port list now names no job, and the
-  scheduler is not asked about it.</p>
+  <p>An operand carries no label, so the command decides what its number list
+  is. A list of two or more under a command that takes ports by position —
+  <code>nc -z a-host 80,443</code> — is read as ports and names no job, and the
+  scheduler is not asked about it. The same list handed to an interpreter beside
+  a script is read as jobs. A number above the port ceiling cannot be a port, so
+  a list carrying one is a job list whatever the command. Counting digits cannot
+  answer this: the module's own port range runs to 65535, so
+  <code>nc -z host 50000,50001</code> would read as two jobs while a script
+  handed <code>1234,5678</code> named none, and a wait on those jobs could reach
+  producer-gone with one still alive.</p>
+  <p>A job flag's comma list is read from the raw argument vector, before the
+  interpreter separator set splits the words, because that split breaks at the
+  comma and kept only the first id: <code>--jobs=1312389,1312390</code> and the
+  glued <code>-j1312389,1312390</code> each named the first job alone, so a wait
+  resting on the second read as abandoned while it ran.</p>
   <p>Four readings are distinct on the row. A live job in the batch keeps the
   run waiting. A batch the scheduler listed none of reads as nothing can lift
   it, and the row names the jobs that were asked about. A batch whose query
@@ -40,23 +49,28 @@
     <tbody>
       <tr><td>Armed gate at the head: the three wait-reading files and the
         staged-write inventory</td>
-        <td>70 passed, 2 errors, <code>EXIT=1</code>. Both errors are the
+        <td>74 passed, 2 errors, <code>EXIT=1</code>. Both errors are the
         inventory test's <code>git ls-tree</code> against a git-archive
         extraction, which has no <code>.git</code>; they reproduce identically
         in the base arm.</td></tr>
       <tr><td>Armed base arm at <code>f855c080d0</code>, the same files resolved
         at that revision</td>
-        <td>64 passed, 2 errors, <code>EXIT=1</code>. Six added cases and no
+        <td>64 passed, 2 errors, <code>EXIT=1</code>. Ten added cases and no
         added failure.</td></tr>
-      <tr><td>Declared mutation: read job ids only from scheduler commands, as
-        before</td>
-        <td>2 failed, 3 passed, <code>EXIT=1</code>. The batch case is called
-        abandoned and the row no longer names the jobs that were asked
-        about.</td></tr>
+      <tr><td>Negative control: the answering commit's reader change reverted
+        inside an extracted tree, its cases left in place</td>
+        <td>2 failed, 72 passed, 2 errors, <code>EXIT=1</code>. The failures are
+        the port-list case and the flag-list case, the two checks the findings
+        name.</td></tr>
+      <tr><td>Negative control: the same commit's test change reverted, counted
+        as duplicated helpers in the new module</td>
+        <td>4 without it, 1 with it. Three of the four are copies of the
+        parked-run module's fixtures; the one that remains is the wrapper that
+        adds the files a batch probe reaches.</td></tr>
       <tr><td>Base importer arm at <code>f855c080d0</code>, 90 files</td>
         <td>10 failed, 718 passed, <code>EXIT=1</code>.</td></tr>
       <tr><td>Head importer arm, the same set plus the new file</td>
-        <td>10 failed, 724 passed, <code>EXIT=1</code>. The failure set is
+        <td>10 failed, 728 passed, <code>EXIT=1</code>. The failure set is
         identical to the base arm's, one id for one id.</td></tr>
     </tbody>
   </table>
