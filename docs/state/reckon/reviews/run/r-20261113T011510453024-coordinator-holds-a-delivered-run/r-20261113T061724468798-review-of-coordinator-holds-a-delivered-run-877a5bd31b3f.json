@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1957",
+    "reckon/crew/recovery_review_acceptance.py:507",
+    "reckon/crew/resume.py:102",
+    "reckon/cli.py:670"
+  ],
+  "completed_at": "2026-11-13T06:31:03.250Z",
+  "dispatched_at": "2026-11-13T06:22:00Z",
+  "finding_dispositions": {},
+  "findings": [
+    {
+      "file": "tests/test_a_coordinator_holds_a_delivered_run.py",
+      "line": 453,
+      "severity": "non-blocking",
+      "text": "the sanity guard `assert head[:10] in manifest.read_text()` is satisfied by the unshortened manifest as well, because a full sha contains its own ten-character prefix, so it cannot detect the replacement at line 451 silently doing nothing; the case would then hold against the full head and pass with the repair reverted. Assert the full spelling is gone (`f\"commits: [{head}]\" not in text`) instead. The behaviour is guarded today only because the control log shows the short spelling really reaching the lander."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 6ccf02af4e to 877a5bd31b: 8d87ff16a7 passes the resolved head and compares revisions, adding one case; 877a5bd31b extends the evidence fragment's prose, its head-arm count from 58 to 59, and its control table.",
+    "done_when": "the source done_when requires the new test to show a held run neither landed nor promoted, released-and-landed, a promoted resume refused by name, a resume holding before launch, and a lander negative control; the gate command at 877a5bd31b runs that file plus tests/test_staged_write_inventory.py and after-arm.log records 59 passed EXIT=0.",
+    "goal": "the node goal is a coordinator hold over a delivered run plus a resume that never vanishes; the reviewed commits close the case where the lander handed the hold the manifest's own abbreviated token, so a held, correctly reviewed run could still be landed at reckon/crew/queue_landing.py:1957.",
+    "manifest": "read; it records the eight commits, the 59-passed head arm, the two-error base arm attributed as scaffolding, the importer arms, and the abbreviated-spelling negative control at negative-control-abbreviated-hold.log with its note.",
+    "write_paths": "read the source prompt's exclusive write paths; the two commits' four changed paths are all inside them, and no path outside them changed."
+  },
+  "justifications": {
+    "durability": "the new case reddens under the reverted repair (negative-control-abbreviated-hold.log), but its fixture sanity assertion at tests/test_a_coordinator_holds_a_delivered_run.py:453 is entailed by the unshortened head too, so a no-op replacement would leave the case green.",
+    "evidence": "after-arm.log records 59 passed EXIT=0 at 877a5bd31b and negative-control-abbreviated-hold.log records 1 failed, 7 passed EXIT=1 with both halves of the repair reverted, the failing case being test_a_hold_covers_a_manifest_that_abbreviates_its_commit.",
+    "fit": "the added docstring paragraph and the lazy `from reckon.crew import recovery` at reckon/crew/resume.py:77 follow the module's existing idiom, and no plan or ticket identifier appears in the diff.",
+    "goal_fidelity": "reckon/crew/queue_landing.py:1957 now hands the resolved head to delivery_hold_reason, and reckon/crew/resume.py:82 compares the two spellings with recovery.same_revision, so a hold covers a delivery its manifest abbreviates and the prior blocking finding on that hole is closed.",
+    "reuse": "no definition is added; the change makes covers_delivery at reckon/crew/resume.py:66 extend the revision-equivalence owner recovery_review_subject.py:105 (same_revision), replacing its private exact-equality rule, which retires the prior non-blocking reuse finding.",
+    "scope_discipline": "the two commits touch exactly reckon/crew/queue_landing.py, reckon/crew/resume.py, tests/test_a_coordinator_holds_a_delivered_run.py and docs/evidence/fragments/work-flows-to-the-lane/coordinator-holds-a-delivered-run.html, all inside the source node's declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is a coordinator hold over a delivered run plus a resume that never vanishes; reckon/crew/queue_landing.py:1957 now hands the hold the resolved head, closing the last way a held delivery could still land.\nVERDICT done_when: the done_when names tests/test_a_coordinator_holds_a_delivered_run.py and its cases; the manifest's after arm at 877a5bd31b records that file plus tests/test_staged_write_inventory.py at 59 passed EXIT=0, and the abbreviated-spelling control at negative-control-abbreviated-hold.log records 1 failed, 7 passed EXIT=1.\nVERDICT write_paths: read the source prompt's exclusive paths; the four paths the two commits touch (reckon/crew/queue_landing.py, reckon/crew/resume.py, the test file, the evidence fragment) are all inside them.\nVERDICT manifest: read; it records the 59-passed head arm, the two-error base arm attributed to a git-archive extraction, the importer arms, and the abbreviated-spelling negative control with its note.\nVERDICT diff: read commit by commit from 6ccf02af4ebc to 877a5bd31b; 8d87ff16a7 changes the lander's hold argument and makes covers_delivery compare revisions, adding one case, and 877a5bd31b updates the evidence fragment's prose, count and control row.\nCALL_SITES: reckon/crew/queue_landing.py:1957, reckon/crew/recovery_review_acceptance.py:507, reckon/crew/resume.py:102, reckon/cli.py:670\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/queue_landing.py:1957 hands over the resolved head and reckon/crew/resume.py:82 compares revisions, so the deferral now holds however the manifest spells its commit.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-arm.log records 59 passed EXIT=0 at 877a5bd31b and negative-control-abbreviated-hold.log records the answering test red with the repair reverted.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: every path in the two commits is inside the declared write paths, and no other file changed.\nSCORE durability: 18\nJUSTIFICATION durability: the new case fails when both halves of the repair are reverted, but its fixture sanity assertion at tests/test_a_coordinator_holds_a_delivered_run.py:453 is true of the unshortened head too.\nSCORE fit: 19\nJUSTIFICATION fit: the added docstring paragraph and the lazy recovery import at reckon/crew/resume.py:77 follow the file's existing idiom.\nSCORE reuse: 20\nJUSTIFICATION reuse: covers_delivery at reckon/crew/resume.py:66 now extends recovery_review_subject.py:105 (same_revision) rather than restating revision equivalence.\nFINDING tests/test_a_coordinator_holds_a_delivered_run.py:453 non-blocking: the `assert head[:10] in manifest.read_text()` sanity check is satisfied by the unshortened manifest, so it cannot detect the replacement at line 451 doing nothing and the case would pass with the repair reverted.\n",
+  "review_run_id": "r-20261113T061724468798-review-of-coordinator-holds-a-delivered-run-877a5bd31b3f",
+  "reviewed_base_sha": "6ccf02af4ebc914d9085d488dfb6e8273c459408",
+  "reviewed_head_sha": "877a5bd31b3f62cecaee8cc974927ba3b4beaba8",
+  "reviewed_run_id": "r-20261113T011510453024-coordinator-holds-a-delivered-run",
+  "scores": {
+    "durability": 18,
+    "evidence": 19,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:28:24+00:00",
+  "total": 115
+}
