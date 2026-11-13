@@ -1919,6 +1919,15 @@ def _land_deliveries() -> dict[str, Any]:
         head, tree = recovery._review_head_and_tree(pointer)
         if not head:
             continue
+        # A run the ledger already holds a row for has been promoted, and this
+        # pass never lands a promoted run. Its landing is finished from the
+        # pending-landing record that named the head it cited, so reading this
+        # pointer's reviews would hold the run awaiting-review at whatever head
+        # a resume moved it to — a revision no review read, and an obligation
+        # nothing in this pass can answer.
+        if _landed_elsewhere(pointer, run_id):
+            skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
+            continue
         entries = classified.get("manifest_commits") or ()
         delivered = _delivered_revision(entries)
         code_stamp = _landing_code_stamp()
