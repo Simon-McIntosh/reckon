@@ -1,0 +1,104 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "No regression assertion is tautological with its supplied input: phases are persisted production outputs compared with an explicit expected sequence and a separately forced whole-ledger route; counters observe production operations; fixture readback and git HEAD checks are identified as setup controls.",
+  "assertion_review": [
+    {
+      "failure_condition": "Fixture row count or exact run identities differ from the 2000 records written; these are fixture readback controls, not assertions offered as the optimization guard.",
+      "lines": "72-76"
+    },
+    {
+      "failure_condition": "The unchanged whole-ledger route returns no mixed verdicts or differs from the explicit five-section expected sequence.",
+      "lines": "138-139"
+    },
+    {
+      "failure_condition": "Snapshot reuse changes persisted request phases relative to the whole-ledger oracle or releases a count other than eight.",
+      "lines": "143-144"
+    },
+    {
+      "failure_condition": "Removing ledger_rows=rows reinstates extra loader and document-reader calls; negative.log records four loads and 6000 reader calls, proving the read counter sees the defect; physical-open zero alone is insufficient on a warm memo.",
+      "lines": "148-151"
+    },
+    {
+      "failure_condition": "A promotion published after snapshot creation releases its waiters immediately, or a new pass fails to see it, or either pass adds a full-history load.",
+      "lines": "180-186"
+    },
+    {
+      "failure_condition": "The controlled merge hook did not first encounter a waiting request, did not put the pending commit at HEAD, or never ran; these assert setup rather than implementation durability.",
+      "lines": "200,202,208"
+    },
+    {
+      "failure_condition": "A mid-pass merge bypasses the per-pass wait verdict, the next pass retains stale state, or either pass performs additional ledger/document reads.",
+      "lines": "209-217"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/admission/selection.py:102",
+    "reckon/crew/admission/release.py:426-485",
+    "reckon/crew/admission/readiness.py:1186",
+    "reckon/crew/admission/readiness.py:530",
+    "reckon/crew/runs.py:2859"
+  ],
+  "completed_at": "2026-11-13T05:03:41Z",
+  "dispatched_at": "2026-11-13T04:55:11Z",
+  "findings": [],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=/tmp/admission-ledger-6tq46k9b /tmp/admission-ledger-6tq46k9b/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/admission-ledger-6tq46k9b/tests/test_an_admission_pass_reads_the_ledger_once.py /tmp/admission-ledger-6tq46k9b/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T032923501296-admission-pass-reads-ledger-once/final.log",
+      "revision": "277c5b7e7684befd91d11625305c8d173a33fcca"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=/tmp/admission-ledger-iuvo7xsx /tmp/admission-ledger-iuvo7xsx/.venv/bin/python -m pytest -p no:cacheprovider -q /tmp/admission-ledger-iuvo7xsx/tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T032923501296-admission-pass-reads-ledger-once/baseline.log",
+      "revision": "13350b465eef53803dbfe406edbf323300dabe6f"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read cd7f7f35350c0799a7fe1f92f6dbb768e3cfb628, 901a333b8f5c9d3c95e81f222ed0b8ccf8bda575 and 277c5b7e7684befd91d11625305c8d173a33fcca separately against base 13350b465eef53803dbfe406edbf323300dabe6f; production changes extend the existing helper, with focused tests and evidence only.",
+    "done_when": "Source prompt.txt and live s36 require 2000 rows, ten requests, five sections, unchanged verdicts, next-pass freshness and a failing repeated-read mutation; tests/test_an_admission_pass_reads_the_ledger_once.py:23-217 asserts these and final.log records 54 passed with EXIT=0.",
+    "goal": "Source prompt.txt requires one indexed ledger reading for all section waits; reckon/crew/admission/readiness.py:530-535 passes the existing cached rows into the shared landing derivation.",
+    "manifest": "Source manifest.md names three commits, a completed 51-pass baseline and 54-pass final arm, related 34-pass arms and the failing negative.log; the opened logs confirm their revisions, summaries and exit status.",
+    "write_paths": "Source manifest.md declares admission/, runs.py, ledger.py, the new test and evidence paths; the four paths changed between the recorded base and head are all inside those grants."
+  },
+  "justifications": {
+    "durability": "tests/test_an_admission_pass_reads_the_ledger_once.py:148-151 fails when ledger_rows=rows is removed, while lines 180-186 and 208-217 fail if snapshots persist across passes or waiters release before landing.",
+    "evidence": "Source final.log records 54 passed at 277c5b7e7684befd91d11625305c8d173a33fcca, negative.log records the one-load assertion failing at four loads and 6000 document-reader calls, and the related base/head logs both record 34 passing checks.",
+    "fit": "reckon/crew/runs.py:2554-2598 adds an optional keyword argument preserving the existing fallback, and readiness.py:534 uses its existing per-project cache without introducing prohibited names.",
+    "goal_fidelity": "reckon/crew/admission/readiness.py:534 supplies the indexed rows already memoised by _ledger_run_rows, eliminating each promoted section's extra full-history load.",
+    "reuse": "reckon/crew/runs.py:2554 extends the existing unloaded-section owner and readiness.py:416 supplies the existing snapshot owner; capability searches found reusable synthetic-repository and phase-oracle fixtures in tests/test_a_wait_releases_when_its_upstream_lands.py and tests/test_an_admission_pass_reads_each_project_once.py, which the new fixture reuses or adapts for ledger-specific instrumentation.",
+    "scope_discipline": "The base-to-head diff changes only reckon/crew/admission/readiness.py, reckon/crew/runs.py, tests/test_an_admission_pass_reads_the_ledger_once.py and the declared admission-pass-reads-ledger-once.html evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Source prompt.txt requires one indexed ledger reading for all section waits; reckon/crew/admission/readiness.py:530-535 passes the existing cached rows into the shared landing derivation.\nVERDICT done_when: Source prompt.txt and live s36 require 2000 rows, ten requests, five sections, unchanged verdicts, next-pass freshness and a failing repeated-read mutation; tests/test_an_admission_pass_reads_the_ledger_once.py:23-217 asserts these and final.log records 54 passed with EXIT=0.\nVERDICT write_paths: Source manifest.md declares admission/, runs.py, ledger.py, the new test and evidence paths; the four paths changed between the recorded base and head are all inside those grants.\nVERDICT manifest: Source manifest.md names three commits, a completed 51-pass baseline and 54-pass final arm, related 34-pass arms and the failing negative.log; the opened logs confirm their revisions, summaries and exit status.\nVERDICT diff: Read cd7f7f35350c0799a7fe1f92f6dbb768e3cfb628, 901a333b8f5c9d3c95e81f222ed0b8ccf8bda575 and 277c5b7e7684befd91d11625305c8d173a33fcca separately against base 13350b465eef53803dbfe406edbf323300dabe6f; production changes extend the existing helper, with focused tests and evidence only.\nCALL_SITES: reckon/crew/admission/selection.py:102, reckon/crew/admission/release.py:426-485, reckon/crew/admission/readiness.py:1186, reckon/crew/admission/readiness.py:530, reckon/crew/runs.py:2859\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/admission/readiness.py:534 supplies the indexed rows already memoised by _ledger_run_rows, eliminating each promoted section's extra full-history load.\nSCORE evidence: 20\nJUSTIFICATION evidence: Source final.log records 54 passed at 277c5b7e7684befd91d11625305c8d173a33fcca, negative.log records the one-load assertion failing at four loads and 6000 document-reader calls, and the related base/head logs both record 34 passing checks.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The base-to-head diff changes only reckon/crew/admission/readiness.py, reckon/crew/runs.py, tests/test_an_admission_pass_reads_the_ledger_once.py and the declared admission-pass-reads-ledger-once.html evidence fragment.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_an_admission_pass_reads_the_ledger_once.py:148-151 fails when ledger_rows=rows is removed, while lines 180-186 and 208-217 fail if snapshots persist across passes or waiters release before landing.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/runs.py:2554-2598 adds an optional keyword argument preserving the existing fallback, and readiness.py:534 uses its existing per-project cache without introducing prohibited names.\nSCORE reuse: 20\nJUSTIFICATION reuse: reckon/crew/runs.py:2554 extends the existing unloaded-section owner and readiness.py:416 supplies the existing snapshot owner; capability searches found reusable synthetic-repository and phase-oracle fixtures in tests/test_a_wait_releases_when_its_upstream_lands.py and tests/test_an_admission_pass_reads_each_project_once.py, which the new fixture reuses or adapts for ledger-specific instrumentation.\n",
+  "reproduction": "reproduction.log: assert 4 == 1; 1 failed in 2.54s; EXIT=1. negative.log: loads=4, unindexed=3, run_documents=6000; 1 failed in 4.86s; EXIT=1.",
+  "review_run_id": "r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684",
+  "reviewed_base_sha": "13350b465eef53803dbfe406edbf323300dabe6f",
+  "reviewed_head_sha": "277c5b7e7684befd91d11625305c8d173a33fcca",
+  "reviewed_run_id": "r-20261113T032923501296-admission-pass-reads-ledger-once",
+  "scores": {
+    "durability": 20,
+    "evidence": 20,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T05:13:20.936658+00:00",
+  "total": 120
+}
