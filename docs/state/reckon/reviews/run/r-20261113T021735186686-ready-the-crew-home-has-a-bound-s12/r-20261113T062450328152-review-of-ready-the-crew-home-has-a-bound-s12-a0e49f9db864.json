@@ -1,0 +1,58 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/promotion.py:1382",
+    "reckon/crew/promotion.py:1384",
+    "reckon/crew/runs.py:2601",
+    "reckon/crew/runs.py:2667"
+  ],
+  "completed_at": "2026-11-13T08:31:04.272Z",
+  "dispatched_at": "2026-11-13T08:19:11Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T021735186686-ready-the-crew-home-has-a-bound-s12/manifest.md",
+      "line": "18",
+      "severity": "non-blocking",
+      "text": "non-blocking: baseline_suite and after_suite both name tests/test_staged_write_inventory.py, a staged-write census that is not one of the 104 ledger importers and does not reach the damaged-record path, so the suite pair promotion reads answers nothing the done-when asks; the importer clause is supported only by importer-arm-gate.log and by the head==base argument, so the claims hold but the structured measure does not assert what the done-when states."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 4 production call site(s)",
+    "diff": "one commit, a0e49f9db8, a single new 44-line evidence HTML fragment; scope confirms no source or test line changed and the file is inside the declared scope. Its 16-failure grouping reconciles exactly with importer-arm-gate.log, and the importer-arm failure ids name queue-time and merge-time refusals the tree no longer emits.",
+    "done_when": "the done_when names tests/test_a_damaged_run_record_stops_only_its_run.py; gate.log records 3 passed EXIT=0 for exactly that file, and negative-controls.log shows each of the three named controls failing exactly one case (1 failed, EXIT=1 each); the done_when's word \"new\" is not met, because that test already exists at base 3ddc28c71f, added by 78d775ca09.",
+    "goal": "the node goal is \"deliver the section so that a damaged run record stops only its own run\" (dispatch-detail.json admit_request.node.goal); the behaviour is present and correct in reckon/ledger.py:1627-1644 and reckon/crew/promotion.py:1382-1387, but it predates the node \u2014 commit 78d775ca09 landed it before dispatch \u2014 so the node's own diff certifies it rather than delivering it.",
+    "manifest": "read in full; it records the gate (3 passed, EXIT=0), the importer arm (874 passed, 16 failed, EXIT=1 at head==base) with the 16 grouped 5/4/5/2, and a suite pair naming tests/test_staged_write_inventory.py at 51 passed on both arms.",
+    "write_paths": "the declared paths are reckon/ledger.py, reckon/crew/promotion.py and the new test, plus the evidence fragment path; the diff changes only docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html, which is inside that scope, and the two Python paths are untouched."
+  },
+  "justifications": {
+    "durability": "no assertion is added by the diff itself, and durability rests on tests/test_a_damaged_run_record_stops_only_its_run.py:66-147; negative-controls.log shows three isolated mutations each reddening exactly one case, so the pre-existing guard is load-bearing rather than incidental.",
+    "evidence": "gate.log runs the done_when's named test and records 3 passed EXIT=0, yet the structured baseline_suite/after_suite pair measures tests/test_staged_write_inventory.py, a staged-write census, so the done-when's importer clause is asserted by no suite pair.",
+    "fit": "the fragment's metadata block at docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html:1-18 mirrors the sibling a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html:1-16 and introduces no forbidden name, though it ends without a trailing newline.",
+    "goal_fidelity": "reckon/crew/promotion.py:1384 refuses only the damaged run's own promotion and reckon/ledger.py:1627-1644 reports and skips a damaged document, so the goal's behaviour holds, but the landed commit a0e49f9db8 adds only docs and the behaviour was already at base.",
+    "reuse": "the diff adds no definition to extend; the mechanisms it describes are the existing ones at reckon/ledger.py:71, :77 and :1734 and no second reporter is introduced.",
+    "scope_discipline": "the only path in the diff is docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html, inside the declared fragment path, and reckon/ledger.py and reckon/crew/promotion.py are untouched."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is \"deliver the section so that a damaged run record stops only its own run\" (dispatch-detail.json admit_request.node.goal); the behaviour is present and correct in reckon/ledger.py:1627-1644 and reckon/crew/promotion.py:1382-1387, but it predates the node \u2014 commit 78d775ca09 landed it before dispatch \u2014 so the node's own diff certifies it rather than delivering it.\nVERDICT done_when: the done_when names tests/test_a_damaged_run_record_stops_only_its_run.py; gate.log records 3 passed EXIT=0 for exactly that file, and negative-controls.log shows each of the three named controls failing exactly one case (1 failed, EXIT=1 each); the done_when's word \"new\" is not met, because that test already exists at base 3ddc28c71f, added by 78d775ca09.\nVERDICT write_paths: the declared paths are reckon/ledger.py, reckon/crew/promotion.py and the new test, plus the evidence fragment path; the diff changes only docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html, which is inside that scope, and the two Python paths are untouched.\nVERDICT manifest: read in full; it records the gate (3 passed, EXIT=0), the importer arm (874 passed, 16 failed, EXIT=1 at head==base) with the 16 grouped 5/4/5/2, and a suite pair naming tests/test_staged_write_inventory.py at 51 passed on both arms.\nVERDICT diff: one commit, a0e49f9db8, a single new 44-line evidence HTML fragment; scope confirms no source or test line changed and the file is inside the declared scope. Its 16-failure grouping reconciles exactly with importer-arm-gate.log, and the importer-arm failure ids name queue-time and merge-time refusals the tree no longer emits.\nCALL_SITES: reckon/crew/promotion.py:1382, reckon/crew/promotion.py:1384, reckon/crew/runs.py:2601, reckon/crew/runs.py:2667\nSCORE goal_fidelity: 15\nJUSTIFICATION goal_fidelity: reckon/crew/promotion.py:1384 refuses only the damaged run's own promotion and reckon/ledger.py:1627-1644 reports and skips a damaged document, so the goal's behaviour holds, but the landed commit a0e49f9db8 adds only docs and the behaviour was already at base.\nSCORE evidence: 13\nJUSTIFICATION evidence: gate.log runs the done_when's named test and records 3 passed EXIT=0, yet the structured baseline_suite/after_suite pair measures tests/test_staged_write_inventory.py, a staged-write census, so the done-when's importer clause is asserted by no suite pair.\nSCORE scope_discipline: 18\nJUSTIFICATION scope_discipline: the only path in the diff is docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html, inside the declared fragment path, and reckon/ledger.py and reckon/crew/promotion.py are untouched.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion is added by the diff itself, and durability rests on tests/test_a_damaged_run_record_stops_only_its_run.py:66-147; negative-controls.log shows three isolated mutations each reddening exactly one case, so the pre-existing guard is load-bearing rather than incidental.\nSCORE fit: 16\nJUSTIFICATION fit: the fragment's metadata block at docs/evidence/fragments/the-crew-home-has-a-bound/ready-the-crew-home-has-a-bound-s12.html:1-18 mirrors the sibling a-reader-builds-no-index-for-a-ledger-that-does-not-exist.html:1-16 and introduces no forbidden name, though it ends without a trailing newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition to extend; the mechanisms it describes are the existing ones at reckon/ledger.py:71, :77 and :1734 and no second reporter is introduced.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T021735186686-ready-the-crew-home-has-a-bound-s12/manifest.md:18 non-blocking: baseline_suite and after_suite both name tests/test_staged_write_inventory.py, a staged-write census that is not one of the 104 ledger importers and does not reach the damaged-record path, so the suite pair promotion reads answers nothing the done-when asks; the importer clause is supported only by importer-arm-gate.log and by the head==base argument, so the claims hold but the structured measure does not assert what the done-when states.",
+  "review_run_id": "r-20261113T062450328152-review-of-ready-the-crew-home-has-a-bound-s12-a0e49f9db864",
+  "reviewed_base_sha": "3ddc28c71fb85bc078298b8e27d8d74a8a095551",
+  "reviewed_head_sha": "a0e49f9db864c9d6626c5486f7a8b511bd47f63b",
+  "reviewed_run_id": "r-20261113T021735186686-ready-the-crew-home-has-a-bound-s12",
+  "scores": {
+    "durability": 15,
+    "evidence": 13,
+    "fit": 16,
+    "goal_fidelity": 15,
+    "reuse": 20,
+    "scope_discipline": 18
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:41:08.732174+00:00",
+  "total": 97
+}
