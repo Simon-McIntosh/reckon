@@ -7,8 +7,14 @@ number of distinct plans the batch touches — never by the entries or by the
 wait edges they declare. The requests the batch stores carry the same waits and
 phases they did before the read was shared.
 
+A second batch of two plans with three sections each measures the plan-document
+read itself: six entries read each plan's document once, so the count is two.
+That assertion is what holds the scoped read, and reverting the reader to a
+plain one raises the count with the entries.
+
 The negative control is the base revision, where each entry and each wait edge
-resolves its target plan for itself: there the counts grow with the entries.
+resolves its own copy of its target plan: there the counts grow with the
+entries.
 """
 
 from __future__ import annotations
@@ -61,10 +67,14 @@ def _config() -> dict:
     }
 
 
-def _plan(slug: str) -> str:
+def _plan(
+    slug: str,
+    sections: tuple[str, ...] = SECTIONS,
+    waits: dict[str, list[str]] | None = None,
+) -> str:
     quote = '"'
-    declarations = json.dumps(dict.fromkeys(SECTIONS, "implementable"))
-    depends_on = json.dumps(WAITS[slug])
+    declarations = json.dumps(dict.fromkeys(sections, "implementable"))
+    depends_on = json.dumps(waits or {})
     body = "".join(
         f"<h2 id={quote}{section}{quote}>§{section[1:]}</h2>"
         f"<p>Build {slug} {section}.</p>"
@@ -86,8 +96,8 @@ def _plan(slug: str) -> str:
     )
 
 
-def _batch() -> list[dict]:
-    """One entry per section of every plan: twenty entries over four plans."""
+def _entries(plans: tuple[str, ...], sections: tuple[str, ...]) -> list[dict]:
+    """One entry per section of every plan."""
     return [
         {
             "project": PROJECT,
@@ -98,17 +108,28 @@ def _batch() -> list[dict]:
             "time_budget": "20m",
             "spec_level": "exact",
         }
-        for slug in PLANS
-        for section in SECTIONS
+        for slug in plans
+        for section in sections
     ]
+
+
+def _batch() -> list[dict]:
+    """One entry per section of every plan: twenty entries over four plans."""
+    return _entries(PLANS, SECTIONS)
 
 
 def _git(repository: Path, *arguments: str) -> None:
     subprocess.run(["git", *arguments], cwd=repository, check=True, capture_output=True)
 
 
-@pytest.fixture()
-def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+def _checkout(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    plans: tuple[str, ...],
+    sections: tuple[str, ...],
+    waits: dict[str, dict[str, list[str]]],
+) -> Path:
+    """A throwaway checkout carrying one authored plan file per slug."""
     config_home = tmp_path / "config"
     config_home.mkdir()
     monkeypatch.setenv("RECKON_HOME", str(config_home))
@@ -120,10 +141,12 @@ def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
         json.dumps({"project": PROJECT, "data": {"_version": 0}}) + "\n",
         encoding="utf-8",
     )
-    plans = repository / "docs" / "plans"
-    plans.mkdir(parents=True)
-    for slug in PLANS:
-        (plans / f"{slug}.html").write_text(_plan(slug), encoding="utf-8")
+    plans_dir = repository / "docs" / "plans"
+    plans_dir.mkdir(parents=True)
+    for slug in plans:
+        (plans_dir / f"{slug}.html").write_text(
+            _plan(slug, sections, waits.get(slug, {})), encoding="utf-8"
+        )
     _git(repository, "init", "-q", "-b", "main")
     _git(repository, "config", "user.email", "worker@example.invalid")
     _git(repository, "config", "user.name", "Worker")
@@ -135,12 +158,36 @@ def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     return repository
 
 
-def _queue(repository: Path) -> dict:
+@pytest.fixture()
+def batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return _checkout(tmp_path, monkeypatch, PLANS, SECTIONS, WAITS)
+
+
+#: A second batch shape: two plans, three sections each. Small enough that the
+#: plan-document read count is one per plan and nothing else, so a regression
+#: that re-reads a plan for a second section is visible as a third read.
+SMALL_PLANS = ("plan-x", "plan-y")
+SMALL_SECTIONS = ("s1", "s2", "s3")
+SMALL_WAITS: dict[str, dict[str, list[str]]] = {
+    "plan-x": {section: [f"plan-y#{section}"] for section in SMALL_SECTIONS},
+    "plan-y": {},
+}
+
+
+@pytest.fixture()
+def small_batch_repo(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
+    return _checkout(tmp_path, monkeypatch, SMALL_PLANS, SMALL_SECTIONS, SMALL_WAITS)
+
+
+def _queue(repository: Path, entries: list[dict] | None = None) -> dict:
     def config_for(_project: str) -> dict:
         return json.loads(json.dumps(_config()))
 
     return dispatch_batch.queue_batch(
-        _batch(), session=SESSION, config_for=config_for, repo_root=repository
+        entries if entries is not None else _batch(),
+        session=SESSION,
+        config_for=config_for,
+        repo_root=repository,
     )
 
 
@@ -193,3 +240,59 @@ def test_a_batch_reads_each_plan_once(
     assert d_one.get("waits") in (None, []), (
         "a section that declares no wait is queueable at once"
     )
+
+
+def test_a_batch_reads_each_plan_document_once(
+    small_batch_repo: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One plan document is read once however many of its sections a batch names.
+
+    Two plans with three sections each queue six entries, and the plan's own
+    document is read exactly twice for the whole batch: once for the plan whose
+    sections wait, once for the plan they wait on. Reverting the scoped read to
+    a plain one raises the count with the entries, which is what makes this
+    assertion the one that holds the saving.
+    """
+    from reckon.crew.admission import release as release_module
+
+    documents: list[str] = []
+    original_document = release_module._plan_html
+
+    def counted_document(repo_root, plan):
+        documents.append(str(plan))
+        return original_document(repo_root, plan)
+
+    headings: list[str] = []
+    original_headings = _plan_html.authored_section_headings
+
+    def counted_headings(html_text: str):
+        headings.append(html_text[:40])
+        return original_headings(html_text)
+
+    monkeypatch.setattr(release_module, "_plan_html", counted_document)
+    monkeypatch.setattr(_plan_html, "authored_section_headings", counted_headings)
+
+    result = _queue(small_batch_repo, _entries(SMALL_PLANS, SMALL_SECTIONS))
+
+    assert result["refused"] == 0, result["results"]
+    assert result["queued"] == 6
+    assert len(documents) == 2, (
+        "six entries over two plans read each plan document once, so the count "
+        f"is one per plan and never per entry or per wait edge: {len(documents)} "
+        f"reads of {sorted(documents)}"
+    )
+    assert sorted(documents) == sorted(SMALL_PLANS)
+    assert len(headings) == 2, (
+        "each distinct plan text is parsed for its section headings once for "
+        f"the whole batch: {len(headings)} parses"
+    )
+
+    stored = {
+        str((pointer.get("node") or {}).get("id") or ""): pointer
+        for pointer in runs.list_live(project=PROJECT)
+    }
+    assert len(stored) == 6, sorted(stored)
+    x_one = stored["plan-x-s1"]
+    assert x_one["phase"] == "awaiting-upstream"
+    assert x_one["waits"] == ["plan-y#s1"]
+    assert stored["plan-y-s1"].get("waits") in (None, [])
