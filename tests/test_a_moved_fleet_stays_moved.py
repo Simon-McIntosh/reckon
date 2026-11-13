@@ -109,10 +109,13 @@ def test_the_census_lists_sessions_in_the_fleet_socket_directory(
 
 def test_runs_launched_on_the_old_node_match_by_short_hostname():
     live = [
-        {"run_id": "r-b", "launcher_host": "old-node.example.org"},
-        {"run_id": "r-a", "launcher_host": "old-node"},
-        {"run_id": "r-c", "launcher_host": "new-node.example.org"},
-        {"run_id": "r-d"},
+        {"run_id": "r-b", "launcher_host": "old-node.example.org", "phase": "working"},
+        {"run_id": "r-a", "launcher_host": "old-node", "phase": "a-phase-nobody-knows"},
+        {"run_id": "r-c", "launcher_host": "new-node.example.org", "phase": "working"},
+        {"run_id": "r-d", "phase": "working"},
+        {"run_id": "r-e", "launcher_host": "old-node", "phase": "complete"},
+        {"run_id": "r-f", "launcher_host": "old-node", "phase": "promotion-requested"},
+        {"run_id": "r-g", "launcher_host": "old-node", "phase": "queued"},
     ]
     assert fleet_migrate._runs_launched_on("old-node", live) == ["r-a", "r-b"]
     assert fleet_migrate._runs_launched_on("", live) == []

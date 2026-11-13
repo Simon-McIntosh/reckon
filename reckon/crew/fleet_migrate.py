@@ -21,6 +21,7 @@ from reckon.crew.fleet_supervisor import (
     runtime_directory,
     state_directory,
 )
+from reckon.crew.node import _TERMINAL_RUN_PHASES
 from reckon.crew.recovery import _resume_remedy
 from reckon.crew.resumption import resolve_session
 
@@ -586,8 +587,21 @@ def _worker_steps(job_id: str) -> list[str]:
     ]
 
 
+# Phases in which a run has no worker process: it has finished, it is waiting
+# for the coordinator to promote it, or it has not been launched yet. Any other
+# phase, including one this list does not know, counts as a worker that may
+# still be running, so retire fails closed.
+_PROCESS_FREE_RUN_PHASES = _TERMINAL_RUN_PHASES | {
+    "promotion-requested",
+    "queued",
+    "awaiting-upstream",
+    "held",
+    "blocked-upstream",
+}
+
+
 def _runs_launched_on(node: str, live: list[dict[str, Any]]) -> list[str]:
-    """Live runs whose worker was launched on ``node``.
+    """Live runs launched on ``node`` whose worker may still be running.
 
     A worker the supervisor spawns runs in the allocation's batch step, not
     in a step of its own, so the step list does not show it; cancelling the
@@ -601,6 +615,7 @@ def _runs_launched_on(node: str, live: list[dict[str, Any]]) -> list[str]:
         str(run.get("run_id") or "?")
         for run in live
         if str(run.get("launcher_host") or "").split(".", 1)[0] == short
+        and str(run.get("phase") or "") not in _PROCESS_FREE_RUN_PHASES
     )
 
 

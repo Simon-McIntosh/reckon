@@ -391,10 +391,19 @@ def test_retire_refuses_steps_and_sessions_then_requires_confirmation(actions: A
         actions.migrate(confirm=True)
     actions.old_sessions.clear()
     # A worker the supervisor spawned runs in the batch step, not a step.
-    actions.live = [{"run_id": "r-resident", "launcher_host": "old-node.example"}]
+    actions.live = [
+        {
+            "run_id": "r-resident",
+            "launcher_host": "old-node.example",
+            "phase": "working",
+        }
+    ]
     with pytest.raises(fleet_migrate.MigrationError, match="r-resident"):
         actions.migrate(confirm=True)
-    actions.live = [{"run_id": "r-elsewhere", "launcher_host": "new-node"}]
+    actions.live = [
+        {"run_id": "r-elsewhere", "launcher_host": "new-node", "phase": "working"},
+        {"run_id": "r-finished", "launcher_host": "old-node", "phase": "complete"},
+    ]
     answer = actions.migrate()
     assert "scancel 1234" in answer and "--confirm required" in answer
     assert not any(call[0] == "cancel" for call in actions.calls)
