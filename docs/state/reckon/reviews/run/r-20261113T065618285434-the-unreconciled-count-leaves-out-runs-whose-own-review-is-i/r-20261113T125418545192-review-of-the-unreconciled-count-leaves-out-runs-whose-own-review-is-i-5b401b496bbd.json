@@ -1,0 +1,75 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/runs.py:2997",
+    "reckon/crew/runs.py:3039",
+    "reckon/crew/promotion_release.py:1169",
+    "reckon/crew/promotion_release.py:1044",
+    "reckon/crew/obligations.py:3777",
+    "reckon/crew/obligation_snapshot.py:1391"
+  ],
+  "completed_at": "2026-11-13T13:09:19.423Z",
+  "dispatched_at": "2026-11-13T12:56:02Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "the reviewer re-read the three changed Python files at 5b401b496b and found no ruff finding on any changed line; the one PERF403 at promotion_release.py:958 predates this diff",
+      "recorded_at": "2026-11-13T13:14:01.153900+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "promotion_release.py is ratified at landing with --accept-path: it is the per-pointer caller the prior review named, disclosed in changed_paths and scope_note",
+      "recorded_at": "2026-11-13T13:14:08.551254+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html",
+      "line": "25",
+      "severity": "non-blocking",
+      "text": "non-blocking: the done-when's third clause, that ruff check and ruff format --check add no findings on the staged paths, is measured nowhere in the run - no ruff log exists in the run directory, the manifest's tests, test_logs and artifacts lines name pytest arms only, and rubric.evidence reads 'answered'. A re-read of the three changed Python files at 5b401b496b finds no ruff finding on any changed line (one pre-existing PERF403 at reckon/crew/promotion_release.py:958, untouched by this diff) and format --check reports all three already formatted, so the landed change is clean; the defect is the missing receipt, not a finding."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "1044",
+      "severity": "non-blocking",
+      "text": "non-blocking: this file is outside the reviewed dispatch's declared write paths (reckon/crew/runs.py, reckon/crew/obligations.py, the test file, the evidence fragment, the figures directory). The manifest discloses the expansion in changed_paths, scope_note and outside_scope as required by the prior review's third finding, and the goal names a promotion's fleet reading as a reader that must count through the one composition, so the edit is substantively in scope; what is missing is a coordinator ratification of the added path."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit against 91e6c988a6: d2250ebb61 changes reckon/crew/runs.py (90 lines), reckon/crew/promotion_release.py (29) and the test file (132), and 5b401b496b changes only the evidence fragment (12 lines); the row scope extracted at runs.py:2863 is entered by _closure_rows at runs.py:2966 and by the promotion reading at promotion_release.py:1044.",
+    "done_when": "the section's done-when has three clauses: the section test passes with its negative control, the importing test files add no failure against the base revision on all_debug at -n 4 or below, and ruff adds no finding on the staged paths. Clauses one and two are measured and recorded (gate5-head.log 59 passed EXIT=0 at d2250ebb, gate5-head-callers.log 68 failed / 745 passed against gate3-base-callers.log 68 failed / 737 passed with byte-identical FAILED ids, verified by diff at review time); clause three has no receipt in the run.",
+    "goal": "the source node's goal is that the unreconciled count leaves out runs whose own review or repair is in flight; the two gained commits keep that and answer the prior review's findings, moving the excuse set into reckon/crew/runs.py:2933-2955 where all three readings reach it.",
+    "manifest": "read; it records seven commits, the literal tests line, six gate logs, four negative controls, the baseline and after suite pair, and an after_suite_note explaining that the code head d2250ebb carries the measurement while 5b401b496b adds only the evidence fragment.",
+    "write_paths": "the reviewed dispatch declares reckon/crew/runs.py, reckon/crew/obligations.py, tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py, the evidence fragment and the figures directory; git diff --stat 91e6c988..5b401b496b names four files, of which reckon/crew/promotion_release.py lies outside that list and is disclosed in the manifest's changed_paths and scope_note."
+  },
+  "justifications": {
+    "durability": "tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:338-419 adds four cases comparing the drain's count and run-id set against the fixture's own subjects, and gate5-negative-control-2.log shows all four failing when runs.py and promotion_release.py are reverted to 91e6c988.",
+    "evidence": "gate5-head.log reads 59 passed EXIT=0 at d2250ebb and gate5-negative-control-2.log shows all four new cases failing with 'assert 11 <= 1', but no ruff log exists in the run directory for the done-when's third clause.",
+    "fit": "row_scope at reckon/crew/runs.py:2863 is a contextmanager placed beside the two context variables it sets, matching the module's existing idiom, and no added name carries a plan, sprint or ticket label.",
+    "goal_fidelity": "reckon/crew/runs.py:2933-2955 excuses a run only while the round standing for it is itself excused, so a delivered round and its subject both count again, which is the goal's rule carried through the prior review's second finding.",
+    "reuse": "_round_has_delivered at reckon/crew/runs.py:2893 delegates to reports.parse_manifest and manifest_status_is_terminal instead of scanning the status line itself, and row_scope at runs.py:2863 is the one scope both the drain and the promotion reading now enter.",
+    "scope_discipline": "every changed path except reckon/crew/promotion_release.py:1044 is a declared write path, and that one is disclosed in the manifest's changed_paths and scope_note."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the source node's goal is that the unreconciled count leaves out runs whose own review or repair is in flight; the two gained commits keep that and answer the prior review's findings, moving the excuse set into reckon/crew/runs.py:2933-2955 where all three readings reach it.\nVERDICT done_when: the section's done-when has three clauses; clauses one and two are measured and recorded (gate5-head.log 59 passed EXIT=0 at d2250ebb, gate5-head-callers.log 68 failed / 745 passed with FAILED ids byte-identical to gate3-base-callers.log), while clause three, ruff check and format --check on the staged paths, is measured nowhere in the run.\nVERDICT write_paths: the reviewed dispatch declares reckon/crew/runs.py, reckon/crew/obligations.py, the test file, the evidence fragment and the figures directory; git diff --stat 91e6c988..5b401b496b names four files, of which reckon/crew/promotion_release.py is outside that list and is disclosed in the manifest's changed_paths and scope_note.\nVERDICT manifest: read; it records seven commits, the literal tests line, six gate logs, four negative controls and the baseline/after suite pair, and its after_suite_note explains that the code head d2250ebb carries the measurement while 5b401b496b adds only the fragment.\nVERDICT diff: read commit by commit against 91e6c988a6 - d2250ebb61 changes runs.py, promotion_release.py and the test file, 5b401b496b changes only the fragment; the row scope extracted at runs.py:2863 is entered by _closure_rows at runs.py:2966 and by the promotion reading at promotion_release.py:1044.\nCALL_SITES: reckon/crew/runs.py:2997, reckon/crew/runs.py:3039, reckon/crew/promotion_release.py:1169, reckon/crew/promotion_release.py:1044, reckon/crew/obligations.py:3777, reckon/crew/obligation_snapshot.py:1391\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2933-2955 excuses a run only while the round standing for it is itself excused, so a delivered round and its subject both count again.\nSCORE evidence: 14\nJUSTIFICATION evidence: gate5-head.log reads 59 passed EXIT=0 and gate5-negative-control-2.log shows the four new cases failing with 'assert 11 <= 1', but no ruff log exists in the run directory for the done-when's third clause.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every changed path except reckon/crew/promotion_release.py:1044 is a declared write path, and that one is disclosed in the manifest's scope_note.\nSCORE durability: 18\nJUSTIFICATION durability: the four cases added at tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:338-419 compare the drain's count against the fixture's own subjects and all four fail in gate5-negative-control-2.log when the answering files are reverted.\nSCORE fit: 18\nJUSTIFICATION fit: row_scope at reckon/crew/runs.py:2863 is a contextmanager beside the context variables it sets, matching the module's idiom, and carries no plan or ticket label.\nSCORE reuse: 19\nJUSTIFICATION reuse: _round_has_delivered at reckon/crew/runs.py:2893 delegates to reports.parse_manifest and manifest_status_is_terminal rather than scanning the status line itself.\nFINDING docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html:25 non-blocking: the done-when's third clause, that ruff check and ruff format --check add no findings on the staged paths, is measured nowhere in the run - no ruff log exists in the run directory and the manifest's tests, test_logs and artifacts lines name pytest arms only, while rubric.evidence reads answered; a re-read of the three changed Python files at 5b401b496b finds no ruff finding on any changed line, so the defect is the missing receipt and not a finding.\nFINDING reckon/crew/promotion_release.py:1044 non-blocking: this file is outside the reviewed dispatch's declared write paths; the manifest discloses the expansion in changed_paths, scope_note and outside_scope as the prior review's third finding required, but no coordinator ratification of the added path is recorded.",
+  "review_run_id": "r-20261113T125418545192-review-of-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i-5b401b496bbd",
+  "reviewed_base_sha": "91e6c988a689ffc4b342f0f2476783320054fa64",
+  "reviewed_head_sha": "5b401b496bbd948f36ff60c05ecd02ad86553e12",
+  "reviewed_run_id": "r-20261113T065618285434-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i",
+  "scope_note": "covers only the two commits gained since the prior review at 91e6c988a6 (d2250ebb61, 5b401b496b), as the dispatch names; the earlier commits since the run's own base were reviewed in r-20261113T072926825723 and r-20261113T113832127777",
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 18,
+    "reuse": 19,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T13:15:12.567918+00:00",
+  "total": 103
+}
