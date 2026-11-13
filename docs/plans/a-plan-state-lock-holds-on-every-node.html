@@ -24,7 +24,7 @@
   <title>A plan-state lock holds on every node | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="1">
+<meta name="plan-version" content="2">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -57,7 +57,7 @@
 <p>Deliverable: while a process on one node holds a plan-state resource lock, another process on any node that asks for the same lock waits or is refused. This covers sprint moves, pushes, closes and every other <code>project_state</code> write, and the transaction recovery that reads beside them. Exclusion between two holders inside one process (two threads, or two opens of the lock file) is no weaker than today's.</p>
 <p>Done when:</p>
 <ul>
-  <li>A probe script under <code>scripts/</code> holds a plan-state resource lock through the production lock code, on a temporary docs tree and never a live project's, on the node it runs on. A second invocation on a different compute node, against the same temporary tree, reports that it could not take the same lock.</li>
+  <li>A probe script under <code>scripts/</code> holds a plan-state resource lock through the production lock code, on a temporary docs tree and never a live project's, on the node it runs on. The tree is on storage both nodes open (the shared home, never a node-local <code>/tmp</code>). A second invocation on a different compute node, against the same temporary tree, finds the lock file present and reports that the lock was refused; a missing path is not a refusal.</li>
   <li>The negative control is the same pair run against the base revision: there the second node reports that it took the lock.</li>
   <li>Both runs are logged under the run directory with each hostname printed. The two hostnames must differ, or the run is not evidence.</li>
   <li>A test, using a temporary docs tree, shows two threads of one process exclude each other on one resource lock. It also shows that a recovery started while a move holds its locks either waits for the move to finish or finds no journal; it never restores either sprint's "before" bytes.</li>
@@ -93,10 +93,10 @@
 </ul>
 <p>Done when:</p>
 <ul>
-  <li>the fragment's row count equals the number of lock-taking <code>fcntl.flock</code> calls under <code>reckon/</code> at the commit it names, both stated in the fragment;</li>
+  <li>the fragment's rows, keyed by file and line, are exactly the lock-taking <code>fcntl.flock</code> calls under <code>reckon/</code> at the commit it names: none missing and none listed twice, with the count stated in the fragment;</li>
   <li>a row claimed node-local by design names the host-local object it guards.</li>
 </ul>
-<p>The negative control is one row deliberately removed from a copy of the fragment, which the count check must fail. Write paths: the fragment only; this section changes no source.</p>
+<p>The negative controls are two copies of the fragment, one with a row removed and one with a row removed and another duplicated in its place; the check must fail both. Write paths: the fragment only; this section changes no source.</p>
 
     
 
