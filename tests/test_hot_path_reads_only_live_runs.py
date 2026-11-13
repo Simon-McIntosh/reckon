@@ -249,9 +249,10 @@ def test_a_cold_profile_is_reported_without_reading_history(tmp_path, monkeypatc
         pytest.fail("a promotion rebuilt the full history profile")
 
     monkeypatch.setattr(lane_context, "run_time_profile", history)
-    result = lane_context.refresh_run_time_profile(
-        PROJECT, appended=(), allow_rebuild=False
-    )
+    from reckon.crew.open_run_index import read_scope
+
+    with read_scope():
+        result = lane_context.refresh_run_time_profile(PROJECT, appended=())
     assert result["status"] == "unavailable"
     assert "explicit history refresh" in result["reason"]
 

@@ -2021,7 +2021,7 @@ def _complete_locked(
         from reckon.crew.picker import lane_context as _lane_context
 
         profile_refresh = _lane_context.refresh_run_time_profile(
-            project, appended=(run,), anchor=profile_anchor, allow_rebuild=False
+            project, appended=(run,), anchor=profile_anchor
         )
     except Exception:  # noqa: BLE001, S110 - advisory profiling cannot prevent a landing
         pass
