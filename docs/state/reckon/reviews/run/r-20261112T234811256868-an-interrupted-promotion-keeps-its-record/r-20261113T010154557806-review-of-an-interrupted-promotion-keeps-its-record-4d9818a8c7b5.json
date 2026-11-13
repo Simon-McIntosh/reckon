@@ -1,0 +1,56 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1882",
+    "reckon/crew_run_commands.py:3607"
+  ],
+  "completed_at": "2026-11-13T01:38:02.600Z",
+  "dispatched_at": "2026-11-13T01:23:57Z",
+  "findings": [
+    {
+      "file": "reckon/crew/pending_landing.py",
+      "line": "468",
+      "severity": "non-blocking",
+      "text": "non-blocking: clear_pending runs even when _retire_interrupted_landing returns False on a pointer write failure, which clears the only evidence and leaves the `attempting` pointer unliftable \u2014 the same hold this node removes; clear only when the retirement succeeded, or keep the record."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit against f24adf8ea4f7; f12479c498 moves the retire ahead of clear_pending and widens the predicate, ce205d6b58 formats the new case, 4d9818a8c7 adds a new 73-line evidence fragment; 163 insertions, 5 deletions, no peer evidence overwritten.",
+    "done_when": "the done_when names a new case in tests/test_a_finished_pending_landing_retires_its_run.py that makes clear_pending raise and asserts the attempt is retired, the record survives, and a second sweep releases the run; the manifest records 55 passed at base and 56 at head for that pair, 44/45 for the eight module-importing files, and a red negative control at EXIT=1.",
+    "goal": "the node's goal is to retire an interrupted promotion's land attempt before clearing its pending-landing record; reckon/crew/pending_landing.py:467-468 now retires first and clears second, and :242-260 accepts `interrupted` so a later sweep settles a record a partial pass left behind.",
+    "manifest": "read; status complete, tests line names the literal pytest command, test_logs lists five logs each opening with revision and command and ending in a bare EXIT= line, and baseline_suite/after_suite both record completed true with zero failures.",
+    "write_paths": "the manifest declares reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py, the evidence fragment and the figure directory; every path in the diff is inside them and no figure path was touched."
+  },
+  "justifications": {
+    "durability": "tests/test_a_finished_pending_landing_retires_its_run.py:155 asserts the pointer status is `interrupted`, which fails whenever clear_pending runs before _retire_interrupted_landing, as negative_control.log demonstrates.",
+    "evidence": "base_pending.log and head_pending.log record 44 and 45 passed with EXIT=0 at f24adf8e and ce205d6b58, and negative_control.log records the declared mutation failing that case at EXIT=1; the done_when's ruff check is claimed in the fragment but not recorded in the manifest.",
+    "fit": "reckon/crew/pending_landing.py:242-260 keeps the module's predicate-and-docstring idiom and reuses the existing `interrupted` status the module already writes at :265.",
+    "goal_fidelity": "reckon/crew/pending_landing.py:467-468 retires the attempt before clear_pending, which is the ordering the goal names, and :256-260 accepts `interrupted` so the record is retried on the next sweep.",
+    "reuse": "the change extends _land_attempt_unanswered and _retire_interrupted_landing, the owners of attempt settlement in reckon/crew/pending_landing.py; a search over reckon/crew for an attempt-state predicate found only queue_landing.py:1981, which gates landing rather than settling an attempt.",
+    "scope_discipline": "git diff f24adf8ea4f7..4d9818a8c7 touches only reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py and the declared evidence fragment."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is to retire an interrupted promotion's land attempt before clearing its pending-landing record; reckon/crew/pending_landing.py:467-468 now retires first and clears second, and :242-260 accepts `interrupted` so a later sweep settles a record a partial pass left behind.\nVERDICT done_when: the done_when names a new case in tests/test_a_finished_pending_landing_retires_its_run.py that makes clear_pending raise and asserts the attempt is retired, the record survives, and a second sweep releases the run; the manifest records 55 passed at base and 56 at head for that pair, 44/45 for the eight module-importing files, and a red negative control at EXIT=1.\nVERDICT write_paths: the manifest declares reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py, the evidence fragment and the figure directory; every path in the diff is inside them and no figure path was touched.\nVERDICT manifest: read; status complete, tests line names the literal pytest command, test_logs lists five logs each opening with revision and command and ending in a bare EXIT= line, and baseline_suite/after_suite both record completed true with zero failures.\nVERDICT diff: read commit by commit against f24adf8ea4f7; f12479c498 moves the retire ahead of clear_pending and widens the predicate, ce205d6b58 formats the new case, 4d9818a8c7 adds a new 73-line evidence fragment; 163 insertions, 5 deletions, no peer evidence overwritten.\nCALL_SITES: reckon/crew/queue_landing.py:1882, reckon/crew_run_commands.py:3607\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/pending_landing.py:467-468 retires the attempt before clear_pending, which is the ordering the goal names, and :256-260 accepts `interrupted` so the record is retried on the next sweep.\nSCORE evidence: 18\nJUSTIFICATION evidence: base_pending.log and head_pending.log record 44 and 45 passed with EXIT=0 at f24adf8e and ce205d6b58, and negative_control.log records the declared mutation failing that case at EXIT=1; the done_when's ruff check is claimed in the fragment but not recorded in the manifest.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f24adf8ea4f7..4d9818a8c7 touches only reckon/crew/pending_landing.py, tests/test_a_finished_pending_landing_retires_its_run.py and the declared evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: tests/test_a_finished_pending_landing_retires_its_run.py:155 asserts the pointer status is `interrupted`, which fails whenever clear_pending runs before _retire_interrupted_landing, as negative_control.log demonstrates.\nSCORE fit: 19\nJUSTIFICATION fit: reckon/crew/pending_landing.py:242-260 keeps the module's predicate-and-docstring idiom and reuses the existing `interrupted` status the module already writes at :265.\nSCORE reuse: 20\nJUSTIFICATION reuse: the change extends _land_attempt_unanswered and _retire_interrupted_landing, the owners of attempt settlement in reckon/crew/pending_landing.py; a search over reckon/crew for an attempt-state predicate found only queue_landing.py:1981, which gates landing rather than settling an attempt.\nFINDING reckon/crew/pending_landing.py:468 non-blocking: clear_pending runs even when _retire_interrupted_landing returns False on a pointer write failure, which clears the only evidence and leaves the `attempting` pointer unliftable \u2014 the same hold this node removes; clear only when the retirement succeeded, or keep the record.\n",
+  "review_run_id": "r-20261113T010154557806-review-of-an-interrupted-promotion-keeps-its-record-4d9818a8c7b5",
+  "reviewed_base_sha": "f24adf8ea4f7bc482ba5056daff432772a1d90d2",
+  "reviewed_head_sha": "4d9818a8c7b59179da51ff0d40fdaf7df0d2cfdf",
+  "reviewed_run_id": "r-20261112T234811256868-an-interrupted-promotion-keeps-its-record",
+  "scores": {
+    "durability": 19,
+    "evidence": 18,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:45:33.023495+00:00",
+  "total": 115
+}
