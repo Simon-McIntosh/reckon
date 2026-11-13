@@ -5,6 +5,8 @@ import signal
 import subprocess
 import sys
 import time
+from collections.abc import Iterator
+from contextlib import contextmanager
 
 from reckon._store import _config_home
 from reckon.crew.routing import (
@@ -284,6 +286,45 @@ BEAT_SECONDS = 1.0
 # The beat most recently walked, held as one element so the map is replaced
 # without rebinding a module name.
 _MARKED_PROCESSES_BEAT: list[tuple[float, dict[tuple[str, str], list[int]]]] = []
+# The walk a region pinned, held as one element for the same reason. A region
+# exists because a beat bounds a poller's pass and not a sweep's: one refresh
+# classifies every live run in the project, and on a loaded node that pass
+# outlasts a one-second beat many times over, so a beat-keyed cache would walk
+# the table again for nearly every run. Inside a region the first read walks
+# and every later read — however long the pass takes — is answered from that
+# one table.
+_PINNED_PROCESSES: list[dict[tuple[str, str], list[int]] | None] = [None]
+
+
+@contextmanager
+def process_table_walk_once() -> Iterator[dict[tuple[str, str], list[int]]]:
+    """One walk of the process table serves every read inside the block.
+
+    A sweep reaches the table once per live run it classifies, and its pass can
+    run for minutes on a busy host, so the beat's one-second sharing window
+    expires between runs and each run pays a full listing of ``/proc``. A region
+    replaces that bound for the length of the block: the first read walks and
+    the rest — of any run, at any moment inside the block — are answered from
+    the same table, so a sweep costs one listing however many runs it covers.
+
+    The table a region holds is the table at the instant it opened, so it is
+    the same answer every run would have received had the pass completed within
+    one beat, and no read inside the region can see a process started after it
+    opened. A caller that must see the live table — the stop path, which selects
+    processes to signal — never reads the region and walks afresh.
+
+    A nested region joins the one already open rather than walking again, so an
+    inner scope cannot widen the outer one's staleness. Nothing is left pinned
+    once the outermost block exits, including on an exception inside it.
+    """
+    opened_here = _PINNED_PROCESSES[0] is None
+    if opened_here:
+        _PINNED_PROCESSES[:] = [_walk_marked_processes()]
+    try:
+        yield _PINNED_PROCESSES[0]
+    finally:
+        if opened_here:
+            _PINNED_PROCESSES[:] = [None]
 
 
 def _beat_clock() -> float:
@@ -340,7 +381,14 @@ def _beat_marked_processes() -> dict[tuple[str, str], list[int]]:
     needs the same table. The first reach of a beat walks it and the rest are
     answered from that map, which is what makes a beat cost one listing of
     ``/proc`` rather than one per run. A reach in a later beat walks again.
+
+    Inside a :func:`process_table_walk_once` region the beat is not consulted at
+    all: the region's table answers every read until the block exits, so a pass
+    that outlives many beats still costs one walk.
     """
+    pinned = _PINNED_PROCESSES[0]
+    if pinned is not None:
+        return pinned
     moment = _beat_clock()
     if _MARKED_PROCESSES_BEAT and moment - _MARKED_PROCESSES_BEAT[0][0] < BEAT_SECONDS:
         return _MARKED_PROCESSES_BEAT[0][1]
