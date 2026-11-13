@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="73">
+<meta name="plan-version" content="74">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -217,6 +217,15 @@
 <div class="r-comment" data-section="s11" data-id="c-run-r-20261112T221037018610-a-gate-log-s-failure-count-is-read-across-the-whole-gate" data-who="reckon-build" data-when="2026-11-12T22:40:00.917Z">
     <div class="r-comment-body"><p>§11 makes the gate-log agreement check read a ctest gate whole: the reported 32/0 two-label log now agrees with a receipt of 32 while a receipt of 31, an unknown id and a pytest log's earlier run still refuse; after arm 111 passed, base arm 106 passed, negative control 3 failed/2 passed at b30f1e1350.</p></div>
 </div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261113T082942915710-review-of-a-refused-landing-writes-nothing-95c0e0db9a20" data-who="reckon-build" data-when="2026-11-13T08:57:26.345Z">
+    <div class="r-comment-body"><p>Review of r-20261113T072023880936-a-refused-landing-writes-nothing at base 85bbe4ec02 / head 95c0e0db9a: parsed, scores goal_fidelity 16, evidence 13, scope_discipline 20, durability 17, fit 17, reuse 5, added_failure_count 0 with no added failure ids; three non-blocking findings (a new I001 lint finding in the added test file that refutes the manifest's clean-ruff claim, a duplicated ledger-row read in queue_landing, and a manifest artifacts mis-citation of head-arm-importers.log), no blocking finding; records stored under review-records/.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261113T122509808327-review-of-a-refused-landing-writes-nothing-853c09794dfd" data-who="reckon-build" data-when="2026-11-13T12:39:50.741Z">
+    <div class="r-comment-body"><p>Independent review of r-20261113T072023880936-a-refused-landing-writes-nothing covering the increment at 95c0e0db9a..853c0979 only — parsed record at reviewed_base_sha 95c0e0db9a20ffb81161a398e1e7e1669e6780a4 and reviewed_head_sha 853c09794dfddb7183705b8684b0cba84bfdddb1, scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 15, fit 19, reuse 20 (total 108), added_failure_count 0 with no added ids from the run's own base and after arms, two non-blocking findings and no blocking finding: the refactor removes the duplicated ledger-row read the earlier review found and leaves every branch's answer unchanged; the importer arm names 6892c102b2 rather than the landed head, and _ledger_row's two refusals carry no test.</p></div>
+</div>
+<div class="r-comment" data-section="s12" data-id="c-run-r-20261113T072023880936-a-refused-landing-writes-nothing" data-who="reckon-build" data-when="2026-11-13T12:10:07Z">
+    <div class="r-comment-body"><p>Pending-landing records now carry the head the landing cited, read from the run&#x27;s own tree before promotion; the pass merges that revision and nothing later, clears the record with nothing merged when the cited head is already on the branch, and the lander no longer holds a promoted run awaiting-review at a later head — 3 node tests pass at head and all 3 fail at base 85bbe4ec02, the third reproducing the awaiting-review-on-the-later-head failure.</p></div>
+</div>
 <div class="r-comment" data-section="s2" data-id="c-run-r-20261108T123713881297-review-of-a-source-file-is-shared-by-default-d7fb8d91992a" data-who="reckon-build" data-when="2026-11-08T12:59:46Z">
     <div class="r-comment-body"><p>Independent review stores all six scores and exact source revision; focused added-failure count is zero, with one blocking incomplete-importer finding.</p></div>
 </div>
@@ -291,12 +300,6 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261112T215811285812-a-merge-repair-is-not-held-by-a-dead-worker" data-who="reckon-build" data-when="2026-11-12T22:36:27.625Z">
     <div class="r-comment-body"><p>A merge repair is released once the resumed turn's process is gone — a pointer or worker-record pid proved dead no longer holds the round, while unknown liveness keeps the old stream reading; node gate 4 passed, negative control at the base revision 2 failed/2 passed, importer arms 184 passed at base and 188 at head with zero added failure ids, suite arms 51/51.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261113T082942915710-review-of-a-refused-landing-writes-nothing-95c0e0db9a20" data-who="reckon-build" data-when="2026-11-13T08:57:26.345Z">
-    <div class="r-comment-body"><p>Review of r-20261113T072023880936-a-refused-landing-writes-nothing at base 85bbe4ec02 / head 95c0e0db9a: parsed, scores goal_fidelity 16, evidence 13, scope_discipline 20, durability 17, fit 17, reuse 5, added_failure_count 0 with no added failure ids; three non-blocking findings (a new I001 lint finding in the added test file that refutes the manifest's clean-ruff claim, a duplicated ledger-row read in queue_landing, and a manifest artifacts mis-citation of head-arm-importers.log), no blocking finding; records stored under review-records/.</p></div>
-</div>
-<div class="r-comment" data-section="s12" data-id="c-run-r-20261113T122509808327-review-of-a-refused-landing-writes-nothing-853c09794dfd" data-who="reckon-build" data-when="2026-11-13T12:39:50.741Z">
-    <div class="r-comment-body"><p>Independent review of r-20261113T072023880936-a-refused-landing-writes-nothing covering the increment at 95c0e0db9a..853c0979 only — parsed record at reviewed_base_sha 95c0e0db9a20ffb81161a398e1e7e1669e6780a4 and reviewed_head_sha 853c09794dfddb7183705b8684b0cba84bfdddb1, scores goal_fidelity 18, evidence 16, scope_discipline 20, durability 15, fit 19, reuse 20 (total 108), added_failure_count 0 with no added ids from the run&#x27;s own base and after arms, two non-blocking findings and no blocking finding: the refactor removes the duplicated ledger-row read the earlier review found and leaves every branch&#x27;s answer unchanged; the importer arm names 6892c102b2 rather than the landed head, and _ledger_row&#x27;s two refusals carry no test.</p></div>
 </div>
 </section>
 </main>
