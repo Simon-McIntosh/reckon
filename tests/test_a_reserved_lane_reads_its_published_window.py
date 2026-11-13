@@ -95,7 +95,7 @@ def _isolated_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 def _no_fleet_reads(monkeypatch: pytest.MonkeyPatch) -> None:
     """Freeze every fleet read so a pick touches only the code under test."""
 
-    monkeypatch.setattr(snapshot, "_fit", lambda *a, **k: ([], []))
+    monkeypatch.setattr(snapshot, "_fit", lambda *a, **k: [])
     monkeypatch.setattr(snapshot, "estimated_context_tokens", lambda *a, **k: 0)
     monkeypatch.setattr(
         snapshot,

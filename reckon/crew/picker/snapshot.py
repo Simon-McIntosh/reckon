@@ -742,8 +742,9 @@ def _fit(
     verdict_inputs: dict[str, Any] | None = None,
     context_out: dict[str, Any] | None = None,
     authority: Mapping[str, Any] | None = None,
-) -> tuple[list[str], list[str]]:
-    """The lane's fit as an exclusion (first) and a preference (second).
+    preference_out: list[str] | None = None,
+) -> list[str]:
+    """The reasons the lane cannot run this node, and its preferences beside it.
 
     Context fit and an execution refusal make the lane unable to run the node,
     so they remove it. A competence verdict is a judgment about whether the
@@ -797,15 +798,22 @@ def _fit(
         reasons.append(
             f"context-fit: requested {request.estimated_context} tokens exceeds {context['window_tokens']}"
         )
-    preferences: list[str] = []
-    if not competence["allowed"] and competence.get("reason") != "context-window-exceeded":
-        preferences.append("competence: " + competence["reason"])
+    if (
+        not competence["allowed"]
+        and competence.get("reason") != "context-window-exceeded"
+    ):
+        # A competence verdict is a judgment about whether the lane's measured
+        # horizon covers a node this size, which is the router's to weigh. The
+        # one that restates a context overflow is already carried as
+        # ``context-fit`` above, so it is not stated twice.
+        if preference_out is not None:
+            preference_out.append("competence: " + competence["reason"])
     # The verdict measured this backend's window once; hand the measurement to
     # the caller rather than measuring it a second time for the candidate's
     # context block.
     if context_out is not None:
         context_out[name] = context
-    return reasons, preferences
+    return reasons
 
 
 def _budget_view_input_paths(config: Mapping[str, Any]) -> list[str]:
@@ -1832,16 +1840,19 @@ def candidates(
         context_block = None
         if not reasons:
             contexts: dict[str, Any] = {}
-            fit_reasons, fit_preferences = _fit(
-                request,
-                name,
-                backend,
-                repo,
-                verdict_inputs=shared,
-                context_out=contexts,
-                authority=authority,
+            fit_preferences: list[str] = []
+            reasons.extend(
+                _fit(
+                    request,
+                    name,
+                    backend,
+                    repo,
+                    verdict_inputs=shared,
+                    context_out=contexts,
+                    authority=authority,
+                    preference_out=fit_preferences,
+                )
             )
-            reasons.extend(fit_reasons)
             preferences.extend(fit_preferences)
             context_block = _context_block(
                 contexts.get(name), node_context_tokens, lane_utilisation.get(name, {})

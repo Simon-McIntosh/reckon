@@ -121,7 +121,7 @@ MUTATIONS = {
     "reserved-exclusion": lambda mp: mp.setattr(
         snapshot, "_reserved_lane_evidence", lambda reason: ([reason], [])) ,
     "offer-unfit-lane": lambda mp: mp.setattr(
-        snapshot, "_fit", lambda *args, **kwargs: ([], [])),
+        snapshot, "_fit", lambda *args, **kwargs: []),
 }
 
 
@@ -339,7 +339,7 @@ def test_offering_a_lane_that_fails_context_fit_fails_the_third_case(
     """Context fit is a hard constraint: drop it and the node fits locally."""
 
     def _fit_stub(*args, **kwargs):
-        return [], []
+        return []
 
     monkeypatch.setattr(snapshot, "_fit", _fit_stub)
     with pytest.raises(AssertionError):
