@@ -193,10 +193,13 @@ def test_history_does_not_change_the_open_population(
 
 
 def test_ending_a_run_removes_it_from_the_live_index(population):
+    root = population["repo"]
+    assert "run-00" in {row["run_id"] for row in ledger.open_runs(PROJECT, root)}
     pointer = runs.read_pointer("run-00")
     assert "run-00" in {row["run_id"] for row in runs.list_live()}
     assert promotion._remove_promoted_pointer("run-00", pointer)
     assert "run-00" not in {row["run_id"] for row in runs.list_live()}
+    assert "run-00" not in {row["run_id"] for row in ledger.open_runs(PROJECT, root)}
 
 
 def test_cleanup_keeps_a_promoted_run_open_until_its_release(population):
