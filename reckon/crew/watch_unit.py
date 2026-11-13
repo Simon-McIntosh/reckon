@@ -861,13 +861,15 @@ def _lock_identity(path: Path) -> tuple[int, int, int] | None:
 
 
 def _command_line(pid: int) -> str:
-    """A process's command line, for the sentence a coordinator acts on."""
-    try:
-        raw = Path(f"/proc/{pid}/cmdline").read_bytes()
-    except OSError:
-        return ""
-    parts = raw.decode("utf-8", "replace").split("\0")
-    return " ".join(part for part in parts if part)
+    """A process's command line, for the sentence a coordinator acts on.
+
+    Read through the fleet supervisor's own collector rather than a second copy
+    of the ``/proc/<pid>/cmdline`` parse, so a holder is described exactly as a
+    supervised process is, and there is one place that knows the format.
+    """
+    from reckon.crew.fleet_supervisor import process_cmdline
+
+    return " ".join(process_cmdline(pid) or ())
 
 
 def _lock_entry_pids(text: str, identity: tuple[int, int, int]) -> list[int]:
@@ -955,20 +957,27 @@ def _producer_snapshot_stale(project: str, registration: Mapping[str, Any]) -> b
     return runs.watch_lease_lapsed(project)
 
 
-def _stop_seat_holder(holder: SeatLockHolder) -> list[str]:
+def _stop_seat_holder(holder: SeatLockHolder, *, project: str) -> list[str]:
     """Stop one stale producer: SIGTERM, then SIGKILL once the window passes.
 
     The contention window is the claim's own: it is how long a producer waits
     for a seat another process is releasing, so a holder that has not let go
     within it is not on its way out and is killed. The signals sent are
     returned rather than only logged, so the caller reports what it did.
+
+    Delivery goes through ``signal_worker``, the crew's one home for
+    ``os.kill``: a holder named from the lock table is a pid from a scan, which
+    is exactly the target whose group membership that function refuses to
+    assume, and a second signalling path here would be a kill the attribution
+    scan could not see.
     """
     from reckon.crew import runs
+    from reckon.crew.process_signal import signal_worker
 
     sent: list[str] = []
-    try:
-        os.kill(holder.pid, signal.SIGTERM)
-    except ProcessLookupError:
+    if not signal_worker(
+        holder.pid, signal.SIGTERM, reason="watch-seat-reclaim", project=project
+    ):
         return sent
     sent.append("SIGTERM")
     deadline = time.monotonic() + runs._CLAIM_CONTENTION_SECONDS
@@ -976,11 +985,10 @@ def _stop_seat_holder(holder: SeatLockHolder) -> list[str]:
         if process_alive(holder.pid) is False:
             return sent
         time.sleep(0.05)
-    try:
-        os.kill(holder.pid, signal.SIGKILL)
-    except ProcessLookupError:
-        return sent
-    sent.append("SIGKILL")
+    if signal_worker(
+        holder.pid, signal.SIGKILL, reason="watch-seat-reclaim", project=project
+    ):
+        sent.append("SIGKILL")
     return sent
 
 
@@ -1025,7 +1033,7 @@ def _reclaim_stale_seat(project: str) -> dict[str, Any] | None:
         {
             "pid": holder.pid,
             "command": holder.command,
-            "signals": _stop_seat_holder(holder),
+            "signals": _stop_seat_holder(holder, project=project),
         }
         for holder in producers
     ]
