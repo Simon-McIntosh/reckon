@@ -57,6 +57,7 @@ def _coordinator_complete(repository, commit):
         "from reckon.cli import main; main()",
         "crew",
         "complete",
+        "--wait",
         "--run",
         RUN_ID,
         "--gate",

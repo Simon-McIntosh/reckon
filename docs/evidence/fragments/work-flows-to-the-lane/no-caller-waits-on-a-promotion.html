@@ -1,0 +1,230 @@
+<section id="no-caller-waits-on-a-promotion-landing">
+  <h2>Promotion requests are carried by the fleet service</h2>
+  <p>The default <code>crew complete</code> records a durable request and returns.
+  The review sweep dispatches the reviews it owes before requesting acceptance
+  or review self-promotion. A landing pass records the same kind of request
+  without reporting the delivery as landed. The admission service drains these
+  requests at the configured promotion width, calling the existing synchronous
+  promotion and landing paths with their guards and receipts intact.</p>
+
+  <p><code>crew complete --wait</code> retains the synchronous CLI outcome.
+  Internal callers of the promotion function retain their existing behavior.
+  A sweep can explicitly receive the existing bounded worker pool when its
+  caller consumes that pool's report; its production default persists requests.</p>
+
+  <p>The request remains authoritative until its terminal receipt is written
+  as <code>promotion.json</code> in the run directory. Renewable run and slot
+  leases, together with in-process claims, exclude duplicate service work and
+  bound concurrency. A fresh service adopts an unfinished request, and a
+  matching terminal receipt prevents replay during interrupted retirement.
+  Refusals and exceptions remain indexed for session obligations and their
+  published snapshot. The pending-landing sweep leaves a service-owned request
+  to the service.</p>
+
+  <p>Implementation commits:
+  <code>b4840067adb0d8717e49dedb48658ae3d0501796</code> and
+  <code>1ff2fb47fe2cbf8df85f15329d2f300c461043e0</code>.
+  The initial test module contains thirteen cases covering delayed CLI, sweep and
+  landing requests; width-two concurrency; failure and refusal receipts;
+  session and snapshot obligations; restart adoption; duplicate requests;
+  admission-service draining; commit identities; and explicit synchronous CLI
+  completion.</p>
+
+  <table id="no-caller-waits-on-a-promotion-measures">
+    <caption>Measurements retained in the assigned run directory. Gate logs
+    identify their revision, command, imported module and working directory.</caption>
+    <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Reproduction before repair: synchronous CLI with injected delay</td>
+        <td>30.002 s; CLI exit 0</td></tr>
+      <tr><td>Declared mutation: execute promotion inside the request</td>
+        <td><q>crew complete waited 30.004 s on a 30 s promotion</q>;
+        the first case fails its five-second assertion.
+        Latest control: 1 failed in 31.47 s; EXIT=1.</td></tr>
+      <tr><td>Armed baseline at
+        <code>6d4266db9bf865d1c9f735940c7b798b58834c5f</code></td>
+        <td>51 passed in 9.14 s; EXIT=0</td></tr>
+      <tr><td>Importer baseline on all_debug</td>
+        <td>40 failed, 962 passed, 7 warnings in 146.61 s; EXIT=1.
+        The additional helper-owner file passes both cases at that base.</td></tr>
+      <tr><td>Initial candidate importer comparison</td>
+        <td>44 added failure IDs. This exposed CLI tests requiring the
+        synchronous outcome and sweep tests consuming the worker report.</td></tr>
+      <tr><td>Compatibility candidate importer comparison on all_debug</td>
+        <td>40 failed, 977 passed, 7 warnings in 224.56 s; EXIT=1.
+        Zero added and zero removed failure IDs against the recorded base.</td></tr>
+    </tbody>
+  </table>
+
+  <p>The CLI outcome tests now pass <code>--wait</code> without changing their
+  assertions. These cover ledger reads, scoped suite receipts, commit lists,
+  acceptance leases, unchanged runs, executable gates, promotion and scope
+  guards, and consequence gates; the shared landing-repository helper does the
+  same. Three sweep test files explicitly supply the existing worker pool to
+  retain their worker/report/failure ordering contract. The exact file-to-reason
+  mapping is in <code>test-migrations.json</code> and the manifest.</p>
+
+  <p><strong>Live host evidence.</strong> At
+  <code>1ff2fb47fe2cbf8df85f15329d2f300c461043e0</code>, a real CLI subprocess
+  on <code>98dci4-clu-2023</code> returned <code>promotion-requested</code>
+  before its injected 30 s promotion began. The service subsequently completed
+  the real promotion, recording
+  <code>fbd261a757262c6acafc97e2ef898c6e760b24f9</code> as promoted 33.641 s
+  after the CLI returned. The subprocess took 5.373 s including startup, so the
+  helper's extra five-second assertion failed after the successful receipt was
+  recorded. Earlier subprocess readings were 3.871 s and 5.982 s; the first
+  retained an existing guard refusal for citing its dispatch base. These logs
+  establish that the live caller returns before promotion finishes; they do
+  not establish consistently sub-five-second process startup on this host.</p>
+
+  <p>The final armed after arm and importer comparison run after this fragment
+  is committed. Their exact full revision, commands, summaries and failure-ID
+  comparison are recorded in the manifest; no pending result is claimed here.
+  The unchanged baseline failures are retained for the coordinator's comparison.
+  Verification of the combined merged tree belongs to the integration node.</p>
+
+  <p>Durable record:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/manifest.md</code>.
+  The same directory retains <code>baseline-suite.log</code>,
+  <code>baseline-importers.log</code>, <code>baseline-supplement.log</code>,
+  <code>compatibility-importers.log</code>, <code>compatibility-delta.json</code>,
+  <code>negative-control-final.log</code>, <code>live-final.log</code>,
+  the earlier attempt logs, and the final-head measurement logs.</p>
+
+  <section id="no-caller-waits-on-a-promotion-recovery-repair">
+    <h3>A completed review promotion survives an interrupted receipt</h3>
+    <p>The service can stop after a review operation has persisted the promoted
+    ledger row and removed its live pointer, but before publishing
+    <code>promotion.json</code>. Both request kinds reproduced the defect:
+    <q>promotion-refused</q> instead of <q>promoted</q>, with
+    <q>CrewError: no live run</q>, even though the matching ledger row was present.</p>
+
+    <p>Answering commit <code>14f5694030b77790bcb1b835a27fc571aa377374</code>
+    recovers the result and its commit identities from that run's ledger row in
+    the project's registered repository when the pointer is absent. It verifies
+    the row's run identity, publishes the service receipt, and retires the
+    request without repeating either review operation. An absent row or a row
+    naming another run remains a refusal with a session obligation. A neighbor's
+    known-present row is read before testing absence, so the refusal test does
+    not mistake an unreadable instrument for a missing delivery.</p>
+
+    <p>The regression tests were committed separately at
+    <code>4739bf4c0f3b32f63edca8949b3bff05cef8469d</code>. They interrupt receipt
+    publication after the review callback writes a real per-run ledger document
+    and removes the pointer, then require a fresh service to recover the same
+    commits once. They verify that the ledger bytes remain unchanged, the
+    operation is not repeated, the request is retired, and no false failure
+    obligation is published. Six cases cover both review request kinds and their
+    missing-row and different-run refusal controls.</p>
+
+    <table id="no-caller-waits-on-a-promotion-recovery-measures">
+      <caption>Repair measurements retained in this run directory.</caption>
+      <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+      <tbody>
+        <tr><td>Confirmed crash-window reproduction against unchanged code</td>
+          <td>2 failed, 13 deselected in 10.01 s; EXIT=1</td></tr>
+        <tr><td>Focused repair with refusal output</td>
+          <td>6 passed, 13 deselected in 21.73 s; EXIT=0</td></tr>
+        <tr><td>Reverse the entire answering commit in a temporary tree</td>
+          <td>Both crash-window tests fail again: 2 failed, 13 deselected in
+          0.78 s; EXIT=1</td></tr>
+        <tr><td>Armed suite at repair base
+          <code>d513212c96665c026454b1e469b81849daa0ba36</code></td>
+          <td>64 passed in 130.39 s; EXIT=0</td></tr>
+      </tbody>
+    </table>
+
+    <p>The manifest records the original dispatch-base arm separately from the
+    repair-base arm. The final repair-head armed suite and importer comparison
+    run after this evidence is committed; their exact revision, commands,
+    summaries and failure-ID comparison are recorded in the manifest. Logs are
+    <code>repair-reproduction-confirmed.log</code>, <code>repair-focused.log</code>,
+    <code>repair-baseline-suite-final.log</code> and
+    <code>repair-negative-control.log</code>. Initial fixture and scratch Git
+    metadata errors are retained with their scaffolding attribution.</p>
+  </section>
+
+  <section id="no-caller-waits-on-a-promotion-merge-repair">
+    <h3>Repair holds and promotion requests share the sweep report</h3>
+    <p>The delivery at <code>37ca2c25c5ac53fce51da9feaf0a1611f01b367e</code>
+    merges current primary <code>797c142c307e26b4085eaebe1d75477e6d6306dc</code>.
+    The single conflict was between adjacent sweep report entries. The resolved
+    report retains both <code>repair_held</code>, which exposes the primary
+    branch's refusal to start a floor repair during an active promotion, and
+    <code>promotion_requested</code>, which reports the durable service handoff.
+    Both implementations remain in place. The manifest records the merge
+    commit and the fresh own gate run after that commit; no promotion is
+    requested by this repair.</p>
+  </section>
+
+  <section id="no-caller-waits-on-a-promotion-released-hold">
+    <h3>A released hold invalidates the cached acceptance refusal</h3>
+    <p>An eligible delivery held by its coordinator produced a durable held
+    refusal. Releasing only that hold left the memo identity unchanged, so
+    acceptance returned the cached refusal before checking the released hold.
+    Both ordinary and head-bound holds reproduced this: the result still read
+    <code>accepted: false</code> and <code>held: true</code> after release.</p>
+
+    <p>Answering commit <code>93f8975688dd546dea8f7e4a22fe288ed50e2a42</code>
+    includes <code>delivery_hold</code> in the acceptance input identity. An
+    unchanged hold keeps its cached refusal. Changing or releasing that hold
+    now requires a fresh judgment, and the same identity is rechecked under
+    the promotion lease.</p>
+
+    <p>Regression commit <code>40ebc24a30204f7476969031524648e5fb83de34</code>
+    uses a temporary repository, bare remote, recorded gate and stored clean
+    review. It observes the held refusal and confirms that a repeated held
+    request is cached, then releases the hold through the real release API.
+    All other pointer fields, the checkout head, gate and manifest bytes are
+    asserted unchanged before acceptance is retried. Both hold forms then
+    promote the same delivery and record its commit in the ledger.</p>
+
+    <table id="no-caller-waits-on-a-promotion-released-hold-measures">
+      <caption>Held-release measurements retained in this run directory.</caption>
+      <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+      <tbody>
+        <tr><td>Reproduction before product repair</td>
+          <td>2 failed, 19 deselected in 1.39 s; EXIT=1</td></tr>
+        <tr><td>Focused repair, with refusal and promotion receipts</td>
+          <td>2 passed, 19 deselected in 2.06 s; EXIT=0</td></tr>
+        <tr><td>Exact armed suite at repair base
+          <code>11ae57aaeee308e36dfe395a32e05da02445fb6a</code></td>
+          <td>70 passed in 130.57 s; EXIT=0</td></tr>
+      </tbody>
+    </table>
+
+    <p>The final armed head suite, fixed-population importer comparison and
+    negative control reversing the entire answering commit run after this
+    evidence is committed. Their receipts are recorded in the manifest without
+    claiming a pending measurement here. The original dispatch-base and earlier
+    repair suite pairs remain recorded separately. Logs include
+    <code>hold-reproduction.log</code>, <code>hold-focused.log</code> and
+    <code>hold-baseline-suite.log</code>.</p>
+  </section>
+
+  <section id="no-caller-waits-on-a-promotion-service-boundary-merge">
+    <h3>Promotion draining stays inside the supervised admission pass</h3>
+    <p>The delivery at <code>98f558e30d9b821b7953e3b03cadc519fac821ec</code>
+    merges primary <code>b39f7760e27c2f7b1b4ba67ac2b6b5ccfe6605f3</code>.
+    Primary wraps continuous admission work in <code>service_pass()</code> so
+    a service reload respects the active pass boundary. The delivery starts a
+    bounded promotion service and ticks it in manual and continuous admission.
+    The resolution retains both: the continuous promotion tick runs inside the
+    supervised pass, while manual admission keeps its existing promotion tick.</p>
+
+    <p>A focused continuous-loop regression uses a real pass lock and a durable
+    promotion request. It observes the kernel refusing a second lock owner
+    during the promotion tick, verifies the lock is free between iterations,
+    and reads the queued run's promoted receipt and commit. The focused run is
+    <code>1 passed, 21 deselected in 1.02 s; EXIT=0</code>, with all three
+    observations printed in <code>service-merge-focused.log</code>. The fresh
+    original-base inventory arm is <code>51 passed in 9.26 s; EXIT=0</code>.</p>
+
+    <p>The final own gate and primary pass-boundary cases run at the committed
+    merge head. Separate controls remove the continuous promotion tick or
+    bypass the supervised boundary and require the new regression to fail.
+    Their actual receipts and the merge's full SHA are recorded in the
+    manifest after this evidence is committed. No promotion of this already
+    promoted run is requested; its pending landing remains a merge-only act.</p>
+  </section>
+</section>

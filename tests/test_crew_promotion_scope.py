@@ -324,6 +324,7 @@ def test_complete_command_accepts_reasoned_companion_path(
     arguments = [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",
@@ -419,6 +420,7 @@ def test_complete_command_refuses_companion_path_without_a_reason(
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",
@@ -475,6 +477,7 @@ def _complete_arguments(run_id: str, commit: str) -> list[str]:
     return [
         "crew",
         "complete",
+        "--wait",
         "--run",
         run_id,
         "--gate",

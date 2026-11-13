@@ -453,6 +453,18 @@ def finish_pending_landings(
         project = str(record.get("project") or "")
         if not run_id or not project or (only_run and run_id != only_run):
             continue
+        from reckon.crew.promotion_requests import (
+            COMMAND_REPLY,
+            PENDING,
+            read_promotion,
+        )
+
+        if (
+            COMMAND_REPLY.get() is None
+            and read_promotion(run_id).get("phase") in PENDING
+        ):
+            results.append({"run_id": run_id, "status": "promotion-requested"})
+            continue
         row = _promoted_row(project, run_id)
         cited = _cited_head(record)
         head = cited or (_reviewed_head(row) if row else "")

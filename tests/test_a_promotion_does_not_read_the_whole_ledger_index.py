@@ -234,6 +234,7 @@ def _drive_one_promotion(repository: Path, tmp_path: Path) -> _DecodeCounter:
             [
                 "crew",
                 "complete",
+                "--wait",
                 "--run",
                 RUN_ID,
                 "--gate",

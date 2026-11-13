@@ -97,6 +97,7 @@ def test_ledger_failure_and_vanished_pointer_leave_the_third_promoted(
             session="session-fixture",
             pointers=review_runs,
             config={"promotion": {"width": 1, "wait_seconds": 60}},
+            promotions=resumption.PromotionWorkers(width=1, wait_seconds=60),
         )["reviews"]
     else:
         report = acceptance.dispatch_awaiting_reviews(

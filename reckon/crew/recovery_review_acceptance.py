@@ -387,6 +387,7 @@ def _acceptance_inputs(
         "agent",
         "log_path",
         "resume_launch_in_flight",
+        "delivery_hold",
         "manifest_path",
     )
     checkout = str(pointer.get("repo") or "")
@@ -867,6 +868,7 @@ def dispatch_awaiting_reviews(
     repair_held: list[dict[str, Any]] = []
     in_flight: list[dict[str, Any]] = []
     handed: list[tuple[str, str, Callable[[], dict[str, Any] | None]]] = []
+    requested: list[str] = []
 
     def _run_job(
         run_id: str, job: Callable[[], dict[str, Any] | None]
@@ -924,6 +926,11 @@ def dispatch_awaiting_reviews(
     def _hand_off(
         run_id: str, kind: str, job: Callable[[], dict[str, Any] | None]
     ) -> None:
+        from reckon.crew.promotion_requests import PromotionRequests
+
+        if isinstance(promotions, PromotionRequests):
+            handed.append((run_id, kind, job))
+            return
         if promotions is None:
             _apply(kind, run_id, _run_job(run_id, job))
             return
@@ -1090,7 +1097,18 @@ def dispatch_awaiting_reviews(
     # to their workers with nothing left waiting behind them. A run another
     # sweep is already promoting is reported in flight rather than promoted a
     # second time beside it.
-    if promotions is not None:
+    from reckon.crew.promotion_requests import PromotionRequests
+
+    if isinstance(promotions, PromotionRequests):
+        for run_id, kind, _job in handed:
+            receipt = promotions.request(run_id, kind, config=config)
+            if receipt.get("phase") in {"promotion-requested", "promotion-running"}:
+                requested.append(run_id)
+            elif receipt.get("phase") in {"promotion-failed", "promotion-refused"}:
+                failed.append(
+                    {"run_id": run_id, "error": str(receipt.get("error") or "")}
+                )
+    elif promotions is not None and handed:
         for run_id, kind, job in handed:
 
             def _job(
@@ -1150,6 +1168,7 @@ def dispatch_awaiting_reviews(
         "lane_paused": lane_paused,
         "repaired": repaired,
         "repair_held": repair_held,
+        "promotion_requested": requested,
     }
 
 

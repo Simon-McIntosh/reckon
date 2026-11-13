@@ -147,6 +147,7 @@ def _complete(run_id: str, repository: Path):
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

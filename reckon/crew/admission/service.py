@@ -222,10 +222,15 @@ def admit_until_stopped(
     # A service that replaced its own image in place still owns the children
     # the old image left. Registering them here, once, lets the shared reaper
     # collect them; nothing in this image refers to them otherwise.
+    from reckon import flight
     from reckon.crew.dispatch_launch import _adopt_launched_workers_from_reexec
     from reckon.crew.fleet_supervisor import service_pass
+    from reckon.crew.promotion_requests import PromotionService
+    from reckon.crew.resumption import _promotion_settings
 
     _adopt_launched_workers_from_reexec()
+    promotion_width, _ = _promotion_settings(flight.resolve().config)
+    promotions = PromotionService(width=promotion_width)
     admission_options: dict[str, Any] = {"lane": lane}
     if launcher is not None:
         admission_options["launcher"] = launcher
@@ -245,6 +250,7 @@ def admit_until_stopped(
         release = _release._release_tick()
         released = time.monotonic()
         worker.tick()
+        promotions.tick()
         landing = worker.settle()
         result = _selection.admit_once(**admission_options)
         ended = time.monotonic()
@@ -274,6 +280,7 @@ def admit_until_stopped(
                 # pass proceeds whether or not one is in flight, and the landing
                 # holds only the next landing.
                 worker.tick()
+                promotions.tick()
                 release = _release._release_tick()
                 released = time.monotonic()
                 admitted = _selection.admit_once(**admission_options)

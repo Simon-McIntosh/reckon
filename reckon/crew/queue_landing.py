@@ -1780,20 +1780,17 @@ def _verified_measurement(
 
 def _land(run_id: str) -> tuple[bool, str]:
     """Hand the measured delivery to completion, which owns publication."""
-    from reckon.crew import merge
+    from reckon.crew.promotion_requests import PENDING, request_promotion
+    from reckon.crew_run_commands import crew_complete
 
-    try:
-        _verified_measurement(run_id)
-    except (OSError, ValueError, CrewError, merge.MergeError) as exc:
-        return False, str(exc)
-
-    environment = os.environ.copy()
-    source = str(Path(__file__).resolve().parents[2])
-    environment["PYTHONPATH"] = os.pathsep.join(
-        part for part in (source, environment.get("PYTHONPATH", "")) if part
-    )
-    timeout = _land_timeout(run_id)
-    return _run_land_command(_land_command(run_id), environment, timeout)
+    command = _land_command(run_id)
+    with crew_complete.make_context(
+        "complete", command[command.index("complete") + 1 :]
+    ) as context:
+        receipt = request_promotion(run_id, kind="command", options=context.params)
+    if receipt.get("phase") in PENDING:
+        return True, "promotion-requested"
+    return False, str(receipt.get("error") or "promotion already settled")
 
 
 def _run_land_command(
@@ -1914,6 +1911,7 @@ def land_once() -> dict[str, Any]:
 def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]:
     settled_landings = settled_landings or set()
     landed: list[str] = []
+    requested: list[str] = []
     skipped: list[dict[str, str]] = []
     obligations: list[dict[str, str]] = []
     deferred: list[str] = []
@@ -1926,6 +1924,11 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
     # exists to stay off that cost.
     history: dict[str, list[dict[str, Any]]] = {}
     for pointer in live:
+        if pointer.get("promotion_status") in {
+            "promotion-requested",
+            "promotion-running",
+        }:
+            continue
         if pointer.get("pending_landing_repair"):
             continue
         if (
@@ -2317,6 +2320,9 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
         ):
             skipped.append({"run_id": run_id, "status": "landed-elsewhere"})
             continue
+        if accepted and guard == "promotion-requested":
+            requested.append(run_id)
+            continue
         if accepted:
             landed.append(run_id)
             try:
@@ -2370,6 +2376,8 @@ def _land_deliveries(settled_landings: set[str] | None = None) -> dict[str, Any]
                 refused["remedy"] = remedy
             obligations.append(refused)
     result = {"landed": landed, "obligations": obligations, "deferred": deferred}
+    if requested:
+        result["promotion_requested"] = requested
     if deferred_reasons:
         result["deferred_reasons"] = deferred_reasons
     if skipped:

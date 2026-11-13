@@ -172,6 +172,7 @@ def _complete(run_id: str, root: Path):
         [
             "crew",
             "complete",
+            "--wait",
             "--run",
             run_id,
             "--gate",

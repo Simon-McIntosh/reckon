@@ -208,6 +208,7 @@ def _drive_promotion(
             [
                 "crew",
                 "complete",
+                "--wait",
                 "--run",
                 run_id,
                 "--gate",
