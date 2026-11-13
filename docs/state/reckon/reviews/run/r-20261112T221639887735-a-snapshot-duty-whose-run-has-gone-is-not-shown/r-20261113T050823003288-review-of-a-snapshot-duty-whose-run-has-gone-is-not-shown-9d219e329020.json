@@ -1,0 +1,66 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "69e234d535a239016a81557410c2ebe5b4ec5f71",
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/hooks/coordinator_obligations.py:1512",
+    "reckon/mcp_views.py:4618"
+  ],
+  "completed_at": "2026-11-13T05:56:45.621Z",
+  "dimension_dispositions": {},
+  "dispatched_at": "2026-11-13T05:42:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/obligation_snapshot.py",
+      "line": "1078",
+      "severity": "non-blocking",
+      "text": "non-blocking: REVIEW_QUEUED_DUTY_KIND re-declares the kind string owned by reckon/crew/obligations.py:205 without extending that owner and without a parity test, so it duplicates a repository-owned value; a change to the owner's string would silently stop the settlement at :1240 matching queued rows, which is the drift class this round's agreement test closes for _same_revision only."
+    },
+    {
+      "file": "manifest.md",
+      "line": "53",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head focused-gate result '9 passed in 15.70s (EXIT=0)' has no log file under the run directory carrying that revision, command and EXIT= line; it survives only in the worker's harness stream (resume-1.jsonl), so a reader cannot open the receipt this claim rests on, while the two population arms and the template arms do carry well-formed logs."
+    }
+  ],
+  "head_log_revision": "9d219e3290208cd6220f17f2fefa11eeb106084d",
+  "item_aggregate": 5,
+  "item_verdicts": {
+    "diff": "read commit by commit against 69e234d535: e2cdd0744c changes reckon/crew/obligation_snapshot.py, reckon/crew/obligations.py and the node's test file, and 9d219e3290 updates the evidence fragment; four files, 131 insertions and 31 deletions.",
+    "done_when": "the done-when names a test through both surfaces, a dropped duty on a dispatched review, a population arm against the base and a base negative control; tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:363 and :408 add the queued and headless-head cases and the manifest records the 9-passed gate beside both population arms.",
+    "goal": "the node's goal is that a snapshot duty naming a run that has gone is not shown; the range completes it by settling both review kinds on the same two facts at reckon/crew/obligation_snapshot.py:1079 and :1240.",
+    "manifest": "read; it records status complete, five commits, the 9-passed focused gate, both population arms at 15 failed/333 passed and 15 failed/342 passed, and the base negative control at 6 failed/3 passed.",
+    "write_paths": "the goal names four paths; git diff --name-only 69e234d535..9d219e3290 lists exactly those four and nothing else."
+  },
+  "justifications": {
+    "durability": "tests/test_a_dispatch_without_a_recorded_head_keeps_the_duty at tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:408 reddens on the permissive branch at reckon/crew/obligation_snapshot.py:1161 that this round removed, and the queued case at :363 reddens on a tree where review-queued is unsettled, which gate-repair-negative-control.log shows at EXIT=1.",
+    "evidence": "gate-repair-baseline.log (a4717d952f, 15 failed/333 passed, EXIT=1) and gate-repair-after.log (e2cdd0744c, 15 failed/342 passed, EXIT=1) carry identical failure-id sets, and gate-repair-negative-control.log ends '6 failed, 3 passed' EXIT=1; the 9-passed focused gate is recorded in the manifest and the worker's stream but has no log of its own under the run directory.",
+    "fit": "reckon/crew/obligation_snapshot.py:1077-1079 sets the two review kinds as a frozenset beside LIVE_POINTER_DUTY_KINDS and QUEUED_POINTER_DUTY_KINDS, follows the module's constant-plus-settlement idiom, and adds no plan, sprint, ticket or author identifier.",
+    "goal_fidelity": "reckon/crew/obligation_snapshot.py:1240 settles both review kinds and :1161 requires the dispatch to name the duty's head, so a departed run and a dispatched review end the duty while every other row is kept.",
+    "reuse": "reckon/crew/obligation_snapshot.py:1078 duplicates the kind string owned by reckon/crew/obligations.py:205 without a parity test, though the round does pin the pre-existing revision mirror at tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:420 to its owner at reckon/crew/recovery_review_subject.py:105.",
+    "scope_discipline": "git diff --name-only 69e234d535..9d219e3290 lists the four declared paths, the fragment included, and no other file."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a snapshot duty naming a run that has gone is not shown, and this range completes it by settling both review kinds on the same two facts at reckon/crew/obligation_snapshot.py:1079 and :1240.\nVERDICT done_when: the done-when names a test through both the view and the hook plus a population arm against the base; tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:363 and :408 add the queued and headless-head cases, and the manifest records the 9-passed gate beside both population arms.\nVERDICT write_paths: the goal names four paths and git diff --name-only 69e234d535..9d219e3290 lists exactly those four, the evidence fragment included.\nVERDICT manifest: read; it records status complete, five commits, the 9-passed focused gate, the two population arms at 15 failed/333 passed and 15 failed/342 passed, and the base negative control at 6 failed/3 passed.\nVERDICT diff: read commit by commit against 69e234d535; e2cdd0744c changes obligation_snapshot.py, obligations.py and the node's test file, and 9d219e3290 updates the evidence fragment, four files and 131 insertions against 31 deletions.\nCALL_SITES: reckon/hooks/coordinator_obligations.py:1512, reckon/mcp_views.py:4618\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/obligation_snapshot.py:1240 settles both review kinds and :1161 requires the dispatch to name the duty's head, so a departed run and a dispatched review end the duty while every other row is kept.\nSCORE evidence: 15\nJUSTIFICATION evidence: gate-repair-baseline.log (a4717d952f) and gate-repair-after.log (e2cdd0744c) share an identical failure-id set and gate-repair-negative-control.log fails 6 of 9 at EXIT=1, but the head focused gate at manifest.md:53 has no log under the run directory.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff --name-only 69e234d535..9d219e3290 lists the four declared paths and no other file.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_dispatch_without_a_recorded_head_keeps_the_duty at tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:408 reddens on the permissive branch at reckon/crew/obligation_snapshot.py:1161 this round removed.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/obligation_snapshot.py:1077-1079 sets the two review kinds as a frozenset beside the neighbouring duty-kind sets and adds no plan or ticket identifier.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/obligation_snapshot.py:1078 duplicates the kind string owned by reckon/crew/obligations.py:205 without a parity test, while tests/test_a_snapshot_duty_whose_run_has_gone_is_not_shown.py:420 now pins the revision mirror to its owner at reckon/crew/recovery_review_subject.py:105.\nFINDING reckon/crew/obligation_snapshot.py:1078 non-blocking: REVIEW_QUEUED_DUTY_KIND duplicates the value owned by reckon/crew/obligations.py:205 without extending it or pinning the two to agreement, so a change to the owner's kind string would silently stop the settlement matching queued rows.\nFINDING manifest.md:53 non-blocking: the head focused-gate result has no log under the run directory carrying its revision, command and EXIT= line, so the claim rests on the worker's harness stream rather than on a receipt a reader can open.\n",
+  "review_run_id": "r-20261113T050823003288-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-9d219e329020",
+  "reviewed_base_sha": "69e234d535a239016a81557410c2ebe5b4ec5f71",
+  "reviewed_head_sha": "9d219e3290208cd6220f17f2fefa11eeb106084d",
+  "reviewed_run_id": "r-20261112T221639887735-a-snapshot-duty-whose-run-has-gone-is-not-shown",
+  "reviewer": "review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-9d219e329020",
+  "reviewer_run_id": "r-20261113T050823003288-review-of-a-snapshot-duty-whose-run-has-gone-is-not-shown-9d219e329020",
+  "scores": {
+    "durability": 17,
+    "evidence": 15,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:37:33.264663+00:00",
+  "total": 103
+}
