@@ -68,6 +68,35 @@ def test_a_first_row_already_working_prints_one_row() -> None:
     assert path.flush(now=1e9) == []
 
 
+def test_inventory_already_working_is_not_a_start() -> None:
+    """A re-arm baseline describes a run already on screen, so it draws nothing.
+
+    The baseline carries the same ``None -> working`` pair a follower's first
+    row does, but it is inventory taken when the pane attaches rather than a
+    run beginning, and the pane has no reader waiting to see a run that was
+    already working before this pane existed.
+    """
+    path = ticker.PaneRowPath(own_session=SESSION)
+    baseline = {**_row(None, "working"), "event": "baseline"}
+    assert path.feed(baseline, now=0.0) == []
+    assert path.flush(now=1e9) == []
+
+
+def test_a_follower_attaching_after_the_start_prints_no_second_row() -> None:
+    """One attempt prints one start, whichever row announces it first.
+
+    The admission pass prints ``queued -> working``. The follower that attaches
+    while the run works then delivers the run's first row already in
+    ``working``, with no left side, and the pane already shows this run working:
+    that row is the same attempt's start seen again and adds nothing.
+    """
+    path = ticker.PaneRowPath(own_session=SESSION)
+    first = path.feed(_row("queued", "working"), now=0.0)
+    assert len(first) == 1, first
+    assert path.feed(_row(None, "working"), now=2.0) == []
+    assert path.flush(now=1e9) == []
+
+
 def test_another_sessions_start_prints_nothing() -> None:
     """Neither start is this pane's to show when the run belongs to a peer."""
     path = ticker.PaneRowPath(own_session=SESSION)
