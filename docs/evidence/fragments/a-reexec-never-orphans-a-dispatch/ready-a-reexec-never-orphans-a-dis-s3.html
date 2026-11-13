@@ -1,0 +1,102 @@
+<section id="ready-a-reexec-never-orphans-a-dis-s3-landing">
+  <h2>A discard releases its run's dispatch claim</h2>
+
+  <p><strong>What changed.</strong> <code>promotion.discard</code> gives up the node
+  dispatch claim of the run it removes, through the claim's own
+  <code>_NodeDispatchClaim.release()</code>, and reports the unlinked paths as
+  <code>dispatch_claim_released</code>. Selection is by the run the claim records,
+  never by the node the discarded pointer names, so a claim another run has since
+  taken over that node is left standing. A deliberate discard is not a stale claim,
+  so the claim is unlinked rather than displaced to a <code>.reclaimed-</code>
+  artifact, which is what the reclaim path leaves for a stale one. A dispatch cut off
+  between taking the claim and spawning its worker would otherwise hold that node
+  against every later dispatch for as long as its holder process lives.</p>
+
+  <p>The behaviour and its gate are already present in this tree at the base
+  revision. The behaviour needed no change: this node confirmed the deliverable both
+  directly and under mutation, rather than reimplementing a working guard. It added
+  the one assertion the deliverable states but the test did not cover — that a
+  discard leaves no <code>.reclaimed-</code> artifact — and gave that assertion its
+  own control.</p>
+
+  <h3>Measured</h3>
+
+  <p>Gate: <code>tests/test_a_discard_releases_its_dispatch_claim.py</code>, two cases
+  over a synthesised crew home under <code>RECKON_HOME</code>; the operator's own
+  home is never read or written. Each arm ran alone, one at a time and not with
+  another arm, in a log whose header names its revision, tree and command and whose
+  last line is a bare <code>EXIT=&lt;code&gt;</code>.</p>
+
+  <table>
+    <thead><tr><th>case</th><th>what it asserts</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>a discard whose claim names it</td>
+        <td>the claim is gone, no <code>.reclaimed-</code> sibling is left, the same
+        node dispatches again without a reclaim, and the release is reported</td>
+        <td>passed</td></tr>
+      <tr><td>a discard leaving another run's claim</td>
+        <td>the other claim survives and still refuses a third dispatch, by name</td>
+        <td>passed</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Controls: each mutation reproduced before the repair was trusted</h3>
+
+  <p>Each mutation was applied to <code>reckon/crew/promotion.py</code> in place, run,
+  and the file then restored byte-for-byte — <code>git diff</code> was empty
+  afterwards and the base source is unchanged in this node's diff.</p>
+
+  <table>
+    <thead><tr><th>mutation</th><th>expected</th><th>observed</th></tr></thead>
+    <tbody>
+      <tr><td>skip the release: report <code>[]</code> instead of calling
+        <code>_release_discarded_dispatch_claim</code></td>
+        <td>case 1 refuses the second dispatch</td>
+        <td>case 1 failed, case 2 passed, exit 1</td></tr>
+      <tr><td>release any claim for the node: drop the run-id filter</td>
+        <td>case 2 loses the other run's claim</td>
+        <td>case 2 failed, case 1 passed, exit 1</td></tr>
+      <tr><td>displace instead of release: rename the claim to a
+        <code>.reclaimed-</code> sibling</td>
+        <td>the added no-artifact assertion fires</td>
+        <td>case 1 failed on that assertion alone, naming the artifact, exit 1</td></tr>
+    </tbody>
+  </table>
+
+  <p>The third mutation is the control for the assertion this node added: it fails on
+  that line and nothing else, so the assertion can see an artifact when one is
+  present rather than passing because it is inert.</p>
+
+  <h3>Arms</h3>
+
+  <table>
+    <thead><tr><th>arm</th><th>revision</th><th>result</th></tr></thead>
+    <tbody>
+      <tr><td>suite gate, base</td><td><code>078f7c800c</code></td>
+        <td>51 passed, exit 0 (<code>.gate/suite_base.log</code>)</td></tr>
+      <tr><td>suite gate, after</td><td><code>d7687b3f80</code></td>
+        <td>51 passed, exit 0 (<code>.gate/suite_after.log</code>)</td></tr>
+      <tr><td>node test, base (assertion not yet added)</td>
+        <td><code>078f7c800c</code></td>
+        <td>2 passed, exit 0 (<code>.gate/head_first.log</code>)</td></tr>
+      <tr><td>node test, after</td><td><code>d7687b3f80</code></td>
+        <td>2 passed, exit 0 (<code>.gate/head_final.log</code>)</td></tr>
+      <tr><td>discard-adjacent siblings (9 files importing
+        <code>reckon.crew.promotion</code> that exercise <code>discard</code>)</td>
+        <td><code>d7687b3f80</code></td>
+        <td>50 passed, exit 0 (<code>.gate/discard_siblings.log</code>)</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Not completed.</strong> The broad arm over all 68 test files that
+  reference <code>reckon.crew.promotion</code> was started twice at this revision and
+  did not reach its summary line inside the run's time budget; the second attempt
+  reached about a quarter of the set with a per-test bound of 120 s applied
+  (<code>.gate/base_arm.log</code>). It is recorded as incomplete rather than as a
+  passing arm. Its failure marks are pre-existing base failures: this node's diff is
+  one assertion in one test file and touches no product source, and the nine
+  discard-adjacent files it could affect are the 50-passing arm above.</p>
+
+  <p>Ruff was run on the staged path only: baseline and this change both report no
+  finding, and <code>ruff format --check</code> reports the file already formatted.</p>
+</section>
