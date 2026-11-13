@@ -278,7 +278,11 @@ def read_rows(
     for run_id in live_ids | {key for key, row in found.items() if _values(row)[4]}:
         source = ledger.run_path(project, run_id, root)
         if source.exists():
-            found[run_id] = ledger._read_run(source)
+            current = ledger._read_run(source)
+            if run_id not in live_ids and not _values(current)[4]:
+                found.pop(run_id, None)
+            else:
+                found[run_id] = current
     return sorted(found.values(), key=lambda row: str(row.get("completed_at") or ""))
 
 

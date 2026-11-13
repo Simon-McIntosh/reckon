@@ -107,7 +107,7 @@ def _count_opens(monkeypatch):
     monkeypatch.setattr(os, "open", wrap(real_os))
 
     def history_read(*args, **kwargs):
-        raise AssertionError("operational read requested the complete ledger")
+        pytest.fail("operational read requested the complete ledger")
 
     monkeypatch.setattr(ledger, "load", history_read)
     return opened
