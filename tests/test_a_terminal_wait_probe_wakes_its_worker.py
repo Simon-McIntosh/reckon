@@ -47,6 +47,10 @@ NODE_ID = "terminal-wait-node"
 # minutes. The station's clock is injected, so the figure is measured on the
 # run's own clock rather than on this machine's wall clock.
 WAKE_BOUND_SECONDS = 300
+# How long the tick is held, on the station's own clock. The case advances the
+# run clock that far while the tick is blocked, so the hold it proves is the
+# half hour the plan describes rather than a few milliseconds of this case.
+HOLD_SECONDS = 1800
 SWEEP_BEAT_SECONDS = 120.0
 # Virtual seconds each reflex arm advances the station's clock, and the real
 # interval between arms. The ratio sets how many virtual minutes pass per
@@ -319,10 +323,16 @@ def test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held(
 
     gate = threading.Event()
     entered = threading.Event()
+    released = threading.Event()
+    held_from: list[datetime] = []
 
     def held_publish(*args: object, **kwargs: object) -> None:
+        held_from.append(now_of_run_clock())
         entered.set()
         gate.wait(timeout=60)
+        # Recorded after the block ends, so a tick that timed out or was let
+        # go is visible to the wake assertion rather than merely suspected.
+        released.set()
 
     monkeypatch.setattr(station_obligations, "publish", held_publish)
 
@@ -343,6 +353,17 @@ def test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held(
     ticker.start()
     try:
         assert entered.wait(timeout=20), "the tick never entered its refresh stage"
+        # Advance the station's clock half an hour while the tick is blocked.
+        # Each read is a read of the run's own clock, so the hold asserted
+        # below is thirty minutes of the station's time, not of this case's.
+        hold_deadline = time.monotonic() + 5
+        while (
+            now_of_run_clock() - held_from[0]
+        ).total_seconds() < HOLD_SECONDS and time.monotonic() < hold_deadline:
+            pass
+        assert (now_of_run_clock() - held_from[0]).total_seconds() >= HOLD_SECONDS, (
+            "the station clock did not reach the half hour the case holds the tick for"
+        )
         # The probe turns terminal while the tick is held. The clock the case
         # reads here is the same one the station's own threads read.
         turned_terminal = now_of_run_clock()
@@ -350,7 +371,7 @@ def test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held(
         deadline = time.monotonic() + 30
         while time.monotonic() < deadline and not woken:
             time.sleep(0.01)
-        assert ticker.is_alive() and gate.is_set() is False, (
+        assert ticker.is_alive() and not released.is_set(), (
             "the tick returned before the wake; the case proves nothing about a held tick"
         )
         assert woken, (
@@ -362,6 +383,11 @@ def test_a_terminal_probe_wakes_its_worker_while_the_tick_is_held(
         assert 0 <= delay <= WAKE_BOUND_SECONDS, (
             f"the wake came {delay:.0f}s of the run's own clock after the probe "
             f"turned terminal, past the {WAKE_BOUND_SECONDS}s bound"
+        )
+        held_span = (woken_at - held_from[0]).total_seconds()
+        assert held_span >= HOLD_SECONDS, (
+            f"the tick was held for {held_span:.0f}s of the run's own clock when "
+            f"the wake happened, short of the {HOLD_SECONDS}s the case holds it for"
         )
     finally:
         gate.set()

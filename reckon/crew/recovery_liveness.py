@@ -1171,34 +1171,21 @@ def parked_on_declared_wait(
 
 
 def _latest_reservation(record: Mapping[str, Any]) -> Mapping[str, Any] | None:
-    """The highest-numbered launch reservation in the run's own directory."""
+    """The highest-numbered launch reservation in the run's own directory.
+
+    The file family, its name pattern and its payload reader all belong to
+    ``reckon.crew.dispatch_launch``, which writes them. This module asks that
+    owner rather than parsing the names again, so a reservation is one thing
+    to both the launch that takes it and the parked reading that weighs it.
+    """
+    from reckon.crew.dispatch_launch import latest_reservation
+
     try:
         directory = _run_directory(record)
-        candidates = sorted(
-            directory.glob("attempt-*.reservation"),
-            key=lambda path: _attempt_number(path.name),
-        )
     except (OSError, ValueError):
         return None
-    for path in reversed(candidates):
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
-            continue
-        if isinstance(data, Mapping):
-            return data
-    return None
-
-
-def _attempt_number(name: str) -> int:
-    """The attempt a run directory's file name is keyed on, or -1."""
-    head = name.split("-", 2)
-    if len(head) < 2 or head[0] != "attempt":
-        return -1
-    try:
-        return int(head[1])
-    except ValueError:
-        return -1
+    found = latest_reservation(directory)
+    return None if found is None else found[2]
 
 
 def _reservation_outruns_worker(
@@ -1219,7 +1206,8 @@ def _reservation_outruns_worker(
     worker_attempt = _int_or_none(worker.get("attempt"))
     if reserved_attempt is not None and worker_attempt is not None:
         return reserved_attempt > worker_attempt
-    reserved_at = _seconds_from_stamp(reservation.get("at"))
+    reserved_stamp = parse_utc(reservation.get("at"))
+    reserved_at = reserved_stamp.timestamp() if reserved_stamp is not None else None
     written_at = _worker_record_mtime(record)
     if reserved_at is None or written_at is None:
         return False
@@ -1231,16 +1219,6 @@ def _worker_record_mtime(record: Mapping[str, Any]) -> float | None:
     try:
         return (_run_directory(record) / WORKER_RECORD_NAME).stat().st_mtime
     except (OSError, ValueError):
-        return None
-
-
-def _seconds_from_stamp(value: Any) -> float | None:
-    """An ISO timestamp as epoch seconds, or None when it does not parse."""
-    if not isinstance(value, str) or not value.strip():
-        return None
-    try:
-        return datetime.fromisoformat(value.strip()).timestamp()
-    except ValueError:
         return None
 
 

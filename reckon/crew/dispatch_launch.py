@@ -2373,6 +2373,44 @@ def launch_reservation_path(run_directory: Path, attempt: int) -> Path:
     return run_directory / f"attempt-{attempt}{RESERVATION_SUFFIX}"
 
 
+def reservations_in(
+    run_directory: Path,
+) -> list[tuple[int, Path, Mapping[str, Any]]]:
+    """Every reservation the run directory holds, ascending by attempt.
+
+    The attempt is read from the file name by this module's own pattern and
+    the payload by its own reader, so every caller that has to answer a
+    question about an ``attempt-N.reservation`` file — the launch taking one,
+    the parked reading deciding whether one outruns the worker record — gets
+    the same answer about the same file. A reservation whose payload cannot
+    be read as a mapping carries no attempt anyone can act on and is skipped.
+    """
+    try:
+        names = [path.name for path in run_directory.iterdir()]
+    except OSError:
+        return []
+    found: list[tuple[int, Path, Mapping[str, Any]]] = []
+    for name in names:
+        match = _RESERVATION_PATTERN.match(name)
+        if match is None:
+            continue
+        path = run_directory / name
+        payload = _read_reservation(path)
+        if payload is None:
+            continue
+        found.append((int(match.group(1)), path, payload))
+    found.sort(key=lambda item: item[0])
+    return found
+
+
+def latest_reservation(
+    run_directory: Path,
+) -> tuple[int, Path, Mapping[str, Any]] | None:
+    """The highest-numbered reservation the run directory holds, with its attempt."""
+    found = reservations_in(run_directory)
+    return found[-1] if found else None
+
+
 def _reservation_taken_by_this_process(
     run_directory: Path, *, at_least: int = 1
 ) -> LaunchReservation | None:
@@ -2385,28 +2423,17 @@ def _reservation_taken_by_this_process(
     launch's attempt or a later one, is adopted; another process's hold is never
     taken over, and neither is an earlier attempt's.
     """
-    try:
-        names = [path.name for path in run_directory.iterdir()]
-    except OSError:
-        return None
     pid = os.getpid()
-    for name in sorted(names):
-        match = _RESERVATION_PATTERN.match(name)
-        if match is None:
-            continue
-        path = run_directory / name
-        payload = _read_reservation(path)
-        if not isinstance(payload, Mapping):
-            continue
+    for attempt, path, payload in reservations_in(run_directory):
         if payload.get("supervisor_pid") is not None:
             continue
         if payload.get("pid") != pid:
             continue
-        if int(match.group(1)) < at_least:
+        if attempt < at_least:
             continue
         return LaunchReservation(
             run_id=str(payload.get("run_id") or run_directory.name),
-            attempt=int(match.group(1)),
+            attempt=attempt,
             path=path,
             kind=str(payload.get("kind") or ""),
         )
