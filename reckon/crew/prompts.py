@@ -967,10 +967,12 @@ ROLE     {node.role}
 
 {closure_authority_contract}
 
-FENCE — SCOPE (exclusive write paths; nothing outside them)
+FENCE — SCOPE (declared write paths; nothing outside them)
 {scope_lines}
 
-CONCURRENT NODES (never touch their paths; request a scope change instead)
+CONCURRENT NODES (information only; overlapping source and test edits are allowed)
+  Work in your own worktree within your declared write paths. Git merge reconciles
+  shared edits; a real conflict returns to the worker for a merge repair.
 {peer_lines}
 
 PEER CHANNEL — knowledge only; write scopes never transfer. Run {run_id}; endpoint {peer_channel}.
