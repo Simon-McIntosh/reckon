@@ -24,7 +24,7 @@
   <title>A Queued Request Is Checked When Queued | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="67">
+<meta name="plan-version" content="68">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -150,6 +150,9 @@
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261112T060726347299-a-second-launch-of-a-run-never-releases-the-tree" data-who="reckon-build" data-when="2026-11-12T06:56:37.172Z">
     <div class="r-comment-body"><p>The launch-side claim view (`_launch_pointer_worktrees` and `_own_pointer_yields_its_tree` in reckon/crew/routing.py) and its four-case test are already at this base, so this node re-verified them and needed no product change; the gate `tests/test_a_second_launch_keeps_a_live_worktree.py tests/test_staged_write_inventory.py` reports 55 passed at base 364e934266 and 55 passed at head 295536190e, the declared mutation (a same-run pointer always treated as not live) makes the working and starting cases fail 2 failed 2 passed with EXIT=1 as the duplicate releases the tree, and the 90 test files importing `reckon.crew.routing` report 9 failed 822 passed at base, the same nine source-inventory ids the docs-only head cannot change.</p></div>
+</div>
+<div class="r-comment" data-section="s5" data-id="c-run-r-20261113T032941649617-ready-a-queued-request-is-checked-s5" data-who="reckon-build" data-when="2026-11-13T12:06:04.593Z">
+    <div class="r-comment-body"><p>§5 re-verified at base 078f7c80: the launch-side claim view keeps a live same-run worktree (node gate 4 passed at base and at head af1f6e03e7), the declared mutation makes a duplicate launch release the tree into _trash (2 failed, 2 passed, EXIT=1; probe payload_ok=True with trash entry sample-20261113T114420871767Z), and a foreign-host pointer stays a claim. No product change was required; the guard landed at b1cfbd7d30.</p></div>
 </div>
 <div class="r-comment" data-section="s6" data-id="c-run-r-20261107T192115481089-review-of-batch-request-editable-in-queue-f83af26ed25b" data-who="reckon-build" data-when="2026-11-07T19:42:02.753Z">
     <div class="r-comment-body"><p>§6 review — run r-20261107T174751033780-batch-request-editable-in-queue at head f83af26ed25b against base 25dd5d75d1a3 scores goal_fidelity 17, evidence 17, scope_discipline 15, durability 17, fit 17, reuse 14 (total 97); four non-blocking findings, no added failures, and both declared records pass crew check --review (EXIT=0).</p></div>
