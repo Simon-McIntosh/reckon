@@ -1692,6 +1692,15 @@ def _stop(payload: dict[str, Any]) -> int:
     resolved = reapply_acknowledgements(resolved, project=resolved_project)
     blocking = _blocking_items(resolved.get("obligations") or ())
     if not blocking:
+        # Nothing is held open: either the snapshot listed no actionable duty
+        # or an acknowledgement in force defers the ones it named. The record
+        # of what this mode last refused is cleared with the emptiness, because
+        # an acknowledgement bounds only itself. A deferral that lapses puts
+        # the same duty identity back in the list, and a record left standing
+        # across the deferral would read it as the set already refused and
+        # never block for it again -- one acknowledgement silencing a duty for
+        # good.
+        _clear_digest(stop_digest_file)
         return 0
     # The block fires at most once per unchanged list. A list whose duties are
     # the same ones this mode last refused a turn over has nothing new to say:

@@ -1059,6 +1059,53 @@ def test_a_duty_that_empties_and_returns_is_refused_again_by_the_stop_mode(
     )
 
 
+def test_a_lapsed_deferral_blocks_the_stop_again(
+    repository: Path, tmp_path: Path, config_home: Path
+) -> None:
+    """An acknowledgement defers a duty; it does not excuse it for good.
+
+    Three stops over one blocked run: the first refuses the turn and records
+    the set; the second is allowed because an acknowledgement in force defers
+    the duty; the third runs after that deferral has lapsed, and the duty is
+    back in the list under the same identity the first stop refused. A stop
+    record left standing across the deferral would read the returned duty as
+    the set it already blocked over and never refuse it again, so the lapse
+    would be silent. The record is cleared when no duty is held open, and the
+    lapsed duty is refused once more.
+    """
+    _blocked_run(repository, tmp_path)
+    now = datetime.now(tz=UTC)
+
+    with runs.follower_claim(PROJECT, SESSION):
+        first = _hook("stop", _stop_payload(repository, "harness-session"))
+        assert json.loads(first.stdout)["decision"] == "block", (
+            "the first stop must block for the lapsed-deferral case to bite"
+        )
+
+        runs.record_run_acknowledgement(
+            RUN_ID, "waiting on a peer", (now + timedelta(hours=1)).isoformat()
+        )
+        deferred = _hook("stop", _stop_payload(repository, "harness-session"))
+        assert deferred.returncode == 0
+        assert deferred.stdout == "", "an acknowledged duty must not hold the turn open"
+
+        # A second acknowledgement replaced the first: the recorded deadline is
+        # now behind the clock, which is the same state a deferral reaches by
+        # itself when its own deadline passes.
+        runs.record_run_acknowledgement(
+            RUN_ID, "lapsed", (now - timedelta(hours=1)).isoformat()
+        )
+        assert obligations_view(PROJECT, SESSION)["obligations"], (
+            "the run must still owe the duty for this case to show a refusal"
+        )
+        lapsed = _hook("stop", _stop_payload(repository, "harness-session"))
+
+    assert lapsed.returncode == 0
+    assert json.loads(lapsed.stdout)["decision"] == "block", (
+        "the duty returning after its deferral lapsed must be refused again"
+    )
+
+
 def test_a_duty_that_empties_and_returns_is_injected_again(
     repository: Path, tmp_path: Path, config_home: Path
 ) -> None:
