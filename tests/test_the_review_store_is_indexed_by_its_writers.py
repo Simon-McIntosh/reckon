@@ -89,13 +89,47 @@ def _count_store_reads(directory: Path) -> tuple[list, object]:
                 counted.append(f"stat:{target.name}")
         return real_stat(value, *args, **kwargs)
 
+    class CountedEntry:
+        """A directory entry whose per-file stat is counted like any other."""
+
+        def __init__(self, entry):
+            self._entry = entry
+            self.name = entry.name
+
+        def stat(self, *args, **kwargs):
+            if self.name.endswith(".json") and not self.name.startswith("."):
+                counted.append(f"stat:{self.name}")
+            return self._entry.stat(*args, **kwargs)
+
+        def __getattr__(self, item):
+            return getattr(self._entry, item)
+
+    class CountedScan:
+        def __init__(self, scanned):
+            self._scanned = scanned
+
+        def __iter__(self):
+            return (CountedEntry(entry) for entry in self._scanned)
+
+        def __enter__(self):
+            self._scanned.__enter__()
+            return self
+
+        def __exit__(self, *args):
+            return self._scanned.__exit__(*args)
+
+        def close(self):
+            return self._scanned.close()
+
     def counted_scandir(value="."):
         nonlocal inside_glob
+        scanned = real_scandir(value)
         if not inside_glob and not isinstance(value, int):
             target = path_of(value)
             if target == directory:
                 counted.append("scandir")
-        return real_scandir(value)
+                return CountedScan(scanned)
+        return scanned
 
     def counted_glob(self, pattern, **kwargs):
         nonlocal inside_glob
@@ -159,8 +193,11 @@ def test_reading_every_run_after_a_store_lists_and_stats_nothing(stored) -> None
     try:
         with review_records.review_store_tick():
             for run_id in run_ids:
+                # The station's own per-tick view of the store, then the
+                # changed-run query the station asks of it.
+                review_records._tick_store(directory)
+                review_records.store_index_document(directory)
                 review.store_index_run_digest(directory, run_id)
-                review.store_index_document(directory)
     finally:
         restore()
 

@@ -66,8 +66,12 @@ def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     stores = _TICK_REVIEW_STORES.get()
     if stores is not None and directory in stores:
         return stores[directory]
-    document = store_index_document(directory)
-    if document is not None:
+    # Inside a tick the store's own index answers, so no record is stat'ed and
+    # the directory is not listed; outside one the established per-file
+    # revalidation stays, because that is the pass which sees a record rewritten
+    # in place by a writer that bypassed this module.
+    document = store_index_document(directory) if stores is not None else None
+    if document is not None and stores is not None:
         return _document_stat_view(directory, document, stores)
     selected = open_run_index.review_paths(directory)
     if selected is not None:
@@ -123,8 +127,10 @@ def _document_stat_view(
 def _store_paths(directory: Path, pattern: str) -> list[Path]:
     files = _tick_store(directory)
     if files is None:
-        return list(directory.glob(pattern))
-    return [path for path in files if fnmatchcase(path.name, pattern)]
+        held = list(directory.glob(pattern))
+    else:
+        held = [path for path in files if fnmatchcase(path.name, pattern)]
+    return [path for path in held if not path.name.startswith(".")]
 
 
 def _record_stat(path: Path) -> os.stat_result:
@@ -1397,7 +1403,7 @@ def _index_entry(path: Path, info: os.stat_result) -> dict[str, Any] | None:
     store keeps outside current-review selection by design -- yields ``None``
     and no entry.
     """
-    if _review._INCOMPLETE_RECORD_MARK in path.name:
+    if _review._INCOMPLETE_RECORD_MARK in path.name or path.name.startswith("."):
         return None
     try:
         record = _record_file(path)
@@ -1505,10 +1511,16 @@ def _update_store_entries(
     listing = _tick_store(directory)
     try:
         if listing is None:
-            candidates = sorted(directory.glob("*.json"))
+            candidates = sorted(
+                path
+                for path in directory.glob("*.json")
+                if not path.name.startswith(".")
+            )
         else:
             candidates = sorted(
-                path for path in listing if fnmatchcase(path.name, "*.json")
+                path
+                for path in listing
+                if fnmatchcase(path.name, "*.json") and not path.name.startswith(".")
             )
     except OSError:
         candidates = []
@@ -1691,9 +1703,6 @@ def _store_indexes(
     that write having moved the directory away from it, and the next reader
     lists the store rather than adopting an index short of the record.
     """
-    document = store_index_document(directory)
-    if document is not None:
-        return _document_indexes(directory, document)
     if open_run_index.review_paths(directory) is not None:
         return _build_store_indexes(directory)
     from reckon import ledger
@@ -2187,24 +2196,6 @@ def _indexable(directory: Path) -> bool:
         return False
 
 
-def _document_indexes(
-    directory: Path, document: Mapping[str, Any]
-) -> tuple[dict[str, list[dict[str, Any]]], dict[str, list[dict[str, Any]]]]:
-    """The two keyed indexes as the store's own writers left them.
-
-    The open-work selection, when one is installed, keeps only the records the
-    live runs can refer to; the document already holds the facts that tell a run
-    apart, so applying that selection costs a set membership rather than a stat
-    of every record the store holds.
-    """
-    entries = _entries_from_document(directory, document)
-    selected = open_run_index.review_paths(directory)
-    if selected is not None:
-        keep = {path.name for path in selected}
-        entries = [entry for entry in entries if entry["name"] in keep]
-    return _index_maps(entries)
-
-
 def store_index_version(directory: Path) -> int:
     """The version of one store's index, as its writers last left it."""
     doc = store_index_document(directory) or {}
@@ -2248,35 +2239,6 @@ def store_index_run_digest(directory: Path, run_id: str) -> str | None:
     if not isinstance(runs, Mapping):
         return None
     return runs.get(run_id)
-
-
-def _entries_from_document(
-    directory: Path, doc: Mapping[str, Any]
-) -> list[dict[str, Any]]:
-    """Bind the document's per-name facts to the paths they resolve to now."""
-    bound: list[dict[str, Any]] = []
-    for name, raw in (doc.get("entries") or {}).items():
-        if not isinstance(raw, Mapping):
-            continue
-        try:
-            size = int(raw.get("size") or 0)
-        except (TypeError, ValueError):
-            size = 0
-        bound.append(
-            {
-                "name": str(name),
-                "path": directory / str(name),
-                "mtime_ns": 0,
-                "identity": (0, size, 0),
-                "reviewed_run_id": str(raw.get("reviewed_run_id") or ""),
-                "review_run_id": str(raw.get("review_run_id") or ""),
-                "head_carried": bool(raw.get("head_carried")),
-                "head_sha": raw.get("head_sha"),
-                "sha256": str(raw.get("sha256") or ""),
-            }
-        )
-    bound.sort(key=lambda entry: entry["name"])
-    return bound
 
 
 def _indexed_record_stat(entry: Mapping[str, Any]) -> os.stat_result:

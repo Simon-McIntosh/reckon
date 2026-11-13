@@ -757,9 +757,7 @@ def store_plan_review(
     if not stored.get("timestamp"):
         stored["timestamp"] = datetime.now(UTC).isoformat()
     path = _target_path(project, plan_slug, int(plan_version), stored, base_dir)
-    write_json_atomically(
-        path, stored, indent=2, sort_keys=True, fsync=False, mode=None
-    )
+    _review_store.record_written(path, stored)
     return path
 
 
