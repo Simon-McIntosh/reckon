@@ -405,3 +405,18 @@ def latest_session_row(project: str, session: str, root=None) -> dict[str, Any] 
             (session,),
         ).fetchone()
         return json.loads(row[0]) if row else None
+
+
+def has_row(project: str, run_id: str, root=None) -> bool:
+    """Test one promoted identity without enumerating historical membership."""
+    from reckon import ledger
+
+    if ledger.run_path(project, run_id, root).is_file():
+        return True
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        return (
+            connection.execute(
+                "SELECT 1 FROM records WHERE run_id=?", (run_id,)
+            ).fetchone()
+            is not None
+        )

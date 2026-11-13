@@ -1105,11 +1105,7 @@ def _promoted_run_ids(project: str) -> set[str]:
     """
     from reckon import ledger as ledger_module
 
-    from reckon.crew import open_run_index
-
     try:
-        if open_run_index.pointers() is not None:
-            return ledger_module.open_run_ids(project)
         return ledger_module.run_ids(project)
     except Exception:  # noqa: BLE001 - an unreadable ledger is not a promotion
         return set()
@@ -1241,7 +1237,9 @@ def _repair_in_flight(record: Mapping[str, Any], *, node_id: str, project: str) 
         if standing:
             if runs.pointer_path(standing).exists() and read_pointer(standing):
                 return standing
-            if project and standing in _promoted_run_ids(project):
+            from reckon.crew.open_run_index import has_row
+
+            if project and has_row(project, standing):
                 return standing
     for pointer in list_live(project=project or None):
         node = pointer.get("node") or {}
@@ -1267,7 +1265,9 @@ def _repair_launch_refusal(run_id: str, project: str) -> str:
         return "the reviewed run's live pointer is gone"
     if str(fresh.get("promoted_revision") or "").strip():
         return "the reviewed run is promoted"
-    if project and run_id in _promoted_run_ids(project):
+    from reckon.crew.open_run_index import has_row
+
+    if project and has_row(project, run_id):
         return "the reviewed run is promoted"
     return ""
 

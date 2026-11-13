@@ -291,3 +291,15 @@ def test_operational_metadata_preserves_predecessor_ambiguity_and_session_meter(
         )
         is None
     )
+
+
+def test_a_named_promoted_repair_is_found_without_reading_ended_files(
+    population, monkeypatch
+):
+    from reckon.crew.open_run_index import has_row
+
+    _end_history(population, 20)
+    with monkeypatch.context() as counting:
+        opened = _count_opens(counting)
+        assert has_row(PROJECT, "ended-0000", population["repo"])
+        assert not any("ended-" in path for path in opened)

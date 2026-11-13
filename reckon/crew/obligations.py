@@ -835,7 +835,9 @@ def _review_dispatch_refusal(
         ]
     except (OSError, ValueError):
         return None
-    closed = run_id in ledger.open_run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = has_row(project, run_id)
     for record in stored:
         if (
             review_lifecycle.lifecycle(
@@ -3142,7 +3144,13 @@ def _sub_floor_items_by_session(
     """
     if not floors:
         return {}
-    closed = recovery._promoted_run_ids(project)
+    from reckon.crew.open_run_index import has_row
+
+    closed = {
+        str(pointer.get("run_id") or "")
+        for pointer in _live_pointers(project)
+        if pointer.get("run_id") and has_row(project, str(pointer["run_id"]))
+    }
     by_session: dict[str, list[dict[str, Any]]] = {}
     for pointer in _live_pointers(project):
         session = str(pointer.get("session") or "")
