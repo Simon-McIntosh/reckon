@@ -947,6 +947,25 @@ def take_session_hand_off() -> dict[str, Any] | None:
     return handoff
 
 
+def _mismatch_stream() -> Any:
+    """Where the hand-off line is written, or None when nothing reads it.
+
+    A dispatch's stdout carries its payload, and a reader parsing that payload
+    cannot have a line beside it. The line is for the operator, so it is
+    written where a terminal receives it and nowhere else: a piped dispatch
+    carries the same fact in its ``host_handoff`` field, which a caller reads
+    instead of the line.
+    """
+    return sys.stdout if sys.stdout.isatty() else None
+
+
+def _emit_session_mismatch(line: str) -> None:
+    """Write the hand-off line to the terminal that asked for the dispatch."""
+    stream = _mismatch_stream()
+    if stream is not None:
+        print(line, file=stream, flush=True)
+
+
 def _session_mismatch_line(handoff: Mapping[str, Any]) -> str:
     """The one line a mismatched dispatch prints, naming both sessions."""
     requested = handoff["requested_session"]
@@ -996,7 +1015,7 @@ def hand_off_mismatched_session(
         "calling_session": calling,
         "handed_to_host": handed,
     }
-    print(_session_mismatch_line(handoff), flush=True)
+    _emit_session_mismatch(_session_mismatch_line(handoff))
     _SESSION_HAND_OFF.set(handoff)
     return handoff
 

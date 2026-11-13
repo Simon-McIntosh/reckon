@@ -21,6 +21,7 @@ from __future__ import annotations
 import json
 import os
 import subprocess
+import sys
 import threading
 import time
 from pathlib import Path
@@ -69,6 +70,9 @@ def claude_session(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setenv("RECKON_SESSION_HOST_STATE_DIR", str(runtime / "session-hosts"))
     monkeypatch.setenv("CLAUDE_PID", str(os.getpid()))
     monkeypatch.setenv("CLAUDE_CODE_SESSION_ID", CALLING_SESSION)
+    # A captured stdout is not a terminal, and the hand-off line is written
+    # only where one receives it; the cases read it from the capture.
+    monkeypatch.setattr(dispatch_watch, "_mismatch_stream", lambda: sys.stdout)
     monkeypatch.delenv("CODEX_SESSION_ID", raising=False)
     monkeypatch.delenv("CODEX_THREAD_ID", raising=False)
     return runtime
@@ -151,7 +155,8 @@ def test_a_mismatched_dispatch_hands_the_run_to_the_calling_host(
     assert request["project"] == PROJECT
     assert request["session"] == OTHER_SESSION
     assert request["owner_checked"] is True
-    line = capsys.readouterr().out
+    captured = capsys.readouterr()
+    line = captured.out + captured.err
     assert OTHER_SESSION in line and CALLING_SESSION in line
     assert "took the run" in line
 
@@ -166,7 +171,8 @@ def test_a_mismatched_dispatch_with_no_waiting_host_says_so(
         "calling_session": CALLING_SESSION,
         "handed_to_host": False,
     }
-    line = capsys.readouterr().out
+    captured = capsys.readouterr()
+    line = captured.out + captured.err
     assert OTHER_SESSION in line and CALLING_SESSION in line
     assert "no waiting host received the run" in line
 
@@ -275,6 +281,7 @@ def _register_watcher(project: str) -> None:
         )
 
 
+@pytest.mark.arms_watch_producer
 def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
     home: Path,
     claude_session: Path,
@@ -301,7 +308,8 @@ def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
     request = json.loads(stub_host.lines[0])
     assert request["session"] == OTHER_SESSION
     assert request["owner_checked"] is True
-    line = capsys.readouterr().out
+    captured = capsys.readouterr()
+    line = captured.out + captured.err
     assert OTHER_SESSION in line and CALLING_SESSION in line
     assert record["host_handoff"] == {
         "requested_session": OTHER_SESSION,
