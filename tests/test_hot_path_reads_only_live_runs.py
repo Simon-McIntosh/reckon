@@ -128,7 +128,7 @@ def _station(fleet, tmp_path):
         store.close()
 
 
-def _read(operation, fleet, tmp_path, monkeypatch):
+def _read(operation, fleet, tmp_path, monkeypatch, promotion_record=None):
     if operation == "station":
         return _station(fleet, tmp_path)
     if operation == "obligations":
@@ -139,7 +139,7 @@ def _read(operation, fleet, tmp_path, monkeypatch):
         return {key: result.get(key) for key in ("landed", "deferred")}
     # Keep publishing and physical cleanup outside this read-population test.
     # Pointer retirement and the promotion's ledger/review readers remain real.
-    pointer = runs.read_pointer("run-00")
+    pointer = promotion_record or runs.read_pointer("run-00")
     monkeypatch.setattr(
         promotion, "_record_landing_comment", lambda **kwargs: {"recorded": False}
     )
@@ -154,7 +154,9 @@ def _read(operation, fleet, tmp_path, monkeypatch):
         lambda **kwargs: (kwargs["release"], None),
     )
     monkeypatch.setattr(promotion, "_retire_disposable_identity", lambda *args: {})
-    result = promotion._complete_locked("run-00", gate="passed", root=fleet["repo"])
+    result = promotion._complete_locked(
+        "run-00", record=pointer, gate="passed", root=fleet["repo"]
+    )
     assert result["already_promoted"]
     assert result["pointer_removed"]
     assert not runs.pointer_path("run-00").exists()
@@ -303,3 +305,15 @@ def test_a_named_promoted_repair_is_found_without_reading_ended_files(
         opened = _count_opens(counting)
         assert has_row(PROJECT, "ended-0000", population["repo"])
         assert not any("ended-" in path for path in opened)
+
+
+def test_reconstructed_promotion_keeps_its_named_ledger_record(
+    population, tmp_path, monkeypatch
+):
+    pointer = runs.read_pointer("run-00")
+    promotion._remove_promoted_pointer("run-00", pointer)
+    result = _read(
+        "promotion", population, tmp_path, monkeypatch, promotion_record=pointer
+    )
+    assert result["already_promoted"]
+    assert result["record"]["run_id"] == "run-00"

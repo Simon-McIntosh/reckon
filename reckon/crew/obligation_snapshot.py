@@ -45,8 +45,6 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
-from reckon.crew.open_run_index import operational_read
-
 # The prompt hook reads a snapshot on every turn's opening, so the window that
 # keeps a live producer's snapshot trusted is short enough to notice a stalled
 # producer and long enough to survive one skipped sweep.
@@ -1338,8 +1336,15 @@ class FleetState:
     findings: list[dict[str, str]]
 
 
-@operational_read
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
+    """Derive a sweep inside one shared open-run population."""
+    from reckon.crew.open_run_index import read_scope
+
+    with read_scope():
+        return _derive_fleet_state(project, now=now)
+
+
+def _derive_fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Derive everything a sweep's per-session payloads are sliced from.
 
     The derivation opens the two regions its readers share: one run index built

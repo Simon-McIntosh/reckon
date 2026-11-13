@@ -2545,14 +2545,9 @@ def _landing_preconditions(
     project = str(record.get("project") or "")
     node = record.get("node") or {}
     shadow = _is_shadow(record)
-    existing = next(
-        (
-            item
-            for item in ledger.load_open(project, root=ledger_root)[0]["runs"]
-            if str(item.get("run_id") or "") == run_id
-        ),
-        None,
-    )
+    from reckon.crew.open_run_index import row_for_run
+
+    existing = row_for_run(project, run_id, ledger_root)
     if existing is not None:
         return {"already_landed": True}
 

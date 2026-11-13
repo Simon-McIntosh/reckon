@@ -1388,14 +1388,9 @@ def _complete_locked(
             raise ledger.LedgerError(
                 f"cannot promote run {run_id!r}: its record is damaged at {damaged_record}"
             )
-        existing = next(
-            (
-                item
-                for item in ledger_data["runs"]
-                if str(item.get("run_id") or "") == run_id
-            ),
-            None,
-        )
+        from reckon.crew.open_run_index import row_for_run
+
+        existing = row_for_run(project, run_id, ledger_root)
         if existing is not None:
             existing_path = ledger.run_path(project, run_id, ledger_root)
             if not existing_path.is_file():
@@ -1987,15 +1982,7 @@ def _complete_locked(
         # Another completion can land after the read above. Treat only an
         # observed matching record as success; every other ledger error is
         # still a refusal.
-        refreshed, ledger_version = ledger.load_open(project, root=ledger_root)
-        existing = next(
-            (
-                item
-                for item in refreshed["runs"]
-                if str(item.get("run_id") or "") == run_id
-            ),
-            None,
-        )
+        existing = row_for_run(project, run_id, ledger_root)
         if existing is None:
             raise
         already_promoted = True

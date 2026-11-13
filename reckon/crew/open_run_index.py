@@ -12,6 +12,7 @@ from __future__ import annotations
 import contextlib
 import hashlib
 import json
+import re
 import sqlite3
 from collections.abc import Iterator, Mapping, Sequence
 from contextvars import ContextVar
@@ -30,14 +31,20 @@ def pointers() -> tuple[Mapping[str, Any], ...] | None:
 
 
 @contextlib.contextmanager
-def read_scope() -> Iterator[None]:
-    """Share a live-index snapshot across nested operational readers."""
-    if pointers() is not None:
-        yield
-        return
-    from reckon.crew import runs
+def read_scope(record: Mapping[str, Any] | None = None) -> Iterator[None]:
+    """Share live identities and an explicitly reconstructed target's record."""
+    snapshot = pointers()
+    if snapshot is None:
+        from reckon.crew import runs
 
-    token = _READERS.set(tuple(runs.list_live()))
+        snapshot = tuple(runs.list_live())
+    if (
+        record is not None
+        and record.get("run_id")
+        and not any(item.get("run_id") == record["run_id"] for item in snapshot)
+    ):
+        snapshot = (*snapshot, record)
+    token = _READERS.set(snapshot)
     try:
         yield
     finally:
@@ -49,7 +56,7 @@ def operational_read(function):
 
     @wraps(function)
     def bounded(*args, **kwargs):
-        with read_scope():
+        with read_scope(record=kwargs.get("record")):
             return function(*args, **kwargs)
 
     return bounded
@@ -324,9 +331,23 @@ def review_paths(directory: Path) -> list[Path] | None:
     if snapshot is None:
         return None
     ids = {str(row.get("run_id") or "") for row in snapshot} - {""}
+    declared: set[Path] = set()
     for row in snapshot:
         node = row.get("node") or {}
         if isinstance(node, Mapping):
+            for name in node.get("write_paths") or ():
+                path = Path(name)
+                if (
+                    path.is_absolute()
+                    and path.parent == directory
+                    and path.suffix == ".json"
+                ):
+                    declared.add(path)
+            subject = re.fullmatch(
+                r"review-of-(.+)-[0-9a-f]{8,40}(?:-figure)?", str(node.get("id") or "")
+            )
+            if subject:
+                ids.add(subject[1])
             ids.update(
                 str(node.get(key) or "") for key in ("reviewed_run_id", "repairs")
             )
@@ -334,7 +355,7 @@ def review_paths(directory: Path) -> list[Path] | None:
     if directory.name in ids:
         return sorted(directory.glob("*.json"))
     index = _review_index_path(directory)
-    paths: set[Path] = set()
+    paths: set[Path] = declared
     if index.exists():
         with contextlib.closing(
             sqlite3.connect(f"{index.as_uri()}?mode=ro", uri=True)
