@@ -1,0 +1,32 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T18:21:06.441Z",
+  "dispatched_at": "2026-11-13T18:10:32Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html",
+      "line": 43,
+      "severity": "non-blocking",
+      "text": "The head-arm row citing job 1314543 and 55 passed in 12.45 s points at gate-sbatch.log, whose gate-head section records only a cwd and no revision or command, so the 'final head f5568d40' claim cannot be checked from the artefact; the run's declared after_suite log (gate-head-final.log) does carry revision aa99f154 and the command."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that the drain promotes a run's queued review before the run and keeps a run queued when its only refusal is that still-queued review; the gained commits repair the aggregated-refusal branch at reckon/crew/promotion_requests.py:483 so the refusal object is judged by its own parts instead of its joined text.\nVERDICT done_when: the done_when names tests/test_review_promoted_before_its_run.py; the manifest records gate-head-final.log at reviewed head aa99f154 (55 passed, EXIT=0) and gate-base.log at 5057bfac (51 passed, EXIT=0), and I re-ran that file at the head in a scratch extraction: 4 passed in 7.86s.\nVERDICT write_paths: read the declared scope (reckon/crew/promotion_requests.py, reckon/crew/promotion_checks.py, tests/test_review_promoted_before_its_run.py, the evidence fragment); the three files in the gained diff are all inside it.\nVERDICT manifest: read; it names commits bcdf3965/f5568d40/d61c0ba/aa99f154, the after and base arms with their log paths, and the declared name-order mutation (2 failed, 2 passed, EXIT=1).\nVERDICT diff: read all three gained commits from f2cafde82d to aa99f154; the fix hands the exception object to _defer_to_a_queued_review (reckon/crew/promotion_requests.py:483), the test adds _MixedReasons plus test_a_run_refused_for_its_review_and_another_reason_is_refused, and the docs commit records the repair-round gate at gate-sbatch.log.\nCALL_SITES: reckon/crew/admission/service.py:233, reckon/crew/promotion_requests.py:483\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/promotion_requests.py:483 passes the raised refusal itself, and promotion_checks.py:1506 reads its .refusals parts, so a run refused for a failing suite beside a missing review is refused rather than requeued.\nSCORE evidence: 17\nJUSTIFICATION evidence: gate-head-final.log:1 names revision aa99f154 and ends EXIT=0 with 55 passed, gate-base.log:1 names 5057bfac with 51 passed, and negative-control.log ends 2 failed/2 passed EXIT=1; the fragment's 12.45 s row cites a log (gate-sbatch.log) that records its job and cwd but no revision or command line.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: git diff f2cafde82d..aa99f154 touches only reckon/crew/promotion_requests.py, tests/test_review_promoted_before_its_run.py and the evidence fragment.\nSCORE durability: 19\nJUSTIFICATION durability: reinstating the pre-fix call (str(exc)) in a scratch extraction of the head reddens tests/test_review_promoted_before_its_run.py:175 with phase promotion-requested, so the added case fails on the exact regression it guards.\nSCORE fit: 19\nJUSTIFICATION fit: the change keeps the module's private-helper idiom and its existing docstring voice at reckon/crew/promotion_requests.py:287-310, and introduces no forbidden name.\nSCORE reuse: 20\nJUSTIFICATION reuse: the fix extends the existing owner \u2014 reckon/crew/promotion_checks.py:1506 refusal_awaits_a_review \u2014 rather than adding a second predicate or re-parsing the refusal text.\nFINDING docs/evidence/fragments/work-flows-to-the-lane/review-promoted-before-its-run.html:43 non-blocking: the head-arm row citing job 1314543 and 55 passed in 12.45 s points at gate-sbatch.log, whose gate-head section records only a cwd and no revision or command, so the \"final head f5568d40\" claim cannot be checked from the artefact; the run's declared after_suite log does carry revision aa99f154 and the command.\n",
+  "review_run_id": "r-20261113T175429002719-review-of-review-promoted-before-its-run-aa99f15412f1",
+  "reviewed_base_sha": "f2cafde82d8de10112f47469abfaab0eb3fa77b0",
+  "reviewed_head_sha": "aa99f15412f11c3336a80b5a74df451432bf5808",
+  "reviewed_run_id": "r-20261113T161424570358-review-promoted-before-its-run",
+  "scores": {
+    "durability": 19,
+    "evidence": 17,
+    "fit": 19,
+    "goal_fidelity": 19,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T19:08:06.022793+00:00",
+  "total": 114
+}
