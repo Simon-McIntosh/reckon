@@ -1,0 +1,52 @@
+<section id="ready-the-monitor-shows-the-work-i-s115">
+<h3>The session pane shows a run starting</h3>
+<p>A run the session owns draws one row when it begins working, from either
+pair that announces it: <code>("queued", "working")</code>, an admission pass
+launching a request the pane already listed as queued, and
+<code>(None, "working")</code>, a follower attaching after the run began and
+delivering its first row already in the working word with no left side. Both
+pairs are in <code>START_KINDS</code> in <code>reckon/crew/ticker.py</code>;
+<code>RowPolicy._is_own_start</code> reads that set and excludes inventory
+first, and both gate on the pane's own session, so a peer session's start
+draws nothing. The pane's row path is the follower's own path:
+<code>_follow_selects</code> carries no state filter, so these rows reach the
+policy and are decided there.</p>
+<p id="ready-the-monitor-shows-the-work-i-s115-status">The deliverable was
+already present at this node's base revision
+<code>18385bba31f0292b7514a36666ccdfea1a906624</code>, landed as
+<code>3233841951</code>, so it was verified here and not reimplemented. This
+node changes no product source: it adds coverage for two behaviours beside the
+deliverable that the section's test left unasserted — a re-arm baseline must
+not draw as a start, and a follower attaching after an admitted request's start
+must not draw a second row.</p>
+<table>
+<thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+<tbody>
+<tr><td>Queued start, own session</td><td><code>[("queued", "working")]</code>, and the same pair again reads <code>[]</code>.</td></tr>
+<tr><td>First streamed row already working, own session</td><td><code>[(None, "working")]</code> for a fresh run; <code>[]</code> once that run's start was drawn.</td></td></tr>
+<tr><td>Both pairs, peer session</td><td><code>[]</code> and <code>[]</code>.</td></tr>
+<tr><td>Baseline already working, own session</td><td><code>[]</code>.</td></tr>
+<tr><td>Node test at head</td><td>5 passed.</td></tr>
+<tr><td>Importers of <code>reckon.crew.ticker</code>, base</td><td>493 passed in 115.28s.</td></tr>
+<tr><td>Importers of <code>reckon.crew.ticker</code>, head</td><td>495 passed in 247.69s.</td></tr>
+<tr><td>Added failures</td><td>0.</td></tr>
+<tr><td>Negative control, queued pair excluded from the start rows</td><td><code>2 failed, 3 passed</code>, <code>EXIT=1</code>: the queued case reads no row, and the attaching-follower case loses its first row.</td></tr>
+<tr><td>Negative control, baseline exclusions removed</td><td><code>1 failed, 4 passed</code>, <code>EXIT=1</code>: the inventory case draws a start.</td></tr>
+<tr><td>Negative control, attempt once-only gates removed</td><td><code>3 failed, 2 passed</code>, <code>EXIT=1</code>: both repeated starts and the attaching follower draw again.</td></tr>
+<tr><td>Lint and formatting on the staged path</td><td><code>ruff check</code> all checks passed; <code>ruff format --check</code> one file already formatted.</td></tr>
+</tbody>
+</table>
+<p id="ready-the-monitor-shows-the-work-i-s115-arms">The gate is one arm at a
+time. The base arm runs the same test files against an extraction of the base
+revision; the head arm is the worktree head with this node's change applied.
+Every log names its revision, the module path printed as imported and the
+literal command, and ends with a bare <code>EXIT=</code> line.</p>
+<p id="ready-the-monitor-shows-the-work-i-s115-guards">The baseline pair is
+suppressed by two predicates, <code>_is_own_start</code> and
+<code>_is_own_launch</code>, so removing either alone leaves the inventory case
+green — each is measured and recorded that way — and the case mutates red only
+with both removed. The case therefore asserts the behaviour the section owes
+rather than one line; the pair reads as defence in depth, and the review that
+first noted the line as untested is answered by the behaviour rather than by a
+white-box assertion on a private predicate.</p>
+</section>
