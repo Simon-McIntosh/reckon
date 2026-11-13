@@ -50,10 +50,16 @@ BATCH_PROBE = ["python", "{script}", ",".join(BATCH_JOBS)]
 # A probe that names no job at all: a file wait whose reference is a path.
 NO_JOB_PROBE = ["cat", "{state}"]
 
+# The same shape as the batch, with one bare number instead of a list. Nothing
+# in a lone operand says it is a job, so it stays unread.
+SINGLE_JOB = ("1312389",)
+SINGLE_NUMBER_PROBE = ["python", "{script}", SINGLE_JOB[0]]
+
 RUN_IDS = (
     "r-batch-one-job-running",
     "r-batch-no-job-listed",
     "r-no-job-named",
+    "r-single-bare-number",
 )
 
 
@@ -208,18 +214,15 @@ def _row(run: dict) -> dict:
     )
 
 
-def _row_prose(row: dict) -> str:
-    """The text a reader is shown for a row, lowercased.
+def _detail(row: dict) -> str:
+    """The row's detail text, lowercased.
 
-    The row's classification identifier and the evidence key it carries are a
-    machine vocabulary shared with the duty derivation and asserted as literals
-    by tests outside this node's write scope, so the word this reading is about
-    is the one the row's own sentences use. A row that says the run's process
-    is gone cannot be read as the project's watch producer having stopped.
+    The classification and obligation kind keep their names — another shipped
+    plan reads both — so the word this reading is about is the one the row's
+    own detail uses. A detail that names the run's own process cannot be read
+    as the project's watch producer having stopped.
     """
-    return " ".join(
-        str(row.get(key) or "") for key in ("detail", "next_action")
-    ).lower()
+    return str(row.get("detail") or "").lower()
 
 
 def test_a_batch_wait_with_one_job_running_is_not_abandoned(
@@ -289,14 +292,36 @@ def test_a_wait_naming_no_job_says_the_scheduler_was_not_consulted(
     assert "no scheduler job alive" not in row["detail"]
 
 
-def test_no_row_names_the_watch_producer(
+def test_a_single_bare_number_names_no_job(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    """All three readings name the run's own process, never the watch producer.
+    """One number handed to a script stays unread, as a pid or a port may be one.
 
-    The word the incident turned on is the one a row uses for what is gone.
-    Naming the run's own process keeps the reading from being acted on as a
-    stopped project watch producer, which is what happened for a day.
+    Nothing in a single bare operand says it is a job: ``kill -0 424242`` and
+    ``nc -z a-host 8765`` hand a script one number too. Reading it as a job
+    would ask the scheduler about something it was never told about, so the
+    operand is left unread and the row says the scheduler was not consulted.
+    """
+    asked = _scheduler_stub(monkeypatch, frozenset(SINGLE_JOB))
+    run = _waiting_run(RUN_IDS[3], probe=SINGLE_NUMBER_PROBE)
+
+    row = _row(run)
+
+    assert asked == []
+    assert recovery_wait._wait_probe_job_ids(["python", "/x/y.py", SINGLE_JOB[0]]) == ()
+    assert row["classification"] == recovery_classification.PRODUCER_GONE_STATUS
+    assert row["external_wait"]["producer_gone"]["scheduler_jobs"] == []
+    assert "the scheduler was not consulted" in row["detail"]
+
+
+def test_no_detail_names_the_watch_producer(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Every reading names the run's own process, never the watch producer.
+
+    The word the incident turned on is the one the row's detail uses for what
+    is gone. Naming the run's own process keeps the reading from being acted on
+    as a stopped project watch producer, which is what happened for a day.
     """
     rows = []
     _scheduler_stub(monkeypatch, frozenset({BATCH_JOBS[1]}))
@@ -304,9 +329,10 @@ def test_no_row_names_the_watch_producer(
     _scheduler_stub(monkeypatch, frozenset())
     rows.append(_row(_waiting_run(RUN_IDS[1], probe=BATCH_PROBE)))
     rows.append(_row(_waiting_run(RUN_IDS[2], probe=NO_JOB_PROBE)))
+    rows.append(_row(_waiting_run(RUN_IDS[3], probe=SINGLE_NUMBER_PROBE)))
 
     for row in rows:
-        assert "producer" not in _row_prose(row), row["detail"]
+        assert "producer" not in _detail(row), row["detail"]
 
 
 def test_the_batch_reader_is_the_one_the_classifier_calls() -> None:

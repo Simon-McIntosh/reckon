@@ -242,7 +242,7 @@ def test_a_sacct_wait_whose_job_left_the_queue_is_producer_gone(
         row["recovery_classification"] == recovery_classification.PRODUCER_GONE_STATUS
     )
     assert row["external_wait"]["producer_gone"]["still_seconds"] >= BOUND
-    assert "producer is gone" in row["detail"]
+    assert "the run's own process is gone" in row["detail"]
 
 
 def test_an_interpreter_wait_over_a_job_still_running_keeps_waiting(

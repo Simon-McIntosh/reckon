@@ -1543,9 +1543,9 @@ def _producer_gone_item(row: Mapping[str, Any], *, now: datetime) -> dict[str, A
     Every field is the classifier's own evidence rather than a second
     derivation: the probe vector, the value it last reported, the terminal
     states it was waiting for and how long that value has stood still. The
-    action names the two remedies left — carry the wait past its gone producer,
-    or discard the run — because no sweep will lift it and the session is the
-    only thing that can decide.
+    action names the two remedies left — carry the wait past the end of the
+    run's own process, or discard the run — because no sweep will lift it and
+    the session is the only thing that can decide.
     """
     item = _live_item(row, kind=PRODUCER_GONE_DUTY_KIND, now=now)
     item["reason"] = str(row.get("detail") or "")
