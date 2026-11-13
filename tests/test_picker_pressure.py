@@ -187,7 +187,7 @@ def test_a_reserve_hold_below_the_hard_ceiling_withholds_the_lane(
 
 
 @pytest.mark.parametrize("utilisation", [90, 100])
-def test_hard_ceiling_refuses_even_when_serving_is_recorded(
+def test_a_pacing_ceiling_is_stated_beside_the_lane(
     live_facts, monkeypatch, request_node, config, tmp_path, utilisation
 ):
     config["budget"]["utilisation_ceiling_pct"] = 90
@@ -199,7 +199,10 @@ def test_hard_ceiling_refuses_even_when_serving_is_recorded(
         ),
     )
     options = snapshot.candidates(request_node, config, tmp_path, records=[])
-    assert all(any(r.startswith("budget-ceiling:") for r in c.reasons) for c in options)
+    assert all(
+        any(p.startswith("budget-pace:") for p in c.preferences) for c in options
+    )
+    assert all(not any(r.startswith("budget-ceiling:") for r in c.reasons) for c in options)
 
 
 @pytest.mark.parametrize("status", ["refused", "unavailable", "logged-out"])

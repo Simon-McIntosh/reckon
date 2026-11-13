@@ -168,7 +168,6 @@ def test_refusal_and_serving_both_come_from_the_observation(
     [
         ("budget", "budget-ceiling"),
         ("context", "context-fit"),
-        ("competence", "competence"),
         ("availability", "availability"),
         ("paused", "lane-gate"),
     ],
@@ -194,12 +193,6 @@ def test_hard_exclusions(
                 "window_tokens": 1000,
             },
         )
-    elif kind == "competence":
-        monkeypatch.setattr(
-            snapshot.routing,
-            "_competence_verdict",
-            lambda **k: {"allowed": False, "reason": "too-large"},
-        )
     elif kind == "availability":
         monkeypatch.setattr(
             snapshot.resumption,
@@ -213,6 +206,22 @@ def test_hard_exclusions(
     options = snapshot.candidates(request_node, config, tmp_path, records=[])
     remote = next(c for c in options if c.backend == "remote")
     assert any(value.startswith(reason) for value in remote.reasons)
+
+
+def test_a_competence_verdict_is_stated_beside_the_lane(
+    live_facts, monkeypatch, request_node, config, tmp_path
+):
+    """Competence is a judgment about fit, so the router weighs it, not the filter."""
+
+    monkeypatch.setattr(
+        snapshot.routing,
+        "_competence_verdict",
+        lambda **k: {"allowed": False, "reason": "too-large"},
+    )
+    options = snapshot.candidates(request_node, config, tmp_path, records=[])
+    remote = next(c for c in options if c.backend == "remote")
+    assert remote.reasons == []
+    assert any(value.startswith("competence:") for value in remote.preferences)
 
 
 def test_exact_calls_jev(live_facts, request_node, config, tmp_path):
@@ -331,14 +340,23 @@ def test_unreachable_jev_has_explicit_fallback(
     assert "sensitive" not in json.dumps(selection.as_dict())
 
 
-def test_fallback_cannot_select_refused_default(
-    live_facts, request_node, config, tmp_path
+def test_fallback_never_selects_a_refused_default(
+    live_facts, monkeypatch, request_node, config, tmp_path
 ):
+    """A hard-excluded default is not chosen; a usable lane takes the node."""
+
     config["default_backend"] = "codex-spark"
     selection = run_pick(request_node, config, tmp_path, lambda *a, **k: {})
-    assert selection.backend is None
-    assert selection.action == "refuse"
-    assert selection.fallback_reason.endswith("default-backend-ineligible")
+    assert selection.backend == "local"
+    assert selection.action == "fallback"
+    assert selection.backend != "codex-spark"
+
+    # With no usable lane left the fallback refuses, naming the default.
+    monkeypatch.setattr(snapshot, "_dispatch_lane_gate", lambda backend: {"state": "paused"})
+    refused = run_pick(request_node, config, tmp_path, lambda *a, **k: {})
+    assert refused.backend is None
+    assert refused.action == "refuse"
+    assert refused.fallback_reason.endswith("default-backend-ineligible")
 
 
 @pytest.mark.parametrize(
