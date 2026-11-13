@@ -597,12 +597,14 @@ def _producer_gone_verdict(
     # liveness unknown rather than absent. A wait naming no job asks nothing of
     # the scheduler, so its silence says nothing either way.
     probe = wait.get("probe") or ()
-    job_ids = _wait_probe_job_ids(probe)
     if (
         _wait_probe_job_id(probe) is not None
         and _scheduler_job_alive(probe) is not False
     ):
         return None
+    # Read only once the question is settled: which jobs the scheduler was
+    # asked about is the row's evidence, not part of the gate.
+    job_ids = _wait_probe_job_ids(probe)
     still = _wait_value_still_seconds(
         record, wait=wait, observation=observation, now_seconds=now_seconds
     )
