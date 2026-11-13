@@ -442,7 +442,9 @@ def test_the_lander_lands_a_held_run_without_the_hold_guard(
     delivery, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     """Ignoring the hold in the lander makes the first case land."""
-    monkeypatch.setattr(queue_landing, "delivery_hold_reason", lambda pointer, revision=None: "")
+    monkeypatch.setattr(
+        queue_landing, "delivery_hold_reason", lambda pointer, revision=None: ""
+    )
     resume.hold_delivery(RUN, "the lead rejected this result; the coordinator decides")
 
     result = queue_landing.land_once()
