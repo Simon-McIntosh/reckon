@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="152">
+<meta name="plan-version" content="153">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -267,10 +267,16 @@
     <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §29</pre>
     <p class="r-fu-outcome">§29 landed on 2026-11-13 as a regression test. The remaining work moves to f-wftl-009.</p>
     </article>
-<article class="r-fu" data-id="f-wftl-009" data-status="open" data-written-by="reckon-build" data-written-at="2026-11-13" data-recommends-skill="/reckon-build work-flows-to-the-lane §32" data-resolved-at="" data-resolved-by="">
+<article class="r-fu" data-id="f-wftl-009" data-status="resolved" data-written-by="reckon-build" data-written-at="2026-11-13" data-recommends-skill="/reckon-build work-flows-to-the-lane §32" data-resolved-at="2026-11-13T07:20:05+00:00" data-resolved-by="reckon-build">
     <h4 class="r-fu-title">Build §9, §22, §30, §31 and §32</h4>
     <div class="r-fu-body">§30 (a scheduler wait read as abandoned) and §22 (a node needs no write paths) are running. §31 (holding a delivered run, and a resume that never vanishes) and §32 (no caller waits on a promotion) are filed and dispatched next. §9 waits on a measurement window the coordinator opens.</div>
     <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §32</pre>
+    <p class="r-fu-outcome">§31, §33, §34, §36 and §38 landed on 2026-11-13. The remaining work moves to f-wftl-010.</p>
+    </article>
+<article class="r-fu" data-id="f-wftl-010" data-status="open" data-written-by="reckon-build" data-written-at="2026-11-13" data-recommends-skill="/reckon-build work-flows-to-the-lane §39" data-resolved-at="" data-resolved-by="">
+    <h4 class="r-fu-title">Build §9, §22, §30, §32, §35, §37 and §39</h4>
+    <div class="r-fu-body">§39 (a queued launch never classifies the fleet) is the last thing keeping the admit service from launching, and is in a repair round. §30 is landing. §32 is through its merge repair and landing next. §37 is through its re-review. §35 is repairing two remaining importer failures. §22 is parked after breaking 322 tests and will be rescoped now that §33 has landed. §9 waits on a measurement window the coordinator opens.</div>
+    <pre class="r-fu-prompt">/reckon-build work-flows-to-the-lane §39</pre>
     </article>
 </section>
   <section data-reckon="comments" id="comments" class="r-comments">
@@ -562,6 +568,9 @@
 <div class="r-comment" data-section="s38" data-id="c-close-s38" data-who="reckon-build" data-when="2026-11-13T07:05:00Z">
     <div class="r-comment-body"><p>§38 landed at <code>e0e44c0ca6</code>: a stopped run resumes with advice. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s38-stopped-run-resumes-with-advice">evidence</a></p></div>
 </div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261113T064457972733-review-of-queued-launch-never-classifies-the-fleet-bd0fc739e430" data-who="reckon-build" data-when="2026-11-13T06:59:53Z">
+    <div class="r-comment-body"><p>Stored independent review of base 2c04e1a4da11c68694631b3297694c611bbad839 to head bd0fc739e4306993388458f248755abbc36294d2; parsed six-dimension review with one blocking finding requiring older admission backlog test expectation updates before integration.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
 </div>
@@ -630,9 +639,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
-</div>
-<div class="r-comment" data-section="s39" data-id="c-run-r-20261113T064457972733-review-of-queued-launch-never-classifies-the-fleet-bd0fc739e430" data-who="reckon-build" data-when="2026-11-13T06:59:53Z">
-    <div class="r-comment-body"><p>Stored independent review of base 2c04e1a4da11c68694631b3297694c611bbad839 to head bd0fc739e4306993388458f248755abbc36294d2; parsed six-dimension review with one blocking finding requiring older admission backlog test expectation updates before integration.</p></div>
 </div>
 </section>
 </main>
