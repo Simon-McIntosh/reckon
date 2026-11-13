@@ -992,8 +992,7 @@ def refresh_run_time_profile(
     is what keeps a promotion's cost from growing with the ledger. A base the
     anchor does not account for is rebuilt instead of being left in place,
     because a promotion is the only writer of this profile and nothing else
-    would ever replace it. Inside an operational read scope an unavailable
-    base is reported instead of walking completed history.
+    would ever replace it.
     """
 
     moment = now if now is not None else datetime.now(UTC)
@@ -1025,13 +1024,6 @@ def refresh_run_time_profile(
             appended=appended,
             anchor=anchor,
         )
-        from reckon.crew.open_run_index import pointers
-
-        if inputs is None and pointers() is not None:
-            return {
-                "status": "unavailable",
-                "reason": "the run-time profile needs an explicit history refresh",
-            }
         if inputs is None:
             # Nothing else builds this profile: a promotion is its only writer,
             # a pick serves one and never rebuilds it, and no refresh runs

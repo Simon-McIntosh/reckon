@@ -2487,7 +2487,19 @@ def _run_namings(
 
     namings: dict[str, tuple[str, Path | None]] = {}
     try:
-        rows = ledger.runs(project, root=_ledger_read_root(project, repository))
+        from reckon.crew import open_run_index
+
+        root = _ledger_read_root(project, repository)
+        signature = _HELD_SOURCE_SIGNATURE.get()
+        if (
+            open_run_index.pointers() is not None
+            and signature is not None
+            and open_run_index.matches_sources(project, root, signature)
+        ):
+            rows = ledger.open_runs(project, root)
+            rows.extend(open_run_index.rows_naming_trees(project, signature[4], root))
+        else:
+            rows = ledger.runs(project, root=root)
     except Exception:  # noqa: BLE001 — a screen must never fail the derivation
         return None
     for row in rows:
@@ -2593,27 +2605,17 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     if docs_dir is None:
         return {}
     repository = docs_dir.parent.resolve()
-    from reckon.crew import open_run_index
-
-    root = _ledger_read_root(project, repository)
-    occupied = _live_worktrees(project)
-    trees = [
-        tree
-        for tree in _held_registered_worktrees(repository)
-        if tree != repository and tree not in occupied and tree.is_dir()
-    ]
-    rows = ledger.open_runs(project, root)
-    rows.extend(open_run_index.rows_naming_trees(project, trees, root))
-    index = WorktreeRecordIndex()
-    for position, row in enumerate(rows):
-        index.replace(
-            position, row, retained=_retained_worktree(row), position=position
+    with file_memo.read_only_region():
+        key = (project, str(repository), _held_records_signature(project, repository))
+        if key[2] is None:
+            return _held_worktree_records_read(project, repository)
+        # Source identity is stable when unrelated checkout files are created.
+        return file_memo.memoized(
+            "obligation_held_records",
+            Path(__file__),
+            lambda: _held_records_read_uncached(project, repository, key[2]),
+            variant=key,
         )
-    return {
-        tree: record
-        for tree in trees
-        if (record := _holding_record(tree, index)) is not None
-    }
 
 
 def _held_records_read_uncached(

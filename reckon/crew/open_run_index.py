@@ -90,6 +90,9 @@ def _connect(path: Path) -> sqlite3.Connection:
         "CREATE TABLE IF NOT EXISTS tips (run_id TEXT PRIMARY KEY, tip TEXT)"
     )
     connection.execute("CREATE INDEX IF NOT EXISTS by_tip ON tips(tip)")
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS sources (name TEXT PRIMARY KEY, stamp TEXT)"
+    )
     return connection
 
 
@@ -125,6 +128,20 @@ def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
             "INSERT OR REPLACE INTO tips VALUES (?, ?)",
             (str(row["run_id"]), ledger._run_tip(row)),
         )
+        _source_written(connection, ledger.run_path(project, str(row["run_id"]), root))
+
+
+def _source_written(connection, path: Path) -> None:
+    from reckon import file_memo
+
+    try:
+        stamp = file_memo.file_signature(path)
+    except OSError:
+        return
+    connection.execute(
+        "INSERT OR REPLACE INTO sources VALUES (?, ?)",
+        (str(path.resolve()), json.dumps(stamp)),
+    )
 
 
 def aggregate_written(
@@ -152,6 +169,12 @@ def aggregate_written(
         connection.execute(
             "INSERT OR REPLACE INTO metadata VALUES ('version', ?)", (str(version),)
         )
+        _source_written(connection, ledger.ledger_path(project, root))
+        for row in rows:
+            if row.get("run_id"):
+                _source_written(
+                    connection, ledger.run_path(project, str(row["run_id"]), root)
+                )
 
 
 def _ensure(project: str, root=None) -> Path:
@@ -199,6 +222,11 @@ def _ensure(project: str, root=None) -> Path:
                     "INSERT OR REPLACE INTO metadata VALUES ('version', ?)",
                     (str(_version),),
                 )
+                _source_written(connection, ledger.ledger_path(project, root))
+                for source in (ledger.ledger_path(project, root).parent / "runs").glob(
+                    "*.json"
+                ):
+                    _source_written(connection, source)
                 connection.execute("INSERT INTO metadata VALUES ('ready', '1')")
     return path
 
@@ -402,7 +430,20 @@ def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
         row = connection.execute(
             "SELECT payload FROM records WHERE run_id=?", (run_id,)
         ).fetchone()
-        return json.loads(row[0]) if row else None
+        if row is None:
+            return None
+        if connection.execute(
+            "SELECT 1 FROM sources WHERE name=?", (str(source.resolve()),)
+        ).fetchone():
+            return next(
+                (
+                    item
+                    for item in ledger.load_aggregate(project, root)[0]["runs"]
+                    if item.get("run_id") == run_id
+                ),
+                None,
+            )
+        return json.loads(row[0])
 
 
 def rows_naming_trees(
@@ -447,3 +488,23 @@ def has_row(project: str, run_id: str, root=None) -> bool:
             ).fetchone()
             is not None
         )
+
+
+def matches_sources(project: str, root, signature: tuple) -> bool:
+    """Use the held reader's existing stat snapshot to validate the fast path."""
+    path = index_path(project, root)
+    if not path.exists():
+        return False
+    try:
+        with contextlib.closing(sqlite3.connect(path)) as connection:
+            if not connection.execute(
+                "SELECT 1 FROM metadata WHERE key='ready'"
+            ).fetchone():
+                return False
+            stored = dict(connection.execute("SELECT name, stamp FROM sources"))
+        aggregate, stamp, documents = signature[:3]
+        actual = {aggregate: json.dumps(stamp)} if stamp is not None else {}
+        actual.update((name, json.dumps(identity)) for name, identity in documents[1])
+        return stored == actual
+    except (OSError, sqlite3.Error):
+        return False

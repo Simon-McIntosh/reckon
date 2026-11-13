@@ -239,24 +239,30 @@ def test_an_open_record_is_read_from_its_authoritative_document(population):
     )
 
 
-def test_a_cold_profile_is_reported_without_reading_history(tmp_path, monkeypatch):
+def test_a_missing_profile_fold_keeps_the_history_rebuild(tmp_path, monkeypatch):
+    from reckon.crew.open_run_index import read_scope
     from reckon.crew.picker import lane_context
 
+    monkeypatch.setattr(lane_context, "_profile_cache_root", lambda: tmp_path)
     monkeypatch.setattr(lane_context, "_profile_stamp", lambda *args: "fixture-stamp")
     monkeypatch.setattr(
         lane_context, "_promotion_fold_inputs", lambda *args, **kwargs: None
     )
+    monkeypatch.setattr(
+        lane_context, "_indexed_profile_inputs", lambda *args, **kwargs: None
+    )
+    rebuilt = []
 
     def history(*args, **kwargs):
-        pytest.fail("a promotion rebuilt the full history profile")
+        rebuilt.append(kwargs)
+        return {"rows": 7}
 
     monkeypatch.setattr(lane_context, "run_time_profile", history)
-    from reckon.crew.open_run_index import read_scope
-
     with read_scope():
         result = lane_context.refresh_run_time_profile(PROJECT, appended=())
-    assert result["status"] == "unavailable"
-    assert "explicit history refresh" in result["reason"]
+    assert result["rows"] == 7
+    assert len(rebuilt) == 1
+    assert "rows" not in rebuilt[0]
 
 
 def test_operational_metadata_preserves_predecessor_ambiguity_and_session_meter(
