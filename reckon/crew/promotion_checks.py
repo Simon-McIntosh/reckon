@@ -2548,7 +2548,7 @@ def _landing_preconditions(
     existing = next(
         (
             item
-            for item in ledger.load(project, root=ledger_root)[0]["runs"]
+            for item in ledger.load_open(project, root=ledger_root)[0]["runs"]
             if str(item.get("run_id") or "") == run_id
         ),
         None,

@@ -1105,7 +1105,11 @@ def _promoted_run_ids(project: str) -> set[str]:
     """
     from reckon import ledger as ledger_module
 
+    from reckon.crew import open_run_index
+
     try:
+        if open_run_index.pointers() is not None:
+            return ledger_module.open_run_ids(project)
         return ledger_module.run_ids(project)
     except Exception:  # noqa: BLE001 - an unreadable ledger is not a promotion
         return set()

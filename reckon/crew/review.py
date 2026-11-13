@@ -4006,6 +4006,9 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
         fsync=False,
         create_parents=False,
     )
+    from reckon.crew import open_run_index
+
+    open_run_index.review_written(path, record)
 
 
 # ── The review-record store family, owned by review_records ──

@@ -2779,7 +2779,9 @@ def _open_review_refusal(
         return None
     if not stored_reviews:
         return None
-    closed = run_id in ledger.run_ids(project)
+    from reckon.crew.open_run_index import row_for_run
+
+    closed = row_for_run(project, run_id) is not None
     for stored in stored_reviews:
         if (
             review_lifecycle_module.lifecycle(

@@ -1,0 +1,350 @@
+"""Bound operational reads to live runs and promoted runs still owing cleanup.
+
+Live pointers are the start/end index for running work. The ledger projection
+keeps promoted rows addressable by identity, with a separate indexed population
+for retained worktrees. History readers continue to use the complete ledger.
+An existing installation bootstraps the projection once from the ledger; every
+subsequent ledger writer updates it in the same operation as its run record.
+"""
+
+from __future__ import annotations
+
+import contextlib
+import hashlib
+import json
+import sqlite3
+from collections.abc import Iterator, Mapping, Sequence
+from contextvars import ContextVar
+from functools import wraps
+from pathlib import Path
+from typing import Any
+
+_READERS: ContextVar[tuple[Mapping[str, Any], ...] | None] = ContextVar(
+    "open_run_readers", default=None
+)
+
+
+def pointers() -> tuple[Mapping[str, Any], ...] | None:
+    """The live-index snapshot this operational read is using, if any."""
+    return _READERS.get()
+
+
+@contextlib.contextmanager
+def read_scope() -> Iterator[None]:
+    """Share a live-index snapshot across nested operational readers."""
+    if pointers() is not None:
+        yield
+        return
+    from reckon.crew import runs
+
+    token = _READERS.set(tuple(runs.list_live()))
+    try:
+        yield
+    finally:
+        _READERS.reset(token)
+
+
+def operational_read(function):
+    """Keep an operational entry point inside the open-run read population."""
+
+    @wraps(function)
+    def bounded(*args, **kwargs):
+        with read_scope():
+            return function(*args, **kwargs)
+
+    return bounded
+
+
+def index_path(project: str, root: str | Path | None = None) -> Path:
+    """One projection per authoritative ledger path, including private trees."""
+    from reckon import ledger
+
+    source = str(ledger.ledger_path(project, root).resolve())
+    key = hashlib.sha256(source.encode()).hexdigest()
+    return ledger._index_directory() / "open-run-index" / f"{key}.sqlite"
+
+
+def _connect(path: Path) -> sqlite3.Connection:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path, timeout=30)
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS records "
+        "(run_id TEXT PRIMARY KEY, node TEXT, session TEXT, completed TEXT, "
+        "owed INTEGER, payload TEXT NOT NULL)"
+    )
+    for column in ("owed", "node", "session"):
+        connection.execute(
+            f"CREATE INDEX IF NOT EXISTS by_{column} ON records({column}, completed)"
+        )
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT)"
+    )
+    return connection
+
+
+def _values(row: Mapping[str, Any]) -> tuple[Any, ...]:
+    node = row.get("node") or ""
+    if isinstance(node, Mapping):
+        node = node.get("id") or ""
+    release = row.get("release") or {}
+    released = isinstance(release, Mapping) and release.get("worktree_released")
+    owed = bool(row.get("worktree_retention")) and not released
+    return (
+        str(row["run_id"]),
+        str(node),
+        str(row.get("session_id") or ""),
+        str(row.get("completed_at") or ""),
+        int(owed),
+        json.dumps(dict(row)),
+    )
+
+
+def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
+    """Advance the projection after its authoritative run file was written."""
+    with (
+        contextlib.closing(_connect(index_path(project, root))) as connection,
+        connection,
+    ):
+        connection.execute(
+            "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)", _values(row)
+        )
+
+
+def aggregate_written(
+    project: str, rows: Sequence[Mapping[str, Any]], root=None, *, version: int = 0
+) -> None:
+    """Index aggregate rows without dropping records held in their own files."""
+    with (
+        contextlib.closing(_connect(index_path(project, root))) as connection,
+        connection,
+    ):
+        connection.executemany(
+            "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
+            [_values(row) for row in rows if row.get("run_id")],
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO metadata VALUES ('version', ?)", (str(version),)
+        )
+
+
+def _ensure(project: str, root=None) -> Path:
+    """Bootstrap an installation that predates the incremental projection."""
+    from reckon import ledger
+
+    path = index_path(project, root)
+    with contextlib.closing(_connect(path)) as connection:
+        ready = connection.execute(
+            "SELECT value FROM metadata WHERE key='ready'"
+        ).fetchone()
+        if ready:
+            return path
+        # Serialize bootstrap with writers; rows written while this starts are
+        # either in the authoritative read or applied after this transaction.
+        with connection:
+            connection.execute("BEGIN IMMEDIATE")
+            if not connection.execute(
+                "SELECT value FROM metadata WHERE key='ready'"
+            ).fetchone():
+                token = _READERS.set(None)
+                try:
+                    data, _version = ledger.load(project, root)
+                finally:
+                    _READERS.reset(token)
+                connection.executemany(
+                    "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
+                    [_values(row) for row in data["runs"] if row.get("run_id")],
+                )
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES ('version', ?)",
+                    (str(_version),),
+                )
+                connection.execute("INSERT INTO metadata VALUES ('ready', '1')")
+    return path
+
+
+def bootstrap_complete(project: str, root=None) -> None:
+    """Mark a full aggregate write complete when no per-run files predate it."""
+    from reckon import ledger
+
+    if (
+        next((ledger.ledger_path(project, root).parent / "runs").glob("*.json"), None)
+        is not None
+    ):
+        return
+    with (
+        contextlib.closing(_connect(index_path(project, root))) as connection,
+        connection,
+    ):
+        connection.execute("INSERT OR REPLACE INTO metadata VALUES ('ready', '1')")
+
+
+def read_rows(
+    project: str, root=None, *, retained_only: bool = False
+) -> list[dict[str, Any]]:
+    """Read indexed retained rows and only the identities the live index names."""
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        found = {
+            row["run_id"]: row
+            for (payload,) in connection.execute(
+                "SELECT payload FROM records WHERE owed=1"
+            )
+            for row in [json.loads(payload)]
+        }
+        if not retained_only:
+            for pointer in pointers() or ():
+                if pointer.get("project") != project:
+                    continue
+                ids = [str(pointer.get("run_id") or "")]
+                node = pointer.get("node") or {}
+                if isinstance(node, Mapping):
+                    ids.extend(
+                        str(node.get(key) or "") for key in ("repairs", "predecessor")
+                    )
+                    identity = str(node.get("id") or "")
+                    if identity:
+                        row = connection.execute(
+                            "SELECT payload FROM records WHERE node=? ORDER BY completed DESC LIMIT 1",
+                            (identity,),
+                        ).fetchone()
+                        if row:
+                            parsed = json.loads(row[0])
+                            found[parsed["run_id"]] = parsed
+                for run_id in ids:
+                    row = connection.execute(
+                        "SELECT payload FROM records WHERE run_id=?", (run_id,)
+                    ).fetchone()
+                    if row:
+                        parsed = json.loads(row[0])
+                        found[parsed["run_id"]] = parsed
+                session = str(pointer.get("session_id") or "")
+                if session:
+                    row = connection.execute(
+                        "SELECT payload FROM records WHERE session=? ORDER BY completed DESC LIMIT 1",
+                        (session,),
+                    ).fetchone()
+                    if row:
+                        parsed = json.loads(row[0])
+                        found[parsed["run_id"]] = parsed
+    # The projection locates rows; the open run's own document remains the
+    # authority for in-place edits and a writer interrupted before indexing.
+    from reckon import ledger
+
+    live_ids = {
+        str(pointer.get("run_id") or "")
+        for pointer in pointers() or ()
+        if pointer.get("project") == project
+    }
+    for run_id in live_ids | {key for key, row in found.items() if _values(row)[4]}:
+        source = ledger.run_path(project, run_id, root)
+        if source.exists():
+            found[run_id] = ledger._read_run(source)
+    return sorted(found.values(), key=lambda row: str(row.get("completed_at") or ""))
+
+
+def _review_index_path(directory: Path) -> Path:
+    from reckon import ledger
+
+    key = hashlib.sha256(str(directory.resolve()).encode()).hexdigest()
+    return ledger._index_directory() / "review-lookup" / f"{key}.sqlite"
+
+
+def review_written(path: Path, record: Mapping[str, Any]) -> None:
+    """Index a review by subject and producer when its writer files it."""
+    index = _review_index_path(path.parent)
+    index.parent.mkdir(parents=True, exist_ok=True)
+    with (
+        contextlib.closing(sqlite3.connect(index, timeout=30)) as connection,
+        connection,
+    ):
+        connection.execute(
+            "CREATE TABLE IF NOT EXISTS reviews (name TEXT PRIMARY KEY, subject TEXT, producer TEXT)"
+        )
+        connection.execute("CREATE INDEX IF NOT EXISTS by_subject ON reviews(subject)")
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS by_producer ON reviews(producer)"
+        )
+        connection.execute(
+            "INSERT OR REPLACE INTO reviews VALUES (?, ?, ?)",
+            (
+                path.name,
+                str(record.get("reviewed_run_id") or ""),
+                str(record.get("review_run_id") or ""),
+            ),
+        )
+
+
+def review_paths(directory: Path) -> list[Path] | None:
+    """The review files open work can refer to, or None for a history read."""
+    snapshot = pointers()
+    if snapshot is None:
+        return None
+    ids = {str(row.get("run_id") or "") for row in snapshot} - {""}
+    for row in snapshot:
+        node = row.get("node") or {}
+        if isinstance(node, Mapping):
+            ids.update(
+                str(node.get(key) or "") for key in ("reviewed_run_id", "repairs")
+            )
+    ids.discard("")
+    if directory.name in ids:
+        return sorted(directory.glob("*.json"))
+    index = _review_index_path(directory)
+    paths: set[Path] = set()
+    if index.exists():
+        with contextlib.closing(
+            sqlite3.connect(f"{index.as_uri()}?mode=ro", uri=True)
+        ) as connection:
+            for run_id in ids:
+                paths.update(
+                    directory / name
+                    for (name,) in connection.execute(
+                        "SELECT name FROM reviews WHERE subject=? OR producer=?",
+                        (run_id, run_id),
+                    )
+                )
+    else:
+        # Legacy flat files are named by subject or producer. This compatibility
+        # lookup reads only names for open runs; filing them publishes the index.
+        for run_id in ids:
+            paths.update(directory.glob(f"{run_id}*.json"))
+    return sorted(paths)
+
+
+def ledger_version(project: str, root=None) -> int:
+    """The aggregate version captured by its writer or initial bootstrap."""
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        row = connection.execute(
+            "SELECT value FROM metadata WHERE key='version'"
+        ).fetchone()
+        return int(row[0]) if row else 0
+
+
+def row_for_run(project: str, run_id: str, root=None) -> dict[str, Any] | None:
+    """Lookup one promoted identity without decoding unrelated history."""
+    from reckon import ledger
+
+    source = ledger.run_path(project, run_id, root)
+    if source.exists():
+        return ledger._read_run(source)
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        row = connection.execute(
+            "SELECT payload FROM records WHERE run_id=?", (run_id,)
+        ).fetchone()
+        return json.loads(row[0]) if row else None
+
+
+def rows_naming_trees(
+    project: str, trees: Sequence[Path], root=None
+) -> list[dict[str, Any]]:
+    """Locate promoted rows still owing a registered tree by its naming keys."""
+    result = {}
+    with contextlib.closing(sqlite3.connect(_ensure(project, root))) as connection:
+        for tree in trees:
+            row = connection.execute(
+                "SELECT payload FROM records WHERE node=? AND json_extract(payload, '$.session')=? ORDER BY completed DESC LIMIT 1",
+                (tree.name, tree.parent.name),
+            ).fetchone()
+            if row:
+                parsed = json.loads(row[0])
+                result[parsed["run_id"]] = parsed
+    return list(result.values())

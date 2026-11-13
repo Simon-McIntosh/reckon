@@ -975,6 +975,7 @@ def refresh_run_time_profile(
     now: datetime | None = None,
     appended: Sequence[Mapping[str, Any]] | None = None,
     anchor: Mapping[str, Any] | None = None,
+    allow_rebuild: bool = True,
 ) -> Mapping[str, Any] | None:
     """Fold newly indexed rows into the stored profile, or build a missing base.
 
@@ -992,7 +993,8 @@ def refresh_run_time_profile(
     is what keeps a promotion's cost from growing with the ledger. A base the
     anchor does not account for is rebuilt instead of being left in place,
     because a promotion is the only writer of this profile and nothing else
-    would ever replace it.
+    would ever replace it. An operational caller sets ``allow_rebuild=False``
+    to report an unavailable base instead of walking completed history.
     """
 
     moment = now if now is not None else datetime.now(UTC)
@@ -1024,6 +1026,11 @@ def refresh_run_time_profile(
             appended=appended,
             anchor=anchor,
         )
+        if inputs is None and not allow_rebuild:
+            return {
+                "status": "unavailable",
+                "reason": "the run-time profile needs an explicit history refresh",
+            }
         if inputs is None:
             # Nothing else builds this profile: a promotion is its only writer,
             # a pick serves one and never rebuilds it, and no refresh runs

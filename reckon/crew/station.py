@@ -32,6 +32,7 @@ from reckon.crew import (
     ticker,
 )
 from reckon.crew.host_lease import LEASE_RENEW_SECONDS, HostLease, local_host
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.run_paths import crew_home
 from reckon.crew_follow_commands import (
     _FOLLOWER_IMAGE_COMMIT_ENV as IMAGE_IDENTITY_ENV,
@@ -671,6 +672,7 @@ class Station:
             )
         self.store.set_station_value(obligation_snapshot.STATION_TICK_STAGE_KEY, stage)
 
+    @operational_read
     def tick(self, *, now: datetime | None = None) -> list[dict[str, Any]]:
         """Publish every new transition, then move the heartbeat."""
         moment = now or self.clock()

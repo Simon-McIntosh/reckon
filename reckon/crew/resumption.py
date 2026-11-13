@@ -56,7 +56,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from reckon import _backends, ledger
+from reckon import _backends
 from reckon import budget as budget_module
 from reckon._backends import _human_age
 from reckon._store import write_atomically, write_json_atomically
@@ -791,8 +791,7 @@ def _ledger_session(
 
     A caller that already holds the run's committed row hands it in, so the
     ledger is not loaded again to find the row it just read. A caller holding
-    only a run id still pays that load, which is what every other ledger source
-    caller does.
+    only a run id reads that run's own record through its indexed identity.
 
     A caller that can find the row but would rather not unless it is needed
     hands in a nullary callable returning it or ``None``; it is called only
@@ -806,14 +805,13 @@ def _ledger_session(
         return str(row.get("session_id") or "").strip()
     if not project:
         return ""
+    from reckon.crew.open_run_index import row_for_run
+
     try:
-        data, _version = ledger.load(project, root=root)
+        candidate = row_for_run(project, run_id, root)
     except Exception:  # noqa: BLE001 - an unreadable ledger answers nothing
         return ""
-    for candidate in reversed(data.get("runs") or []):
-        if str(candidate.get("run_id") or "") == run_id:
-            return str(candidate.get("session_id") or "").strip()
-    return ""
+    return str(candidate.get("session_id") or "").strip() if candidate else ""
 
 
 def resolve_session(
@@ -836,8 +834,7 @@ def resolve_session(
     ``ledger_row`` is the committed row the caller already holds for this run,
     which the ledger source answers from directly instead of loading the ledger
     to find it again. A caller holding no row states only the run id and the
-    ledger source loads the ledger, so a view compacting every row of a project
-    does not make one load per row. A caller holding a nullary callable has the
+    ledger source reads that run's own indexed identity. A caller holding a nullary callable has the
     ledger source call it, so a run whose session the pointer or the stream
     answered never pays a ledger read it did not need.
 

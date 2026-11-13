@@ -56,6 +56,7 @@ from reckon.crew.node import (
     PlanReviewMissingError,
     parse_duration,
 )
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.query import project_run_rows, run_section_index
 from reckon.crew.recovery_classification import PRODUCER_GONE_STATUS
 from reckon.crew.recovery_review_dispatch import supersedes_head
@@ -834,7 +835,7 @@ def _review_dispatch_refusal(
         ]
     except (OSError, ValueError):
         return None
-    closed = run_id in ledger.run_ids(project)
+    closed = run_id in ledger.open_run_ids(project)
     for record in stored:
         if (
             review_lifecycle.lifecycle(
@@ -2590,17 +2591,27 @@ def _held_worktree_records(project: str) -> dict[Path, Mapping[str, Any]]:
     if docs_dir is None:
         return {}
     repository = docs_dir.parent.resolve()
-    with file_memo.read_only_region():
-        key = (project, str(repository), _held_records_signature(project, repository))
-        if key[2] is None:
-            return _held_worktree_records_read(project, repository)
-        # Source identity is stable when unrelated checkout files are created.
-        return file_memo.memoized(
-            "obligation_held_records",
-            Path(__file__),
-            lambda: _held_records_read_uncached(project, repository, key[2]),
-            variant=key,
+    from reckon.crew import open_run_index
+
+    root = _ledger_read_root(project, repository)
+    occupied = _live_worktrees(project)
+    trees = [
+        tree
+        for tree in _held_registered_worktrees(repository)
+        if tree != repository and tree not in occupied and tree.is_dir()
+    ]
+    rows = ledger.open_runs(project, root)
+    rows.extend(open_run_index.rows_naming_trees(project, trees, root))
+    index = WorktreeRecordIndex()
+    for position, row in enumerate(rows):
+        index.replace(
+            position, row, retained=_retained_worktree(row), position=position
         )
+    return {
+        tree: record
+        for tree in trees
+        if (record := _holding_record(tree, index)) is not None
+    }
 
 
 def _held_records_read_uncached(
@@ -3388,6 +3399,7 @@ def _index_lag_notice(project: str, *, now: datetime) -> dict[str, Any] | None:
     return dict(notice)
 
 
+@operational_read
 def obligations(
     project: str, session: str, *, fields: Iterable[str] | None = None
 ) -> dict[str, Any]:
@@ -3774,7 +3786,7 @@ def _obligations_view(
             str(item["kind"]),
         )
     )
-    closure = runs.drain(project, session=session)
+    unreconciled = runs.drain_unreconciled_by_session(project).get(session, 0)
     items = [_with_action_form(item) for item in items]
     acknowledged = [_with_action_form(item) for item in acknowledged]
     sections = run_section_index([pointers.values()])
@@ -3783,7 +3795,7 @@ def _obligations_view(
         "oldest_age_seconds": max(
             (int(item["age_seconds"]) for item in items), default=0
         ),
-        "unreconciled_runs": int(closure["unreconciled_runs"]),
+        "unreconciled_runs": int(unreconciled),
     }
     view = {
         "project": project,

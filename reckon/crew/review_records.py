@@ -33,6 +33,7 @@ from pathlib import Path
 from typing import Any
 
 from reckon import file_memo
+from reckon.crew import open_run_index
 
 # Each producer tick freezes the store's names and per-file identities once.
 # Parsed bytes use the shared bounded memo; the next tick revalidates every
@@ -59,6 +60,15 @@ def review_store_tick() -> Iterator[None]:
 
 def _tick_store(directory: Path) -> dict[Path, os.stat_result] | None:
     stores = _TICK_REVIEW_STORES.get()
+    selected = open_run_index.review_paths(directory)
+    if selected is not None:
+        files = {}
+        for path in selected:
+            try:
+                files[path] = path.stat()
+            except OSError:
+                continue
+        return files
     if stores is None:
         return None
     if directory not in stores:
@@ -1625,6 +1635,8 @@ def _store_indexes(
     that write having moved the directory away from it, and the next reader
     lists the store rather than adopting an index short of the record.
     """
+    if open_run_index.pointers() is not None:
+        return _build_store_indexes(directory)
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
         if directory not in tick_indexes:

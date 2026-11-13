@@ -19,6 +19,7 @@ from typing import Any
 from reckon import checkout_trust, ledger
 from reckon.crew import landing_measure, recovery, runs
 from reckon.crew.node import CrewError, is_collectible_test_path
+from reckon.crew.open_run_index import operational_read
 from reckon.crew.promotion_records import _node_test_files
 from reckon.crew.recovery_review_acceptance import _review_accepts_promotion
 
@@ -1834,6 +1835,7 @@ def _delivery_order(pointer: Mapping[str, Any]) -> tuple[int, str]:
     )
 
 
+@operational_read
 def land_once() -> dict[str, Any]:
     """Land each accepted delivery once and return obligations for refusals.
 

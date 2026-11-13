@@ -1426,7 +1426,9 @@ def _require_repairs_target(
     root = _repairs_ledger_root(project, authority)
     if _SAFE_ID.fullmatch(target):
         try:
-            data, _version = ledger.load(project, root=root)
+            from reckon.crew.open_run_index import row_for_run
+
+            target_row = row_for_run(project, target, root)
         except (ledger.LedgerError, _store.CorruptEnvelopeError) as exc:
             raise CrewError(
                 f"--repairs {target!r} cannot be checked: the ledger at "
@@ -1435,10 +1437,7 @@ def _require_repairs_target(
                 "absent, so repair the ledger before dispatching a repair "
                 "against it"
             ) from exc
-        if any(
-            isinstance(row, Mapping) and str(row.get("run_id")) == target
-            for row in data.get("runs", [])
-        ):
+        if target_row is not None:
             return
         try:
             pointer = read_pointer(target)
