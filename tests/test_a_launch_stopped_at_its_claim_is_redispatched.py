@@ -34,6 +34,7 @@ from reckon.crew import (
     recovery_liveness,
     runs,
 )
+from reckon.crew.node import CrewError
 
 RUN_ID = "r-station-claim-published"
 PROJECT = "sample"
@@ -99,7 +100,9 @@ def test_an_unreached_station_launch_frees_its_claim(
 ) -> None:
     bound = recovery_liveness.STRANDED_LAUNCH_BOUND_SECONDS
     if holder == "dead":
-        pointer, now = _station_launch(held_for_seconds=bound + 60, holder_pid=_dead_pid())
+        pointer, now = _station_launch(
+            held_for_seconds=bound + 60, holder_pid=_dead_pid()
+        )
     else:
         pointer, now = _station_launch(held_for_seconds=bound + 60)
 
@@ -137,12 +140,11 @@ def test_a_released_claim_starts_no_worker_and_writes_no_reservation(
         RUN_ID
     ]
 
-    with pytest.raises(Exception) as refused:
+    with pytest.raises(CrewError, match="released as a stranded launch"):
         dispatch_launch.reserve_launch_attempt(
             runs.run_dir(RUN_ID), RUN_ID, kind="dispatch"
         )
 
-    assert "released as a stranded launch" in str(refused.value)
     directory = runs.run_dir(RUN_ID)
     assert list(directory.glob("attempt-*.reservation")) == []
     assert not (directory / dispatch_launch.WORKER_RECORD_NAME).exists()
