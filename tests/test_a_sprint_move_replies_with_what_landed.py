@@ -14,6 +14,7 @@ import pytest
 
 from reckon import _plan_html, project_state
 from reckon import mcp as mcp_module
+from reckon import mcp_edit_plan as edit_module
 from reckon.project_state import create_project_state, read_resource, write_resource
 
 SOURCE = "S3"
@@ -237,7 +238,7 @@ def _fault_version_read_after_settle(monkeypatch: pytest.MonkeyPatch) -> None:
     reply performs to name the sprints' versions fails.
     """
     original_write = project_state._write_resource_unlocked
-    original_read = mcp_module.read_resource
+    original_read = edit_module.read_resource
     state = {"writes": 0}
 
     def write_wrapper(*args, **kwargs):
@@ -251,7 +252,7 @@ def _fault_version_read_after_settle(monkeypatch: pytest.MonkeyPatch) -> None:
         return original_read(docs_dir, project, resource_type, resource_id)
 
     monkeypatch.setattr(project_state, "_write_resource_unlocked", write_wrapper)
-    monkeypatch.setattr(mcp_module, "read_resource", read_wrapper)
+    monkeypatch.setattr(edit_module, "read_resource", read_wrapper)
 
 
 def test_a_failed_post_write_version_read_keeps_the_applied_verdict(
