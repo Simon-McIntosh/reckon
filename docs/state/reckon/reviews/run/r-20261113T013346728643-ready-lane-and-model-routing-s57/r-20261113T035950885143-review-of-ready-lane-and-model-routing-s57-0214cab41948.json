@@ -1,0 +1,87 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/picker/__init__.py:pick",
+    "reckon/crew/picker/snapshot.py:candidates",
+    "reckon/crew/picker/prompts.py:_candidate_state",
+    "reckon/crew/dispatch_picker.py:_name_reserved_lane",
+    "reckon/crew/picker/__init__.py:_record_pick_timings"
+  ],
+  "completed_at": "2026-11-13T06:12:47.917Z",
+  "dispatched_at": "2026-11-13T05:55:15Z",
+  "findings": [
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1776",
+      "severity": "non-blocking",
+      "text": "the comment block above the reserved-lane branch still reads it is removed here rather than left for Jev to weigh and never offered as a fallback either, which is the opposite of what this change does, so a reader of the edited block is told the superseded rule."
+    },
+    {
+      "file": "reckon/crew/picker/snapshot.py",
+      "line": "1307",
+      "severity": "non-blocking",
+      "text": "the waive_tier parameter and its docstring at :1331 document the whole-set oversize waiver the change deleted, leaving production code whose only caller is tests/test_an_oversize_node_reaches_a_reserved_lane.py:232."
+    },
+    {
+      "file": "tests/test_picker_reserved_lanes.py",
+      "line": "245",
+      "severity": "non-blocking",
+      "text": "the docstring still says A routine node at full headroom is never offered the reserved lane while the body at :247 asserts the lane is offered and marked reserved, so the file's own account contradicts its assertion."
+    },
+    {
+      "file": "tests/test_the_router_decides_on_preferences.py",
+      "line": "282",
+      "severity": "non-blocking",
+      "text": "the fallback case runs both picks while the local lane holds three worker slots, so selection.backend == clive holds whether or not reckon/crew/picker/__init__.py:329 keeps an unlifted reservation, and the done_when's holds-the-unlifted-reserved-lane clause is not falsifiable by the test that claims it."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T013346728643-ready-lane-and-model-routing-s57/manifest.md",
+      "line": "13",
+      "severity": "non-blocking",
+      "text": "the tests, baseline_suite.command and after_suite.command fields carry the placeholder for the 92 test files instead of the literal command, so those receipts are not re-runnable from the manifest and the literal survives only in the gate logs' command header lines; after_suite.revision likewise carries prose rather than a bare sha."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "read all nine commits of 63522670a6..0214cab41948; the production change is confined to reckon/crew/picker, and the five rewritten test files change their assertions from lane-removed to lane-offered-with-the-term-stated rather than deleting coverage.",
+    "done_when": "the plan's five cases are exercised in tests/test_the_router_decides_on_preferences.py:238, :249, :272, :296, :311 and the manifest records both gate arms; I re-ran the plan's named file at 0214cab41948 (8 passed) and the reserved-exclusion mutation (4 failed, 4 passed).",
+    "goal": "the goal is that the router decides on preferences and only a hard constraint excludes a lane; reckon/crew/picker/snapshot.py:1806 now routes a withheld reservation through _reserved_lane_evidence into the preferences list, leaving only context-fit, availability, in-harness-backend, lane-gate, a held budget verdict and the review exclusion in reasons.",
+    "manifest": "read; it reports 8 cases plus 2 negative controls in the new file, base 17 failed/690 passed against head 15 failed/700 passed, and discloses the five test files edited outside the declared fence with their commits.",
+    "write_paths": "the declared paths are snapshot.py, picker/__init__.py, the picker prompt module, the two named test files, the new test and the evidence fragment; the diff adds types.py, prompts.py and templates/questions.jinja inside the picker directory, and rewrites five test files outside the fence that the manifest lists under outside_scope."
+  },
+  "justifications": {
+    "durability": "I re-ran tests/test_the_router_decides_on_preferences.py under RECKON_PICKER_MUTATION=reserved-exclusion and 4 cases redden, but the fallback arm at tests/test_the_router_decides_on_preferences.py:282 leaves the local lane with room in both picks, so it passes whether or not reckon/crew/picker/__init__.py:_fallback_choice keeps an unlifted reservation.",
+    "evidence": "tests/test_the_router_decides_on_preferences.py:238-311 covers four of the five named cases and the new file passes 8 cases in my re-run and gate-head-2.log records 15 failed/700 passed against gate-base.log's 17 failed/690 passed with no head-only failure, but the fallback case at :282-306 cannot fail if the reservation filter in reckon/crew/picker/__init__.py:329-339 is removed.",
+    "fit": "the new helpers at reckon/crew/picker/__init__.py:305-358 follow the module's idiom, but the comment at snapshot.py:1773-1778 still says the reserved lane is removed rather than left for Jev to weigh, and snapshot.py:1307 keeps a waive_tier parameter no production caller passes.",
+    "goal_fidelity": "snapshot.py:1306-1311 states the competence verdict through preference_out instead of reasons and snapshot.py:1932-1940 attaches reserved, reservation and preferences to every candidate, which is what the goal asks for.",
+    "reuse": "the fallback selection was an inline expression at reckon/crew/picker/__init__.py:585 and _fallback_choice extends it in place, and a search of reckon/crew found no existing predicate over Candidate.worker_slots for room, so _has_room is the first rather than a copy.",
+    "scope_discipline": "every production path in the diff lies under reckon/crew/picker/, while the five named test files outside the fence are declared in the manifest's outside_scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that the router decides on preferences and only a hard constraint excludes a lane; reckon/crew/picker/snapshot.py:1806 now routes a withheld reservation through _reserved_lane_evidence into `preferences`, leaving only context-fit, availability, in-harness-backend, lane-gate, a held budget verdict and the review exclusion in `reasons`.\nVERDICT done_when: the plan's five cases are exercised in tests/test_the_router_decides_on_preferences.py:238, :249, :272, :296, :311 and the manifest records both gate arms; I re-ran the plan's named file at 0214cab41948 (8 passed) and the reserved-exclusion mutation (4 failed, 4 passed).\nVERDICT write_paths: the declared paths are reckon/crew/picker/snapshot.py, reckon/crew/picker/__init__.py, the picker prompt module, tests/test_a_reserved_lane_reads_its_published_window.py, tests/test_an_oversize_node_reaches_a_reserved_lane.py, the new test and the evidence fragment; the diff adds reckon/crew/picker/types.py, prompts.py and templates/questions.jinja inside the picker directory, and rewrites five test files outside the fence that the manifest lists under outside_scope.\nVERDICT manifest: read; it reports 8 cases plus 2 negative controls in the new file, base 17 failed/690 passed against head 15 failed/700 passed, and discloses the five test files edited outside the declared fence with their commits.\nVERDICT diff: read all nine commits of 63522670a6..0214cab41948; the production change is confined to reckon/crew/picker (an out-parameter on _fit, a preferences list on Candidate, a reservation block, _fallback_choice, and the prompt and glossary text), and the five rewritten test files change their assertions from \"lane removed\" to \"lane offered with the term stated\" rather than deleting coverage.\nCALL_SITES: reckon/crew/picker/__init__.py:pick, reckon/crew/picker/snapshot.py:candidates, reckon/crew/picker/prompts.py:_candidate_state, reckon/crew/dispatch_picker.py:_name_reserved_lane, reckon/crew/picker/__init__.py:_record_pick_timings\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: snapshot.py:1306-1311 states the competence verdict through preference_out instead of reasons and snapshot.py:1932-1940 attaches reserved, reservation and preferences to every candidate, which is what the goal asks for.\nSCORE evidence: 16\nJUSTIFICATION evidence: tests/test_the_router_decides_on_preferences.py:238-311 exercises five of the named cases and I re-ran it to 8 passed, with gate-head-2.log at 15 failed/700 passed against gate-base.log's 17 failed/690 passed and no head-only failure, but the fallback case at :282-306 cannot fail if the reservation filter in reckon/crew/picker/__init__.py:329-339 is removed.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: every production path in the diff lies under reckon/crew/picker/, while tests/test_picker.py, tests/test_picker_pressure.py, tests/test_picker_reserved_lanes.py, tests/test_reserved_lane_window_reading.py and tests/test_a_credit_lifted_lane_is_open_but_scarce.py lie outside the declared fence and are declared in the manifest's outside_scope.\nSCORE durability: 16\nJUSTIFICATION durability: I re-ran tests/test_the_router_decides_on_preferences.py under RECKON_PICKER_MUTATION=reserved-exclusion and 4 cases redden, but the fallback arm at tests/test_the_router_decides_on_preferences.py:282 leaves the local lane with room in both picks, so it passes whether or not reckon/crew/picker/__init__.py:_fallback_choice keeps an unlifted reservation.\nSCORE fit: 15\nJUSTIFICATION fit: the new helpers at reckon/crew/picker/__init__.py:305-358 follow the module's idiom, but the comment at snapshot.py:1773-1778 still says the reserved lane \"is removed here rather than left for Jev to weigh\", and snapshot.py:1307 keeps a waive_tier parameter no production caller passes.\nSCORE reuse: 18\nJUSTIFICATION reuse: the fallback selection was an inline expression at reckon/crew/picker/__init__.py:585 and _fallback_choice extends it in place, and a search of reckon/crew found no existing predicate over Candidate.worker_slots for room, so _has_room is the first rather than a copy.\nFINDING reckon/crew/picker/snapshot.py:1776 non-blocking: the comment block above the reserved-lane branch still reads it \"is removed here rather than left for Jev to weigh\" and \"never offered as a fallback either\", which is the opposite of what this change does, so a reader of the edited block is told the superseded rule.\nFINDING reckon/crew/picker/snapshot.py:1307 non-blocking: the waive_tier parameter and its docstring at :1331 document the whole-set oversize waiver the change deleted, leaving production code whose only caller is tests/test_an_oversize_node_reaches_a_reserved_lane.py:232.\nFINDING tests/test_picker_reserved_lanes.py:245 non-blocking: the docstring still says \"A routine node at full headroom is never offered the reserved lane\" while the body at :247 asserts the lane is offered and marked reserved, so the file's own account contradicts its assertion.\nFINDING tests/test_the_router_decides_on_preferences.py:282 non-blocking: the fallback case runs both picks while the local lane holds three worker slots, so selection.backend == \"clive\" holds whether or not reckon/crew/picker/__init__.py:329 keeps an unlifted reservation, and the done_when's \"holds the unlifted reserved lane\" clause is not falsifiable by the test that claims it.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T013346728643-ready-lane-and-model-routing-s57/manifest.md:13 non-blocking: the tests, baseline_suite.command and after_suite.command fields carry the placeholder for the 92 test files instead of the literal command, so those receipts are not re-runnable from the manifest and the literal survives only in the gate logs' command header lines; after_suite.revision likewise carries prose rather than a bare sha.",
+  "review_run_id": "r-20261113T035950885143-review-of-ready-lane-and-model-routing-s57-0214cab41948",
+  "reviewed_base_sha": "63522670a6a925b7a62907e81218cd43f190010a",
+  "reviewed_head_sha": "0214cab41948cfa536bf767c71166190ef95aabf",
+  "reviewed_run_id": "r-20261113T013346728643-ready-lane-and-model-routing-s57",
+  "reviewer": {
+    "backend": "local",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash"
+  },
+  "scores": {
+    "durability": 16,
+    "evidence": 16,
+    "fit": 15,
+    "goal_fidelity": 18,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T06:18:16.755083+00:00",
+  "total": 99
+}
