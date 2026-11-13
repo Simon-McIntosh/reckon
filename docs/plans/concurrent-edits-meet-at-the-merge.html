@@ -24,7 +24,7 @@
   <title>Concurrent Edits Meet At The Merge | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="65">
+<meta name="plan-version" content="66">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -274,6 +274,9 @@
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261112T215811285812-a-merge-repair-is-not-held-by-a-dead-worker" data-who="reckon-build" data-when="2026-11-12T22:36:27.625Z">
     <div class="r-comment-body"><p>A merge repair is released once the resumed turn's process is gone — a pointer or worker-record pid proved dead no longer holds the round, while unknown liveness keeps the old stream reading; node gate 4 passed, negative control at the base revision 2 failed/2 passed, importer arms 184 passed at base and 188 at head with zero added failure ids, suite arms 51/51.</p></div>
+</div>
+<div class="r-comment" data-section="s11" data-id="c-run-r-20261112T231854969031-review-of-a-gate-log-s-failure-count-is-read-across-the-whole-gate-fbd1bd5fdc3c" data-who="reckon-build" data-when="2026-11-12T23:30:42.628Z">
+    <div class="r-comment-body"><p>Independent review of §11 stored: goal met and evidence sound (base b30f1e1350 106 passed, head 1836dc71d0 111 passed, negative control 3 failed/2 passed at base, zero added failures); scores goal_fidelity 20, evidence 16, scope_discipline 20, durability 18, fit 16, reuse 20; three non-blocking findings (stale last-run docstring, whole-log ctest union on a re-run gate, manifest arm command disagreeing with its cited log headers).</p></div>
 </div>
 </section>
 </main>
