@@ -1,0 +1,125 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_independence": "Every added assertion has a falsifying condition above; no added comparison is a tautological comparison against the same supplied value. The pre-change PID is observed before a subsequent supervisor action, and replacement stamp content is observed in a real child.",
+  "assertion_review": {
+    "147": "Fails if the fixture no longer pauses before first publication; this independently verifies the race precondition.",
+    "148-152 pytest.raises": "Fails if the paused service does not hold the pass lock, because the second descriptor acquires it instead of raising BlockingIOError.",
+    "155": "Restoring the early missing-record return permits replacement during registration, so the recorded PID differs from the pre-supervision PID; both reproduction and full reverse-commit control fail here.",
+    "156": "Fails if the registering process receives SIGTERM before publication completes; its own signal handler writes the stopped marker.",
+    "157": "Fails if supervision defers without publishing the reload request; that request must prevent entry to the next stale pass.",
+    "159,161,162 _wait": "Fail by bounded timeout if registration cannot resume, the original pass cannot finish after release, or the original process cannot reach its first boundary.",
+    "165": "Fails if a completed original pass never leads to replacement on the next supervisor cycle.",
+    "166 _wait": "Fails by bounded timeout if the recorded replacement never begins its first pass.",
+    "167": "Fails if the independently running replacement reads the old code-stamp file value; although the fixture supplies the new file content, this checks a child observation rather than echoing an argument from a mocked return.",
+    "168": "Fails if the original service enters a second pass despite the pending reload request."
+  },
+  "call_site_count": 4,
+  "call_sites": [
+    "reckon/crew/admission/service.py:admit_until_stopped (service_pass at line 268)",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices._code_decision (lines 1559, 1572 and 1605)",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices.reload (line 1726)",
+    "reckon/crew/fleet_supervisor.py:DeclaredServices.supervise_once"
+  ],
+  "commits_reviewed": [
+    "f7d28f2648e84a2039f3e94de044a95305c9686e",
+    "93248e049948b6fd25491879590c0a72b2b67b29",
+    "bb7fe7fd6d941e876f8f67e11fa31447908b8627"
+  ],
+  "completed_at": "2026-11-13T07:08:34Z",
+  "dispatched_at": "2026-11-13T07:00:26Z",
+  "findings": [],
+  "gate_receipts": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_service_reloads_between_passes.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T033507849520-service-reloads-between-passes/registration-final-head.log",
+      "measurement_cwd": "/tmp/service-reload-gate-wjdklwpe/tree",
+      "measurement_module": "/tmp/service-reload-gate-wjdklwpe/tree/reckon/crew/fleet_supervisor.py",
+      "observed_failure_ids": [],
+      "observed_summary": "64 passed in 23.92s",
+      "revision": "bb7fe7fd6d941e876f8f67e11fa31447908b8627"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T033507849520-service-reloads-between-passes/registration-original-base.log",
+      "measurement_cwd": "/tmp/service-reload-gate-54aegvu3/tree",
+      "measurement_module": "/tmp/service-reload-gate-54aegvu3/tree/reckon/crew/fleet_supervisor.py",
+      "observed_failure_ids": [],
+      "observed_summary": "51 passed in 6.79s",
+      "revision": "b575b660a03426db747bcf6b452599b2c47712fa"
+    },
+    "repair_baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_a_service_reloads_between_passes.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T033507849520-service-reloads-between-passes/registration-repair-base.log",
+      "measurement_cwd": "/tmp/service-reload-gate-1n4m81h6/tree",
+      "measurement_module": "/tmp/service-reload-gate-1n4m81h6/tree/reckon/crew/fleet_supervisor.py",
+      "observed_failure_ids": [],
+      "observed_summary": "63 passed in 17.49s",
+      "revision": "71765ae67b433370aec37e5bd21e6262eb8ad7a7"
+    }
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "Verified production admission and supervisor call paths.",
+    "diff": "Read each of f7d28f2648e84a2039f3e94de044a95305c9686e (controlled regression), 93248e049948b6fd25491879590c0a72b2b67b29 (registration locking), and bb7fe7fd6d941e876f8f67e11fa31447908b8627 (evidence); all three files remain within scope.",
+    "done_when": "Read the source live pointer node.done_when and live docs/plans/work-flows-to-the-lane.html#s37; registration-repair-base.log records 63 passed, registration-final-head.log records 64 passed, and the reverse-control log restores the controlled registration failure; broad importer results are explicitly historical.",
+    "goal": "Read the source live pointer node.goal (pass-boundary code replacement); fleet_supervisor.py:1325-1348 and :1622-1645 now serialize first-pass publication with the reload decision, answering the prior registration-race finding.",
+    "manifest": "Read the current source manifest.md through head bb7fe7fd6d941e876f8f67e11fa31447908b8627; its completed baseline_suite and after_suite logs reconcile to 51 and 64 passes with zero failures, and repair_baseline_suite separately records 63 passes.",
+    "write_paths": "Read source live pointer node.write_paths and manifest.md orientation_write_paths; the incremental diff changes only fleet_supervisor.py, test_a_service_reloads_between_passes.py and the declared evidence fragment."
+  },
+  "justifications": {
+    "durability": "tests/test_a_service_reloads_between_passes.py:155 compares the actual post-supervision PID against the independently captured pre-change PID, and reversing the product repair demonstrably fails that assertion while the repaired head passes.",
+    "evidence": "registration-final-head.log records 64 passed and EXIT=0 at the exact head, registration-reverse-control.log records 1 failed and 63 passed with EXIT=1, and the fragment explicitly limits the broad importer comparison to the earlier source head.",
+    "fit": "reckon/crew/fleet_supervisor.py:1325-1353 and :1623-1650 use the surrounding context-managed flock and atomic-publication idiom, release registration before pass work, and introduce mechanism-based names.",
+    "goal_fidelity": "reckon/crew/fleet_supervisor.py:1622 publishes the reload request before both lock probes, while :1338 publishes pass ownership under the registration lock, closing the previously reviewed first-registration interleaving.",
+    "reuse": "Capability search at the reviewed head found service_pass and DeclaredServices as the pass-boundary owners; the patch extends those owners, while the opened admission/service.py:41 lock and follower_reload.py:87 reloader govern different lifetimes rather than first-pass publication.",
+    "scope_discipline": "The three paths in the 71765ae67b43..bb7fe7fd6d94 diff are expressly granted by the source node.write_paths and each implements, tests or records the registration-race repair."
+  },
+  "limitations": [
+    "The original baseline_suite remains at b575b660a03426db747bcf6b452599b2c47712fa as required by the source run; the incremental diff starts at the previous reviewed head 71765ae67b433370aec37e5bd21e6262eb8ad7a7 and its matching repair_baseline_suite is also checked.",
+    "Broad importer logs predate this registration repair; focused legacy compatibility records 10 passes at both repair revisions."
+  ],
+  "previous_finding_answer": "The first-registration blocking finding in the prior review is answered by the shared registration lock and request-before-probe ordering; the controlled reproduction and reverse-commit control fail at line 155, and the repaired head passes.",
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read the source live pointer node.goal (pass-boundary code replacement); fleet_supervisor.py:1325-1348 and :1622-1645 now serialize first-pass publication with the reload decision, answering the prior registration-race finding.\nVERDICT done_when: Read the source live pointer node.done_when and live docs/plans/work-flows-to-the-lane.html#s37; registration-repair-base.log records 63 passed, registration-final-head.log records 64 passed, and the reverse-control log restores the controlled registration failure; broad importer results are explicitly historical.\nVERDICT write_paths: Read source live pointer node.write_paths and manifest.md orientation_write_paths; the incremental diff changes only fleet_supervisor.py, test_a_service_reloads_between_passes.py and the declared evidence fragment.\nVERDICT manifest: Read the current source manifest.md through head bb7fe7fd6d941e876f8f67e11fa31447908b8627; its completed baseline_suite and after_suite logs reconcile to 51 and 64 passes with zero failures, and repair_baseline_suite separately records 63 passes.\nVERDICT diff: Read each of f7d28f2648e84a2039f3e94de044a95305c9686e (controlled regression), 93248e049948b6fd25491879590c0a72b2b67b29 (registration locking), and bb7fe7fd6d941e876f8f67e11fa31447908b8627 (evidence); all three files remain within scope.\nCALL_SITES: reckon/crew/admission/service.py:admit_until_stopped (service_pass at line 268), reckon/crew/fleet_supervisor.py:DeclaredServices._code_decision (lines 1559, 1572 and 1605), reckon/crew/fleet_supervisor.py:DeclaredServices.reload (line 1726), reckon/crew/fleet_supervisor.py:DeclaredServices.supervise_once\nSCORE goal_fidelity: 20\nJUSTIFICATION goal_fidelity: reckon/crew/fleet_supervisor.py:1622 publishes the reload request before both lock probes, while :1338 publishes pass ownership under the registration lock, closing the previously reviewed first-registration interleaving.\nSCORE evidence: 19\nJUSTIFICATION evidence: registration-final-head.log records 64 passed and EXIT=0 at the exact head, registration-reverse-control.log records 1 failed and 63 passed with EXIT=1, and the fragment explicitly limits the broad importer comparison to the earlier source head.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The three paths in the 71765ae67b43..bb7fe7fd6d94 diff are expressly granted by the source node.write_paths and each implements, tests or records the registration-race repair.\nSCORE durability: 20\nJUSTIFICATION durability: tests/test_a_service_reloads_between_passes.py:155 compares the actual post-supervision PID against the independently captured pre-change PID, and reversing the product repair demonstrably fails that assertion while the repaired head passes.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/fleet_supervisor.py:1325-1353 and :1623-1650 use the surrounding context-managed flock and atomic-publication idiom, release registration before pass work, and introduce mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability search at the reviewed head found service_pass and DeclaredServices as the pass-boundary owners; the patch extends those owners, while the opened admission/service.py:41 lock and follower_reload.py:87 reloader govern different lifetimes rather than first-pass publication.\n",
+  "reproduction_quote": "registration-reproduction.log: tests/test_a_service_reloads_between_passes.py:155: AssertionError: assert 4078816 == 4078573; 1 failed, 63 passed in 19.71s; EXIT=1",
+  "review_method": "Read-only review of exact Git objects and source receipts; no source mutation or test rerun. MCP plan read timed out, so canonical live plan HTML s37 was read directly.",
+  "review_run_id": "r-20261113T065627153818-review-of-service-reloads-between-passes-bb7fe7fd6d94",
+  "review_subject_write_paths": [
+    "reckon/crew/fleet_supervisor.py",
+    "reckon/crew/admission/service.py",
+    "tests/test_a_service_reloads_between_passes.py",
+    "docs/evidence/fragments/work-flows-to-the-lane/service-reloads-between-passes.html",
+    "docs/figures/work-flows-to-the-lane/service-reloads-between-passes",
+    "reckon/crew/dispatch_launch.py"
+  ],
+  "reviewed_base_sha": "71765ae67b433370aec37e5bd21e6262eb8ad7a7",
+  "reviewed_head_sha": "bb7fe7fd6d941e876f8f67e11fa31447908b8627",
+  "reviewed_run_id": "r-20261113T033507849520-service-reloads-between-passes",
+  "scores": {
+    "durability": 20,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 20,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:26:53.252419+00:00",
+  "total": 119
+}
