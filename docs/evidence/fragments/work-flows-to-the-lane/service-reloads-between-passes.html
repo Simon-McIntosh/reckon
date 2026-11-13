@@ -9,7 +9,7 @@
   <meta name="plan-evidence-for" content="reckon:work-flows-to-the-lane">
   <meta name="plan-verifies" content="reckon:work-flows-to-the-lane#s37">
   <meta name="plan-recorded-at" content="2026-11-13">
-  <meta name="plan-verdict" content="blocked">
+  <meta name="plan-verdict" content="passed">
   <title>Declared service pass boundary evidence</title>
 </head>
 <body>
@@ -33,25 +33,30 @@
   of its replacement checkout releases the pending request. A live copy's recorded
   stamp is retained in supervisor state when its runtime PID record disappears;
   disappearance alone does not restart it. The implementation reuses the atomic JSON
-  writer, flock, existing checkout-trust decisions, and existing stop/start paths.</p>
+  writer, flock, existing checkout-trust decisions, and existing stop/start paths.
+  Worker launches remove <code>RECKON_SERVICE_PASS_PATH</code> after merging their
+  environment overlays. A launched child therefore cannot join its parent service's
+  boundary, and neither the parent environment nor the caller's overlay is mutated.</p>
   <table id="service-reloads-between-passes-measurements">
     <thead><tr><th>Measurement on all_debug</th><th>Base</th><th>Head</th></tr></thead>
     <tbody>
-      <tr><td>Armed node gate and staged-write inventory</td><td>51 passed</td><td>59 passed</td></tr>
-      <tr><td>Importer population, up to four workers</td><td>131 failed, 682 passed</td><td>131 failed, 689 passed, 1 error</td></tr>
-      <tr><td>Importer delta including setup errors</td><td colspan="2">One added error ID, zero removed IDs; required zero-added condition is unmet.</td></tr>
+      <tr><td>Armed node gate and staged-write inventory</td><td>51 passed</td><td>63 passed</td></tr>
+      <tr><td>Importer population, up to four workers</td><td>155 failed, 1232 passed</td><td>155 failed, 1244 passed</td></tr>
+      <tr><td>Importer delta including setup errors</td><td colspan="2">Zero added or removed failure IDs; zero setup errors in either arm.</td></tr>
     </tbody>
   </table>
-  <p id="service-reloads-between-passes-tests">The eight new tests exercise an active
+  <p id="service-reloads-between-passes-tests">The twelve new cases exercise an active
   pass completing before replacement, replacement before its next pass, a fresh
   supervisor adopting active work, replacement between passes in one cycle, an
   overlong pass's logged bound, cancellation of a pending request, a vanished runtime
   record, admission's lock through verdict publication, and an unsupervised manual
-  pass. Controlled subprocess markers identify the running copy and the code stamp
-  read by each pass. All eight pass.</p>
+  pass. Four parameterized cases launch children through the worker environment
+  boundary for both launch dialects, with inherited and overlaid service paths.
+  Controlled subprocess markers identify the running copy and the code stamp
+  read by each pass. All twelve cases pass.</p>
   <p id="service-reloads-between-passes-control">Declared mutation: restart on the stamp
   change regardless of the pass. Replacing the boundary decision with an unconditional
-  restart produces <strong>5 failed, 54 passed</strong>, <code>EXIT=1</code>. The active-pass
+  restart produces <strong>5 failed, 58 passed</strong>, <code>EXIT=1</code>. The active-pass
   test fails because its original PID is stopped and replaced during the pass; that
   test passes at the delivered source head. The overrun case also detects the missing
   bound in the restart log. The mutation is confined to a disposable extraction.</p>
@@ -60,13 +65,14 @@
   resolved working directory. Base, head and mutation arms run sequentially in separate
   partition jobs. Exploratory arms using the worktree's live Git pointer are superseded.
   Test scratch is removed after each job; the cancelled exploratory job's scratch was
-  explicitly removed on its owning node. Ruff check and format check pass for all three
-  changed Python files.</p>
+  explicitly removed on its owning node. Ruff adds no findings across the four
+  changed Python files: the two worker-launch findings already exist at base.
+  All four files pass format check.</p>
   <p id="service-reloads-between-passes-handoff">Product source is committed through
-  <code>cb64c37031a3e6fd47ab5d4279eaa3cb80b87193</code>. Commands, summaries, failure IDs,
-  the red mutation log and the exact remaining blocker are held in the run manifest
+  <code>4d2b5dc6598f1e850f86645fca54d4ca463888c5</code>. Commands, summaries, failure IDs,
+  the red mutation logs and the stability observations are held in the run manifest
   and receipts under <code>r-20261113T033507849520-service-reloads-between-passes</code>.
-  The coordinator owns the blocker disposition, independent review, integration,
+  The coordinator owns independent review, integration,
   merged-head verification and shared plan-state update.</p>
 </article>
 </body>
