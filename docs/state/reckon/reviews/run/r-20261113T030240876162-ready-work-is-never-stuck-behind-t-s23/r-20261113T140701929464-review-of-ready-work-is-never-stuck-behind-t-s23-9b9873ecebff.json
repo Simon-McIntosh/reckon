@@ -1,0 +1,86 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": [
+    "reckon/evidence.py:687 compose_landed_record (composes docs/evidence/fragments/<plan>/<node>.html into the plan's landed record)"
+  ],
+  "completed_at": "2026-11-13T14:31:11.117Z",
+  "dispatched_at": "2026-11-13T14:16:49Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:17:37.558511+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:18:20.714597+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:19:31.715591+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan's next health review",
+      "recorded_at": "2026-11-13T17:19:41.429356+00:00"
+    }
+  },
+  "findings": [
+    {
+      "category": "citation",
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html",
+      "line": 61,
+      "severity": "non-blocking",
+      "text": "line citations drift by up to eight lines from what the fragment names: the shipped text cites `_reserved_lane_exclusion` at snapshot.py:1267, whose `def` is at 1259 and whose cited return is at 1317-1320; snapshot.py:633-638 for the `usable` filter, whose first line is 639; picker/__init__.py:113-145 for `_record_pick_timings`, defined at 115 with `exclusions` written at 135 and `estimated_context` at 144. The done_when asks for line citations and these land in the right code, but a reader following the first one opens a function boundary that is not there."
+    },
+    {
+      "category": "evidence",
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html",
+      "line": 144,
+      "severity": "non-blocking",
+      "text": "`The input that moved is one field` is stated flatly, but only the code-versus-data split is isolated (logs/isolate-head-code-tree-data.log). No arm varies s6's data-status alone, so the single-field attribution is an inference from one isolation plus one candidate, not a measurement; the fragment's own conditional-attribution discipline elsewhere should cover this sentence too."
+    },
+    {
+      "category": "reuse",
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "a third record of the same replay: replay-the-two-oversizednode-routing-refusals.html already carries the eleven-and-three reproduced rows with the same reserved-lane/waiver findings, and oversized-node-reserved-lane-reproduced.html carries the same title and the reproduced-exit-0 claim. The genuinely new content is the head-of-delivery non-reproduction and the three fix bullets; the rest is duplicated, so a reader must read three records to learn which is current."
+    },
+    {
+      "category": "evidence",
+      "file": "docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html",
+      "line": 144,
+      "severity": "non-blocking",
+      "text": "the fragment cites logs/replay-at-head-the-day-of-delivery.log as the arm showing the replay can fail, and that log carries no `EXIT=` line, so its completion is inferred from its own `replay: 2 attempts, refusals NOT reproduced` summary. It is the one arm proving the check is not vacuous, and it is the only evidence file in the run without a readable exit status."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "Two commits read against 4d5c4389b7: e94bf95d7a adds the 152-line fragment, 9b9873eceb closes one unclosed paragraph; no deletions, no other paths.",
+    "done_when": "The done_when asks for a reproducing gate log ending in a bare EXIT= line and a fragment naming paths with line citations; logs/replay-at-9bdaea5ab6.log ends `EXIT=0` with 11 of 11 and 3 of 3 rows reproduced, and the fragment cites snapshot.py and dispatch.py lines.",
+    "goal": "The node's goal is why an oversized node did not reach the reserved lane, reproduced; the fragment reproduces both recorded refusals against main@9bdaea5ab6 and names the deciding terms.",
+    "manifest": "The manifest reads complete, names commits e94bf95d7a and 9b9873eceb, cites the gate log and its measurement module and citable lines.",
+    "write_paths": "The declared write path is docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop; the diff adds exactly one new file inside that directory."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is why an oversized node did not reach the reserved lane, reproduced; the fragment at docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:1 reproduces both recorded refusals and names the deciding terms.\nVERDICT done_when: the done_when names a replay reproducing both attempts with a bare EXIT= line and a fragment with line citations; logs/replay-at-9bdaea5ab6.log ends EXIT=0 and the fragment cites snapshot.py and dispatch.py lines.\nVERDICT write_paths: the declared write path is docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop; the diff adds exactly one file inside it and nothing else.\nVERDICT manifest: read; it records status complete, commits e94bf95d7a and 9b9873eceb, the gate command, and the measurement module under /tmp/reckon-crew-scratch.\nVERDICT diff: read commit by commit against 4d5c4389b7; e94bf95d7a adds the 152-line fragment and 9b9873eceb closes an unclosed paragraph, with no deletions and no out-of-scope path.\nCALL_SITES: reckon/evidence.py:687 compose_landed_record\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:36-96 answers why each refusal happened (reserved-lane window term, skipped oversize waiver, reroute filter that drops any reasoned candidate).\nSCORE evidence: 17\nJUSTIFICATION evidence: logs/replay-at-9bdaea5ab6.log records 11 of 11 and 3 of 3 rows reproduced and ends EXIT=0, and the head arm shows the same check saying NOT reproduced, so the measure discriminates.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the whole change is one new file under docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/, which is the node's declared directory.\nSCORE durability: 15\nJUSTIFICATION durability: no assertion ties the fragment's transcribed row counts to the replay's output, so a drift between page and log reddens nothing; the guard that does fail is replay_oversized_route.py, which the head arm shows failing already.\nSCORE fit: 16\nJUSTIFICATION fit: the file follows the sibling fragments' r-evidence article shape, but its line citations drift from the definitions they name (ready-work-is-never-stuck-behind-t-s23.html:61 cites snapshot.py:1267 where the def is 1259).\nSCORE reuse: 14\nJUSTIFICATION reuse: the fragment is correctly keyed by node id for reckon/evidence.py:687 compose_landed_record and reuses replay_oversized_route.py, but it restates the reproduced rows and findings already carried by replay-the-two-oversizednode-routing-refusals.html rather than extending it.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:61 non-blocking: line citations drift by up to eight lines from what they name (snapshot.py:1267 vs def at 1259, snapshot.py:633-638 vs 639, picker/__init__.py:113-145 vs 115-147), so a reader following them opens the wrong boundary.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:144 non-blocking: 'The input that moved is one field' is asserted, but only the code-versus-data split is isolated; no arm varies section s6's data-status alone.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:1 non-blocking: the record duplicates replay-the-two-oversizednode-routing-refusals.html and oversized-node-reserved-lane-reproduced.html on the same replay, leaving three pages a reader must reconcile.\nFINDING docs/evidence/fragments/work-is-never-stuck-behind-the-admission-loop/ready-work-is-never-stuck-behind-t-s23.html:144 non-blocking: the fragment cites logs/replay-at-head-the-day-of-delivery.log as the arm proving the check can say 'NOT reproduced', and that log carries no EXIT= line.\n",
+  "review_run_id": "r-20261113T140701929464-review-of-ready-work-is-never-stuck-behind-t-s23-9b9873ecebff",
+  "reviewed_base_sha": "4d5c4389b7cffd9462a79412ccd472e3bce0589a",
+  "reviewed_head_sha": "9b9873ecebfffafd4d934ba95352d635e56aea7b",
+  "reviewed_run_id": "r-20261113T030240876162-ready-work-is-never-stuck-behind-t-s23",
+  "scores": {
+    "durability": 15,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:27:45.188351+00:00",
+  "total": 100
+}
