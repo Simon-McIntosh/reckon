@@ -1,0 +1,77 @@
+<section id="no-caller-waits-on-a-promotion-landing">
+  <h2>Promotion requests are carried by the fleet service</h2>
+  <p>The CLI records a durable request and returns. The review sweep hands off
+  acceptance and review self-promotion after dispatching the reviews it owes;
+  the measured landing pass records a request without reporting the delivery
+  as landed. The admission service drains these requests at the configured
+  promotion width. The service calls the existing synchronous promotion and
+  landing paths, retaining their guards and their receipts.</p>
+
+  <p>The request is authoritative until its terminal receipt is written in the
+  run directory as <code>promotion.json</code>. Renewable run and slot leases,
+  together with in-process claims, exclude duplicate service work and bound
+  concurrency. A fresh service adopts an unfinished request, and a terminal
+  receipt prevents replay when its request file has not yet been retired.
+  Refusals and exceptions remain indexed for the owning session's obligations,
+  including its published snapshot. The pending-landing sweep leaves a run
+  whose promotion is owned by the service alone.</p>
+
+  <p>Implementation commit:
+  <code>b4840067adb0d8717e49dedb48658ae3d0501796</code>.
+  The new test module covers the CLI, review sweep and landing pass with an
+  injected 30 s promotion; width-two concurrency; failure and refusal receipts;
+  session and snapshot duties; restart adoption; pending and terminal duplicate
+  requests; admission-service draining; and commit identities read from landing
+  and acceptance receipts.</p>
+
+  <table id="no-caller-waits-on-a-promotion-measures">
+    <caption>Measurements stored in the run directory, with the revision,
+    command and imported module recorded in the gate logs.</caption>
+    <thead><tr><th>Measurement</th><th>Recorded result</th></tr></thead>
+    <tbody>
+      <tr><td>Unmodified synchronous CLI, injected 30 s work</td>
+        <td>30.002 s; CLI exit 0</td></tr>
+      <tr><td>Initial delayed-work exploratory gate on all_debug</td>
+        <td>8 passed in 63.11 s; EXIT=0</td></tr>
+      <tr><td>Focused additions on all_debug</td>
+        <td>8 passed in 6.30 s; EXIT=0</td></tr>
+      <tr><td>Declared negative control: execute promotion inside the request</td>
+        <td>The first case waited 30.004 s, failed its five-second assertion,
+        and recorded 1 failed in 31.15 s; EXIT=1</td></tr>
+      <tr><td>Armed baseline at
+        <code>6d4266db9bf865d1c9f735940c7b798b58834c5f</code></td>
+        <td>51 passed in 9.14 s; EXIT=0</td></tr>
+      <tr><td>Importer baseline on all_debug</td>
+        <td>40 failed, 962 passed, 7 warnings in 146.61 s; EXIT=1</td></tr>
+      <tr><td>Importer head at the implementation commit, including the new tests</td>
+        <td>84 failed, 930 passed, 7 warnings in 265.40 s; EXIT=1.
+        Forty-four failure IDs were added and none removed.</td></tr>
+    </tbody>
+  </table>
+
+  <p><strong>Live host evidence and its limits.</strong> On
+  <code>98dci4-clu-2023</code>, a real CLI subprocess at the implementation
+  head returned <code>promotion-requested</code> in 3.871 s, before its
+  service's injected 30 s delay finished. The service subsequently recorded the
+  existing guard's refusal because the probe cited its dispatch base. That
+  proves the live request returned before the guarded work and that the refusal
+  was retained; it does not prove a successful live promotion. A second probe
+  with a delivery beyond its base returned the request in 5.982 s, exceeding
+  the bound, and its helper stopped before draining it. Both logs are retained;
+  live startup latency is not established as consistently below five seconds.</p>
+
+  <p><strong>Remaining acceptance work.</strong> The importer comparison does
+  not meet the no-added-failure measure. Its failure IDs and the pending request
+  to update affected importer tests are recorded in the manifest's
+  <code>outside_scope</code> field. No importer test was edited. The final armed
+  after arm is run after this evidence fragment is committed and is recorded at
+  that final head in the manifest; this fragment does not claim that a pending
+  measurement passed.</p>
+
+  <p>Durable record:
+  <code>/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/manifest.md</code>.
+  The same directory holds <code>negative-control.log</code>,
+  <code>baseline-suite.log</code>, <code>baseline-importers.log</code>,
+  <code>head-importers.log</code>, <code>importer-delta.json</code>,
+  <code>live-complete.log</code> and <code>live-complete-finished.log</code>.</p>
+</section>
