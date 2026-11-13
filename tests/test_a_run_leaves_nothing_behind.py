@@ -47,6 +47,11 @@ def _assert_retired(run):
     assert not run["directory"].exists(), "ended directory remains in walked runs"
     archive = runs.crew_home() / "archive" / "runs" / run["run_id"]
     assert (archive / "end.json").is_file(), "archive receipt is missing"
+    receipt = json.loads((archive / "end.json").read_text())
+    assert receipt["run_id"] == run["run_id"]
+    assert receipt["record"]["worktree"] == str(run["worktree"])
+    assert receipt["record"]["manifest_path"] == str(run["directory"] / "manifest.md")
+    assert receipt["release"]["worktree_released"] is True
     assert (archive / "manifest.md").read_text().startswith("node:")
     assert runs.run_dir(run["run_id"]) == archive
     assert runs.resolve_run_path(run["directory"] / "manifest.md").is_file()
