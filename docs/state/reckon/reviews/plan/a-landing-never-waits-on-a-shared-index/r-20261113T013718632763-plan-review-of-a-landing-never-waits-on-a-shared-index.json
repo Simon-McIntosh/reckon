@@ -1,0 +1,57 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T01:49:55.011Z",
+  "dispatched_at": "2026-11-13T01:42:14Z",
+  "findings": [
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:97",
+      "id": "reasoning-1",
+      "reason": "a node taking \"about two seconds\" as its starting bound mis-sizes the headroom it must beat, and a node editing `merge.py`'s `DEFAULT_ATTEMPTS`/`DEFAULT_RETRY_SECONDS` to raise it changes every merge caller instead of the one staging path.",
+      "text": "\u00a79's Why says staging retries \"with 8 attempts 0.25 s apart (`reckon/crew/merge.py:65-66`), about two seconds in all\", but `_stage_landing_writes` (promotion_scope.py:2406) calls `_run_waiting_out_a_held_index_lock` with `attempts=_INDEX_LOCK_RETRY_ATTEMPTS` (12) and `retry_seconds=_INDEX_LOCK_RETRY_INTERVAL_SECONDS` (0.5) at :2437-2438, so the staging bound in use is about six seconds and merge's defaults are not it",
+      "type": "reasoning",
+      "would_change": true
+    },
+    {
+      "anchor": "docs/plans/a-landing-never-waits-on-a-shared-index.html:119",
+      "id": "wiring-1",
+      "reason": "an open followup on a landed section queues a node to rebuild \u00a77, and its title still reads \"Build \u00a77\u2013\u00a78\" so it also carries f-alnw-005's scope; the followup must be resolved (and the title narrowed) or the `done` declaration withdrawn.",
+      "text": "the same `_document` change flips `s7` to `done` while its driving followup f-alnw-004 is still `open` with the prompt `/reckon-build a-landing-never-waits-on-a-shared-index \u00a77`, and \u00a77's head `fad32654e562` is an ancestor of the current HEAD with its build and review comments recorded",
+      "type": "wiring",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "741d6834c0817284ba742e0fc01bc6fa133a4fbe",
+  "plan_fingerprint": "f3ede565d0b836a2b411730efcffd51479ee194824d8da2dc236fc4c77c51bf2",
+  "plan_slug": "a-landing-never-waits-on-a-shared-index",
+  "plan_version": 35,
+  "project": "reckon",
+  "responses": {},
+  "review_run_id": "r-20261113T013718632763-plan-review-of-a-landing-never-waits-on-a-shared-index",
+  "reviewed_blob_sha": "c41d65c614a1eeb28ba5eb0e71b6f3fd31efc70d",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 `reckon/crew/promotion_scope.py:2516` carries the cited \"could not stage the landing writes\" refusal, `reckon/crew/merge.py:65-66` carry `DEFAULT_ATTEMPTS = 8` / `DEFAULT_RETRY_SECONDS = 0.25`, the profile `.raw` resolves, and `s9`/f-alnw-006 resolve in the snapshot.",
+    "done_when": "pass \u2014 \u00a79 names one measured case, a refusal case, and a base-revision negative control that is red at the bound staging actually uses (about 6 s, well under the 20 s hold).",
+    "evidence_paths": "pass \u2014 \u00a79 writes every gate log under the run directory, and the cited profile path exists on disk at the absolute path it names.",
+    "naming": "pass \u2014 \u00a79's write paths and its new test name carry no plan labels, stage names or version tags.",
+    "reasoning": "a finding \u2014 \u00a79's Why states the staging retry bound as merge's 8 attempts at 0.25 s (about two seconds) cited at `merge.py:65-66`, but `_stage_landing_writes` passes the module's own `_INDEX_LOCK_RETRY_ATTEMPTS (12)` and `_INDEX_LOCK_RETRY_INTERVAL_SECONDS (0.5)` (promotion_scope.py:2432-2438), and \u00a75's own landed text already says the module's bound is used \"not merge's\".",
+    "single_goal": "pass \u2014 \u00a79 carries one deliverable: a landing write that outlasts a briefly held lock and names the lock's age when it gives up.",
+    "wiring": "a finding \u2014 the `_document` change declares `s7` done and adds f-alnw-005/f-alnw-006, but \u00a77's own followup f-alnw-004 remains `data-status=\"open\"` with the prompt `/reckon-build a-landing-never-waits-on-a-shared-index \u00a77`."
+  },
+  "section_digests": {
+    "_document": "406a7a1bad186c03292ae246bc8caadebc565d577093329cb2e2c6eb68811562",
+    "s1": "704da057b1e86cedb79ae983e9f7504afd9303eac87bb25b9d4aa38717913746",
+    "s2": "a72539aa82cfb965c54c35d223b2606608ed39bc8269f82d2e7427267b4636af",
+    "s3": "58b92de94f7a15cbe2a66cb37ebc307ca1d8306003ca55ca38ac6fd12e6266c8",
+    "s4": "f9e5f60efd976441ef227da76beb3f9309fccd0d2f99eee0fc98924588b241aa",
+    "s5": "41308d89a4ece7829b6313c98047025055c9c8dc56e754dc8ccf0501af52b1b3",
+    "s6": "ddc19efe3db5d3e2196ba12f1ccea29b87e0e15e0f71c68c2fc89431d6cca56b",
+    "s7": "2ebeb3cecb2ecb78b7b4d2160d5d040e80b315fd2ed14bebcd78068961e3d9e7",
+    "s8": "b02f4e8c623fc056b518109ad2e4921c5835b87308d0f448c3c0acd9590ab68f",
+    "s9": "aeee732a4e93bbf59439bab90beb76f2b67b48a4c6290a67cdc51c3b3d0f2232"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:39:18.351532+00:00",
+  "total": null
+}
