@@ -30,6 +30,11 @@ PROMOTED = "promoted"
 FAILED = "promotion-failed"
 REFUSED = "promotion-refused"
 DEFERRED = "promotion-deferred"
+# A request whose review record has not been stored yet is not a promotion
+# attempt: the record is still being written. It is parked outside PENDING so
+# the queue starts the requests behind it and no promotion slot is spent on it,
+# and so a coordinator reading it is not told a promotion failed.
+WAITING = "promotion-waiting"
 PENDING = frozenset({REQUESTED, RUNNING})
 ERRORS = frozenset({FAILED, REFUSED})
 
@@ -138,6 +143,62 @@ def request_promotion(
         runs._write_json(path, request)
         _mark_pointer(request, REQUESTED)
         return request
+
+
+def _review_self_waits(request: Mapping[str, Any]) -> tuple[bool, str]:
+    """Whether this request is waiting on a review record still being written.
+
+    Only a review's own promotion asks this: every other kind reads durable
+    state that either exists or does not, so only ``review-self`` has a state
+    in which the right answer is to wait rather than to drain or refuse.
+    """
+    if request.get("kind") != "review-self":
+        return False, ""
+    from reckon.crew import recovery_review_acceptance as acceptance
+
+    try:
+        pointer = runs.read_pointer(str(request.get("run_id") or ""))
+    except CrewError:
+        # A pointer that has gone is not waiting; draining it reports the
+        # vanished run the way every other request kind does.
+        return False, ""
+    state, reason, _record = acceptance.review_self_state(pointer)
+    if state != acceptance.REVIEW_SELF_WAITING:
+        return False, ""
+    # Only a reviewer that is still running holds the queue. One that is not
+    # running is drained, so a run that ended without its record leaves the
+    # refusal its coordinator has to see rather than a request that never
+    # moves.
+    if runs.record_process_alive(pointer) is True:
+        return True, reason
+    return False, ""
+
+
+def _mark_waiting(request: Mapping[str, Any], reason: str) -> dict[str, Any]:
+    """Park a request on the record its reviewer still owes.
+
+    The pointer keeps the working phase its reviewer is in: a request waiting
+    for a record must not read as a promotion the coordinator has to answer.
+    The request is written outside ``PENDING`` so the next tick starts the
+    requests behind it instead of spending a slot on this one.
+    """
+    run_id = str(request["run_id"])
+    waiting = {
+        **dict(request),
+        "phase": WAITING,
+        "waiting_reason": reason,
+        "checked_at": _now(),
+    }
+    with runs._pointer_lock(f"promotion-request-{run_id}"):
+        current = _read(_request_path(run_id))
+        if current.get("request_id") != waiting["request_id"] or current.get(
+            "phase"
+        ) != request.get("phase"):
+            # Another drain moved this request on while it was being judged.
+            return {}
+        runs._write_json(_request_path(run_id), waiting)
+        _mark_pointer(waiting, WAITING)
+    return waiting
 
 
 class PromotionRequests:
@@ -333,6 +394,12 @@ class PromotionService:
             request = _read(path)
             if request.get("phase") not in PENDING:
                 continue
+            waiting, reason = _review_self_waits(request)
+            if waiting:
+                # Nothing is owed here yet, so this request takes no slot and
+                # the loop carries on to the ones behind it.
+                _mark_waiting(request, reason)
+                continue
             slot = next(
                 (
                     lease
@@ -386,6 +453,11 @@ class PromotionService:
             result = self.execute(request)
             if result is None:
                 _finish(request, DEFERRED, result=None)
+                return
+            if result.get("waiting"):
+                # The reviewer is still writing the record: park the request
+                # rather than refusing a run that is not finished.
+                _mark_waiting(request, str(result.get("reason") or ""))
                 return
             if (
                 result.get("accepted") is False
