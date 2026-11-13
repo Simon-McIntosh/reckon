@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from reckon import ledger
 from reckon.crew import (
     gc,
     promotion,
@@ -164,9 +165,20 @@ def test_archived_population_is_outside_the_gc_walk(tmp_path, monkeypatch):
     # operations. The positive control is five live directories the gc
     # extraction reader must actually visit.
     for index in range(200):
-        directory = terminal_cleanup.archive_dir(f"ended-{index}")
+        name = f"ended-{index}"
+        directory = terminal_cleanup.archive_dir(name)
         directory.mkdir(parents=True)
-        (directory / "end.json").write_text("{}")
+        record = ledger.build_record(
+            run_id=name,
+            plan="fixture-plan",
+            node=name,
+            gate="passed",
+            manifest_path=str(runs.runs_dir() / name / "manifest.md"),
+        )
+        ledger.write_run_file("fixture", record, repo)
+        (directory / "end.json").write_text(
+            json.dumps({"run_id": name, "kind": "promoted", "record": record})
+        )
     live = runs.runs_dir()
     live.mkdir(parents=True)
     names = {f"live-{index}" for index in range(5)}
