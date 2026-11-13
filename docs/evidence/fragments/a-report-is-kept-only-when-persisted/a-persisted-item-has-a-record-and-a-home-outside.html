@@ -52,6 +52,14 @@
   (<code>copied_hash</code> set to <code>source_hash</code>), the altered-copy case accepts a corrupt copy and
   fails: expected <code>PersistError</code>, none raised. The size check is still in place in that mutation, and
   the case alters bytes without changing the length, so only the hash can catch it.</p>
+
+  <h2 id="a-persisted-item-has-a-record-and-a-home-outside-repair">Repair round</h2>
+  <ul id="a-persisted-item-has-a-record-and-a-home-outside-repair-list">
+    <li>The persist module no longer carries its own file digest: it reads the chunked reader the project-state module owns, so the content hash has one definition. Checked by object identity, not by wording.</li>
+    <li>The reports block declares only the persist root. The staging root belongs to the retention pass that reads it, and this node writes no such pass.</li>
+    <li>The untouched check now watches the operator docs state as well as the crew home, the data records are compared with the fixture path rather than with a script- produced field, and a case drives the refusal for a persist root inside the crew home.</li>
+  </ul>
+  <p id="a-persisted-item-has-a-record-and-a-home-outside-repair-control">Each fix has a red control: disabling the crew-home guard fails its case, and a data record naming its own copy rather than the figure source fails the two-data-file case.</p>
 </main>
 </body>
 </html>
