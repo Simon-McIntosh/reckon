@@ -387,6 +387,7 @@ def _acceptance_inputs(
         "agent",
         "log_path",
         "resume_launch_in_flight",
+        "delivery_hold",
         "manifest_path",
     )
     checkout = str(pointer.get("repo") or "")
