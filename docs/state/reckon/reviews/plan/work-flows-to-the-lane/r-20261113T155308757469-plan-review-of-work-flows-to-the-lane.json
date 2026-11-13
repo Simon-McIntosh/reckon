@@ -1,0 +1,163 @@
+{
+  "absent_items": [],
+  "completed_at": "2026-11-13T16:02:38.938Z",
+  "dispatched_at": "2026-11-13T15:54:23Z",
+  "findings": [
+    {
+      "anchor": "plan.html:23",
+      "id": "wiring-1",
+      "reason": "the followup chain is the plan's dispatch authority; an unnamed section is built by nobody until a later hand re-derives the list, which is the exact defect earlier reviews raised against f-wftl-009/010/013.",
+      "text": "\u00a743, \u00a745 and \u00a746 are declared implementable and the plan's only open followups name \u00a742, \u00a722, \u00a79 and \u00a744, so a coordinator driving the plan from its open followup (f-wftl-014, whose invocation is `/reckon-build work-flows-to-the-lane \u00a742`) never dispatches three of the six buildable sections",
+      "type": "wiring",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:230",
+      "id": "done_when-1",
+      "reason": "this node's whole output is ledger values that nothing else can re-derive once the streams are reaped, so a gate that cannot tell a derived figure from an arbitrary one proves none of the deliverable, and the reapability of an explicitly-absent row is now assumed rather than shown.",
+      "text": "\u00a742's gate is a set of row counts compared against an on-disk census, and the earlier version's two case assertions (a row whose stream exists receives the figure the routing derivation computes from that stream; a row whose stream is gone is recorded absent and retention then treats it as reapable) are gone, together with its \"a negative control that skips the write leaves retention withholding the same directory\"; a command that writes 0, or any plausible number, into both fields satisfies every remaining count, because retention only tests whether the key is present",
+      "type": "done_when",
+      "would_change": true
+    },
+    {
+      "anchor": "plan.html:246",
+      "id": "reasoning-1",
+      "reason": "a worker building \u00a746 from its own done-when will start promotions during \u00a744's reload drain, undoing \u00a744's guarantee that an in-flight promotion is never cut off; the plan must state the precedence (a drain suspends slot refill) or scope \u00a746 to the open lane.",
+      "text": "\u00a746's endpoint (\"A freed promotion slot takes the next waiting request within seconds, whatever the admission pass is doing\") contradicts \u00a744's (\"Once the code stamp has moved, the loop starts no new promotion or landing \u2026 and then re-executes\"), because the only thing that starts promotions is the loop's `promotions.tick()`; \u00a746's test moves no code stamp and \u00a744's test requires no next request, so each gate passes while the merged behaviour must choose one, and the two sections sit in no depends-on relationship, so either may be built first",
+      "type": "reasoning",
+      "would_change": true
+    }
+  ],
+  "plan_commit": "d325cb9fe1b4ca7dce30632200db99daca7593a6",
+  "plan_fingerprint": "7a20de1c9bf8a4de7aaa2b377a1f6e44fcf87c648bcbe919d38b1a5ce842aad0",
+  "plan_slug": "work-flows-to-the-lane",
+  "plan_version": 186,
+  "project": "reckon",
+  "response_events": [
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "finding": "wiring-1",
+      "note": "f-wftl-015 names \u00a743, \u00a745 and \u00a746 (with \u00a746 after \u00a744); f-wftl-044 still names \u00a744",
+      "reason": "",
+      "when": "2026-11-13T16:03:59.878893+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "finding": "done_when-1",
+      "note": "\u00a742 again requires the stream-derived and gone-stream tests and the skip-the-write negative control, plus a five-row re-derivation spot check per project, alongside the census bound",
+      "reason": "",
+      "when": "2026-11-13T16:04:12.364619+00:00"
+    },
+    {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "finding": "reasoning-1",
+      "note": "\u00a746 now yields to \u00a744: during a reload drain no new request starts, a second test asserts it, and \u00a746 declares a section wait on \u00a744",
+      "reason": "",
+      "when": "2026-11-13T16:04:22.111820+00:00"
+    }
+  ],
+  "responses": {
+    "done_when-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "note": "\u00a742 again requires the stream-derived and gone-stream tests and the skip-the-write negative control, plus a five-row re-derivation spot check per project, alongside the census bound",
+      "reason": "",
+      "when": "2026-11-13T16:04:12.364619+00:00"
+    },
+    "reasoning-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "note": "\u00a746 now yields to \u00a744: during a reload drain no new request starts, a second test asserts it, and \u00a746 declares a section wait on \u00a744",
+      "reason": "",
+      "when": "2026-11-13T16:04:22.111820+00:00"
+    },
+    "wiring-1": {
+      "action": "acted",
+      "by": "",
+      "commit": "9531d80c1bef1a29df68530e680414f71a1fef0d",
+      "commit_basis": "edit",
+      "note": "f-wftl-015 names \u00a743, \u00a745 and \u00a746 (with \u00a746 after \u00a744); f-wftl-044 still names \u00a744",
+      "reason": "",
+      "when": "2026-11-13T16:03:59.878893+00:00"
+    }
+  },
+  "review_path": "/home/ITER/mcintos/.config/reckon/crew/reviews/reckon/plan-work-flows-to-the-lane.v186.json",
+  "review_run_id": "r-20261113T155308757469-plan-review-of-work-flows-to-the-lane",
+  "reviewed_blob_sha": "db0f005d3af039b955e6b45b4960ec1739e42f39",
+  "rubric": "content",
+  "rubric_items": {
+    "anchors_resolve": "pass \u2014 scripts/derive_run_figures.py exists and takes --project/--root; reckon/crew/promotion_gate.py:362 is the `if \"/\" in program` check the Why cites \"near lines 361\u2013372\"; PromotionService (promotion_requests.py:246), _admit_code_stamp() (admission/service.py:63), _reexec_into_current_code() (:120, called at :276), \"no complete independent review is stored\" (promotion_checks.py:1528), the promotion-refused phase (promotion_requests.py:31) and `complete --wait` (crew_run_commands.py:3441) all resolve.",
+    "done_when": "a finding \u2014 \u00a742's done-when (plan.html:230) measures only row counts against a census and names no negative control, so it cannot distinguish a figure derived from the run's stream from any other number written into the row.",
+    "evidence_paths": "pass \u2014 every gate log in s42\u2013s46 is written to the section's evidence fragment, and the files the sections cite (~/.cache/reckon-gpfs-footprint/retention-census-1314067.log, the promotion-requests directory) exist on durable paths.",
+    "naming": "pass \u2014 no plan labels, stage names, ticket numbers or version tags reach the files or symbols these sections name; `missing-derived-figure` is a real ledger status token (gc.py:460).",
+    "reasoning": "a finding \u2014 \u00a746 requires a freed promotion slot to be refilled \"within seconds, whatever the admission pass is doing\" (plan.html:246) while \u00a744 requires that, once the code stamp has moved, the loop \"starts no new promotion or landing\" until those in flight finish (plan.html:238); the two endpoints are opposing for the whole drain window.",
+    "single_goal": "pass \u2014 each of \u00a742 to \u00a746 names one endpoint; \u00a745's two clauses (review promoted first, run not refused) are two halves of one outcome, a run waiting on its own queued review.",
+    "wiring": "a finding \u2014 plan.html:23 declares s43, s45 and s46 implementable, and no open followup names any of them: f-wftl-014 (plan.html:328) names \u00a742, \u00a722 and \u00a79, and f-wftl-044 (plan.html:333) names \u00a744 only."
+  },
+  "section_digests": {
+    "_document": "636fb8c3dbf0f0626171630a9f45cef81ca35e38fbe5f5580ff7746f25ef5729",
+    "s1": "1176d881373dcfc183430925a9be7bda1d724f734d02210efa9a7406d8e1fa71",
+    "s10": "b65d0fb4159bfb41836b0ad8f574cf832084834e89db286572f537377eb3eb6d",
+    "s11": "c91dc2f2b4a4a7ba600f8a8f62cb23d0a923515ca21d7e7769645146e4db7427",
+    "s12": "6b87a65f56033f720b634f56c22424f9243d93aa09b8d223f9256a45a62b8401",
+    "s13": "bad1450236608d548873bc0831709655753d5f32c522514cd8a8267e16cc24cb",
+    "s14": "2f8f373cb0aea17e906875fcfee5e31675e99c3770486edcd5ca6381e7c45682",
+    "s15": "e29e1d3a49e752b7bdfe588aa034f386201d10af208f3aa59e29a2f24fe1bd5f",
+    "s16": "3b7f7832ad95bba2eafed9e9cf857961510c04511e9e0ec71438cbce6a583913",
+    "s17": "61f7c6cf19aeea97c136c1e61b863688591bf51fc6ecee75fd76577abe685e5b",
+    "s18": "83c96035969192d1b3be1f3898d127f112e33f0dbac58a7ccb624ab20c5d4844",
+    "s19": "7e2db89abd0f36c289ae715d8efbeeb340e4295f5671e1d350cb85b452cd2119",
+    "s2": "bd3d223462ee3b0fb515f2472d9397d8e27ca44c184bf71b42367fd7a9db1054",
+    "s20": "a3a48d30a0815970f76f95987246e39304eca36cfb2135e853829cf79bf092ba",
+    "s21": "534978447da306fad3f72e4fb24ba76d2de45ed2650892c581fad1c8b520a7fa",
+    "s22": "a5d78fa647145c171d2f286382057bec8f66c55347171ac921967bfc5efdc858",
+    "s23": "2bef8c7bbc76d3d3a437c02cc89a91aae529b00b0073c0a3c030b4fbff677ef1",
+    "s24": "d5bb21282d0bbd0556f4a66c410ce0b238b6f6da4c9469af5bd64c0a50434b84",
+    "s25": "cb57590a3a2c45deb077d3ffbc49193ad01682577ee75c5b057eba28163f50b4",
+    "s26": "89a92efceb488f777af08540355f65ea8f87428c99c0ed45ec80be685c3fee19",
+    "s27": "35a0948378d380410d9c7f73a9f9e29cd168f930b1d4373a8744f335b1574aed",
+    "s28": "cf82ffda11d9fd109a3ed44f706095a2fff7275d2c1c0f7fd64518f7a61aadb9",
+    "s29": "0b58f8bd3beebc3e32a96527bd0f873d4850ceb104a05ed10cd4af6237a59862",
+    "s3": "2a060c7a5415553f71ca05b752499669f3209379066f0ffca3eb658079698d29",
+    "s30": "2a73bd72bdcc87421c26a7292a470f8ed0c046f06b67c09e50223451c8b56b27",
+    "s31": "8a42898fce5462fb994793c7f8697c3f11af025b71f89251169edc9d7f302552",
+    "s32": "7130574157aca67198cbaa9e5005abe6772165f4b45d24aea4f3a6c554a7529b",
+    "s33": "5cb11b883822cc98b799266558f2dfa18afd6cc78ab0efa4351d607f7d2c52a2",
+    "s34": "9929ef3f403622f53690250ef6fa4241e473d12cf758556f925c1dabab265c36",
+    "s35": "bc7d0f54020517eefeef623ae8fa4e1d0e92fac832f4d560dae282ea5a2bca8a",
+    "s36": "ab240fcf30777d2562045ec3e67c6899642cc80b3c568025cb1bce9e5929928f",
+    "s37": "2aa999f459e028c25919ac86153fa48445b6cb04037f61021998270bfae88021",
+    "s38": "5d2a6b32a6f4169d9ab94998540c285fe8cb797fc1e7a9d36dd00596bf10149d",
+    "s39": "f967aa9592023fd789832d7840c7c336addb657f3ca81c21557e8ca0628749ca",
+    "s4": "73dd573a24e53462f06ce2ee81f9ce01d788caba75663d34802e585ffa9af368",
+    "s40": "3bfbf8ed0ff967780ee0923932c5e95b55731c4bb1fb10f02a76b5f9908f25a9",
+    "s41": "253e2044eac6f5e216403adea71bd159e40f03846cc6a76e85d66ac2eba636f9",
+    "s42": "9b3f5dfb68bde1b80bf1af8ede4d352cd4b32767f05488835edab06ab97cf063",
+    "s43": "904d641de5d11d32c3d731fe49d2d7ea0b913b5d508f690904a42617414ba8d1",
+    "s44": "9b65558127db1ea6450866b29324eedc2ba03a158b4291411e23d0146eff679f",
+    "s45": "90960113d652b30c024700b3f7fa8ad6f3921e2096758b3ea1e47ffe924790f5",
+    "s46": "5ba0593afd186f9969e2b8ee05476c8cbf8b19006f471ca866c71d15f6e6d594",
+    "s5": "71c63f4fe2ec953ac5f7ddb2a246f167602f4978f9480d7bc81453507d1aa8cc",
+    "s6": "3d8f3682cd21a9f9205ae37acce45450d89ee9d1a0a061c46509dea8c5c1bc86",
+    "s7": "8411a4b87a6d941e69b74aa81c380f024a398cf80490125819b718f524deb5fd",
+    "s8": "a66c3212fab5497e7274bfa5e8eaadaea067a414aa6eb26fe1317dff343c2654",
+    "s9": "22b677c7bb355bdeb12944385e3d77bc965d6b2749b0a01789a6c5b8bc805e56"
+  },
+  "status": "ready",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T16:03:52.311139+00:00",
+  "total": null
+}
