@@ -24,7 +24,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="39">
+<meta name="plan-version" content="40">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -174,7 +174,10 @@
     <div class="r-comment-body"><p>§8 review of r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies at head cb6358cacaf3 is stored parsed: goal_fidelity 15, evidence 12, scope_discipline 18, durability 19, fit 17, reuse 5 (total 86), 0 added failures, four non-blocking findings (SIGTERM install/restore duplicated from reckon/serve.py, the cited red base log absent from disk, the armed suite pair not importing the changed module, and the section's no-product-change conditional departed from).</p></div>
 </div>
 <div class="r-comment" data-section="s9" data-id="c-run-r-20261113T033219624325-review-of-a-landing-write-outlasts-a-briefly-held-index-lock-50493b22a8d2" data-who="reckon-build" data-when="2026-11-13T03:44:10.437Z">
-    <div class="r-comment-body"><p>Independent review of run r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock landed at reviewed_base cb25b41dfda82d07332ba485626b5d3d6347a07e and reviewed_head 50493b22a8d29ed22f4202c1bd7bc0fff83991cc; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 19, reuse 17; added_failure_count 0 with an empty id list (both arms&#x27; suite logs record 0 failures); three non-blocking findings, no blocking finding, so the node may land.</p></div>
+    <div class="r-comment-body"><p>Independent review of run r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock landed at reviewed_base cb25b41dfda82d07332ba485626b5d3d6347a07e and reviewed_head 50493b22a8d29ed22f4202c1bd7bc0fff83991cc; scores goal_fidelity 19, evidence 15, scope_discipline 19, durability 15, fit 19, reuse 17; added_failure_count 0 with an empty id list (both arms' suite logs record 0 failures); three non-blocking findings, no blocking finding, so the node may land.</p></div>
+</div>
+<div class="r-comment" data-section="s9" data-id="c-run-r-20261113T024814201130-a-landing-write-outlasts-a-briefly-held-index-lock" data-who="reckon-build" data-when="2026-11-13T03:25:49.353Z">
+    <div class="r-comment-body"><p>A landing&#x27;s staging, commit and rollback now wait out a shared index lock another writer holds for up to a minute (130 attempts 0.5 s apart, a 64.5 s span, up from 12 attempts and a 5.5 s span) and refuse only on a lock that outlasts it, naming the lock&#x27;s age and the bound; gate 53 passed at head 50493b22a8, base arm 51 passed, and the negative control is 2 failed at cb25b41dfd with the 20 s hold rolling the promotion back.</p></div>
 </div>
 </section>
 </main>
