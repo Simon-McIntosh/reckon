@@ -1,0 +1,64 @@
+<section id="ready-a-held-lane-never-holds-a-re-s2-landing">
+  <h2>A review's followed lane yields to a hold, and the route says it was followed</h2>
+  <p>A review composed onto the lane its reviewed run used carries a
+  <code>named_route</code> whose <code>set_by</code> is
+  <code>review-follows-run</code>. The admission pass reads that field: a route
+  the reflex wrote is a preference derived from which lane ran the work, so a
+  budget hold on that lane rebinds the request onto the local backend and
+  records a <code>route_fallback</code> naming the held lane. A route a caller
+  named with <code>--backend</code> or <code>--local</code> keeps
+  <code>set_by: dispatch</code> and stays authoritative — its answer is a
+  queued request that waits, not a silent lane move.</p>
+  <p>The run edge of the guard was already present in the tree when this node
+  opened: <code>_local_fallback</code>
+  (<code>reckon/crew/admission/holds.py</code>) rebinds the reflex's spelling
+  whatever the picker's action and whether or not a <code>picker_selection</code>
+  is recorded, and <code>dispatch_review_for_run</code> passes the origin on the
+  route it hands dispatch. The remaining gap was in the evidence: the
+  composition case captured the arguments handed to <code>dispatch</code>
+  rather than the route admission reads. That is an input echo — a composer
+  that passed the origin and a dispatch that dropped it would still have
+  satisfied it, and the queued request would carry no origin for admission to
+  act on.</p>
+  <p>The composition case now holds the metered lane, composes the review for a
+  run carried on that lane, and reads the review's own queued pointer:
+  <code>named_route</code> is <code>{backend: beta, set_by:
+  review-follows-run}</code>. The rebind case and the caller-named case are
+  unchanged.</p>
+  <table id="ready-a-held-lane-never-holds-a-re-s2-measures">
+    <caption>Measurements: one arm at a time, node tests run in the worktree and
+    in scratch extractions; logs carry the revision, tree, command and imported
+    module, and end with a bare exit-status line.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base arm at <code>433d71f07619</code>, node tests</td>
+        <td>3 passed, <code>EXIT=0</code>: the behaviour under test was already
+        correct at the base revision.</td></tr>
+      <tr><td>Head arm at <code>2c242297d9</code>, node tests</td>
+        <td>3 passed, <code>EXIT=0</code>.</td></tr>
+      <tr><td>Importer population at the head, 153 files
+        importing <code>reckon.crew.queue_admission</code> or
+        <code>reckon.crew.recovery_review_dispatch</code>, <code>-n 4</code></td>
+        <td>136 failed, 932 passed, 3 errors, <code>EXIT=1</code>. The
+        failures are the checkout's own heavy-dispatch population under a
+        four-worker run — worktree creation refused, producer and claim
+        contention — and none of the 139 failure and error ids is this node's
+        test file.</td></tr>
+      <tr><td>Delta over that population against the base revision</td>
+        <td>Zero. The node's diff changes exactly one file,
+        <code>tests/test_a_held_lane_never_holds_a_review.py</code>; a
+        <code>git diff</code> over the other 152 population paths at
+        <code>433d71f07619..2c242297d9</code> is empty, and that one file
+        passes 3 of 3 at both arms. The base population arm was not run: it
+        took 23.5 minutes at the head and would have crossed this node's
+        deadline without adding a fact the file-identity check does not
+        already establish.</td></tr>
+      <tr><td>Declared mutation: treat every <code>named_route</code> as
+        authoritative</td>
+        <td>1 failed, 2 passed, <code>EXIT=1</code>: the rebind case fails —
+        the followed route is returned <code>None</code> by
+        <code>_local_fallback</code> and the request stays on the held lane.
+        </td></tr>
+    </tbody>
+  </table>
+</section>
