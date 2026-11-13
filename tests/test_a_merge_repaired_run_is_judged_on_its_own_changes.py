@@ -36,8 +36,8 @@ def delivery(tmp_path, monkeypatch):
     git(repo, "init", "-q", "-b", "main")
     git(repo, "config", "user.name", "Worker")
     git(repo, "config", "user.email", "worker@example.invalid")
-    (repo / "allowed.txt").write_text("seed\n")
-    base = _commit(repo, "allowed.txt")
+    (repo / "allowed.receipt").write_text("seed\n")
+    base = _commit(repo, "allowed.receipt")
     (repo / "docs").mkdir()
     (home / "mounts.json").write_text(json.dumps({PROJECT: str(repo / "docs")}))
     tree = tmp_path / "worker"
@@ -52,12 +52,12 @@ def delivery(tmp_path, monkeypatch):
         "role": "implement",
         "backend": "native",
         "repository_tree_snapshot": routing._repository_tree_snapshot(repo),
-        "node": {"id": "scope", "write_paths": ["allowed.txt"]},
+        "node": {"id": "scope", "write_paths": ["allowed.receipt"]},
     }
     _write_json(pointer_path(record["run_id"]), record)
-    (tree / "allowed.txt").write_text("seed\nworker result\n")
-    own = _commit(tree, "allowed.txt")
-    main_paths = [f"primary-{index:02}.txt" for index in range(20)]
+    (tree / "allowed.receipt").write_text("seed\nworker result\n")
+    own = _commit(tree, "allowed.receipt")
+    main_paths = [f"primary-{index:02}.receipt" for index in range(20)]
     for path in main_paths:
         (repo / path).write_text("primary content\n")
     _commit(repo, *main_paths)
@@ -139,8 +139,8 @@ def test_unmerged_run_keeps_its_scope_guard(delivery, escape):
 def test_repaired_run_still_refuses_dirt_on_its_own_path(delivery):
     repo, tree, record, _own, _main_paths = delivery
     head = _merge_primary(repo, tree)
-    (repo / "allowed.txt").write_text("uncommitted change on the delivered path\n")
-    with pytest.raises(crew.CrewError, match=r"allowed\.txt"):
+    (repo / "allowed.receipt").write_text("uncommitted change on the delivered path\n")
+    with pytest.raises(crew.CrewError, match=r"allowed\.receipt"):
         crew.complete(record["run_id"], gate="passed", commits=[head], root=repo)
     assert ledger.runs(PROJECT, root=repo) == []
     assert pointer_path(record["run_id"]).exists()
