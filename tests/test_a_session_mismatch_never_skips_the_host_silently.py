@@ -1,29 +1,33 @@
 """A session mismatch never skips the host silently.
 
 A dispatch issued with a ``--session`` name that is not the calling Claude
-session used to be refused by the host hand-off and the refusal was silent: no
-host was asked for the run's follower, so the caller's pane showed nothing while
-the run read as unattached everywhere else. A hand-off that silently does
-nothing is a delivery that never arrives.
+session is refused by ``_request_host_follower``'s name guard: the host that
+would follow the run is named for the calling process, so a pair belonging to
+another session is never asked of it. A refusal with nothing beside it leaves
+the caller's pane with no run and no reason, so the dispatch hands the run to
+the calling session's waiting host and prints one line naming both sessions.
 
 The cases run against a temporary crew home and a stub host on the session-host
-FIFO. The first shows a mismatched dispatch writes its request to the calling
-host, prints one line naming both sessions, and reports that the host took the
-run. The second shows a mismatched dispatch with no waiting host says so and
-writes nothing. The third shows a matching dispatch is left to the ordinary ask
-path, which still writes its request.
+FIFO. Two drive the hand-off directly: a mismatched dispatch writes its request
+to the calling host, prints the line and reports that the host took the run; a
+mismatched dispatch with no waiting host says so and writes nothing.
+The third shows a matching dispatch is left to the ordinary ask path, which
+still writes its request. The last drives the real dispatch entry point, so the
+hand-off reaches the launch record the caller receives.
 """
 
 from __future__ import annotations
 
 import json
 import os
+import subprocess
 import threading
 import time
 from pathlib import Path
 
 import pytest
 
+from reckon import crew
 from reckon.crew import dispatch_watch, runs
 
 PROJECT = "proj"
@@ -186,3 +190,122 @@ def test_the_calling_session_is_none_while_a_foreign_session_name_is_handed_off(
     assert dispatch_watch._calling_session() == CALLING_SESSION
     assert dispatch_watch.hand_off_mismatched_session(PROJECT, CALLING_SESSION) is None
     assert dispatch_watch.hand_off_mismatched_session(PROJECT, "") is None
+
+
+CONFIG = {
+    "default_backend": "alpha",
+    "backends": {
+        "alpha": {
+            "launch": "cli",
+            "command": "codex",
+            "model": "some-model",
+            "effort": "high",
+            "sandbox": "worktree-full",
+            "session_reuse": True,
+            "time_budget": "25m",
+        }
+    },
+    "roles": {"implement": {}},
+    "fences": {"time_budget": "25m", "needs_help_after_failures": 2},
+}
+
+
+def _dispatch_site(config_home: Path, repo: Path) -> None:
+    """A mountable project and a repository, as a real dispatch needs."""
+    docs = repo / "docs"
+    scripts = repo / "skills" / "reckon-build" / "scripts"
+    scripts.mkdir(parents=True)
+    (docs / "plans").mkdir(parents=True)
+    fleet_script = (
+        Path(__file__).parents[1]
+        / "skills"
+        / "reckon-build"
+        / "scripts"
+        / "worktree_fleet.py"
+    )
+    (scripts / "worktree_fleet.py").write_text(
+        fleet_script.read_text(encoding="utf-8"), encoding="utf-8"
+    )
+    (docs / "plans" / "fixture.html").write_text(
+        """<!doctype html>
+<html><head>
+<meta name="docs-project" content="proj">
+<meta name="reckon-type" content="plan">
+<meta name="plan-slug" content="fixture">
+</head><body><h2 id="guard">Dispatch guard</h2></body></html>
+""",
+        encoding="utf-8",
+    )
+    (repo / "seed.txt").write_text("seed\n", encoding="utf-8")
+    for arguments in (
+        ["init", "-q", "-b", "main"],
+        ["config", "user.email", "worker@example.invalid"],
+        ["config", "user.name", "Worker"],
+        ["add", "seed.txt", "skills", "docs/plans/fixture.html"],
+        ["commit", "-q", "-m", "chore: seed"],
+    ):
+        subprocess.run(["git", *arguments], cwd=repo, check=True, capture_output=True)
+    (config_home / "mounts.json").write_text(
+        json.dumps({PROJECT: str(docs)}), encoding="utf-8"
+    )
+
+
+def _dispatch_node(config_home: Path) -> crew.TaskNode:
+    return crew.TaskNode(
+        id="node-mismatch",
+        goal="reach the dispatch record with a hand-off",
+        plan="fixture",
+        section="guard",
+        spec_level="exact",
+        done_when="pytest reports one passing hand-off dispatch case",
+        write_paths=["src/one.py"],
+        time_budget="20m",
+        manifest_path=str(config_home / "manifests" / "mismatch.md"),
+    )
+
+
+def _register_watcher(project: str) -> None:
+    """Register this live process as the project's watcher seat."""
+    path = crew.watch_lock_path(project)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    pid = os.getpid()
+    with path.open("a+b") as handle:
+        crew._write_watch_record(
+            handle, {"pid": pid, "pid_start_time": crew._process_start_time(pid)}
+        )
+
+
+def test_a_real_dispatch_with_a_mismatched_session_reaches_the_record(
+    home: Path,
+    claude_session: Path,
+    stub_host: _StubSessionHost,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """The production dispatch path hands the run over and says so in its payload."""
+    repo = home.parent / "repo"
+    _dispatch_site(home, repo)
+    _register_watcher(PROJECT)
+    with runs.follower_claim(PROJECT, OTHER_SESSION, delivery="stream"):
+        record = crew.dispatch(
+            node=_dispatch_node(home),
+            project=PROJECT,
+            repo=repo,
+            config=CONFIG,
+            session=OTHER_SESSION,
+            launcher=lambda *args, **kwargs: os.getpid(),
+            watch_required=True,
+        )
+
+    stub_host.wait_for(1)
+    assert len(stub_host.lines) == 1, "the dispatch wrote nothing to the calling host"
+    request = json.loads(stub_host.lines[0])
+    assert request["session"] == OTHER_SESSION
+    assert request["owner_checked"] is True
+    line = capsys.readouterr().out
+    assert OTHER_SESSION in line and CALLING_SESSION in line
+    assert record["host_handoff"] == {
+        "requested_session": OTHER_SESSION,
+        "calling_session": CALLING_SESSION,
+        "handed_to_host": True,
+    }
+    assert record["watch"]["delivery"] == "host"

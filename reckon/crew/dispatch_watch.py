@@ -13,6 +13,9 @@ import time
 from pathlib import (
     Path,
 )
+from contextvars import (
+    ContextVar,
+)
 from typing import (
     Any,
     Callable,
@@ -857,9 +860,18 @@ def _rearm_session_follower(project: str, session: str | None) -> tuple[bool, st
         return False, "the run records no session, so no host owns its follower"
     calling = _calling_session()
     if calling != session:
+        # The resume's own host can still take the run: the request names the
+        # run's pair and travels to this process's FIFO, which is the pane the
+        # caller watches. Report the refusal only when no waiting host took it.
+        handoff = hand_off_mismatched_session(project, session)
+        # A resume composes no launch record, so the hand-off it recorded is
+        # dropped here rather than left for a later dispatch to claim.
+        take_session_hand_off()
+        if handoff is not None and handoff["handed_to_host"]:
+            return True, ""
         return False, (
-            f"the run belongs to session {session}, and only that session's own "
-            "host can re-arm its follower"
+            f"the run belongs to session {session}, and no waiting host for the "
+            f"calling session {calling or '(none)'} took it"
         )
     rearmed = _ask_session_host(
         project, session, lambda: _session_host_child_pid(project, session) is not None
@@ -916,6 +928,25 @@ def _deliver_request(fifo: Path, project: str, session: str) -> bool:
     return True
 
 
+_SESSION_HAND_OFF: ContextVar[dict[str, Any] | None] = ContextVar(
+    "crew_session_hand_off", default=None
+)
+
+
+def take_session_hand_off() -> dict[str, Any] | None:
+    """The hand-off this dispatch recorded, cleared as it is read.
+
+    A dispatch arranges its follower before it composes the launch record, so
+    the hand-off is carried between the two steps in this process. Reading it
+    clears the slot, which is what keeps it a per-dispatch fact: a later
+    dispatch in the same process cannot inherit one, and a record that reads
+    ``None`` names a dispatch whose session matched its caller.
+    """
+    handoff = _SESSION_HAND_OFF.get()
+    _SESSION_HAND_OFF.set(None)
+    return handoff
+
+
 def _session_mismatch_line(handoff: Mapping[str, Any]) -> str:
     """The one line a mismatched dispatch prints, naming both sessions."""
     requested = handoff["requested_session"]
@@ -936,20 +967,21 @@ def hand_off_mismatched_session(
 ) -> dict[str, Any] | None:
     """Hand a mismatched dispatch's run to the calling session's waiting host.
 
-    A dispatch issued with a ``--session`` that is not this process's Claude
-    session used to be refused by ``_request_host_follower``, and the refusal
-    was silent: no host was ever asked for the run's follower, so the caller's
-    pane showed nothing while the run read as unattached everywhere else. The
-    caller's pane is the one that has to show the run, so the request names the
-    run's own pair and travels to the calling process's host FIFO -- the same
-    FIFO every other request uses. The pair stays the run's, because that is
-    the pair the run is registered under; only the host that receives it is the
-    calling session's.
+    The host that runs a session's follower is named for the Claude process
+    issuing the request, so a request naming another session reaches this
+    process's host. ``_request_host_follower`` refuses such a pair because that
+    host does not own the session; a refusal on its own leaves the caller's
+    pane with no run and no reason. This path writes the request deliberately:
+    the caller's pane is the one that has to show the run, the pair stays the
+    run's own because that is the pair the run is registered under, and one
+    line on stdout names both sessions so the hand-off is never silent.
 
     ``None`` is returned when the two names agree, leaving the ordinary ask
-    path untouched. Otherwise one line naming both sessions is printed, and the
-    ``host_handoff`` record names the requested session, the calling session,
-    and whether a waiting host took the request.
+    path untouched. Otherwise one line naming both sessions is printed, the
+    hand-off is left for ``take_session_hand_off`` to put on the launch record
+    the dispatch composes next, and the ``host_handoff`` record names the
+    requested session, the calling session, and whether a waiting host took the
+    request.
     """
     calling = _calling_session()
     requested = str(session or "")
@@ -965,6 +997,7 @@ def hand_off_mismatched_session(
         "handed_to_host": handed,
     }
     print(_session_mismatch_line(handoff), flush=True)
+    _SESSION_HAND_OFF.set(handoff)
     return handoff
 
 
