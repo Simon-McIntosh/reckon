@@ -5,9 +5,12 @@ from __future__ import annotations
 import json
 import subprocess
 
+import pytest
+
 from reckon import crew_run_commands
 from reckon.crew import merge, pending_landing, runs
 from tests.helpers.git import git
+from tests.helpers.landing_repository import PROJECT
 from tests.test_a_conflicting_landing_is_repaired import (
     ORIGINAL,
     SOURCE,
@@ -127,6 +130,69 @@ def test_an_already_removed_pointer_does_not_prevent_finishing(deliveries, monke
     _assert_remote_carries(run)
     assert not runs.pointer_path(run["run_id"]).exists()
     assert not pending_landing._record_path(run["run_id"]).exists()
+
+
+def test_an_interrupted_promotion_keeps_its_record_until_its_attempt_is_retired(
+    deliveries, monkeypatch
+):
+    """A pass that ends before it clears the record leaves the retry reachable.
+
+    The unfinished-promotion branch clears the pending-landing record and
+    retires the interrupted land attempt. A pass killed between the two would,
+    if it cleared first, leave a live pointer carrying an ``attempting``
+    attempt and no record — a hold no later sweep can lift, because the record
+    is the evidence the attempt's promotion stopped. So the attempt and its
+    pointer are retired before the record goes.
+    """
+    deliver, _resumed = deliveries
+    run = deliver("interrupted-promotion", "first original", "first delivered")
+    pointer = runs.read_pointer(run["run_id"])
+    runs._write_json(
+        runs.pointer_path(run["run_id"]),
+        {
+            **pointer,
+            "admission_landing": {
+                "head": run["head"],
+                "guard": "crew land",
+                "status": "attempting",
+                "attempts": 0,
+                "failed_at": 0.0,
+            },
+        },
+    )
+    pending_landing.write_pending(run["run_id"], PROJECT, now=1000.0 - 10 * 60)
+    real_clear = pending_landing.clear_pending
+
+    def clear_dies(run_id):
+        raise OSError("the pass ended before it could clear its record")
+
+    monkeypatch.setattr(pending_landing, "clear_pending", clear_dies)
+    with pytest.raises(OSError):
+        pending_landing.finish_pending_landings(now=1000.0, only_run=run["run_id"])
+
+    # The pass died at the record's removal, so what reached disk is the whole
+    # of its work: the attempt is retired and the record is still there.
+    assert pending_landing._record_path(run["run_id"]).is_file()
+    assert (
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"]
+        == "interrupted"
+    )
+
+    monkeypatch.setattr(pending_landing, "clear_pending", real_clear)
+    results = pending_landing.finish_pending_landings(now=1000.0, only_run=run["run_id"])
+
+    assert results == [
+        {
+            "run_id": run["run_id"],
+            "status": "retried-unfinished",
+            "attempt_retired": True,
+        }
+    ], results
+    assert not pending_landing._record_path(run["run_id"]).exists()
+    assert (
+        runs.read_pointer(run["run_id"])["admission_landing"]["status"]
+        == "interrupted"
+    )
 
 
 def test_a_newer_attempt_keeps_its_pointer_and_worktree(deliveries):
