@@ -1041,10 +1041,11 @@ def not_fresh_line(
 ) -> str:
     """One line naming why the session's snapshot is not fresh, and the remedy.
 
-    Each of the four not-fresh states is said in its own words a coordinator
+    Each of the five not-fresh states is said in its own words a coordinator
     reads at the open of a turn: no producer, no follower for a session beside a
     producer seated on another host, a producer running older code than the
-    checkout, or the age of a snapshot. A no-follower reading -- this session has
+    checkout, a stopped follower behind an aged snapshot, or the age of a
+    snapshot. A no-follower reading -- this session has
     no snapshot at all while the project's seat names a live producer elsewhere,
     because a session's snapshot is refreshed only while that session has a live
     follower -- names the host the seat is on and is answered with the follower
@@ -1068,6 +1069,13 @@ def not_fresh_line(
             "the snapshot is stamped with no readable age"
             if age is None
             else f"the snapshot is {age}s old"
+        )
+    elif state == module.FOLLOWER_RELEASED:
+        age = module.snapshot_age_seconds(document)
+        published = "with no readable age" if age is None else f"{age}s ago"
+        reason = (
+            "this session's follower has stopped, and its obligations were "
+            f"last published {published}"
         )
     elif state == module.NO_FOLLOWER:
         host = (
@@ -1096,7 +1104,7 @@ def not_fresh_line(
             f"`reckon crew follow --project {project} --session {session}` "
             "to arm this session's follower"
         )
-    elif state == module.NO_FOLLOWER:
+    elif state in (module.NO_FOLLOWER, module.FOLLOWER_RELEASED):
         remedy = (
             "run "
             f"`reckon crew follow --project {project} --session {session}` "
@@ -1359,7 +1367,9 @@ def _prompt(payload: dict[str, Any]) -> int:
         )
         return 0
     document = module.read_snapshot(project, session)
-    state, foreign_host = module.freshness_reading(document, project=project)
+    state, foreign_host = module.freshness_reading(
+        document, project=project, session=session
+    )
     if state == module.FRESH:
         _inject_list(
             payload,
@@ -1629,7 +1639,9 @@ def _stop(payload: dict[str, Any]) -> int:
         resolved = recheck_worktree_held_rows(station["payload"], project=project)
     else:
         document = module.read_snapshot(project, session)
-        state, foreign_host = module.freshness_reading(document, project=project)
+        state, foreign_host = module.freshness_reading(
+            document, project=project, session=session
+        )
         if state == module.FRESH:
             resolved = recheck_worktree_held_rows(
                 module.live_payload(document), project=project

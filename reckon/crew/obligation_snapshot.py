@@ -18,12 +18,13 @@ A snapshot is ``fresh`` when all three hold: a process with the recorded pid is
 alive and carries the recorded start time (so a reused pid does not pass), its
 code stamp equals the stamp computed for the source a restarted producer would
 run, and ``computed_at`` is within :data:`FRESHNESS_WINDOW_SECONDS`. Otherwise
-it reads as one of four fixed words: ``no-producer`` when no snapshot was
+it reads as one of five fixed words: ``no-producer`` when no snapshot was
 published or its producer is not running, ``no-follower`` when this session has
 no snapshot at all while the project's seat names a live producer on another
 host, ``producer-stale-code`` when the producer runs source other than what a
-restarted one would run, and ``stale-snapshot`` when the snapshot is older than
-the window.
+restarted one would run, ``follower-released`` when a session whose own follower
+has stopped keeps an aged snapshot stamped with older code, and
+``stale-snapshot`` when the snapshot is older than the window.
 
 A not-fresh snapshot whose producer is plausibly mid-reload is a fourth
 reading, outside :func:`freshness`'s fixed words: :func:`reload_in_progress`
@@ -59,6 +60,7 @@ NO_PRODUCER = "no-producer"
 NO_FOLLOWER = "no-follower"
 STALE_CODE = "producer-stale-code"
 STALE_SNAPSHOT = "stale-snapshot"
+FOLLOWER_RELEASED = "follower-released"
 
 STAT_IDENTITY_INTERVAL_SECONDS = 10.0
 
@@ -744,10 +746,32 @@ def source_code_stamp(package_dir: Path | None = None) -> str:
     return checkout_trust.source_code_identity(package)
 
 
+def _follower_delivering(project: str | None, session: str | None) -> bool:
+    """Whether this session's follower registration still delivers.
+
+    The judgement of what counts as a live follower is the publisher's own: it
+    republishes only sessions whose registration reads live, so a reader that
+    tested a missing lease or the file's age instead would disagree with the
+    publisher about one session. A caller naming no session cannot ask the
+    question and is answered yes, which keeps every reading it had.
+
+    The import is deferred to this call for the reason the seat read defers its
+    own: the prompt hook loads this module by file path on a turn's opening,
+    and the crew package a module-scope import would drag in is paid only by a
+    read whose snapshot is already past the window.
+    """
+    if not project or not session:
+        return True
+    from reckon.crew.follower_registration import _follower_liveness, follower_lock_path
+
+    return bool(_follower_liveness(follower_lock_path(project, session)).get("live"))
+
+
 def freshness_reading(
     document: Mapping[str, Any] | None,
     *,
     project: str | None = None,
+    session: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> tuple[str, str]:
@@ -761,12 +785,17 @@ def freshness_reading(
     name a live producer elsewhere. The seat's code stamp identifies the
     producer now holding it, even when its predecessor wrote the snapshot.
 
-    The four not-fresh reasons are ``no-producer`` for an absent producer with
+    The five not-fresh reasons are ``no-producer`` for an absent producer with
     no live seat behind it, ``no-follower`` for no snapshot at all while a live
     producer stands on another host -- the reading a session earns when it has
     no follower of its own with a fresh lease -- ``producer-stale-code`` for a
-    producer running source other than the checkout, and ``stale-snapshot`` for
-    an aged publication.
+    producer running source other than the checkout, ``follower-released`` for
+    an aged snapshot on older code whose session has no delivering follower of
+    its own, and ``stale-snapshot`` for an aged publication on current code.
+
+    ``session`` names whose follower registration is asked about for the
+    ``follower-released`` reading. A caller naming none cannot answer that
+    question for anyone and gets the code-stamp reading it always had.
     """
     if not isinstance(document, Mapping) or not document:
         host = live_foreign_seat_host(project)
@@ -786,13 +815,25 @@ def freshness_reading(
     stamp = source_code_stamp() if current_stamp is None else current_stamp
     # Older seat records may carry no stamp; retain their snapshot's reading.
     producer_stamp = seat_stamp or str(producer.get("code_stamp") or "")
-    if producer_stamp != stamp:
-        return STALE_CODE, host
     computed = _parse_instant(document.get("computed_at"))
+    instant = _utc_now() if now is None else now
+    aged = (
+        computed is not None
+        and (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS
+    )
+    if producer_stamp != stamp:
+        # A session whose follower has stopped keeps the snapshot that
+        # follower's producer last wrote, so it both stays on the older stamp
+        # and ages. This population reads the stale-code word today, and the
+        # stale-code remedy names the producer when what the session has to do
+        # is arm its own follower. Both conditions are therefore required: an
+        # aged snapshot on current code keeps its own reading.
+        if aged and not _follower_delivering(project, session):
+            return FOLLOWER_RELEASED, host
+        return STALE_CODE, host
     if computed is None:
         return STALE_SNAPSHOT, host
-    instant = _utc_now() if now is None else now
-    if (instant - computed).total_seconds() > FRESHNESS_WINDOW_SECONDS:
+    if aged:
         return STALE_SNAPSHOT, host
     return FRESH, host
 
@@ -801,12 +842,13 @@ def freshness(
     document: Mapping[str, Any] | None,
     *,
     project: str | None = None,
+    session: str | None = None,
     current_stamp: str | None = None,
     now: datetime | None = None,
 ) -> str:
     """Return the snapshot's freshness state for callers needing no host."""
     return freshness_reading(
-        document, project=project, current_stamp=current_stamp, now=now
+        document, project=project, session=session, current_stamp=current_stamp, now=now
     )[0]
 
 
