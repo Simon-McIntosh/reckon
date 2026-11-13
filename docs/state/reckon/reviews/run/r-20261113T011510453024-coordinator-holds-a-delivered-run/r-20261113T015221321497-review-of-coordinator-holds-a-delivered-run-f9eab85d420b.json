@@ -1,0 +1,68 @@
+{
+  "absent": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/queue_landing.py:1920",
+    "reckon/crew/recovery_review_acceptance.py:504",
+    "reckon/cli.py:670",
+    "reckon/mcp.py:3096",
+    "reckon/crew/recovery_repair_dispatch.py:1882"
+  ],
+  "completed_at": "2026-11-13T02:06:38.226Z",
+  "dispatched_at": "2026-11-13T01:56:08Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resume.py",
+      "line": 219,
+      "severity": "blocking",
+      "text": "promotion_in_flight is consulted only when the live pointer is already absent, but a promotion holds its lease from reckon/crew/promotion.py:460 and removes the pointer only at reckon/crew/promotion.py:1414, so a resume issued during the whole promotion window finds the pointer present, takes a hold and launches \u2014 the race the section exists to close \u2014 and the done_when case that would have caught it is absent."
+    },
+    {
+      "file": "reckon/mcp.py",
+      "line": 3096,
+      "severity": "non-blocking",
+      "text": "the MCP resume door calls resumption._resume directly and never passes the CLI guard installed at reckon/cli.py:670, so an MCP resume of a promoted run still ends silently and one of a delivered run takes no hold."
+    },
+    {
+      "file": "reckon/crew/resume.py",
+      "line": 1,
+      "severity": "non-blocking",
+      "text": "a new module named resume.py beside the existing resumption.py leaves two files whose names differ only by suffix and both own resume behaviour, and the plan's write path named resumption.py."
+    }
+  ],
+  "item_verdicts": {
+    "diff": "read commit by commit from 55d49260706d to f9eab85d420b; the feature commit adds resume.py (331 lines), three call-site edits and a 388-line test, and the two documentation commits add only the evidence fragment.",
+    "done_when": "the done_when names five cases; tests/test_a_coordinator_holds_a_delivered_run.py contains four of them (held-run deferral, recorded hold and release, promoted-run refusal naming its commit, hold-before-relaunch) and no case for a resume issued while a promotion is in flight, so one named case is unasserted.",
+    "goal": "the node's goal is a coordinator hold over a delivered run plus a resume that never vanishes; reckon/crew/resume.py:57 hold_delivery writes it, reckon/crew/queue_landing.py:1920 skips a held run, reckon/crew/recovery_review_acceptance.py:504 refuses it, and the hold, release and promoted-run refusal are all landed, but the \"being promoted\" refusal at reckon/crew/resume.py:219 is reached only once the pointer is already gone.",
+    "manifest": "read; status complete, commits f39a6fa1e2aba68b5e1437770dafdfa001707eef, c536fe6d9b, f9eab85d42; it records the head arm at 56 passed EXIT=0, the base arm at 49 passed 2 errors EXIT=1 attributed to scaffolding, the two importer arms, and the red negative control.",
+    "write_paths": "read the source run's manifest orientation paths; every path in the diff is inside the granted set, and the plan's own list named resumption.py/crew_run_commands.py instead, recorded under evidence_inputs and outside_scope."
+  },
+  "justifications": {
+    "durability": "tests/test_a_coordinator_holds_a_delivered_run.py:196 and :262 fail if the lander or the resume hold is removed (shown by the 2-failed negative control), but the promotion_in_flight branch at reckon/crew/resume.py:159 has no assertion, so the missing case and its code are both unguarded.",
+    "evidence": "the after-arm log records 56 passed EXIT=0 at f9eab85d and the two importer arms carry 12 identical failure/error identities, but the done_when's in-flight case is measured nowhere.",
+    "fit": "the module follows the surrounding docstring-and-CrewError idiom, but reckon/crew/resume.py sits beside the existing reckon/crew/resumption.py and both names claim resume.",
+    "goal_fidelity": "the hold and its two automatic doors work, but reckon/crew/resume.py:219 tests promotion_in_flight only when the live pointer is already absent, so the \"being promoted\" half of the goal is unmet.",
+    "reuse": "the change reuses recovery.classify_pointer, pending_landing._promoted_row and runs._mutate_pointer instead of forking them; a search of reckon/crew for an existing landing-hold (queue_hold, budget_hold, pending_landing) found none.",
+    "scope_discipline": "all six landed paths sit inside the dispatch-granted set in the source manifest, with the resumption.py deviation disclosed under outside_scope rather than taken silently."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is a coordinator hold over a delivered run plus a resume that never vanishes; reckon/crew/resume.py:57 hold_delivery writes it, reckon/crew/queue_landing.py:1920 skips a held run, reckon/crew/recovery_reason_acceptance.py:504 refuses it, and the hold, release and promoted-run refusal are all landed, but the \"being promoted\" refusal at reckon/crew/resume.py:219 is reached only once the pointer is already gone.\nVERDICT done_when: the done_when names five cases; tests/test_a_coordinator_holds_a_delivered_run.py contains four of them (held-run deferral, recorded hold and release, promoted-run refusal naming its commit, hold-before-relaunch) and no case for a resume issued while a promotion is in flight, so one named case is unasserted.\nVERDICT write_paths: read the source run's manifest orientation paths; every path in the diff (reckon/cli.py, reckon/crew/queue_landing.py, reckon/crew/recovery_review_acceptance.py, reckon/crew/resume.py, tests/test_a_coordinator_holds_a_delivered_run.py, docs/evidence/fragments/work-flows-to-the-lane/coordinator-holds-a-delivered-run.html) is inside the granted set, and the plan's own list named resumption.py/crew_run_commands.py instead, recorded under evidence_inputs and outside_scope.\nVERDICT manifest: read; status complete, commits f39a6fa1e2aba68b5e1437770dafdfa001707eef, c536fe6d9b, f9eab85d42; it records the head arm at 56 passed EXIT=0, the base arm at 49 passed 2 errors EXIT=1 attributed to scaffolding, the two importer arms, and the red negative control.\nVERDICT diff: read commit by commit from 55d49260706d to f9eab85d420b; the feature commit adds resume.py (331 lines), three call-site edits and a 388-line test, and the two documentation commits add only the evidence fragment.\nCALL_SITES: reckon/crew/queue_landing.py:1920 (_land_deliveries), reckon/crew/recovery_review_acceptance.py:504 (accept_clean_review), reckon/cli.py:670 (guard on crew_resume), reckon/mcp.py:3096 (resume door that bypasses the guard), reckon/crew/recovery_repair_dispatch.py:1882 (repair resume that bypasses the guard)\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: the hold and its two automatic doors work, but reckon/crew/resume.py:219 tests promotion_in_flight only when the live pointer is already absent, so the \"being promoted\" half of the goal is unmet.\nSCORE evidence: 13\nJUSTIFICATION evidence: the after-arm log records 56 passed EXIT=0 at f9eab85d and the two importer arms carry 12 identical failure/error identities, but the done_when's in-flight case is measured nowhere.\nSCORE scope_discipline: 16\nJUSTIFICATION scope_discipline: all six landed paths sit inside the dispatch-granted set in the source manifest, with the resumption.py deviation disclosed under outside_scope rather than taken silently.\nSCORE durability: 13\nJUSTIFICATION durability: tests/test_a_coordinator_holds_a_delivered_run.py:196 and :262 fail if the lander or the resume hold is removed (shown by the 2-failed negative control), but the promotion_in_flight branch at reckon/crew/resume.py:159 has no assertion, so the missing case and its code are both unguarded.\nSCORE fit: 15\nJUSTIFICATION fit: the module follows the surrounding docstring-and-CrewError idiom, but reckon/crew/resume.py sits beside the existing reckon/crew/resumption.py and both names claim resume.\nSCORE reuse: 18\nJUSTIFICATION reuse: the change reuses recovery.classify_pointer, pending_landing._promoted_row and runs._mutate_pointer instead of forking them; a search of reckon/crew for an existing landing-hold (queue_hold, budget_hold, pending_landing) found none.\nFINDING reckon/crew/resume.py:219 blocking: promotion_in_flight is consulted only when the live pointer is already absent, but a promotion holds its lease from reckon/crew/promotion.py:460 and removes the pointer only at reckon/crew/promotion.py:1414, so a resume issued during the whole promotion window finds the pointer present, takes a hold and launches \u2014 the race the section exists to close \u2014 and the done_when case that would have caught it is absent.\nFINDING reckon/mcp.py:3096 non-blocking: the MCP resume door calls resumption._resume directly and never passes the CLI guard installed at reckon/cli.py:670, so an MCP resume of a promoted run still ends silently and one of a delivered run takes no hold.\nFINDING reckon/crew/resume.py:1 non-blocking: a new module named resume.py beside the existing resumption.py leaves two files whose names differ only by suffix and both own resume behaviour, and the plan's write path named resumption.py.\n",
+  "review_run_id": "r-20261113T015221321497-review-of-coordinator-holds-a-delivered-run-f9eab85d420b",
+  "reviewed_base_sha": "55d49260706d07043d3e211514ed76fcf6a85c08",
+  "reviewed_head_sha": "f9eab85d420bb23e03a3a30df0de4697b804d998",
+  "reviewed_run_id": "r-20261113T011510453024-coordinator-holds-a-delivered-run",
+  "scores": {
+    "durability": 13,
+    "evidence": 13,
+    "fit": 15,
+    "goal_fidelity": 14,
+    "reuse": 18,
+    "scope_discipline": 16
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T02:04:05.768187+00:00",
+  "total": 89
+}
