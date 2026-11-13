@@ -24,7 +24,7 @@
   <title>Work Is Never Stuck Behind the Admission Loop | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="388">
+<meta name="plan-version" content="389">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -760,6 +760,9 @@
 <div class="r-comment" data-section="s35" data-id="c-run-r-20261113T115019098649-review-of-ready-work-is-never-stuck-behind-t-s35-b14fde8ac692" data-who="reckon-build" data-when="2026-11-13T12:18:21.633Z">
     <div class="r-comment-body"><p>Reviewed r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35 across base 4c4cf234390f5326b995cee7ad6bda55fe01b5c0 and head b14fde8ac69275dffce1f805a2637474bcc67fc0, scoring 18/15/19/19/18/20 with one blocking finding on the superseded evidence fragment and one non-blocking finding on a missing ruff receipt.</p></div>
 </div>
+<div class="r-comment" data-section="s35" data-id="c-run-r-20261113T030959269941-ready-work-is-never-stuck-behind-t-s35" data-who="reckon-build" data-when="2026-11-13T14:12:03Z">
+    <div class="r-comment-body"><p>Verified queue hold steering with five passing cases and two failing guard mutations; the completed 98-file importer comparison adds zero failures, final gates pass 54 baseline and 56 head tests, and the corrected committed fragment records these results with all four log paths.</p></div>
+</div>
 <div class="r-comment" data-section="s36" data-id="c-run-r-20261106T171536810712-review-of-the-lander-skips-a-run-landed-elsewhere-61b9147844e5" data-who="reckon-build" data-when="2026-11-06T17:25:05Z">
     <div class="r-comment-body"><p>Parsed independent review of ad4269927f577138e8e4e1adebc10637383333ee..61b9147844e5815a780f79ae233c7b56ae1c32b0 stored at both granted paths with six scores, zero added failure ids, and two blocking findings; both records pass crew check --review.</p></div>
 </div>
@@ -786,6 +789,12 @@
 </div>
 <div class="r-comment" data-section="s37" data-id="c-run-r-20261108T122920635199-review-of-launch-rereads-its-run-9000ff29071e" data-who="reckon-build" data-when="2026-11-08T12:45:48.904Z">
     <div class="r-comment-body"><p>§37 review of run r-20261108T053837379010-launch-rereads-its-run at head 9000ff29071e; parsed record with scores goal_fidelity 16, evidence 14, scope_discipline 10, durability 16, fit 15, reuse 20, added_failure_count 0 over the reviewed run's own head and base arms, three non-blocking findings and no blocking one.</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T140745608963-review-of-ready-work-is-never-stuck-behind-t-s38-fb22b77a7426" data-who="reckon-build" data-when="2026-11-13T14:37:49.922Z">
+    <div class="r-comment-body"><p>§38 reviewed — the repair is correct and its tests are real: `TERMINAL_VERDICTS` joins the pass's held set (admission/selection.py:714) and `_record_stalls` skips a terminal last verdict (admission/verdicts.py:183), the refusal case fails at base with `['refused-before-launch','stalled']` and stall rows 1 then 2, the head gate is 56 passed EXIT=0 at fb22b77a74 against 54 passed EXIT=0 at 433d71f0, and the importer arms add no failure (133 at head vs 135 at base). Two non-blocking findings: the new exit-record case at tests/test_a_launch_rereads_the_run_it_starts.py:348 duplicates the existing case at :297, and the base importer log opens with slurmstepd noise before its revision header.</p></div>
+</div>
+<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T171457416329-review-of-ready-work-is-never-stuck-behind-t-s38-858617ce0660" data-who="reckon-build" data-when="2026-11-13T17:39:33.051Z">
+    <div class="r-comment-body"><p>§38 review landed as a parsed record scoring goal_fidelity 18, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 20 (total 113) with zero added failures and three non-blocking findings (a stale `held` docstring on `_record_stalls`, and two factual slips in the §38 evidence fragment).</p></div>
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261108T104745074252-review-of-lander-leaves-red-run-to-coordinator-f1627c3c88b0" data-who="reckon-build" data-when="2026-11-08T11:11:30.155Z">
     <div class="r-comment-body"><p>Review of admission-loop §39: one blocking finding (record_landed_exemptions overwrites a coordinator's folded disposition with exempted on the next pass), reuse scored 5 for duplicating promotion_checks' failure-id readers.</p></div>
@@ -933,12 +942,6 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261029T145111134871-review-of-a-delivered-run-reaches-a-landing-verdict-c12609ed2938" data-who="reckon-build" data-when="2026-10-29T15:00:19.489Z">
     <div class="r-comment-body"><p>§8 reviewed at c12609ed29 against base c97238c9: goal met, evidence reproducible, 0 added failures, two non-blocking findings (a tautological ledger assertion at the new test's line 260, and a surviving raw commit-entry reader at promotion_scope.py:1253).</p></div>
-</div>
-<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T140745608963-review-of-ready-work-is-never-stuck-behind-t-s38-fb22b77a7426" data-who="reckon-build" data-when="2026-11-13T14:37:49.922Z">
-    <div class="r-comment-body"><p>§38 reviewed — the repair is correct and its tests are real: `TERMINAL_VERDICTS` joins the pass's held set (admission/selection.py:714) and `_record_stalls` skips a terminal last verdict (admission/verdicts.py:183), the refusal case fails at base with `['refused-before-launch','stalled']` and stall rows 1 then 2, the head gate is 56 passed EXIT=0 at fb22b77a74 against 54 passed EXIT=0 at 433d71f0, and the importer arms add no failure (133 at head vs 135 at base). Two non-blocking findings: the new exit-record case at tests/test_a_launch_rereads_the_run_it_starts.py:348 duplicates the existing case at :297, and the base importer log opens with slurmstepd noise before its revision header.</p></div>
-</div>
-<div class="r-comment" data-section="s38" data-id="c-run-r-20261113T171457416329-review-of-ready-work-is-never-stuck-behind-t-s38-858617ce0660" data-who="reckon-build" data-when="2026-11-13T17:39:33.051Z">
-    <div class="r-comment-body"><p>§38 review landed as a parsed record scoring goal_fidelity 18, evidence 18, scope_discipline 20, durability 19, fit 18, reuse 20 (total 113) with zero added failures and three non-blocking findings (a stale `held` docstring on `_record_stalls`, and two factual slips in the §38 evidence fragment).</p></div>
 </div>
 </section>
 </main>
