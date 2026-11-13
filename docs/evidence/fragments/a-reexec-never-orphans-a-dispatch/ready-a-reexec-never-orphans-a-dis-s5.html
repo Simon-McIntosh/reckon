@@ -1,0 +1,45 @@
+<section id="ready-a-reexec-never-orphans-a-dis-s5-landing">
+  <h2>Reload waits exercised through real dispatch claims</h2>
+  <p>The shared bounded wait and its three service call sites already exist at
+  <code>4c4cf234390f5326b995cee7ad6bda55fe01b5c0</code>. The test change at
+  <code>74a05816122294a2851d3392d5554f07a3e78c76</code> exercises claim acquisition
+  through <code>dispatch_claims._claim_node_dispatch</code>, releases through
+  <code>_NodeDispatchClaim.release</code>, and dispatches the station case through
+  <code>station.SweepBeat</code> on its actual sweep thread. A condition-wait
+  handshake holds the claim until the reload blocks; each test uses a temporary
+  crew home. This removes the timing-only release and detects missing registration.</p>
+  <p>The scoped gate includes <code>tests/test_a_reexec_waits_for_its_dispatches.py</code>
+  and <code>tests/test_staged_write_inventory.py</code>. Both importer arms cover the
+  same 166 directly importing test files. All arms and controls ran sequentially
+  on <code>all_debug</code>, with importer parallelism limited to four workers.
+  Each receipt records the source revision, command, imported module path,
+  working directory and exit status. Both temporary measurement worktrees and
+  the job's own scratch were removed.</p>
+  <table>
+    <thead><tr><th>Measure</th><th>Recorded summary</th><th>Run-directory log</th></tr></thead>
+    <tbody>
+    <tr><td>Scoped baseline</td><td>56 passed in 13.35s</td><td><code>resume-baseline-suite.log</code></td></tr>
+    <tr><td>Scoped head</td><td>56 passed in 12.11s</td><td><code>resume-after-suite.log</code></td></tr>
+    <tr><td>Importer baseline</td><td>155 failed, 1267 passed, 12 warnings in 466.37s (0:07:46)</td><td><code>resume-baseline-importers.log</code></td></tr>
+    <tr><td>Importer head</td><td>156 failed, 1266 passed, 8 warnings in 392.24s (0:06:32)</td><td><code>resume-after-importers.log</code></td></tr>
+    <tr><td>Station wait bypassed</td><td>1 failed in 0.54s</td><td><code>resume-negative-station.log</code></td></tr>
+    <tr><td>Follower wait bypassed</td><td>1 failed in 0.28s</td><td><code>resume-negative-follower.log</code></td></tr>
+    <tr><td>Admit wait bypassed</td><td>1 failed in 0.24s</td><td><code>resume-negative-admit.log</code></td></tr>
+    <tr><td>Bound log suppressed</td><td>1 failed in 0.30s</td><td><code>resume-negative-bound-log.log</code></td></tr>
+    <tr><td>Claim registration removed</td><td>1 failed in 0.30s</td><td><code>resume-negative-claim-entry.log</code></td></tr>
+    </tbody>
+  </table>
+  <p>The scoped arms add zero failures. The full importer comparison currently
+  adds one failure, so that measure remains unresolved. Its exact identity and
+  the authority needed for a bounded recheck are recorded in the manifest's
+  <code>outside_scope</code> field.</p>
+  <p>Each skipped-wait control fails on the recorded execution state:
+  <code>[{'r-in-flight': 'node-waiting'}]</code> is still present at
+  <code>os.execve</code>. Suppressing the bound log fails on
+  <code>assert 'node-stuck' in ''</code>. Removing claim registration fails the
+  assertion that the real claim entered the register. The unmodified scoped
+  head passes every case, including the quiet empty-register case.</p>
+  <p>Logs and machine-readable measurements are retained under run
+  <code>r-20261113T032606972809-ready-a-reexec-never-orphans-a-dis-s5</code>.
+  Ruff check and format check both passed for the changed Python file.</p>
+</section>
