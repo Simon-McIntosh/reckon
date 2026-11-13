@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="829">
+<meta name="plan-version" content="830">
 <meta name="plan-modified" content="2026-11-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1410,6 +1410,12 @@ Both cases run under the file's existing temporary crew home.</li>
 <div class="r-comment" data-section="s102" data-id="c-run-r-20261103T061724230349-review-of-a-promoted-run-owes-no-promotion-4431f940b753" data-who="reckon-build" data-when="2026-11-03T06:57:41.151Z">
     <div class="r-comment-body"><p>independent review of r-20261103T052920940353-a-promoted-run-owes-no-promotion at 4431f940b753 read from 79c62d09744e50a1942d7b593713188b90f7807c; all six dimensions scored, zero added failures, two non-blocking findings, no blocking finding</p></div>
 </div>
+<div class="r-comment" data-section="s104" data-id="c-run-r-20261113T061546946085-review-of-ready-the-monitor-shows-the-work-i-s104-f110705f3c64" data-who="reckon-build" data-when="2026-11-13T07:58:17.372Z">
+    <div class="r-comment-body"><p>Independent review of r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104 over d7cf20c73d..f110705f3c: all six dimensions scored, added_failure_count 0 (base 25 ids, head 23, the two removed are the scaffolding ERRORS in tests/test_staged_write_inventory.py), one blocking finding (the new test file is outside the dispatch's granted fence and needs a coordinator widen) and two non-blocking findings (the evidence fragment over-claims its negative control's failing set; _revision_spellings_match duplicates reckon/crew/review_records.py:1938). Status parsed.</p></div>
+</div>
+<div class="r-comment" data-section="s104" data-id="c-run-r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104" data-who="reckon-build" data-when="2026-11-13T05:41:20.627Z">
+    <div class="r-comment-body"><p>The read-time settlement answers three further duty kinds from the run&#x27;s current live pointer — a review-missing row is dropped once a launched reviewer&#x27;s granted &lt;run&gt;.at-&lt;head&gt;.json record names the head the row does (a queued or delivered reviewer answers nothing), a review-ready or promotable-stale row is dropped once the pointer reads a phase other than complete, and a blocked or review-missing row is dropped once the run has been resumed after the manifest the row was built from; the new tests/test_a_held_duty_is_settled_against_the_pointer.py passes seven cases (7 passed at f110705f3c) and the declared negative control fails the first and third cases (3 failed, 4 passed).</p></div>
+</div>
 <div class="r-comment" data-section="s107" data-id="c-run-r-20261108T040736422647-review-of-a-follower-runs-current-code-48d3aba14c4d" data-who="reckon-build" data-when="2026-11-08T04:22:04.239Z">
     <div class="r-comment-body"><p>review of r-20261108T032830784659-a-follower-runs-current-code at head 48d3aba14c4db3b6e8c2a6212f769951639179cb; parsed record scores goal_fidelity 19, evidence 13, scope_discipline 19, durability 10, fit 18, reuse 18, added_failure_count 0, and carries three non-blocking findings — the subscriber delivery's reloader is not guarded by any added test, the first negative control was applied to the test's own builder rather than the subscriber path, and the base-arm breadth clause of the done_when (62 importing test files) was not run.</p></div>
 </div>
@@ -2600,9 +2606,6 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s99" data-id="c-run-r-20261105T131501961323-reland-the-reviewed-change-that-keeps-a-neverlaunched" data-who="reckon-build" data-when="2026-11-05T14:36:18.629Z">
     <div class="r-comment-body"><p>Re-landed the reviewed parked-request budget fix unchanged on base cd5edbd573 (patch byte-identical to git diff 98d07499d1 918894481d); elapsed now charges from launch, a never-launched pointer reports no elapsed/overrun and carries waiting_seconds (declared in LIVE_CLASSIFICATION_FIELDS); gate 23 passed at head effb92dc47 against 16 passed at base, importers 86 passed both sides, declared negative control EXIT=1 with the awaiting-upstream case failing on the overrun assertion.</p></div>
-</div>
-<div class="r-comment" data-section="s104" data-id="c-run-r-20261113T061546946085-review-of-ready-the-monitor-shows-the-work-i-s104-f110705f3c64" data-who="reckon-build" data-when="2026-11-13T07:58:17.372Z">
-    <div class="r-comment-body"><p>Independent review of r-20261113T015234088676-ready-the-monitor-shows-the-work-i-s104 over d7cf20c73d..f110705f3c: all six dimensions scored, added_failure_count 0 (base 25 ids, head 23, the two removed are the scaffolding ERRORS in tests/test_staged_write_inventory.py), one blocking finding (the new test file is outside the dispatch&#x27;s granted fence and needs a coordinator widen) and two non-blocking findings (the evidence fragment over-claims its negative control&#x27;s failing set; _revision_spellings_match duplicates reckon/crew/review_records.py:1938). Status parsed.</p></div>
 </div>
 </section>
 <section data-reckon="gates" id="gates" class="r-gates">
