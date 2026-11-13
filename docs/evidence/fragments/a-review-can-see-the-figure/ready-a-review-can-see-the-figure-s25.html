@@ -1,20 +1,26 @@
 <section id="ready-a-review-can-see-the-figure-s25-landing">
   <h2>A figure review is complete by its own rubric</h2>
 
-  <p><strong>What changed.</strong> The delivery check in
-  <code>reckon/crew/recovery_review_delivery.py</code> judged every stored review
-  record against the six landed-node score dimensions. A figure review records a
+  <p><strong>What changed.</strong> The completeness rule in
+  <code>reckon/crew/recovery_review_subject.py</code>
+  (<code>_review_missing_measures</code>) judged every stored review record
+  against the six landed-node score dimensions. A figure review records a
   verdict per item of its own rubric instead, so a figure record that carried all
-  six of its measures was refused at its first promotion as an incomplete review,
-  naming six dimensions it was never asked for. The check now reads the record's
-  rubric through the same reader <code>crew check --review</code> applies: a
-  figure record is complete when it carries a non-blank verdict for every item of
-  <code>FIGURE_REVIEW_ITEMS</code>, and its refusal names the figure item it
-  lacks. Every other record keeps the completeness rule the shared reader owns,
-  so a text record and a claims record are judged as before. A
-  <code>rubric_items</code> value that is not a mapping reports every item
-  missing rather than raising, because the check runs on classification paths
-  that must not take the pass down with them.</p>
+  six of its measures was refused at its first promotion as an incomplete
+  review, naming six dimensions it was never asked for. The rule now reads the
+  record's rubric through the same reader <code>crew check --review</code>
+  applies: a figure record is complete when it carries a non-blank verdict for
+  every item of <code>FIGURE_REVIEW_ITEMS</code>, and its refusal names the
+  figure item it lacks. Because the rule lives in the one helper every other
+  reader calls, <code>_review_is_complete</code> and the six production paths
+  that read it give the delivery check's answer rather than a second one</p>
+
+  <p>Every other record keeps the completeness rule as it was, so a text record
+  and a claims record are judged exactly as before. A <code>rubric_items</code>
+  value that is not a mapping reports every item missing rather than raising,
+  because the check runs on classification paths that must not take the pass
+  down with them. The delivery check delegates to the shared rule and holds no
+  measure list of its own.</p>
 
   <h3>Measured</h3>
 
@@ -63,5 +69,35 @@
     and unchanged by this node, so it is not an added failure.</li>
     <li><strong>What is not measured here.</strong> Verifying the merged result
     belongs to a separately dispatched test node.</li>
+  </ul>
+
+  <h3>Repair after review</h3>
+
+  <p>An independent review of this landing found the figure branch in the wrong
+  place: it had been added to the delivery check as a second completeness
+  dispatcher beside <code>_review_missing_measures</code>, so the delivery check
+  and the six production readers of <code>_review_is_complete</code> could
+  answer differently for the same record. The repair moves the branch into that
+  owner and leaves the delivery check delegating to it, so one rule answers for
+  every reader. The delivery module therefore carries no diff from the base
+  revision at all: the whole change is 35 lines in
+  <code>reckon/crew/recovery_review_subject.py</code>.</p>
+
+  <ul>
+    <li><strong>A figure record is complete for the fleet, not just for
+    promotion.</strong> The test now asserts
+    <code>_review_is_complete(body) is True</code> on the same body it proves
+    deliverable, so the classification, repair-dispatch, review-dispatch,
+    acceptance and obligations readers give the promotion check's answer.</li>
+    <li><strong>The record proven deliverable is one the review contract
+    accepts.</strong> Both fixtures carry <code>added_failure_count</code> and
+    <code>added_failure_ids</code>, and the test asserts
+    <code>review_record_refusals(body) == []</code> before staging it. The
+    earlier fixtures omitted both, so the case proved delivery for a record
+    <code>crew check --review</code> would have refused.</li>
+    <li><strong>Negative control.</strong> Reverting the owner to its delivered
+    form, leaving the delivery check delegating, turns eight cases red: the
+    deliver-and-promote case, the blank-verdict case, and all six
+    missing-measure cases.</li>
   </ul>
 </section>
