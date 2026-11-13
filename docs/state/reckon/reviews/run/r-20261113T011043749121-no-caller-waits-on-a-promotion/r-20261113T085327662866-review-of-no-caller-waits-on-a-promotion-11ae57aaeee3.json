@@ -1,0 +1,126 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_audit": [
+    {
+      "assessment": "No test/assertion additions in these six paths; the merge retains existing tests rather than adding guards.",
+      "scope": "All six requested paths in first-parent incremental diff"
+    },
+    {
+      "fails_if": "Restoring synchronous execution inside the request makes each relevant caller wait for the injected 30-second operation, exceeding its five-second bound.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:121,160,209"
+    },
+    {
+      "fails_if": "Dropping the imported active-promotion guard opens a repair round or loses the repair_held report for a known-held cross-host claim.",
+      "lines": "tests/test_a_floor_repair_and_a_promotion_are_exclusive.py: test_a_promotion_in_flight_opens_no_floor_repair_round"
+    },
+    {
+      "assessment": "Existing fixture-supplied commit propagation assertions, already caveated by earlier reviews; not counted as independent new commit-identity coverage in this merge.",
+      "lines": "tests/test_no_caller_waits_on_a_promotion.py:132,219,431,548"
+    },
+    {
+      "assessment": "The recorded gates do not assert that release invalidates an earlier held acceptance refusal; finding identifies this unprotected transition.",
+      "scope": "Imported delivery hold and refusal memo"
+    }
+  ],
+  "call_sites": [
+    "reckon/crew/resumption.py:2783 dispatch_awaiting_reviews",
+    "reckon/crew/recovery_review_acceptance.py:1050 accept_clean_review callback",
+    "reckon/crew/queue_landing.py:1880 finish_pending_landings",
+    "reckon/crew/queue_landing.py:1882 _land_deliveries",
+    "reckon/crew_run_commands.py:2524 reopen_run"
+  ],
+  "completed_at": "2026-11-13T09:35:23Z",
+  "dispatched_at": "2026-11-13T09:24:21Z",
+  "evidence_caveats": [
+    "Review bounded to six requested paths gained since previous reviewed head; imported primary files outside that scope are not re-reviewed.",
+    "Review pair begins at previous reviewed head; required gate baseline remains original dispatch base 6d4266db9bf865d1c9f735940c7b798b58834c5f as expressly required by merge-resume advice.",
+    "No suite rerun or source mutation; findings follow exact-target control flow and owner release mutation.",
+    "One blocking finding concerns primary code newly imported into the reviewed run, not the two-line manual conflict resolution.",
+    "Live plan MCP read returned read-slow; read the current canonical plan HTML directly."
+  ],
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_review_acceptance.py",
+      "line": "509",
+      "severity": "blocking",
+      "text": "blocking: A held acceptance is persisted by refuse() using _acceptance_inputs(), whose pointer field list at lines 373-391 omits delivery_hold; release_hold() changes only that omitted field (reckon/crew/resume.py:158-168), so an otherwise unchanged eligible run returns the cached held refusal at lines 489-495 before re-reading the now-released hold. Include hold state in the memo identity or avoid memoizing hold refusals, and cover held acceptance followed by release and acceptance without unrelated head/gate changes."
+    }
+  ],
+  "gate_evidence": {
+    "after_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_no_caller_waits_on_a_promotion.py tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/merge-after-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "70 passed in 132.70s (0:02:12)",
+      "revision": "11ae57aaeee308e36dfe395a32e05da02445fb6a"
+    },
+    "baseline_suite": {
+      "command": "PYTHONPATH=. .venv/bin/python -m pytest -p no:cacheprovider -q tests/test_staged_write_inventory.py",
+      "completed": true,
+      "exit_status": 0,
+      "failure_count": 0,
+      "failure_ids": [],
+      "log_path": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T011043749121-no-caller-waits-on-a-promotion/merge-baseline-suite.log",
+      "observed_failure_ids": [],
+      "observed_summary": "51 passed in 9.73s",
+      "revision": "6d4266db9bf865d1c9f735940c7b798b58834c5f"
+    }
+  },
+  "item_verdicts": {
+    "call_sites": "Verified exact-target production callers listed in call_sites.",
+    "diff": "Read merge 11ae57aaeee308e36dfe395a32e05da02445fb6a against first parent 37ca2c25c5ac53fce51da9feaf0a1611f01b367e for all six requested paths and its combined conflict diff; both report fields survive, with one imported acceptance-cache defect.",
+    "done_when": "Read live section s32 and resume-4-advice.txt; merge-baseline-suite.log records 51 passed at the required original base, merge-after-suite.log records 70 passed at the reviewed head, and merge-repair-exclusion.log records two passing guard tests.",
+    "goal": "Read source prompt.txt:38-40 and live docs/plans/work-flows-to-the-lane.html:188-190; the merge preserves asynchronous promotion and repair exclusion, but the imported hold refusal can survive release in reckon/crew/recovery_review_acceptance.py:489-515.",
+    "manifest": "Read source manifest.md and its baseline_suite/after_suite receipts; both complete with EXIT=0 and zero failure IDs, while importer-population results are explicitly historical rather than claimed fresh at this merge.",
+    "write_paths": "Read source prompt.txt scope, manifest scope_note and resume-4-advice.txt merge authorization; the six requested paths comprise the fragment, the resolved acceptance module and automatic primary imports authorized by that instruction."
+  },
+  "justifications": {
+    "durability": "tests/test_no_caller_waits_on_a_promotion.py:121,160,209 fail on synchronous promotion and tests/test_a_floor_repair_and_a_promotion_are_exclusive.py checks a held claim, but no new assertion in this six-path merge protects release from the acceptance memo.",
+    "evidence": "merge-after-suite.log records 70 passes at 11ae57aaeee308e36dfe395a32e05da02445fb6a and merge-repair-exclusion.log records two guard passes, but neither tests acceptance after releasing a cached hold.",
+    "fit": "reckon/crew/recovery_review_acceptance.py:1169-1170 keeps adjacent report fields, while reckon/crew/resumption.py:213-281 owns reopening and crew_run_commands.py:2512-2526 delegates to it with mechanism-based names.",
+    "goal_fidelity": "reckon/crew/recovery_review_acceptance.py:1099-1105 retains durable handoff and :1067-1087 retains repair exclusion, but :489-515 can retain a released hold as a refusal.",
+    "reuse": "Capability searches found the existing resumption.py:153-192 advice owner, moved CLI reopening code and resume.py:91 hold owner; resumption.py:195-281 extends those owners and the acceptance and landing imports reuse the hold predicate.",
+    "scope_discipline": "The six requested paths match the scoped delta, and source resume-4-advice.txt expressly authorizes automatic primary imports plus resolution of reckon/crew/recovery_review_acceptance.py."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read source prompt.txt:38-40 and live docs/plans/work-flows-to-the-lane.html:188-190; the merge preserves asynchronous promotion and repair exclusion, but the imported hold refusal can survive release in reckon/crew/recovery_review_acceptance.py:489-515.\nVERDICT done_when: Read live section s32 and resume-4-advice.txt; merge-baseline-suite.log records 51 passed at the required original base, merge-after-suite.log records 70 passed at the reviewed head, and merge-repair-exclusion.log records two passing guard tests.\nVERDICT write_paths: Read source prompt.txt scope, manifest scope_note and resume-4-advice.txt merge authorization; the six requested paths comprise the fragment, the resolved acceptance module and automatic primary imports authorized by that instruction.\nVERDICT manifest: Read source manifest.md and its baseline_suite/after_suite receipts; both complete with EXIT=0 and zero failure IDs, while importer-population results are explicitly historical rather than claimed fresh at this merge.\nVERDICT diff: Read merge 11ae57aaeee308e36dfe395a32e05da02445fb6a against first parent 37ca2c25c5ac53fce51da9feaf0a1611f01b367e for all six requested paths and its combined conflict diff; both report fields survive, with one imported acceptance-cache defect.\nCALL_SITES: reckon/crew/resumption.py:2783 dispatch_awaiting_reviews, reckon/crew/recovery_review_acceptance.py:1050 accept_clean_review callback, reckon/crew/queue_landing.py:1880 finish_pending_landings, reckon/crew/queue_landing.py:1882 _land_deliveries, reckon/crew_run_commands.py:2524 reopen_run\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/recovery_review_acceptance.py:1099-1105 retains durable handoff and :1067-1087 retains repair exclusion, but :489-515 can retain a released hold as a refusal.\nSCORE evidence: 18\nJUSTIFICATION evidence: merge-after-suite.log records 70 passes at 11ae57aaeee308e36dfe395a32e05da02445fb6a and merge-repair-exclusion.log records two guard passes, but neither tests acceptance after releasing a cached hold.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The six requested paths match the scoped delta, and source resume-4-advice.txt expressly authorizes automatic primary imports plus resolution of reckon/crew/recovery_review_acceptance.py.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_no_caller_waits_on_a_promotion.py:121,160,209 fail on synchronous promotion and tests/test_a_floor_repair_and_a_promotion_are_exclusive.py checks a held claim, but no new assertion in this six-path merge protects release from the acceptance memo.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/recovery_review_acceptance.py:1169-1170 keeps adjacent report fields, while reckon/crew/resumption.py:213-281 owns reopening and crew_run_commands.py:2512-2526 delegates to it with mechanism-based names.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found the existing resumption.py:153-192 advice owner, moved CLI reopening code and resume.py:91 hold owner; resumption.py:195-281 extends those owners and the acceptance and landing imports reuse the hold predicate.\nFINDING reckon/crew/recovery_review_acceptance.py:509 blocking: A held acceptance is persisted by refuse() using _acceptance_inputs(), whose pointer field list at lines 373-391 omits delivery_hold; release_hold() changes only that omitted field (reckon/crew/resume.py:158-168), so an otherwise unchanged eligible run returns the cached held refusal at lines 489-495 before re-reading the now-released hold. Include hold state in the memo identity or avoid memoizing hold refusals, and cover held acceptance followed by release and acceptance without unrelated head/gate changes.\n",
+  "reuse_search": {
+    "assessment": "New definitions extend the resumption owner, move the CLI writer there, and share existing hold and claim mechanisms; no capability fork found.",
+    "capabilities": [
+      "read pending refused advice without consuming it",
+      "record reopening and widen scope without launching",
+      "query coordinator delivery hold",
+      "query active promotion claim"
+    ],
+    "owners_read": [
+      "reckon/crew/resumption.py:153-192",
+      "reckon/crew_run_commands.py at first parent:1716-1749",
+      "reckon/crew/resume.py:51-168",
+      "reckon/crew/promotion.py:322-343"
+    ]
+  },
+  "review_run_id": "r-20261113T085327662866-review-of-no-caller-waits-on-a-promotion-11ae57aaeee3",
+  "reviewed_base_sha": "37ca2c25c5ac53fce51da9feaf0a1611f01b367e",
+  "reviewed_head_sha": "11ae57aaeee308e36dfe395a32e05da02445fb6a",
+  "reviewed_run_id": "r-20261113T011043749121-no-caller-waits-on-a-promotion",
+  "scores": {
+    "durability": 16,
+    "evidence": 18,
+    "fit": 20,
+    "goal_fidelity": 18,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "source_commits": [
+    "11ae57aaeee308e36dfe395a32e05da02445fb6a"
+  ],
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T10:42:29.102340+00:00",
+  "total": 112
+}
