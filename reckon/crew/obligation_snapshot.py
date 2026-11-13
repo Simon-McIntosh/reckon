@@ -1403,6 +1403,18 @@ def _ledger_module():
     return module
 
 
+def _process_signal_module():
+    """The process table's reader, imported where it is used and not before.
+
+    The module carries the region that pins one walk of the table for the
+    length of a derivation, reached here rather than through the derivation
+    module so the region is opened by the sweep's own entry point.
+    """
+    from reckon.crew import process_signal as module
+
+    return module
+
+
 def _review_head_module():
     """The reviewed-head resolution's own module, imported where it is used.
 
@@ -1444,15 +1456,28 @@ class FleetState:
 def fleet_state(project: str, *, now: datetime | None = None) -> FleetState:
     """Derive everything a sweep's per-session payloads are sliced from.
 
-    The derivation opens the two regions its readers share: one run index built
-    once for every ledger read inside it, and one resolution of each live run's
-    reviewed head and tree that the classifier, the derivation and its slices
-    all read. A derivation nested in a sweep joins the regions already open, so
-    the slices the sweep builds afterwards read what the derivation resolved.
+    The derivation opens the three regions its readers share: one run index
+    built once for every ledger read inside it, one resolution of each live
+    run's reviewed head and tree that the classifier, the derivation and its
+    slices all read, and one walk of the process table that every liveness read
+    inside the derivation answers from. A derivation nested in a sweep joins the
+    regions already open, so the slices the sweep builds afterwards read what
+    the derivation resolved.
+
+    The process-table region is what keeps a refresh of a loaded node
+    proportional to the fleet rather than to the fleet multiplied by its pass
+    time: every live pointer is classified here, and the environment reach a
+    dead-looking pointer costs would otherwise list ``/proc`` once per pointer
+    once the pass outlasts a beat.
     """
     ledger_module = _ledger_module()
     head_module = _review_head_module()
-    with ledger_module.index_reuse(), head_module.review_heads_resolve_once():
+    processes_module = _process_signal_module()
+    with (
+        processes_module.process_table_walk_once(),
+        ledger_module.index_reuse(),
+        head_module.review_heads_resolve_once(),
+    ):
         return _derive_fleet_state(project, now=now)
 
 

@@ -1368,7 +1368,10 @@ def _env_scan_run_pid(record: Mapping[str, Any]) -> int | None:
     meaningful only on the machine that issued it. The walk is taken from the
     beat's own reading of the table, so the first run scanned in a beat walks
     it once and every other run scanned in the same beat is answered from that
-    map, without a listing of ``/proc`` of its own.
+    map, without a listing of ``/proc`` of its own. Inside a sweep, whose pass
+    can outlast many beats, the same answer comes from the region the sweep
+    opened: one walk serves every scan it makes, so the cost of a refresh is
+    one listing rather than one per run.
     """
     run_id = str(record.get("run_id") or "")
     if not run_id or _record_is_known_foreign(record):
