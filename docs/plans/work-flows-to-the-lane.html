@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="149">
+<meta name="plan-version" content="150">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -512,7 +512,10 @@
     <div class="r-comment-body"><p>Reviewed the three commits the run gained after f9eab85d420b (fix a promotion in flight refuses the resume, its evidence fragment, and a style wrap): the promotion-lease-before-pointer repair is sound and proven red by its own control, but the revision-scoped hold added in the same commit fails to defer a delivery whose manifest spells its commit abbreviated; scores goal_fidelity 13, evidence 17, scope_discipline 20, durability 12, fit 15, reuse 12.</p></div>
 </div>
 <div class="r-comment" data-section="s31" data-id="c-run-r-20261113T061724468798-review-of-coordinator-holds-a-delivered-run-877a5bd31b3f" data-who="reckon-build" data-when="2026-11-13T06:31:03.250Z">
-    <div class="r-comment-body"><p>Reviewed run r-20261113T011510453024-coordinator-holds-a-delivered-run at head 877a5bd31b3f across the commits it gained since its prior review (base 6ccf02af4ebc): the hold now compares revisions rather than spellings and the lander hands over the resolved head, so a delivery a manifest abbreviates stays held. All six dimensions scored, one non-blocking finding on the new case&#x27;s fixture sanity assertion.</p></div>
+    <div class="r-comment-body"><p>Reviewed run r-20261113T011510453024-coordinator-holds-a-delivered-run at head 877a5bd31b3f across the commits it gained since its prior review (base 6ccf02af4ebc): the hold now compares revisions rather than spellings and the lander hands over the resolved head, so a delivery a manifest abbreviates stays held. All six dimensions scored, one non-blocking finding on the new case's fixture sanity assertion.</p></div>
+</div>
+<div class="r-comment" data-section="s31" data-id="c-run-r-20261113T011510453024-coordinator-holds-a-delivered-run" data-who="reckon-build" data-when="2026-11-13T06:09:51Z">
+    <div class="r-comment-body"><p>Held a delivered run from automatic promotion and landing: a hold on the run record, read by the landing pass and the review-acceptance sweep, released with its reason; the single-run resume reads the promotion lease before the run&#x27;s pointer, holds a delivered run before it launches, and refuses a run a promotion owns or is running, naming its revision. A hold covers the delivery its manifest names however it spells that commit, because the lander hands over the head it resolved and the comparison matches revisions rather than strings. Measured 59 passed at the head arm against a two-error base arm, and 12 identical failure identities across both importer arms.</p></div>
 </div>
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666" data-who="reckon-build" data-when="2026-11-13T03:32:22Z">
     <div class="r-comment-body"><p>Independent review of base 6d4266db9bf865d1c9f735940c7b798b58834c5f to head d513212c96665c026454b1e469b81849daa0ba36 stored parsed; scores 16/18/20/15/18/20, zero added failures, one blocking restart-recovery finding and one non-blocking propagation-assertion caveat.</p></div>
