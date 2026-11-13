@@ -796,6 +796,9 @@ def _record_admission_positions(
     ranking have already been applied. Arrival time and identity bind that key
     to this queue snapshot without deriving a second ordering for the reader.
     A named admission makes no queue-wide order and keeps the stored position.
+    An unchanged verdict keeps its receipt time, so repeatedly observing the
+    same hold leaves the pointer unchanged. Holding reasons remain in the
+    hold record rather than being duplicated in the attempt receipt.
     """
     by_run = {row["run_id"]: row for row in verdicts}
     for position, pointer in enumerate(order, 1):
@@ -804,22 +807,37 @@ def _record_admission_positions(
         if verdict is None or verdict["verdict"] == "launched":
             continue
 
-        updates = {
-            "last_admission": {**verdict, "recorded_at": moment.isoformat()},
-        }
+        attempt = {key: verdict[key] for key in ("run_id", "verdict")}
+        updates: dict[str, Any] = {}
         if ordered:
             updates["queue_position"] = position
             updates["rank_key"] = [position, pointer["queued_at"], run_id]
 
-        def stamp(current: dict[str, Any], updates=updates) -> dict[str, Any]:
+        def stamp(
+            current: dict[str, Any], updates=updates, pointer=pointer
+        ) -> dict[str, Any]:
+            _launching._require_live_writeback(pointer)
             if current.get("phase") == QUEUED_PHASE:
                 current.update(updates)
             return current
 
         try:
+            current = runs.read_pointer(run_id)
+            previous = current.get("last_admission") or {}
+            same_attempt = {
+                key: value for key, value in previous.items() if key != "recorded_at"
+            } == attempt
+            if same_attempt and all(
+                current.get(key) == value for key, value in updates.items()
+            ):
+                continue
+            updates["last_admission"] = {
+                **attempt,
+                "recorded_at": moment.isoformat(),
+            }
             runs._mutate_pointer(run_id, stamp)
         except CrewError:
-            # A promoted or discarded request no longer has a live pointer.
+            # A promoted or discarded request no longer belongs to this pass.
             continue
         except OSError as exc:
             verdict["queue_record_error"] = str(exc)
