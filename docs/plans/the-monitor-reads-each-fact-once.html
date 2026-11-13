@@ -25,7 +25,7 @@
   <title>The Monitor Reads Each Fact Once | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="230">
+<meta name="plan-version" content="231">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -1037,6 +1037,9 @@ staged paths.</p>
 </div>
 <div class="r-comment" data-section="s40" data-id="c-run-r-20261112T235643795164-review-of-a-landed-reading-follows-the-primary-branch-111949d634d9" data-who="reckon-build" data-when="2026-11-13T00:11:37.040Z">
     <div class="r-comment-body"><p>Review of r-20261112T231336380925-a-landed-reading-follows-the-primary-branch at head 111949d634 over base 3886d8d45c: scores goal_fidelity 18, evidence 8, scope_discipline 19, durability 19, fit 17, reuse 5; one blocking finding — the matched base arm was extracted from the node's own commit, so arms.sh:12 makes base-arm.log a head-vs-head comparison and the done_when's zero-added-failures clause is unmeasured (added_failure_count is 0 only against the narrower gate pair).</p></div>
+</div>
+<div class="r-comment" data-section="s40" data-id="c-run-r-20261113T013107378107-review-of-a-landed-reading-follows-the-primary-branch-aecee18b9e10" data-who="reckon-build" data-when="2026-11-13T01:49:09.043Z">
+    <div class="r-comment-body"><p>Independent review of r-20261112T231336380925-a-landed-reading-follows-the-primary-branch at head aecee18b9e1 over base 3886d8d45c scored goal_fidelity 17, evidence 17, scope_discipline 20, durability 18, fit 17, reuse 20 (total 109) with added_failure_count 0 against the reviewed run&#x27;s own gate logs (gate-base.log 51 passed EXIT=0, gate-after.log 56 passed EXIT=0) and three non-blocking findings (a report-only `recorded` run now reads as an owed merge it never had; the arm logs&#x27; `# command:` header names only the first of 114 test files; the manifest misnames the head arm&#x27;s revision as aecee18b where the log reads 55261d3e), and no blocking finding.</p></div>
 </div>
 <div class="r-comment" data-section="s5" data-id="c-run-r-20261023T170707287094-the-station-store-is-node-local" data-who="reckon-build" data-when="2026-10-23T18:59:58Z">
     <div class="r-comment-body"><p>station_store adds the node-local SQLite store at the node-local runtime root: pointer and stream identity is file_memo.file_signature's, day files hold the events and an out-of-window day file is unlinked with its rows, and a root reached only through TMPDIR or on a shared mount is refused; tests/test_the_station_store_is_node_local.py is 15 passed EXIT=0, and both declared mutations turn their case red (1 failed and 8 failed).</p></div>

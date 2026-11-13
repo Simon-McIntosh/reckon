@@ -1,0 +1,61 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_sites": "reckon/crew/recovery_classification.py:classify_pointer, reckon/crew/recovery_watch.py:1397, reckon/crew/recovery_watch.py:502, reckon/crew/recovery_watch.py:3593, reckon/crew/query.py:446, reckon/crew/query.py:589, reckon/crew/query.py:1067, reckon/crew/queue_landing.py:1674, reckon/crew/queue_landing.py:1915, reckon/crew/promotion_release.py:1045, reckon/serve.py:901",
+  "completed_at": "2026-11-13T01:49:09.043Z",
+  "dispatched_at": "2026-11-13T01:34:35Z",
+  "findings": [
+    {
+      "file": "reckon/crew/recovery_classification.py",
+      "line": 1006,
+      "severity": "non-blocking",
+      "text": "A report-only completion now reads as an owed merge. Settled word `recorded` is exactly the ledger row with no commits (recovery_watch.py:824 _recorded_pointer_word), and _promoted_awaiting_merge is called for every settled run (recovery_classification.py:2727; FLEET_SETTLED_STATES includes `recorded`). Such a row gives _delivered_head an empty head, _head_on_primary_branch answers None for an empty head at :895, and :1006 returns 'the run is promoted and awaits its merge: its landing is unverified' \u2014 a merge the run never owed, on a run that was never promoted. Reaching this path is new: before the change the function answered empty unless a pending-landing record existed, so a report-only completion kept the word `recorded`. The fail-closed choice is deliberate and test_a_promoted_run_whose_head_cannot_be_read_does_not_read_landed asserts it for the unreadable-head case, but here the head is not unreadable, it does not exist, and the detail names the run 'promoted' when it was not. Distinguishing 'no delivered head' (nothing to merge) from 'unreadable head' (unverified) would keep the report-only reading correct."
+    },
+    {
+      "file": "arms.sh",
+      "line": 24,
+      "severity": "non-blocking",
+      "text": "The arm logs' literal command does not survive as one line. arms.sh:24 and :44 expand the multi-line test list inside a single quoted echo argument, so head-arm.log:4 ends at the first file (tests/test_a_delivered_review_ends_its_turn.py) and the remaining 113 files print on lines 5-115. A reader or a promotion parser taking the `# command:` line re-runs one test file, not the 114 the arm ran, so the done_when's 'opens with its revision and literal command' holds for the revision but not for the command. Printing the list space-joined on one line (or naming a manifest file and its digest) would make the header re-runnable."
+    },
+    {
+      "file": "manifest.md",
+      "line": 21,
+      "severity": "non-blocking",
+      "text": "The artifacts line attributes head-arm.log to aecee18b, but head-arm.log:1 reads `# revision: 55261d3e8ed4a9fc80b3d97b9a8885d715bfcbbd`, the parent of the landed head; only aecee18b9e1 (a docs-fragment commit) separates them, so the arm measured the landed code, but the record names a revision the log does not. The revision a record cites should be the one the log was written at."
+    }
+  ],
+  "justifications": {
+    "durability": "tests/test_a_landed_reading_follows_the_primary_branch.py:139 asserts an unmerged head does not read promoted against an independent git merge-base probe at :66, and negative-control.log shows three cases reddening when the record-only reading is restored; no case covers the report-only recorded cohort, which the change newly mislabels.",
+    "evidence": "The done_when's clauses are measured and recorded: three promoted-run cases plus negative control, matched arms with a real base (base-arm.log:1 = 3886d8d4, head-arm.log:1 = 55261d3e) whose 10 failing ids are identical, gate-base.log 51 passed EXIT=0 and gate-after.log 56 passed EXIT=0 giving 0 added failures; the ruff clause is claimed in the manifest but has no log, and manifest.md:21 misnames the head arm's revision.",
+    "fit": "reckon/crew/recovery_classification.py:845 follows the module's own idiom of module-level memos and short private helpers and introduces no forbidden name, though :856 still resolves the reference through merge._current_branch rather than the integration ref the crew code names elsewhere.",
+    "goal_fidelity": "reckon/crew/recovery_classification.py:948 now asks the branch itself and returns empty (landed) only when plan_review._commit_is_ancestor answers True, repairing the section's defect for the promoted and unrecorded case, but :1006 extends the reading to report-only recorded runs as a merge they do not owe.",
+    "reuse": "reckon/crew/recovery_classification.py:906 extends plan_review._commit_is_ancestor (the owner of the reachability probe, the prior review's reuse finding), and :932 resolves the ledger row through ledger._run_ledger_root, the ownership resolution promotion writes under, so no capability is forked.",
+    "scope_discipline": "Every path in the three-commit diff (reckon/crew/recovery_classification.py, tests/test_a_landed_reading_follows_the_primary_branch.py, docs/evidence/fragments/the-monitor-reads-each-fact-once/a-landed-reading-follows-the-primary-branch.html, arms.sh) is inside the node's write paths, arms.sh having been granted in the repair round's scope."
+  },
+  "project": "reckon",
+  "review_run_id": "r-20261113T013107378107-review-of-a-landed-reading-follows-the-primary-branch-aecee18b9e10",
+  "reviewed_base_sha": "3886d8d45c827b58f638ee2a94cca71d601231b3",
+  "reviewed_head_sha": "aecee18b9e10e37f8c570097d4888c7960721d07",
+  "reviewed_run_id": "r-20261112T231336380925-a-landed-reading-follows-the-primary-branch",
+  "rubric": "six-dimension landed-change review",
+  "scores": {
+    "durability": 18,
+    "evidence": 17,
+    "fit": 17,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T01:44:00+00:00",
+  "total": 109,
+  "verdicts": {
+    "call_sites": "The reading reaches production through classify_pointer, which recovery_watch.py:1397 and :502, query.py:446/:589/:1067, queue_landing.py:1674/:1915, promotion_release.py:1045 and serve.py:901 all call; each of those was read at the landed head and none assumes the old record-only answer.",
+    "diff": "Read commit by commit against base 3886d8d4: 111949d634 adds the ancestry reading and its test, 55261d3e8e repairs the three prior non-blocking findings (shared ancestry probe, ledger owner resolution, fail-closed reading), aecee18b9e1 adds the evidence fragment; four files, +455/-22, all inside the granted scope.",
+    "done_when": "The done_when's three promoted-run cases exist at tests/test_a_landed_reading_follows_the_primary_branch.py:139, :155 and :169, the negative control is recorded (negative-control.log: 3 failed, 2 passed, EXIT=1 over the base code), and the matched arms are now a real base (base-arm.log:1 = 3886d8d4) and a head (head-arm.log:1 = 55261d3e) with identical 10-id failure sets and zero added; the ruff clause is stated with no log.",
+    "goal": "The node goal is that a promoted run reads landed only when its delivered head is on the primary branch; reckon/crew/recovery_classification.py:948 _promoted_awaiting_merge asks the branch through plan_review._commit_is_ancestor at :906 and returns empty only on True, with the head taken from the run's ledger row at :914.",
+    "manifest": "Read at /home/ITER/mcintos/.config/reckon/crew/runs/r-20261112T231336380925-a-landed-reading-follows-the-primary-branch/manifest.md; it records status complete, the three commits, gate-base.log 51 passed EXIT=0 and gate-after.log 56 passed EXIT=0, the negative control 3 of 5 failing, and zero added failures, but its artifacts line misnames the head arm's revision (finding).",
+    "write_paths": "The manifest and the repair round's advice declare reckon/crew/recovery_classification.py, reckon/crew/obligations.py, tests/test_a_landed_reading_follows_the_primary_branch.py, the node's fragment and arms.sh; the diff touches all but obligations.py, every path inside the declaration."
+  }
+}
