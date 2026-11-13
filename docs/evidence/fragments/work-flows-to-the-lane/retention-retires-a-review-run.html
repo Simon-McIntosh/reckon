@@ -76,3 +76,42 @@
   which did not exist there. All commands, revisions, imported module paths,
   reversal evidence and the live report are preserved in the run directory.</p>
 </section>
+
+<section id="retention-retires-a-review-run-figure-record">
+  <h2>Committed figure results resolve through the review store</h2>
+  <p>Committed reviewer identity is resolved by the review store's content-keyed
+  index. GC delegates the lookup to that owner, so rubric-prefixed and
+  head-qualified figure filenames resolve without a second naming rule.
+  The regression fixture files its only figure result through the store's
+  writer and verifies its path through the store's resolver. The result permits
+  retirement when present, and its absence preserves the reviewer directory.
+  An unreadable sibling cannot hide the valid result.</p>
+  <table id="retention-retires-a-review-run-figure-measures">
+    <caption>Source head <code>3fd0f0f966b65f33e3c0b8c1966829c53daf1b37</code>;
+    measures ran sequentially on all_debug in job 1313890.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Repair base <code>5852df8c3e6fe54e820ecdf7c949aac782f5621f</code></td>
+      <td>65 passed; EXIT=0.</td></tr>
+      <tr><td>Source verification</td><td>67 passed; EXIT=0.</td></tr>
+      <tr><td>Fresh importer comparison, 36 files</td><td>Base: 3 failed,
+      353 passed. Head: 3 failed, 355 passed. Identical failure identities;
+      zero added failures.</td></tr>
+      <tr><td>Figure-lookup product change reversed</td><td>1 failed,
+      66 passed; EXIT=1. The committed-only figure case fails.</td></tr>
+      <tr><td>Own-result product guard reversed</td><td>7 failed,
+      60 passed; EXIT=1. Missing or unusable result cases fail, including the
+      figure result's absence.</td></tr>
+      <tr><td>Paired live dry run</td><td>500 examined,
+      364 judged, 346 offered versus zero under
+      the original predicate, 18 withheld and zero
+      directories removed.</td></tr>
+      <tr><td>Scoped Ruff</td><td>Check and format check pass for all three
+      changed Python files; EXIT=0.</td></tr>
+    </tbody>
+  </table>
+  <p>This evidence is committed before the final armed head measurement. The
+  manifest records that final arm at the resulting full HEAD SHA, using the
+  literal two-file command. Earlier source measurements above remain historical
+  observations of the revisions they name.</p>
+</section>
