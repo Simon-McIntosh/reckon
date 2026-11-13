@@ -181,6 +181,19 @@ def test_a_refused_checkout_releases_the_requested_boundary(controlled):
     assert fleet.recorded_service_pid(home.runtime, "demo") == pid
 
 
+def test_a_missing_pid_record_keeps_the_running_copys_known_stamp(controlled):
+    home = controlled
+    manager, pid = home.start()
+    fleet.service_pid_path(home.runtime, "demo").unlink()
+    fleet.service_lock_path(home.runtime, "demo").unlink()
+    manager.supervise_once()
+    assert manager._states["demo"].pid == pid
+    assert not (home.root / f"stopped-{pid}").exists()
+    (home.root / "stamp").write_text("after")
+    manager.supervise_once()
+    assert (home.runtime / "demo.pass.reload").exists()
+
+
 def test_admission_holds_the_boundary_through_verdict_publication(
     tmp_path, monkeypatch
 ):

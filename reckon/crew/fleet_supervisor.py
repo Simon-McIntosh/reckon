@@ -1387,6 +1387,7 @@ class _ServiceState:
     # The published image a replacement is started from, set by the decision
     # that chose one and consumed by the start that follows it.
     start_image: Path | None = None
+    code_stamp: str | None = None
 
 
 def _checkout_trust_verdict() -> Any:
@@ -1536,6 +1537,10 @@ class DeclaredServices:
             return "uncompared"
         state.uncompared_reported = False
         recorded = recorded_service_stamp(self._runtime, name)
+        if recorded:
+            state.code_stamp = recorded
+        else:
+            recorded = state.code_stamp
         if not recorded or recorded == _unknown_code_stamp():
             if not self._pass_allows_restart(name, pid):
                 return "adopt"
@@ -1803,6 +1808,7 @@ class DeclaredServices:
         state.started_at = self._clock()
         state.last_renewed = self._clock()
         state.next_attempt = None
+        state.code_stamp = recorded_service_stamp(self._runtime, name)
         return process.pid
 
     def stop(self, name: str) -> None:
