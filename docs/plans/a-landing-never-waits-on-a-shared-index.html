@@ -24,7 +24,7 @@
   <title>A Landing Never Waits On A Shared Index | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="34">
+<meta name="plan-version" content="35">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -168,6 +168,9 @@
 </div>
 <div class="r-comment" data-section="s8" data-id="c-run-r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies" data-who="reckon-build" data-when="2026-11-12T23:06:56.145Z">
     <div class="r-comment-body"><p>§8: a promotion now records SIGTERM and stops at its next stage boundary, releasing the run-time claim it held, so a killed promotion no longer blocks its own retry; measured base 6 failed/3 passed, head 9 passed on tests/test_a_killed_promotion_writes_nothing_after_it_dies.py.</p></div>
+</div>
+<div class="r-comment" data-section="s8" data-id="c-run-r-20261112T234742476323-review-of-a-killed-promotion-writes-nothing-after-it-dies-cb6358cacaf3" data-who="reckon-build" data-when="2026-11-13T00:02:53.523Z">
+    <div class="r-comment-body"><p>§8 review of r-20261112T222328496505-a-killed-promotion-writes-nothing-after-it-dies at head cb6358cacaf3 is stored parsed: goal_fidelity 15, evidence 12, scope_discipline 18, durability 19, fit 17, reuse 5 (total 86), 0 added failures, four non-blocking findings (SIGTERM install/restore duplicated from reckon/serve.py, the cited red base log absent from disk, the armed suite pair not importing the changed module, and the section&#x27;s no-product-change conditional departed from).</p></div>
 </div>
 </section>
 </main>
