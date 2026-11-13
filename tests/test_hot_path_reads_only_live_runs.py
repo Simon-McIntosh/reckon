@@ -7,6 +7,7 @@ import importlib
 import io
 import json
 import os
+import sqlite3
 from pathlib import Path
 
 import pytest
@@ -382,3 +383,71 @@ def test_an_unknown_generation_keeps_document_freshness(tmp_path, monkeypatch):
     assert row["run_id"] in {
         item["run_id"] for item in ledger.open_runs(PROJECT, tmp_path)
     }
+
+
+def test_an_incomplete_review_index_recovers_older_producers(tmp_path, monkeypatch):
+    from reckon.crew import open_run_index, review_records
+
+    directory = tmp_path / PROJECT
+    directory.mkdir()
+    earlier = []
+    for suffix in ("a", "b"):
+        path = directory / f"earlier-{suffix}.json"
+        record = {
+            "project": PROJECT,
+            "reviewed_run_id": f"subject-before-{suffix}",
+            "review_run_id": f"producer-before-{suffix}",
+            "status": "parsed",
+        }
+        path.write_text(json.dumps(record))
+        earlier.append((path, record))
+    index = open_run_index._review_index_path(directory)
+    assert not index.exists()
+    review_module._write_record(
+        directory / "added-review.json",
+        {
+            "project": PROJECT,
+            "reviewed_run_id": "subject-after",
+            "review_run_id": "producer-after",
+            "status": "parsed",
+        },
+    )
+    with sqlite3.connect(index) as connection:
+        assert (
+            dict(connection.execute("SELECT key, value FROM review_meta"))["complete"]
+            == "0"
+        )
+        assert connection.execute("SELECT name FROM reviews").fetchall() == [
+            ("added-review.json",)
+        ]
+    assert json.loads(earlier[0][0].read_text()) == earlier[0][1]
+    recovered = []
+    full_reader = review_records._full_store_indexes
+
+    def full_store(path):
+        recovered.append(path)
+        return full_reader(path)
+
+    monkeypatch.setattr(review_records, "_full_store_indexes", full_store)
+    with open_run_index.read_scope():
+        assert (
+            review_records.record_for_review_run(
+                PROJECT, "producer-before-a", base_dir=tmp_path
+            )
+            == earlier[0]
+        )
+    assert recovered == [directory]
+    with sqlite3.connect(index) as connection:
+        assert (
+            dict(connection.execute("SELECT key, value FROM review_meta"))["complete"]
+            == "1"
+        )
+        assert connection.execute("SELECT count(*) FROM reviews").fetchone() == (3,)
+    with open_run_index.read_scope():
+        assert (
+            review_records.record_for_review_run(
+                PROJECT, "producer-before-b", base_dir=tmp_path
+            )
+            == earlier[1]
+        )
+    assert recovered == [directory]
