@@ -2226,6 +2226,14 @@ def terminate(run_id: str) -> dict[str, Any]:
             )
         record["phase"] = "stopped"
         record["stopped_at"] = _utc_now()
+        # A stop owns the wait when its supervisor was ended before it could
+        # file an exit. The receipt is written only after the whole tree is
+        # gone; a surviving worker must keep every resume door closed.
+        record["stop_exit_recorded"] = (
+            _record_stopped_attempt_exit(run_id, record) if not alive_after else False
+        )
+        if not alive_after and not record["stop_exit_recorded"]:
+            record["detail"] += "; the stopped attempt's exit could not be recorded"
         # The result a caller prints and the record it reads back both carry
         # what happened to the tree, so neither has to be opened to know
         # whether the stopped attempt's work was kept.
@@ -2233,6 +2241,55 @@ def terminate(run_id: str) -> dict[str, Any]:
         return record
 
     return _mutate_pointer(run_id, stop)
+
+
+def _record_stopped_attempt_exit(run_id: str, record: Mapping[str, Any]) -> bool:
+    """Keep the attempt's own end, or file the end observed by crew stop."""
+    from reckon.crew.dispatch_launch import (
+        EXIT_RECORD_NAME,
+        _supervisor_exit_record,
+        _supervisor_write,
+    )
+    from reckon.crew.process_signal import _recorded_worker_pid
+    from reckon.crew.recovery_liveness import _current_attempt_number, _run_exit_record
+
+    if record.get("launcher_host") not in (None, socket.gethostname()):
+        return False
+    directory = run_dir(run_id)
+    attempt = _current_attempt_number(record) or 1
+    name = f"attempt-{attempt}-{EXIT_RECORD_NAME}"
+    # The supervisor may have completed its wait before the stop finished.
+    # Its immutable receipt stays at its own attempt number, rather than
+    # allocating a second attempt for a second observation of the same end.
+    receipt = _run_exit_record(record, name, require_run_id=True)
+    if receipt is None and (directory / name).exists():
+        return False
+    if receipt is None:
+        canonical = _run_exit_record(record, require_run_id=True)
+        if canonical is not None and canonical.get("attempt") == attempt:
+            receipt = canonical
+    if receipt is None:
+        receipt = _supervisor_exit_record(
+            run_id=run_id,
+            attempt=attempt,
+            worker_pid=_recorded_worker_pid(directory),
+            launched_at=str(record.get("attempt_started_at") or ""),
+            status=None,
+            run_directory=directory,
+            ended_pids=list(record.get("ended_pids") or []),
+        ) | {
+            "recorded_by": "crew-stop",
+            "reason": "run-stop",
+            "detail": f"crew stop observed the process tree gone; {record['detail']}",
+        }
+    receipt = receipt | {
+        "stop": {"reason": "run-stop", "stopped_at": record["stopped_at"]}
+    }
+    if not (directory / name).exists() and not _supervisor_write(
+        directory / name, receipt
+    ):
+        return False
+    return _supervisor_write(directory / EXIT_RECORD_NAME, receipt)
 
 
 # How long ``crew stop`` waits for the run's processes to leave the table before
