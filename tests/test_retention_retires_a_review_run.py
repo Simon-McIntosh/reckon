@@ -149,3 +149,67 @@ def test_install_timer_writes_a_bounded_retention_sweep(tmp_path, monkeypatch):
     assert calls[0]["apply"] is True
     assert calls[0]["limit"] == limit
     assert commands == [["daemon-reload"], ["enable", "--now", gc.RETENTION_TIMER_NAME]]
+
+
+@pytest.mark.parametrize(
+    "damage",
+    [
+        "missing",
+        "invalid-json",
+        "invalid-utf8",
+        "wrong-reviewer",
+        "unknown-status",
+        "no-review",
+    ],
+)
+def test_an_old_reviewer_without_its_readable_result_is_kept(review_home, damage):
+    directory, stored = plant_run(review_home, age=timedelta(days=8))
+    if damage == "missing":
+        stored.unlink()
+    elif damage == "invalid-json":
+        stored.write_text("{")
+    elif damage == "invalid-utf8":
+        stored.write_bytes(bytes([255]))
+    else:
+        payload = json.loads(stored.read_text())
+        if damage == "wrong-reviewer":
+            payload["review_run_id"] = "r-someone-else"
+        elif damage == "unknown-status":
+            payload["status"] = "unreadable-verdict"
+        else:
+            payload = {"review_run_id": directory.name, "status": "parsed"}
+        stored.write_text(json.dumps(payload))
+
+    report = gc.retention_sweep(apply=True, now=review_home[2], limit=5)
+
+    assert report["removed"] == [], report
+    assert directory.is_dir()
+    row = report["withheld"][0]
+    assert row["withheld"] == "missing-review-result"
+    assert "review record produced by this reviewer" in row["reason"]
+
+
+@pytest.mark.parametrize("location", ["staging", "plan"])
+def test_a_review_result_can_be_stored_outside_the_run_review_tree(
+    review_home, location
+):
+    directory, stored = plant_run(review_home, age=timedelta(days=8))
+    _home, root, now = review_home
+    payload = json.loads(stored.read_text())
+    if location == "staging":
+        from reckon.crew import review
+
+        target = review.review_store_root() / "sample" / "stored-review.json"
+    else:
+        target = root / "docs/state/sample/reviews/plan/example" / stored.name
+        payload.pop("reviewed_run_id")
+        payload.update(plan_slug="example", plan_version=1)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(payload))
+    stored.unlink()
+
+    report = gc.retention_sweep(apply=True, now=now, limit=5)
+
+    assert report["removed"] == [directory.name], report
+    assert not directory.exists()
+    assert target.is_file()
