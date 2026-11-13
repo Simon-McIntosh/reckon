@@ -62,6 +62,19 @@ def operational_read(function):
     return bounded
 
 
+def _publish(function):
+    """A refused cache write leaves the authoritative writer's result intact."""
+
+    @wraps(function)
+    def publish(*args, **kwargs):
+        try:
+            return function(*args, **kwargs)
+        except (OSError, sqlite3.Error):
+            return None
+
+    return publish
+
+
 def index_path(project: str, root: str | Path | None = None) -> Path:
     """One projection per authoritative ledger path, including private trees."""
     from reckon import ledger
@@ -113,6 +126,7 @@ def _values(row: Mapping[str, Any]) -> tuple[Any, ...]:
     )
 
 
+@_publish
 def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
     """Advance the projection after its authoritative run file was written."""
     with (
@@ -129,6 +143,10 @@ def record_written(project: str, row: Mapping[str, Any], root=None) -> None:
             (str(row["run_id"]), ledger._run_tip(row)),
         )
         _source_written(connection, ledger.run_path(project, str(row["run_id"]), root))
+        connection.execute(
+            "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
+            (json.dumps(ledger.ledger_generation(project)),),
+        )
 
 
 def _source_written(connection, path: Path) -> None:
@@ -144,6 +162,7 @@ def _source_written(connection, path: Path) -> None:
     )
 
 
+@_publish
 def aggregate_written(
     project: str, rows: Sequence[Mapping[str, Any]], root=None, *, version: int = 0
 ) -> None:
@@ -170,6 +189,10 @@ def aggregate_written(
             "INSERT OR REPLACE INTO metadata VALUES ('version', ?)", (str(version),)
         )
         _source_written(connection, ledger.ledger_path(project, root))
+        connection.execute(
+            "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
+            (json.dumps(ledger.ledger_generation(project)),),
+        )
         for row in rows:
             if row.get("run_id"):
                 _source_written(
@@ -183,18 +206,34 @@ def _ensure(project: str, root=None) -> Path:
 
     path = index_path(project, root)
     with contextlib.closing(_connect(path)) as connection:
-        ready = connection.execute(
-            "SELECT value FROM metadata WHERE key='ready'"
-        ).fetchone()
-        if ready:
+
+        def current():
+            metadata = dict(connection.execute("SELECT key, value FROM metadata"))
+            from reckon import file_memo
+
+            aggregate = ledger.ledger_path(project, root).resolve()
+            recorded = connection.execute(
+                "SELECT stamp FROM sources WHERE name=?", (str(aggregate),)
+            ).fetchone()
+            try:
+                actual = json.dumps(file_memo.file_signature(aggregate))
+            except FileNotFoundError:
+                actual = None
+            return (
+                metadata.get("ready") == "1"
+                and metadata.get("generation")
+                == json.dumps(ledger.ledger_generation(project))
+                and (recorded[0] if recorded else None) == actual
+            )
+
+        if current():
             return path
         # Serialize bootstrap with writers; rows written while this starts are
         # either in the authoritative read or applied after this transaction.
         with connection:
             connection.execute("BEGIN IMMEDIATE")
-            if not connection.execute(
-                "SELECT value FROM metadata WHERE key='ready'"
-            ).fetchone():
+            if not current():
+                generation = ledger.ledger_generation(project)
                 aggregate = ledger.ledger_path(project, root)
                 if not aggregate.exists() and not any(
                     (aggregate.parent / "runs").glob("*.json")
@@ -206,6 +245,9 @@ def _ensure(project: str, root=None) -> Path:
                         data, _version = ledger.load(project, root)
                     finally:
                         _READERS.reset(token)
+                connection.execute("DELETE FROM records")
+                connection.execute("DELETE FROM tips")
+                connection.execute("DELETE FROM sources")
                 connection.executemany(
                     "INSERT OR REPLACE INTO records VALUES (?, ?, ?, ?, ?, ?)",
                     [_values(row) for row in data["runs"] if row.get("run_id")],
@@ -227,10 +269,17 @@ def _ensure(project: str, root=None) -> Path:
                     "*.json"
                 ):
                     _source_written(connection, source)
-                connection.execute("INSERT INTO metadata VALUES ('ready', '1')")
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES ('generation', ?)",
+                    (json.dumps(generation),),
+                )
+                connection.execute(
+                    "INSERT OR REPLACE INTO metadata VALUES ('ready', '1')"
+                )
     return path
 
 
+@_publish
 def bootstrap_complete(project: str, root=None) -> None:
     """Mark a full aggregate write complete when no per-run files predate it."""
     from reckon import ledger
@@ -334,38 +383,86 @@ def _review_index_path(directory: Path) -> Path:
     return ledger._index_directory() / "review-lookup" / f"{key}.sqlite"
 
 
-def review_written(path: Path, record: Mapping[str, Any]) -> None:
-    """Index a review by subject and producer when its writer files it."""
+@_publish
+def review_written(path: Path, record: Mapping[str, Any], *, previous=None) -> None:
+    """Advance a complete review projection or leave it marked for recovery."""
+    from reckon import ledger
+
     index = _review_index_path(path.parent)
+    existed = index.exists()
     index.parent.mkdir(parents=True, exist_ok=True)
     with (
         contextlib.closing(sqlite3.connect(index, timeout=30)) as connection,
         connection,
     ):
-        connection.execute(
-            "CREATE TABLE IF NOT EXISTS reviews (name TEXT PRIMARY KEY, subject TEXT, producer TEXT)"
-        )
-        connection.execute("CREATE INDEX IF NOT EXISTS by_subject ON reviews(subject)")
-        connection.execute(
-            "CREATE INDEX IF NOT EXISTS by_producer ON reviews(producer)"
-        )
-        connection.execute(
-            "INSERT OR REPLACE INTO reviews VALUES (?, ?, ?)",
+        _review_schema(connection)
+        metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
+        complete = (
             (
-                path.name,
-                str(record.get("reviewed_run_id") or ""),
-                str(record.get("review_run_id") or ""),
-            ),
+                metadata.get("complete") == "1"
+                and metadata.get("directory") == json.dumps(previous)
+            )
+            if existed
+            else not any(item.name != path.name for item in path.parent.glob("*.json"))
         )
-        from reckon import ledger
+        _review_rows(connection, [(path.name, record)])
+        connection.executemany(
+            "INSERT OR REPLACE INTO review_meta VALUES (?, ?)",
+            [
+                ("directory", json.dumps(ledger._file_identity(path.parent))),
+                ("complete", str(int(complete))),
+            ],
+        )
 
-        connection.execute(
-            "CREATE TABLE IF NOT EXISTS review_meta (key TEXT PRIMARY KEY, value TEXT)"
-        )
-        connection.execute(
-            "INSERT OR REPLACE INTO review_meta VALUES ('directory', ?)",
-            (json.dumps(ledger._file_identity(path.parent)),),
-        )
+
+def _review_schema(connection) -> None:
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS reviews (name TEXT PRIMARY KEY, subject TEXT, producer TEXT)"
+    )
+    connection.execute("CREATE INDEX IF NOT EXISTS by_subject ON reviews(subject)")
+    connection.execute("CREATE INDEX IF NOT EXISTS by_producer ON reviews(producer)")
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS review_meta (key TEXT PRIMARY KEY, value TEXT)"
+    )
+
+
+def _review_rows(connection, rows) -> None:
+    connection.executemany(
+        "INSERT OR REPLACE INTO reviews VALUES (?, ?, ?)",
+        [
+            (
+                name,
+                str(row.get("reviewed_run_id") or ""),
+                str(row.get("review_run_id") or ""),
+            )
+            for name, row in rows
+        ],
+    )
+
+
+def review_rebuilt(directory: Path, entries, stamp) -> None:
+    """Publish the full reader's answer as the next operational lookup."""
+    try:
+        index = _review_index_path(directory)
+        index.parent.mkdir(parents=True, exist_ok=True)
+        with (
+            contextlib.closing(sqlite3.connect(index, timeout=30)) as connection,
+            connection,
+        ):
+            _review_schema(connection)
+            metadata = dict(connection.execute("SELECT key, value FROM review_meta"))
+            if metadata.get("complete") == "1" and metadata.get(
+                "directory"
+            ) == json.dumps(stamp):
+                return
+            connection.execute("DELETE FROM reviews")
+            _review_rows(connection, [(entry["name"], entry) for entry in entries])
+            connection.executemany(
+                "INSERT OR REPLACE INTO review_meta VALUES (?, ?)",
+                [("directory", json.dumps(stamp)), ("complete", "1")],
+            )
+    except (OSError, sqlite3.Error):
+        return
 
 
 def review_paths(directory: Path) -> list[Path] | None:
@@ -424,9 +521,6 @@ def review_paths(directory: Path) -> list[Path] | None:
                 )
     except (OSError, sqlite3.Error):
         return None
-    # Filename-keyed records can predate the projection's writer.
-    for run_id in ids:
-        paths.update(directory.glob(f"{run_id}*.json"))
     return sorted(paths)
 
 

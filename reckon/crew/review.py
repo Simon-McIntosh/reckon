@@ -3997,6 +3997,9 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     directory to resurrect. The record is indented and key-sorted as before,
     and the parent keeps its previous mode rather than taking a private one.
     """
+    from reckon import ledger
+
+    previous = ledger._file_identity(path.parent)
     write_json_atomically(
         path,
         dict(record),
@@ -4008,7 +4011,7 @@ def _write_record(path: Path, record: Mapping[str, Any]) -> None:
     )
     from reckon.crew import open_run_index
 
-    open_run_index.review_written(path, record)
+    open_run_index.review_written(path, record, previous=previous)
 
 
 # ── The review-record store family, owned by review_records ──

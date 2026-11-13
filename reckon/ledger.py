@@ -946,8 +946,8 @@ def write_run_file(
     )
     from reckon.crew import open_run_index
 
-    open_run_index.record_written(project, row, root)
     _bump_generation(project)
+    open_run_index.record_written(project, row, root)
     _index_record_written_document(project, root, row, target)
     return target
 
@@ -2754,12 +2754,12 @@ def _write_state(
             raise
         from reckon.crew import open_run_index
 
+        _bump_generation(project)
         open_run_index.aggregate_written(
             project, payload["runs"], root, version=version
         )
         open_run_index.bootstrap_complete(project, root)
         rewritten = [path, *(target for target, _prior in snapshots)]
-        _bump_generation(project)
         if commit and obstruction is None:
             _commit_state_write(
                 project,
@@ -3411,8 +3411,8 @@ def append_run(
         raise LedgerError(refusal) from exc
     from reckon.crew import open_run_index
 
-    open_run_index.record_written(project, stored_record, ledger_root)
     _bump_generation(project)
+    open_run_index.record_written(project, stored_record, ledger_root)
     _index_record_written_document(project, root, stored_record, target)
     store_outcome = _index_append(project, stored_record)
     return {

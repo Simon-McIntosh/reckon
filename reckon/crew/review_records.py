@@ -1637,6 +1637,16 @@ def _store_indexes(
     """
     if open_run_index.review_paths(directory) is not None:
         return _build_store_indexes(directory)
+    from reckon import ledger
+
+    stamp = ledger._file_identity(directory)
+    result = _full_store_indexes(directory)
+    open_run_index.review_rebuilt(directory, _index_files(*result), stamp)
+    return result
+
+
+def _full_store_indexes(directory: Path):
+    """The established cached reader for history and projection recovery."""
     tick_indexes = _TICK_REVIEW_INDEXES.get()
     if tick_indexes is not None:
         if directory not in tick_indexes:
