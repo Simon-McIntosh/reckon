@@ -324,6 +324,50 @@ def _committed_review_exists(project: str, run_id: str, repo: Path) -> bool:
     return bool(heads)
 
 
+def _stored_reviewer_result_exists(
+    project: str,
+    run_id: str,
+    repo: Path,
+    committed_paths: dict[Path, dict[str, list[Path]]] | None = None,
+) -> bool:
+    """Find a readable result produced by this reviewer outside its run directory."""
+    from reckon.crew import review, review_records
+
+    def belongs_to_reviewer(body: Any) -> bool:
+        return (
+            isinstance(body, Mapping)
+            and body.get("review_run_id") == run_id
+            and isinstance(body.get("status"), str)
+            and review.names_a_review_subject(body)
+            and review.carries_review_material(body)
+            and review.review_status_refusal(body) is None
+        )
+
+    try:
+        staged = review_records.record_for_review_run(project, run_id)
+        if staged is not None and belongs_to_reviewer(staged[1]):
+            return True
+    except (OSError, ValueError, TypeError):
+        pass
+    root = review.committed_review_root(project, root=repo)
+    if root is None:
+        return False
+    # Cache only locations for this pass; re-read selected bytes before removal.
+    paths = committed_paths if committed_paths is not None else {}
+    if root not in paths:
+        paths[root] = review_records.committed_record_paths_by_review_run(
+            project, root=repo
+        )
+    for path in paths[root].get(run_id, ()):
+        try:
+            body = json.loads(path.read_text(encoding="utf-8"))
+            if belongs_to_reviewer(body):
+                return True
+        except (OSError, ValueError, TypeError):
+            continue
+    return False
+
+
 def _run_directory_retention_report(
     directory: Path,
     record: Mapping[str, Any],
@@ -332,6 +376,7 @@ def _run_directory_retention_report(
     repo_root: Path,
     cutoff: datetime,
     live_review_targets: set[str],
+    review_result_paths: dict[Path, dict[str, list[Path]]] | None = None,
 ) -> dict[str, Any] | None:
     """Classify one ledgered run directory under the retention rule.
 
@@ -343,6 +388,7 @@ def _run_directory_retention_report(
     :func:`garbage_collect` classify a directory identically.
     """
     from reckon.crew.dispatch_launch import tree_size_bytes
+    from reckon.crew.recovery_review_delivery import _is_review_run
 
     run_id = directory.name
     # A review in flight is a run of its own that names this run as its subject;
@@ -350,12 +396,32 @@ def _run_directory_retention_report(
     # cannot see it.
     if run_id in live_review_targets:
         return None
-    # A review is owed while the run's tier says one is required and no complete
-    # review of it is committed yet. The directory holds the stream and diff such
-    # a review reads, so it is kept until the review lands.
+    # Reviewers owe their own stored result, rather than a review of themselves.
+    # Other runs keep their stream and diff while their tier requires a review
+    # whose committed record is still missing.
     tier = str(record.get("review_tier") or "").strip().lower()
+    # A ledger stores the node id where a dispatch pointer stores a node object.
+    node = record.get("node")
+    identity = {**record, "node": node if isinstance(node, Mapping) else {"id": node}}
+    reviewer = _is_review_run(identity)
+    if reviewer and not _stored_reviewer_result_exists(
+        project, run_id, repo_root, review_result_paths
+    ):
+        return {
+            "run_id": run_id,
+            "path": str(directory),
+            "action": "withheld",
+            "removed": False,
+            "withheld": "missing-review-result",
+            "reason": (
+                "the review record produced by this reviewer is missing or "
+                "unreadable in the staging and committed stores; its directory "
+                "stays until its own result is stored"
+            ),
+        }
     if (
         tier
+        and not reviewer
         and tier != review_tiers.NONE
         and not _committed_review_exists(project, run_id, repo_root)
     ):
@@ -992,6 +1058,7 @@ def garbage_collect(
         )
         live_ids = {str(record.get("run_id") or "") for record in list_live()}
         live_review_targets = _live_review_targets()
+        review_result_paths: dict[Path, dict[str, list[Path]]] = {}
         run_reports: list[dict[str, Any]] = []
         run_file_reports: list[dict[str, Any]] = []
         from reckon.crew.fleet_supervisor import bound_run_files, run_file_limit_bytes
@@ -1020,6 +1087,7 @@ def garbage_collect(
                     repo_root=repo_root,
                     cutoff=run_directory_cutoff,
                     live_review_targets=live_review_targets,
+                    review_result_paths=review_result_paths,
                 )
                 if report is None:
                     continue
@@ -1917,6 +1985,7 @@ def retention_sweep(
     runs_root, records, owner_of, roots = _retention_ledger_records(projects, mounted)
     live_ids = {str(record.get("run_id") or "") for record in list_live()}
     live_review_targets = _live_review_targets()
+    review_result_paths: dict[Path, dict[str, list[Path]]] = {}
     unreachable = [name for name in projects if name not in roots]
     # One resolve per project: every directory that project dispatched is judged
     # against the same window, and the config read is the cost this hoists out
@@ -1954,6 +2023,7 @@ def retention_sweep(
                     repo_root=root,
                     cutoff=cutoff,
                     live_review_targets=live_review_targets,
+                    review_result_paths=review_result_paths,
                 )
                 if row is not None:
                     judged += 1
@@ -2089,7 +2159,7 @@ def render_retention_service_unit(
     """Render the oneshot service that runs the retention pass once.
 
     ``ExecStart`` is the interpreter that ran the install with
-    ``-m reckon.crew.gc --apply``, so the timer runs this checkout's own code
+    ``-m reckon.crew.gc --apply --limit N``, so the timer runs a bounded pass
     under the environment the install ran from. ``WorkingDirectory`` is the
     checkout root, which puts that tree on the module search path even where the
     package is not installed into the interpreter's environment.
@@ -2098,7 +2168,14 @@ def render_retention_service_unit(
 
     interpreter = str(executable or sys.executable)
     working_directory = str(root or Path(__file__).resolve().parents[2])
-    argv = [interpreter, "-m", "reckon.crew.gc", "--apply"]
+    argv = [
+        interpreter,
+        "-m",
+        "reckon.crew.gc",
+        "--apply",
+        "--limit",
+        str(RETENTION_SWEEP_LIMIT),
+    ]
     forwarded = dict(environment or {})
     home = os.environ.get("RECKON_HOME")
     if home:
