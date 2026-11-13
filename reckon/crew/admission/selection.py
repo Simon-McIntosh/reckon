@@ -19,6 +19,7 @@ from .shared import (
     BudgetHold,
     Callable,
     CompetenceLimit,
+    CrewError,
     LaneHeld,
     LanePaused,
     Mapping,
@@ -39,6 +40,7 @@ def admit_once(
     launcher: Callable[..., int] | None = None,
     config_for: Callable[[Mapping[str, Any]], Mapping[str, Any]] | None = None,
     lane: str = "",
+    run_id: str = "",
     now: datetime | None = None,
     lock: bool = True,
 ) -> dict[str, Any]:
@@ -52,6 +54,8 @@ def admit_once(
     ending the pass for every other request on the lane.
     ``lock`` serialises the pass against a concurrent drainer so one queued run
     launches once; a caller already holding the admit lock passes ``lock=False``.
+    ``run_id`` selects one queued request under that lock, skipping queue-wide
+    release and recovery. Other pointers supply occupancy and claims only.
     """
     moment = now or _service._now()
     gate = _dispatch_fleet_gate()
@@ -68,7 +72,7 @@ def admit_once(
         "obligations": [],
     }
     local_gated = gate.get("state") in _LANE_GATE_WAITING_STATES
-    if local_gated:
+    if local_gated and not run_id:
         _verdicts._record_gated_verdicts(
             result, gate=gate, lane=lane, config_for=config_for
         )
@@ -80,38 +84,50 @@ def admit_once(
         review_read_pass(),
         _reviews.plan_review_pass(),
     ):
-        result["requeued"] = _launching._requeue_admitted_failures(
-            runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
-        )
-        live = runs.list_live()
-        # A launch past its bound holds a claim no worker backs. Releasing it
-        # here, before anything is ordered, keeps the lanes and the review
-        # reflex from reading a stranded span as work in flight; the released
-        # run is re-read so it costs no place in the ordering this pass.
-        result["released_stranded"] = _launching._release_stranded_launches(
-            live, verdicts=result["verdicts"]
-        )
-        if result["released_stranded"]:
+        if run_id:
+            selected = runs.read_pointer(run_id)
+            if selected.get("phase") != QUEUED_PHASE:
+                raise CrewError(
+                    f"run {run_id!r} is {selected.get('phase')!r}; "
+                    "named admission requires a queued request"
+                )
             live = runs.list_live()
-        # Readiness is re-read here, on every pass: a request waiting on its
-        # section's refs moves to ``queued`` the moment the last ref lands and
-        # to ``blocked-upstream`` the moment one is closed as abandoned or
-        # failed, with no coordinator turn in between. This is what lets a
-        # batch queued in one call launch in dependency order.
-        waits_started = time.monotonic()
-        upstream = _release.advance_waiting_requests(live)
-        _verdicts._record_readiness_verdicts(
-            result, live=live, lane=lane, config_for=config_for
-        )
-        result["released_plan_review"] = _reviews._release_plan_review_holds(
-            live, config_for=config_for
-        )
-        result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
-        result["promoted_upstream"] = upstream["promoted"]
-        result["blocked_upstream"] = upstream["blocked"]
-        result["upstream_obligations"] = upstream["obligations"]
-        runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
-        queued = [pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE]
+            queued = [selected]
+        else:
+            result["requeued"] = _launching._requeue_admitted_failures(
+                runs.list_live(phase=LAUNCH_FAILED_PHASE), verdicts=result["verdicts"]
+            )
+            live = runs.list_live()
+            # A launch past its bound holds a claim no worker backs. Releasing it
+            # here, before anything is ordered, keeps the lanes and the review
+            # reflex from reading a stranded span as work in flight; the released
+            # run is re-read so it costs no place in the ordering this pass.
+            result["released_stranded"] = _launching._release_stranded_launches(
+                live, verdicts=result["verdicts"]
+            )
+            if result["released_stranded"]:
+                live = runs.list_live()
+            # Readiness is re-read here, on every pass: a request waiting on its
+            # section's refs moves to ``queued`` the moment the last ref lands and
+            # to ``blocked-upstream`` the moment one is closed as abandoned or
+            # failed, with no coordinator turn in between. This is what lets a
+            # batch queued in one call launch in dependency order.
+            waits_started = time.monotonic()
+            upstream = _release.advance_waiting_requests(live)
+            _verdicts._record_readiness_verdicts(
+                result, live=live, lane=lane, config_for=config_for
+            )
+            result["released_plan_review"] = _reviews._release_plan_review_holds(
+                live, config_for=config_for
+            )
+            result["waits_seconds"] = round(time.monotonic() - waits_started, 3)
+            result["promoted_upstream"] = upstream["promoted"]
+            result["blocked_upstream"] = upstream["blocked"]
+            result["upstream_obligations"] = upstream["obligations"]
+            runs.sweep_handovers(str(pointer.get("run_id") or "") for pointer in live)
+            queued = [
+                pointer for pointer in live if pointer.get("phase") == QUEUED_PHASE
+            ]
         if lane:
 
             def included(pointer: Mapping[str, Any]) -> bool:
@@ -132,6 +148,28 @@ def admit_once(
             queued = [pointer for pointer in queued if included(pointer)]
         else:
             excluded_by_lane = []
+        if local_gated and run_id and queued:
+            pointer = queued[0]
+            config = (
+                config_for(pointer)
+                if config_for is not None
+                else _launching._resolve_lane_config(pointer, select_local=False)
+            )
+            if str(pointer.get("backend") or "") == str(
+                config.get("local_backend") or ""
+            ):
+                result["held"].append(run_id)
+                result["verdicts"].append(
+                    _verdicts._verdict_row(
+                        pointer,
+                        allowance=None,
+                        allowance_source="fleet gate",
+                        verdict="held-by-gate",
+                        detail=str(gate.get("detail") or gate.get("state")),
+                    )
+                )
+                result["action"] = "gated"
+                return result
         if local_gated:
             queued = [
                 pointer
@@ -198,8 +236,12 @@ def admit_once(
         unplaceable = [
             pointer for pointer in queued if parse_utc(pointer.get("queued_at")) is None
         ]
-        order = _ordering.fair_share_admission_order(
-            placeable, live, now=moment, config_for=config_for
+        order = (
+            placeable
+            if run_id
+            else _ordering.fair_share_admission_order(
+                placeable, live, now=moment, config_for=config_for
+            )
         )
         remaining: dict[tuple[str, str], float | None] = {}
         allowance_sources: dict[tuple[str, str], str] = {}
@@ -734,4 +776,50 @@ def admit_once(
         admissible_age = result.get("admissible_age_seconds")
         for row in result["verdicts"]:
             row.setdefault("admissible_age_seconds", admissible_age)
+        if not local_gated:
+            _record_admission_positions(
+                order, verdicts, moment=moment, ordered=not bool(run_id)
+            )
         return result
+
+
+def _record_admission_positions(
+    order: list[Mapping[str, Any]],
+    verdicts: list[dict[str, Any]],
+    *,
+    moment: datetime,
+    ordered: bool,
+) -> None:
+    """Persist this pass's order and verdict without reviving a removed pointer.
+
+    The rank key starts with the computed position: fair-share and roadmap
+    ranking have already been applied. Arrival time and identity bind that key
+    to this queue snapshot without deriving a second ordering for the reader.
+    A named admission makes no queue-wide order and keeps the stored position.
+    """
+    by_run = {row["run_id"]: row for row in verdicts}
+    for position, pointer in enumerate(order, 1):
+        run_id = str(pointer["run_id"])
+        verdict = by_run.get(run_id)
+        if verdict is None or verdict["verdict"] == "launched":
+            continue
+
+        updates = {
+            "last_admission": {**verdict, "recorded_at": moment.isoformat()},
+        }
+        if ordered:
+            updates["queue_position"] = position
+            updates["rank_key"] = [position, pointer["queued_at"], run_id]
+
+        def stamp(current: dict[str, Any], updates=updates) -> dict[str, Any]:
+            if current.get("phase") == QUEUED_PHASE:
+                current.update(updates)
+            return current
+
+        try:
+            runs._mutate_pointer(run_id, stamp)
+        except CrewError:
+            # A promoted or discarded request no longer has a live pointer.
+            continue
+        except OSError as exc:
+            verdict["queue_record_error"] = str(exc)

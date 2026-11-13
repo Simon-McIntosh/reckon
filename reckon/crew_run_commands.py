@@ -4957,8 +4957,14 @@ def crew_repair_completion(project, write_changes, checkout_path, pretty):
     is_flag=True,
     help="Run a single admission pass and return instead of looping on a cadence.",
 )
+@click.option(
+    "--run",
+    "run_id",
+    default="",
+    help="Decide and launch only this queued request, without release or landing.",
+)
 @click.option("--pretty", is_flag=True, help="Indent the JSON for reading.")
-def crew_admit(lane, once, pretty):
+def crew_admit(lane, once, run_id, pretty):
     """Launch queued dispatches while the lane grants a slot.
 
     One pass reads the fleet gate, then the queued run pointers, and launches
@@ -4972,13 +4978,19 @@ def crew_admit(lane, once, pretty):
     runs one pass and returns instead of looping. One pass is bounded by the
     lane and fleet gate reads it makes, each under a five-second deadline, so a
     caller that needs it to return asks for ``--once`` rather than wrapping the
-    loop in a timeout of its own.
+    loop in a timeout of its own. ``--run`` returns after deciding only the
+    named queued request under the admit lock; it runs no release tick or
+    landing action and leaves unrelated requests untouched.
     """
     from reckon.crew import queue_admission
     from reckon.crew.node import CrewError
 
     try:
-        result = queue_admission.admit_until_stopped(lane=lane, once=once)
+        result = (
+            queue_admission.admit_once(lane=lane, run_id=run_id)
+            if run_id
+            else queue_admission.admit_until_stopped(lane=lane, once=once)
+        )
     except CrewError as exc:
         raise click.ClickException(str(exc)) from exc
     # A pass that could not launch a queued request, or could not read the
