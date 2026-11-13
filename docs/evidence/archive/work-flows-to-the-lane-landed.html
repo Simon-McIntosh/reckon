@@ -154,6 +154,31 @@
     <p>§29 landed at <code>69ffd69fb9</code> (reviewed head <code>d8769b9a6e</code>, run <code>r-20261112T230644567766-finished-pending-landing-retires-its-run</code>). By the time it ran, the defect no longer reproduced at main: the pending-landing pass's attempt-aware release, landed beside the-monitor-reads-each-fact-once §39, already retired the finished attempt's pointer and worktree. The section therefore lands as a regression test, <code>tests/test_a_finished_pending_landing_retires_its_run.py</code>. It covers retirement after a pushed merge, a refused push that keeps everything, an already-discarded pointer, and a newer attempt's pointer that is kept. Two negative controls fail by name. Both reviews scored 20 on every dimension. A related order defect remains with the-monitor-reads-each-fact-once §41: the unfinished-promotion path clears the pending record before it retires the attempt.</p>
   </section>
 
+  <section id="s33-only-unmergeable-paths-are-claimed" data-evidence-origin="append">
+    <h2>§33 — only a path git cannot merge is ever claimed</h2>
+    <p>§33 landed at <code>71fac2fe84</code> (run <code>r-20261113T020053676895-only-unmergeable-paths-are-claimed</code>). Dispatch, admission, widening, resume and promotion no longer hold, refuse or fence a node because another live run declares the same source or test path, or a directory containing it. Claims remain only on plans, generated state, cumulative evidence records, figure topic directories and dependency lockfiles, and a worker's brief names other runs' paths only as information. Until it landed, the old peer fence stopped §22, §32, §34 and §35 on one another's <code>reckon/crew</code> claims, and each was resumed under the lead's ruling that concurrent edits meet at the merge. The review scored 20 on every dimension, with no finding and no added failure.</p>
+  </section>
+
+  <section id="s36-admission-pass-reads-ledger-once" data-evidence-origin="append">
+    <h2>§36 — an admission pass reads the ledger at most once</h2>
+    <p>§36 landed at <code>ae49564353</code> (run <code>r-20261113T032923501296-admission-pass-reads-ledger-once</code>). An admission pass now answers every waiting request's section waits from one indexed ledger read, where it had read and deep-copied all of about 8,360 run documents once per wait; that stage had kept the admit service from completing a pass from 01:25Z. The review scored 20 on every dimension with no findings. The first landing was refused because the manifest's gate command named a temporary interpreter that no longer existed, and the worker corrected the record. Once the service ran it, its passes reached the launch stage, where §39's regression was then found.</p>
+  </section>
+
+  <section id="s34-run-leaves-nothing-behind" data-evidence-origin="append">
+    <h2>§34 — a run leaves nothing behind when it ends</h2>
+    <p>§34 landed at <code>b31dd85d52</code> (run <code>r-20261113T023226263467-run-leaves-nothing-behind</code>). Landing, discarding, or promoting a run with nothing to merge now removes its worktree and scratch and archives its run directory out of the walked tree, as part of the operation that ends it; the sweep is a crash backstop. Its review raised no finding and found no added failure, scoring 19 on durability and 20 elsewhere. The live-fleet measurement of worktree and run-directory counts is recorded in the run's evidence fragment.</p>
+  </section>
+
+  <section id="s38-stopped-run-resumes-with-advice" data-evidence-origin="append">
+    <h2>§38 — a stopped run can be resumed with advice</h2>
+    <p>§38 landed at <code>e0e44c0ca6</code> (run <code>r-20261113T044627048212-stopped-run-resumes-with-advice</code>). <code>crew stop</code> now records the attempt's exit when it ends the run's processes, so a stopped run whose processes are gone resumes with advice; a run stopped before the change, with a dead recorded pid, resumes too. This restores stop-then-resume as the way to steer a worker, which nova had found dead-ended on 13 November. The review raised one non-blocking note on a duplicated test helper, exempted.</p>
+  </section>
+
+  <section id="s31-coordinator-holds-a-delivered-run" data-evidence-origin="append">
+    <h2>§31 — a coordinator can hold a delivered run, and a resume never vanishes</h2>
+    <p>§31 landed at <code>ab0ad1589f</code> (run <code>r-20261113T011510453024-coordinator-holds-a-delivered-run</code>). A coordinator can hold a delivered run from automatic promotion and landing and release it, the lander and acceptance sweep skip a held run, a resume of a promoted or promoting run refuses with the promotion named, and a resume of a delivered run takes a hold first. Two repair rounds closed the review's blocking findings: a promotion in flight is now refused before the resume holds, and a hold now matches an abbreviated commit spelling. The final re-review raised one non-blocking note on a test guard.</p>
+  </section>
+
 </main>
 </body>
 </html>
