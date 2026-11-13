@@ -2120,22 +2120,24 @@ def _sprint_holds_item(sprint: dict[str, Any], slug: str) -> bool:
     return any(sprint_item_slug(row) == slug for row in sprint.get("items", []))
 
 
-def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
-    """Write both sprints back from a journal's before-bytes.
-
-    Returns False when the journal is already gone, so there is nothing left to
-    restore from.
-    """
+def _journal_before_bytes(payload: dict, journal: Path) -> tuple[bytes, bytes]:
+    """Decode the before-bytes a prepared journal restores."""
     try:
-        payload = json.loads(journal.read_text(encoding="utf-8"))
-        source_id = _safe_segment(str(payload["source_id"]), "journal source id")
-        target_id = _safe_segment(str(payload["target_id"]), "journal target id")
         source_bytes = base64.b64decode(payload["source_before"], validate=True)
         target_bytes = base64.b64decode(payload["target_before"], validate=True)
-    except FileNotFoundError:
-        return False
-    except (KeyError, ValueError, json.JSONDecodeError) as exc:
+    except (KeyError, ValueError) as exc:
         raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    return source_bytes, target_bytes
+
+
+def _restore_journal_sprints(
+    docs_dir: Path,
+    project: str,
+    source_id: str,
+    target_id: str,
+    source_bytes: bytes,
+    target_bytes: bytes,
+) -> None:
     for resource_id, content in (
         (source_id, source_bytes),
         (target_id, target_bytes),
@@ -2150,6 +2152,31 @@ def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
             fsync_directory=True,
             binary=True,
         )
+
+
+def _restore_move_journal(docs_dir: Path, project: str, journal: Path) -> bool:
+    """Write both sprints back from a journal's before-bytes.
+
+    Returns False when the journal is already gone, so there is nothing left to
+    restore from.
+    """
+    try:
+        payload = json.loads(journal.read_text(encoding="utf-8"))
+    except FileNotFoundError:
+        return False
+    except json.JSONDecodeError as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    try:
+        source_id = _safe_segment(str(payload["source_id"]), "journal source id")
+        target_id = _safe_segment(str(payload["target_id"]), "journal target id")
+    except (KeyError, ValueError) as exc:
+        raise ProjectStateError(f"malformed transaction journal: {journal}") from exc
+    source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+    _restore_journal_sprints(
+        docs_dir, project, source_id, target_id, source_bytes, target_bytes
+    )
     return True
 
 
@@ -2212,32 +2239,10 @@ def recover_project_state_transactions(docs_dir: Path, project: str) -> list[Pat
                     continue
                 if status != "prepared":
                     raise ProjectStateError(f"malformed transaction journal: {journal}")
-                try:
-                    source_bytes = base64.b64decode(
-                        payload["source_before"], validate=True
-                    )
-                    target_bytes = base64.b64decode(
-                        payload["target_before"], validate=True
-                    )
-                except (KeyError, ValueError) as exc:
-                    raise ProjectStateError(
-                        f"malformed transaction journal: {journal}"
-                    ) from exc
-                source_path = resource_path(docs_dir, project, "sprint", source_id)
-                target_path = resource_path(docs_dir, project, "sprint", target_id)
-                for path, content in (
-                    (source_path, source_bytes),
-                    (target_path, target_bytes),
-                ):
-                    path.parent.mkdir(parents=True, exist_ok=True)
-                    write_atomically(
-                        path,
-                        lambda handle, data=content: handle.write(data),
-                        mode=0o600,
-                        fsync=True,
-                        fsync_directory=True,
-                        binary=True,
-                    )
+                source_bytes, target_bytes = _journal_before_bytes(payload, journal)
+                _restore_journal_sprints(
+                    docs_dir, project, source_id, target_id, source_bytes, target_bytes
+                )
                 _durable_unlink(journal)
                 recovered.append(journal)
     return recovered

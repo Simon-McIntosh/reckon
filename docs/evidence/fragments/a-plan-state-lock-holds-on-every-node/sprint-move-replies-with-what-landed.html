@@ -37,15 +37,19 @@
     <tr>
       <td><code>reckon/project_state.py</code></td>
       <td><code>move_sprint_item</code> re-reads both sprints after the second write
-          and decides <code>applied</code> from them; <code>_retire_move_journal</code>
+          and decides <code>applied</code> from them; a disagreement restores both
+          sprints from the journal before the refusal; <code>_retire_move_journal</code>
           retires the journal without raising; <code>push_sprint</code> and the
-          close carry-forward use the same retirement.</td>
+          close carry-forward use the same retirement. The journal parse and
+          restore are one primitive shared with
+          <code>recover_project_state_transactions</code>.</td>
     </tr>
     <tr>
       <td><code>reckon/mcp_edit_plan.py</code></td>
       <td>A move reply carries <code>applied</code> and <code>sprint_versions</code>
           read fresh from disk; a refused resource edit carries
-          <code>applied: false</code>.</td>
+          <code>applied: false</code> and the same <code>sprint_versions</code>, so
+          a refusal is compared with the disk as closely as a settled move.</td>
     </tr>
     <tr>
       <td><code>tests/test_a_sprint_move_replies_with_what_landed.py</code></td>
@@ -66,6 +70,7 @@
     <tr><td>after the first sprint write</td><td>source only</td><td><code>ok: false</code>, <code>applied: false</code></td><td>fails the verdict assertion</td></tr>
     <tr><td>after the second sprint write (commit mark raises)</td><td>destination only</td><td><code>ok: true</code>, <code>applied: true</code>, warning recorded</td><td><code>ok: false</code> while the item is in the destination</td></tr>
     <tr><td>commit mark with the journal already gone</td><td>destination only</td><td><code>ok: true</code>, <code>applied: true</code></td><td><code>ok: false</code> while the item is in the destination</td></tr>
+    <tr><td>read-back disagrees with both writes</td><td>source only, both files restored</td><td><code>ok: false</code>, <code>applied: false</code>, both versions as the restored files report</td><td>the item stays in the destination</td></tr>
   </tbody>
 </table>
 

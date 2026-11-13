@@ -157,6 +157,10 @@ def _assert_reply_matches_disk(reply: dict, docs: Path, *, applied: bool) -> Non
     else:
         assert reply["ok"] is False, f"reply claims a move that did not land: {reply}"
         assert reply.get("applied") is False, reply
+        assert reply.get("sprint_versions") == {
+            SOURCE: from_version,
+            TARGET: to_version,
+        }, reply
 
 
 def test_fault_after_journal_written_reports_not_applied(
