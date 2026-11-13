@@ -1,0 +1,79 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "added_failures_note": "derived from the reviewed run's own arm logs on disk: the readable pair is the ticker-importer arms the done_when names, base-arm-importers.log at 18385bba reading 493 passed EXIT=0 with no FAILED line and head-arm-importers.log at 78af074c reading 495 passed EXIT=0 with no FAILED line, so the set difference is empty (0). The armed pair is readable only on its base side: after-arm-armed.log holds four header lines and no summary and no EXIT= line, so the manifest's claimed 51 passed at head is not a receipt and no failure id is derived from it; that absence is reported as a blocking finding.",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew_follow_commands.py:1120 (builds PaneRowPath with own_session=session)",
+    "reckon/crew_follow_commands.py:1350",
+    "reckon/crew_follow_commands.py:2449",
+    "reckon/crew_follow_commands.py:2534",
+    "reckon/crew_follow_commands.py:57 (_follow_selects applies no state filter",
+    "so start rows reach the policy)"
+  ],
+  "completed_at": "2026-11-13T08:06:02.249Z",
+  "dispatched_at": "2026-11-13T07:55:21Z",
+  "findings": [
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T015716346067-ready-the-monitor-shows-the-work-i-s115/logs/after-arm-armed.log",
+      "line": "4",
+      "severity": "blocking",
+      "text": "blocking: the file ends at its fourth header line with no progress line, no \"51 passed\" summary and no EXIT= line, while manifest.md:24 records completed true, 51 passed and EXIT=0 from this path, so the armed gate receipt a promotion reads does not exist in the log that promotion would open."
+    },
+    {
+      "file": "tests/test_the_pane_shows_a_run_starting.py",
+      "line": "71",
+      "severity": "non-blocking",
+      "text": "non-blocking: the added coverage lands at a path outside the node's declared write_paths (prompt.txt:80-83 lists reckon/crew/ticker.py, the fragment and a figures directory), so the coordinator should ratify it with crew complete --accept-path rather than leave the fence quietly narrower than the done_when."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T015716346067-ready-the-monitor-shows-the-work-i-s115/manifest.md",
+      "line": "17",
+      "severity": "non-blocking",
+      "text": "non-blocking: the tests line names tests/test_staged_write_inventory.py, which does not import reckon.crew.ticker and so cannot reach the landed change; the readable measure of this node is the importer pair named at manifest.md:18 (493 passed at base, 495 at head, 0 added failures)."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 6 production call site(s)",
+    "diff": "read bc763a35, 72b2cbd8, 78af074c and a39ea126 against base 18385bba; two files and 81 insertions, reckon/crew/ticker.py untouched, one commit adding the two test cases and three editing the evidence fragment.",
+    "done_when": "the done_when names a new tests/test_the_pane_shows_a_run_starting.py plus the ticker-importer arms; that file already exists at base with 3 cases and the diff adds 2, which I re-ran at the reviewed head (5 passed) and in my own base tree (3 passed), so the cases the done_when names are asserted and green.",
+    "goal": "the node goal is to deliver the section so the session pane shows a run starting; the behaviour is present at the reviewed base (reckon/crew/ticker.py:1389 carries START_KINDS with (\"queued\",\"working\") and (None,\"working\"), landed by 3233841951, an ancestor of base 18385bba), and this node's diff asserts it rather than reimplementing it.",
+    "manifest": "read; it reports status complete, importer arms of 493 and 495 passed, and an armed pair of 51 and 51, but its after_suite names logs/after-arm-armed.log, which holds only four header lines with no summary and no EXIT line.",
+    "write_paths": "the declared list is reckon/crew/ticker.py, the landing fragment and a figures directory (prompt.txt:80-83); the diff touches docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s115.html and tests/test_the_pane_shows_a_run_starting.py, so the test path is outside the declared list although the done_when names it as a write path."
+  },
+  "justifications": {
+    "durability": "tests/test_the_pane_shows_a_run_starting.py:81 reddens with the baseline exclusion removed from both predicates (logs/mutation-baseline-guards-both-removed.log, 1 failed) and tests/test_the_pane_shows_a_run_starting.py:96 reddens with the once-only gates removed (logs/mutation-once-only-gates-removed.log, 3 failed), so both added assertions name a mutation that reddens them.",
+    "evidence": "the importer arms at logs/base-arm-importers.log (493 passed, EXIT=0) and logs/head-arm-importers.log (495 passed, EXIT=0) are readable and match the manifest, but the armed after arm the manifest cites at manifest.md:24 is an empty receipt and manifest.md:17 records a gate command that cannot reach the change.",
+    "fit": "the two cases follow the module's fixture and assertion style at tests/test_the_pane_shows_a_run_starting.py:31-51, and the only blemishes are the fragment's closing provenance sentence and its missing final newline.",
+    "goal_fidelity": "reckon/crew/ticker.py:1389 and reckon/crew/ticker.py:1811-1849 carry the pairs and the baseline exclusion at base, so the goal's outcome holds in the tree while this node's own diff delivers coverage and evidence rather than the behaviour.",
+    "reuse": "the diff adds no definition and drives ticker.PaneRowPath, the same owner the follower builds at reckon/crew_follow_commands.py:1120, and the nearest existing baseline case tests/test_a_pane_shows_its_own_starts.py:23 covers baseline -> dispatched rather than baseline -> working.",
+    "scope_discipline": "tests/test_the_pane_shows_a_run_starting.py is written outside the declared write_paths at prompt.txt:80-83 even though the done_when names it, and the fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s115.html is inside the fence."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is to deliver the section so the session pane shows a run starting; the behaviour is present at the reviewed base (reckon/crew/ticker.py:1389 carries START_KINDS with (\"queued\",\"working\") and (None,\"working\"), landed by 3233841951, an ancestor of base 18385bba), and this node's diff asserts it rather than reimplementing it.\nVERDICT done_when: the done_when names a new tests/test_the_pane_shows_a_run_starting.py plus the ticker-importer arms; that file already exists at base with 3 cases and the diff adds 2, which I re-ran at the reviewed head (5 passed) and in my own base tree (3 passed), so the cases the done_when names are asserted and green.\nVERDICT write_paths: the declared list is reckon/crew/ticker.py, the landing fragment and a figures directory (prompt.txt:80-83); the diff touches docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s115.html and tests/test_the_pane_shows_a_run_starting.py, so the test path is outside the declared list although the done_when names it as a write path.\nVERDICT manifest: read; it reports status complete, importer arms of 493 and 495 passed, and an armed pair of 51 and 51, but its after_suite names logs/after-arm-armed.log, which holds only four header lines with no summary and no EXIT line.\nVERDICT diff: read bc763a35, 72b2cbd8, 78af074c and a39ea126 against base 18385bba; two files and 81 insertions, reckon/crew/ticker.py untouched, one commit adding the two test cases and three editing the evidence fragment.\nCALL_SITES: reckon/crew_follow_commands.py:1120 (builds PaneRowPath with own_session=session), reckon/crew_follow_commands.py:1350, reckon/crew_follow_commands.py:2449, reckon/crew_follow_commands.py:2534, reckon/crew_follow_commands.py:57 (_follow_selects applies no state filter, so start rows reach the policy)\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/ticker.py:1389 and reckon/crew/ticker.py:1811-1849 carry the pairs and the baseline exclusion at base, so the goal's outcome holds in the tree while this node's own diff delivers coverage and evidence rather than the behaviour.\nSCORE evidence: 14\nJUSTIFICATION evidence: the importer arms at logs/base-arm-importers.log (493 passed, EXIT=0) and logs/head-arm-importers.log (495 passed, EXIT=0) are readable and match the manifest, but the armed after arm the manifest cites at manifest.md:24 is an empty receipt and manifest.md:17 records a gate command that cannot reach the change.\nSCORE scope_discipline: 14\nJUSTIFICATION scope_discipline: tests/test_the_pane_shows_a_run_starting.py is written outside the declared write_paths at prompt.txt:80-83 even though the done_when names it, and the fragment at docs/evidence/fragments/the-monitor-shows-the-work-it-watches/ready-the-monitor-shows-the-work-i-s115.html is inside the fence.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_the_pane_shows_a_run_starting.py:81 reddens with the baseline exclusion removed from both predicates (logs/mutation-baseline-guards-both-removed.log, 1 failed) and tests/test_the_pane_shows_a_run_starting.py:96 reddens with the once-only gates removed (logs/mutation-once-only-gates-removed.log, 3 failed), so both added assertions name a mutation that reddens them.\nSCORE fit: 17\nJUSTIFICATION fit: the two cases follow the module's fixture and assertion style at tests/test_the_pane_shows_a_run_starting.py:31-51, and the only blemishes are the fragment's closing provenance sentence and its missing final newline.\nSCORE reuse: 20\nJUSTIFICATION reuse: the diff adds no definition and drives ticker.PaneRowPath, the same owner the follower builds at reckon/crew_follow_commands.py:1120, and the nearest existing baseline case tests/test_a_pane_shows_its_own_starts.py:23 covers baseline -> dispatched rather than baseline -> working.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T015716346067-ready-the-monitor-shows-the-work-i-s115/logs/after-arm-armed.log:4 blocking: the file ends at its fourth header line with no progress line, no \"51 passed\" summary and no EXIT= line, while manifest.md:24 records completed true, 51 passed and EXIT=0 from this path, so the armed gate receipt a promotion reads does not exist in the log that promotion would open.\nFINDING tests/test_the_pane_shows_a_run_starting.py:71 non-blocking: the added coverage lands at a path outside the node's declared write_paths (prompt.txt:80-83 lists reckon/crew/ticker.py, the fragment and a figures directory), so the coordinator should ratify it with crew complete --accept-path rather than leave the fence quietly narrower than the done_when.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T015716346067-ready-the-monitor-shows-the-work-i-s115/manifest.md:17 non-blocking: the tests line names tests/test_staged_write_inventory.py, which does not import reckon.crew.ticker and so cannot reach the landed change; the readable measure of this node is the importer pair named at manifest.md:18 (493 passed at base, 495 at head, 0 added failures).",
+  "review_node": "review-of-ready-the-monitor-shows-the-work-i-s115-a39ea1260afa",
+  "review_run_id": "r-20261113T061849153241-review-of-ready-the-monitor-shows-the-work-i-s115-a39ea1260afa",
+  "reviewed_base_sha": "18385bba31f0292b7514a36666ccdfea1a906624",
+  "reviewed_head_sha": "a39ea1260afa1985e1bdbd26847aaf0e6c1ae839",
+  "reviewed_run_id": "r-20261113T015716346067-ready-the-monitor-shows-the-work-i-s115",
+  "reviewer": {
+    "backend": "clive",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T061849153241-review-of-ready-the-monitor-shows-the-work-i-s115-a39ea1260afa"
+  },
+  "scores": {
+    "durability": 18,
+    "evidence": 14,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 20,
+    "scope_discipline": 14
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T08:23:09.396293+00:00",
+  "total": 99
+}
