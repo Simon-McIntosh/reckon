@@ -158,7 +158,7 @@ def test_every_classifier_transition_keeps_one_grid() -> None:
             "stage": row.index("review"),
             "job": row.index("n"),
             "model": row.index(model_text),
-            "counters": row.index(" 1w  0h"),
+            "counters": row.index(" 1w  0n"),
         }
         measured["arrow"] = row.index(ticker_module.ARROW)
         for name, start in measured.items():

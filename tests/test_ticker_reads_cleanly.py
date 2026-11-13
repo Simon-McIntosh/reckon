@@ -253,7 +253,7 @@ def test_a_line_counter_includes_the_transition_it_reports():
     assert counts["blocked"] == 1, counts
     # And the rendered row prints that number, so the line and the fleet agree.
     line = plain(grid_row(snapshot, counts))
-    assert "1h" in line, line
+    assert "1n" in line, line
 
 
 def grid_row(snapshot, counts):

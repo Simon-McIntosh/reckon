@@ -29,7 +29,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 # shape rather than by searching from an edge. Each cell is two right-aligned
 # digits and one letter, and the cells abut with the second digit's own leading
 # space as the gap; the trailing rate, model and effort cells follow the block.
-COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})h( \s?\d{1,2})d")
+COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})n( \s?\d{1,2})d")
 
 # The roles a fleet node carries as its ordinary work, and the longest of them.
 # The role column is sized from these, so the two rare roles wider than the cell
@@ -156,7 +156,7 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4h  1d`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w  (\d+)n\s+1d`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
     Each cell is two right-aligned digits followed by its letter, and one space
     separates each cell from the next, so two counts never touch and the block
@@ -176,7 +176,7 @@ def test_the_counter_block_carries_one_space_between_cells(grid):
     than running together.
     """
     line = plain(grid.render(_event(working=2, blocked=4, unpromoted=1)))
-    assert "w  4h" in line
+    assert "w  4n" in line
     assert "h  1d" in line
     assert "·" not in line
 

@@ -20,7 +20,7 @@ ESCAPES = re.compile(r"\x1b\[[0-9;]*m")
 
 # The fleet counter block, wherever it sits on the row, located by its own shape
 # so the cell after the state word can be compared between two rows.
-COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})h( \s?\d{1,2})d")
+COUNTERS = re.compile(r"(\s?\d{1,2})w( \s?\d{1,2})n( \s?\d{1,2})d")
 
 
 def plain(line: str) -> str:

@@ -228,7 +228,7 @@ def test_counter_cells_stay_apart_at_every_digit_width() -> None:
     width inside its cells shortens the block and has to fail here.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
+    counters = re.compile(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q")
 
     block_ends: set[int] = set()
     row_ends: set[int] = set()
@@ -296,7 +296,7 @@ def test_a_count_above_the_fixed_width_widens_its_own_row() -> None:
     column lengthens the row by one, and the counts stay four separate tokens.
     """
     escapes = re.compile(r"\x1b\[[0-9;]*m")
-    counters = re.compile(r"(\d+)w\s+(\d+)h\s+(\d+)d\s+(\d+)q")
+    counters = re.compile(r"(\d+)w\s+(\d+)n\s+(\d+)d\s+(\d+)q")
 
     def render(index: int, **counts: int) -> str:
         grid = ticker_module.Ticker(width=180, color=False, model_aliases=())
