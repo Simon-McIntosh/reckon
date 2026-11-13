@@ -28,6 +28,7 @@ import pytest
 from reckon import crew
 from reckon.crew import obligations, recovery, resumption, runs
 from reckon.crew.dispatch import WATCHER_LOAD_BOUND_SECONDS
+from reckon.crew.node import CrewError
 
 pytestmark = pytest.mark.arms_watch_producer
 
@@ -269,29 +270,22 @@ def test_a_repair_delivery_is_reviewed_by_the_reflex(
 
 def test_an_overdue_duty_names_the_reflex_refusal(
     isolated_project: tuple[Path, Path, str],
-    monkeypatch,
 ) -> None:
     """A delivery whose reflex dispatch was refused names that refusal.
 
-    The reflex records the refusal it reached on the run it acted for. While the
-    duty is inside the reflex's window it waits; past the window it must name
-    the refusal and the command that dispatches the review by hand instead of
-    sending its reader to inspect a follower with nothing wrong with it.
+    The reflex reaches the launch and the lane refuses it. One real sweep is
+    what puts that refusal on the run; past the reflex's window the duty must
+    name the refusal the reflex recorded and the command that starts the review
+    by hand, instead of promising another sweep or sending its reader to inspect
+    a follower with nothing wrong with it.
     """
     config_home, repo, head = isolated_project
-    record = _pointer(
-        config_home,
-        repo,
-        "r-refused",
-        head=head,
-        extra={
-            "resume_launch_in_flight": {
-                "at": (datetime.now(UTC) - timedelta(minutes=30)).isoformat(),
-                "attempt": 4,
-            }
-        },
-    )
-    command = f"reckon crew dispatch --project {PROJECT} --role review --run r-refused"
+    _pointer(config_home, repo, "r-refused", head=head)
+    refusal = "the review lane refused this review's dispatch: budget exhausted"
+
+    def refusing_launcher(plan, *, log_path, stderr_path, prompt_path):
+        raise CrewError(refusal)
+
     window = obligations._reflex_review_window_seconds()
     row = {
         "run_id": "r-refused",
@@ -300,21 +294,25 @@ def test_an_overdue_duty_names_the_reflex_refusal(
         "classification": "scoring",
         "age_seconds": window + 600,
         "head": head,
-        "next_action": command,
     }
     with _armed_fleet():
+        report = resumption.sweep(PROJECT, config=CONFIG, launcher=refusing_launcher)
+        assert report["reviews"]["refused"], report["reviews"]
+        pointer = runs.read_pointer("r-refused")
+        assert pointer["review_dispatch"]["status"] == "refused"
+        assert refusal in pointer["review_dispatch"]["reason"]
         duty = obligations._review_duty_item(
             PROJECT,
             row,
-            record,
+            pointer,
             now=datetime.now(UTC),
             grace=60,
-            live_pointers=[record],
+            live_pointers=[pointer],
             placements={},
         )
     assert duty is not None, row
-    refusal = "the run has a resume launching; its delivery is not settled"
     assert duty["kind"] == "review-missing", duty
     assert refusal in duty["reason"], duty
-    assert command in duty["next_command"], duty
+    hand = obligations.review_hand_dispatch_command(PROJECT, "r-refused")
+    assert hand in duty["next_command"], duty
     assert "inspect the follower" not in duty["next_command"], duty

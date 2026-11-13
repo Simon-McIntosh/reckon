@@ -1065,6 +1065,14 @@ def _reflex_review_command(
     )
 
 
+def review_hand_dispatch_command(project: str, run_id: str) -> str:
+    """The command that starts one run's review without waiting for a sweep."""
+    return (
+        "dispatch the review by hand: `reckon crew dispatch --project "
+        f"{project} --role review` for run {run_id}"
+    )
+
+
 def _reflex_open_refusal(
     project: str, pointer: Mapping[str, Any], *, age: int, dispatch: str = ""
 ) -> dict[str, str] | None:
@@ -1079,20 +1087,33 @@ def _reflex_open_refusal(
 
     The question is asked of :func:`review_dispatch_refusal`, the read-only form
     of the predicate the dispatch applies, so the duty and the dispatch cannot
-    name different reasons for one held review.
+    name different reasons for one held review. A dispatch that reached the
+    launch and was refused there leaves its reason on the run, and that record
+    answers when the read-only predicate would not: the state that caused it may
+    be a lane that refused once rather than a guard that still holds.
     """
     if age <= _reflex_review_window_seconds():
         return None
-    report = recovery_review_dispatch.review_dispatch_refusal(pointer)
-    if not isinstance(report, Mapping) or not report.get("refused"):
-        return None
-    reason = str(report.get("reason") or "")
-    indices = [
-        index
-        for index in report.get("undisposed_findings") or ()
-        if isinstance(index, int)
-    ]
     run_id = str(pointer.get("run_id") or "")
+    report = recovery_review_dispatch.review_dispatch_refusal(pointer)
+    reason = ""
+    indices: list[int] = []
+    if isinstance(report, Mapping) and report.get("refused"):
+        reason = str(report.get("reason") or "")
+        indices = [
+            index
+            for index in report.get("undisposed_findings") or ()
+            if isinstance(index, int)
+        ]
+    if not reason and run_id:
+        recorded = pointer.get("review_dispatch")
+        if (
+            isinstance(recorded, Mapping)
+            and str(recorded.get("status") or "") == "refused"
+        ):
+            reason = str(recorded.get("reason") or "")
+    if not reason:
+        return None
     if not indices or not run_id or not reason:
         # A refusal that names no finding is a state the reflex must wait out:
         # a resume still launching, a recorded process not yet gone, a deferred
@@ -1101,9 +1122,7 @@ def _reflex_open_refusal(
         # that will keep refusing for the same reason.
         return {
             "reason": reason or "the reflex refused this review's dispatch",
-            "next_command": dispatch
-            or f"dispatch the review by hand: `reckon crew dispatch --project "
-            f"{project} --role review` for run {run_id}",
+            "next_command": dispatch or review_hand_dispatch_command(project, run_id),
         }
     fold, exempt = recovery_review_dispatch._finding_dispose_commands(
         project,

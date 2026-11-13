@@ -2921,15 +2921,8 @@ def _attempt_ended_after(record: Mapping[str, Any], written_ns: int) -> bool:
     attempt = record.get("attempt")
     if not isinstance(attempt, int) or isinstance(attempt, bool):
         return False
-    run_id = str(record.get("run_id") or "")
-    if not run_id:
-        return False
-    path = runs.run_dir(run_id) / f"attempt-{attempt}-exit.json"
-    try:
-        data = json.loads(path.read_text(encoding="utf-8"))
-    except (OSError, ValueError):
-        return False
-    if not isinstance(data, Mapping):
+    data = _run_exit_record(record, f"attempt-{attempt}-exit.json", require_run_id=True)
+    if data is None:
         return False
     if int(data.get("attempt") or 0) != attempt:
         return False
