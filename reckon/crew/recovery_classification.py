@@ -449,6 +449,17 @@ PRODUCER_GONE_STATUS = "producer-gone"
 #: stop the coordinator decides, and investigating it is the remedy.
 PRODUCER_GONE_VERB = "investigate"
 
+#: What one scheduler query about a wait's jobs established, kept apart because
+#: only one of the four readings says anything about whether the work has ended.
+_SCHEDULER_NO_JOBS = "no-jobs"
+_SCHEDULER_LISTED = "listed"
+_SCHEDULER_UNLISTED = "unlisted"
+_SCHEDULER_UNASKABLE = "unaskable"
+
+#: Standing for "the scheduler has not been asked yet", so a caller that has
+#: already asked can hand its answer down rather than put the question twice.
+_NOT_READ = object()
+
 
 def _wait_probe_history(record: Mapping[str, Any]) -> list[dict[str, Any]]:
     """The probe observations the sweep has recorded for a wait, oldest first.
@@ -526,8 +537,8 @@ def _wait_value_still_seconds(
     return max(0.0, now_seconds - reference)
 
 
-def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
-    """Whether the scheduler still lists any job a wait's probe names.
+def _scheduler_jobs_reading(probe: Sequence[Any]) -> tuple[str, tuple[str, ...]]:
+    """How the scheduler answered about the jobs a wait's probe names.
 
     The job ids come from the shared probe reader, so every shape a wait is
     written in names its jobs: an ``squeue`` vector, a ``sacct`` vector, an
@@ -538,18 +549,21 @@ def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
     ended.
 
     A wait may name a batch, so the question is asked about all of them in one
-    query and answered True as soon as the scheduler lists any. The batch is
-    why the answer is not a single job's: one completed job beside five still
-    running is a healthy wait, and reading it per job would call the wait dead
-    on the one that finished.
+    query and answered as listed as soon as the scheduler lists any. The batch
+    is why the answer is not a single job's: one completed job beside five
+    still running is a healthy wait, and reading it per job would call the wait
+    dead on the one that finished.
 
-    None means the wait names no scheduler job, or the scheduler could not be
-    asked: an unreadable answer is not evidence the jobs are gone, so it never
-    contributes to calling the run abandoned.
+    The four readings are kept apart because they support different claims. No
+    job is named: the scheduler was never consulted. The scheduler listed a
+    job: the wait has something left to lift it. It listed none: the question
+    was put and answered. It could not be asked at all, because the command is
+    absent or refused the query: nothing was measured, so the row must say the
+    scheduler could not be asked rather than that no job is alive.
     """
     job_ids = _wait_probe_job_ids(probe)
     if not job_ids:
-        return None
+        return (_SCHEDULER_NO_JOBS, ())
     try:
         result = subprocess.run(
             ["squeue", "-h", "-j", ",".join(job_ids)],
@@ -559,10 +573,27 @@ def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
             timeout=1.0,
         )
     except (OSError, subprocess.SubprocessError):
-        return None
+        return (_SCHEDULER_UNASKABLE, job_ids)
     if result.returncode != 0:
-        return None
-    return bool((result.stdout or "").strip())
+        return (_SCHEDULER_UNASKABLE, job_ids)
+    if (result.stdout or "").strip():
+        return (_SCHEDULER_LISTED, job_ids)
+    return (_SCHEDULER_UNLISTED, job_ids)
+
+
+def _scheduler_job_alive(probe: Sequence[Any]) -> bool | None:
+    """Whether the scheduler still lists any job a wait's probe names.
+
+    None means the wait names no scheduler job, or the scheduler could not be
+    asked: an unreadable answer is not evidence the jobs are gone, so it never
+    contributes to calling the run abandoned.
+    """
+    state = _scheduler_jobs_reading(probe)[0]
+    if state == _SCHEDULER_LISTED:
+        return True
+    if state == _SCHEDULER_UNLISTED:
+        return False
+    return None
 
 
 def _producer_gone_verdict(
@@ -573,6 +604,7 @@ def _producer_gone_verdict(
     alive: bool | None,
     liveness_proven: bool,
     now_seconds: float,
+    scheduler_alive: bool | object | None = _NOT_READ,
 ) -> dict[str, Any] | None:
     """Whether a waiting run's producer is provably gone, and on what evidence.
 
@@ -597,11 +629,11 @@ def _producer_gone_verdict(
     # liveness unknown rather than absent. A wait naming no job asks nothing of
     # the scheduler, so its silence says nothing either way.
     probe = wait.get("probe") or ()
-    if (
-        _wait_probe_job_id(probe) is not None
-        and _scheduler_job_alive(probe) is not False
-    ):
-        return None
+    if _wait_probe_job_id(probe) is not None:
+        if scheduler_alive is _NOT_READ:
+            scheduler_alive = _scheduler_job_alive(probe)
+        if scheduler_alive is not False:
+            return None
     # Read only once the question is settled: which jobs the scheduler was
     # asked about is the row's evidence, not part of the gate.
     job_ids = _wait_probe_job_ids(probe)
@@ -1695,6 +1727,13 @@ def classify_pointer(
         )
     elif wait is not None and wait["valid"]:
         classification = WAITING_STATUS
+        # One scheduler query answers both questions this branch asks: whether
+        # any job still holds the wait, and whether the row must say the
+        # scheduler could not be asked. Asking once keeps a sweep from putting
+        # the same question twice when the scheduler is slow or absent.
+        probe_words = wait.get("probe") or ()
+        named_jobs = _wait_probe_job_ids(probe_words)
+        scheduler_alive = _scheduler_job_alive(probe_words) if named_jobs else None
         if (
             wait_observation
             and wait_observation["state"] == "met"
@@ -1753,6 +1792,7 @@ def classify_pointer(
                 alive=alive,
                 liveness_proven=liveness_proven,
                 now_seconds=moment,
+                scheduler_alive=scheduler_alive if named_jobs else _NOT_READ,
             )
         ) is not None:
             # Nothing that could lift this wait is alive. A file wait's probe
@@ -1800,6 +1840,16 @@ def classify_pointer(
                 if wait_observation is not None
                 else "the condition probe did not answer"
             )
+            # A wait that names jobs leaves the scheduler's answer owed, and a
+            # query that could not be put leaves it unanswered. The row says
+            # so rather than answering it with an absence nobody measured.
+            if named_jobs and scheduler_alive is None:
+                observation_detail = (
+                    f"{observation_detail}; the scheduler could not be asked "
+                    f"about the {len(named_jobs)} jobs the wait names "
+                    f"({', '.join(named_jobs)}), so its silence says nothing "
+                    "about whether they are still running"
+                )
             detail = (
                 f"waiting {wait['age_seconds']}s on {wait['condition']}; "
                 f"{observation_detail}; terminal when the probe reports "

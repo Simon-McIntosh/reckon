@@ -55,11 +55,20 @@ NO_JOB_PROBE = ["cat", "{state}"]
 SINGLE_JOB = ("1312389",)
 SINGLE_NUMBER_PROBE = ["python", "{script}", SINGLE_JOB[0]]
 
+# A comma list of ports behind the same script operand: the shape that made
+# this reader too eager. ``nc -z a-host 80,443`` hands the probe two numbers
+# the way the job batch does, and neither is a job.
+PORT_LIST = ("80", "443")
+PORT_LIST_PROBE = ["python", "{script}", ",".join(PORT_LIST)]
+NC_PORT_PROBE = ["nc", "-z", "a-host", ",".join(PORT_LIST)]
+
 RUN_IDS = (
     "r-batch-one-job-running",
     "r-batch-no-job-listed",
     "r-no-job-named",
     "r-single-bare-number",
+    "r-batch-scheduler-unaskable",
+    "r-port-list",
 )
 
 
@@ -193,6 +202,32 @@ def _scheduler_stub(
     return asked
 
 
+def _scheduler_that_cannot_be_asked(
+    monkeypatch: pytest.MonkeyPatch, refusal: str
+) -> list[list[str]]:
+    """Stub the scheduler query as one this host cannot put.
+
+    ``absent`` is the command this host does not have; ``failed`` is the
+    command that runs and refuses the query. Neither measured anything about
+    the jobs, which is the point: an unanswered question is not a negative
+    answer. Every other command is delegated to the real runner, because the
+    classifier reaches git for the same run.
+    """
+    real_run = subprocess.run
+    asked: list[list[str]] = []
+
+    def fake_run(argv, *args, **kwargs):
+        if Path(str(argv[0])).name == "squeue":
+            asked.append([str(item) for item in argv])
+            if refusal == "absent":
+                raise FileNotFoundError(2, "No such file or directory", "squeue")
+            return subprocess.CompletedProcess(argv, 1, stdout="", stderr="refused")
+        return real_run(argv, *args, **kwargs)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    return asked
+
+
 def _asked_jobs(asked: list[list[str]]) -> list[str]:
     """Every job id the stub was asked about, in the order it was asked."""
     return [
@@ -312,6 +347,57 @@ def test_a_single_bare_number_names_no_job(
     assert row["classification"] == recovery_classification.PRODUCER_GONE_STATUS
     assert row["external_wait"]["producer_gone"]["scheduler_jobs"] == []
     assert "the scheduler was not consulted" in row["detail"]
+
+
+def test_a_port_list_is_not_read_as_a_job_batch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Two comma-separated ports are not two jobs, whatever command carries them.
+
+    An operand's shape alone does not say the numbers are scheduler ids. A
+    port list is handed over exactly as a job batch is, so the list is read as
+    jobs only when the probe runs a scheduler command, passes a job flag, or
+    spells ids long enough to be jobs. Here the scheduler is stubbed to list
+    both ports, so a reader that mistook them for jobs would keep this run
+    waiting.
+    """
+    asked = _scheduler_stub(monkeypatch, frozenset(PORT_LIST))
+    run = _waiting_run(RUN_IDS[5], probe=PORT_LIST_PROBE)
+
+    row = _row(run)
+
+    assert recovery_wait._wait_probe_job_ids(NC_PORT_PROBE) == ()
+    assert recovery_wait._wait_probe_job_ids(["python", "/x/y.py", "80,443"]) == ()
+    assert asked == []
+    assert row["classification"] == recovery_classification.PRODUCER_GONE_STATUS
+    assert row["external_wait"]["producer_gone"]["scheduler_jobs"] == []
+    assert "the scheduler was not consulted" in row["detail"]
+
+
+@pytest.mark.parametrize("refusal", ["absent", "failed"])
+def test_a_batch_the_scheduler_could_not_answer_about_is_not_abandoned(
+    monkeypatch: pytest.MonkeyPatch, refusal: str
+) -> None:
+    """A query that could not be put leaves the job question unanswered.
+
+    The wait names three jobs and the scheduler is either missing or refuses
+    the query, so nothing was measured about them. The run keeps its wait, and
+    the row says the scheduler could not be asked rather than that no job is
+    alive — the second is a claim only a answered query could support.
+    """
+    asked = _scheduler_that_cannot_be_asked(monkeypatch, refusal)
+    run = _waiting_run(RUN_IDS[4], probe=BATCH_PROBE)
+
+    row = _row(run)
+
+    assert _asked_jobs(asked) == list(BATCH_JOBS)
+    assert row["classification"] == "waiting"
+    assert row["external_wait"].get("producer_gone") is None
+    detail = _detail(row)
+    assert "the scheduler could not be asked" in detail
+    assert "the 3 jobs the wait names" in detail
+    assert "no scheduler job alive" not in detail
+    assert "producer" not in detail
 
 
 def test_no_detail_names_the_watch_producer(

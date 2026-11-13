@@ -662,6 +662,9 @@ _WAIT_FILE_TEST_COMMANDS = frozenset({"test", "["})
 _WAIT_PROBE_JOB_FLAGS = frozenset({"-j", "--job", "--jobs", "--jobid", "--job-id"})
 # The commands whose bare digit operand is a job id rather than a pid or a port.
 _WAIT_PROBE_SCHEDULER_COMMANDS = frozenset({"squeue", "sacct"})
+# The fewest digits a scheduler job id carries, which is what makes an
+# unlabelled comma list of numbers readable as jobs rather than as ports.
+_WAIT_PROBE_JOB_ID_DIGITS = 5
 _WAIT_PROBE_PID_FLAGS = frozenset({"--pid"})
 _WAIT_PROBE_PORT_FLAGS = frozenset({"--port", "--local-port"})
 # ``-p`` names a pid or a port depending on the command it belongs to.
@@ -869,6 +872,34 @@ def _wait_probe_count_list(token: str) -> list[str]:
     return parts
 
 
+def _wait_probe_names_a_job_count(value: str) -> bool:
+    """True when a value is written the way a scheduler job id is.
+
+    A job id carries at least five digits. A port is four at most and a pid
+    can be any length, so the length is what separates a list of jobs from a
+    list of ports when nothing in the probe says which one it is: ``nc -z host
+    80,443`` names two ports and no job.
+    """
+    if not _wait_probe_names_a_count(value):
+        return False
+    return len(value.strip()) >= _WAIT_PROBE_JOB_ID_DIGITS
+
+
+def _wait_probe_job_shaped_list(token: str) -> list[str]:
+    """The job ids an unlabelled operand spells as a list, or an empty list.
+
+    Only an operand that says nothing else about itself is read here, so the
+    list has to look like jobs on its own: two or more ids, each long enough
+    to be one. A scheduler command's operand and a job flag's value are read
+    by :func:`_wait_probe_job_values` instead, where the probe has already
+    said the numbers are jobs.
+    """
+    parts = [part.strip() for part in token.split(",")]
+    if len(parts) < 2 or not all(_wait_probe_names_a_job_count(part) for part in parts):
+        return []
+    return parts
+
+
 def _wait_probe_job_values(value: str) -> list[str]:
     """The job ids one flag value or operand names, singly or as a list."""
     listed = _wait_probe_count_list(value)
@@ -893,10 +924,14 @@ def _wait_probe_job_ids(probe: Sequence[str]) -> tuple[str, ...]:
     of bare numbers is indistinguishable from pids. Reading the operand whole
     keeps the list a list and is what makes a wait on seven jobs name all
     seven rather than none.
+
+    An operand carries no label, so the list has to be job-shaped to be read at
+    all: ``nc -z host 80,443`` hands over two numbers the same way and names
+    ports, and a list of four-digit ports must not become a list of jobs.
     """
     job_ids: list[str] = []
     for item in probe[1:]:
-        job_ids.extend(_wait_probe_count_list(str(item)))
+        job_ids.extend(_wait_probe_job_shaped_list(str(item)))
     command, words = _wait_probe_program_words(probe)
     tokens = [command, *words]
     for index, token in enumerate(tokens):
