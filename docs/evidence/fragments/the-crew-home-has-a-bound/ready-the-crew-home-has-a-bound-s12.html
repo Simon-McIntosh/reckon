@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="the-crew-home-has-a-bound">
+  <meta name="plan-evidence-for" content="reckon:the-crew-home-has-a-bound">
+  <meta name="plan-verifies" content="reckon:the-crew-home-has-a-bound#s12">
+  <meta name="plan-recorded-at" content="2026-11-13">
+  <meta name="plan-verdict" content="passed">
+  <meta name="plan-tags" content="crew,ledger,run-record,promotion,damaged-record">
+  <title>A damaged run record stops only its own run — evidence | reckon</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body>
+<article class="r-note" id="ready-the-crew-home-has-a-bound-s12-landing" data-node="ready-the-crew-home-has-a-bound-s12" data-reckon="landed" data-when="2026-11-13">
+<section>
+<h3 id="ready-the-crew-home-has-a-bound-s12-state">State at the base revision</h3>
+<p>The behaviour this section asks for is already present at base revision <code>3ddc28c71fb85bc078298b8e27d8d74a8a095551</code>, landed by <code>78d775ca09534e22ba5c4ce463e55cd0518370ac</code>. The plan section still read <code>implementable</code>, so this node verifies the delivered behaviour rather than reimplementing a working guard, and records the measurement the earlier delivery's review left incomplete. No source line changes here; the point of the node is the receipt.</p>
+<p>In <code>reckon/ledger.py</code>: <code>_read_run</code> raises <code>DamagedRunRecordError</code> for a document that does not parse or does not hold its own <code>run_id</code>; <code>_indexed_data</code> writes such a run into the index with a null payload and continues; <code>_indexed_damaged_paths</code> and <code>damaged_run_records(project)</code> publish the damaged paths from a warm index as well as a refreshing one; <code>_merge_run_documents</code> skips and reports a damaged document in both refusing and best-effort modes. In <code>reckon/crew/promotion.py</code> a promotion refuses only when its own run's path is among the damaged set, naming that path.</p>
+</section>
+<section>
+<h3 id="ready-the-crew-home-has-a-bound-s12-measure">Measured behavior</h3>
+<p>The section's test, <code>tests/test_a_damaged_run_record_stops_only_its_run.py</code>, builds a temporary store holding one zero-byte <code>r-damaged.json</code> beside a healthy <code>r-healthy.json</code>. Three cases pass at head: the index read lists the healthy run and reports the damaged path (twice, so a warm index reports it too); the <code>use_index=False</code> load does the same; and a fresh run promotes beside the damage while the damaged run's own promotion is refused with its path. The gate exited <code>EXIT=0</code> with 3 passed.</p>
+<p>Each negative control isolates one half of the tolerance and makes only its own case fail, at <code>EXIT=1</code>:</p>
+<ul>
+<li>Replacing the index read's <code>except DamagedRunRecordError</code> with a non-matching handler restores the aborting read; <code>test_index_read_keeps_the_healthy_run</code> then fails with <code>DamagedRunRecordError: cannot read run 'r-damaged' … Expecting value: line 1 column 1</code>.</li>
+<li>Restoring <code>if refuse: raise</code> in the aggregate fallback breaks <code>test_fallback_read_keeps_the_healthy_run</code> with the same error through <code>use_index=False</code>.</li>
+<li>Refusing every promotion beside any damaged record breaks <code>test_promotion_refuses_only_the_damaged_run</code>: the healthy <code>r-fresh</code> promotion returns <code>Error: cannot promote run 'r-fresh': its record is damaged at …/r-fresh.json</code> and exits 1.</li>
+</ul>
+<p>The control log is <code>negative-controls.log</code> in this run's directory. The mutations were applied to <code>git archive</code> copies of the head under the run's scratch directory; the worktree itself was never mutated.</p>
+</section>
+<section>
+<h3 id="ready-the-crew-home-has-a-bound-s12-populations">Populations</h3>
+<p>Base arm, resolved over this node's write scope: <code>tests/test_staged_write_inventory.py</code>, 51 passed, <code>EXIT=0</code>.</p>
+<p>Importers of <code>reckon.ledger</code>: 104 test files selected by a grep for the module's import forms, run with four workers on <code>all_debug</code> against head, which is the base revision itself. 874 passed, 16 failed, 3 skipped, <code>EXIT=1</code>. Because the head commit is the base commit and no source line changed, the added-failure count is zero by construction; the 16 are this revision's own. They are grouped in <code>test_a_merge_releases_its_worktree.py</code> (5), <code>test_a_queued_request_waits_on_its_dependencies.py</code> (4), <code>test_a_run_wait_names_its_project.py</code> (5) and <code>test_brief_prompt.py</code> (2), and assert queue-time and merge-time refusals this tree no longer emits, which is peer work in flight rather than anything in the ledger read path. The log is <code>importer-arm-gate.log</code>.</p>
+<p>Ruff reports no finding on either staged Python path, and both are already formatted.</p>
+</section>
+</article>
+</body>
+</html>
