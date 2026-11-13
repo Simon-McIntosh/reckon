@@ -89,12 +89,26 @@ def _write_delivered_run(
     return pointer
 
 
+def _write_round_manifest(run_id: str, *, status: str, body: str = "line") -> Path:
+    """Write one round's manifest at ``status`` in either manifest body form."""
+    directory = runs.run_dir(run_id)
+    directory.mkdir(parents=True, exist_ok=True)
+    path = directory / runs.DEFAULT_MANIFEST_NAME
+    if body == "json":
+        path.write_text(json.dumps({"status": status}), encoding="utf-8")
+    else:
+        path.write_text(f"status: {status}\n", encoding="utf-8")
+    return path
+
+
 def _write_working_review(
     *,
     review_run_id: str,
     reviewed_run_id: str,
     head: str,
     phase: str = "running",
+    manifest_status: str | None = None,
+    manifest_body: str = "line",
 ) -> dict:
     """Record one launched review working on ``reviewed_run_id`` at ``head``."""
     pointer = {
@@ -119,6 +133,12 @@ def _write_working_review(
             ],
         },
     }
+    if manifest_status is not None:
+        pointer["manifest_path"] = str(
+            _write_round_manifest(
+                review_run_id, status=manifest_status, body=manifest_body
+            )
+        )
     runs._write_json(runs.pointer_path(review_run_id), pointer)
     return pointer
 
@@ -129,6 +149,8 @@ def _write_working_repair(
     source_node_id: str,
     head: str,
     phase: str = "running",
+    manifest_status: str | None = None,
+    manifest_body: str = "line",
 ) -> dict:
     """Record one launched repair round working on ``source_node_id``'s run."""
     node_id = repair_module.round_node_id(
@@ -149,6 +171,12 @@ def _write_working_repair(
             "write_paths": ["seed.txt"],
         },
     }
+    if manifest_status is not None:
+        pointer["manifest_path"] = str(
+            _write_round_manifest(
+                repair_run_id, status=manifest_status, body=manifest_body
+            )
+        )
     runs._write_json(runs.pointer_path(repair_run_id), pointer)
     return pointer
 
@@ -304,3 +332,107 @@ def test_a_promotion_reading_counts_the_same_runs_as_the_drain(
 
     assert drain_count == 1
     assert promotion_count == drain_count
+
+
+@pytest.mark.parametrize("body", ["line", "json"])
+def test_a_delivered_review_round_is_counted_and_its_subject_again(
+    repository: Path, tmp_path: Path, body: str
+) -> None:
+    """A round that has delivered owes its coordinator an action, so it counts.
+
+    While the review works, neither the subject nor the review run is a duty.
+    Once the review writes a terminal manifest, completing it is the duty, and
+    the subject's verdict is the next one — so both are candidates again. The
+    manifest is read through the shared parser, which accepts a JSON body and
+    the tolerant ``key: value`` form alike.
+    """
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-reviewing", node_id="src-reviewing", head=head
+    )
+    _write_working_review(
+        review_run_id="r-review-working",
+        reviewed_run_id="run-reviewing",
+        head=head,
+        manifest_status="complete",
+        manifest_body=body,
+    )
+
+    payload = runs.drain(PROJECT, session=SESSION)
+
+    assert payload["unreconciled_runs"] == 2, payload["runs"]
+    assert set(_unreconciled_run_ids(payload)) == {
+        "run-reviewing",
+        "r-review-working",
+    }
+    assert all(not row.get("in_flight") for row in payload["runs"])
+
+
+def test_a_delivered_repair_round_is_counted_and_its_node_again(
+    repository: Path, tmp_path: Path
+) -> None:
+    """The same rule holds for a repair round that has written a terminal manifest."""
+    head = _git(repository, "rev-parse", "HEAD")
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-repairing", node_id="src-repairing", head=head
+    )
+    _write_working_repair(
+        repair_run_id="r-repair-working",
+        source_node_id="src-repairing",
+        head=head,
+        manifest_status="failed",
+    )
+
+    payload = runs.drain(PROJECT, session=SESSION)
+
+    assert payload["unreconciled_runs"] == 2, payload["runs"]
+    assert set(_unreconciled_run_ids(payload)) == {
+        "run-repairing",
+        "r-repair-working",
+    }
+
+
+def test_the_promotion_reading_lists_the_pointer_directory_once(
+    repository: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The promoted reading derives its rows from one snapshot, as the drain does.
+
+    A promotion counts pointer by pointer, so a per-row fallback reads the
+    pointer directory and every round's manifest once per pointer. Over N
+    pointers that is N directory listings for one fleet reading, which is the
+    work this test bounds: the caller enters the row scope and the count reads
+    the snapshot once.
+    """
+    head = _git(repository, "rev-parse", "HEAD")
+    for index in range(4):
+        _write_delivered_run(
+            repository,
+            tmp_path,
+            run_id=f"run-delivered-{index}",
+            node_id=f"src-delivered-{index}",
+            head=head,
+        )
+    _write_delivered_run(
+        repository, tmp_path, run_id="run-reviewing", node_id="src-reviewing", head=head
+    )
+    _write_working_review(
+        review_run_id="r-review-working",
+        reviewed_run_id="run-reviewing",
+        head=head,
+    )
+
+    pointers = runs.list_live(project=PROJECT)
+
+    listings: list[int] = []
+    original_listing = runs._list_live_records
+
+    def counting_listing(*args: object, **kwargs: object) -> object:
+        listings.append(1)
+        return original_listing(*args, **kwargs)
+
+    monkeypatch.setattr(runs, "_list_live_records", counting_listing)
+
+    count = promotion_release_module._unreconciled_live_runs(pointers)
+
+    assert count == 4
+    assert len(listings) <= 1, listings

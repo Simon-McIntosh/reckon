@@ -19,6 +19,7 @@ import time as time
 from collections.abc import (
     Callable as Callable,
     Iterable as Iterable,
+    Iterator as Iterator,
     Mapping as Mapping,
 )
 from contextlib import contextmanager as contextmanager, suppress as suppress
@@ -2542,9 +2543,14 @@ def _drain_row(
         local_liveness,
     )
 
+    snapshot: list[dict[str, Any]] | None = None
     if classification is None:
+        snapshot = _row_snapshot(pointer)
         alive, proven = local_liveness(pointer)
-        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+        row = classify_pointer(
+            {**pointer, "process_alive": alive if proven else None},
+            pointers=snapshot,
+        )
         classification = str(row["classification"])
     else:
         row = {"classification": str(classification)}
@@ -2556,7 +2562,9 @@ def _drain_row(
     run_id = str(pointer.get("run_id") or "")
     excused = _ROW_EXCUSED.get()
     if excused is None:
-        excused = _in_flight_round_ids(_row_snapshot(pointer))
+        excused = _in_flight_round_ids(
+            snapshot if snapshot is not None else _row_snapshot(pointer)
+        )
     in_flight = bool(run_id) and run_id in excused
     return {
         **row,
@@ -2838,18 +2846,37 @@ _ROW_EXCUSED: ContextVar[set[str] | None] = ContextVar(
 def _row_snapshot(pointer: Mapping[str, Any]) -> list[dict[str, Any]]:
     """The live pointers one run is counted among.
 
-    A drain sets the snapshot once for its whole reading, so a view over many
-    pointers reads the directory once instead of once per row. A caller
-    deriving a single row — a promotion's fleet reading — leaves it unset and
-    the row reads the pointers itself, through the quiet reader: a watcher
-    transition is a public event, and deriving one run's row is not a reason to
-    publish one.
+    A reader counting rows over a snapshot enters :func:`row_scope`, so a view
+    over many pointers reads the directory once instead of once per row. A
+    caller deriving a single row leaves the scope unset and the row reads the
+    pointers itself, through the quiet reader: a watcher transition is a public
+    event, and deriving one run's row is not a reason to publish one.
     """
     snapshot = _ROW_SNAPSHOT.get()
     if snapshot is not None:
         return snapshot
     project = str(pointer.get("project") or "")
     return _list_live_records(project=project or None)
+
+
+@contextmanager
+def row_scope(pointers: Iterable[Mapping[str, Any]]) -> Iterator[list[dict[str, Any]]]:
+    """Derive closure rows for one pointer snapshot, reading the excuse once.
+
+    Every reader that counts rows over a snapshot enters this scope, so the
+    pointer directory and each round's manifest are read once for the whole
+    reading rather than once per pointer. The two context variables carry the
+    snapshot and the excuse set to :func:`_drain_row`, which keeps its
+    per-pointer signature for the callers that reach it directly.
+    """
+    points = list(pointers)
+    snapshot_token = _ROW_SNAPSHOT.set(points)
+    excused_token = _ROW_EXCUSED.set(_in_flight_round_ids(points))
+    try:
+        yield points
+    finally:
+        _ROW_EXCUSED.reset(excused_token)
+        _ROW_SNAPSHOT.reset(snapshot_token)
 
 
 def _round_has_delivered(pointer: Mapping[str, Any]) -> bool:
@@ -2862,18 +2889,20 @@ def _round_has_delivered(pointer: Mapping[str, Any]) -> bool:
     pointer shows.
     """
     from reckon.crew.recovery_stream import manifest_status_is_terminal
+    from reckon.crew.reports import ManifestParseError, parse_manifest
 
     path = str(pointer.get("manifest_path") or "")
     if not path:
         return False
     try:
-        text = Path(path).read_text(encoding="utf-8")
+        text = Path(path).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return False
-    for line in text.splitlines():
-        if line.startswith("status:"):
-            return manifest_status_is_terminal(line.partition(":")[2].strip())
-    return False
+    try:
+        status = parse_manifest(text, path=path).get("status") or ""
+    except ManifestParseError:
+        return False
+    return manifest_status_is_terminal(status)
 
 
 def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
@@ -2894,16 +2923,19 @@ def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
         pointer for pointer in live if str(pointer.get("phase") or "") != "queued"
     ]
     excused: set[str] = set()
+    rounds: set[str] = set()
     repair_sources: set[str] = set()
     for pointer in launched:
         run_id = str(pointer.get("run_id") or "")
-        if recovery._is_review_run(pointer):
-            if not _round_has_delivered(pointer):
-                excused.add(run_id)
+        is_review = recovery._is_review_run(pointer)
+        is_repair = recovery._is_repair_node(pointer)
+        if not run_id or not (is_review or is_repair):
             continue
-        if recovery._is_repair_node(pointer):
-            if not _round_has_delivered(pointer):
-                excused.add(run_id)
+        rounds.add(run_id)
+        if _round_has_delivered(pointer):
+            continue
+        excused.add(run_id)
+        if is_repair:
             node_id = str((pointer.get("node") or {}).get("id") or "")
             source = repair_module.round_node_source(
                 node_id, repair_module.REPAIR_NODE_PREFIX
@@ -2912,13 +2944,14 @@ def _in_flight_round_ids(pointers: Iterable[Mapping[str, Any]]) -> set[str]:
                 repair_sources.add(source)
     for pointer in live:
         run_id = str(pointer.get("run_id") or "")
-        if not run_id or run_id in excused:
+        if not run_id or run_id in excused or run_id in rounds:
             continue
         node_id = str((pointer.get("node") or {}).get("id") or "")
-        repairing = run_id in repair_sources or bool(
-            node_id and node_id in repair_sources
-        )
-        if repairing or recovery._review_in_flight(pointer, pointers=launched):
+        if run_id in repair_sources or (node_id and node_id in repair_sources):
+            excused.add(run_id)
+            continue
+        standing = recovery._review_in_flight(pointer, pointers=launched)
+        if standing and standing in excused:
             excused.add(run_id)
     return excused
 
@@ -2930,15 +2963,8 @@ def _closure_rows(pointers: Iterable[Mapping[str, Any]]) -> list[dict[str, Any]]
     and why it is not counted — so the count and the list cannot disagree about
     how many runs the counted set holds.
     """
-    points = list(pointers)
-    snapshot_token = _ROW_SNAPSHOT.set(points)
-    excused: set[str] = _in_flight_round_ids(points)
-    excused_token = _ROW_EXCUSED.set(excused)
-    try:
+    with row_scope(pointers) as points:
         return [_drain_row(pointer) for pointer in points]
-    finally:
-        _ROW_EXCUSED.reset(excused_token)
-        _ROW_SNAPSHOT.reset(snapshot_token)
 
 
 def drain(project: str, *, session: str | None = None) -> dict[str, Any]:
