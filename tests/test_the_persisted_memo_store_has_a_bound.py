@@ -69,7 +69,10 @@ def test_a_gc_pass_removes_aged_memos_and_keeps_recent_ones(
     assert fresh.is_file()
     removed = [row for row in report["persisted_memos"] if row["removed"]]
     assert [row["path"] for row in removed] == [str(stale)]
-    assert str(stale) in capsys.readouterr().out
+    captured = capsys.readouterr()
+    assert str(stale) in captured.err
+    # stdout carries the pass's JSON report, so a removal must not land there.
+    assert captured.out == ""
 
 
 def test_skipping_the_memo_store_leaves_aged_entries_in_place(

@@ -34,8 +34,10 @@
     retention sweep. An entry is judged on its mtime, the last write
     <code>_write_persisted_memo</code> makes; a read never refreshes it, and a
     file a process holds or whose stat moved is left alone. Each removal is
-    printed as <code>removing persisted memo &lt;path&gt; (&lt;n&gt; bytes)</code>
-    and recorded in the pass report under <code>persisted_memos</code>.</p>
+    announced on stderr as
+    <code>removing persisted memo &lt;path&gt; (&lt;n&gt; bytes)</code>, the
+    channel the ledger-cache and picker-view sweeps beside it use, so the pass's
+    JSON report stays the only thing on stdout, and it is recorded in the pass report under <code>persisted_memos</code>.</p>
     <p>The new test drives the real pass with a temporary config home. It writes
     one entry older than the threshold and one inside it: an applied pass leaves
     the recent entry, removes the aged one, and prints its path; a dry pass
@@ -44,10 +46,13 @@
     and the head arm the same 4 failed ids, 360 passed, so the delta is zero. The
     two base-arm errors are the staged-write-inventory tests refusing an
     extracted tree with no git repository, and they do not occur in the head arm.</p>
-    <p><strong>Negative control.</strong> With the sweep's memo roots replaced by
-    an empty list, the same pass leaves the aged entry in place and the test that
-    requires its removal fails (<code>1 failed</code>). The red log is
-    <code>negative-control.log</code> in the run directory.</p>
+    <p><strong>Negative control.</strong> With the removal announcement reverted
+    to <code>print()</code> on stdout, the test fails on
+    <code>assert str(stale) in captured.err</code> (<code>1 failed</code>); with
+    the sweep's memo roots replaced by an empty
+    list, the same pass leaves the aged entry in place and the removal assertion
+    fails. The red log is <code>negative-control.log</code> in the run
+    directory.</p>
   </section>
 </article>
 </body>

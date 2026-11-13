@@ -273,10 +273,12 @@ def _expired_persisted_memos(*, apply: bool, now: datetime) -> list[dict[str, An
                     continue
                 entry = {"path": str(path), "size": stat.st_size, "removed": False}
                 if apply and not holders.get(path.name) and path.stat() == stat:
-                    print(
-                        f"removing persisted memo {path} ({stat.st_size} bytes)",
-                        flush=True,
+                    # stdout carries the pass's JSON report; every cache sweep
+                    # announces on stderr so that report stays parseable.
+                    sys.stderr.write(
+                        f"removing persisted memo {path} ({stat.st_size} bytes)\n"
                     )
+                    sys.stderr.flush()
                     path.unlink()
                     entry["removed"] = True
                 entries.append(entry)
