@@ -134,3 +134,13 @@ def test_unmerged_run_keeps_its_scope_guard(delivery, escape):
             "removed": 0,
             "files": 1,
         }
+
+
+def test_repaired_run_still_refuses_dirt_on_its_own_path(delivery):
+    repo, tree, record, _own, _main_paths = delivery
+    head = _merge_primary(repo, tree)
+    (repo / "allowed.txt").write_text("uncommitted change on the delivered path\n")
+    with pytest.raises(crew.CrewError, match=r"allowed\.txt"):
+        crew.complete(record["run_id"], gate="passed", commits=[head], root=repo)
+    assert ledger.runs(PROJECT, root=repo) == []
+    assert pointer_path(record["run_id"]).exists()
