@@ -1,0 +1,74 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/crew/obligations.py:3779",
+    "reckon/crew/obligation_snapshot.py:1496"
+  ],
+  "completed_at": "2026-11-13T07:42:51.027Z",
+  "dispatched_at": "2026-11-13T07:33:06Z",
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html",
+      "line": "22",
+      "severity": "blocking",
+      "text": "blocking: the base arm ran tests/test_staged_write_inventory.py, which imports none of the changed modules, so the done-when's requirement that the test files importing the changed modules add no failure against the base revision is unmeasured and the fragment's \"adds no failure against the base revision\" claim has no importing-file evidence behind it."
+    },
+    {
+      "file": "reckon/crew/promotion_release.py",
+      "line": "1047",
+      "severity": "non-blocking",
+      "text": "non-blocking: _unreconciled_live_runs still counts a run whose own review or repair is in flight while runs.drain no longer does, so the two readings that tests/test_the_unreconciled_count_has_one_composition.py:100-101 pins equal now disagree on any in-flight shape and no test exercises that shape."
+    },
+    {
+      "file": "reckon/crew/runs.py",
+      "line": "2834",
+      "severity": "non-blocking",
+      "text": "non-blocking: the queued-stays-counted rule the docstring and commit message assert is unasserted, so a change that admitted a queued review or repair into the excuse set would leave every recorded test green."
+    },
+    {
+      "file": "docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html",
+      "line": "22",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment cites job 1313268, but the cited logs on disk were written by jobs 1313279 and 1313281 per gate-head-job.log and gate-base-job.log, so the citation does not name the job that produced the evidence it points at."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read commit by commit from af288e186acfbb224325493cea224c421e4cb32d \u2014 b859035ca8 adds _in_flight_round_ids and _closure_rows to reckon/crew/runs.py plus the test, and 01f870fb7f adds only the landing fragment; 313 insertions across three files.",
+    "done_when": "the plan section's done-when asks for three subject runs with the count reading 1 naming the run with no review; tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:186-192 asserts that count, the run-id list and the obligations summary, and the negative control at base fails both cases.",
+    "goal": "the node goal is that the unreconciled count leaves out runs whose own review or repair is in flight; reckon/crew/runs.py:2876 sets row[\"unreconciled\"] = False for exactly those runs and their working round, and leaves a queued request counted.",
+    "manifest": "read; it reports status complete, the gate command, three logs under the run directory, and baseline/after suite JSON that both read completed with zero failures.",
+    "write_paths": "read the reviewed manifest's four declared paths; every path in the diff (reckon/crew/runs.py, the new test file, the landing fragment) is inside them, and reckon/crew/obligations.py was not needed and was not touched."
+  },
+  "justifications": {
+    "durability": "the assertions at tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:178-192 compare against independent constants and the base-module negative control reddens both, but the queued-stays-counted behaviour at runs.py:2834 has no assertion that would redden if it changed.",
+    "evidence": "the three-run count is asserted and the negative control is real, but the recorded base arm at tests/test_staged_write_inventory.py imports none of the changed modules, so the done-when's importing-files half is unmeasured.",
+    "fit": "the added functions follow the module's local-import and Mapping-typed idiom beside reckon/crew/runs.py:2521 and carry mechanism docstrings with no plan, ticket or stage label.",
+    "goal_fidelity": "reckon/crew/runs.py:2864-2880 excuses the in-flight subject and the working review or repair run and both drain entry points (runs.py:2908, runs.py:2950) reach it, while a pointer whose phase is queued is excluded from the excuse set at runs.py:2834.",
+    "reuse": "reckon/crew/runs.py:2819-2880 reuses recovery's recognition helpers but composes the count a second time instead of extending promotion_release.py:1020, so the fleet reading and the drain now disagree for in-flight shapes that tests/test_the_unreconciled_count_has_one_composition.py:100-101 was written to hold equal.",
+    "scope_discipline": "the diff touches only reckon/crew/runs.py, tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py and the landing fragment, all inside the declared write paths."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that the unreconciled count leaves out runs whose own review or repair is in flight; reckon/crew/runs.py:2876 sets row[\"unreconciled\"] = False for exactly those runs and their working round, and leaves a queued request counted.\nVERDICT done_when: the plan section's done-when asks for three subject runs with the count reading 1 naming the run with no review; tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:186-192 asserts that count, the run-id list and the obligations summary, and the negative control at base fails both cases.\nVERDICT write_paths: read the reviewed manifest's four declared paths; every path in the diff (reckon/crew/runs.py, the new test file, the landing fragment) is inside them, and reckon/crew/obligations.py was not needed and was not touched.\nVERDICT manifest: read; it reports status complete, the gate command, three logs under the run directory, and baseline/after suite JSON that both read completed with zero failures.\nVERDICT diff: read commit by commit from af288e186acfbb224325493cea224c421e4cb32d \u2014 b859035ca8 adds _in_flight_round_ids and _closure_rows to reckon/crew/runs.py plus the test, and 01f870fb7f adds only the landing fragment; 313 insertions across three files.\nCALL_SITES: reckon/crew/obligations.py:3779, reckon/crew/obligation_snapshot.py:1496\nSCORE goal_fidelity: 18\nJUSTIFICATION goal_fidelity: reckon/crew/runs.py:2864-2880 excuses the in-flight subject and the working review or repair run and both drain entry points (runs.py:2908, runs.py:2950) reach it, while a pointer whose phase is queued is excluded from the excuse set at runs.py:2834.\nSCORE evidence: 9\nJUSTIFICATION evidence: the three-run count is asserted and the negative control is real, but the recorded base arm at tests/test_staged_write_inventory.py imports none of the changed modules, so the done-when's importing-files half is unmeasured.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the diff touches only reckon/crew/runs.py, tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py and the landing fragment, all inside the declared write paths.\nSCORE durability: 15\nJUSTIFICATION durability: the assertions at tests/test_the_unreconciled_count_leaves_out_runs_whose_own_review_is_i.py:178-192 compare against independent constants and the base-module negative control reddens both, but the queued-stays-counted behaviour at runs.py:2834 has no assertion that would redden if it changed.\nSCORE fit: 17\nJUSTIFICATION fit: the added functions follow the module's local-import and Mapping-typed idiom beside reckon/crew/runs.py:2521 and carry mechanism docstrings with no plan, ticket or stage label.\nSCORE reuse: 6\nJUSTIFICATION reuse: reckon/crew/runs.py:2819-2880 reuses recovery's recognition helpers but composes the count a second time instead of extending promotion_release.py:1020, so the fleet reading and the drain now disagree for in-flight shapes that tests/test_the_unreconciled_count_has_one_composition.py:100-101 was written to hold equal.\nFINDING docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html:22 blocking: the base arm ran tests/test_staged_write_inventory.py, which imports none of the changed modules, so the done-when's requirement that the test files importing the changed modules add no failure against the base revision is unmeasured and the fragment's \"adds no failure against the base revision\" claim has no importing-file evidence behind it.\nFINDING reckon/crew/promotion_release.py:1047 non-blocking: _unreconciled_live_runs still counts a run whose own review or repair is in flight while runs.drain no longer does, so the two readings that tests/test_the_unreconciled_count_has_one_composition.py:100-101 pins equal now disagree on any in-flight shape and no test exercises that shape.\nFINDING reckon/crew/runs.py:2834 non-blocking: the queued-stays-counted rule the docstring and commit message assert is unasserted, so a change that admitted a queued review or repair into the excuse set would leave every recorded test green.\nFINDING docs/evidence/fragments/crew-observability-truth/the-unreconciled-count-leaves-out-runs-whose-own-review-is-i.html:22 non-blocking: the fragment cites job 1313268, but the cited logs on disk were written by jobs 1313279 and 1313281 per gate-head-job.log and gate-base-job.log, so the citation does not name the job that produced the evidence it points at.",
+  "review_run_id": "r-20261113T072926825723-review-of-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i-01f870fb7f1d",
+  "reviewed_base_sha": "af288e186acfbb224325493cea224c421e4cb32d",
+  "reviewed_head_sha": "01f870fb7f1d8230ace583a0c619073fcac511cc",
+  "reviewed_run_id": "r-20261113T065618285434-the-unreconciled-count-leaves-out-runs-whose-own-review-is-i",
+  "scores": {
+    "durability": 15,
+    "evidence": 9,
+    "fit": 17,
+    "goal_fidelity": 18,
+    "reuse": 6,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T07:55:33.293246+00:00",
+  "total": 84
+}
