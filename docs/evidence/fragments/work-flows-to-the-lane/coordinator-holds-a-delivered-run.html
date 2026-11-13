@@ -25,7 +25,10 @@
   takes no hold. A hold a resume took also names the head the resume was issued
   against, so it stops covering the run once a later attempt delivers a
   different head — the repaired delivery reaches the lander instead of waiting
-  for a release nobody remembers to give.</p>
+  for a release nobody remembers to give. Both spellings are compared as
+  revisions rather than as strings, because a manifest may name its commit
+  abbreviated while a hold is taken against the full head; reading those as two
+  commits would end the hold and land the delivery it was taken to defer.</p>
   <table id="coordinator-holds-a-delivered-run-measures">
     <caption>Measurements: the node gate ran in place, one arm at a time; the
     importer arms ran on <code>all_debug</code>, one arm at a time, four
@@ -39,7 +42,7 @@
         scratch extraction that is not a git checkout, and the same file passes
         51 of 51 in a checkout.</td></tr>
       <tr><td>Head arm at the run's head, node tests</td>
-        <td>58 passed, <code>EXIT=0</code>: 51 staged-write checks and seven new
+        <td>59 passed, <code>EXIT=0</code>: 51 staged-write checks and eight new
         cases.</td></tr>
       <tr><td>Base importer arm at <code>55d49260706d</code>, 51 files</td>
         <td>9 failed, 368 passed, 3 errors, <code>EXIT</code> 1.</td></tr>
@@ -54,6 +57,10 @@
         <td>1 failed, 6 passed, <code>EXIT=1</code>. A run whose pointer is still
         present while a promotion holds its lease is resumed and launched, and
         the case fails at the launcher.</td></tr>
+      <tr><td>Abbreviated-spelling repair reverted, its own control</td>
+        <td>1 failed, 7 passed, <code>EXIT=1</code>. A held run whose manifest
+        names its commit short is landed, and the case fails printing the run
+        it landed.</td></tr>
     </tbody>
   </table>
 </section>
