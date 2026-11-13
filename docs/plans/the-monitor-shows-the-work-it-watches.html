@@ -26,7 +26,7 @@
   <title>The Monitor Shows The Work It Watches | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="823">
+<meta name="plan-version" content="824">
 <meta name="plan-modified" content="2026-11-13">
 <meta name="plan-supersedes" content="a-follower-keeps-your-work-in-view,monitor-renders-what-it-is-given,a-follower-lives-as-long-as-its-session">
 </head>
@@ -1541,6 +1541,9 @@ Both cases run under the file's existing temporary crew home.</li>
 </div>
 <div class="r-comment" data-section="s129" data-id="c-run-r-20261113T020106081485-review-of-a-pipe-rearm-draws-each-run-once-140e2f4d64cc" data-who="reckon-build" data-when="2026-11-13T02:20:46.171Z">
     <div class="r-comment-body"><p>independent review of r-20261113T011602155862-a-pipe-rearm-draws-each-run-once at 140e2f4d64cc (base 5dabbcb3e8) — 6/6 dimensions scored 17-20, item verdicts 6/6, one non-blocking finding (the ruff half of the done_when is claimed without a log); record stored parsed and validated by crew check --review at both declared paths.</p></div>
+</div>
+<div class="r-comment" data-section="s129" data-id="c-run-r-20261113T011602155862-a-pipe-rearm-draws-each-run-once" data-who="reckon-build" data-when="2026-11-13T01:57:56.499Z">
+    <div class="r-comment-body"><p>§129 — the pipe re-arm now reads and records the one delivered-state store the live rows use (the station subscriber&#x27;s checkpoint while one is attached, the file record otherwise), so a re-arm draws a run once; 3 cases pass at head, the same 3 fail at base, and the declared negative control reddens the first case.</p></div>
 </div>
 <div class="r-comment" data-section="s13" data-id="c-s13-already-landed" data-who="reckon-build" data-when="2026-10-13T06:05:00Z">
     <div class="r-comment-body"><p>§13 was already built when it was folded here: commit <code>68361d4ee</code> (2026-10-07, "fix(crew): remove the session host FIFO when the host stops") added <code>_remove_fifo</code> to <code>reckon/crew/session_host.py</code>, called on the stop path, with <code>TERM</code> and <code>HUP</code> handlers at the entry point, and the section's tests pass on main. Its old plan's declaration was stale, so it is declared done here rather than rebuilt.</p></div>
