@@ -156,7 +156,7 @@ def test_stat_digits_align_across_one_and_two_digit_counts(grid):
 def test_the_fleet_counters_render_as_digits_followed_by_one_letter(grid):
     """Each counter is its number followed by the state's single letter.
 
-    `2 working · 4 blocked · 1 unpromoted` becomes `2w  (\d+)n\s+1d`: the word is
+    `2 working · 4 blocked · 1 unpromoted` becomes `2w  4n  1d`: the word is
     gone from the count column, and a zero still shows rather than vanishing.
     Each cell is two right-aligned digits followed by its letter, and one space
     separates each cell from the next, so two counts never touch and the block
