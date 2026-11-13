@@ -1,0 +1,76 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 2,
+  "call_sites": [
+    "reckon/ledger.py:_index_append",
+    "reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision"
+  ],
+  "completed_at": "2026-11-13T14:28:14.426Z",
+  "dispatched_at": "2026-11-13T14:12:08Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:00:45.024744+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:00:49.569799+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s11.html",
+      "id": "f14d125b740",
+      "line": "4",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the repair pass is one the promotion gate already runs after writing a row, but run_store.import_ledger has one caller, record_gate_rerun_at_integrated_revision (reckon/crew/promotion_gate.py:1181), reached from the crew verify-gate command (reckon/crew_run_commands.py:4094), so an ordinary promotion whose index append was reported failed is not repaired by it and a reader may believe the index heals without that command; the sentence mirrors the pre-existing docstring at reckon/ledger.py:3218."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T024351780504-ready-the-crew-does-its-own-bookke-s11/logs/after-gate-n8.log",
+      "id": "f8459d3983a",
+      "line": "2",
+      "severity": "non-blocking",
+      "text": "non-blocking: the head arm ran against the node worktree, named on the log's tree line, rather than a git checkout under the run's scratch directory as the done_when states; the measure is unaffected because no source file differs between the base and head trees, but the arm does not take the stated form."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 2 production call site(s)",
+    "diff": "read against base d0ed11d6c3; one landing at 0b1a5877f6, 16 added lines in docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s11.html, no source code changed.",
+    "done_when": "both halves are pinned by tests/test_a_locked_ledger_store_is_retried.py:67-83 and the manifest records base and head arms at 136 passed each, EXIT=0, plus the negative control at 2 failed 1 passed, EXIT=1, in logs/base-gate-n8.log and logs/negative-control.log.",
+    "goal": "the goal is that a locked ledger store is retried; the landed change touches only docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s11.html because reckon/run_store.py:952 _retrying already retries at base d0ed11d6c3.",
+    "manifest": "read; it records status complete, the three-case test at base and head, the armed suite pair at 51 passed each, and names every log by path.",
+    "write_paths": "declared paths are reckon/ledger.py, reckon/run_store.py, the section fragment and its figure directory; the diff adds one file under the fragment path and touches no source path."
+  },
+  "justifications": {
+    "durability": "the diff adds no assertion, and the section's guard is the pre-existing tests/test_a_locked_ledger_store_is_retried.py:50-83, which the negative control shows reddens two of three cases when _retrying is removed.",
+    "evidence": "logs/base-gate-n8.log and logs/negative-control.log each carry revision, tree, command, module.__file__ and a bare EXIT= line, but the head arm's tree is the node worktree rather than a scratch checkout as the done_when names.",
+    "fit": "the fragment follows the sibling shape of docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s4.html and carries no forbidden plan or phase label.",
+    "goal_fidelity": "reckon/run_store.py:952 _retrying already retries a locked append at base d0ed11d6c3, and the landed fragment records that rather than reimplementing it, so the goal's outcome holds while the node ships verification rather than code.",
+    "reuse": "the diff adds no definition; the retry the fragment describes is owned by reckon/run_store.py:_retrying and no second implementation was introduced.",
+    "scope_discipline": "the diff adds only docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s11.html, inside the declared fragment path."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the goal is that a locked ledger store is retried; the fragment at docs/evidence/fragments/the-crew-does-its-own-bookkeeping/ready-the-crew-does-its-own-bookke-s11.html records that reckon/run_store.py:952 _retrying already retries at base d0ed11d6c3.\nVERDICT done_when: both halves are pinned by tests/test_a_locked_ledger_store_is_retried.py:67-83 and the manifest records the arms and the negative control in its named logs.\nVERDICT write_paths: the diff adds one file under the declared fragment path and touches no source path.\nVERDICT manifest: read; it records the arms, the suite pair and every log path.\nVERDICT diff: read against base d0ed11d6c3; one landing at 0b1a5877f6, 16 added lines, no source changed.\nCALL_SITES: reckon/ledger.py:_index_append, reckon/crew/promotion_gate.py:record_gate_rerun_at_integrated_revision\nSCORE goal_fidelity: 17\nSCORE evidence: 16\nSCORE scope_discipline: 20\nSCORE reuse: 20\n",
+  "review_run_id": "r-20261113T140618850205-review-of-ready-the-crew-does-its-own-bookke-s11-0b1a5877f62e",
+  "reviewed_base_sha": "d0ed11d6c3e2e942129a9ee3ef47881ea9b3a4e7",
+  "reviewed_head_sha": "0b1a5877f62e3cc16377bfce94d68ca161f32756",
+  "reviewed_run_id": "r-20261113T024351780504-ready-the-crew-does-its-own-bookke-s11",
+  "scores": {
+    "durability": 15,
+    "evidence": 16,
+    "fit": 20,
+    "goal_fidelity": 17,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:28:19.077575+00:00",
+  "total": 108
+}
