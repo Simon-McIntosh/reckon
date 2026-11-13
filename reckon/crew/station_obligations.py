@@ -30,7 +30,7 @@ import socket
 import sys
 import threading
 import traceback
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
 from pathlib import Path
@@ -457,13 +457,23 @@ def publish(
     home: str | Path,
     changed: bool,
     now: datetime | None = None,
+    submit: Callable[..., Any] | None = None,
 ) -> Path | None:
     """Refresh this project's rows, then export them; never raise into a tick.
 
-    One project's unreadable input must not cost the node its station: the
-    traceback goes to the station's log, exactly as a failed obligation sweep's
-    does, and the next tick tries again.
+    A caller that owns a derivation worker hands the work to it through
+    ``submit`` and returns at once: a derivation reads the review store once
+    per run and may outlast a tick, and the pause it takes must not hold the
+    tick's run-phase transitions, which are what wake the sessions those
+    transitions belong to.
+
+    Run in the caller's own thread, one project's unreadable input must not
+    cost the node its station: the traceback goes to the station's log, exactly
+    as a failed obligation sweep's does, and the next tick tries again.
     """
+    if submit is not None:
+        submit(project, home=home, changed=changed, moment=now)
+        return None
     try:
         sweep_record = store.station_value(_sweep_failure_key(project)) or "{}"
         refresh(

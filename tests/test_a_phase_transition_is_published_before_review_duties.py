@@ -1,12 +1,11 @@
 """A run's phase transition is published before review duties are derived.
 
-A station derives each session's duties once per change, and that derivation
-reads the review store per run: on 12-13 November one project's refresh ran for
-44 to 58 minutes inside a single tick. The tick used to commit a project's
-transitions and then derive its duties before touching the next project, so a
-run whose state changed in a later project waited for every earlier project's
-derivation, and the sessions it should have woken were told nothing for 29 to
-75 minutes.
+A project's review-duty derivation reads the review store once per run and can
+take far longer than a tick. A transition is what wakes the session that owns a
+run, so committing each project's transitions and then deriving that project's
+duties before the next project's transitions holds a run's wake behind work
+that has nothing to do with it, and a derivation in flight must not delay
+another tick's phase events for any project.
 
 Both projects are driven through one real ``Station.tick`` on a temporary crew
 home. The first project's review-duty derivation is held open by the case; the
