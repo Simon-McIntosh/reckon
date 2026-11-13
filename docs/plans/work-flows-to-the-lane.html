@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="159">
+<meta name="plan-version" content="160">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -592,6 +592,9 @@
 </div>
 <div class="r-comment" data-section="s39" data-id="c-run-r-20261113T073729306630-review-of-queued-launch-never-classifies-the-fleet-d31bc61cab63" data-who="reckon-build" data-when="2026-11-13T07:51:35Z">
     <div class="r-comment-body"><p>Independent repair-only review of bd0fc739e4306993388458f248755abbc36294d2 to d31bc61cab6359d0ef9ac5e58a94707c18d22a3d scores all six dimensions 20/20, finds no defects, and confirms zero added failure IDs from the source baseline/head receipts.</p></div>
+</div>
+<div class="r-comment" data-section="s39" data-id="c-run-r-20261113T060010212800-queued-launch-never-classifies-the-fleet" data-who="reckon-build" data-when="2026-11-13T07:24:29Z">
+    <div class="r-comment-body"><p>Admission launches record no backlog and make 0 classifier calls in the 50-run fixture; direct dispatch still records 10 overdue runs. Both stale expectations are repaired; final three-file gate 58 passed, importer comparison 19 passed at each original-base/repaired-head arm, reverse-answering-commit control 2 failed/56 passed. Finding f5ea3f39c9c acted in f7b605922f14ea2d998187d1905ad9719b857ed1.</p></div>
 </div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
