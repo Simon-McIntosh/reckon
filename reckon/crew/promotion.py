@@ -1435,8 +1435,15 @@ def _complete_locked(
                 )
                 capture = capture_run_session(record)
                 path = pointer_path(run_id)
-                _remove_promoted_pointer_or_defer(run_id, record)
+                from reckon.crew.terminal_cleanup import queue_cleanup
+
                 retention = existing.get("worktree_retention")
+                queue_cleanup(
+                    {**record, "worktree_retention": retention},
+                    kind="promoted",
+                    gate=str(gate),
+                )
+                _remove_promoted_pointer_or_defer(run_id, record)
                 release = _release_after_promotion(
                     run_id,
                     record,
@@ -2113,6 +2120,13 @@ def _complete_locked(
         # ownership has already been copied onto the committed ledger row.
         _stop_at_stage_boundary("the release")
         capture = capture_run_session(record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(
+            {**record, "worktree_retention": worktree_retention},
+            kind="promoted",
+            gate=str(gate),
+        )
         _remove_promoted_pointer_or_defer(run_id, record)
         release = _release_after_promotion(
             run_id,
@@ -2316,7 +2330,15 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
         # record behind it, and a record written afterwards leaves a window in
         # which the departure is indistinguishable from a vanished pointer.
         written = _write_discard_record(run_id, record)
+        from reckon.crew.terminal_cleanup import queue_cleanup
+
+        queue_cleanup(record, kind="discarded")
         path.unlink()
+        release = _remove_discarded_worktree(record)
+        if written:
+            from reckon.crew.runs import resolve_run_path
+
+            written = str(resolve_run_path(written))
         return {
             "run_id": run_id,
             "pointer_path": str(path),
@@ -2334,7 +2356,7 @@ def discard(run_id: str, *, allowed_phases: Sequence[str] = ()) -> dict[str, Any
             # later dispatch for as long as its holder lives. The run this
             # discard removed is the claim's own, so the claim goes with it.
             "dispatch_claim_released": _release_discarded_dispatch_claim(run_id),
-            **_remove_discarded_worktree(record),
+            **release,
         }
 
 
@@ -2424,6 +2446,8 @@ def _remove_discarded_worktree(record: Mapping[str, Any]) -> dict[str, Any]:
             "arms_kept",
             "arms_logs_copied",
             "arms_withheld",
+            "run_archived",
+            "run_archive_withheld",
         )
         if key in release
     }

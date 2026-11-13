@@ -666,9 +666,11 @@ def garbage_collect(
         raise CrewError("retention days cannot be negative")
     repo_root = Path(repo).resolve()
     from reckon.crew.recovery import _resolve_commit
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
 
     if not _resolve_commit(repo_root, integrated_into):
         raise CrewError(f"integration revision {integrated_into!r} is not a commit")
+    ended_cleanup = sweep_ended_runs(repo=repo_root) if apply and run_id is None else []
     confined_to: Path | None = None
     already_removed_run = ""
     already_removed_worktree = ""
@@ -1150,6 +1152,7 @@ def garbage_collect(
         "already_removed": bool(already_removed_run),
         "already_removed_run": already_removed_run,
         "already_removed_worktree": already_removed_worktree,
+        "ended_cleanup": ended_cleanup,
         "run_lock": run_lock_reports,
         "unledgered_run_directories": unledgered_run_reports,
         "unledgered_run_directories_removed": sum(
@@ -1850,12 +1853,14 @@ def retention_sweep(
     so a pass killed under its timeout still leaves a record of how far it got.
     """
     from reckon import flight
+    from reckon.crew.terminal_cleanup import sweep_ended_runs
 
     moment = now or datetime.now(tz=timezone.utc)
     if limit < 1:
         raise CrewError("retention sweep limit must be at least one directory")
     if store_limit < 1 or store_vacuum_pages < 1:
         raise CrewError("store row and compaction page limits must be positive")
+    ended_cleanup = sweep_ended_runs(limit=limit) if apply else []
     phase_seconds: dict[str, float] = {}
 
     started = time.perf_counter()
@@ -1983,6 +1988,7 @@ def retention_sweep(
         "projects": projects,
         "unreachable_projects": unreachable,
         "limit": limit,
+        "ended_cleanup": ended_cleanup,
         "examined": examined,
         "judged": judged,
         "offered": offered,

@@ -2414,6 +2414,9 @@ def _read_gate_log(log_path: str | None, run_directory: Path | None) -> str | No
     path = Path(log_path)
     if not path.is_absolute() and run_directory is not None:
         path = Path(run_directory) / path
+    from reckon.crew.runs import resolve_run_path
+
+    path = resolve_run_path(path)
     try:
         return path.read_text(encoding="utf-8", errors="replace")
     except OSError:

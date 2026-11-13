@@ -102,7 +102,21 @@ def delivery_roots() -> tuple[Path, ...]:
 
 def run_dir(run_id: str) -> Path:
     """Directory holding one run's prompt, event log and default manifest."""
-    return runs_dir() / run_id
+    live = runs_dir() / run_id
+    archived = crew_home() / "archive" / "runs" / run_id
+    return archived if not live.exists() and archived.is_dir() else live
+
+
+def resolve_run_path(path: str | Path) -> Path:
+    """Resolve a stored artifact citation through a run's archived home."""
+    original = Path(path)
+    try:
+        relative = original.relative_to(runs_dir())
+    except ValueError:
+        return original
+    if not relative.parts:
+        return original
+    return run_dir(relative.parts[0]).joinpath(*relative.parts[1:])
 
 
 #: The authority text a queued request is launched from. It lives in the
