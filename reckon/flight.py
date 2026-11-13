@@ -172,6 +172,8 @@ DEFAULT_PROJECT_WEIGHT = 1.0
 # it, and a resolved config that never did falls back here.
 QUEUE_MAX_REQUESTS_KEY = "max_requests"
 DEFAULT_QUEUE_MAX_REQUESTS = 500
+QUEUE_REPICK_AFTER_SECONDS_KEY = "repick_after_seconds"
+DEFAULT_QUEUE_REPICK_AFTER_SECONDS = 60
 
 # The unit each budget suffix is worth in seconds. A budget is written as an
 # integer followed by one of these letters, and the reader converts it once so
@@ -1190,6 +1192,28 @@ def queue_max_requests(config: Mapping[str, Any] | None) -> int:
     )
     if not isinstance(value, int) or isinstance(value, bool) or value < 1:
         return DEFAULT_QUEUE_MAX_REQUESTS
+    return int(value)
+
+
+def queue_repick_after_seconds(config: Mapping[str, Any] | None) -> int:
+    """How long a router-chosen route may stand before launch picks again.
+
+    A queued request waits on its upstream, and the lanes move while it waits:
+    a lane reserved at dispatch can be open by the time the request launches.
+    This is the age at which the stored route stops being evidence of what the
+    router would answer now. Read from the resolved config's ``queue``
+    namespace, with the same fallbacks as :func:`queue_max_requests`, except
+    that zero is a legitimate value — it says every request is picked again at
+    launch — so only a negative or non-integer value falls back.
+    """
+    queue = (config or {}).get(QUEUE_KEY)
+    value = (
+        queue.get(QUEUE_REPICK_AFTER_SECONDS_KEY, DEFAULT_QUEUE_REPICK_AFTER_SECONDS)
+        if isinstance(queue, Mapping)
+        else DEFAULT_QUEUE_REPICK_AFTER_SECONDS
+    )
+    if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+        return DEFAULT_QUEUE_REPICK_AFTER_SECONDS
     return int(value)
 
 
