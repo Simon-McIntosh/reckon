@@ -834,17 +834,32 @@ _PRIMARY_REVISION_TTL_SECONDS = 5.0
 #: pair is fixed, so an answer stays true until the branch moves, which changes
 #: the key. Cleared wholesale at the limit rather than evicted one by one: the
 #: entries are cheap to recompute and a sweep repopulates what it still needs.
-_ANCESTRY_MEMO: dict[tuple[str, str, str], bool] = {}
+_ANCESTRY_MEMO: dict[tuple[Any, ...], bool] = {}
 _ANCESTRY_MEMO_LIMIT = 4096
 
 #: The primary revision last read from each checkout, with the moment it was
 #: read, so one pass over many rows of one project asks git once.
-_PRIMARY_REVISION_MEMO: dict[str, tuple[float, str]] = {}
+_PRIMARY_REVISION_MEMO: dict[tuple[Any, ...], tuple[float, str]] = {}
+
+
+def _checkout_identity(checkout: Path) -> tuple[Any, ...]:
+    """The cache key that names one checkout *instance* rather than one path.
+
+    A path can be emptied and made a repository again — a worktree reclaimed
+    and reused, a temporary tree replaced — and the new repository shares
+    nothing with the old one but its name. The git directory's identity is what
+    separates them, so a cached revision is never carried across the change.
+    """
+    try:
+        entry = (checkout / ".git").stat()
+    except OSError:
+        return (str(checkout),)
+    return (str(checkout), entry.st_dev, entry.st_ino)
 
 
 def _primary_branch_revision(checkout: Path, moment: float) -> str:
     """The commit ``checkout``'s primary branch carries, or empty when unreadable."""
-    key = str(checkout)
+    key = _checkout_identity(checkout)
     cached = _PRIMARY_REVISION_MEMO.get(key)
     if cached is not None and 0 <= moment - cached[0] <= _PRIMARY_REVISION_TTL_SECONDS:
         return cached[1]
@@ -893,7 +908,7 @@ def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | 
     primary = _primary_branch_revision(checkout, moment)
     if not primary or not head:
         return None
-    key = (str(checkout), head, primary)
+    key = (_checkout_identity(checkout), head, primary)
     cached = _ANCESTRY_MEMO.get(key)
     if cached is not None:
         return cached
@@ -911,22 +926,26 @@ def _head_on_primary_branch(checkout: Path, head: str, moment: float) -> bool | 
     return on_branch
 
 
-def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str]:
-    """The repository a run's head lands in and the head its ledger row names.
+def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str, bool]:
+    """The repository a run's head lands in, the head its row names, and whether it read one.
 
     The head comes from the run's own ledger row rather than from its worktree,
     because the row is what promotion wrote: the promoted revision when it
     recorded one, and otherwise the last commit it promoted. The row is found
     through the ledger's own ownership resolution, which is the same one
     promotion writes it under, so a run implementing one project's plan in
-    another repository's checkout is still found. A row that cannot be read
-    leaves the head unknown, which reads as an unverified landing rather than a
+    another repository's checkout is still found.
+
+    The third answer separates a row that was read from one that was not. A row
+    read and naming no commit is a completion that delivered nothing — there is
+    no head to place on a branch, so it owes no merge. A row that could not be
+    read leaves the head unknown, which is an unverified landing rather than a
     settled one.
     """
     project = str(record.get("project") or "")
     run_id = str(record.get("run_id") or "")
     if not project or not run_id:
-        return None, ""
+        return None, "", False
     from reckon.crew.node import claim_repository
 
     checkout = claim_repository(record)
@@ -935,14 +954,14 @@ def _delivered_head(record: Mapping[str, Any]) -> tuple[Path | None, str]:
         path = ledger.run_path(project, run_id, root)
         row = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError, ledger.LedgerError):
-        return checkout, ""
+        return checkout, "", False
     if not isinstance(row, Mapping) or str(row.get("run_id") or "") != run_id:
-        return checkout, ""
+        return checkout, "", False
     promoted = str(row.get("promoted_revision") or "").strip()
     if promoted:
-        return checkout, promoted
+        return checkout, promoted, True
     commits = [str(commit).strip() for commit in (row.get("commits") or ())]
-    return checkout, next((commit for commit in reversed(commits) if commit), "")
+    return checkout, next((commit for commit in reversed(commits) if commit), ""), True
 
 
 def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str:
@@ -978,7 +997,11 @@ def _promoted_awaiting_merge(record: Mapping[str, Any], *, moment: float) -> str
             if pending.get("merge_conflict")
             else "awaiting-merge"
         )
-    checkout, head = _delivered_head(record)
+    checkout, head, row_read = _delivered_head(record)
+    if row_read and not head:
+        # A completion that delivered no commits has nothing to place on a
+        # branch, so it owes no merge and stays settled.
+        return ""
     on_branch = (
         _head_on_primary_branch(checkout, head, moment)
         if checkout is not None

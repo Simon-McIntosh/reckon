@@ -16,7 +16,7 @@ trap cleanup EXIT
 git -C "$W" archive "$BASE" | tar -x -C "$D"
 HEAD_SHA=$(git -C "$W" rev-parse HEAD)
 
-BASE_TESTS=$(cd "$D" && grep -rl "recovery_classification" tests/ --include='test_*.py' | sort)
+BASE_TESTS=$(cd "$D" && grep -rl "recovery_classification" tests/ --include='test_*.py' | sort | tr '\n' ' ')
 {
   echo "# revision: $BASE (tree: $D, base arm)"
   echo "# module: $(cd "$D" && PYTHONPATH=. "$PY" -c 'import reckon.crew.recovery_classification as m; print(m.__file__)')"
@@ -36,7 +36,7 @@ cp "$W/$NODE_TEST" "$D/$NODE_TEST"
   echo "EXIT=$?"
 } > "$R/negative-control.log"
 
-HEAD_TESTS=$(cd "$W" && grep -rl "recovery_classification" tests/ --include='test_*.py' | sort)
+HEAD_TESTS=$(cd "$W" && grep -rl "recovery_classification" tests/ --include='test_*.py' | sort | tr '\n' ' ')" $NODE_TEST"
 {
   echo "# revision: $HEAD_SHA (tree: $W, head arm)"
   echo "# module: $(cd "$W" && PYTHONPATH=. "$PY" -c 'import reckon.crew.recovery_classification as m; print(m.__file__)')"

@@ -16,6 +16,7 @@ draws as delivered — with a detail naming what the merge waits on.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import time
 from datetime import UTC, datetime
@@ -197,11 +198,29 @@ def test_a_record_left_behind_a_finished_merge_does_not_hold_the_run(
 def test_a_promoted_run_whose_head_cannot_be_read_does_not_read_landed(
     home: Path, tmp_path: Path
 ) -> None:
-    """An unreadable head is an unverified landing, never a landed one."""
+    """An unreadable branch is an unverified landing, never a landed one."""
     run_id = "r-head-unreadable"
     repo, head = _repository(tmp_path)
     _promoted_run(tmp_path, run_id, repo, head)
-    # A ledger row promotion wrote with no revision it can name.
+    # The recorded checkout carries no repository, so neither the primary
+    # revision nor the head's ancestry can be read; its ledger row still does.
+    shutil.rmtree(repo / ".git")
+
+    row = _snapshot(run_id)
+
+    assert row["state"] != "promoted"
+    assert row["state"] == "complete"
+    assert "landing is unverified" in row["detail"]
+
+
+def test_a_recorded_run_with_no_commits_does_not_read_awaiting_its_merge(
+    home: Path, tmp_path: Path
+) -> None:
+    """A completion that delivered no commits has nothing to merge."""
+    run_id = "r-recorded-no-commits"
+    repo, head = _repository(tmp_path)
+    _promoted_run(tmp_path, run_id, repo, head)
+    # Report-only work: the row records the completion and names no commit.
     ledger.run_path(PROJECT, run_id, str(repo)).write_text(
         json.dumps({"run_id": run_id, "project": PROJECT, "commits": []}),
         encoding="utf-8",
@@ -209,6 +228,5 @@ def test_a_promoted_run_whose_head_cannot_be_read_does_not_read_landed(
 
     row = _snapshot(run_id)
 
-    assert row["state"] != "promoted"
-    assert row["state"] == "complete"
-    assert "landing is unverified" in row["detail"]
+    assert row["state"] == "recorded"
+    assert "awaits its merge" not in row["detail"]
