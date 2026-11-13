@@ -1,0 +1,50 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "completed_at": "2026-11-13T04:13:16.579Z",
+  "dispatched_at": "2026-11-13T04:05:37Z",
+  "findings": [
+    {
+      "file": "reckon/crew/resumption.py",
+      "line": 195,
+      "severity": "non-blocking",
+      "summary": "waiting_refused_advice duplicates the read-and-strip of consume_refused_advice at resumption.py:178 instead of extending it."
+    },
+    {
+      "file": "tests/test_a_reopen_launches_no_worker.py",
+      "line": 5,
+      "severity": "non-blocking",
+      "summary": "module docstring narrates the retired behaviour and cites a dated incident rather than stating the invariant."
+    },
+    {
+      "file": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15/manifest.md",
+      "line": 16,
+      "severity": "non-blocking",
+      "summary": "the gate's head arm has no log in the run directory, so its green result is claimed rather than recorded."
+    },
+    {
+      "file": "tests/test_crew_families_fold.py",
+      "line": 634,
+      "severity": "non-blocking",
+      "summary": "an existing test file outside the declared write paths and outside the plan's authorised module/test split was edited; disclosed in outside_scope."
+    }
+  ],
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node goal is that a reopen never launches on refused advice; reckon/crew/resumption.py:241 reopen_run widens the claim, records it and returns launched False, and reckon/crew_run_commands.py:2493 returns from the verb without reaching _resume.\nVERDICT done_when: the done_when asks for a refused-then-ended resume followed by a reopen that starts no attempt and names the waiting advice, with the base revision as control; tests/test_a_reopen_launches_no_worker.py covers all three and the manifest records 3 passed at head, 3 failed at base.\nVERDICT write_paths: the pointer declares resumption.py, run_commands_resume.py, the evidence fragment and a figures dir; the diff also carries reckon/crew_run_commands.py and two test files, the module-holding-the-verb and new-test-file cases the plan authorises, but tests/test_crew_families_fold.py is authorised by neither.\nVERDICT manifest: read; it states status complete, records the gate as 3 passed at head and 3 failed at base, the importer arms at 28 failed both sides with identical sets, and names its logs, but no log exists for the gate's head arm.\nVERDICT diff: read commit by commit (e3b2dcc8ac fix + ecba127a28 evidence); five files, 423 insertions, 56 deletions, the deletions confined to the reopen body removed from reckon/crew_run_commands.py and one retired assertion in tests/test_crew_families_fold.py; the evidence fragment adds 63 lines and deletes none.\nCALL_SITES: reckon/crew_run_commands.py:2493 (crew_resume)\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/resumption.py:241 reopen_run grants the write paths and returns launched False, and reckon/crew/resumption.py:269 names the waiting refused advice without consuming it.\nSCORE evidence: 14\nJUSTIFICATION evidence: the base arm is logged red at 71b873595a (negative-control.log, 3 failed, EXIT=1) and I re-ran the gate at head getting 3 passed, but no log of the head arm exists in the run directory.\nSCORE scope_discipline: 12\nJUSTIFICATION scope_discipline: tests/test_crew_families_fold.py:634 sits outside both the declared write paths and the plan's authorised module/test split, though the manifest discloses it under outside_scope.\nSCORE durability: 17\nJUSTIFICATION durability: tests/test_a_reopen_launches_no_worker.py:190-197 fails at the base revision with AssertionError('a reopen must launch nothing'), so reverting the fix reddens it.\nSCORE fit: 15\nJUSTIFICATION fit: reckon/crew/resumption.py:207 follows the module's own docstring-and-refusal idiom, but tests/test_a_reopen_launches_no_worker.py:5-13 narrates the former behaviour and a dated incident instead of stating the invariant.\nSCORE reuse: 5\nJUSTIFICATION reuse: reckon/crew/resumption.py:195 waiting_refused_advice re-reads refused advice that consume_refused_advice at reckon/crew/resumption.py:178 already owns, without extending that owner.\nFINDING reckon/crew/resumption.py:195 non-blocking: waiting_refused_advice duplicates the read-and-strip of consume_refused_advice at reckon/crew/resumption.py:178 in the same module, differing only in not unlinking and returning the path; a non-consuming parameter on the owner would keep one implementation of the slot's read rule.\nFINDING tests/test_a_reopen_launches_no_worker.py:5 non-blocking: the module docstring narrates the retired behaviour and cites a dated measurement (\"Measured 2026-11-12 ...\"), which is changelog prose in source; it should state the invariant the test holds, leaving the incident to the commit message.\nFINDING /home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15/manifest.md:16 non-blocking: the done_when requires every log to start with its revision and literal command and end in EXIT=, but the gate's head arm has no log in the run directory, so its green result rests on the manifest's claim rather than a stored receipt.\nFINDING tests/test_crew_families_fold.py:634 non-blocking: an existing test file outside both the declared write paths and the plan's \"a new test file under tests/\" was edited to retire the launch expectation; the manifest discloses it, and the edit is required for the importer arms to add no failure.\n",
+  "review_run_id": "r-20261113T035109580580-review-of-ready-a-review-dies-where-nobody-i-s15-ecba127a2883",
+  "reviewed_base_sha": "71b873595aa35bc63b5c8ff0147a89ff8ef2235c",
+  "reviewed_head_sha": "ecba127a2883a4a5bd4fd44584e5c593c71fb5c5",
+  "reviewed_run_id": "r-20261113T012546102955-ready-a-review-dies-where-nobody-i-s15",
+  "scores": {
+    "durability": 17,
+    "evidence": 14,
+    "fit": 15,
+    "goal_fidelity": 19,
+    "reuse": 5,
+    "scope_discipline": 12
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T04:41:50.054594+00:00",
+  "total": 82
+}
