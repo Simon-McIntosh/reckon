@@ -1,0 +1,112 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "base_log_revision": "1f81316d74a9ac860e5ee01cc98e6ebfaee9248d",
+  "call_site_count": 6,
+  "call_sites": [
+    "reckon/crew/admission/service.py:286 admit_until_stopped drain path",
+    "reckon/crew/admission/service.py:261 once path promotions.tick",
+    "reckon/crew/admission/service.py:297 per-pass promotions.tick",
+    "reckon/crew/admission/landing.py:88 _LandingWorker.settle",
+    "reckon/crew/admission/landing.py:97 _LandingWorker.stop",
+    "reckon/crew/fleet_supervisor.py:1405 service_pass bound"
+  ],
+  "completed_at": "2026-11-13T17:08:50.036Z",
+  "dispatched_at": "2026-11-13T16:56:38Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking duplication of a join loop; no behaviour change, left for a later tidy",
+      "recorded_at": "2026-11-13T17:17:01.788740+00:00"
+    },
+    "1": {
+      "kind": "exempted",
+      "reason": "a promotion over 1800s exceeds the service pass bound by design; the supervisor restart path is out of this section's scope",
+      "recorded_at": "2026-11-13T17:17:12.928968+00:00"
+    },
+    "2": {
+      "kind": "exempted",
+      "reason": "the drain test's negative control already starts the request when not draining; a separate positive arm adds little",
+      "recorded_at": "2026-11-13T17:17:20.975011+00:00"
+    },
+    "3": {
+      "kind": "exempted",
+      "reason": "_draining defaults to False, so tick() behaves as before on every path test_no_caller_waits_on_a_promotion exercises",
+      "recorded_at": "2026-11-13T17:17:26.704663+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "id": "f7296e0e9e5",
+      "line": "275",
+      "severity": "non-blocking",
+      "text": "wait_for_in_flight re-implements the join loop PromotionService.settle already carries at :419, so the class has two ways to wait for one thread list and a later change to one will diverge from the other; express settle in terms of it, and drop the timeout parameter no caller passes."
+    },
+    {
+      "file": "reckon/crew/admission/service.py",
+      "id": "f83a8b348c4",
+      "line": "288",
+      "severity": "non-blocking",
+      "text": "the join at :288 passes no timeout, so the plan's absolute never-killed-partway is bounded by SERVICE_PASS_BOUND_SECONDS: a promotion longer than 1800s is still stopped by the supervisor's restart at fleet_supervisor.py:1745-1749, a path the node's evidence does not cover."
+    },
+    {
+      "file": "tests/test_code_reload_never_cuts_off_a_promotion.py",
+      "id": "f27d9cadaba",
+      "line": "206",
+      "severity": "non-blocking",
+      "text": "test_a_draining_service_starts_no_request asserts started == [] after begin_drain(), an absence with no positive control, so it also passes when the request is never launchable at all, for example with the slot lease already held; it needs a no-drain arm asserting the same request does start."
+    },
+    {
+      "file": "reckon/crew/promotion_requests.py",
+      "id": "ffa0929b4ca",
+      "line": "328",
+      "severity": "non-blocking",
+      "text": "tick() gained an early return that no gate arm measured on the file that exercises it, tests/test_no_caller_waits_on_a_promotion.py, which calls tick() throughout; the risk is low because _draining defaults to False, but the importing-tests arm did not run that file."
+    }
+  ],
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified five production call sites: the drain path and per-pass promotions.tick at service.py:286 and :297, the once path at :261, _LandingWorker.settle and stop at landing.py:88 and :97, and the supervisor pass bound at fleet_supervisor.py:1405.",
+    "diff": "read both change sets against base 1f81316d; 966e47a3b6 adds begin_drain, wait_for_in_flight and the drain call across 3 files, and 986e09bb18 adds only the evidence fragment.",
+    "done_when": "the plan's done-when asks for a blocking executor, a stamp moved mid-promotion, recorded re-execs, no second promotion and a re-exec within one pass; tests/test_code_reload_never_cuts_off_a_promotion.py:139-203 asserts all of it with base 51 passed and head 54 passed, but the importing-tests arm ran only tests/test_staged_write_inventory.py.",
+    "goal": "the node's goal is that an admission-service reload never cuts a promotion or a landing off in flight; reckon/crew/admission/service.py:286-289 stops new ticks, joins the promotion and landing threads, and only then calls _reexec_into_current_code(), which delivers it, though a promotion outliving the 1800s pass bound is still stopped by the supervisor.",
+    "manifest": "read; status complete, both suite arms recorded as JSON with completed true and failure_count 0, a negative-control log named alone, and the measurement module and cwd, all reconciling against the logs.",
+    "write_paths": "the manifest declares five fence entries; every path in both diffs is inside them and nothing else was written."
+  },
+  "justifications": {
+    "durability": "tests/test_code_reload_never_cuts_off_a_promotion.py:165 and :198 redden with \"assert 1 == 0\" when the three drain calls are removed, as logs/negative-control.log records, but the :206 drain-flag case is an absence assertion with no arm showing tick() launches when not draining.",
+    "evidence": "logs/base-arm.log (rev 1f81316d) reads \"51 passed\" EXIT=0 and logs/head-arm.log (rev 966e47a3) reads \"54 passed\" EXIT=0, with logs/negative-control.log showing the two in-flight cases red at EXIT=1, but no arm ran tests/test_no_caller_waits_on_a_promotion.py, the only test importing promotion_requests that calls tick().",
+    "fit": "reckon/crew/promotion_requests.py:271-293 uses the same self._threads prune idiom as tick() at :329 and states the mechanism, with no plan, node or ticket identifier in any added name, comment or subject.",
+    "goal_fidelity": "reckon/crew/admission/service.py:286-289 drains promotions, settles the landing and then re-executes, which is the stated deliverable; the residual is a promotion longer than SERVICE_PASS_BOUND_SECONDS being cut off by the supervisor's restart at reckon/crew/fleet_supervisor.py:1745-1749 rather than by the loop.",
+    "reuse": "reckon/crew/promotion_requests.py:275 re-implements the join loop PromotionService.settle already carries at :419; the addition sits inside the owning class rather than forking another owner, which is why it is not scored at the fork cap.",
+    "scope_discipline": "the two change sets touch only reckon/crew/admission/service.py, reckon/crew/promotion_requests.py, tests/test_code_reload_never_cuts_off_a_promotion.py and the evidence fragment, all inside the fence the manifest declares."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that an admission-service reload never cuts a promotion or a landing off in flight; reckon/crew/admission/service.py:286-289 stops new ticks, joins the promotion threads and the landing thread, and only then calls _reexec_into_current_code(), which delivers that goal, though a promotion outliving the supervisor's 1800s pass bound is still stopped by reckon/crew/fleet_supervisor.py:1745-1749.\nVERDICT done_when: the plan's done-when asks for a blocking promotion executor, a stamp moved mid-promotion, recorded re-execs, no second promotion after the move and a re-exec within one pass; tests/test_code_reload_never_cuts_off_a_promotion.py:139-203 asserts all of it, base arm 51 passed EXIT=0 and head arm 54 passed EXIT=0, but the done-when's \"test files importing the changed modules\" arm ran only tests/test_staged_write_inventory.py and omitted tests/test_no_caller_waits_on_a_promotion.py, the one file importing promotion_requests that calls PromotionService.tick().\nVERDICT write_paths: read the reviewed manifest's declared fence of five entries (service.py, promotion_requests.py, the new test file, the evidence fragment, the figures directory); every path in both diffs is inside that fence and nothing else was written.\nVERDICT manifest: read; it records status complete, both shas, both suite arms as JSON with completed true and failure_count 0, a negative-control log named alone, the measurement module and cwd, and a per-dimension self-check, all reconciling against the logs it cites.\nVERDICT diff: read both commits against base 1f81316d; 966e47a3b6 adds begin_drain, wait_for_in_flight and the drain call across 3 files, and 986e09bb18 adds only the evidence fragment.\nCALL_SITES: reckon/crew/admission/service.py:286 admit_until_stopped drain path, reckon/crew/admission/service.py:261 once path promotions.tick, reckon/crew/admission/service.py:297 per-pass promotions.tick, reckon/crew/admission/landing.py:88 _LandingWorker.settle, reckon/crew/admission/landing.py:97 _LandingWorker.stop, reckon/crew/fleet_supervisor.py:1405 service_pass bound\nSCORE goal_fidelity: 19\nJUSTIFICATION goal_fidelity: reckon/crew/admission/service.py:286-289 drains promotions, settles the landing and then re-executes, which is the stated deliverable; the residual is that a promotion longer than SERVICE_PASS_BOUND_SECONDS is cut off by the supervisor's restart at reckon/crew/fleet_supervisor.py:1745-1749 rather than by the loop.\nSCORE evidence: 14\nJUSTIFICATION evidence: logs/base-arm.log (rev 1f81316d) reads \"51 passed\" EXIT=0 and logs/head-arm.log (rev 966e47a3) reads \"54 passed\" EXIT=0, with logs/negative-control.log showing the two in-flight cases red at EXIT=1, but no arm ran tests/test_no_caller_waits_on_a_promotion.py, the only test importing promotion_requests that calls tick().\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: the two change sets touch only reckon/crew/admission/service.py, reckon/crew/promotion_requests.py, tests/test_code_reload_never_cuts_off_a_promotion.py and docs/evidence/fragments/work-flows-to-the-lane/code-reload-never-cuts-off-a-promotion.html, all inside the fence the manifest declares.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_code_reload_never_cuts_off_a_promotion.py:165 and :198 redden with \"assert 1 == 0\" when the three drain calls are removed, which logs/negative-control.log records, but the :206 drain-flag case is an absence assertion with no arm showing tick() launches when not draining.\nSCORE fit: 18\nJUSTIFICATION fit: reckon/crew/promotion_requests.py:271-293 uses the same self._threads prune idiom as tick() at :329 and states the mechanism, with no plan, node or ticket identifier in any added name, comment or subject; waiting before an execve also matches reckon/crew/admission/service.py:137.\nSCORE reuse: 14\nJUSTIFICATION reuse: reckon/crew/promotion_requests.py:275 wait_for_in_flight re-implements the join loop PromotionService.settle already carries at :419; the addition sits inside the owning class rather than forking another owner, which is why it is not scored at the fork cap.\nFINDING reckon/crew/promotion_requests.py:275 non-blocking: wait_for_in_flight re-implements the join loop PromotionService.settle already carries at :419, so the class now has two ways to wait for one thread list and a later change to one will diverge from the other; express settle in terms of it, and drop the timeout parameter no caller passes.\nFINDING reckon/crew/admission/service.py:288 non-blocking: the join at :288 passes no timeout, so the plan's absolute \"never killed partway\" is bounded by SERVICE_PASS_BOUND_SECONDS, and a promotion longer than 1800s is still stopped by the supervisor's restart at fleet_supervisor.py:1745-1749; the node's evidence does not cover that path.\nFINDING tests/test_code_reload_never_cuts_off_a_promotion.py:206 non-blocking: test_a_draining_service_starts_no_request asserts started == [] after begin_drain(), an absence with no positive control, so it also passes when the request is never launchable at all, for example with the slot lease already held; it needs a no-drain arm asserting the same request does start.\nFINDING reckon/crew/promotion_requests.py:328 non-blocking: tick() gained an early return that no gate arm measured on the file that exercises it, tests/test_no_caller_waits_on_a_promotion.py, which calls tick() throughout; the risk is low because _draining defaults to False, but the done-when's importing-tests arm did not run that file.\n",
+  "review_run_id": "r-20261113T165514301796-review-of-code-reload-never-cuts-off-a-promotion-986e09bb1853",
+  "reviewed_base_sha": "1f81316d74a9ac860e5ee01cc98e6ebfaee9248d",
+  "reviewed_head_sha": "986e09bb1853840952ccc5c7fb7b70f6dfac21f1",
+  "reviewed_run_id": "r-20261113T161415953123-code-reload-never-cuts-off-a-promotion",
+  "reviewer": {
+    "backend": "deepseek-v4.1-flash",
+    "effort": "high",
+    "model": "deepseek-v4.1-flash",
+    "reviewer_run_id": "r-20261113T165514301796-review-of-code-reload-never-cuts-off-a-promotion-986e09bb1853"
+  },
+  "reviewer_run_id": "r-20261113T165514301796-review-of-code-reload-never-cuts-off-a-promotion-986e09bb1853",
+  "scores": {
+    "durability": 16,
+    "evidence": 14,
+    "fit": 18,
+    "goal_fidelity": 19,
+    "reuse": 14,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T17:09:38.306430+00:00",
+  "total": 100
+}
