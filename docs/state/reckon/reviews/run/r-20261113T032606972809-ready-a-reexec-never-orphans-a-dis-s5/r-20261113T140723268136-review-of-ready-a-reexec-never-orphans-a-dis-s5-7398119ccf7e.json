@@ -1,0 +1,64 @@
+{
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/station.py:StationReloader._reexec_into_image",
+    "reckon/crew/follower_reload.py:_FollowerReloader reload path",
+    "reckon/crew/admission/service.py:_reexec_into_current_code",
+    "reckon/crew/dispatch_claims.py:wait_for_dispatches_in_flight",
+    "reckon/crew/dispatch_claims.py:_claim_node_dispatch"
+  ],
+  "completed_at": "2026-11-13T14:36:10.363Z",
+  "dispatched_at": "2026-11-13T14:18:03Z",
+  "finding_dispositions": {
+    "0": {
+      "kind": "exempted",
+      "reason": "non-blocking; carried to the plan next health review",
+      "recorded_at": "2026-11-13T15:06:48.914303+00:00"
+    }
+  },
+  "findings": [
+    {
+      "file": "docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ready-a-reexec-never-orphans-a-dis-s5.html",
+      "id": "f0b1fdd0bbf",
+      "line": "8",
+      "severity": "non-blocking",
+      "text": "non-blocking: the fragment says the station case dispatches 'through station.SweepBeat on its actual sweep thread', but tests/test_a_reexec_waits_for_its_dispatches.py:97 constructs its own SweepBeat rather than running on a StationReloader's thread, so what the case proves is that a dispatch held on a thread naming itself station-sweep blocks the reload, not that a station's own sweep is that thread."
+    }
+  ],
+  "item_verdicts": {
+    "call_sites": "the three production re-exec paths call the one wait: reckon/crew/station.py:604, reckon/crew/follower_reload.py:511 and reckon/crew/admission/service.py:137, each immediately before its os.execve, with no local copy of the wait.",
+    "diff": "read commit by commit: 74a05816 replaces the synthetic in-flight seed with a real _claim_node_dispatch held by a condition-wait handshake, 99da6734 and 7398119c add the evidence fragment and its recheck table; 65 insertions and 32 deletions across the test, 69 lines of evidence, nothing else.",
+    "done_when": "the done_when names tests/test_a_reexec_waits_for_its_dispatches.py with three stubbed-execve cases, a bound case and four negative controls; the file holds all three service cases and the two bound cases, and the five control logs each end EXIT=1 on the intended assertion, but the controls live as recorded mutation runs rather than as cases in the file.",
+    "goal": "the node's goal is that a service waits for its in-flight dispatches before it re-executes; the landed diff contains no product change because the shared wait and its three call sites already exist at the base revision (reckon/crew/station.py:604, reckon/crew/follower_reload-equivalent at follower_reload.py:511, admission/service.py:137), and what the diff delivers is the proof demanded by the done_when.",
+    "manifest": "read; it records status complete, the scoped arms at 56 passed each with EXIT=0, five control logs at EXIT=1, the 155-vs-156 importer pair, three serial repetitions per revision, and the one added failure carried under outside_scope.",
+    "write_paths": "the manifest declares the five product modules plus the new test and the node's evidence fragment; the diff of 4c4cf234..7398119c touches only tests/test_a_reexec_waits_for_its_dispatches.py and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ready-a-reexec-never-orphans-a-dis-s5.html, both inside it."
+  },
+  "justifications": {
+    "durability": "tests/test_a_reexec_waits_for_its_dispatches.py:169/195/215 fail on an exec taken while a real claim is registered (resume-negative-station.log, resume-negative-follower.log, resume-negative-admit.log), :106 fails when claim registration is removed (resume-negative-claim-entry.log) and :234 fails when the bound line is dropped (resume-negative-bound-log.log).",
+    "evidence": "resume-baseline-suite.log and recheck-after-suite.log each record 56 passed with EXIT=0 at their own revision, and recheck-baseline-spawn-3.log reproduces the exact importer failure id at base, though the importer pair itself retains 155-vs-156 failures rather than the 'adds no failure' the done_when states.",
+    "fit": "tests/test_a_reexec_waits_for_its_dispatches.py follows the surrounding test idiom of a local helper plus monkeypatched RECKON_HOME (tests/test_a_reexec_never_orphans_a_dispatch.py:17-31), with no plan label or version token in a symbol, filename or comment.",
+    "goal_fidelity": "reckon/crew/station.py:604, reckon/crew/follower_reload.py:511 and reckon/crew/admission/service.py:137 call dispatch_claims.wait_for_dispatches_in_flight() immediately before os.execve, but all three predate the base at f53d0a8f25, so the landed diff proves the behaviour rather than adding it.",
+    "reuse": "the test drops the synthetic _enter_dispatch_in_flight seeding for the real owner, dispatch_claims._claim_node_dispatch at reckon/crew/dispatch_claims.py:1029, which enters the same _DISPATCHES_IN_FLIGHT register the services wait on; a search of tests/ and reckon/crew found no other helper for holding a claim that this duplicates.",
+    "scope_discipline": "git diff 4c4cf234390f5326b995cee7ad6bda55fe01b5c0..7398119ccf7e5f21090364d80b723a157dba322a touches only tests/test_a_reexec_waits_for_its_dispatches.py and the node's own evidence fragment, both named in the declared scope."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: the node's goal is that a service waits for its in-flight dispatches before it re-executes; the landed diff carries no product change because reckon/crew/station.py:604, reckon/crew/follower_reload.py:511 and reckon/crew/admission/service.py:137 already call the shared wait at the base revision, so what this node delivers is the proof its done_when demands.\nVERDICT done_when: the done_when names tests/test_a_reexec_waits_for_its_dispatches.py with three stubbed-execve cases, a bound case and four negative controls; the file holds all three service cases and the two bound cases, and the five control logs resume-negative-station.log, resume-negative-follower.log, resume-negative-admit.log, resume-negative-bound-log.log and resume-negative-claim-entry.log each end EXIT=1 on the intended assertion, though the controls live as recorded mutation runs rather than as cases in the file.\nVERDICT write_paths: the manifest declares the five product modules plus the new test and the node's evidence fragment; git diff 4c4cf234..7398119c touches only tests/test_a_reexec_waits_for_its_dispatches.py and docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ready-a-reexec-never-orphans-a-dis-s5.html, both inside it.\nVERDICT manifest: read; it records status complete, scoped arms at 56 passed each with EXIT=0, five control logs at EXIT=1, the 155-vs-156 importer pair, three serial repetitions per revision, and the one added importer failure carried under outside_scope.\nVERDICT diff: read commit by commit against 4c4cf234; 74a05816 replaces the synthetic in-flight seed with a real _claim_node_dispatch held by a condition-wait handshake, 99da6734 and 7398119c add the evidence fragment and its recheck table, every path inside the declared scope.\nCALL_SITES: reckon/crew/station.py:StationReloader._reexec_into_image, reckon/crew/follower_reload.py:_FollowerReloader reload path, reckon/crew/admission/service.py:_reexec_into_current_code, reckon/crew/dispatch_claims.py:wait_for_dispatches_in_flight, reckon/crew/dispatch_claims.py:_claim_node_dispatch\nSCORE goal_fidelity: 16\nJUSTIFICATION goal_fidelity: reckon/crew/station.py:604, reckon/crew/follower_reload.py:511 and reckon/crew/admission/service.py:137 call dispatch_claims.wait_for_dispatches_in_flight() immediately before os.execve, but all three predate the base at f53d0a8f25, so the landed diff proves the behaviour rather than adding it.\nSCORE evidence: 16\nJUSTIFICATION evidence: recheck-after-suite.log and resume-baseline-suite.log record 56 passed with EXIT=0 at both revisions and recheck-baseline-spawn-3.log reproduces the exact importer failure id at base, though the importer pair itself retains 155-vs-156 failures rather than the 'adds no failure' the done_when states.\nSCORE scope_discipline: 19\nJUSTIFICATION scope_discipline: git diff 4c4cf234390f5326b995cee7ad6bda55fe01b5c0..7398119ccf7e5f21090364d80b723a157dba322a touches only tests/test_a_reexec_waits_for_its_dispatches.py and the node's own evidence fragment, both named in the declared scope.\nSCORE durability: 18\nJUSTIFICATION durability: tests/test_a_reexec_waits_for_its_dispatches.py:169/195/215 fail on an exec taken while a real claim is registered (resume-negative-station.log, resume-negative-follower.log, resume-negative-admit.log), :106 fails when claim registration is removed (resume-negative-claim-entry.log) and :234 fails when the bound line is dropped (resume-negative-bound-log.log).\nSCORE fit: 17\nJUSTIFICATION fit: tests/test_a_reexec_waits_for_its_dispatches.py follows the surrounding test idiom of a local helper plus monkeypatched RECKON_HOME (tests/test_a_reexec_never_orphans_a_dispatch.py:17-31), with no plan label or version token in a symbol, filename or comment.\nSCORE reuse: 19\nJUSTIFICATION reuse: the test drops the synthetic _enter_dispatch_in_flight seeding for the real owner, dispatch_claims._claim_node_dispatch at reckon/crew/dispatch_claims.py:1029, which enters the same _DISPATCHES_IN_FLIGHT register the services wait on; a search of tests/ and reckon/crew found no other helper for holding a claim that this duplicates.\nFINDING docs/evidence/fragments/a-reexec-never-orphans-a-dispatch/ready-a-reexec-never-orphans-a-dis-s5.html:8 non-blocking: the fragment says the station case dispatches 'through station.SweepBeat on its actual sweep thread', but the test constructs its own SweepBeat at tests/test_a_reexec_waits_for_its_dispatches.py:97 rather than running on a StationReloader's thread, so what is proved is that a dispatch held on a thread naming itself station-sweep blocks the reload, not that a station's own sweep is that thread.\n",
+  "review_run_id": "r-20261113T140723268136-review-of-ready-a-reexec-never-orphans-a-dis-s5-7398119ccf7e",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "7398119ccf7e5f21090364d80b723a157dba322a",
+  "reviewed_run_id": "r-20261113T032606972809-ready-a-reexec-never-orphans-a-dis-s5",
+  "scores": {
+    "durability": 18,
+    "evidence": 16,
+    "fit": 17,
+    "goal_fidelity": 16,
+    "reuse": 19,
+    "scope_discipline": 19
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T14:36:35.788372+00:00",
+  "total": 105
+}
