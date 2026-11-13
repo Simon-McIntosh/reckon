@@ -151,6 +151,20 @@ def test_an_overrunning_pass_is_restarted_and_logs_its_bound(controlled, capsys)
     assert "pass exceeded its 0.2s bound" in output
 
 
+def test_a_withdrawn_code_change_releases_the_requested_boundary(controlled):
+    home = controlled
+    manager, pid = home.start()
+    (home.root / "stamp").write_text("after")
+    manager.supervise_once()
+    assert (home.runtime / "demo.pass.reload").exists()
+    (home.root / "stamp").write_text("before")
+    manager.supervise_once()
+    assert not (home.runtime / "demo.pass.reload").exists()
+    (home.root / "release-0").touch()
+    _wait((home.root / f"begin-{pid}-1").exists)
+    assert fleet.recorded_service_pid(home.runtime, "demo") == pid
+
+
 def test_admission_holds_the_boundary_through_verdict_publication(
     tmp_path, monkeypatch
 ):

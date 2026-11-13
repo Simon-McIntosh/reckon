@@ -1758,8 +1758,9 @@ class DeclaredServices:
         state = self._states.get(name)
         image = state.start_image if state is not None else None
         pass_path = self._runtime / f"{name}.pass"
-        pass_path.unlink(missing_ok=True)
-        pass_path.with_suffix(".pass.reload").unlink(missing_ok=True)
+        if not lock_held(name, self._runtime):
+            pass_path.unlink(missing_ok=True)
+            pass_path.with_suffix(".pass.reload").unlink(missing_ok=True)
         child_environ = self._child_environ(image)
         child_environ[SERVICE_PASS_PATH_ENV] = str(pass_path)
         try:
