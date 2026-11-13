@@ -149,6 +149,11 @@
     <p>§28 landed at <code>d3eef3d59e</code> (reviewed head <code>3e900454ea</code>, run <code>r-20261112T211024663068-acceptance-check-holds-no-lease</code>). A sweep's acceptance job now judges a run without holding its promotion lease, and takes the lease only once it has decided to promote, re-checking under the lease that the run is still the one it judged. A refused acceptance is not tried again while the run's head, its stored review and the refusal's own inputs are unchanged, and it is judged again when any of them moves. A coordinator's completion is never refused because a sweep is judging the run. This repairs a regression from §25, which held the lease through the judgement and retried on every sweep. That regression refused nova's coordinator's <code>crew complete --gate failed</code> on <code>icm-west-62751-solve</code> five times over more than an hour, until the run was completed between sweeps. All three mutation controls fail as intended. The added importer failure first reported, <code>test_resume_reaps_its_child.py</code>, passed 5 of 5 at both base and head on re-measurement. The review scored 20 on every dimension with no findings.</p>
   </section>
 
+  <section id="s29-finished-pending-landing-retires-its-run" data-evidence-origin="append">
+    <h2>§29 — a landing finished from its pending record retires the run</h2>
+    <p>§29 landed at <code>69ffd69fb9</code> (reviewed head <code>d8769b9a6e</code>, run <code>r-20261112T230644567766-finished-pending-landing-retires-its-run</code>). By the time it ran, the defect no longer reproduced at main: the pending-landing pass's attempt-aware release, landed beside the-monitor-reads-each-fact-once §39, already retired the finished attempt's pointer and worktree. The section therefore lands as a regression test, <code>tests/test_a_finished_pending_landing_retires_its_run.py</code>. It covers retirement after a pushed merge, a refused push that keeps everything, an already-discarded pointer, and a newer attempt's pointer that is kept. Two negative controls fail by name. Both reviews scored 20 on every dimension. A related order defect remains with the-monitor-reads-each-fact-once §41: the unfinished-promotion path clears the pending record before it retires the attempt.</p>
+  </section>
+
 </main>
 </body>
 </html>
