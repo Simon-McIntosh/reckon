@@ -29,6 +29,15 @@
       non-producer is named and stays alive; the fresh producer is untouched; an opener beside a stale producer is neither named nor stopped.
       15 passed at head (11 at the base revision plus the 4 new cases). With the stop of the stale producer removed the first case fails
       (1 failed), because the producer the arming starts never takes a seat the stale pid still holds.</p>
+      <p>The stop does not signal from here. The pid it acts on is a scan result &mdash; a row of the kernel&rsquo;s lock table &mdash; which is
+      exactly the target whose process group the crew refuses to assume, so delivery goes through
+      <code>reckon.crew.process_signal.signal_worker</code>, the crew&rsquo;s one home for <code>os.kill</code>, and the holder&rsquo;s
+      command line is read through <code>fleet_supervisor.process_cmdline</code> rather than a second parse of
+      <code>/proc/&lt;pid&gt;/cmdline</code>. A case in <code>tests/test_watch_seat_across_hosts.py</code> pins the routing: with the source
+      half of that change reversed the case fails (1 failed), because the fake signaller sees no signal at all.</p>
+      <p>Both the files that import these modules and the staged-write inventory were measured rather than asserted: the five importing test
+      files pass at the base revision and at this head (22 at base, 27 with the new seat case at head), and
+      <code>tests/test_staged_write_inventory.py</code> passes at both revisions (51 passed each, EXIT=0).
     </section>
   </main>
 </body>
