@@ -1,0 +1,113 @@
+{
+  "absent": [],
+  "absent_items": [],
+  "added_failure_count": 0,
+  "added_failure_ids": [],
+  "assertion_analysis": [
+    {
+      "assertions": "configured grace equals seven days",
+      "fails_if": "The supported fixture duration is ignored or resolves to a value other than 604800 seconds.",
+      "path": "tests/test_retention_retires_a_review_run.py:30"
+    },
+    {
+      "assertions": "fixture stored review_run_id equals directory name",
+      "fails_if": "The fixture writes the wrong reviewer identity; setup check, not product regression coverage.",
+      "path": "tests/test_retention_retires_a_review_run.py:81"
+    },
+    {
+      "assertions": "removed identifies reviewer; directory absent; stored result exists",
+      "fails_if": "Restoring review-of-self gating or dropping role/legacy-id recognition empties removed; reporting without deletion leaves the directory; deleting the stored result fails its existence check.",
+      "path": "tests/test_retention_retires_a_review_run.py:85-87"
+    },
+    {
+      "assertions": "removed and withheld empty; both artifacts remain",
+      "fails_if": "Bypassing age protection deletes the six-day-old reviewer; restoring review-of-self gating adds a withheld row; removing either artifact breaks existence.",
+      "path": "tests/test_retention_retires_a_review_run.py:95-97"
+    },
+    {
+      "assertions": "implementation retained with one exact review-owed refusal",
+      "fails_if": "Exempting implementations or deleting their directory breaks retention assertions; changing refusal category, text or cardinality breaks the report checks.",
+      "path": "tests/test_retention_retires_a_review_run.py:108-120"
+    },
+    {
+      "assertions": "install succeeds; module argv, apply and limit flags, configured default, forwarded kwargs and service operations",
+      "fails_if": "Restoring the renderer without --limit fails line 140; wrong module/apply, installation return or reload/enable sequence fails independent assertions; line 150 stays green if main ignores its input limit and uses the identical default.",
+      "path": "tests/test_retention_retires_a_review_run.py:135-151"
+    }
+  ],
+  "call_site_count": 5,
+  "call_sites": [
+    "reckon/crew/gc.py:retention_sweep:1955",
+    "reckon/crew/gc.py:main:2234",
+    "reckon/crew/gc.py:install_retention_timer:2149",
+    "reckon/crew_run_commands.py:crew_retention_sweep:2139",
+    "reckon/crew_run_commands.py:crew_retention_sweep:2154"
+  ],
+  "completed_at": "2026-11-13T10:49:12Z",
+  "dispatched_at": "2026-11-13T10:39:01Z",
+  "findings": [
+    {
+      "file": "reckon/crew/gc.py",
+      "line": "363",
+      "severity": "blocking",
+      "text": "blocking: Review identity alone bypasses the review-related refusal, without resolving or checking a stored result produced by this reviewer before age-and-measurement checks return prune; an old ledgered reviewer whose delivered record is missing or unreadable is deleted just like a delivered reviewer, contrary to the plan's stored-review condition; keep the review-of-self exemption while checking its own delivered result and test absence."
+    },
+    {
+      "file": "tests/test_retention_retires_a_review_run.py",
+      "line": "150",
+      "severity": "non-blocking",
+      "text": "non-blocking: The expected limit is the same default-valued argument extracted from the generated command and supplied to main; dropping main's limit assignment and using RETENTION_SWEEP_LIMIT leaves this assertion green, so it does not independently guard forwarding of the supplied bound; exercise a distinct positive limit for that claim."
+    }
+  ],
+  "gate_evidence": {
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/after-suite-final.log",
+    "after_revision": "f6abdb14117852e7456322d6f094bdd1b0f683f4",
+    "after_summary": "57 passed in 12.64s; EXIT=0",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/baseline-suite.log",
+    "baseline_summary": "51 passed in 10.42s; EXIT=0",
+    "head_difference": "Only evidence HTML was committed after this gate."
+  },
+  "importer_delta": {
+    "added_failure_count": 0,
+    "added_failure_ids": [],
+    "after_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/after-importers-final.log",
+    "baseline_log": "/home/ITER/mcintos/.config/reckon/crew/runs/r-20261113T084815947556-retention-retires-a-review-run/baseline-importers-corrected.log",
+    "unchanged_failure_count": 3
+  },
+  "item_aggregate": 6,
+  "item_verdicts": {
+    "call_sites": "verified 5 production call site(s)",
+    "diff": "Read commits a2b56d2141c0bfb7278c6d3f99ffe499899f199f, f6abdb14117852e7456322d6f094bdd1b0f683f4 and b5361735bbb50a4ae8afce0986e23b986543b1f1 against base 4c4cf234390f5326b995cee7ad6bda55fe01b5c0; changes comprise reviewer classification, explicit timer bound, six tests and evidence prose.",
+    "done_when": "Read prompt.txt:156-157 and recorded logs; six new cases, a red guard mutation, identical importer failures, clean scoped lint and a paired all_debug live dry run cover the explicit measurements, while stored-result absence remains untested.",
+    "goal": "Read prompt.txt:38 and live docs/plans/work-flows-to-the-lane.html:226; gc.py:363 removes review-of-self gating but never checks the reviewer's own stored result as the plan requires.",
+    "manifest": "Read manifest.md and its gate logs; baseline records 51 passed and head 57 passed with EXIT=0, both importer arms have the same three failures, and the dry run offers 357 directories while removing zero.",
+    "write_paths": "Read prompt.txt:80-84; all three changed paths are inside the declared crew, test and evidence-fragment scope."
+  },
+  "justifications": {
+    "durability": "tests/test_retention_retires_a_review_run.py:85-120 detects restoring review-of-self gating, skipping age protection or exempting implementations, but lacks missing-result coverage and line 150 cannot detect ignoring a supplied limit equal to the parser default.",
+    "evidence": "after-suite-final.log records 57 passed with EXIT=0, negative-control-final.log records 3 failed, and live-dry-run-final.log records 357 offers versus zero with no removal at source revision f6abdb14117852e7456322d6f094bdd1b0f683f4; the final commit changes only evidence HTML.",
+    "fit": "reckon/crew/gc.py:346-365 reuses the review classifier with a ledger-shape adapter and line 2112 reuses the sweep constant, while lint.log records clean scoped checks and added names describe their mechanisms.",
+    "goal_fidelity": "reckon/crew/gc.py:363 exempts reviewers from a review of themselves but never establishes their own stored review, required by docs/plans/work-flows-to-the-lane.html:226.",
+    "reuse": "Capability searches found the review-classification owner in reckon/crew/recovery_review_delivery.py:45 and timer owner in gc.py:2088, both reused or extended; existing test plant_run in tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:54 cannot express reviewer roles and delivered-subject setup, which the added fixture specializes.",
+    "scope_discipline": "The exact diff changes only reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and the permitted docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html."
+  },
+  "project": "reckon",
+  "raw_text": "VERDICT goal: Read prompt.txt:38 and live docs/plans/work-flows-to-the-lane.html:226; gc.py:363 removes review-of-self gating but never checks the reviewer's own stored result as the plan requires.\nVERDICT done_when: Read prompt.txt:156-157 and recorded logs; six new cases, a red guard mutation, identical importer failures, clean scoped lint and a paired all_debug live dry run cover the explicit measurements, while stored-result absence remains untested.\nVERDICT write_paths: Read prompt.txt:80-84; all three changed paths are inside the declared crew, test and evidence-fragment scope.\nVERDICT manifest: Read manifest.md and its gate logs; baseline records 51 passed and head 57 passed with EXIT=0, both importer arms have the same three failures, and the dry run offers 357 directories while removing zero.\nVERDICT diff: Read commits a2b56d2141c0bfb7278c6d3f99ffe499899f199f, f6abdb14117852e7456322d6f094bdd1b0f683f4 and b5361735bbb50a4ae8afce0986e23b986543b1f1 against base 4c4cf234390f5326b995cee7ad6bda55fe01b5c0; changes comprise reviewer classification, explicit timer bound, six tests and evidence prose.\nCALL_SITES: reckon/crew/gc.py:retention_sweep:1955, reckon/crew/gc.py:main:2234, reckon/crew/gc.py:install_retention_timer:2149, reckon/crew_run_commands.py:crew_retention_sweep:2139, reckon/crew_run_commands.py:crew_retention_sweep:2154\nSCORE goal_fidelity: 14\nJUSTIFICATION goal_fidelity: reckon/crew/gc.py:363 exempts reviewers from a review of themselves but never establishes their own stored review, required by docs/plans/work-flows-to-the-lane.html:226.\nSCORE evidence: 19\nJUSTIFICATION evidence: after-suite-final.log records 57 passed with EXIT=0, negative-control-final.log records 3 failed, and live-dry-run-final.log records 357 offers versus zero with no removal at source revision f6abdb14117852e7456322d6f094bdd1b0f683f4; the final commit changes only evidence HTML.\nSCORE scope_discipline: 20\nJUSTIFICATION scope_discipline: The exact diff changes only reckon/crew/gc.py, tests/test_retention_retires_a_review_run.py and the permitted docs/evidence/fragments/work-flows-to-the-lane/retention-retires-a-review-run.html.\nSCORE durability: 16\nJUSTIFICATION durability: tests/test_retention_retires_a_review_run.py:85-120 detects restoring review-of-self gating, skipping age protection or exempting implementations, but lacks missing-result coverage and line 150 cannot detect ignoring a supplied limit equal to the parser default.\nSCORE fit: 20\nJUSTIFICATION fit: reckon/crew/gc.py:346-365 reuses the review classifier with a ledger-shape adapter and line 2112 reuses the sweep constant, while lint.log records clean scoped checks and added names describe their mechanisms.\nSCORE reuse: 20\nJUSTIFICATION reuse: Capability searches found the review-classification owner in reckon/crew/recovery_review_delivery.py:45 and timer owner in gc.py:2088, both reused or extended; existing test plant_run in tests/test_only_a_run_something_can_still_need_keeps_its_directory.py:54 cannot express reviewer roles and delivered-subject setup, which the added fixture specializes.\nFINDING reckon/crew/gc.py:363 blocking: Review identity alone bypasses the review-related refusal, without resolving or checking a stored result produced by this reviewer before age-and-measurement checks return prune; an old ledgered reviewer whose delivered record is missing or unreadable is deleted just like a delivered reviewer, contrary to the plan's stored-review condition; keep the review-of-self exemption while checking its own delivered result and test absence.\nFINDING tests/test_retention_retires_a_review_run.py:150 non-blocking: The expected limit is the same default-valued argument extracted from the generated command and supplied to main; dropping main's limit assignment and using RETENTION_SWEEP_LIMIT leaves this assertion green, so it does not independently guard forwarding of the supplied bound; exercise a distinct positive limit for that claim.\n",
+  "reproduction_quote": "reproduction.log: E       assert [] == ['r-reviewer']; 4 failed, 1 passed in 1.37s; EXIT=1",
+  "review_run_id": "r-20261113T103241468600-review-of-retention-retires-a-review-run-b5361735bbb5",
+  "reviewed_base_sha": "4c4cf234390f5326b995cee7ad6bda55fe01b5c0",
+  "reviewed_head_sha": "b5361735bbb50a4ae8afce0986e23b986543b1f1",
+  "reviewed_run_id": "r-20261113T084815947556-retention-retires-a-review-run",
+  "scores": {
+    "durability": 16,
+    "evidence": 19,
+    "fit": 20,
+    "goal_fidelity": 14,
+    "reuse": 20,
+    "scope_discipline": 20
+  },
+  "status": "parsed",
+  "times_source": "run-record",
+  "timestamp": "2026-11-13T11:27:19.341909+00:00",
+  "total": 109
+}
