@@ -1,0 +1,40 @@
+<section id="retention-retires-a-review-run-landing">
+  <h2>Ledgered reviewers retire without owing another review</h2>
+  <p>Retention now uses the existing review-run classifier, adapting the
+  ledger's string node id to the dispatch identity shape it reads. Both an
+  explicit review role and a legacy review node id bypass the review-of-self
+  guard. The retention window and stream-derived measurement guards still
+  apply. Implementations owing a review keep their directory and the existing
+  <code>review-owed</code> reason.</p>
+  <p>The installed hourly service explicitly passes <code>--limit 500</code>.
+  Its module entry point already called the retention sweep; the new test
+  exercises the command written by <code>--install-timer</code> and verifies
+  that it reaches the sweep with that limit. No live timer was installed and
+  no live run directory was removed by this node.</p>
+  <table id="retention-retires-a-review-run-measures">
+    <caption>Checks ran sequentially on all_debug. The source head is
+    <code>f6abdb14117852e7456322d6f094bdd1b0f683f4</code>; the base is
+    <code>4c4cf234390f5326b995cee7ad6bda55fe01b5c0</code>.</caption>
+    <thead><tr><th>Measure</th><th>Observed result</th></tr></thead>
+    <tbody>
+      <tr><td>Base armed gate</td><td>51 passed; EXIT=0.</td></tr>
+      <tr><td>Head armed gate</td><td>57 passed; EXIT=0. Six cases cover old
+      reviewers by role and legacy identity, a recent reviewer, owed-review
+      implementations with and without a role, and the installed timer.</td></tr>
+      <tr><td>GC and retention importer arms</td><td>Both arms: 3 failed,
+      202 passed; EXIT=1. Failure identities are equal; zero added.</td></tr>
+      <tr><td>Declared guard mutation</td><td>3 failed, 3 passed; EXIT=1.
+      Both old-review retirement cases fail because the reviewer is kept;
+      the recent-review case also reports an incorrectly owed review.</td></tr>
+      <tr><td>Live dry run, paired predicates on identical candidates</td>
+      <td>500 directories examined, 365 judged by the head: 357 offered,
+      8 withheld, 0 removed. The base predicate offers 0; the head offers 357.</td></tr>
+      <tr><td>Scoped Ruff checks</td><td>All checks passed; 2 files already
+      formatted. Both commands EXIT=0.</td></tr>
+    </tbody>
+  </table>
+  <p>Logs, exact commands, module import paths, the reproduction and failed
+  intermediate checks are retained in the run directory. The paired live
+  comparison loads the base predicate from its committed source and evaluates
+  it beside the head predicate in one dry sweep.</p>
+</section>
