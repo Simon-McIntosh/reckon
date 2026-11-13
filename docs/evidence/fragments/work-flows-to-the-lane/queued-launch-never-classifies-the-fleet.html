@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="docs-project" content="reckon">
+  <meta name="reckon-type" content="evidence">
+  <meta name="plan-slug" content="queued-launch-never-classifies-the-fleet">
+  <meta name="plan-status" content="done">
+  <meta name="plan-title" content="A queued launch skips the session backlog">
+  <meta name="plan-summary" content="Admission avoids fleet classification while coordinator dispatch records its backlog and launch records remain compatible.">
+  <meta name="plan-evidence-for" content="work-flows-to-the-lane">
+  <meta name="plan-verifies" content="work-flows-to-the-lane#s39">
+  <meta name="plan-verdict" content="pass">
+  <title>A queued launch skips the session backlog — evidence</title>
+  <link rel="stylesheet" href="/_shared/foundation.css">
+  <link rel="stylesheet" href="/_shared/dashboard.css">
+</head>
+<body><main class="plan-doc">
+<section id="queued-launch-never-classifies-the-fleet-evidence">
+  <h2>A queued launch skips the session backlog</h2>
+  <p>The admission launch now skips backlog computation in <code>reckon/crew/dispatching/preparation.py</code>; coordinator dispatch retains its existing backlog recording. The admission caller's comment describes that behavior. The change is committed in <code>261e5abfa761ce02de513a97e71bd3d5fb8f7ab8</code>, and the regression tests in <code>d1e6f28d034511a79677a4043c49a46d8f9597e3</code>.</p>
+  <p>With 50 live runs in a temporary crew home, including 10 overdue unreconciled runs in the launching session, the base behavior made 51 classifier calls. The updated admission pass makes 0 calls and records no backlog. Direct dispatch still records exactly those 10 runs. A replay of the immutable base implementation, using the same clock and temporary worktree, produces the same full launch record, live pointer and command apart from backlog.</p>
+  <p>On <code>all_debug</code>, the base scoped gate reports <code>51 passed in 11.52s</code>, exit 0; the head gate reports <code>54 passed in 17.72s</code>, exit 0. Restoring backlog computation for queued launches makes the instrument report 51 calls and fails both the classifier guard and the no-backlog comparison: <code>2 failed, 1 passed in 5.51s</code>, exit 1. The production guard was restored after this mutation. Both test modules importing the implementation concerns retain all 15 passing cases. Ruff check and format check are clean on the changed Python paths. Full receipts and commands are in the run manifest.</p>
+</section>
+</main></body>
+</html>
