@@ -24,7 +24,7 @@
   <title>Work Flows To The Lane | reckon</title>
   <link rel="stylesheet" href="/_shared/foundation.css">
   <link rel="stylesheet" href="/_shared/dashboard.css">
-<meta name="plan-version" content="137">
+<meta name="plan-version" content="138">
 <meta name="plan-modified" content="2026-11-13">
 </head>
 <body>
@@ -504,6 +504,9 @@
 <div class="r-comment" data-section="s32" data-id="c-run-r-20261113T031841613150-review-of-no-caller-waits-on-a-promotion-d513212c9666" data-who="reckon-build" data-when="2026-11-13T03:32:22Z">
     <div class="r-comment-body"><p>Independent review of base 6d4266db9bf865d1c9f735940c7b798b58834c5f to head d513212c96665c026454b1e469b81849daa0ba36 stored parsed; scores 16/18/20/15/18/20, zero added failures, one blocking restart-recovery finding and one non-blocking propagation-assertion caveat.</p></div>
 </div>
+<div class="r-comment" data-section="s36" data-id="c-run-r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684" data-who="reckon-build" data-when="2026-11-13T05:03:41Z">
+    <div class="r-comment-body"><p>Independent review of the recorded base/head pair found no blocking defects; all six dimensions scored 20 and gate logs show zero added failures.</p></div>
+</div>
 <div class="r-comment" data-section="s4" data-id="c-run-r-20261111T173332277801-review-of-non-blocking-deferred-at-landing-710664cfd2fc" data-who="reckon-build" data-when="2026-11-11T18:03:06.637Z">
     <div class="r-comment-body"><p>Independent review of r-20261111T154328431125-non-blocking-deferred-at-landing at head 710664cfd2 over base d5df5102: parsed record, all six dimensions scored, added_failure_count 0, four non-blocking findings and no blocking finding. The guard change is sound and well measured; what holds it back is reuse - the deferral rule re-implements the unanswered-non-blocking enumerator recovery_review_acceptance.py:66 and the record write review_dispositions.py:507, and that duplication is where a claim-field divergence appears.</p></div>
 </div>
@@ -573,8 +576,8 @@
 <div class="r-comment" data-section="s8" data-id="c-close-s8" data-who="reckon-build" data-when="2026-11-12T02:20:00Z">
     <div class="r-comment-body"><p>§8 landed at <code>ff797f0c45</code>. <a href="/reckon/evidence/archive/work-flows-to-the-lane-landed.html#s8-re-review-need-in-shadow">evidence</a></p></div>
 </div>
-<div class="r-comment" data-section="s36" data-id="c-run-r-20261113T045205157069-review-of-admission-pass-reads-ledger-once-277c5b7e7684" data-who="reckon-build" data-when="2026-11-13T05:03:41Z">
-    <div class="r-comment-body"><p>Independent review of the recorded base/head pair found no blocking defects; all six dimensions scored 20 and gate logs show zero added failures.</p></div>
+<div class="r-comment" data-section="s33" data-id="c-run-r-20261113T042224969691-review-of-only-unmergeable-paths-are-claimed-c1dbb46fd03d" data-who="reckon-build" data-when="2026-11-13T05:07:56Z">
+    <div class="r-comment-body"><p>Independent review of 437ec81650839ed309c6e341b21dce269c911c0a..c1dbb46fd03d68012d6731aa17552dbfb3a3e8a5 records parsed scores for all six dimensions, 76 assertion checks, zero added failures and no findings; coordinator integration and merged-head verification remain separate.</p></div>
 </div>
 </section>
 </main>
