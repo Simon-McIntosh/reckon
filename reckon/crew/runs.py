@@ -2513,21 +2513,36 @@ def _drain_executable_remainder(
     )
 
 
-def _drain_row(pointer: Mapping[str, Any]) -> dict[str, Any]:
-    """One live pointer's closure row, the drain's own classification."""
+def _drain_row(
+    pointer: Mapping[str, Any], *, classification: str | None = None
+) -> dict[str, Any]:
+    """One live pointer's closure row, the drain's own classification.
+
+    ``classification`` is the word an already-made classification of this run
+    reached, for a caller reading a verdict some producer holds rather than
+    taking its own: the disposition's validity is the only part of the row that
+    turns on that word, so a caller that has one puts it here instead of
+    re-reading the run's stream, manifest and review records. A caller with no
+    such word passes none and the pointer is classified here, host-gated
+    liveness and all.
+    """
     from reckon.crew.recovery import (
         classify_pointer,
         closure_disposition_valid,
         local_liveness,
     )
 
-    alive, proven = local_liveness(pointer)
-    row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+    if classification is None:
+        alive, proven = local_liveness(pointer)
+        row = classify_pointer({**pointer, "process_alive": alive if proven else None})
+        classification = str(row["classification"])
+    else:
+        row = {"classification": str(classification)}
     recorded = pointer.get("closure_disposition")
     disposition = (
         str(recorded.get("kind") or "") if isinstance(recorded, Mapping) else ""
     )
-    valid = closure_disposition_valid(disposition, row["classification"])
+    valid = closure_disposition_valid(disposition, classification)
     return {
         **row,
         "disposition": dict(recorded) if isinstance(recorded, Mapping) else None,
