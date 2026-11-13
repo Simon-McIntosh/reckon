@@ -586,3 +586,60 @@ def test_a_missing_review_pointer_needs_its_own_promoted_row(
     assert expected in receipt["error"], receipt
     assert requests.failure_obligations(PROJECT, SESSION)[0]["run_id"] == run_id
     print(f"{kind} / {row_state}: {receipt['phase']}: {receipt['error']}")
+
+
+@pytest.mark.parametrize("head_bound", [False, True])
+def test_releasing_a_delivery_hold_invalidates_the_acceptance_refusal(
+    tmp_path, isolated_reckon_home, head_bound
+):
+    from reckon import ledger
+    from reckon.crew import resume
+    from tests import test_review_acceptance_promotes as review_fixture
+
+    root = review_fixture.repository.__wrapped__(isolated_reckon_home, tmp_path)
+    review_fixture._land_and_review(root, tmp_path)
+    run_id = review_fixture.RUN_ID
+    delivered_head = git(root, "rev-parse", "HEAD")
+    resume.hold_delivery(
+        run_id,
+        "the coordinator is checking the delivery",
+        head=delivered_head if head_bound else "",
+    )
+    held_pointer = runs.read_pointer(run_id)
+    gate_before = acceptance._recorded_gate_passed(held_pointer)
+    manifest = Path(held_pointer["manifest_path"])
+    manifest_before = manifest.read_bytes()
+
+    held = acceptance.accept_clean_review(held_pointer)
+    assert held is not None and held["accepted"] is False, held
+    assert held["held"] is True, held
+    memo_path = runs.run_dir(run_id) / "acceptance-refusal.json"
+    assert json.loads(memo_path.read_text())["refusal"] == held
+    cached = acceptance.accept_clean_review(runs.read_pointer(run_id))
+    assert cached["held"] is True and cached["unchanged"] is True, cached
+    print(f"held acceptance: {cached['reason']}; unchanged={cached['unchanged']}")
+
+    resume.release_hold(run_id, "the delivery is ready to accept")
+    released_pointer = runs.read_pointer(run_id)
+    assert {
+        key: value for key, value in held_pointer.items() if key != resume.HOLD_FIELD
+    } == {
+        key: value
+        for key, value in released_pointer.items()
+        if key != resume.HOLD_FIELD
+    }
+    assert released_pointer[resume.HOLD_FIELD]["released_at"]
+    assert git(root, "rev-parse", "HEAD") == delivered_head
+    assert acceptance._recorded_gate_passed(released_pointer) == gate_before
+    assert manifest.read_bytes() == manifest_before
+
+    accepted = acceptance.accept_clean_review(released_pointer)
+    assert accepted is not None and accepted["accepted"] is True, accepted
+    assert accepted["promoted"] is True
+    assert not accepted.get("unchanged"), accepted
+    assert not runs.pointer_path(run_id).exists()
+    rows = ledger.runs(review_fixture.PROJECT, root=root)
+    assert len(rows) == 1 and rows[0]["run_id"] == run_id, rows
+    assert rows[0]["commits"] == [delivered_head]
+    assert rows[0]["promoted_by"] == "review-acceptance"
+    print(f"released acceptance: promoted {delivered_head}")
