@@ -234,6 +234,12 @@ HOLD_VERDICTS = frozenset(
     }
 )
 
+#: The verdicts that settle a request for the sessions that follow. A refusal
+#: before launch is the pass's decision about that request rather than a wait it
+#: repeats: no stall row belongs beside it in the same pass, and a later pass
+#: reads it as answered rather than as a request still waiting.
+TERMINAL_VERDICTS = frozenset({"refused-before-launch"})
+
 #: The phases in which a request is not admissible at all, because the work it
 #: waits on has not been released. A wait here is the queue working as designed.
 NOT_ADMISSIBLE_PHASES = frozenset({"awaiting-upstream", "blocked-upstream"})
