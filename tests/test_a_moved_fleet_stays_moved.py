@@ -9,7 +9,9 @@ the fleet's zellij servers whatever environment launched it.
 from __future__ import annotations
 
 import json
+import os
 import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -119,3 +121,41 @@ def test_runs_launched_on_the_old_node_match_by_short_hostname():
     ]
     assert fleet_migrate._runs_launched_on("old-node", live) == ["r-a", "r-b"]
     assert fleet_migrate._runs_launched_on("", live) == []
+
+
+def test_lock_holders_are_read_from_proc_locks_and_waiters_are_skipped():
+    device = os.makedev(0xFD, 0x2)
+    text = (
+        "1: FLOCK  ADVISORY  WRITE 2612499 fd:02:4242 0 EOF\n"
+        "1: -> FLOCK  ADVISORY  WRITE 3000 fd:02:4242 0 EOF\n"
+        "2: FLOCK  ADVISORY  WRITE 1111 fd:02:9999 0 EOF\n"
+        "3: POSIX  ADVISORY  WRITE 2222 08:01:4242 0 EOF\n"
+        "4: FLOCK  ADVISORY  WRITE 2612499 fd:02:4242 0 EOF\n"
+    )
+    assert fleet_supervisor.lock_holders_in(text, device, 4242) == [2612499]
+
+
+def test_a_live_lock_names_the_process_that_holds_it(tmp_path: Path):
+    runtime = tmp_path / "runtime"
+    runtime.mkdir()
+    path = fleet_supervisor.service_lock_path(runtime, "ingest")
+    holder = subprocess.Popen(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import fcntl, sys, time; f = open(sys.argv[1], 'w'); "
+                "fcntl.flock(f, fcntl.LOCK_EX); print('held', flush=True); "
+                "time.sleep(60)"
+            ),
+            str(path),
+        ],
+        stdout=subprocess.PIPE,
+    )
+    try:
+        assert holder.stdout.readline() == b"held\n"
+        assert fleet_supervisor.service_lock_holders("ingest", runtime) == [holder.pid]
+    finally:
+        holder.kill()
+        holder.wait()
+    assert fleet_supervisor.service_lock_holders("ingest", runtime) == []

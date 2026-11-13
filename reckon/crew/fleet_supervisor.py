@@ -860,6 +860,46 @@ def service_lock_path(runtime: Path, name: str) -> Path:
     return runtime / f"{name}{SERVICE_LOCK_SUFFIX}"
 
 
+def lock_holders_in(locks_text: str, device: int, inode: int) -> list[int]:
+    """The pids /proc/locks lists as holding a lock on one file.
+
+    Each holder line reads ``<n>: FLOCK ADVISORY WRITE <pid> <maj>:<min>:<inode>
+    <start> <end>`` with the device numbers in hex; a line carrying ``->`` is a
+    process waiting for the lock, not holding it, and is skipped.
+    """
+    wanted = (os.major(device), os.minor(device), inode)
+    holders = set()
+    for line in locks_text.splitlines():
+        fields = line.split()
+        if len(fields) < 6 or "->" in fields:
+            continue
+        parts = fields[5].split(":")
+        if len(parts) != 3 or not fields[4].isdecimal():
+            continue
+        try:
+            where = (int(parts[0], 16), int(parts[1], 16), int(parts[2]))
+        except ValueError:
+            continue
+        if where == wanted:
+            holders.add(int(fields[4]))
+    return sorted(holders)
+
+
+def service_lock_holders(name: str, runtime: Path) -> list[int]:
+    """The pids holding a service's lock, which are copies of that service.
+
+    The recorded pid is not always the holder: a copy the supervisor lost
+    track of keeps the lock while every copy started after it waits behind it,
+    and killing the recorded copy then leaves the lock held.
+    """
+    try:
+        status = service_lock_path(runtime, name).stat()
+        text = Path("/proc/locks").read_text(encoding="utf-8")
+    except OSError:
+        return []
+    return lock_holders_in(text, status.st_dev, status.st_ino)
+
+
 def _lock_inode(runtime: Path, name: str) -> int | None:
     try:
         return service_lock_path(runtime, name).stat().st_ino
@@ -1956,6 +1996,15 @@ class DeclaredServices:
             if time.monotonic() >= deadline:
                 log(f"declared service {name} did not stop; killing pid {pid}")
                 signal_worker(pid, signal.SIGKILL, reason="fleet-service-stop")
+                for holder in service_lock_holders(name, self._runtime):
+                    if holder in (pid, os.getpid()):
+                        continue
+                    shown = " ".join(process_cmdline(holder) or ["?"])[:200]
+                    log(
+                        f"declared service {name} lock is held by pid {holder}, "
+                        f"not the recorded copy ({shown}); killing it"
+                    )
+                    signal_worker(holder, signal.SIGKILL, reason="fleet-service-stop")
                 # A killed copy still holds its lock and answers to its pid
                 # until the kernel has run it down. Nothing is started beside
                 # it: a replacement that found the old copy alive would be
